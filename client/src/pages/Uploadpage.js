@@ -43,7 +43,7 @@ const autoCalculateFinancing = (pricing, setVerifiedData) => {
 };
 
 // Use relative API path - backend runs on same host
-const API_BASE = "";
+const API_BASE = "http://localhost:8010";
 
 const COLORS = {
   primary: '#4F46E5',
@@ -80,7 +80,7 @@ const styles = {
     border: "none",
     borderRadius: 10,
     fontSize: 15,
-    fontWeight: 600,
+    fontWeight: 900,
     cursor: "pointer",
     transition: "all 0.2s ease",
   },
@@ -94,7 +94,7 @@ const styles = {
     border: "1px solid #e5e7eb",
     borderRadius: 10,
     fontSize: 14,
-    fontWeight: 600,
+    fontWeight: 900,
     cursor: "pointer",
     transition: "all 0.2s ease",
     boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
@@ -833,7 +833,7 @@ const EnhancedUploadPage = () => {
                 <div style={{ margin: "0 auto 16px", width: 80, height: 80, borderRadius: 20, background: "linear-gradient(135deg, #2563eb, #1d4ed8)", display: "grid", placeItems: "center" }}>
                   <Upload size={40} color="#fff" />
                 </div>
-                <div style={{ marginBottom: 12, fontWeight: 700, fontSize: 20, color: "#111827" }}>
+                <div style={{ marginBottom: 12, fontWeight: 900, fontSize: 20, color: "#111827" }}>
                   Drop your PDF here or click to browse
                 </div>
                 <input id="fileInput" type="file" accept=".pdf" onChange={onFileInput} style={{ display: "none" }} />
@@ -889,7 +889,7 @@ const EnhancedUploadPage = () => {
               <button style={{ ...styles.button, background: "#6b7280" }} onClick={clearAll}>
                 Clear All
               </button>
-              <span style={{ alignSelf: "center", fontSize: 14, color: "#6b7280", fontWeight: 600 }}>
+              <span style={{ alignSelf: "center", fontSize: 14, color: "#6b7280", fontWeight: 900 }}>
                 {selectedPages.size} selected
               </span>
             </div>
@@ -915,7 +915,7 @@ const EnhancedUploadPage = () => {
                     }}
                   >
                     <img src={p.thumbnail} alt={`Page ${p.pageNum}`} style={{ width: "100%", borderRadius: 8 }} />
-                    <div style={{ textAlign: "center", marginTop: 8, fontSize: 13, fontWeight: 600 }}>
+                    <div style={{ textAlign: "center", marginTop: 8, fontSize: 13, fontWeight: 900 }}>
                       Page {p.pageNum}
                     </div>
                     {selectedPages.has(p.pageNum) && (
@@ -957,11 +957,11 @@ const EnhancedUploadPage = () => {
                 <div style={{ margin: "0 auto 24px", width: 80, height: 80, borderRadius: 20, background: "linear-gradient(135deg, #2563eb, #1d4ed8)", display: "grid", placeItems: "center", animation: "pulse 2s infinite" }}>
                   <Loader size={40} color="#fff" style={{ animation: "spin 1s linear infinite" }} />
                 </div>
-                <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8, color: "#111827" }}>Analyzing Your Deal</h2>
+                <h2 style={{ fontSize: 28, fontWeight: 900, marginBottom: 8, color: "#111827" }}>Analyzing Your Deal</h2>
                 <p style={{ fontSize: 15, color: "#6b7280", marginBottom: 24 }}>Please wait while we extract and analyze your deal data</p>
                 
                 {/* Progress percentage */}
-                <div style={{ fontSize: 32, fontWeight: 700, color: "#2563eb", marginBottom: 16 }}>
+                <div style={{ fontSize: 32, fontWeight: 900, color: "#2563eb", marginBottom: 16 }}>
                   {progress}%
                 </div>
                 
@@ -982,7 +982,7 @@ const EnhancedUploadPage = () => {
                 <div style={{ 
                   fontSize: 14, 
                   color: "#374151", 
-                  fontWeight: 500,
+                  fontWeight: 900,
                   padding: "12px 20px",
                   background: "#f3f4f6",
                   borderRadius: 8,
@@ -1055,7 +1055,7 @@ const EnhancedUploadPage = () => {
               <div style={{ display: "flex", alignItems: "start", gap: 12 }}>
                 <AlertTriangle size={20} color="#f59e0b" style={{ marginTop: 2 }} />
                 <div>
-                  <div style={{ fontWeight: 600, marginBottom: 8, color: "#92400e" }}>Missing Critical Data</div>
+                  <div style={{ fontWeight: 900, marginBottom: 8, color: "#92400e" }}>Missing Critical Data</div>
                   <div style={{ fontSize: 14, color: "#78350f" }}>
                     The following fields could not be extracted and need your input:
                   </div>
@@ -1116,7 +1116,7 @@ const EnhancedUploadPage = () => {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 20 }}>
                 {/* Purchase Price */}
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>Purchase Price</label>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>Purchase Price</label>
                   <input type="number" style={styles.input} placeholder="Enter purchase price" />
                   {verifiedData?.pricing_financing?.price && (
                     <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Current: {verifiedData.pricing_financing.price}</div>
@@ -1124,7 +1124,7 @@ const EnhancedUploadPage = () => {
                 </div>
                 {/* Insurance */}
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>Insurance</label>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>Insurance</label>
                   <input type="number" style={styles.input} placeholder="Enter insurance" />
                   {verifiedData?.expenses?.insurance && (
                     <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Current: {verifiedData.expenses.insurance}</div>
@@ -1132,7 +1132,7 @@ const EnhancedUploadPage = () => {
                 </div>
                 {/* Taxes */}
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>Taxes</label>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>Taxes</label>
                   <input type="number" style={styles.input} placeholder="Enter taxes" />
                   {verifiedData?.expenses?.taxes && (
                     <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Current: {verifiedData.expenses.taxes}</div>
@@ -1140,7 +1140,7 @@ const EnhancedUploadPage = () => {
                 </div>
                 {/* Annual Debt Service */}
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>Annual Debt Service</label>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>Annual Debt Service</label>
                   <input type="number" style={styles.input} placeholder="Enter annual debt service" />
                   {verifiedData?.pricing_financing?.annual_debt_service && (
                     <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Current: {Number(verifiedData.pricing_financing.annual_debt_service).toFixed(2)}</div>
@@ -1148,7 +1148,7 @@ const EnhancedUploadPage = () => {
                 </div>
                 {/* Property Management */}
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>Property Management (%)</label>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>Property Management (%)</label>
                   <input type="number" style={styles.input} placeholder="Enter property management %" />
                   {verifiedData?.expenses?.property_management_pct && (
                     <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Current: {verifiedData.expenses.property_management_pct}</div>
@@ -1156,7 +1156,7 @@ const EnhancedUploadPage = () => {
                 </div>
                 {/* Vacancy (%) */}
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>Vacancy (%)</label>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>Vacancy (%)</label>
                   <input type="number" style={styles.input} placeholder="Enter vacancy %" />
                   {verifiedData?.expenses?.vacancy_pct && (
                     <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Current: {verifiedData.expenses.vacancy_pct}</div>
@@ -1164,7 +1164,7 @@ const EnhancedUploadPage = () => {
                 </div>
                 {/* CapEx (%) */}
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>CapEx (%)</label>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>CapEx (%)</label>
                   <input type="number" style={styles.input} placeholder="Enter CapEx %" />
                   {verifiedData?.expenses?.capex_pct && (
                     <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Current: {verifiedData.expenses.capex_pct}</div>
@@ -1172,7 +1172,7 @@ const EnhancedUploadPage = () => {
                 </div>
                 {/* Payroll */}
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>Payroll</label>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>Payroll</label>
                   <input type="number" style={styles.input} placeholder="Enter payroll" />
                   {verifiedData?.expenses?.payroll && (
                     <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Current: {verifiedData.expenses.payroll}</div>
@@ -1180,42 +1180,42 @@ const EnhancedUploadPage = () => {
                 </div>
                 {/* Utilities */}
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>Gas (Monthly)</label>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>Gas (Monthly)</label>
                   <input type="number" style={styles.input} placeholder="Enter monthly gas" />
                   {verifiedData?.expenses?.gas && (
                     <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Current: {verifiedData.expenses.gas}</div>
                   )}
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>Electrical (Monthly)</label>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>Electrical (Monthly)</label>
                   <input type="number" style={styles.input} placeholder="Enter monthly electrical" />
                   {verifiedData?.expenses?.electrical && (
                     <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Current: {verifiedData.expenses.electrical}</div>
                   )}
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>Water (Monthly)</label>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>Water (Monthly)</label>
                   <input type="number" style={styles.input} placeholder="Enter monthly water" />
                   {verifiedData?.expenses?.water && (
                     <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Current: {verifiedData.expenses.water}</div>
                   )}
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>Sewer (Monthly)</label>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>Sewer (Monthly)</label>
                   <input type="number" style={styles.input} placeholder="Enter monthly sewer" />
                   {verifiedData?.expenses?.sewer && (
                     <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Current: {verifiedData.expenses.sewer}</div>
                   )}
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>Trash (Monthly)</label>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>Trash (Monthly)</label>
                   <input type="number" style={styles.input} placeholder="Enter monthly trash" />
                   {verifiedData?.expenses?.trash && (
                     <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Current: {verifiedData.expenses.trash}</div>
                   )}
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>Total Utilities</label>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>Total Utilities</label>
                   <input type="number" style={styles.input} placeholder="Enter total utilities" />
                   {verifiedData?.expenses?.utilities && (
                     <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Current: {verifiedData.expenses.utilities}</div>
@@ -1225,12 +1225,12 @@ const EnhancedUploadPage = () => {
 
               {/* Proforma Rents Section */}
               <div style={{ marginTop: 32, paddingTop: 20, borderTop: "2px solid #e5e7eb" }}>
-                <h4 style={{ marginBottom: 16, fontSize: 15, fontWeight: 600, color: "#374151" }}>Proforma Rents</h4>
+                <h4 style={{ marginBottom: 16, fontSize: 15, fontWeight: 900, color: "#374151" }}>Proforma Rents</h4>
                 
                 {proformaRentRows.map((row, index) => (
                   <div key={index} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 20, marginBottom: 12 }}>
                     <div>
-                      <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>Type (Bed/Bath)</label>
+                      <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>Type (Bed/Bath)</label>
                       <input 
                         type="text" 
                         style={styles.input} 
@@ -1240,7 +1240,7 @@ const EnhancedUploadPage = () => {
                       />
                     </div>
                     <div>
-                      <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>Units</label>
+                      <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>Units</label>
                       <input 
                         type="number" 
                         style={styles.input} 
@@ -1250,7 +1250,7 @@ const EnhancedUploadPage = () => {
                       />
                     </div>
                     <div>
-                      <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>Proforma Rent</label>
+                      <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>Proforma Rent</label>
                       <input 
                         type="number" 
                         style={styles.input} 
@@ -1271,7 +1271,7 @@ const EnhancedUploadPage = () => {
                             borderRadius: 8,
                             cursor: "pointer",
                             fontSize: 13,
-                            fontWeight: 500
+                            fontWeight: 900
                           }}
                         >
                           Remove
@@ -1292,7 +1292,7 @@ const EnhancedUploadPage = () => {
                     borderRadius: 8,
                     cursor: "pointer",
                     fontSize: 14,
-                    fontWeight: 500,
+                    fontWeight: 900,
                     display: "flex",
                     alignItems: "center",
                     gap: 8
@@ -1312,7 +1312,7 @@ const EnhancedUploadPage = () => {
               </h3>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 20 }}>
                   <div>
-                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                       County Name (Type exactly: e.g. "Autauga County")
                     </label>
                     <input
@@ -1389,7 +1389,7 @@ const EnhancedUploadPage = () => {
                     >Calculate Property Tax</button>
                   </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     Address *
                   </label>
                   <input
@@ -1405,7 +1405,7 @@ const EnhancedUploadPage = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     City
                   </label>
                   <input
@@ -1420,7 +1420,7 @@ const EnhancedUploadPage = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     State
                   </label>
                   <input
@@ -1435,7 +1435,7 @@ const EnhancedUploadPage = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     ZIP Code
                   </label>
                   <input
@@ -1450,7 +1450,7 @@ const EnhancedUploadPage = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     Total Units *
                   </label>
                   <input
@@ -1466,7 +1466,7 @@ const EnhancedUploadPage = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     Year Built
                   </label>
                   <input
@@ -1481,7 +1481,7 @@ const EnhancedUploadPage = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     Building SF
                   </label>
                   <input
@@ -1496,7 +1496,7 @@ const EnhancedUploadPage = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     Land Area (Acres)
                   </label>
                   <input
@@ -1523,10 +1523,10 @@ const EnhancedUploadPage = () => {
               </h3>
               
               <div style={{ marginBottom: 32 }}>
-                <h4 style={{ marginBottom: 16, fontSize: 16, fontWeight: 600, color: "#374151" }}>Pricing & Financing</h4>
+                <h4 style={{ marginBottom: 16, fontSize: 16, fontWeight: 900, color: "#374151" }}>Pricing & Financing</h4>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 20 }}>
                   <div>
-                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                       Financing Type *
                     </label>
                     <select
@@ -1557,7 +1557,7 @@ const EnhancedUploadPage = () => {
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                       Purchase Price *
                     </label>
                     <input
@@ -1588,7 +1588,7 @@ const EnhancedUploadPage = () => {
                   {financingMode === 'traditional' && (
                     <>
                       <div>
-                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                           Down Payment (%) *
                         </label>
                         <input
@@ -1618,7 +1618,7 @@ const EnhancedUploadPage = () => {
                         />
                       </div>
                       <div>
-                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                           Term (Years) *
                         </label>
                         <input
@@ -1647,7 +1647,7 @@ const EnhancedUploadPage = () => {
                         />
                       </div>
                       <div>
-                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                           Amortization (Years)
                         </label>
                         <input
@@ -1679,7 +1679,7 @@ const EnhancedUploadPage = () => {
                   {financingMode === 'seller_finance' && (
                     <>
                       <div>
-                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                           Down Payment (Amount $) *
                         </label>
                         <input
@@ -1695,7 +1695,7 @@ const EnhancedUploadPage = () => {
                         />
                       </div>
                       <div>
-                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                           Amortization (Years) *
                         </label>
                         <input
@@ -1711,7 +1711,7 @@ const EnhancedUploadPage = () => {
                         />
                       </div>
                       <div>
-                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                           Balloon (Years) *
                         </label>
                         <input
@@ -1727,7 +1727,7 @@ const EnhancedUploadPage = () => {
                         />
                       </div>
                       <div>
-                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                           Interest-Only Period (Years)
                         </label>
                         <input
@@ -1746,7 +1746,7 @@ const EnhancedUploadPage = () => {
                   {financingMode === 'subject_to' && (
                     <>
                       <div>
-                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                           Existing Loan Balance ($) *
                         </label>
                         <input
@@ -1762,7 +1762,7 @@ const EnhancedUploadPage = () => {
                         />
                       </div>
                       <div>
-                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                           Remaining Term (Years) *
                         </label>
                         <input
@@ -1778,7 +1778,7 @@ const EnhancedUploadPage = () => {
                         />
                       </div>
                       <div>
-                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                           Amortization (Years)
                         </label>
                         <input
@@ -1795,7 +1795,7 @@ const EnhancedUploadPage = () => {
                     </>
                   )}
                   <div>
-                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                       Loan Amount
                     </label>
                     <input
@@ -1811,7 +1811,7 @@ const EnhancedUploadPage = () => {
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                       Interest Rate (%) *
                     </label>
                     <input
@@ -1841,7 +1841,7 @@ const EnhancedUploadPage = () => {
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                       Monthly Payment
                     </label>
                     <input
@@ -1856,7 +1856,7 @@ const EnhancedUploadPage = () => {
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                       Annual Debt Service
                     </label>
                     <input
@@ -1873,10 +1873,10 @@ const EnhancedUploadPage = () => {
                 </div>
 
                 {/* Acquisition & Disposition Costs */}
-                <h4 style={{ marginTop: 32, marginBottom: 16, fontSize: 16, fontWeight: 600, color: "#374151" }}>Acquisition & Disposition Costs</h4>
+                <h4 style={{ marginTop: 32, marginBottom: 16, fontSize: 16, fontWeight: 900, color: "#374151" }}>Acquisition & Disposition Costs</h4>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 20 }}>
                   <div>
-                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                       Realtor Fees (%)
                     </label>
                     <input
@@ -1897,7 +1897,7 @@ const EnhancedUploadPage = () => {
                     )}
                   </div>
                   <div>
-                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                       Closing Costs (%)
                     </label>
                     <input
@@ -1918,7 +1918,7 @@ const EnhancedUploadPage = () => {
                     )}
                   </div>
                   <div>
-                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                       Disposition/Acquisition Fees (%)
                     </label>
                     <input
@@ -1939,7 +1939,7 @@ const EnhancedUploadPage = () => {
                     )}
                   </div>
                   <div>
-                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                       Rehab Cost
                     </label>
                     <input
@@ -1954,7 +1954,7 @@ const EnhancedUploadPage = () => {
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                       Total Initial Cash Investment
                     </label>
                     <div style={{
@@ -1963,7 +1963,7 @@ const EnhancedUploadPage = () => {
                       border: "2px solid #e5e7eb",
                       borderRadius: 8,
                       fontSize: 14,
-                      fontWeight: 600
+                      fontWeight: 900
                     }}>
                       {(() => {
                         const price = verifiedData?.pricing_financing?.price || 0;
@@ -1982,14 +1982,14 @@ const EnhancedUploadPage = () => {
               </div>
 
               <div>
-                <h4 style={{ marginBottom: 16, fontSize: 16, fontWeight: 600, color: "#374151" }}>Income</h4>
+                <h4 style={{ marginBottom: 16, fontSize: 16, fontWeight: 900, color: "#374151" }}>Income</h4>
                 <div style={{ marginBottom: 12, fontSize: 13, color: "#6b7280" }}>
                   <strong>Gross Potential Rent (Annual):</strong> Total possible rent if fully occupied, no vacancy.<br/>
                   <strong>Effective Gross Income (Annual):</strong> Actual expected income after vacancy loss and adding other income.
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 20 }}>
                   <div>
-                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                       Gross Potential Rent (Annual) *
                     </label>
                     <input
@@ -2005,7 +2005,7 @@ const EnhancedUploadPage = () => {
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                       Other Income (Annual)
                     </label>
                     <input
@@ -2020,7 +2020,7 @@ const EnhancedUploadPage = () => {
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                    <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                       Effective Gross Income (Annual)
                     </label>
                     <input
@@ -2046,10 +2046,10 @@ const EnhancedUploadPage = () => {
               </h3>
               
               {/* Percentage-based Expenses */}
-              <h4 style={{ marginBottom: 16, fontSize: 15, fontWeight: 600, color: "#374151" }}>Percentage-Based Expenses</h4>
+              <h4 style={{ marginBottom: 16, fontSize: 15, fontWeight: 900, color: "#374151" }}>Percentage-Based Expenses</h4>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, marginBottom: 32 }}>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     Vacancy Rate (%)
                   </label>
                   <input
@@ -2077,7 +2077,7 @@ const EnhancedUploadPage = () => {
                   )}
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     Property Management (%)
                   </label>
                   <input
@@ -2105,7 +2105,7 @@ const EnhancedUploadPage = () => {
                   )}
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     Capital Expenditures (%)
                   </label>
                   <input
@@ -2135,10 +2135,10 @@ const EnhancedUploadPage = () => {
               </div>
 
               {/* Fixed Expenses */}
-              <h4 style={{ marginBottom: 16, fontSize: 15, fontWeight: 600, color: "#374151" }}>Fixed Annual Expenses</h4>
+              <h4 style={{ marginBottom: 16, fontSize: 15, fontWeight: 900, color: "#374151" }}>Fixed Annual Expenses</h4>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 20 }}>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     Real Estate Taxes
                   </label>
                   <input
@@ -2153,7 +2153,7 @@ const EnhancedUploadPage = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     Insurance
                   </label>
                   <input
@@ -2168,7 +2168,7 @@ const EnhancedUploadPage = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     Repairs & Maintenance
                   </label>
                   <input
@@ -2183,7 +2183,7 @@ const EnhancedUploadPage = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     Management Fees
                   </label>
                   <input
@@ -2198,7 +2198,7 @@ const EnhancedUploadPage = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     Payroll
                   </label>
                   <input
@@ -2213,7 +2213,7 @@ const EnhancedUploadPage = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     Other Expenses
                   </label>
                   <input
@@ -2230,10 +2230,10 @@ const EnhancedUploadPage = () => {
               </div>
 
               {/* Utilities Section */}
-              <h4 style={{ marginTop: 32, marginBottom: 16, fontSize: 15, fontWeight: 600, color: "#374151" }}>Utilities (Monthly)</h4>
+              <h4 style={{ marginTop: 32, marginBottom: 16, fontSize: 15, fontWeight: 900, color: "#374151" }}>Utilities (Monthly)</h4>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     Gas
                   </label>
                   <input
@@ -2251,7 +2251,7 @@ const EnhancedUploadPage = () => {
                   </div>
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     Electrical
                   </label>
                   <input
@@ -2269,7 +2269,7 @@ const EnhancedUploadPage = () => {
                   </div>
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     Water
                   </label>
                   <input
@@ -2287,7 +2287,7 @@ const EnhancedUploadPage = () => {
                   </div>
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     Sewer
                   </label>
                   <input
@@ -2305,7 +2305,7 @@ const EnhancedUploadPage = () => {
                   </div>
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     Trash
                   </label>
                   <input
@@ -2323,7 +2323,7 @@ const EnhancedUploadPage = () => {
                   </div>
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 500 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
                     Total Utilities
                   </label>
                   <input
@@ -2343,7 +2343,7 @@ const EnhancedUploadPage = () => {
               {/* Total Expenses */}
               <div style={{ marginTop: 32, paddingTop: 20, borderTop: "2px solid #e5e7eb" }}>
                 <div style={{ maxWidth: 400 }}>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 14, color: "#111827", fontWeight: 600 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 14, color: "#111827", fontWeight: 900 }}>
                     Total Operating Expenses
                   </label>
                   <input
@@ -2351,7 +2351,7 @@ const EnhancedUploadPage = () => {
                     style={{
                       ...styles.input,
                       background: "#f3f4f6",
-                      fontWeight: 700,
+                      fontWeight: 900,
                       fontSize: 16,
                       border: "2px solid #9ca3af",
                       ...(verifiedData?.expenses?.total ? styles.inputSuccess : {})
@@ -2596,7 +2596,7 @@ const EnhancedUploadPage = () => {
                   border: '1px solid #E5E7EB',
                   borderRadius: 8,
                   fontSize: 14,
-                  fontWeight: 600,
+                  fontWeight: 900,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -2609,7 +2609,7 @@ const EnhancedUploadPage = () => {
                 <Home size={16} />
                 Home
               </button>
-              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#111827', letterSpacing: '-0.01em' }}>
+              <h2 style={{ fontSize: 22, fontWeight: 900, color: '#111827', letterSpacing: '-0.01em' }}>
                 {property.address || 'Property Analysis'}
               </h2>
             </div>
@@ -2764,7 +2764,7 @@ const EnhancedUploadPage = () => {
                         }}>
                           <div style={{ 
                             fontSize: 28, 
-                            fontWeight: 800, 
+                            fontWeight: 900, 
                             color: scoreColors.text,
                             lineHeight: 1,
                             textShadow: '0 2px 4px rgba(0,0,0,0.1)'
@@ -2773,7 +2773,7 @@ const EnhancedUploadPage = () => {
                           </div>
                           <div style={{ 
                             fontSize: 9, 
-                            fontWeight: 600,
+                            fontWeight: 900,
                             color: scoreColors.text,
                             opacity: 0.9,
                             marginTop: 2,
@@ -2798,7 +2798,7 @@ const EnhancedUploadPage = () => {
                         <Award size={18} color={scoreColors.text} />
                         <span style={{ 
                           fontSize: 14, 
-                          fontWeight: 700, 
+                          fontWeight: 900, 
                           color: scoreColors.text,
                           letterSpacing: 0.5
                         }}>
@@ -2832,7 +2832,7 @@ const EnhancedUploadPage = () => {
                           }}>
                             <ThumbsUp size={18} color="white" />
                           </div>
-                          <span style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>
+                          <span style={{ fontSize: 16, fontWeight: 900, color: '#111827' }}>
                             Deal Strengths
                           </span>
                         </div>
@@ -2875,7 +2875,7 @@ const EnhancedUploadPage = () => {
                           }}>
                             <AlertTriangle size={18} color="white" />
                           </div>
-                          <span style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>
+                          <span style={{ fontSize: 16, fontWeight: 900, color: '#111827' }}>
                             Risk Factors
                           </span>
                         </div>
@@ -2903,71 +2903,71 @@ const EnhancedUploadPage = () => {
                 {/* Key Metrics Row */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 24 }}>
                   <div style={{ background: 'white', borderRadius: 12, padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                    <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8, fontWeight: 500 }}>Cap Rate</div>
-                    <div style={{ fontSize: 28, fontWeight: 700, color: COLORS.secondary }}>{fmtPct(adjustedCapRate)}</div>
+                    <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8, fontWeight: 900 }}>Cap Rate</div>
+                    <div style={{ fontSize: 28, fontWeight: 900, color: COLORS.secondary }}>{fmtPct(adjustedCapRate)}</div>
                   </div>
                   <div style={{ background: 'white', borderRadius: 12, padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                    <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8, fontWeight: 500 }}>DSCR</div>
-                    <div style={{ fontSize: 28, fontWeight: 700, color: COLORS.dark }}>{fmtNumber(underwriting.dscr)}</div>
+                    <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8, fontWeight: 900 }}>DSCR</div>
+                    <div style={{ fontSize: 28, fontWeight: 900, color: COLORS.dark }}>{fmtNumber(underwriting.dscr)}</div>
                   </div>
                   <div style={{ background: 'white', borderRadius: 12, padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                    <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8, fontWeight: 500 }}>Cash Flow</div>
-                    <div style={{ fontSize: 28, fontWeight: 700, color: COLORS.info }}>
+                    <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8, fontWeight: 900 }}>Cash Flow</div>
+                    <div style={{ fontSize: 28, fontWeight: 900, color: COLORS.info }}>
                       {fmtCurrency(adjustedCashFlow)}
                     </div>
                   </div>
                   <div style={{ background: 'white', borderRadius: 12, padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                    <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8, fontWeight: 500 }}>Price/Unit</div>
-                    <div style={{ fontSize: 28, fontWeight: 700, color: COLORS.warning }}>{fmtCurrency(adjustedPricePerUnit)}</div>
+                    <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8, fontWeight: 900 }}>Price/Unit</div>
+                    <div style={{ fontSize: 28, fontWeight: 900, color: COLORS.warning }}>{fmtCurrency(adjustedPricePerUnit)}</div>
                   </div>
                 </div>
 
                 {/* Property & Financial Summary */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                   <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                    <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <h3 style={{ fontSize: 18, fontWeight: 900, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
                       <Building size={20} /> Property Details
                     </h3>
                     <div style={{ display: 'grid', gap: 12 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #F3F4F6' }}>
                         <span style={{ fontSize: 14, color: '#6B7280' }}>Address</span>
-                        <span style={{ fontSize: 14, fontWeight: 600 }}>{property.address || "—"}</span>
+                        <span style={{ fontSize: 14, fontWeight: 900 }}>{property.address || "—"}</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #F3F4F6' }}>
                         <span style={{ fontSize: 14, color: '#6B7280' }}>Units</span>
-                        <span style={{ fontSize: 14, fontWeight: 600 }}>{fmtNumber(property.units)}</span>
+                        <span style={{ fontSize: 14, fontWeight: 900 }}>{fmtNumber(property.units)}</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #F3F4F6' }}>
                         <span style={{ fontSize: 14, color: '#6B7280' }}>Year Built</span>
-                        <span style={{ fontSize: 14, fontWeight: 600 }}>{property.year_built || "—"}</span>
+                        <span style={{ fontSize: 14, fontWeight: 900 }}>{property.year_built || "—"}</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
                         <span style={{ fontSize: 14, color: '#6B7280' }}>Square Footage</span>
-                        <span style={{ fontSize: 14, fontWeight: 600 }}>{fmtNumber(property.rba_sqft)}</span>
+                        <span style={{ fontSize: 14, fontWeight: 900 }}>{fmtNumber(property.rba_sqft)}</span>
                       </div>
                     </div>
                   </div>
 
                   <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                    <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <h3 style={{ fontSize: 18, fontWeight: 900, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
                       <DollarSign size={20} /> Financial Summary
                     </h3>
                     <div style={{ display: 'grid', gap: 12 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #F3F4F6' }}>
                         <span style={{ fontSize: 14, color: '#6B7280' }}>Purchase Price</span>
-                        <span style={{ fontSize: 14, fontWeight: 600 }}>{fmtCurrency(pricing.price)}</span>
+                        <span style={{ fontSize: 14, fontWeight: 900 }}>{fmtCurrency(pricing.price)}</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #F3F4F6' }}>
                         <span style={{ fontSize: 14, color: '#6B7280' }}>NOI</span>
-                        <span style={{ fontSize: 14, fontWeight: 600 }}>{fmtCurrency(pnl.noi)}</span>
+                        <span style={{ fontSize: 14, fontWeight: 900 }}>{fmtCurrency(pnl.noi)}</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #F3F4F6' }}>
                         <span style={{ fontSize: 14, color: '#6B7280' }}>Loan Amount</span>
-                        <span style={{ fontSize: 14, fontWeight: 600 }}>{fmtCurrency(pricing.loan_amount)}</span>
+                        <span style={{ fontSize: 14, fontWeight: 900 }}>{fmtCurrency(pricing.loan_amount)}</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
                         <span style={{ fontSize: 14, color: '#6B7280' }}>Debt Service</span>
-                        <span style={{ fontSize: 14, fontWeight: 600 }}>{fmtCurrency(pricing.annual_debt_service)}</span>
+                        <span style={{ fontSize: 14, fontWeight: 900 }}>{fmtCurrency(pricing.annual_debt_service)}</span>
                       </div>
                     </div>
                   </div>
@@ -2976,17 +2976,17 @@ const EnhancedUploadPage = () => {
                 {/* Proforma Rent Schedule - NEW SECTION */}
                 {parsed?.proforma?.rent_schedule && parsed.proforma.rent_schedule.length > 0 && (
                   <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', marginTop: 24 }}>
-                    <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <h3 style={{ fontSize: 18, fontWeight: 900, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
                       <FileText size={20} /> Proforma Rent Schedule
                     </h3>
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
                         <tr style={{ background: '#F9FAFB', borderBottom: '2px solid #E5E7EB' }}>
-                          <th style={{ padding: 12, textAlign: 'left', fontSize: 13, fontWeight: 600, color: '#6B7280' }}>Unit Type</th>
-                          <th style={{ padding: 12, textAlign: 'center', fontSize: 13, fontWeight: 600, color: '#6B7280' }}>Units</th>
-                          <th style={{ padding: 12, textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#6B7280' }}>Monthly Rent</th>
-                          <th style={{ padding: 12, textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#6B7280' }}>Monthly Income</th>
-                          <th style={{ padding: 12, textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#6B7280' }}>Annual Income</th>
+                          <th style={{ padding: 12, textAlign: 'left', fontSize: 13, fontWeight: 900, color: '#6B7280' }}>Unit Type</th>
+                          <th style={{ padding: 12, textAlign: 'center', fontSize: 13, fontWeight: 900, color: '#6B7280' }}>Units</th>
+                          <th style={{ padding: 12, textAlign: 'right', fontSize: 13, fontWeight: 900, color: '#6B7280' }}>Monthly Rent</th>
+                          <th style={{ padding: 12, textAlign: 'right', fontSize: 13, fontWeight: 900, color: '#6B7280' }}>Monthly Income</th>
+                          <th style={{ padding: 12, textAlign: 'right', fontSize: 13, fontWeight: 900, color: '#6B7280' }}>Annual Income</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2998,14 +2998,14 @@ const EnhancedUploadPage = () => {
                           return (
                             <tr key={i} style={{ borderBottom: '1px solid #F3F4F6' }}>
                               <td style={{ padding: 12, fontSize: 14 }}>{row.type}</td>
-                              <td style={{ padding: 12, textAlign: 'center', fontSize: 14, fontWeight: 600 }}>{units}</td>
-                              <td style={{ padding: 12, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtCurrency(rent)}</td>
+                              <td style={{ padding: 12, textAlign: 'center', fontSize: 14, fontWeight: 900 }}>{units}</td>
+                              <td style={{ padding: 12, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtCurrency(rent)}</td>
                               <td style={{ padding: 12, textAlign: 'right', fontSize: 14 }}>{fmtCurrency(monthlyIncome)}</td>
                               <td style={{ padding: 12, textAlign: 'right', fontSize: 14 }}>{fmtCurrency(annualIncome)}</td>
                             </tr>
                           );
                         })}
-                        <tr style={{ background: '#F9FAFB', fontWeight: 600, borderTop: '2px solid #E5E7EB' }}>
+                        <tr style={{ background: '#F9FAFB', fontWeight: 900, borderTop: '2px solid #E5E7EB' }}>
                           <td colSpan={3} style={{ padding: 12, fontSize: 14 }}>Total Gross Potential Rent</td>
                           <td colSpan={2} style={{ padding: 12, textAlign: 'right', fontSize: 16, color: COLORS.primary }}>
                             {fmtCurrency(parsed.pnl?.gross_potential_rent || 0)}
@@ -3028,7 +3028,7 @@ const EnhancedUploadPage = () => {
             {resultsTab === 'cashflow' && (
               <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                  <h3 style={{ fontSize: 18, fontWeight: 600 }}>Cash Flow Projection</h3>
+                  <h3 style={{ fontSize: 18, fontWeight: 900 }}>Cash Flow Projection</h3>
                   <select
                     value={cashFlowYears || 10}
                     onChange={(e) => setCashFlowYears(parseInt(e.target.value))}
@@ -3083,14 +3083,14 @@ const EnhancedUploadPage = () => {
             {resultsTab === 'profitability' && (
               <div>
                 <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                  <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 24 }}>10-Year Profitability Analysis</h3>
+                  <h3 style={{ fontSize: 18, fontWeight: 900, marginBottom: 24 }}>10-Year Profitability Analysis</h3>
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                       <thead>
                         <tr style={{ borderBottom: '2px solid #E5E7EB' }}>
-                          <th style={{ padding: 12, textAlign: 'left', color: '#6B7280', fontWeight: 600 }}>Metric</th>
+                          <th style={{ padding: 12, textAlign: 'left', color: '#6B7280', fontWeight: 900 }}>Metric</th>
                           {projections.slice(0, 5).map((_, i) => (
-                            <th key={i} style={{ padding: 12, textAlign: 'right', color: '#6B7280', fontWeight: 600 }}>
+                            <th key={i} style={{ padding: 12, textAlign: 'right', color: '#6B7280', fontWeight: 900 }}>
                               Year {i + 1}
                             </th>
                           ))}
@@ -3098,21 +3098,21 @@ const EnhancedUploadPage = () => {
                       </thead>
                       <tbody>
                         <tr style={{ borderBottom: '1px solid #F3F4F6' }}>
-                          <td style={{ padding: 12, fontWeight: 500 }}>Cash Flow</td>
+                          <td style={{ padding: 12, fontWeight: 900 }}>Cash Flow</td>
                           {projections.slice(0, 5).map((year, i) => (
                             <td key={i} style={{ padding: 12, textAlign: 'right' }}>{fmtCurrency(year.cashFlow)}</td>
                           ))}
                         </tr>
                         <tr style={{ borderBottom: '1px solid #F3F4F6' }}>
-                          <td style={{ padding: 12, fontWeight: 500 }}>Property Value</td>
+                          <td style={{ padding: 12, fontWeight: 900 }}>Property Value</td>
                           {projections.slice(0, 5).map((year, i) => (
                             <td key={i} style={{ padding: 12, textAlign: 'right' }}>{fmtCurrency(year.propertyValue)}</td>
                           ))}
                         </tr>
                         <tr style={{ borderBottom: '1px solid #F3F4F6', background: '#F9FAFB' }}>
-                          <td style={{ padding: 12, fontWeight: 600 }}>Net Worth Increase</td>
+                          <td style={{ padding: 12, fontWeight: 900 }}>Net Worth Increase</td>
                           {projections.slice(0, 5).map((year, i) => (
-                            <td key={i} style={{ padding: 12, textAlign: 'right', fontWeight: 600 }}>
+                            <td key={i} style={{ padding: 12, textAlign: 'right', fontWeight: 900 }}>
                               {fmtCurrency(year.netWorth)}
                             </td>
                           ))}
@@ -3124,7 +3124,7 @@ const EnhancedUploadPage = () => {
 
                 {/* Cumulative Cash Flow Chart */}
                 <div style={{ background: 'white', borderRadius: 12, padding: 24, marginTop: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                  <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 24 }}>Cumulative Returns</h3>
+                  <h3 style={{ fontSize: 18, fontWeight: 900, marginBottom: 24 }}>Cumulative Returns</h3>
                   <ResponsiveContainer width="100%" height={300}>
                     <AreaChart data={projections}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -3152,16 +3152,16 @@ const EnhancedUploadPage = () => {
             {/* Sensitivity Tab */}
             {resultsTab === 'sensitivity' && (
               <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 24 }}>Purchase Price Sensitivity Analysis</h3>
+                <h3 style={{ fontSize: 18, fontWeight: 900, marginBottom: 24 }}>Purchase Price Sensitivity Analysis</h3>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                     <thead>
                       <tr style={{ borderBottom: '2px solid #E5E7EB', background: '#F9FAFB' }}>
-                        <th style={{ padding: 12, textAlign: 'left', fontWeight: 600 }}>Purchase Price</th>
-                        <th style={{ padding: 12, textAlign: 'center', fontWeight: 600 }}>Cap Rate</th>
-                        <th style={{ padding: 12, textAlign: 'center', fontWeight: 600 }}>DSCR</th>
-                        <th style={{ padding: 12, textAlign: 'center', fontWeight: 600 }}>Cash Flow</th>
-                        <th style={{ padding: 12, textAlign: 'center', fontWeight: 600 }}>ROI</th>
+                        <th style={{ padding: 12, textAlign: 'left', fontWeight: 900 }}>Purchase Price</th>
+                        <th style={{ padding: 12, textAlign: 'center', fontWeight: 900 }}>Cap Rate</th>
+                        <th style={{ padding: 12, textAlign: 'center', fontWeight: 900 }}>DSCR</th>
+                        <th style={{ padding: 12, textAlign: 'center', fontWeight: 900 }}>Cash Flow</th>
+                        <th style={{ padding: 12, textAlign: 'center', fontWeight: 900 }}>ROI</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -3180,12 +3180,12 @@ const EnhancedUploadPage = () => {
                               {fmtCurrency(testPrice)}
                               {isOriginal && <span style={{ marginLeft: 8, fontSize: 12, color: '#92400e' }}>(Current)</span>}
                             </td>
-                            <td style={{ padding: 12, textAlign: 'center', fontWeight: 600, color }}>
+                            <td style={{ padding: 12, textAlign: 'center', fontWeight: 900, color }}>
                               {fmtPct(testCapRate)}
                             </td>
                             <td style={{ padding: 12, textAlign: 'center' }}>{fmtNumber(underwriting.dscr)}</td>
                             <td style={{ padding: 12, textAlign: 'center' }}>{fmtCurrency(testCashFlow)}</td>
-                            <td style={{ padding: 12, textAlign: 'center', fontWeight: 600 }}>
+                            <td style={{ padding: 12, textAlign: 'center', fontWeight: 900 }}>
                               {fmtPct(testCashFlow / testPrice)}
                             </td>
                           </tr>
@@ -3230,11 +3230,11 @@ const EnhancedUploadPage = () => {
                           <tr style={{ 
                             borderTop: '3px solid #10b981',
                             background: '#ECFDF5',
-                            fontWeight: 600
+                            fontWeight: 900
                           }}>
                             <td style={{ padding: 12 }}>
                               {fmtCurrency(breakEvenPrice)}
-                              <div style={{ fontSize: 11, color: '#047857', fontWeight: 500, marginTop: 4 }}>
+                              <div style={{ fontSize: 11, color: '#047857', fontWeight: 900, marginTop: 4 }}>
                                 💰 Target: $1,000/mo Cash Flow
                               </div>
                             </td>
@@ -3267,7 +3267,7 @@ const EnhancedUploadPage = () => {
               <div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
                   <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                    <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 24 }}>Capital Structure</h3>
+                    <h3 style={{ fontSize: 18, fontWeight: 900, marginBottom: 24 }}>Capital Structure</h3>
                     
                     {/* Pie Chart */}
                     {pricing.loan_amount && pricing.price && (
@@ -3298,13 +3298,13 @@ const EnhancedUploadPage = () => {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 24 }}>
                           <div>
                             <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>LTV</div>
-                            <div style={{ fontSize: 18, fontWeight: 600 }}>
+                            <div style={{ fontSize: 18, fontWeight: 900 }}>
                               {fmtPct((pricing.loan_amount / pricing.price))}
                             </div>
                           </div>
                           <div>
                             <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>DSCR</div>
-                            <div style={{ fontSize: 18, fontWeight: 600 }}>{fmtNumber(underwriting.dscr)}</div>
+                            <div style={{ fontSize: 18, fontWeight: 900 }}>{fmtNumber(underwriting.dscr)}</div>
                           </div>
                         </div>
                       </>
@@ -3312,7 +3312,7 @@ const EnhancedUploadPage = () => {
                   </div>
 
                   <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                    <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 24 }}>Expense Breakdown</h3>
+                    <h3 style={{ fontSize: 18, fontWeight: 900, marginBottom: 24 }}>Expense Breakdown</h3>
                     {expenseData.length > 0 ? (
                       <>
                         <ResponsiveContainer width="100%" height={300}>
@@ -3339,13 +3339,13 @@ const EnhancedUploadPage = () => {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 24 }}>
                           <div>
                             <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>Total Expenses</div>
-                            <div style={{ fontSize: 18, fontWeight: 600 }}>
+                            <div style={{ fontSize: 18, fontWeight: 900 }}>
                               {fmtCurrency(expenseData.reduce((sum, item) => sum + item.value, 0))}
                             </div>
                           </div>
                           <div>
                             <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>Per Unit/Month</div>
-                            <div style={{ fontSize: 18, fontWeight: 600 }}>
+                            <div style={{ fontSize: 18, fontWeight: 900 }}>
                               {fmtCurrency(expenseData.reduce((sum, item) => sum + item.value, 0) / 12 / (property.units || 1))}
                             </div>
                           </div>
@@ -3361,32 +3361,32 @@ const EnhancedUploadPage = () => {
 
                 {/* PITI Breakdown Section */}
                 <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                  <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <h3 style={{ fontSize: 18, fontWeight: 900, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Calculator size={20} /> Debt Service & PITI Breakdown
                   </h3>
                   
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
                     {/* Column 1: Purchase & Loan Info */}
                     <div>
-                      <h4 style={{ fontSize: 14, fontWeight: 600, color: '#6B7280', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      <h4 style={{ fontSize: 14, fontWeight: 900, color: '#6B7280', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         Purchase & Financing
                       </h4>
                       <div style={{ display: 'grid', gap: 12 }}>
                         <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                           <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>Purchase Price</div>
-                          <div style={{ fontSize: 20, fontWeight: 700, color: COLORS.primary }}>
+                          <div style={{ fontSize: 20, fontWeight: 900, color: COLORS.primary }}>
                             {fmtCurrency(pricing.price)}
                           </div>
                         </div>
                         <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                           <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>Loan Amount</div>
-                          <div style={{ fontSize: 20, fontWeight: 700 }}>
+                          <div style={{ fontSize: 20, fontWeight: 900 }}>
                             {fmtCurrency(pricing.loan_amount)}
                           </div>
                         </div>
                         <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                           <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>Down Payment</div>
-                          <div style={{ fontSize: 20, fontWeight: 700 }}>
+                          <div style={{ fontSize: 20, fontWeight: 900 }}>
                             {fmtCurrency(pricing.price - pricing.loan_amount)}
                           </div>
                           <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>
@@ -3398,32 +3398,32 @@ const EnhancedUploadPage = () => {
 
                     {/* Column 2: Loan Terms */}
                     <div>
-                      <h4 style={{ fontSize: 14, fontWeight: 600, color: '#6B7280', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      <h4 style={{ fontSize: 14, fontWeight: 900, color: '#6B7280', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         Loan Terms
                       </h4>
                       <div style={{ display: 'grid', gap: 12 }}>
                         <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                           <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>Interest Rate</div>
-                          <div style={{ fontSize: 20, fontWeight: 700 }}>
+                          <div style={{ fontSize: 20, fontWeight: 900 }}>
                             {fmtPct((pricing.interest_rate || 0) / 100)}
                           </div>
                         </div>
                         <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                           <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>Amortization</div>
-                          <div style={{ fontSize: 20, fontWeight: 700 }}>
+                          <div style={{ fontSize: 20, fontWeight: 900 }}>
                             {pricing.amortization_years || 30} years
                           </div>
                         </div>
                         <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                           <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>Loan Term</div>
-                          <div style={{ fontSize: 20, fontWeight: 700 }}>
+                          <div style={{ fontSize: 20, fontWeight: 900 }}>
                             {pricing.term_years || pricing.amortization_years || 30} years
                           </div>
                         </div>
                         {pricing.balloon_payment && pricing.balloon_payment > 0 && (
                           <div style={{ padding: 12, background: '#FEF3C7', borderRadius: 8, border: '1px solid #FCD34D' }}>
                             <div style={{ fontSize: 12, color: '#92400e', marginBottom: 4 }}>Balloon Payment</div>
-                            <div style={{ fontSize: 18, fontWeight: 700, color: '#92400e' }}>
+                            <div style={{ fontSize: 18, fontWeight: 900, color: '#92400e' }}>
                               {fmtCurrency(pricing.balloon_payment)}
                             </div>
                             <div style={{ fontSize: 11, color: '#92400e', marginTop: 2 }}>
@@ -3436,13 +3436,13 @@ const EnhancedUploadPage = () => {
 
                     {/* Column 3: Debt Service & PITI */}
                     <div>
-                      <h4 style={{ fontSize: 14, fontWeight: 600, color: '#6B7280', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      <h4 style={{ fontSize: 14, fontWeight: 900, color: '#6B7280', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         Debt Service (PITI)
                       </h4>
                       <div style={{ display: 'grid', gap: 12 }}>
                         <div style={{ padding: 12, background: '#EFF6FF', borderRadius: 8, border: '1px solid #BFDBFE' }}>
                           <div style={{ fontSize: 12, color: '#1e40af', marginBottom: 4 }}>Monthly Payment</div>
-                          <div style={{ fontSize: 20, fontWeight: 700, color: '#1e40af' }}>
+                          <div style={{ fontSize: 20, fontWeight: 900, color: '#1e40af' }}>
                             {fmtCurrency((pricing.annual_debt_service || 0) / 12)}
                           </div>
                           <div style={{ fontSize: 11, color: '#1e40af', marginTop: 2 }}>
@@ -3451,13 +3451,13 @@ const EnhancedUploadPage = () => {
                         </div>
                         <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                           <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>Annual Debt Service</div>
-                          <div style={{ fontSize: 20, fontWeight: 700, color: COLORS.info }}>
+                          <div style={{ fontSize: 20, fontWeight: 900, color: COLORS.info }}>
                             {fmtCurrency(pricing.annual_debt_service)}
                           </div>
                         </div>
                         <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                           <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>Property Taxes (Annual)</div>
-                          <div style={{ fontSize: 18, fontWeight: 700 }}>
+                          <div style={{ fontSize: 18, fontWeight: 900 }}>
                             {fmtCurrency(parsed?.expenses?.taxes || 0)}
                           </div>
                           <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>
@@ -3466,7 +3466,7 @@ const EnhancedUploadPage = () => {
                         </div>
                         <div style={{ padding: 12, background: '#ECFDF5', borderRadius: 8, border: '1px solid #86EFAC' }}>
                           <div style={{ fontSize: 12, color: '#047857', marginBottom: 4 }}>Loan Factor Rate</div>
-                          <div style={{ fontSize: 20, fontWeight: 700, color: '#047857' }}>
+                          <div style={{ fontSize: 20, fontWeight: 900, color: '#047857' }}>
                             {(() => {
                               const loanFactor = pricing.loan_amount > 0 
                                 ? pricing.annual_debt_service / pricing.loan_amount 
@@ -3493,24 +3493,24 @@ const EnhancedUploadPage = () => {
                     gap: 16
                   }}>
                     <div>
-                      <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4, fontWeight: 600 }}>DEBT SERVICE COVERAGE</div>
-                      <div style={{ fontSize: 16, fontWeight: 700 }}>{fmtNumber(underwriting.dscr)}x</div>
+                      <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4, fontWeight: 900 }}>DEBT SERVICE COVERAGE</div>
+                      <div style={{ fontSize: 16, fontWeight: 900 }}>{fmtNumber(underwriting.dscr)}x</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4, fontWeight: 600 }}>ANNUAL CASH FLOW</div>
-                      <div style={{ fontSize: 16, fontWeight: 700 }}>
+                      <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4, fontWeight: 900 }}>ANNUAL CASH FLOW</div>
+                      <div style={{ fontSize: 16, fontWeight: 900 }}>
                         {fmtCurrency((pnl.noi || 0) - (pricing.annual_debt_service || 0))}
                       </div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4, fontWeight: 600 }}>MONTHLY CASH FLOW</div>
-                      <div style={{ fontSize: 16, fontWeight: 700 }}>
+                      <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4, fontWeight: 900 }}>MONTHLY CASH FLOW</div>
+                      <div style={{ fontSize: 16, fontWeight: 900 }}>
                         {fmtCurrency(((pnl.noi || 0) - (pricing.annual_debt_service || 0)) / 12)}
                       </div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4, fontWeight: 600 }}>CAP RATE</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: COLORS.secondary }}>
+                      <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4, fontWeight: 900 }}>CAP RATE</div>
+                      <div style={{ fontSize: 16, fontWeight: 900, color: COLORS.secondary }}>
                         {fmtPct((pnl.noi || 0) / (pricing.price || 1))}
                       </div>
                     </div>
@@ -3523,33 +3523,33 @@ const EnhancedUploadPage = () => {
             {resultsTab === 'returns' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                 <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                  <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 24 }}>Investment Returns</h3>
+                  <h3 style={{ fontSize: 18, fontWeight: 900, marginBottom: 24 }}>Investment Returns</h3>
                   <div style={{ marginBottom: 24 }}>
                     <div style={{ marginBottom: 20 }}>
                       <div style={{ fontSize: 14, color: '#6B7280', marginBottom: 8 }}>10-Year Cash Flow</div>
-                      <div style={{ fontSize: 24, fontWeight: 700 }}>
+                      <div style={{ fontSize: 24, fontWeight: 900 }}>
                         {fmtCurrency(projections.reduce((sum, year) => sum + year.cashFlow, 0))}
                       </div>
                     </div>
                     
                     <div style={{ marginBottom: 20 }}>
                       <div style={{ fontSize: 14, color: '#6B7280', marginBottom: 8 }}>Projected Property Value (Year 10)</div>
-                      <div style={{ fontSize: 24, fontWeight: 700 }}>
+                      <div style={{ fontSize: 24, fontWeight: 900 }}>
                         {fmtCurrency(projections[9]?.propertyValue || 0)}
                       </div>
                     </div>
 
                     <div style={{ padding: 20, background: COLORS.primary, borderRadius: 8, marginBottom: 20 }}>
                       <div style={{ fontSize: 14, color: 'white', opacity: 0.9, marginBottom: 4 }}>Total Return (10-Year)</div>
-                      <div style={{ fontSize: 32, fontWeight: 700, color: 'white' }}>
+                      <div style={{ fontSize: 32, fontWeight: 900, color: 'white' }}>
                         {fmtCurrency(projections[9]?.netWorth || 0)}
                       </div>
                     </div>
 
                     {/* Equity Multiple */}
                     <div style={{ padding: 16, background: '#ECFDF5', borderRadius: 8, border: '1px solid #86EFAC' }}>
-                      <div style={{ fontSize: 12, color: '#047857', marginBottom: 4, fontWeight: 600 }}>EQUITY MULTIPLE (10-YEAR)</div>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: '#047857' }}>
+                      <div style={{ fontSize: 12, color: '#047857', marginBottom: 4, fontWeight: 900 }}>EQUITY MULTIPLE (10-YEAR)</div>
+                      <div style={{ fontSize: 20, fontWeight: 900, color: '#047857' }}>
                         {(() => {
                           const price = pricing.price || 0;
                           const downPayment = pricing.financing_mode === 'traditional'
@@ -3572,19 +3572,19 @@ const EnhancedUploadPage = () => {
                 </div>
 
                 <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                  <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 24 }}>Return Metrics</h3>
+                  <h3 style={{ fontSize: 18, fontWeight: 900, marginBottom: 24 }}>Return Metrics</h3>
                   
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
                     <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 14, color: '#6B7280' }}>Cap Rate</span>
-                        <span style={{ fontSize: 16, fontWeight: 700, color: COLORS.secondary }}>{fmtPct(adjustedCapRate)}</span>
+                        <span style={{ fontSize: 16, fontWeight: 900, color: COLORS.secondary }}>{fmtPct(adjustedCapRate)}</span>
                       </div>
                     </div>
                     <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 14, color: '#6B7280' }}>Cash on Cash (Year 1)</span>
-                        <span style={{ fontSize: 16, fontWeight: 700, color: COLORS.info }}>
+                        <span style={{ fontSize: 16, fontWeight: 900, color: COLORS.info }}>
                           {fmtPct((() => {
                             const cashFlow = (pnl.noi || 0) - (pricing.annual_debt_service || 0);
                             const price = pricing.price || 0;
@@ -3603,7 +3603,7 @@ const EnhancedUploadPage = () => {
                     <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 14, color: '#6B7280' }}>Average Annual Return</span>
-                        <span style={{ fontSize: 16, fontWeight: 700, color: COLORS.primary }}>
+                        <span style={{ fontSize: 16, fontWeight: 900, color: COLORS.primary }}>
                           {fmtPct((() => {
                             const price = pricing.price || 0;
                             const downPayment = pricing.financing_mode === 'traditional'
@@ -3627,13 +3627,13 @@ const EnhancedUploadPage = () => {
                     <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 14, color: '#6B7280' }}>DSCR</span>
-                        <span style={{ fontSize: 16, fontWeight: 700, color: COLORS.warning }}>{fmtNumber(underwriting.dscr)}</span>
+                        <span style={{ fontSize: 16, fontWeight: 900, color: COLORS.warning }}>{fmtNumber(underwriting.dscr)}</span>
                       </div>
                     </div>
                     <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 14, color: '#6B7280' }}>Loan Factor Rate</span>
-                        <span style={{ fontSize: 16, fontWeight: 700, color: '#047857' }}>
+                        <span style={{ fontSize: 16, fontWeight: 900, color: '#047857' }}>
                           {(() => {
                             const loanFactor = pricing.loan_amount > 0 
                               ? pricing.annual_debt_service / pricing.loan_amount 
@@ -3646,7 +3646,7 @@ const EnhancedUploadPage = () => {
                     <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 14, color: '#6B7280' }}>Break-Even Occupancy</span>
-                        <span style={{ fontSize: 16, fontWeight: 700 }}>
+                        <span style={{ fontSize: 16, fontWeight: 900 }}>
                           {(() => {
                             const gpr = pnl.gross_potential_rent || 0;
                             const opex = pnl.operating_expenses || 0;
@@ -3660,19 +3660,19 @@ const EnhancedUploadPage = () => {
                     <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 14, color: '#6B7280' }}>Expense Ratio</span>
-                        <span style={{ fontSize: 16, fontWeight: 700 }}>{fmtPct(pnl.expense_ratio)}</span>
+                        <span style={{ fontSize: 16, fontWeight: 900 }}>{fmtPct(pnl.expense_ratio)}</span>
                       </div>
                     </div>
                     <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 14, color: '#6B7280' }}>Price Per Unit</span>
-                        <span style={{ fontSize: 16, fontWeight: 700 }}>{fmtCurrency((pricing.price || 0) / (property.units || 1))}</span>
+                        <span style={{ fontSize: 16, fontWeight: 900 }}>{fmtCurrency((pricing.price || 0) / (property.units || 1))}</span>
                       </div>
                     </div>
                     <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 14, color: '#6B7280' }}>Price Per SF</span>
-                        <span style={{ fontSize: 16, fontWeight: 700 }}>{fmtCurrency((pricing.price || 0) / (property.rba_sqft || 1))}</span>
+                        <span style={{ fontSize: 16, fontWeight: 900 }}>{fmtCurrency((pricing.price || 0) / (property.rba_sqft || 1))}</span>
                       </div>
                     </div>
                   </div>
@@ -3738,13 +3738,13 @@ const EnhancedUploadPage = () => {
                 <div>
                   {/* Price & Rent Adjustment Section */}
                   <div style={{ background: 'white', borderRadius: 12, padding: 24, marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                    <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <h3 style={{ fontSize: 18, fontWeight: 900, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
                       <Layers size={20} /> Adjust Proforma Assumptions
                     </h3>
                     
                     {/* Purchase Price Controls */}
                     <div style={{ marginBottom: 24 }}>
-                      <h4 style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Purchase Price</h4>
+                      <h4 style={{ fontSize: 14, fontWeight: 900, color: '#374151', marginBottom: 12 }}>Purchase Price</h4>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 24, alignItems: 'center' }}>
                         <div>
                           <label style={{ fontSize: 14, color: '#6B7280', marginBottom: 8, display: 'block' }}>
@@ -3758,7 +3758,7 @@ const EnhancedUploadPage = () => {
                               width: '100%',
                               padding: 12,
                               fontSize: 18,
-                              fontWeight: 600,
+                              fontWeight: 900,
                               border: '2px solid #E5E7EB',
                               borderRadius: 8,
                               outline: 'none'
@@ -3798,7 +3798,7 @@ const EnhancedUploadPage = () => {
                     
                     {/* Rent Controls */}
                     <div style={{ marginBottom: 16, paddingTop: 16, borderTop: '1px solid #E5E7EB' }}>
-                      <h4 style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Rental Income</h4>
+                      <h4 style={{ fontSize: 14, fontWeight: 900, color: '#374151', marginBottom: 12 }}>Rental Income</h4>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 24, alignItems: 'center' }}>
                         <div>
                           <label style={{ fontSize: 14, color: '#6B7280', marginBottom: 8, display: 'block' }}>
@@ -3812,7 +3812,7 @@ const EnhancedUploadPage = () => {
                               width: '100%',
                               padding: 12,
                               fontSize: 18,
-                              fontWeight: 600,
+                              fontWeight: 900,
                               border: '2px solid #E5E7EB',
                               borderRadius: 8,
                               outline: 'none'
@@ -3853,17 +3853,17 @@ const EnhancedUploadPage = () => {
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 16 }}>
                         <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                           <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4 }}>Annual Rent</div>
-                          <div style={{ fontSize: 16, fontWeight: 600 }}>{fmtCurrency(proformaAnnualRent)}</div>
+                          <div style={{ fontSize: 16, fontWeight: 900 }}>{fmtCurrency(proformaAnnualRent)}</div>
                         </div>
                         <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                           <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4 }}>Rent Per Unit/Mo</div>
-                          <div style={{ fontSize: 16, fontWeight: 600 }}>{fmtCurrency(proformaRentPerUnit)}</div>
+                          <div style={{ fontSize: 16, fontWeight: 900 }}>{fmtCurrency(proformaRentPerUnit)}</div>
                         </div>
                         <div style={{ padding: 12, background: proformaAnnualRent > (pnl.gross_potential_rent || 0) ? '#ECFDF5' : '#FEF2F2', borderRadius: 8 }}>
                           <div style={{ fontSize: 11, color: proformaAnnualRent > (pnl.gross_potential_rent || 0) ? '#047857' : '#991B1B', marginBottom: 4 }}>
                             Rent Change
                           </div>
-                          <div style={{ fontSize: 16, fontWeight: 600, color: proformaAnnualRent > (pnl.gross_potential_rent || 0) ? '#047857' : '#991B1B' }}>
+                          <div style={{ fontSize: 16, fontWeight: 900, color: proformaAnnualRent > (pnl.gross_potential_rent || 0) ? '#047857' : '#991B1B' }}>
                             {proformaAnnualRent > (pnl.gross_potential_rent || 0) ? '+' : ''}{fmtCurrency(rentDifference)}
                           </div>
                         </div>
@@ -3873,14 +3873,14 @@ const EnhancedUploadPage = () => {
                     {/* Change Indicators */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 16 }}>
                       <div style={{ padding: 12, background: proformaPrice < pricing.price ? '#ECFDF5' : '#FEF3C7', borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: proformaPrice < pricing.price ? '#047857' : '#92400e' }}>
+                        <div style={{ fontSize: 12, fontWeight: 900, color: proformaPrice < pricing.price ? '#047857' : '#92400e' }}>
                           {proformaPrice < pricing.price ? '✓ ' : '⚠ '}
                           Price {proformaPrice < pricing.price ? 'Decrease' : 'Increase'}: {fmtCurrency(Math.abs(proformaPrice - pricing.price))} 
                           ({fmtPct(Math.abs(proformaPrice - pricing.price) / pricing.price)})
                         </div>
                       </div>
                       <div style={{ padding: 12, background: proformaNOI > (pnl.noi || 0) ? '#ECFDF5' : '#FEF2F2', borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: proformaNOI > (pnl.noi || 0) ? '#047857' : '#991B1B' }}>
+                        <div style={{ fontSize: 12, fontWeight: 900, color: proformaNOI > (pnl.noi || 0) ? '#047857' : '#991B1B' }}>
                           {proformaNOI > (pnl.noi || 0) ? '↑ ' : '↓ '}
                           NOI Impact: {fmtCurrency(Math.abs(proformaNOI - (pnl.noi || 0)))} 
                           ({fmtPct(Math.abs(proformaNOI - (pnl.noi || 0)) / (pnl.noi || 1))})
@@ -3892,57 +3892,57 @@ const EnhancedUploadPage = () => {
                   {/* Proforma Metrics Grid */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 24 }}>
                     <div style={{ background: 'white', borderRadius: 12, padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                      <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8, fontWeight: 500 }}>Cap Rate</div>
-                      <div style={{ fontSize: 28, fontWeight: 700, color: COLORS.secondary }}>{fmtPct(proformaCapRate)}</div>
+                      <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8, fontWeight: 900 }}>Cap Rate</div>
+                      <div style={{ fontSize: 28, fontWeight: 900, color: COLORS.secondary }}>{fmtPct(proformaCapRate)}</div>
                     </div>
                     <div style={{ background: 'white', borderRadius: 12, padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                      <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8, fontWeight: 500 }}>DSCR</div>
-                      <div style={{ fontSize: 28, fontWeight: 700, color: COLORS.dark }}>{fmtNumber(proformaDSCR)}</div>
+                      <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8, fontWeight: 900 }}>DSCR</div>
+                      <div style={{ fontSize: 28, fontWeight: 900, color: COLORS.dark }}>{fmtNumber(proformaDSCR)}</div>
                     </div>
                     <div style={{ background: 'white', borderRadius: 12, padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                      <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8, fontWeight: 500 }}>Cash Flow</div>
-                      <div style={{ fontSize: 28, fontWeight: 700, color: proformaCashFlow > 0 ? COLORS.secondary : COLORS.danger }}>
+                      <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8, fontWeight: 900 }}>Cash Flow</div>
+                      <div style={{ fontSize: 28, fontWeight: 900, color: proformaCashFlow > 0 ? COLORS.secondary : COLORS.danger }}>
                         {fmtCurrency(proformaCashFlow)}
                       </div>
                     </div>
                     <div style={{ background: 'white', borderRadius: 12, padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                      <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8, fontWeight: 500 }}>CoC Return</div>
-                      <div style={{ fontSize: 28, fontWeight: 700, color: COLORS.info }}>{fmtPct(proformaCoCReturn)}</div>
+                      <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8, fontWeight: 900 }}>CoC Return</div>
+                      <div style={{ fontSize: 28, fontWeight: 900, color: COLORS.info }}>{fmtPct(proformaCoCReturn)}</div>
                     </div>
                   </div>
 
                   {/* Detailed Proforma Breakdown */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                     <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                      <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 20 }}>Proforma Financials</h3>
+                      <h3 style={{ fontSize: 18, fontWeight: 900, marginBottom: 20 }}>Proforma Financials</h3>
                       <div style={{ display: 'grid', gap: 12 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #F3F4F6' }}>
                           <span style={{ fontSize: 14, color: '#6B7280' }}>Purchase Price</span>
-                          <span style={{ fontSize: 14, fontWeight: 600 }}>{fmtCurrency(proformaPrice)}</span>
+                          <span style={{ fontSize: 14, fontWeight: 900 }}>{fmtCurrency(proformaPrice)}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #F3F4F6' }}>
                           <span style={{ fontSize: 14, color: '#6B7280' }}>Annual Rent</span>
-                          <span style={{ fontSize: 14, fontWeight: 600 }}>{fmtCurrency(proformaAnnualRent)}</span>
+                          <span style={{ fontSize: 14, fontWeight: 900 }}>{fmtCurrency(proformaAnnualRent)}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #F3F4F6' }}>
                           <span style={{ fontSize: 14, color: '#6B7280' }}>Operating Expenses</span>
-                          <span style={{ fontSize: 14, fontWeight: 600 }}>{fmtCurrency(proformaOpex)}</span>
+                          <span style={{ fontSize: 14, fontWeight: 900 }}>{fmtCurrency(proformaOpex)}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #F3F4F6' }}>
                           <span style={{ fontSize: 14, color: '#6B7280' }}>NOI</span>
-                          <span style={{ fontSize: 14, fontWeight: 600 }}>{fmtCurrency(proformaNOI)}</span>
+                          <span style={{ fontSize: 14, fontWeight: 900 }}>{fmtCurrency(proformaNOI)}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #F3F4F6' }}>
                           <span style={{ fontSize: 14, color: '#6B7280' }}>Loan Amount ({100 - (pricing.down_payment_pct || 20)}%)</span>
-                          <span style={{ fontSize: 14, fontWeight: 600 }}>{fmtCurrency(proformaLoanAmount)}</span>
+                          <span style={{ fontSize: 14, fontWeight: 900 }}>{fmtCurrency(proformaLoanAmount)}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #F3F4F6' }}>
                           <span style={{ fontSize: 14, color: '#6B7280' }}>Annual Debt Service</span>
-                          <span style={{ fontSize: 14, fontWeight: 600 }}>{fmtCurrency(proformaAnnualDebtService)}</span>
+                          <span style={{ fontSize: 14, fontWeight: 900 }}>{fmtCurrency(proformaAnnualDebtService)}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', background: '#F9FAFB' }}>
-                          <span style={{ fontSize: 14, fontWeight: 600 }}>Annual Cash Flow</span>
-                          <span style={{ fontSize: 16, fontWeight: 700, color: proformaCashFlow > 0 ? COLORS.secondary : COLORS.danger }}>
+                          <span style={{ fontSize: 14, fontWeight: 900 }}>Annual Cash Flow</span>
+                          <span style={{ fontSize: 16, fontWeight: 900, color: proformaCashFlow > 0 ? COLORS.secondary : COLORS.danger }}>
                             {fmtCurrency(proformaCashFlow)}
                           </span>
                         </div>
@@ -3950,54 +3950,54 @@ const EnhancedUploadPage = () => {
                     </div>
 
                     <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                      <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 20 }}>Proforma Return Metrics</h3>
+                      <h3 style={{ fontSize: 18, fontWeight: 900, marginBottom: 20 }}>Proforma Return Metrics</h3>
                       <div style={{ display: 'grid', gap: 12 }}>
                         <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: 14, color: '#6B7280' }}>Cap Rate</span>
-                            <span style={{ fontSize: 16, fontWeight: 700, color: COLORS.secondary }}>{fmtPct(proformaCapRate)}</span>
+                            <span style={{ fontSize: 16, fontWeight: 900, color: COLORS.secondary }}>{fmtPct(proformaCapRate)}</span>
                           </div>
                         </div>
                         <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: 14, color: '#6B7280' }}>Cash on Cash</span>
-                            <span style={{ fontSize: 16, fontWeight: 700, color: COLORS.info }}>{fmtPct(proformaCoCReturn)}</span>
+                            <span style={{ fontSize: 16, fontWeight: 900, color: COLORS.info }}>{fmtPct(proformaCoCReturn)}</span>
                           </div>
                         </div>
                         <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: 14, color: '#6B7280' }}>DSCR</span>
-                            <span style={{ fontSize: 16, fontWeight: 700 }}>{fmtNumber(proformaDSCR)}</span>
+                            <span style={{ fontSize: 16, fontWeight: 900 }}>{fmtNumber(proformaDSCR)}</span>
                           </div>
                         </div>
                         <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: 14, color: '#6B7280' }}>GRM</span>
-                            <span style={{ fontSize: 16, fontWeight: 700 }}>{fmtNumber(proformaGRM)}</span>
+                            <span style={{ fontSize: 16, fontWeight: 900 }}>{fmtNumber(proformaGRM)}</span>
                           </div>
                         </div>
                         <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: 14, color: '#6B7280' }}>Break-Even Occupancy</span>
-                            <span style={{ fontSize: 16, fontWeight: 700 }}>{fmtPct(proformaBreakEven)}</span>
+                            <span style={{ fontSize: 16, fontWeight: 900 }}>{fmtPct(proformaBreakEven)}</span>
                           </div>
                         </div>
                         <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: 14, color: '#6B7280' }}>Expense Ratio</span>
-                            <span style={{ fontSize: 16, fontWeight: 700 }}>{fmtPct(proformaExpenseRatio)}</span>
+                            <span style={{ fontSize: 16, fontWeight: 900 }}>{fmtPct(proformaExpenseRatio)}</span>
                           </div>
                         </div>
                         <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: 14, color: '#6B7280' }}>Price Per Unit</span>
-                            <span style={{ fontSize: 16, fontWeight: 700 }}>{fmtCurrency(proformaPricePerUnit)}</span>
+                            <span style={{ fontSize: 16, fontWeight: 900 }}>{fmtCurrency(proformaPricePerUnit)}</span>
                           </div>
                         </div>
                         <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: 14, color: '#6B7280' }}>Monthly Cash Flow</span>
-                            <span style={{ fontSize: 16, fontWeight: 700 }}>{fmtCurrency(proformaCashFlow / 12)}</span>
+                            <span style={{ fontSize: 16, fontWeight: 900 }}>{fmtCurrency(proformaCashFlow / 12)}</span>
                           </div>
                         </div>
                       </div>
@@ -4065,13 +4065,13 @@ const EnhancedUploadPage = () => {
                 <div>
                   {/* Price & Rent Adjustment Section */}
                   <div style={{ background: 'white', borderRadius: 12, padding: 24, marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                    <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <h3 style={{ fontSize: 18, fontWeight: 900, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
                       <GitCompare size={20} /> Adjust Proforma Assumptions
                     </h3>
                     
                     {/* Purchase Price Controls */}
                     <div style={{ marginBottom: 24 }}>
-                      <h4 style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Purchase Price</h4>
+                      <h4 style={{ fontSize: 14, fontWeight: 900, color: '#374151', marginBottom: 12 }}>Purchase Price</h4>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 24, alignItems: 'center' }}>
                         <div>
                           <label style={{ fontSize: 14, color: '#6B7280', marginBottom: 8, display: 'block' }}>
@@ -4085,7 +4085,7 @@ const EnhancedUploadPage = () => {
                               width: '100%',
                               padding: 12,
                               fontSize: 18,
-                              fontWeight: 600,
+                              fontWeight: 900,
                               border: '2px solid #E5E7EB',
                               borderRadius: 8,
                               outline: 'none'
@@ -4122,7 +4122,7 @@ const EnhancedUploadPage = () => {
                     
                     {/* Rent Controls */}
                     <div style={{ paddingTop: 16, borderTop: '1px solid #E5E7EB' }}>
-                      <h4 style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 12 }}>Rental Income</h4>
+                      <h4 style={{ fontSize: 14, fontWeight: 900, color: '#374151', marginBottom: 12 }}>Rental Income</h4>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 24, alignItems: 'center' }}>
                         <div>
                           <label style={{ fontSize: 14, color: '#6B7280', marginBottom: 8, display: 'block' }}>
@@ -4136,7 +4136,7 @@ const EnhancedUploadPage = () => {
                               width: '100%',
                               padding: 12,
                               fontSize: 18,
-                              fontWeight: 600,
+                              fontWeight: 900,
                               border: '2px solid #E5E7EB',
                               borderRadius: 8,
                               outline: 'none'
@@ -4174,145 +4174,145 @@ const EnhancedUploadPage = () => {
 
                   {/* Side-by-Side Comparison */}
                   <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                    <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 24 }}>Current vs Proforma Analysis</h3>
+                    <h3 style={{ fontSize: 18, fontWeight: 900, marginBottom: 24 }}>Current vs Proforma Analysis</h3>
                     
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
                           <tr style={{ borderBottom: '2px solid #E5E7EB', background: '#F9FAFB' }}>
-                            <th style={{ padding: 16, textAlign: 'left', fontSize: 14, fontWeight: 600, color: '#6B7280' }}>Metric</th>
-                            <th style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600, color: '#6B7280' }}>Current</th>
-                            <th style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600, color: '#6B7280' }}>Proforma</th>
-                            <th style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600, color: '#6B7280' }}>Difference</th>
+                            <th style={{ padding: 16, textAlign: 'left', fontSize: 14, fontWeight: 900, color: '#6B7280' }}>Metric</th>
+                            <th style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900, color: '#6B7280' }}>Current</th>
+                            <th style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900, color: '#6B7280' }}>Proforma</th>
+                            <th style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900, color: '#6B7280' }}>Difference</th>
                           </tr>
                         </thead>
                         <tbody>
                           {/* Purchase Price */}
                           <tr style={{ borderBottom: '1px solid #F3F4F6' }}>
-                            <td style={{ padding: 16, fontSize: 14, fontWeight: 500 }}>Purchase Price</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtCurrency(currentPrice)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtCurrency(proformaPrice)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600, color: proformaPrice < currentPrice ? COLORS.secondary : COLORS.danger }}>
+                            <td style={{ padding: 16, fontSize: 14, fontWeight: 900 }}>Purchase Price</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtCurrency(currentPrice)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtCurrency(proformaPrice)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900, color: proformaPrice < currentPrice ? COLORS.secondary : COLORS.danger }}>
                               {fmtCurrency(proformaPrice - currentPrice)} ({fmtPct((proformaPrice - currentPrice) / currentPrice)})
                             </td>
                           </tr>
                           
                           {/* Annual Rent */}
                           <tr style={{ borderBottom: '1px solid #F3F4F6', background: '#FAFAFA' }}>
-                            <td style={{ padding: 16, fontSize: 14, fontWeight: 500 }}>Annual Rent</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtCurrency(currentAnnualRent)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtCurrency(proformaAnnualRent)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600, color: proformaAnnualRent > currentAnnualRent ? COLORS.secondary : COLORS.danger }}>
+                            <td style={{ padding: 16, fontSize: 14, fontWeight: 900 }}>Annual Rent</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtCurrency(currentAnnualRent)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtCurrency(proformaAnnualRent)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900, color: proformaAnnualRent > currentAnnualRent ? COLORS.secondary : COLORS.danger }}>
                               {fmtCurrency(proformaAnnualRent - currentAnnualRent)} ({fmtPct((proformaAnnualRent - currentAnnualRent) / currentAnnualRent)})
                             </td>
                           </tr>
                           
                           {/* Monthly Rent */}
                           <tr style={{ borderBottom: '1px solid #F3F4F6' }}>
-                            <td style={{ padding: 16, fontSize: 14, fontWeight: 500 }}>Monthly Rent</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtCurrency(currentMonthlyRent)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtCurrency(proformaMonthlyRentValue)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600, color: proformaMonthlyRentValue > currentMonthlyRent ? COLORS.secondary : COLORS.danger }}>
+                            <td style={{ padding: 16, fontSize: 14, fontWeight: 900 }}>Monthly Rent</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtCurrency(currentMonthlyRent)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtCurrency(proformaMonthlyRentValue)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900, color: proformaMonthlyRentValue > currentMonthlyRent ? COLORS.secondary : COLORS.danger }}>
                               {fmtCurrency(proformaMonthlyRentValue - currentMonthlyRent)}
                             </td>
                           </tr>
                           
                           {/* NOI */}
                           <tr style={{ borderBottom: '1px solid #F3F4F6', background: '#FAFAFA' }}>
-                            <td style={{ padding: 16, fontSize: 14, fontWeight: 500 }}>NOI</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtCurrency(currentNOI)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtCurrency(proformaNOI)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600, color: proformaNOI > currentNOI ? COLORS.secondary : COLORS.danger }}>
+                            <td style={{ padding: 16, fontSize: 14, fontWeight: 900 }}>NOI</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtCurrency(currentNOI)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtCurrency(proformaNOI)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900, color: proformaNOI > currentNOI ? COLORS.secondary : COLORS.danger }}>
                               {fmtCurrency(proformaNOI - currentNOI)} ({fmtPct((proformaNOI - currentNOI) / currentNOI)})
                             </td>
                           </tr>
                           
                           {/* Cap Rate */}
                           <tr style={{ borderBottom: '1px solid #F3F4F6' }}>
-                            <td style={{ padding: 16, fontSize: 14, fontWeight: 500 }}>Cap Rate</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtPct(currentCapRate)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtPct(proformaCapRate)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600, color: proformaCapRate > currentCapRate ? COLORS.secondary : COLORS.danger }}>
+                            <td style={{ padding: 16, fontSize: 14, fontWeight: 900 }}>Cap Rate</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtPct(currentCapRate)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtPct(proformaCapRate)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900, color: proformaCapRate > currentCapRate ? COLORS.secondary : COLORS.danger }}>
                               {fmtPct(proformaCapRate - currentCapRate)}
                             </td>
                           </tr>
                           
                           {/* DSCR */}
                           <tr style={{ borderBottom: '1px solid #F3F4F6', background: '#FAFAFA' }}>
-                            <td style={{ padding: 16, fontSize: 14, fontWeight: 500 }}>DSCR</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtNumber(currentDSCR)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtNumber(proformaDSCR)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600, color: proformaDSCR > currentDSCR ? COLORS.secondary : COLORS.danger }}>
+                            <td style={{ padding: 16, fontSize: 14, fontWeight: 900 }}>DSCR</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtNumber(currentDSCR)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtNumber(proformaDSCR)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900, color: proformaDSCR > currentDSCR ? COLORS.secondary : COLORS.danger }}>
                               {fmtNumber(proformaDSCR - currentDSCR)}
                             </td>
                           </tr>
                           
                           {/* GRM */}
                           <tr style={{ borderBottom: '1px solid #F3F4F6' }}>
-                            <td style={{ padding: 16, fontSize: 14, fontWeight: 500 }}>GRM</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtNumber(currentGRM)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtNumber(proformaGRM)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600, color: proformaGRM < currentGRM ? COLORS.secondary : COLORS.danger }}>
+                            <td style={{ padding: 16, fontSize: 14, fontWeight: 900 }}>GRM</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtNumber(currentGRM)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtNumber(proformaGRM)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900, color: proformaGRM < currentGRM ? COLORS.secondary : COLORS.danger }}>
                               {fmtNumber(proformaGRM - currentGRM)}
                             </td>
                           </tr>
                           
                           {/* Break-Even Occupancy */}
                           <tr style={{ borderBottom: '1px solid #F3F4F6', background: '#FAFAFA' }}>
-                            <td style={{ padding: 16, fontSize: 14, fontWeight: 500 }}>Break-Even Occupancy</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtPct(currentBreakEven)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtPct(proformaBreakEven)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600, color: proformaBreakEven < currentBreakEven ? COLORS.secondary : COLORS.danger }}>
+                            <td style={{ padding: 16, fontSize: 14, fontWeight: 900 }}>Break-Even Occupancy</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtPct(currentBreakEven)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtPct(proformaBreakEven)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900, color: proformaBreakEven < currentBreakEven ? COLORS.secondary : COLORS.danger }}>
                               {fmtPct(proformaBreakEven - currentBreakEven)}
                             </td>
                           </tr>
                           
                           {/* Expense Ratio */}
                           <tr style={{ borderBottom: '1px solid #F3F4F6' }}>
-                            <td style={{ padding: 16, fontSize: 14, fontWeight: 500 }}>Expense Ratio</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtPct(currentExpenseRatio)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtPct(proformaExpenseRatio)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600, color: proformaExpenseRatio < currentExpenseRatio ? COLORS.secondary : COLORS.danger }}>
+                            <td style={{ padding: 16, fontSize: 14, fontWeight: 900 }}>Expense Ratio</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtPct(currentExpenseRatio)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtPct(proformaExpenseRatio)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900, color: proformaExpenseRatio < currentExpenseRatio ? COLORS.secondary : COLORS.danger }}>
                               {fmtPct(proformaExpenseRatio - currentExpenseRatio)}
                             </td>
                           </tr>
                           
                           {/* Annual Cash Flow */}
                           <tr style={{ borderBottom: '1px solid #F3F4F6', background: '#FAFAFA' }}>
-                            <td style={{ padding: 16, fontSize: 14, fontWeight: 500 }}>Annual Cash Flow</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtCurrency(currentCashFlow)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtCurrency(proformaCashFlow)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600, color: proformaCashFlow > currentCashFlow ? COLORS.secondary : COLORS.danger }}>
+                            <td style={{ padding: 16, fontSize: 14, fontWeight: 900 }}>Annual Cash Flow</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtCurrency(currentCashFlow)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtCurrency(proformaCashFlow)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900, color: proformaCashFlow > currentCashFlow ? COLORS.secondary : COLORS.danger }}>
                               {fmtCurrency(proformaCashFlow - currentCashFlow)}
                             </td>
                           </tr>
                           
                           {/* Monthly Cash Flow */}
                           <tr style={{ borderBottom: '1px solid #F3F4F6' }}>
-                            <td style={{ padding: 16, fontSize: 14, fontWeight: 500 }}>Monthly Cash Flow</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtCurrency(currentCashFlow / 12)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtCurrency(proformaCashFlow / 12)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600, color: proformaCashFlow > currentCashFlow ? COLORS.secondary : COLORS.danger }}>
+                            <td style={{ padding: 16, fontSize: 14, fontWeight: 900 }}>Monthly Cash Flow</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtCurrency(currentCashFlow / 12)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtCurrency(proformaCashFlow / 12)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900, color: proformaCashFlow > currentCashFlow ? COLORS.secondary : COLORS.danger }}>
                               {fmtCurrency((proformaCashFlow - currentCashFlow) / 12)}
                             </td>
                           </tr>
                           
                           {/* Debt Service */}
                           <tr style={{ borderBottom: '1px solid #F3F4F6', background: '#FAFAFA' }}>
-                            <td style={{ padding: 16, fontSize: 14, fontWeight: 500 }}>Annual Debt Service</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtCurrency(pricing.annual_debt_service)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtCurrency(proformaAnnualDebtService)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600, color: proformaAnnualDebtService < pricing.annual_debt_service ? COLORS.secondary : COLORS.danger }}>
+                            <td style={{ padding: 16, fontSize: 14, fontWeight: 900 }}>Annual Debt Service</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtCurrency(pricing.annual_debt_service)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtCurrency(proformaAnnualDebtService)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900, color: proformaAnnualDebtService < pricing.annual_debt_service ? COLORS.secondary : COLORS.danger }}>
                               {fmtCurrency(proformaAnnualDebtService - pricing.annual_debt_service)}
                             </td>
                           </tr>
                           
                           {/* Loan Amount */}
                           <tr style={{ borderBottom: '1px solid #F3F4F6' }}>
-                            <td style={{ padding: 16, fontSize: 14, fontWeight: 500 }}>Loan Amount</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtCurrency(pricing.loan_amount)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>{fmtCurrency(proformaLoanAmount)}</td>
-                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 600 }}>
+                            <td style={{ padding: 16, fontSize: 14, fontWeight: 900 }}>Loan Amount</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtCurrency(pricing.loan_amount)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>{fmtCurrency(proformaLoanAmount)}</td>
+                            <td style={{ padding: 16, textAlign: 'right', fontSize: 14, fontWeight: 900 }}>
                               {fmtCurrency(proformaLoanAmount - pricing.loan_amount)}
                             </td>
                           </tr>
@@ -4323,37 +4323,37 @@ const EnhancedUploadPage = () => {
                     {/* Summary Cards */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginTop: 24 }}>
                       <div style={{ padding: 16, background: proformaCashFlow > currentCashFlow ? '#ECFDF5' : '#FEF2F2', borderRadius: 8, border: `1px solid ${proformaCashFlow > currentCashFlow ? '#86EFAC' : '#FECACA'}` }}>
-                        <div style={{ fontSize: 12, color: proformaCashFlow > currentCashFlow ? '#047857' : '#991B1B', marginBottom: 4, fontWeight: 600 }}>
+                        <div style={{ fontSize: 12, color: proformaCashFlow > currentCashFlow ? '#047857' : '#991B1B', marginBottom: 4, fontWeight: 900 }}>
                           CASH FLOW IMPACT
                         </div>
-                        <div style={{ fontSize: 20, fontWeight: 700, color: proformaCashFlow > currentCashFlow ? '#047857' : '#991B1B' }}>
+                        <div style={{ fontSize: 20, fontWeight: 900, color: proformaCashFlow > currentCashFlow ? '#047857' : '#991B1B' }}>
                           {proformaCashFlow > currentCashFlow ? '↑' : '↓'} {fmtCurrency(Math.abs(proformaCashFlow - currentCashFlow))}
                         </div>
                       </div>
                       
                       <div style={{ padding: 16, background: proformaCapRate > currentCapRate ? '#ECFDF5' : '#FEF2F2', borderRadius: 8, border: `1px solid ${proformaCapRate > currentCapRate ? '#86EFAC' : '#FECACA'}` }}>
-                        <div style={{ fontSize: 12, color: proformaCapRate > currentCapRate ? '#047857' : '#991B1B', marginBottom: 4, fontWeight: 600 }}>
+                        <div style={{ fontSize: 12, color: proformaCapRate > currentCapRate ? '#047857' : '#991B1B', marginBottom: 4, fontWeight: 900 }}>
                           CAP RATE IMPACT
                         </div>
-                        <div style={{ fontSize: 20, fontWeight: 700, color: proformaCapRate > currentCapRate ? '#047857' : '#991B1B' }}>
+                        <div style={{ fontSize: 20, fontWeight: 900, color: proformaCapRate > currentCapRate ? '#047857' : '#991B1B' }}>
                           {proformaCapRate > currentCapRate ? '↑' : '↓'} {fmtPct(Math.abs(proformaCapRate - currentCapRate))}
                         </div>
                       </div>
                       
                       <div style={{ padding: 16, background: proformaNOI > currentNOI ? '#ECFDF5' : '#FEF2F2', borderRadius: 8, border: `1px solid ${proformaNOI > currentNOI ? '#86EFAC' : '#FECACA'}` }}>
-                        <div style={{ fontSize: 12, color: proformaNOI > currentNOI ? '#047857' : '#991B1B', marginBottom: 4, fontWeight: 600 }}>
+                        <div style={{ fontSize: 12, color: proformaNOI > currentNOI ? '#047857' : '#991B1B', marginBottom: 4, fontWeight: 900 }}>
                           NOI IMPACT
                         </div>
-                        <div style={{ fontSize: 20, fontWeight: 700, color: proformaNOI > currentNOI ? '#047857' : '#991B1B' }}>
+                        <div style={{ fontSize: 20, fontWeight: 900, color: proformaNOI > currentNOI ? '#047857' : '#991B1B' }}>
                           {proformaNOI > currentNOI ? '↑' : '↓'} {fmtCurrency(Math.abs(proformaNOI - currentNOI))}
                         </div>
                       </div>
                       
                       <div style={{ padding: 16, background: proformaPrice < currentPrice ? '#ECFDF5' : '#FEF3C7', borderRadius: 8, border: `1px solid ${proformaPrice < currentPrice ? '#86EFAC' : '#FCD34D'}` }}>
-                        <div style={{ fontSize: 12, color: proformaPrice < currentPrice ? '#047857' : '#92400e', marginBottom: 4, fontWeight: 600 }}>
+                        <div style={{ fontSize: 12, color: proformaPrice < currentPrice ? '#047857' : '#92400e', marginBottom: 4, fontWeight: 900 }}>
                           PRICE SAVINGS
                         </div>
-                        <div style={{ fontSize: 20, fontWeight: 700, color: proformaPrice < currentPrice ? '#047857' : '#92400e' }}>
+                        <div style={{ fontSize: 20, fontWeight: 900, color: proformaPrice < currentPrice ? '#047857' : '#92400e' }}>
                           {proformaPrice < currentPrice ? '✓ ' : '⚠ '}{fmtCurrency(Math.abs(currentPrice - proformaPrice))}
                         </div>
                       </div>
@@ -4389,7 +4389,7 @@ const EnhancedUploadPage = () => {
               
               return (
                 <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                  <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 24, color: '#111827', letterSpacing: '-0.02em' }}>
+                  <h3 style={{ fontSize: 20, fontWeight: 900, marginBottom: 24, color: '#111827', letterSpacing: '-0.02em' }}>
                     Acquisition Costs
                   </h3>
                   
@@ -4398,11 +4398,11 @@ const EnhancedUploadPage = () => {
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                       <thead>
                         <tr style={{ background: '#F3F4F6', borderBottom: '2px solid #E5E7EB' }}>
-                          <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 700, color: '#374151', width: '30%' }}>Description</th>
-                          <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: '#374151' }}>/ Unit</th>
-                          <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: '#374151' }}>Unit(s)</th>
-                          <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: '#2563EB', background: '#EFF6FF' }}>Total</th>
-                          <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: '#374151' }}>/ SF</th>
+                          <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 900, color: '#374151', width: '30%' }}>Description</th>
+                          <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 900, color: '#374151' }}>/ Unit</th>
+                          <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 900, color: '#374151' }}>Unit(s)</th>
+                          <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 900, color: '#2563EB', background: '#EFF6FF' }}>Total</th>
+                          <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 900, color: '#374151' }}>/ SF</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -4417,7 +4417,7 @@ const EnhancedUploadPage = () => {
                             <td style={{ padding: '10px 16px', textAlign: 'right', color: '#6B7280' }}>
                               {item.isBlank ? '' : item.pct !== undefined ? '% Price' : 'Amount'}
                             </td>
-                            <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 600, color: '#2563EB', background: '#F8FAFF' }}>
+                            <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 900, color: '#2563EB', background: '#F8FAFF' }}>
                               {item.amount != null ? fmtCurrency(item.amount) : '-'}
                             </td>
                             <td style={{ padding: '10px 16px', textAlign: 'right', color: '#6B7280' }}>
@@ -4428,15 +4428,15 @@ const EnhancedUploadPage = () => {
                         
                         {/* Total Row */}
                         <tr style={{ background: '#F0F9FF', borderTop: '2px solid #2563EB' }}>
-                          <td style={{ padding: '14px 16px', fontWeight: 800, color: '#111827', fontSize: 15 }}>
+                          <td style={{ padding: '14px 16px', fontWeight: 900, color: '#111827', fontSize: 15 }}>
                             Total Acquisition Costs
                           </td>
                           <td style={{ padding: '14px 16px' }}></td>
                           <td style={{ padding: '14px 16px' }}></td>
-                          <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 800, color: '#2563EB', fontSize: 16 }}>
+                          <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 900, color: '#2563EB', fontSize: 16 }}>
                             {fmtCurrency(totalCosts)}
                           </td>
-                          <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 700, color: '#374151' }}>
+                          <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 900, color: '#374151' }}>
                             {(totalCosts / sqft).toFixed(2)}
                           </td>
                         </tr>
@@ -4447,16 +4447,16 @@ const EnhancedUploadPage = () => {
                   {/* Summary Cards */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginTop: 24 }}>
                     <div style={{ padding: 16, background: '#F8FAFC', borderRadius: 8, border: '1px solid #E5E7EB' }}>
-                      <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4, fontWeight: 600 }}>TOTAL ACQUISITION</div>
-                      <div style={{ fontSize: 24, fontWeight: 800, color: '#111827' }}>{fmtCurrency(totalCosts)}</div>
+                      <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4, fontWeight: 900 }}>TOTAL ACQUISITION</div>
+                      <div style={{ fontSize: 24, fontWeight: 900, color: '#111827' }}>{fmtCurrency(totalCosts)}</div>
                     </div>
                     <div style={{ padding: 16, background: '#F8FAFC', borderRadius: 8, border: '1px solid #E5E7EB' }}>
-                      <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4, fontWeight: 600 }}>COST PER UNIT</div>
-                      <div style={{ fontSize: 24, fontWeight: 800, color: '#111827' }}>{fmtCurrency(totalCosts / units)}</div>
+                      <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4, fontWeight: 900 }}>COST PER UNIT</div>
+                      <div style={{ fontSize: 24, fontWeight: 900, color: '#111827' }}>{fmtCurrency(totalCosts / units)}</div>
                     </div>
                     <div style={{ padding: 16, background: '#F8FAFC', borderRadius: 8, border: '1px solid #E5E7EB' }}>
-                      <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4, fontWeight: 600 }}>COST PER SF</div>
-                      <div style={{ fontSize: 24, fontWeight: 800, color: '#111827' }}>${(totalCosts / sqft).toFixed(2)}</div>
+                      <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4, fontWeight: 900 }}>COST PER SF</div>
+                      <div style={{ fontSize: 24, fontWeight: 900, color: '#111827' }}>${(totalCosts / sqft).toFixed(2)}</div>
                     </div>
                   </div>
                 </div>
@@ -4489,7 +4489,7 @@ const EnhancedUploadPage = () => {
             }}>
               <div style={{ textAlign: 'center', marginBottom: 24 }}>
                 <div style={{ fontSize: 48, marginBottom: 16 }}>📄</div>
-                <h2 style={{ fontSize: 24, fontWeight: 700, color: '#111827', marginBottom: 12 }}>
+                <h2 style={{ fontSize: 24, fontWeight: 900, color: '#111827', marginBottom: 12 }}>
                   60-Page Limit Reached
                 </h2>
                 <p style={{ fontSize: 16, color: '#6b7280', lineHeight: 1.6 }}>
@@ -4505,10 +4505,10 @@ const EnhancedUploadPage = () => {
                 marginBottom: 24,
                 textAlign: 'center',
               }}>
-                <div style={{ fontSize: 14, color: '#0369a1', fontWeight: 600, marginBottom: 8 }}>
+                <div style={{ fontSize: 14, color: '#0369a1', fontWeight: 900, marginBottom: 8 }}>
                   60 PAGE PACK
                 </div>
-                <div style={{ fontSize: 36, fontWeight: 800, color: '#0369a1' }}>
+                <div style={{ fontSize: 36, fontWeight: 900, color: '#0369a1' }}>
                   $29
                 </div>
                 <div style={{ fontSize: 14, color: '#0369a1', marginTop: 4 }}>
@@ -4529,7 +4529,7 @@ const EnhancedUploadPage = () => {
                     border: 'none',
                     borderRadius: 10,
                     fontSize: 16,
-                    fontWeight: 700,
+                    fontWeight: 900,
                     cursor: 'pointer',
                     boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.3)',
                   }}
