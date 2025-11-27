@@ -3,11 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "http-proxy-middleware": "^3.0.5",
+    "lucide-react": "^0.555.0",
+    "papaparse": "^5.5.3",
     "pdfjs-dist": "^3.11.174",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.0",
-    "react-scripts": "5.0.1"
+    "react-scripts": "5.0.1",
+    "recharts": "^3.5.0"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -31,6 +35,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "proxy": "http://localhost:8000"
+  }
 }
