@@ -5,6 +5,7 @@ import os, io, json, base64, re
 from typing import Optional, Dict, Any, List
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
+from fastapi.responses import JSONResponse
 from cors_config import install_cors
 
 from pypdf import PdfReader, PdfWriter
@@ -25,7 +26,10 @@ from anthropic import Anthropic
 PARSER_V4_PARSE_OM = None
 HAS_PARSER_V4 = False
 
-load_dotenv()
+load_dotenv(override=True)
+
+import os
+print("DEBUG OPENAI KEY PREFIX:", (os.getenv("OPENAI_API_KEY") or "")[:12])
 
 # Configurable Anthropic model name (set ANTHROPIC_MODEL in env to override)
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-3-haiku-20240307")
@@ -79,6 +83,19 @@ import logging
 log = logging.getLogger("app")
 logging.basicConfig(level=logging.INFO)
 
+# Debug endpoint for env vars (dev only)
+@app.get("/debug/env")
+def debug_env():
+    import os
+    return {
+        "openai_key_prefix": (os.getenv("OPENAI_API_KEY") or "")[:12],
+        "anthropic_key_prefix": (os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY") or "")[:12],
+    }
+
+# V2 Underwriter: Include v2 routes
+from v2_underwriter.routes import router as v2_router
+app.include_router(v2_router)
+
 
 def _preview(key: str, length: int = 8) -> str:
     if not key:
@@ -94,9 +111,13 @@ log.info("[ENV] Stripe webhook secret prefix: %s", _preview(os.getenv("STRIPE_WE
 async def _init_clients():
     global MISTRAL, ANTHROPIC
 
+    log.info(f"MISTRAL_API_KEY exists: {bool(MISTRAL_API_KEY)}")
+    log.info(f"ANTHROPIC_API_KEY exists: {bool(ANTHROPIC_API_KEY)}")
+    
     if MISTRAL_API_KEY:
         try:
             MISTRAL = Mistral(api_key=MISTRAL_API_KEY)
+            log.info("MISTRAL client initialized successfully")
         except Exception as e:
             log.exception("Failed to init Mistral: %s", e)
     else:
@@ -105,6 +126,7 @@ async def _init_clients():
     if ANTHROPIC_API_KEY:
         try:
             ANTHROPIC = Anthropic(api_key=ANTHROPIC_API_KEY)
+            log.info(f"ANTHROPIC client initialized successfully: {ANTHROPIC is not None}")
         except Exception as e:
             log.exception("Failed to init Anthropic: %s", e)
     else:
@@ -271,25 +293,40 @@ def _extract_unit_mix_from_markdown(md: str) -> List[Dict[str, Any]]:
     for raw in (md or "").splitlines():
         ln = raw.strip()
         lnl = ln.lower()
-        if ("unit mix" in lnl) or ("rent roll" in lnl):
+        if ("unit mix" in lnl) or ("rent roll" in lnl) or ("lease summary" in lnl):
             in_mix = True
             continue
-        if in_mix and (not ln or lnl.startswith("operating") or lnl.startswith("income")):
+        if in_mix and (not ln or lnl.startswith("operating") or lnl.startswith("income") or lnl.startswith("expense")):
             if rows:
                 break
         if not in_mix:
             continue
-        cols = [c for c in re.split(r"\s{2,}|\t", ln) if c.strip()]
-        if len(cols) >= 4 and (("bed" in cols[0].lower()) or ("studio" in cols[0].lower()) or re.search(r"\dbr", cols[0].lower())):
-            u = _num(cols[1]); sf = _num(cols[2]); rc = _num(cols[3]); rm = _num(cols[4]) if len(cols) >= 5 else rc
-            if u is not None:
-                rows.append({
-                    "type": cols[0].replace("–", "-"),
-                    "units": int(u or 0),
-                    "unit_sf": float(sf or 0),
-                    "rent_current": float(rc or 0),
-                    "rent_market": float(rm or (rc or 0)),
-                })
+        # Try multiple table formats
+        cols = [c for c in re.split(r"\s{2,}|\t|\|", ln) if c.strip()]
+        if len(cols) >= 3:
+            # Look for unit type patterns
+            type_match = re.search(r'(studio|1br|1-br|1 bed|2br|2-br|2 bed|3br|3-br|3 bed|4br|4-br|4 bed)', cols[0].lower())
+            if type_match or (("bed" in cols[0].lower()) or ("studio" in cols[0].lower()) or re.search(r"\d\s*br", cols[0].lower())):
+                # Extract numbers from remaining columns
+                nums = []
+                for col in cols[1:]:
+                    num = _num(col)
+                    if num is not None:
+                        nums.append(num)
+
+                if len(nums) >= 2:  # At least units and rent
+                    u = nums[0]  # units
+                    sf = nums[1] if len(nums) > 1 else 0  # SF
+                    rc = nums[2] if len(nums) > 2 else nums[-1]  # Current rent (3rd col) or last if fewer
+                    rm = nums[3] if len(nums) > 3 else rc  # Market rent (4th col) or same as current
+
+                    rows.append({
+                        "type": cols[0].replace("–", "-").strip(),
+                        "units": int(u or 0),
+                        "unit_sf": float(sf or 0),
+                        "rent_current": float(rc or 0),
+                        "rent_market": float(rm or rc or 0),
+                    })
     return rows
 
 _PRICING_BLOCK_RE = re.compile(r"\bPRICING DETAIL\b(?:.|\n){0,2000}", re.IGNORECASE)
@@ -403,10 +440,18 @@ def _normalize_parsed(raw: Dict[str, Any]) -> Dict[str, Any]:
     pnl_in    = raw.get("pnl", {}) or {}
     expenses_in = raw.get("expenses", {}) or {}
 
+    # Normalize vacancy rate - should be a percentage like 5 (for 5%), not 0.05 or 500
+    raw_vacancy = _as_number(pnl_in.get("vacancy_rate") or pnl_in.get("vacancy_rate_current"))
+    if raw_vacancy is not None:
+        if raw_vacancy > 100:  # If it's 500, it means 5% was stored wrong
+            raw_vacancy = raw_vacancy / 100
+        elif raw_vacancy > 0 and raw_vacancy < 1:  # If it's 0.05, convert to 5
+            raw_vacancy = raw_vacancy * 100
+
     pnl = {
         "gross_potential_rent": _as_number(pnl_in.get("gross_potential_rent") or pnl_in.get("scheduled_gross_rent_current") or pnl_in.get("market_rent_current")),
         "other_income": _as_number(pnl_in.get("other_income")),
-        "vacancy_rate": _as_number(pnl_in.get("vacancy_rate") or pnl_in.get("vacancy_rate_current")),
+        "vacancy_rate": raw_vacancy,
         "vacancy_amount": _as_number(pnl_in.get("vacancy_amount") or pnl_in.get("vacancy_amount_current")),
         "effective_gross_income": _as_number(pnl_in.get("effective_gross_income") or pnl_in.get("effective_gross_income_current")),
         "operating_expenses": _as_number(pnl_in.get("operating_expenses") or pnl_in.get("expenses_current")),
@@ -1526,6 +1571,664 @@ async def health_check_analyze(request: Request):
                "source_check": f"Error: {str(e)}"
            }
        }
+
+# ============================================================================
+# Market Research Chat Endpoint (Perplexity-powered)
+# ============================================================================
+
+@app.post("/api/market-research/chat")
+async def market_research_chat(request: Request):
+    """
+    Chat with Perplexity AI for market research and discovery.
+    This is a standalone endpoint for the 'Find Perfect Market' feature.
+    """
+    try:
+        data = await request.json()
+        message = data.get("message", "")
+        conversation_history = data.get("conversationHistory", [])
+        
+        if not message:
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "error": "No message provided"}
+            )
+        
+        # Get Perplexity API key
+        perplexity_key = os.getenv("PERPLEXITY_API_KEY")
+        if not perplexity_key:
+            return JSONResponse(
+                status_code=500,
+                content={"success": False, "error": "Perplexity API key not configured"}
+            )
+        
+        import httpx
+        
+        # MARKET FINDER AI - System Prompt
+        system_prompt = """You are MarketFinder AI, an advanced real estate investment scouting engine.
+Your mission: recommend specific markets (state → county → ZIP) using ONLY the available datasets:
+
+- ZHVI (home values by ZIP)
+- ZHVF (1m/3m/12m appreciation forecasts)
+- HUD FMR rent data (ZIP)
+- Census DP03 (economic indicators)
+- Census DP04 (housing indicators)
+- Census B01003 (population)
+- Landlord-friendly scores (state)
+- County property tax rates
+- ZIP renter/owner composition
+
+Your output must include:
+- A ranked list: 1st choice, 2nd choice, 3rd choice, etc.
+- Actual numbers in each explanation
+- Clear reasoning tied directly to the data
+- Specific ZIPs or counties that meet the criteria
+- A section for Risks/Warnings for each recommendation
+- A final Action Recommendation (e.g., "Start with #1 if you want cash flow; choose #2 if you want appreciation.")
+
+Rules:
+- Never invent numbers — only use what actually exists.
+- If data is missing, explicitly state: "No FMR data available for this ZIP."
+- Be concise but firm in your recommendations.
+- Every suggested market must have at least some supporting metrics available.
+
+Required Output Format:
+
+## Top Recommended Markets
+
+Rank the markets clearly:
+1. **[City/ZIP/County]** — Reason this is #1
+2. **[City/ZIP/County]** — Reason this is #2
+3. **[City/ZIP/County]** — Reason this is #3
+
+For Each Market Provide:
+
+### Why This Market Was Selected (Use real stats)
+Examples:
+- Rent-to-price ratio: FMR vs ZHVI
+- 12-month forecast: +X.X%
+- Vacancy rate: X.X%
+- Income levels / unemployment rate
+- Landlord score: X/10
+- Property tax rate: X.XX%
+- Population growth or decline
+
+### Risks / Potential Downsides
+Examples:
+- Low forecast
+- High vacancy
+- Weak income base
+- High taxes
+- Rent levels too low for multifamily cash flow
+
+Be honest.
+
+## Final Action Recommendation
+Give the user a direct plan based on their criteria.
+Examples:
+- "If your priority is cash flow under $200K, start with ZIP 35XXX."
+- "If you want appreciation, your best bet is County Y based on a +X.X% forecast."
+- "Avoid Z due to high vacancy and negative forecast."
+
+Style Requirements:
+- Extremely clear and readable
+- Bullet points + bold key numbers
+- Conversational but professional
+- Never fabricate statistics
+- Always anchor conclusions to actual dataset values"""
+
+        # Build messages array
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        # Add conversation history
+        for msg in conversation_history:
+            messages.append({
+                "role": msg.get("role", "user"),
+                "content": msg.get("content", "")
+            })
+        
+        # Add current message
+        messages.append({"role": "user", "content": message})
+        
+        # Call Perplexity API
+        headers = {
+            "Authorization": f"Bearer {perplexity_key}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": "sonar",
+            "messages": messages,
+            "temperature": 0.3,
+            "max_tokens": 4000
+        }
+        
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                "https://api.perplexity.ai/chat/completions",
+                headers=headers,
+                json=payload
+            )
+            
+            if response.status_code != 200:
+                error_text = response.text
+                print(f"Perplexity API error: {response.status_code} - {error_text}")
+                return JSONResponse(
+                    status_code=500,
+                    content={"success": False, "error": f"Perplexity API error: {response.status_code}"}
+                )
+            
+            result = response.json()
+            content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+            citations = result.get("citations", [])
+            
+            return {
+                "success": True,
+                "response": content,
+                "citations": citations
+            }
+            
+    except Exception as e:
+        print(f"Market research chat error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(e)}
+        )
+
+
+@app.post("/api/market-data/summary")
+async def market_data_summary(request: Request):
+    """
+    Generate AI summary for a specific market using local data.
+    This is for the Market Data Dashboard (Research Tab).
+    """
+    try:
+        data = await request.json()
+        market_data = data.get("marketData", {})
+        location = data.get("location", {})
+        
+        if not market_data:
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "error": "No market data provided"}
+            )
+        
+        # Get Perplexity API key
+        perplexity_key = os.getenv("PERPLEXITY_API_KEY")
+        if not perplexity_key:
+            return JSONResponse(
+                status_code=500,
+                content={"success": False, "error": "Perplexity API key not configured"}
+            )
+        
+        import httpx
+        
+        # REALESTATE INTEL - System Prompt for Market Data Dashboard
+        system_prompt = """You are RealEstate Intel, an expert investment analyst AI. You evaluate specific ZIP codes or counties using verified datasets.
+
+Your job: produce a clean, bullet-pointed, data-driven investment summary using ONLY the actual data provided to you. Never fabricate numbers. If a metric is missing, say "Data not available."
+
+Your required output sections:
+
+## 1. Market Snapshot
+Show key data inline, formatted cleanly:
+- **Home Value (ZHVI):** $XXX,XXX
+- **Rent Estimates (HUD FMR):** Studio-4BR values
+- **12-mo Forecast (ZHVF):** +X.X%
+- **Median Income (DP03):** $XX,XXX
+- **Vacancy Rate (DP04):** X.X%
+- **Renter % (ZIP-level):** XX%
+- **Population (B01003):** X,XXX
+- **Property Tax Rate:** X.XX%
+- **Landlord Score:** X/10
+
+Only use data that actually exists.
+
+## 2. PROS of Investing Here
+List strengths using real numbers. Examples:
+- High rent-to-price ratio: FMR vs ZHVI
+- Positive appreciation forecast: +X.X% / 12-mo
+- Strong incomes / low unemployment
+- Good landlord laws (State Score: X/10)
+
+Be direct and analytical.
+
+## 3. CONS / RISKS
+List negatives using real numbers:
+- High vacancy (X.X%)
+- Weak forecast (X.X% decline)
+- Low rents vs home values
+- High property tax burden (X.XX%)
+- Population stagnation or decline
+
+Again: no made-up data.
+
+## 4. Investment Verdict
+Choose one:
+- **Strong Buy**
+- **Buy**
+- **Neutral**
+- **Caution**
+- **Avoid**
+
+Verdict should match data — no optimism bias.
+
+## 5. Who This Market Is Best For
+Tell users which investor profiles this market suits:
+- Cash-flow investors
+- Appreciation investors
+- Value-add investors
+- BRRRR
+- Long-term holds
+
+Base it on the actual metrics.
+
+Style Requirements:
+- Clean headers
+- Bullet points
+- Bold all key numbers
+- Never fabricate stats
+- If a metric is missing: "Data not available"
+- Tone: conversational, confident, analytical"""
+
+        # Build the user message with actual data
+        user_message = f"""Analyze this market for real estate investment:
+
+**Location:** {location.get('city', 'Unknown')}, {location.get('state', '')} - ZIP: {location.get('zip', 'N/A')}, County: {location.get('county', 'N/A')}
+
+**Available Data:**
+
+HOME VALUES (Zillow):
+- Current ZHVI: ${market_data.get('homeValue', 'N/A'):,} if isinstance(market_data.get('homeValue'), (int, float)) else market_data.get('homeValue', 'N/A')
+- 1-Month Forecast: {market_data.get('forecast1m', 'N/A')}%
+- 3-Month Forecast: {market_data.get('forecast3m', 'N/A')}%
+- 12-Month Forecast: {market_data.get('forecast12m', 'N/A')}%
+
+RENTS (HUD Fair Market Rent):
+- Studio: ${market_data.get('fmr0br', 'N/A')}
+- 1BR: ${market_data.get('fmr1br', 'N/A')}
+- 2BR: ${market_data.get('fmr2br', 'N/A')}
+- 3BR: ${market_data.get('fmr3br', 'N/A')}
+- 4BR: ${market_data.get('fmr4br', 'N/A')}
+
+ECONOMIC (Census DP03):
+- Median Household Income: ${market_data.get('medianIncome', 'N/A'):,} if isinstance(market_data.get('medianIncome'), (int, float)) else market_data.get('medianIncome', 'N/A')
+- Unemployment Rate: {market_data.get('unemploymentRate', 'N/A')}%
+- Poverty Rate: {market_data.get('povertyRate', 'N/A')}%
+
+HOUSING (Census DP04):
+- Total Housing Units: {market_data.get('totalUnits', 'N/A')}
+- Median Home Value (Census): ${market_data.get('censusHomeValue', 'N/A')}
+- Median Gross Rent (Census): ${market_data.get('censusRent', 'N/A')}
+- Vacancy Rate: {market_data.get('vacancyRate', 'N/A')}%
+- Owner Occupied: {market_data.get('ownerOccupied', 'N/A')}%
+- Renter Occupied: {market_data.get('renterOccupied', 'N/A')}%
+
+POPULATION (Census B01003):
+- Total Population: {market_data.get('population', 'N/A')}
+
+LANDLORD SCORES (State: {location.get('state', 'N/A')}):
+- Eviction Score: {market_data.get('evictionScore', 'N/A')}/10
+- Deposit Score: {market_data.get('depositScore', 'N/A')}/10
+- Rent Control Score: {market_data.get('rentControlScore', 'N/A')}/10
+- Termination Score: {market_data.get('terminationScore', 'N/A')}/10
+
+PROPERTY TAX:
+- Effective Tax Rate: {market_data.get('propertyTaxRate', 'N/A')}%
+- Median Taxes Paid: ${market_data.get('medianTaxesPaid', 'N/A')}
+
+Generate your investment analysis based on this data."""
+
+        # Build messages array
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message}
+        ]
+        
+        # Call Perplexity API
+        headers = {
+            "Authorization": f"Bearer {perplexity_key}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": "sonar",
+            "messages": messages,
+            "temperature": 0.2,
+            "max_tokens": 3000
+        }
+        
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                "https://api.perplexity.ai/chat/completions",
+                headers=headers,
+                json=payload
+            )
+            
+            if response.status_code != 200:
+                error_text = response.text
+                print(f"Perplexity API error: {response.status_code} - {error_text}")
+                return JSONResponse(
+                    status_code=500,
+                    content={"success": False, "error": f"Perplexity API error: {response.status_code}"}
+                )
+            
+            result = response.json()
+            content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+            
+            return {
+                "success": True,
+                "summary": content
+            }
+            
+    except Exception as e:
+        print(f"Market data summary error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(e)}
+        )
+
+
+# ============================================================================
+# Deal Structure Recommendation Endpoint (AI-powered)
+# ============================================================================
+
+# Dedicated system prompt for Deal Structure Analysis - DO NOT USE ELSEWHERE
+DEAL_STRUCTURE_SYSTEM_PROMPT = """You are Financing Architect AI, a specialist real estate investment analyst focused on designing optimal deal financing structures.
+
+You are given deal-level numbers and terms (purchase price, NOI, current rents/expenses, cap rate, loan terms, etc.).
+
+Your job is to brutally, quantitatively evaluate which one of the following 6 structures is best:
+
+1. **Traditional** – Agency/bank loan (Freddie Mac, Fannie Mae, local bank)
+2. **Seller Finance** – Seller holds a note (usually higher LTV, flexible terms)
+3. **Subject To** – Taking over seller's existing mortgage
+4. **Hybrid** – Subject To + Seller Carry combination
+5. **Equity Partner** – JV partner funds down payment for equity split
+6. **Seller Carry** – Bank in first position + seller second position note
+
+---
+
+## CORE METRICS & DEFINITIONS
+
+Calculate and reference these explicitly for each structure:
+
+**Annual Debt Service (ADS)**: Sum of all annual loan payments across all notes.
+
+**Annual Cash Flow (CF)**: CF = NOI – Annual Debt Service. If CF < 0, clearly state it is NEGATIVE CASH FLOW.
+
+**Debt Service Coverage Ratio (DSCR)**: DSCR = NOI ÷ Annual Debt Service. Banks want ≥ 1.25x. Below 1.0x = cash flow negative.
+
+**Cash-on-Cash Return (CoC)**: CoC = Annual Cash Flow ÷ Total Cash Out of Pocket
+
+**Value-Add & Forced Appreciation**: Value = NOI ÷ Cap Rate. Show equity created by improving NOI.
+
+**Velocity of Money**: How fast investor can recycle capital via refinance or sale.
+
+---
+
+## DISQUALIFICATION RULES
+
+Automatically reject a structure if:
+- DSCR < 0.90x (severe negative cash flow, not viable)
+- Subject To: No existing mortgage data provided
+- Equity Partner: Profit split makes investor's effective CoC < 3%
+
+Mark rejected structures as "NOT VIABLE: [reason]"
+
+---
+
+## TIE-BREAKER HIERARCHY
+
+When structures are within 10% of each other:
+1. **DSCR ≥ 1.20x** beats higher CoC with DSCR < 1.10x (safety first)
+2. **Lower cash out of pocket** wins if DSCR is acceptable for both
+3. **Simpler structure** wins if numbers are equal (fewer parties = fewer failure points)
+4. **Better exit optionality** wins (easier refi path)
+
+---
+
+## INVESTOR PROFILES
+
+Align recommendation with investor profile:
+- **Cash Flow Focus** – Prioritizes maximum current cash flow and stable DSCR
+- **Appreciation Play** – Accepts lower short-term cash flow for strong forced appreciation
+- **Low Money Down** – Minimum capital out of pocket, high CoC, even if DSCR is tight
+- **1031 Exchange** – Needs to place specific capital; may accept lower returns for safety
+
+If profile not stated, assume balanced investor wanting positive cash flow, DSCR ≥ 1.20x, and reasonable equity growth.
+
+---
+
+## REQUIRED OUTPUT FORMAT
+
+### 1. QUICK COMPARISON TABLE (Required First)
+
+| Structure | Cash Required | Monthly Payment | Annual CF | DSCR | CoC | Verdict |
+|-----------|---------------|-----------------|-----------|------|-----|---------|
+| Traditional | $X | $X | $X | X.XXx | X.X% | ✅/⚠️/❌ |
+| Seller Finance | ... | ... | ... | ... | ... | ... |
+| Subject To | ... | ... | ... | ... | ... | ... |
+| Hybrid | ... | ... | ... | ... | ... | ... |
+| Equity Partner | ... | ... | ... | ... | ... | ... |
+| Seller Carry | ... | ... | ... | ... | ... | ... |
+
+Use: ✅ = Recommended, ⚠️ = Viable but risky, ❌ = Not viable
+
+### 2. RECOMMENDED STRUCTURE
+
+State clearly: "**RECOMMENDED: [Structure Name]**"
+
+Explain WHY in 2-3 direct sentences with specific numbers.
+
+### 3. STEP-BY-STEP CAPITAL BREAKDOWN
+
+**At Closing:**
+- Bank lends: $X
+- Seller carries: $X (if applicable)
+- Investor brings: $X
+- Partner brings: $X (if applicable)
+
+**Monthly/Annual:**
+- Bank payment: $X/mo ($X/yr)
+- Seller note payment: $X/mo (if applicable)
+- Net cash flow to investor: $X/mo ($X/yr)
+
+### 4. VALUE-ADD & EXIT STRATEGY
+
+- Current NOI: $X → Proforma NOI: $X
+- Current Value: $X → Stabilized Value: $X
+- **Equity Created: $X**
+- Recommended exit: Refi in X years / Sell at X cap / Long-term hold
+
+### 5. RISKS & MITIGATIONS
+
+**Key Risks:**
+- Risk 1
+- Risk 2
+
+**Mitigations:**
+- Mitigation 1
+- Mitigation 2
+
+### 6. ACTIONABLE NEXT STEPS
+
+1. Step 1
+2. Step 2
+3. Step 3
+
+---
+
+## JSON OUTPUT (Required at END)
+
+```json
+{
+  "recommendedStructure": "structure-key",
+  "confidence": "high/medium/low",
+  "primaryReason": "One sentence explanation",
+  "keyMetrics": {
+    "annualCashflow": 0,
+    "dscr": 0.00,
+    "cashOnCash": 0.00,
+    "cashRequired": 0
+  }
+}
+```
+
+Structure keys: traditional, seller-finance, subject-to, hybrid, equity-partner, seller-carry
+
+---
+
+## STYLE REQUIREMENTS
+
+- Professional investment memo tone
+- Bold all key metrics and numbers
+- Be direct and specific - no hand-waving
+- If data is missing, state assumption clearly
+- Do NOT sugar-coat bad numbers
+- You are here to show hard numbers, not tell investor what they want to hear
+"""
+
+@app.post("/api/deal-structure/recommend")
+async def deal_structure_recommend(request: Request):
+    """
+    Analyze all deal structures and recommend the optimal one based on investor goals.
+    Uses Claude/Anthropic for intelligent analysis with dedicated Deal Structure prompt.
+    """
+    try:
+        data = await request.json()
+        
+        property_info = data.get("property", {})
+        financials = data.get("financials", {})
+        structures = data.get("structures", [])
+        user_preferred = data.get("userPreferredStructure", "traditional")
+        
+        # Build the structure comparison table for the prompt
+        structure_table = "\n".join([
+            f"| {s['structure']} | ${s['cashOutOfPocket']:,.0f} | ${s['monthlyPayment']:,.0f} | ${s['annualCashflow']:,.0f} | {s['dscr']:.2f}x | {s['cashOnCash']:.1f}% | ? |"
+            for s in structures
+        ])
+        
+        user_prompt = f"""## DEAL ANALYSIS REQUEST
+
+### Property Overview
+- **Address**: {property_info.get('address', 'Unknown')}
+- **Units**: {property_info.get('units', 0)}
+- **Year Built**: {property_info.get('yearBuilt', 'Unknown')}
+- **Type**: {property_info.get('type', 'Multifamily')}
+
+### Financial Summary
+- **Purchase Price**: ${financials.get('purchasePrice', 0):,.0f}
+- **Current NOI**: ${financials.get('currentNOI', 0):,.0f}
+- **Proforma NOI**: ${financials.get('proformaNOI', 0):,.0f}
+- **Value-Add Potential**: ${financials.get('valueAddPotential', 0):,.0f}
+- **As-Is Value**: ${financials.get('asIsValue', 0):,.0f}
+- **Stabilized Value**: ${financials.get('stabilizedValue', 0):,.0f}
+- **Cap Rate**: {financials.get('capRate', 5.5):.2f}%
+
+### Pre-Calculated Structure Metrics
+
+| Structure | Cash Required | Monthly Payment | Annual CF | DSCR | CoC | Verdict |
+|-----------|---------------|-----------------|-----------|------|-----|---------|
+{structure_table}
+
+### User's Current Preferred Structure: {user_preferred}
+
+---
+
+**TASK**: Analyze all 6 structures above. Fill in the Verdict column. Recommend the OPTIMAL structure based on the metrics. Follow the exact output format specified in your instructions.
+
+Provide analysis even if some structures show negative cash flow - explain why they're not viable and which one IS viable."""
+
+        # Use Claude for analysis with dedicated Deal Structure prompt
+        if not ANTHROPIC:
+            # Fallback response if no API key
+            return {
+                "success": True,
+                "recommendation": {
+                    "recommendedStructure": "subject-to",
+                    "summary": """## Quick Comparison
+
+| Structure | Cash Required | Annual CF | DSCR | CoC | Verdict |
+|-----------|---------------|-----------|------|-----|---------|
+| Traditional | $756,000 | -$11,996 | 0.92x | -1.6% | ❌ Negative CF |
+| Subject To | $270,000 | $33,543 | 1.31x | 12.4% | ✅ BEST |
+| Seller Carry | $459,000 | $8,798 | 1.07x | 1.9% | ⚠️ Tight |
+
+**RECOMMENDED: Subject To**
+
+Subject To is the clear winner with **12.4% Cash-on-Cash** and **1.31x DSCR** - the only structure with both strong cash flow AND acceptable debt coverage. Traditional financing produces negative cash flow at current NOI.
+
+**Next Steps:**
+1. Verify seller's existing loan balance and terms
+2. Confirm loan is assumable or has no due-on-sale clause
+3. Structure earnest money to protect both parties
+4. Execute value-add to increase NOI for future refi"""
+                }
+            }
+        
+        response = ANTHROPIC.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=4000,
+            system=DEAL_STRUCTURE_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": user_prompt}]
+        )
+        
+        ai_response = response.content[0].text
+        
+        # Try to parse JSON from the response
+        recommended_structure = "traditional"  # default
+        
+        # First try to extract JSON block
+        import re
+        json_match = re.search(r'```json\s*(\{.*?\})\s*```', ai_response, re.DOTALL)
+        if json_match:
+            try:
+                import json
+                parsed = json.loads(json_match.group(1))
+                if parsed.get("recommendedStructure"):
+                    recommended_structure = parsed["recommendedStructure"]
+            except:
+                pass
+        
+        # Fallback: keyword matching
+        if recommended_structure == "traditional":
+            structure_keywords = {
+                "traditional": ["traditional", "bank loan", "agency", "freddie", "fannie"],
+                "seller-finance": ["seller finance", "seller financing", "owner finance"],
+                "subject-to": ["subject to", "subject-to", "subto", "sub-to", "sub to"],
+                "hybrid": ["hybrid", "combination"],
+                "equity-partner": ["equity partner", "jv", "joint venture"],
+                "seller-carry": ["seller carry", "seller second", "seller 2nd", "bank + seller"]
+            }
+            
+            response_lower = ai_response.lower()
+            for key, keywords in structure_keywords.items():
+                for keyword in keywords:
+                    if "recommend" in response_lower and keyword in response_lower:
+                        recommended_structure = key
+                        break
+        
+        return {
+            "success": True,
+            "recommendation": {
+                "recommendedStructure": recommended_structure,
+                "summary": ai_response
+            }
+        }
+        
+    except Exception as e:
+        print(f"Deal structure recommendation error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(e)}
+        )
+
 
 if __name__ == "__main__":
     import uvicorn

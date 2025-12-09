@@ -1,0 +1,48 @@
+State,RentalPropertiesScore,RentAsIncomeScore,EvictionScore,DepositAmountScore,DepositReturnScore,RepairPolicyScore,TerminationNoticeScore,RentControlScore
+Florida,25,4,0,0,0,0,8,25
+Massachusetts,24,0,18,24,5,12,25,25
+Nevada,23,1,0,9,0,21,0,25
+Colorado,22,0,0,6,9,9,0,25
+Arizona,21,0,0,0,25,25,0,25
+California,20,2,0,7,0,19,0,0
+Oregon,19,0,4,8,7,20,0,0
+Georgia,18,6,6,0,0,23,9,25
+Washington,17,0,0,5,8,4,21,25
+New York,16,0,16,0,22,18,16,0
+Connecticut,15,0,24,17,20,24,19,25
+Rhode Island,14,0,23,23,19,14,18,25
+New Jersey,13,0,12,14,13,11,0,0
+Hawaii,12,0,0,21,24,22,0,25
+Illinois,11,5,1,0,2,16,0,25
+North Carolina,10,10,9,13,4,0,11,25
+North Dakota,9,24,25,12,0,0,0,25
+Minnesota,8,0,17,10,16,17,24,25
+South Dakota,7,20,22,22,21,0,0,25
+Iowa,6,22,21,0,0,15,0,25
+Nebraska,5,14,15,18,23,0,0,25
+Utah,4,0,0,0,0,0,0,25
+Maine,3,0,20,11,17,13,20,0
+South Carolina,2,0,0,0,0,0,10,25
+Alabama,1,11,5,25,0,0,7,25
+Ohio,0,25,3,0,0,0,0,25
+West Virginia,0,23,0,0,0,0,0,25
+Kentucky,0,21,7,19,3,0,0,25
+Wyoming,0,19,0,0,0,0,0,25
+Wisconsin,0,18,14,4,14,1,0,25
+Missouri,0,17,0,2,1,2,1,25
+Michigan,0,16,13,3,12,3,0,25
+Indiana,0,15,0,0,0,0,0,25
+Kansas,0,13,0,20,0,0,0,25
+Arkansas,0,12,0,0,0,0,2,25
+Mississippi,0,9,0,0,0,0,6,25
+Oklahoma,0,8,0,0,0,0,3,25
+Texas,0,7,0,0,0,0,4,25
+Tennessee,0,3,2,0,0,0,23,25
+Vermont,0,0,19,0,18,10,22,25
+Pennsylvania,0,0,11,1,10,6,14,25
+Virginia,0,0,10,0,6,5,12,25
+Maryland,0,0,8,0,11,7,13,0
+Delaware,0,0,0,16,15,8,15,25
+New Mexico,0,0,0,15,0,0,0,25
+New Hampshire,0,0,0,0,0,0,17,25
+Louisiana,0,0,0,0,0,0,5,25

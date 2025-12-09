@@ -1,40 +1,82 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const styles = {
+  dashboardContainer: {
+    display: 'flex',
+    minHeight: '100vh',
+    backgroundColor: '#f5f5f5',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+  },
+  sidebar: {
+    width: '280px',
+    backgroundColor: '#1a1a1a',
+    color: '#ffffff',
+    padding: '32px 24px',
+    display: 'flex',
+    flexDirection: 'column',
+    position: 'fixed',
+    height: '100vh',
+    left: 0,
+    top: 0
+  },
+  sidebarTitle: {
+    fontSize: '28px',
+    fontWeight: '900',
+    color: '#ffffff',
+    marginBottom: '48px',
+    letterSpacing: '-0.02em'
+  },
+  navList: {
+    listStyle: 'none',
+    padding: 0,
+    margin: 0
+  },
+  navItem: {
+    marginBottom: '8px'
+  },
+  navButton: {
+    width: '100%',
+    padding: '14px 16px',
+    backgroundColor: 'transparent',
+    color: '#a0a0a0',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '15px',
+    fontWeight: '700',
+    textAlign: 'left',
+    transition: 'all 0.2s'
+  },
+  navButtonActive: {
+    backgroundColor: '#2d2d2d',
+    color: '#ffffff'
+  },
+  mainContent: {
+    marginLeft: '280px',
+    flex: 1,
+    padding: '40px',
+    width: 'calc(100% - 280px)'
+  },
   container: {
     maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '40px 20px'
+    margin: '0 auto'
   },
   header: {
     marginBottom: '32px'
   },
   title: {
-    fontSize: '32px',
-    fontWeight: '700',
+    fontSize: '36px',
+    fontWeight: '900',
     color: '#1a1a1a',
-    marginBottom: '24px'
+    marginBottom: '8px',
+    letterSpacing: '-0.02em'
   },
-  tabs: {
-    display: 'flex',
-    gap: '8px',
-    borderBottom: '2px solid #e0e0e0',
-    marginBottom: '32px'
-  },
-  tab: {
-    padding: '12px 24px',
-    backgroundColor: 'transparent',
-    color: '#666',
-    border: 'none',
-    borderBottom: '3px solid transparent',
-    cursor: 'pointer',
-    fontSize: '15px',
+  subtitle: {
+    fontSize: '16px',
     fontWeight: '600',
-    transition: 'all 0.2s'
-  },
-  tabActive: {
-    color: '#1a1a1a',
-    borderBottom: '3px solid #1a1a1a'
+    color: '#666',
+    marginBottom: '32px'
   },
   card: {
     backgroundColor: '#ffffff',
@@ -47,16 +89,16 @@ const styles = {
     marginBottom: '40px'
   },
   sectionTitle: {
-    fontSize: '20px',
-    fontWeight: '600',
+    fontSize: '22px',
+    fontWeight: '900',
     color: '#1a1a1a',
     marginBottom: '20px',
     paddingBottom: '12px',
     borderBottom: '2px solid #e0e0e0'
   },
   subsectionTitle: {
-    fontSize: '16px',
-    fontWeight: '600',
+    fontSize: '18px',
+    fontWeight: '900',
     color: '#1a1a1a',
     marginBottom: '16px',
     marginTop: '24px'
@@ -67,7 +109,7 @@ const styles = {
   label: {
     display: 'block',
     marginBottom: '8px',
-    fontWeight: '500',
+    fontWeight: '900',
     color: '#1a1a1a',
     fontSize: '14px'
   },
@@ -214,95 +256,71 @@ function ProfileTab({ profile, setProfile }) {
 function ParametersTab() {
   const [dealParams, setDealParams] = useState({
     // Section A: Basic Deal Filters
-    assetTypes: {
-      multifamily: true,
-      rvPark: true,
-      mobileHomePark: false,
-      selfStorage: false,
-      mixedUse: false,
-      other: ''
-    },
+    assetType: 'multifamily',
     minUnits: 20,
     maxUnits: 200,
-    minPurchasePrice: 500000,
-    maxPurchasePrice: 5000000,
+    minPrice: 500000,
+    maxPrice: 5000000,
     targetMarkets: 'Texas, Florida, Arizona',
-    excludeMarkets: 'California, New York',
+    excludedMarkets: 'California, New York',
 
     // Section B: Day-One Cashflow Rules
-    requirePositiveCashflow: true,
-    minMonthlyCashflow: 2000,
-    minDayOneCapRate: 6.0,
-    maxAcceptableLTV: 75,
-    maxAcceptableInterestRate: 7.5,
+    minDayOneDSCR: 1.25,
+    minDayOneMonthlyCashflow: 2000,
+    maxLTV: 75,
+    maxInterestRate: 7.5,
 
-    // Section C: Stabilized / Value-Add Targets
-    holdPeriodYears: 5,
+    // Section C: Value-Add & Stabilized Targets
+    minRentDeltaToMarket: 150,
+    minStabilizedNOIGrowth: 10,
+    minPostRefiMonthlyCashflow: 5000,
+    minRefiCashOut: 100000,
+    minEquityMultipleAtRefi: 2.0,
+    targetRefiCapRate: 6.5,
     targetRefiYear: 3,
-    minStabilizedCashOnCash: 12,
-    minStabilizedDSCR: 1.25,
-    requireDoubleEquity: true,
-    minEquityMultiple: 2.0,
-    minStabilizedCapRate: 7.5,
 
-    // Section D: Value-Add / Rehab Preferences
-    valueAddStrategy: 'medium',
+    // Section D: Rehab Preferences
     maxRehabPerUnit: 15000,
-    minRentBumpPerUnit: 150,
+    expectedRentBump: 200,
     allowDeferredMaintenance: true,
-    rehabNotes: '',
+    requireRentBumpWithoutHeavyRehab: true,
 
-    // Section E: Risk / Stress Test Settings
-    defaultVacancy: 5,
-    maxStressTestVacancy: 15,
-    annualExpenseGrowth: 3,
-    annualRentGrowth: 3,
-    taxReassessmentRisk: 'medium',
-    maxPropertyTaxIncrease: 20,
+    // Section E: Stress Test Settings
+    vacancyStress: 10,
+    expenseGrowthStress: 5,
+    rentGrowthStress: 3,
+    taxIncreaseStress: 15,
 
     // Section F: Creative Finance Preferences
     allowSellerFinancing: true,
-    preferSellerCarry: false,
-    allowEquityPartners: true,
-    minOwnershipRetain: 70,
-    willingIOPeriod: true,
-    maxIOPeriodMonths: 24,
-    maxBalloonTermYears: 10,
+    allowSellerCarryOnDownPayment: false,
+    allowEquityPartnersForDownPayment: true,
+    minOwnershipAfterRefi: 70,
+    maxIOPeriod: 24,
+    maxBalloonPeriod: 10,
 
     // Section G: Hard Pass Conditions
-    autoFailDayOneDSCR: 1.1,
-    autoFailDayOneCapRate: 5.0,
-    autoFailStabilizedDSCR: 1.15,
-    autoFailMinEquityMultiple: 1.5,
-    autoFailPropertyAge: 1970,
+    autoFailYearBuilt: 1970,
     autoFailPricePerUnit: 100000,
-    otherDealKillers: ''
+    autoFailMinUnits: 20,
+    autoFailMaxUnits: 200,
+    autoFailExcludedMarkets: true,
+    minRecoverableUtilities: 5000
   });
 
   const [saved, setSaved] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
-    if (name.startsWith('assetTypes.')) {
-      const assetType = name.split('.')[1];
-      setDealParams(prev => ({
-        ...prev,
-        assetTypes: {
-          ...prev.assetTypes,
-          [assetType]: type === 'checkbox' ? checked : value
-        }
-      }));
-    } else {
-      setDealParams(prev => ({
-        ...prev,
-        [name]: type === 'checkbox' ? checked : type === 'number' ? parseFloat(value) : value
-      }));
-    }
+    setDealParams(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : type === 'number' ? parseFloat(value) : value
+    }));
   };
 
   const handleSave = () => {
     console.log('Deal Parameters saved:', dealParams);
+    localStorage.setItem('dealParams', JSON.stringify(dealParams));
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -314,73 +332,24 @@ function ParametersTab() {
         <h2 style={styles.sectionTitle}>A. Basic Deal Filters</h2>
         
         <div style={styles.formGroup}>
-          <label style={styles.label}>Preferred Asset Types</label>
-          <label style={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              name="assetTypes.multifamily"
-              checked={dealParams.assetTypes.multifamily}
-              onChange={handleChange}
-              style={styles.checkbox}
-            />
-            Multifamily
-          </label>
-          <label style={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              name="assetTypes.rvPark"
-              checked={dealParams.assetTypes.rvPark}
-              onChange={handleChange}
-              style={styles.checkbox}
-            />
-            RV Park
-          </label>
-          <label style={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              name="assetTypes.mobileHomePark"
-              checked={dealParams.assetTypes.mobileHomePark}
-              onChange={handleChange}
-              style={styles.checkbox}
-            />
-            Mobile Home Park
-          </label>
-          <label style={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              name="assetTypes.selfStorage"
-              checked={dealParams.assetTypes.selfStorage}
-              onChange={handleChange}
-              style={styles.checkbox}
-            />
-            Self Storage
-          </label>
-          <label style={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              name="assetTypes.mixedUse"
-              checked={dealParams.assetTypes.mixedUse}
-              onChange={handleChange}
-              style={styles.checkbox}
-            />
-            Mixed-Use
-          </label>
-          <div style={{ marginTop: '12px' }}>
-            <label htmlFor="assetTypes.other" style={styles.label}>Other (specify)</label>
-            <input
-              type="text"
-              name="assetTypes.other"
-              value={dealParams.assetTypes.other}
-              onChange={handleChange}
-              style={styles.input}
-              placeholder="Other asset types..."
-            />
-          </div>
+          <label htmlFor="assetType" style={styles.label}>Asset Type</label>
+          <select
+            id="assetType"
+            name="assetType"
+            value={dealParams.assetType}
+            onChange={handleChange}
+            style={styles.select}
+          >
+            <option value="multifamily">Multifamily</option>
+            <option value="office">Office</option>
+            <option value="retail">Retail</option>
+            <option value="other">Other</option>
+          </select>
         </div>
 
         <div style={styles.grid}>
           <div style={styles.formGroup}>
-            <label htmlFor="minUnits" style={styles.label}>Min Units / Pads</label>
+            <label htmlFor="minUnits" style={styles.label}>Unit Range (Min)</label>
             <input
               type="number"
               id="minUnits"
@@ -392,7 +361,7 @@ function ParametersTab() {
           </div>
 
           <div style={styles.formGroup}>
-            <label htmlFor="maxUnits" style={styles.label}>Max Units / Pads</label>
+            <label htmlFor="maxUnits" style={styles.label}>Unit Range (Max)</label>
             <input
               type="number"
               id="maxUnits"
@@ -404,12 +373,12 @@ function ParametersTab() {
           </div>
 
           <div style={styles.formGroup}>
-            <label htmlFor="minPurchasePrice" style={styles.label}>Min Purchase Price ($)</label>
+            <label htmlFor="minPrice" style={styles.label}>Price Range (Min)</label>
             <input
               type="number"
-              id="minPurchasePrice"
-              name="minPurchasePrice"
-              value={dealParams.minPurchasePrice}
+              id="minPrice"
+              name="minPrice"
+              value={dealParams.minPrice}
               onChange={handleChange}
               style={styles.input}
               step="10000"
@@ -417,12 +386,12 @@ function ParametersTab() {
           </div>
 
           <div style={styles.formGroup}>
-            <label htmlFor="maxPurchasePrice" style={styles.label}>Max Purchase Price ($)</label>
+            <label htmlFor="maxPrice" style={styles.label}>Price Range (Max)</label>
             <input
               type="number"
-              id="maxPurchasePrice"
-              name="maxPurchasePrice"
-              value={dealParams.maxPurchasePrice}
+              id="maxPrice"
+              name="maxPrice"
+              value={dealParams.maxPrice}
               onChange={handleChange}
               style={styles.input}
               step="10000"
@@ -431,7 +400,7 @@ function ParametersTab() {
         </div>
 
         <div style={styles.formGroup}>
-          <label htmlFor="targetMarkets" style={styles.label}>Target Markets (comma-separated)</label>
+          <label htmlFor="targetMarkets" style={styles.label}>Target Markets</label>
           <input
             type="text"
             id="targetMarkets"
@@ -444,12 +413,12 @@ function ParametersTab() {
         </div>
 
         <div style={styles.formGroup}>
-          <label htmlFor="excludeMarkets" style={styles.label}>Exclude Markets / States</label>
+          <label htmlFor="excludedMarkets" style={styles.label}>Excluded Markets</label>
           <input
             type="text"
-            id="excludeMarkets"
-            name="excludeMarkets"
-            value={dealParams.excludeMarkets}
+            id="excludedMarkets"
+            name="excludedMarkets"
+            value={dealParams.excludedMarkets}
             onChange={handleChange}
             style={styles.input}
             placeholder="California, New York"
@@ -461,52 +430,39 @@ function ParametersTab() {
       <div style={styles.section}>
         <h2 style={styles.sectionTitle}>B. Day-One Cashflow Rules</h2>
         
-        <div style={styles.formGroup}>
-          <label style={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              name="requirePositiveCashflow"
-              checked={dealParams.requirePositiveCashflow}
-              onChange={handleChange}
-              style={styles.checkbox}
-            />
-            Require positive cashflow day one?
-          </label>
-        </div>
-
         <div style={styles.grid}>
           <div style={styles.formGroup}>
-            <label htmlFor="minMonthlyCashflow" style={styles.label}>Minimum Monthly Cashflow (Day One) ($)</label>
+            <label htmlFor="minDayOneDSCR" style={styles.label}>Min Day-One DSCR</label>
             <input
               type="number"
-              id="minMonthlyCashflow"
-              name="minMonthlyCashflow"
-              value={dealParams.minMonthlyCashflow}
+              id="minDayOneDSCR"
+              name="minDayOneDSCR"
+              value={dealParams.minDayOneDSCR}
+              onChange={handleChange}
+              style={styles.input}
+              step="0.01"
+            />
+          </div>
+
+          <div style={styles.formGroup}>
+            <label htmlFor="minDayOneMonthlyCashflow" style={styles.label}>Min Day-One Monthly Cashflow ($)</label>
+            <input
+              type="number"
+              id="minDayOneMonthlyCashflow"
+              name="minDayOneMonthlyCashflow"
+              value={dealParams.minDayOneMonthlyCashflow}
               onChange={handleChange}
               style={styles.input}
             />
           </div>
 
           <div style={styles.formGroup}>
-            <label htmlFor="minDayOneCapRate" style={styles.label}>Minimum Day-One Cap Rate (%)</label>
+            <label htmlFor="maxLTV" style={styles.label}>Max LTV (%)</label>
             <input
               type="number"
-              id="minDayOneCapRate"
-              name="minDayOneCapRate"
-              value={dealParams.minDayOneCapRate}
-              onChange={handleChange}
-              style={styles.input}
-              step="0.1"
-            />
-          </div>
-
-          <div style={styles.formGroup}>
-            <label htmlFor="maxAcceptableLTV" style={styles.label}>Maximum Acceptable LTV (Day One, %)</label>
-            <input
-              type="number"
-              id="maxAcceptableLTV"
-              name="maxAcceptableLTV"
-              value={dealParams.maxAcceptableLTV}
+              id="maxLTV"
+              name="maxLTV"
+              value={dealParams.maxLTV}
               onChange={handleChange}
               style={styles.input}
               step="1"
@@ -514,12 +470,12 @@ function ParametersTab() {
           </div>
 
           <div style={styles.formGroup}>
-            <label htmlFor="maxAcceptableInterestRate" style={styles.label}>Maximum Acceptable Interest Rate (Day One, %)</label>
+            <label htmlFor="maxInterestRate" style={styles.label}>Max Interest Rate (%)</label>
             <input
               type="number"
-              id="maxAcceptableInterestRate"
-              name="maxAcceptableInterestRate"
-              value={dealParams.maxAcceptableInterestRate}
+              id="maxInterestRate"
+              name="maxInterestRate"
+              value={dealParams.maxInterestRate}
               onChange={handleChange}
               style={styles.input}
               step="0.1"
@@ -528,20 +484,84 @@ function ParametersTab() {
         </div>
       </div>
 
-      {/* Section C: Stabilized / Value-Add Targets */}
+      {/* Section C: Value-Add & Stabilized Targets */}
       <div style={styles.section}>
-        <h2 style={styles.sectionTitle}>C. Stabilized / Value-Add Targets</h2>
+        <h2 style={styles.sectionTitle}>C. Value-Add & Stabilized Targets</h2>
         
         <div style={styles.grid}>
           <div style={styles.formGroup}>
-            <label htmlFor="holdPeriodYears" style={styles.label}>Hold Period (Years)</label>
+            <label htmlFor="minRentDeltaToMarket" style={styles.label}>Min Rent Delta to Market ($ per unit)</label>
             <input
               type="number"
-              id="holdPeriodYears"
-              name="holdPeriodYears"
-              value={dealParams.holdPeriodYears}
+              id="minRentDeltaToMarket"
+              name="minRentDeltaToMarket"
+              value={dealParams.minRentDeltaToMarket}
               onChange={handleChange}
               style={styles.input}
+            />
+          </div>
+
+          <div style={styles.formGroup}>
+            <label htmlFor="minStabilizedNOIGrowth" style={styles.label}>Min Stabilized NOI Growth (%)</label>
+            <input
+              type="number"
+              id="minStabilizedNOIGrowth"
+              name="minStabilizedNOIGrowth"
+              value={dealParams.minStabilizedNOIGrowth}
+              onChange={handleChange}
+              style={styles.input}
+              step="0.1"
+            />
+          </div>
+
+          <div style={styles.formGroup}>
+            <label htmlFor="minPostRefiMonthlyCashflow" style={styles.label}>Min Post-Refi Monthly Cashflow ($)</label>
+            <input
+              type="number"
+              id="minPostRefiMonthlyCashflow"
+              name="minPostRefiMonthlyCashflow"
+              value={dealParams.minPostRefiMonthlyCashflow}
+              onChange={handleChange}
+              style={styles.input}
+            />
+          </div>
+
+          <div style={styles.formGroup}>
+            <label htmlFor="minRefiCashOut" style={styles.label}>Min Refi Cash-Out ($)</label>
+            <input
+              type="number"
+              id="minRefiCashOut"
+              name="minRefiCashOut"
+              value={dealParams.minRefiCashOut}
+              onChange={handleChange}
+              style={styles.input}
+              step="1000"
+            />
+          </div>
+
+          <div style={styles.formGroup}>
+            <label htmlFor="minEquityMultipleAtRefi" style={styles.label}>Min Equity Multiple at Refi</label>
+            <input
+              type="number"
+              id="minEquityMultipleAtRefi"
+              name="minEquityMultipleAtRefi"
+              value={dealParams.minEquityMultipleAtRefi}
+              onChange={handleChange}
+              style={styles.input}
+              step="0.1"
+            />
+          </div>
+
+          <div style={styles.formGroup}>
+            <label htmlFor="targetRefiCapRate" style={styles.label}>Target Refi Cap Rate (%)</label>
+            <input
+              type="number"
+              id="targetRefiCapRate"
+              name="targetRefiCapRate"
+              value={dealParams.targetRefiCapRate}
+              onChange={handleChange}
+              style={styles.input}
+              step="0.1"
             />
           </div>
 
@@ -556,96 +576,16 @@ function ParametersTab() {
               style={styles.input}
             />
           </div>
-
-          <div style={styles.formGroup}>
-            <label htmlFor="minStabilizedCashOnCash" style={styles.label}>Minimum Stabilized Cash-on-Cash Return (%)</label>
-            <input
-              type="number"
-              id="minStabilizedCashOnCash"
-              name="minStabilizedCashOnCash"
-              value={dealParams.minStabilizedCashOnCash}
-              onChange={handleChange}
-              style={styles.input}
-              step="0.1"
-            />
-          </div>
-
-          <div style={styles.formGroup}>
-            <label htmlFor="minStabilizedDSCR" style={styles.label}>Minimum Stabilized DSCR</label>
-            <input
-              type="number"
-              id="minStabilizedDSCR"
-              name="minStabilizedDSCR"
-              value={dealParams.minStabilizedDSCR}
-              onChange={handleChange}
-              style={styles.input}
-              step="0.01"
-            />
-          </div>
-
-          <div style={styles.formGroup}>
-            <label htmlFor="minEquityMultiple" style={styles.label}>Minimum Equity Multiple at Refi</label>
-            <input
-              type="number"
-              id="minEquityMultiple"
-              name="minEquityMultiple"
-              value={dealParams.minEquityMultiple}
-              onChange={handleChange}
-              style={styles.input}
-              step="0.1"
-            />
-          </div>
-
-          <div style={styles.formGroup}>
-            <label htmlFor="minStabilizedCapRate" style={styles.label}>Minimum Stabilized Cap Rate (%)</label>
-            <input
-              type="number"
-              id="minStabilizedCapRate"
-              name="minStabilizedCapRate"
-              value={dealParams.minStabilizedCapRate}
-              onChange={handleChange}
-              style={styles.input}
-              step="0.1"
-            />
-          </div>
-        </div>
-
-        <div style={styles.formGroup}>
-          <label style={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              name="requireDoubleEquity"
-              checked={dealParams.requireDoubleEquity}
-              onChange={handleChange}
-              style={styles.checkbox}
-            />
-            Require investor to at least double equity by refi?
-          </label>
         </div>
       </div>
 
-      {/* Section D: Value-Add / Rehab Preferences */}
+      {/* Section D: Rehab Preferences */}
       <div style={styles.section}>
-        <h2 style={styles.sectionTitle}>D. Value-Add / Rehab Preferences</h2>
+        <h2 style={styles.sectionTitle}>D. Rehab Preferences</h2>
         
-        <div style={styles.formGroup}>
-          <label htmlFor="valueAddStrategy" style={styles.label}>Preferred Value-Add Strategy Type</label>
-          <select
-            id="valueAddStrategy"
-            name="valueAddStrategy"
-            value={dealParams.valueAddStrategy}
-            onChange={handleChange}
-            style={styles.select}
-          >
-            <option value="light">Light rehab (cosmetics only)</option>
-            <option value="medium">Medium rehab</option>
-            <option value="heavy">Heavy repositioning</option>
-          </select>
-        </div>
-
         <div style={styles.grid}>
           <div style={styles.formGroup}>
-            <label htmlFor="maxRehabPerUnit" style={styles.label}>Max Rehab Budget per Unit ($)</label>
+            <label htmlFor="maxRehabPerUnit" style={styles.label}>Max Rehab Per Unit ($)</label>
             <input
               type="number"
               id="maxRehabPerUnit"
@@ -658,12 +598,12 @@ function ParametersTab() {
           </div>
 
           <div style={styles.formGroup}>
-            <label htmlFor="minRentBumpPerUnit" style={styles.label}>Min Expected Rent Bump per Unit ($/month)</label>
+            <label htmlFor="expectedRentBump" style={styles.label}>Expected Rent Bump ($ per unit)</label>
             <input
               type="number"
-              id="minRentBumpPerUnit"
-              name="minRentBumpPerUnit"
-              value={dealParams.minRentBumpPerUnit}
+              id="expectedRentBump"
+              name="expectedRentBump"
+              value={dealParams.expectedRentBump}
               onChange={handleChange}
               style={styles.input}
             />
@@ -679,35 +619,36 @@ function ParametersTab() {
               onChange={handleChange}
               style={styles.checkbox}
             />
-            Allow deals with some deferred maintenance?
+            Allow Deferred Maintenance
           </label>
         </div>
 
         <div style={styles.formGroup}>
-          <label htmlFor="rehabNotes" style={styles.label}>Notes / Constraints</label>
-          <textarea
-            id="rehabNotes"
-            name="rehabNotes"
-            value={dealParams.rehabNotes}
-            onChange={handleChange}
-            style={styles.textarea}
-            placeholder="Additional rehab notes or constraints..."
-          />
+          <label style={styles.checkboxLabel}>
+            <input
+              type="checkbox"
+              name="requireRentBumpWithoutHeavyRehab"
+              checked={dealParams.requireRentBumpWithoutHeavyRehab}
+              onChange={handleChange}
+              style={styles.checkbox}
+            />
+            Require Rent Bump Without Heavy Rehab
+          </label>
         </div>
       </div>
 
-      {/* Section E: Risk / Stress Test Settings */}
+      {/* Section E: Stress Test Settings */}
       <div style={styles.section}>
-        <h2 style={styles.sectionTitle}>E. Risk / Stress Test Settings</h2>
+        <h2 style={styles.sectionTitle}>E. Stress Test Settings</h2>
         
         <div style={styles.grid}>
           <div style={styles.formGroup}>
-            <label htmlFor="defaultVacancy" style={styles.label}>Vacancy Assumption (Default %)</label>
+            <label htmlFor="vacancyStress" style={styles.label}>Vacancy Stress (%)</label>
             <input
               type="number"
-              id="defaultVacancy"
-              name="defaultVacancy"
-              value={dealParams.defaultVacancy}
+              id="vacancyStress"
+              name="vacancyStress"
+              value={dealParams.vacancyStress}
               onChange={handleChange}
               style={styles.input}
               step="0.1"
@@ -715,12 +656,12 @@ function ParametersTab() {
           </div>
 
           <div style={styles.formGroup}>
-            <label htmlFor="maxStressTestVacancy" style={styles.label}>Max Acceptable Stress-Test Vacancy (%)</label>
+            <label htmlFor="expenseGrowthStress" style={styles.label}>Expense Growth Stress (%)</label>
             <input
               type="number"
-              id="maxStressTestVacancy"
-              name="maxStressTestVacancy"
-              value={dealParams.maxStressTestVacancy}
+              id="expenseGrowthStress"
+              name="expenseGrowthStress"
+              value={dealParams.expenseGrowthStress}
               onChange={handleChange}
               style={styles.input}
               step="0.1"
@@ -728,12 +669,12 @@ function ParametersTab() {
           </div>
 
           <div style={styles.formGroup}>
-            <label htmlFor="annualExpenseGrowth" style={styles.label}>Annual Expense Growth Assumption (%)</label>
+            <label htmlFor="rentGrowthStress" style={styles.label}>Rent Growth Stress (%)</label>
             <input
               type="number"
-              id="annualExpenseGrowth"
-              name="annualExpenseGrowth"
-              value={dealParams.annualExpenseGrowth}
+              id="rentGrowthStress"
+              name="rentGrowthStress"
+              value={dealParams.rentGrowthStress}
               onChange={handleChange}
               style={styles.input}
               step="0.1"
@@ -741,43 +682,15 @@ function ParametersTab() {
           </div>
 
           <div style={styles.formGroup}>
-            <label htmlFor="annualRentGrowth" style={styles.label}>Annual Rent Growth Assumption (%)</label>
+            <label htmlFor="taxIncreaseStress" style={styles.label}>Tax Increase Stress (%)</label>
             <input
               type="number"
-              id="annualRentGrowth"
-              name="annualRentGrowth"
-              value={dealParams.annualRentGrowth}
+              id="taxIncreaseStress"
+              name="taxIncreaseStress"
+              value={dealParams.taxIncreaseStress}
               onChange={handleChange}
               style={styles.input}
               step="0.1"
-            />
-          </div>
-
-          <div style={styles.formGroup}>
-            <label htmlFor="taxReassessmentRisk" style={styles.label}>Tax Reassessment Risk Tolerance</label>
-            <select
-              id="taxReassessmentRisk"
-              name="taxReassessmentRisk"
-              value={dealParams.taxReassessmentRisk}
-              onChange={handleChange}
-              style={styles.select}
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-          </div>
-
-          <div style={styles.formGroup}>
-            <label htmlFor="maxPropertyTaxIncrease" style={styles.label}>Max % Increase in Property Taxes You're Comfortable Underwriting</label>
-            <input
-              type="number"
-              id="maxPropertyTaxIncrease"
-              name="maxPropertyTaxIncrease"
-              value={dealParams.maxPropertyTaxIncrease}
-              onChange={handleChange}
-              style={styles.input}
-              step="1"
             />
           </div>
         </div>
@@ -796,48 +709,44 @@ function ParametersTab() {
               onChange={handleChange}
               style={styles.checkbox}
             />
-            Allow Seller Financing?
+            Allow Seller Financing
           </label>
+        </div>
+
+        <div style={styles.formGroup}>
           <label style={styles.checkboxLabel}>
             <input
               type="checkbox"
-              name="preferSellerCarry"
-              checked={dealParams.preferSellerCarry}
+              name="allowSellerCarryOnDownPayment"
+              checked={dealParams.allowSellerCarryOnDownPayment}
               onChange={handleChange}
               style={styles.checkbox}
             />
-            Prefer Seller to Carry Down Payment Instead of Equity Partner?
+            Allow Seller Carry on Down Payment
           </label>
+        </div>
+
+        <div style={styles.formGroup}>
           <label style={styles.checkboxLabel}>
             <input
               type="checkbox"
-              name="allowEquityPartners"
-              checked={dealParams.allowEquityPartners}
+              name="allowEquityPartnersForDownPayment"
+              checked={dealParams.allowEquityPartnersForDownPayment}
               onChange={handleChange}
               style={styles.checkbox}
             />
-            Allow Equity Partners to Fund Down Payment?
-          </label>
-          <label style={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              name="willingIOPeriod"
-              checked={dealParams.willingIOPeriod}
-              onChange={handleChange}
-              style={styles.checkbox}
-            />
-            Willing to Take Interest-Only Period?
+            Allow Equity Partners for Down Payment
           </label>
         </div>
 
         <div style={styles.grid}>
           <div style={styles.formGroup}>
-            <label htmlFor="minOwnershipRetain" style={styles.label}>Minimum Ownership You Want to Retain After Refi (%)</label>
+            <label htmlFor="minOwnershipAfterRefi" style={styles.label}>Min Ownership After Refi (%)</label>
             <input
               type="number"
-              id="minOwnershipRetain"
-              name="minOwnershipRetain"
-              value={dealParams.minOwnershipRetain}
+              id="minOwnershipAfterRefi"
+              name="minOwnershipAfterRefi"
+              value={dealParams.minOwnershipAfterRefi}
               onChange={handleChange}
               style={styles.input}
               step="1"
@@ -845,24 +754,24 @@ function ParametersTab() {
           </div>
 
           <div style={styles.formGroup}>
-            <label htmlFor="maxIOPeriodMonths" style={styles.label}>Max IO Period (Months)</label>
+            <label htmlFor="maxIOPeriod" style={styles.label}>Max IO Period (Months)</label>
             <input
               type="number"
-              id="maxIOPeriodMonths"
-              name="maxIOPeriodMonths"
-              value={dealParams.maxIOPeriodMonths}
+              id="maxIOPeriod"
+              name="maxIOPeriod"
+              value={dealParams.maxIOPeriod}
               onChange={handleChange}
               style={styles.input}
             />
           </div>
 
           <div style={styles.formGroup}>
-            <label htmlFor="maxBalloonTermYears" style={styles.label}>Max Balloon Term You're Comfortable With (Years)</label>
+            <label htmlFor="maxBalloonPeriod" style={styles.label}>Max Balloon Period (Years)</label>
             <input
               type="number"
-              id="maxBalloonTermYears"
-              name="maxBalloonTermYears"
-              value={dealParams.maxBalloonTermYears}
+              id="maxBalloonPeriod"
+              name="maxBalloonPeriod"
+              value={dealParams.maxBalloonPeriod}
               onChange={handleChange}
               style={styles.input}
             />
@@ -876,71 +785,19 @@ function ParametersTab() {
         
         <div style={styles.grid}>
           <div style={styles.formGroup}>
-            <label htmlFor="autoFailDayOneDSCR" style={styles.label}>Auto-fail if Day-One DSCR falls below</label>
+            <label htmlFor="autoFailYearBuilt" style={styles.label}>Auto-Fail Year Built &lt; X</label>
             <input
               type="number"
-              id="autoFailDayOneDSCR"
-              name="autoFailDayOneDSCR"
-              value={dealParams.autoFailDayOneDSCR}
-              onChange={handleChange}
-              style={styles.input}
-              step="0.01"
-            />
-          </div>
-
-          <div style={styles.formGroup}>
-            <label htmlFor="autoFailDayOneCapRate" style={styles.label}>Auto-fail if Day-One Cap Rate below (%)</label>
-            <input
-              type="number"
-              id="autoFailDayOneCapRate"
-              name="autoFailDayOneCapRate"
-              value={dealParams.autoFailDayOneCapRate}
-              onChange={handleChange}
-              style={styles.input}
-              step="0.1"
-            />
-          </div>
-
-          <div style={styles.formGroup}>
-            <label htmlFor="autoFailStabilizedDSCR" style={styles.label}>Auto-fail if Stabilized DSCR below</label>
-            <input
-              type="number"
-              id="autoFailStabilizedDSCR"
-              name="autoFailStabilizedDSCR"
-              value={dealParams.autoFailStabilizedDSCR}
-              onChange={handleChange}
-              style={styles.input}
-              step="0.01"
-            />
-          </div>
-
-          <div style={styles.formGroup}>
-            <label htmlFor="autoFailMinEquityMultiple" style={styles.label}>Auto-fail if Minimum Equity Multiple at Refi is below</label>
-            <input
-              type="number"
-              id="autoFailMinEquityMultiple"
-              name="autoFailMinEquityMultiple"
-              value={dealParams.autoFailMinEquityMultiple}
-              onChange={handleChange}
-              style={styles.input}
-              step="0.1"
-            />
-          </div>
-
-          <div style={styles.formGroup}>
-            <label htmlFor="autoFailPropertyAge" style={styles.label}>Auto-fail if Property is Older Than (Year)</label>
-            <input
-              type="number"
-              id="autoFailPropertyAge"
-              name="autoFailPropertyAge"
-              value={dealParams.autoFailPropertyAge}
+              id="autoFailYearBuilt"
+              name="autoFailYearBuilt"
+              value={dealParams.autoFailYearBuilt}
               onChange={handleChange}
               style={styles.input}
             />
           </div>
 
           <div style={styles.formGroup}>
-            <label htmlFor="autoFailPricePerUnit" style={styles.label}>Auto-fail if Price per Unit exceeds ($)</label>
+            <label htmlFor="autoFailPricePerUnit" style={styles.label}>Auto-Fail Price Per Unit &gt; X ($)</label>
             <input
               type="number"
               id="autoFailPricePerUnit"
@@ -951,18 +808,56 @@ function ParametersTab() {
               step="1000"
             />
           </div>
+
+          <div style={styles.formGroup}>
+            <label htmlFor="autoFailMinUnits" style={styles.label}>Auto-Fail Units &lt; Min</label>
+            <input
+              type="number"
+              id="autoFailMinUnits"
+              name="autoFailMinUnits"
+              value={dealParams.autoFailMinUnits}
+              onChange={handleChange}
+              style={styles.input}
+            />
+          </div>
+
+          <div style={styles.formGroup}>
+            <label htmlFor="autoFailMaxUnits" style={styles.label}>Auto-Fail Units &gt; Max</label>
+            <input
+              type="number"
+              id="autoFailMaxUnits"
+              name="autoFailMaxUnits"
+              value={dealParams.autoFailMaxUnits}
+              onChange={handleChange}
+              style={styles.input}
+            />
+          </div>
+
+          <div style={styles.formGroup}>
+            <label htmlFor="minRecoverableUtilities" style={styles.label}>Min Recoverable Utilities ($/year)</label>
+            <input
+              type="number"
+              id="minRecoverableUtilities"
+              name="minRecoverableUtilities"
+              value={dealParams.minRecoverableUtilities}
+              onChange={handleChange}
+              style={styles.input}
+              step="100"
+            />
+          </div>
         </div>
 
         <div style={styles.formGroup}>
-          <label htmlFor="otherDealKillers" style={styles.label}>Other deal killers</label>
-          <textarea
-            id="otherDealKillers"
-            name="otherDealKillers"
-            value={dealParams.otherDealKillers}
-            onChange={handleChange}
-            style={styles.textarea}
-            placeholder="List any other automatic deal killers..."
-          />
+          <label style={styles.checkboxLabel}>
+            <input
+              type="checkbox"
+              name="autoFailExcludedMarkets"
+              checked={dealParams.autoFailExcludedMarkets}
+              onChange={handleChange}
+              style={styles.checkbox}
+            />
+            Auto-Fail Excluded Markets
+          </label>
         </div>
       </div>
 
@@ -972,14 +867,17 @@ function ParametersTab() {
 
       {saved && (
         <div style={styles.successMessage}>
-          ✓ Parameters saved successfully!
+          Parameters saved successfully!
         </div>
       )}
     </div>
   );
 }
 
+// Pipeline functionality moved to dedicated PipelinePage component
+
 function DashboardPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
   const [profile, setProfile] = useState({
     firstName: '',
@@ -988,35 +886,78 @@ function DashboardPage() {
     email: ''
   });
 
+  const tabs = [
+    { id: 'profile', label: 'Profile' },
+    { id: 'parameters', label: 'Parameters' },
+    { id: 'pipeline', label: 'Pipeline' },
+    { id: 'properties', label: 'Properties' },
+    { id: 'contacts', label: 'Contacts' }
+  ];
+
+  // Handle tab click - redirect to Pipeline page if Pipeline tab clicked
+  const handleTabClick = (tabId) => {
+    if (tabId === 'pipeline') {
+      navigate('/pipeline');
+    } else {
+      setActiveTab(tabId);
+    }
+  };
+
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h1 style={styles.title}>Dashboard</h1>
+    <div style={styles.dashboardContainer}>
+      {/* Black Sidebar */}
+      <div style={styles.sidebar}>
+        <h1 style={styles.sidebarTitle}>DealSniper</h1>
+        <nav>
+          <ul style={styles.navList}>
+            {tabs.map(tab => (
+              <li key={tab.id} style={styles.navItem}>
+                <button
+                  onClick={() => handleTabClick(tab.id)}
+                  style={{
+                    ...styles.navButton,
+                    ...(activeTab === tab.id ? styles.navButtonActive : {})
+                  }}
+                  onMouseEnter={(e) => {
+                    if (activeTab !== tab.id) {
+                      e.currentTarget.style.backgroundColor = '#2d2d2d';
+                      e.currentTarget.style.color = '#ffffff';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (activeTab !== tab.id) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = '#a0a0a0';
+                    }
+                  }}
+                >
+                  {tab.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </div>
 
-      <div style={styles.tabs}>
-        <button
-          onClick={() => setActiveTab('profile')}
-          style={{
-            ...styles.tab,
-            ...(activeTab === 'profile' ? styles.tabActive : {})
-          }}
-        >
-          Profile
-        </button>
-        <button
-          onClick={() => setActiveTab('parameters')}
-          style={{
-            ...styles.tab,
-            ...(activeTab === 'parameters' ? styles.tabActive : {})
-          }}
-        >
-          Parameters
-        </button>
+      {/* Main Content Area */}
+      <div style={styles.mainContent}>
+        <div style={styles.container}>
+          {activeTab === 'profile' && <ProfileTab profile={profile} setProfile={setProfile} />}
+          {activeTab === 'parameters' && <ParametersTab />}
+          {activeTab === 'properties' && (
+            <div style={styles.card}>
+              <h2 style={styles.title}>Properties</h2>
+              <p style={styles.subtitle}>Property management coming soon...</p>
+            </div>
+          )}
+          {activeTab === 'contacts' && (
+            <div style={styles.card}>
+              <h2 style={styles.title}>Contacts</h2>
+              <p style={styles.subtitle}>Contact management coming soon...</p>
+            </div>
+          )}
+        </div>
       </div>
-
-      {activeTab === 'profile' && <ProfileTab profile={profile} setProfile={setProfile} />}
-      {activeTab === 'parameters' && <ParametersTab />}
     </div>
   );
 }

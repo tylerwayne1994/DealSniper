@@ -108,38 +108,7 @@ const styles = {
     fontWeight: '400',
     textShadow: '0 2px 10px rgba(0,0,0,0.8)'
   },
-  features: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '24px',
-    marginBottom: '56px',
-    maxWidth: '1000px'
-  },
-  feature: {
-    padding: '32px 24px',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    backdropFilter: 'blur(20px)',
-    borderRadius: '20px',
-    border: '1px solid rgba(255,255,255,0.15)',
-    transition: 'all 0.3s',
-    textAlign: 'center'
-  },
-  featureIcon: {
-    fontSize: '40px',
-    marginBottom: '16px'
-  },
-  featureTitle: {
-    fontSize: '20px',
-    fontWeight: '800',
-    color: '#ffffff',
-    marginBottom: '12px',
-    letterSpacing: '-0.5px'
-  },
-  featureDesc: {
-    fontSize: '15px',
-    color: '#c0c0c0',
-    lineHeight: '1.5'
-  },
+
   ctaButtons: {
     display: 'flex',
     gap: '20px',
@@ -172,6 +141,21 @@ const styles = {
     backdropFilter: 'blur(10px)',
     letterSpacing: '0.5px',
     textTransform: 'uppercase'
+  },
+  researchButton: {
+    padding: '20px 48px',
+    backgroundColor: 'rgba(99, 102, 241, 0.2)',
+    color: '#ffffff',
+    border: '3px solid #6366f1',
+    borderRadius: '16px',
+    fontSize: '18px',
+    fontWeight: '800',
+    cursor: 'pointer',
+    transition: 'all 0.3s',
+    backdropFilter: 'blur(10px)',
+    letterSpacing: '0.5px',
+    textTransform: 'uppercase',
+    boxShadow: '0 8px 32px rgba(99, 102, 241, 0.3)'
   },
   footer: {
     textAlign: 'center',
@@ -232,9 +216,9 @@ function LandingPage() {
                 e.target.style.backgroundColor = 'rgba(255,255,255,0.1)';
                 e.target.style.borderColor = 'rgba(255,255,255,0.3)';
               }}
-              onClick={() => navigate('/pipeline')}
+              onClick={() => navigate('/underwrite')}
             >
-              Pipeline
+              Underwrite
             </button>
             <button 
               style={styles.navButton}
@@ -264,68 +248,6 @@ function LandingPage() {
             Upload offering memorandums, extract data with AI, and analyze multifamily & RV park investments with institutional-grade underwriting—all automated.
           </p>
 
-          <div style={styles.features}>
-            <div 
-              style={styles.feature}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.12)';
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-              }}
-            >
-              <div style={styles.featureIcon}>📄</div>
-              <h3 style={styles.featureTitle}>Smart OCR</h3>
-              <p style={styles.featureDesc}>
-                Extract property data, financials, and unit mix from PDFs using Mistral AI
-              </p>
-            </div>
-
-            <div 
-              style={styles.feature}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.12)';
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-              }}
-            >
-              <div style={styles.featureIcon}>🎯</div>
-              <h3 style={styles.featureTitle}>Auto-Fill Forms</h3>
-              <p style={styles.featureDesc}>
-                Automatically populate deal wizards with extracted data—save hours of manual entry
-              </p>
-            </div>
-
-            <div 
-              style={styles.feature}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.12)';
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-              }}
-            >
-              <div style={styles.featureIcon}>📊</div>
-              <h3 style={styles.featureTitle}>Pipeline Management</h3>
-              <p style={styles.featureDesc}>
-                Track all deals from sourcing to closing with customizable pipeline stages
-              </p>
-            </div>
-          </div>
-
           <div style={styles.ctaButtons}>
             <button 
               style={styles.primaryButton}
@@ -340,6 +262,22 @@ function LandingPage() {
               onClick={() => navigate('/upload')}
             >
               Upload Your First Deal
+            </button>
+            <button 
+              style={styles.researchButton}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = 'rgba(99, 102, 241, 0.4)';
+                e.target.style.transform = 'translateY(-4px) scale(1.05)';
+                e.target.style.boxShadow = '0 12px 40px rgba(99, 102, 241, 0.5)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'rgba(99, 102, 241, 0.2)';
+                e.target.style.transform = 'translateY(0) scale(1)';
+                e.target.style.boxShadow = '0 8px 32px rgba(99, 102, 241, 0.3)';
+              }}
+              onClick={() => navigate('/market-research')}
+            >
+              🔍 Find Perfect Market
             </button>
             <button 
               style={styles.secondaryButton}

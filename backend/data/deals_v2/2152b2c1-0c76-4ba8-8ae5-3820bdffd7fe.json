@@ -1,0 +1,114 @@
+{
+  "id": "2152b2c1-0c76-4ba8-8ae5-3820bdffd7fe",
+  "created_at": "2025-12-04T00:22:02.562124",
+  "updated_at": "2025-12-04T02:50:10.828802",
+  "original_filename": "Lamar 4 CREXU (2) (1).pdf",
+  "parser_strategy": "claude_ocr",
+  "summary_address": "1611 E Lamar Rd, Phoenix, AZ",
+  "summary_units": 4,
+  "summary_price": 2700000.0,
+  "summary_noi": 141597.0,
+  "summary_cap_rate": 5.25,
+  "parsed_json": {
+    "property": {
+      "address": "1611 E Lamar Rd",
+      "city": "Phoenix",
+      "state": "AZ",
+      "zip": "85016",
+      "units": 4,
+      "year_built": 2024,
+      "rba_sqft": 5900,
+      "land_area_acres": 0.263,
+      "property_type": "Multifamily",
+      "property_class": "",
+      "parking_spaces": 0
+    },
+    "pricing_financing": {
+      "price": 2700000,
+      "price_per_unit": 675000,
+      "price_per_sf": 457.63,
+      "loan_amount": 1620000,
+      "down_payment": 1080000,
+      "interest_rate": 0,
+      "ltv": 60,
+      "term_years": 0,
+      "amortization_years": 0
+    },
+    "pnl": {
+      "gross_potential_rent": 171600,
+      "other_income": 4800,
+      "vacancy_rate": 5.0,
+      "vacancy_amount": 8580,
+      "effective_gross_income": 167820,
+      "operating_expenses": 26223,
+      "noi": 141597,
+      "cap_rate": 5.25
+    },
+    "expenses": {
+      "taxes": 3211,
+      "insurance": 1700,
+      "utilities": 6400,
+      "repairs_maintenance": 4400,
+      "management": 6712,
+      "payroll": 0,
+      "admin": 2050,
+      "marketing": 750,
+      "other": 1000,
+      "total": 26223
+    },
+    "underwriting": {
+      "holding_period": 0,
+      "exit_cap_rate": 0
+    },
+    "unit_mix": [
+      {
+        "type": "1 Bed - 1 Bath",
+        "units": 2,
+        "unit_sf": 850,
+        "rent_current": 2400,
+        "rent_market": 0
+      },
+      {
+        "type": "3 Bed - 2 Bath",
+        "units": 2,
+        "unit_sf": 2110,
+        "rent_current": 4750,
+        "rent_market": 0
+      }
+    ]
+  },
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "I've analyzed your deal at 1611 E Lamar Rd. I can help you run scenarios, evaluate different assumptions, or discuss creative financing strategies. Try asking: \"What if I bought this for $60,000 less?\""
+    },
+    {
+      "role": "user",
+      "content": "what are the monthly utilies"
+    },
+    {
+      "role": "assistant",
+      "content": "The total annual utilities expense provided in the deal data is $6,400. To find the monthly utilities, we can divide this by 12.\n\n**Monthly Utilities Calculation:**\n\n\\[\n\\text{Monthly Utilities} = \\frac{6,400}{12} = 533.33\n\\]\n\nSo, the monthly utilities expense is approximately **$533.33**."
+    },
+    {
+      "role": "assistant",
+      "content": "I've analyzed your deal at 1611 E Lamar Rd. I can help you run scenarios, evaluate different assumptions, or discuss creative financing strategies. Try asking: \"What if I bought this for $60,000 less?\""
+    },
+    {
+      "role": "user",
+      "content": "what are the monthly utilies"
+    },
+    {
+      "role": "assistant",
+      "content": "The total annual utilities expense provided in the deal data is $6,400. To find the monthly utilities, we can divide this by 12.\n\n**Monthly Utilities Calculation:**\n\n\\[\n\\text{Monthly Utilities} = \\frac{6,400}{12} = 533.33\n\\]\n\nSo, the monthly utilities expense is approximately **$533.33**."
+    },
+    {
+      "role": "user",
+      "content": "how do you think we could lower expenses the renters arent paying ultiles are they"
+    },
+    {
+      "role": "assistant",
+      "content": "You're correct that tenants generally do not appear to be paying for utilities based on the provided data. To lower expenses, consider the following strategies:\n\n1. **Implement RUBS (Ratio Utility Billing System):**\n   - Charge tenants for utilities based on their unit size or occupancy. This incentivizes energy conservation and can significantly reduce the owner's utility costs.\n\n2. **Trim Utility Expenses:**\n   - Review utility bills for inconsistencies or overcharges. Negotiate with utility providers for better rates or explore energy-efficient upgrades that reduce overall consumption.\n\n3. **Evaluate Management Fees:**\n   - Assess the management fee structure. If it exceeds market averages (usually around 5-10% of gross income), consider renegotiating or switching management companies.\n\n4. **Reduce Maintenance Costs:**\n   - Regularly schedule preventative maintenance to avoid larger repair costs later. Also, consider using in-house staff for maintenance rather than outsourcing.\n\n5. **Optimize Administrative Expenses:**\n   - Review administrative costs for any unnecessary expenditures. Look for subscriptions or services that can be eliminated or consolidated.\n\n6. **Insurance Review:**\n   - Shop around for insurance to ensure you’re getting the best rate. Consider bundling policies or increasing deductibles to lower premiums.\n\n7. **Review Contract Services:**\n   - Evaluate contracts for services like pest control, landscaping, or cleaning. These might be renegotiated for better pricing or frequency based on actual needs.\n\n8. **Monitor Repairs and Maintenance:**\n   - Normalize repair expenses to market levels. If you're over-spending on repairs, it may indicate either mismanagement or unnecessary maintenance.\n\nBy implementing these strategies, you could potentially lower operating expenses, thus increasing your NOI and overall property profitability."
+    }
+  ]
+}

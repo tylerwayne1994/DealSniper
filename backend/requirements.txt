@@ -10,3 +10,8 @@ pydantic
 mistralai
 anthropic
 python-multipart
+openai
+PyMuPDF
+httpx
+numpy-financial
+openpyxl

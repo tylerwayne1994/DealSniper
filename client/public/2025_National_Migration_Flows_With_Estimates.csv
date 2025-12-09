@@ -1,0 +1,51 @@
+Origin,Destination,Level,Source,Estimated Movers
+"Los Angeles, CA","Phoenix, AZ",City-to-City,U-Haul / Redfin,35000
+"Los Angeles, CA","Dallas, TX",City-to-City,U-Haul,32000
+"San Francisco, CA","Austin, TX",City-to-City,PODS,28000
+"San Francisco, CA","Seattle, WA",City-to-City,U-Haul,26000
+"New York, NY","Miami, FL",City-to-City,Redfin,40000
+"New York, NY","Charlotte, NC",City-to-City,moveBuddha,30000
+"Chicago, IL","Nashville, TN",City-to-City,PODS,27000
+"Seattle, WA","Las Vegas, NV",City-to-City,moveBuddha,22000
+"Boston, MA","Raleigh, NC",City-to-City,Redfin,21000
+"Philadelphia, PA","Atlanta, GA",City-to-City,moveBuddha,20000
+"Detroit, MI","Charlotte, NC",City-to-City,U-Haul,18000
+"Denver, CO","Dallas, TX",City-to-City,U-Haul,17000
+"Minneapolis, MN","Tampa, FL",City-to-City,moveBuddha,16000
+"Portland, OR","Boise, ID",City-to-City,PODS,15000
+"Baltimore, MD","Greenville, SC",City-to-City,moveBuddha,14500
+"San Diego, CA","Las Vegas, NV",City-to-City,PODS,14000
+"Austin, TX","Oklahoma City, OK",City-to-City,U-Haul,13000
+"Miami, FL","Orlando, FL",City-to-City,Redfin,12500
+"Newark, NJ","Charlotte, NC",City-to-City,moveBuddha,12000
+"Sacramento, CA","Reno, NV",City-to-City,U-Haul,11000
+Unknown,"Conway, SC",City-to-City,moveBuddha,10500
+Unknown,"Wake Forest, NC",City-to-City,moveBuddha,9500
+Unknown,"Caldwell, ID",City-to-City,moveBuddha,9200
+Unknown,"Johnson City, TN",City-to-City,moveBuddha,9000
+Unknown,"Eagle, ID",City-to-City,moveBuddha,8700
+Unknown,"Greenville, SC",City-to-City,PODS,8500
+Unknown,"Little River, SC",City-to-City,moveBuddha,8300
+Unknown,"Huntsville, AL",City-to-City,PODS,8100
+Unknown,"Ocala, FL",City-to-City,PODS,8000
+Unknown,"Raleigh, NC",City-to-City,PODS,7800
+California,Texas,State-to-State,U-Haul Growth Index,120000
+California,Florida,State-to-State,U-Haul,100000
+New York,Florida,State-to-State,Redfin / IRS,95000
+New York,North Carolina,State-to-State,U-Haul / PODS,87000
+Illinois,Tennessee,State-to-State,moveBuddha,85000
+Illinois,Indiana,State-to-State,IRS / U-Haul,83000
+New Jersey,North Carolina,State-to-State,moveBuddha,80000
+Massachusetts,South Carolina,State-to-State,moveBuddha,75000
+Washington,Arizona,State-to-State,U-Haul,73000
+Colorado,Texas,State-to-State,U-Haul,71000
+Michigan,Florida,State-to-State,PODS,69000
+Pennsylvania,Florida,State-to-State,PODS,67000
+Oregon,Idaho,State-to-State,U-Haul,65000
+Virginia,Florida,State-to-State,PODS,62000
+California,Nevada,State-to-State,Redfin,60000
+California,Idaho,State-to-State,U-Haul,58000
+Nevada,Utah,State-to-State,U-Haul,57000
+Georgia,Tennessee,State-to-State,moveBuddha,55000
+Florida,North Carolina,State-to-State,Redfin,53000
+New York,Georgia,State-to-State,Redfin,51000

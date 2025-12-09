@@ -1,0 +1,94 @@
+{
+  "id": "e52b32ec-729b-4643-a9b3-938d2e664d9f",
+  "created_at": "2025-12-08T00:15:01.275495",
+  "updated_at": "2025-12-08T00:16:11.135756",
+  "original_filename": "Lamar 4 CREXU (2) (1).pdf",
+  "parser_strategy": "claude_ocr",
+  "summary_address": "1611 E LAMAR RD, Phoenix, AZ",
+  "summary_units": 4,
+  "summary_price": 2700000.0,
+  "summary_noi": 141597.0,
+  "summary_cap_rate": 5.25,
+  "parsed_json": {
+    "property": {
+      "address": "1611 E LAMAR RD",
+      "city": "Phoenix",
+      "state": "AZ",
+      "zip": "85016",
+      "units": 4,
+      "year_built": 2024,
+      "rba_sqft": 5900,
+      "land_area_acres": 0,
+      "property_type": "Multifamily",
+      "property_class": "",
+      "parking_spaces": 0
+    },
+    "pricing_financing": {
+      "price": 2700000,
+      "price_per_unit": 675000,
+      "price_per_sf": 457.63,
+      "loan_amount": 0,
+      "down_payment": 1080000,
+      "interest_rate": 0,
+      "ltv": 0,
+      "term_years": 0,
+      "amortization_years": 0
+    },
+    "pnl": {
+      "gross_potential_rent": 171600,
+      "other_income": 4800,
+      "vacancy_rate": 5.0,
+      "vacancy_amount": 8580,
+      "effective_gross_income": 167820,
+      "operating_expenses": 26223,
+      "noi": 141597,
+      "cap_rate": 5.25
+    },
+    "expenses": {
+      "taxes": 3211,
+      "insurance": 1700,
+      "utilities": 6400,
+      "repairs_maintenance": 4400,
+      "management": 6712,
+      "payroll": 0,
+      "admin": 2050,
+      "marketing": 750,
+      "other": 1000,
+      "total": 26223
+    },
+    "underwriting": {
+      "holding_period": 0,
+      "exit_cap_rate": 0
+    },
+    "unit_mix": [
+      {
+        "type": "1 Bed - 1 Bath",
+        "units": 2,
+        "unit_sf": 850,
+        "rent_current": 2400,
+        "rent_market": 0
+      },
+      {
+        "type": "3 Bed - 2 Bath",
+        "units": 2,
+        "unit_sf": 2110,
+        "rent_current": 4750,
+        "rent_market": 0
+      }
+    ]
+  },
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "I've analyzed your deal at 1611 E LAMAR RD. I can help you run scenarios, evaluate different assumptions, or discuss creative financing strategies. Try asking: \"What if I bought this for $60,000 less?\""
+    },
+    {
+      "role": "user",
+      "content": "will this cashflow day one ?"
+    },
+    {
+      "role": "assistant",
+      "content": "Let's analyze the day-one cash flow for the deal at 1611 E LAMAR RD.\n\n### 1. Deal Snapshot\n- **Property Address**: 1611 E LAMAR RD, Phoenix, AZ\n- **Units**: 4\n- **Price**: $2,700,000\n- **NOI**: $141,597\n- **Cap Rate**: 5.25%\n- **Down Payment**: $1,080,000 (40% of purchase price)\n\n### 2. Day-One Cashflow + DSCR\n- **Effective Gross Income (EGI)**: $167,820\n- **Operating Expenses**: $26,223\n- **Net Operating Income (NOI)**: $141,597\n\n**Cashflow Calculation**:\n- **Debt Service**: This number is not provided in the deal data, but we need it to calculate cash flow. Let's assume a hypothetical loan amount of $1,620,000 (which is the remaining purchase price after the down payment) with a common interest rate of 4% over 30 years for calculation purposes.\n\nUsing a mortgage calculator:\n- Monthly Payment = $7,747.50 (approx.)\n- Annual Debt Service = $7,747.50 * 12 = $92,970\n\n**Day-One Cash Flow Calculation**:\n- **Cash Flow** = NOI - Debt Service\n- **Cash Flow** = $141,597 - $92,970 = $48,627\n\n**DSCR Calculation**:\n- **DSCR** = NOI / Debt Service\n- **DSCR** = $141,597 / $92,970 = 1.52\n\n### Conclusion\n- **Day-One Cash Flow**: $48,627\n- **DSCR**: 1.52\n\n### Verdict\nYes, this property will cash flow day one based on the assumed debt service calculations."
+    }
+  ]
+}

@@ -3,12 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@supabase/supabase-js": "^2.86.2",
+    "html2canvas": "^1.4.1",
     "http-proxy-middleware": "^3.0.5",
+    "jspdf": "^3.0.4",
     "lucide-react": "^0.555.0",
     "papaparse": "^5.5.3",
     "pdfjs-dist": "^3.11.174",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^6.20.0",
     "react-scripts": "5.0.1",
     "recharts": "^3.5.0"

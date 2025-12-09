@@ -1,0 +1,672 @@
+// V2 Underwriter - DealSniper Automatic Underwriter
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Upload, Home, Send, Loader, AlertCircle, CheckCircle, DollarSign, Building, TrendingUp } from 'lucide-react';
+
+const API_BASE = "http://localhost:8010";
+
+const styles = {
+  page: {
+    minHeight: '100vh',
+    background: 'linear-gradient(to bottom, #f8fafc, #ffffff)',
+    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    padding: '40px 20px'
+  },
+  container: {
+    maxWidth: 1200,
+    margin: '0 auto'
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 40
+  },
+  title: {
+    fontSize: '2.5rem',
+    fontWeight: 900,
+    color: '#111827',
+    letterSpacing: '-0.03em'
+  },
+  homeButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '10px 18px',
+    background: '#ffffff',
+    color: '#374151',
+    border: '1px solid #e5e7eb',
+    borderRadius: 10,
+    fontSize: 14,
+    fontWeight: 700,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+  },
+  card: {
+    background: '#fff',
+    border: '1px solid #e5e7eb',
+    boxShadow: '0 4px 6px rgba(0,0,0,.04)',
+    borderRadius: 16,
+    padding: 32,
+    marginBottom: 24
+  },
+  uploadZone: {
+    border: '2px dashed #d1d5db',
+    borderRadius: 16,
+    padding: 60,
+    textAlign: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    background: '#f9fafb'
+  },
+  uploadZoneActive: {
+    borderColor: '#3b82f6',
+    background: '#eff6ff'
+  },
+  uploadIcon: {
+    width: 64,
+    height: 64,
+    color: '#9ca3af',
+    margin: '0 auto 16px'
+  },
+  uploadText: {
+    fontSize: 18,
+    fontWeight: 600,
+    color: '#374151',
+    marginBottom: 8
+  },
+  uploadSubtext: {
+    fontSize: 14,
+    color: '#6b7280'
+  },
+  button: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '12px 24px',
+    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 10,
+    fontSize: 15,
+    fontWeight: 700,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 4px 6px rgba(37, 99, 235, 0.3)'
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+    cursor: 'not-allowed'
+  },
+  summaryGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+    gap: 20,
+    marginBottom: 32
+  },
+  summaryCard: {
+    background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+    border: '1px solid #bae6fd',
+    borderRadius: 12,
+    padding: 20
+  },
+  summaryLabel: {
+    fontSize: 13,
+    fontWeight: 600,
+    color: '#0369a1',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    marginBottom: 8
+  },
+  summaryValue: {
+    fontSize: 24,
+    fontWeight: 900,
+    color: '#0c4a6e'
+  },
+  chatContainer: {
+    background: '#fff',
+    border: '1px solid #e5e7eb',
+    borderRadius: 16,
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    height: 600
+  },
+  chatHeader: {
+    padding: 20,
+    borderBottom: '1px solid #e5e7eb',
+    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+    color: '#fff'
+  },
+  chatTitle: {
+    fontSize: 18,
+    fontWeight: 700,
+    margin: 0
+  },
+  chatMessages: {
+    flex: 1,
+    overflowY: 'auto',
+    padding: 20,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 16
+  },
+  message: {
+    maxWidth: '75%',
+    padding: '12px 16px',
+    borderRadius: 12,
+    fontSize: 15,
+    lineHeight: 1.5
+  },
+  userMessage: {
+    alignSelf: 'flex-end',
+    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+    color: '#fff',
+    borderBottomRightRadius: 4
+  },
+  assistantMessage: {
+    alignSelf: 'flex-start',
+    background: '#f3f4f6',
+    color: '#111827',
+    borderBottomLeftRadius: 4
+  },
+  chatInputContainer: {
+    padding: 20,
+    borderTop: '1px solid #e5e7eb',
+    background: '#f9fafb',
+    display: 'flex',
+    gap: 12
+  },
+  chatInput: {
+    flex: 1,
+    padding: '12px 16px',
+    border: '1px solid #d1d5db',
+    borderRadius: 10,
+    fontSize: 15,
+    outline: 'none',
+    transition: 'border-color 0.2s'
+  },
+  sendButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '12px 20px',
+    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 10,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    minWidth: 100
+  },
+  spinner: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 12,
+    fontSize: 16,
+    color: '#6b7280',
+    padding: 20
+  },
+  error: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    padding: 16,
+    background: '#fef2f2',
+    border: '1px solid #fecaca',
+    borderRadius: 12,
+    color: '#991b1b',
+    fontSize: 14,
+    fontWeight: 600
+  },
+  success: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    padding: 16,
+    background: '#f0fdf4',
+    border: '1px solid #bbf7d0',
+    borderRadius: 12,
+    color: '#166534',
+    fontSize: 14,
+    fontWeight: 600
+  }
+};
+
+function UnderwriteV2Page() {
+  const navigate = useNavigate();
+  const fileInputRef = useRef(null);
+  const chatMessagesRef = useRef(null);
+
+  // State
+  const [file, setFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+  
+  const [dealId, setDealId] = useState(null);
+  const [parsedData, setParsedData] = useState(null);
+  
+  const [messages, setMessages] = useState([]);
+  const [inputValue, setInputValue] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [chatError, setChatError] = useState(null);
+
+  // Auto-scroll chat to bottom
+  useEffect(() => {
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  // Handle file selection
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setUploadError(null);
+    }
+  };
+
+  // Handle file upload
+  const handleUpload = async () => {
+    if (!file) return;
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`${API_BASE}/v2/deals/parse`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Upload failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // DEBUG: Log complete API response to browser console
+      console.log('='.repeat(80));
+      console.log('V2 PARSE API RESPONSE:');
+      console.log('='.repeat(80));
+      console.log('Deal ID:', data.deal_id);
+      console.log('Complete Parsed JSON:', JSON.stringify(data.parsed, null, 2));
+      console.log('Summary:', data.summary);
+      console.log('='.repeat(80));
+      
+      setDealId(data.deal_id);
+      setParsedData(data.parsed);
+      
+      // Add initial assistant greeting
+      setMessages([{
+        role: 'assistant',
+        content: `I've analyzed your deal. I can help you evaluate this property, run scenarios, or discuss creative financing strategies. What would you like to know?`
+      }]);
+
+    } catch (err) {
+      console.error('Upload error:', err);
+      setUploadError(err.message || 'Failed to upload and parse document');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Handle send chat message
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || isSending || !dealId) return;
+
+    const userMessage = inputValue.trim();
+    setInputValue('');
+    setChatError(null);
+
+    // Add user message to UI
+    const newMessages = [...messages, { role: 'user', content: userMessage }];
+    setMessages(newMessages);
+    setIsSending(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/v2/deals/${dealId}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          messages: newMessages,
+          llm: 'openai',
+          model: 'gpt-4o-mini'
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Chat failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // DEBUG: Log chat response to browser console
+      console.log('[V2 Chat Response]', data);
+      
+      // Add assistant response to UI
+      setMessages([...newMessages, data.assistant_message]);
+
+    } catch (err) {
+      console.error('Chat error:', err);
+      setChatError(err.message || 'Failed to send message');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // Handle Enter key in chat input
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  // Extract summary data from parsed JSON
+  const getSummary = () => {
+    if (!parsedData) return null;
+
+    const property = parsedData.property || {};
+    const pricing = parsedData.pricing_financing || {};
+    const pnl = parsedData.pnl || {};
+    const underwriting = parsedData.underwriting || {};
+
+    // Build full address with city, state
+    let fullAddress = property.address || 'N/A';
+    if (property.city && property.state) {
+      fullAddress = `${property.address}, ${property.city}, ${property.state}`;
+    }
+
+    return {
+      address: fullAddress,
+      units: property.units || 'N/A',
+      price: pricing.price || 0,
+      noi: pnl.noi || 0,
+      capRate: pnl.cap_rate || underwriting.cap_rate || 0,
+      dscr: underwriting.dscr || 0
+    };
+  };
+
+  const summary = getSummary();
+
+  return (
+    <div style={styles.page}>
+      <div style={styles.container}>
+        {/* Header */}
+        <div style={styles.header}>
+          <h1 style={styles.title}>🎯 V2 Automatic Underwriter</h1>
+          <button 
+            style={styles.homeButton}
+            onClick={() => navigate('/')}
+            onMouseEnter={(e) => {
+              e.target.style.background = '#f3f4f6';
+              e.target.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = '#ffffff';
+              e.target.style.transform = 'translateY(0)';
+            }}
+          >
+            <Home size={18} />
+            Home
+          </button>
+        </div>
+
+        {/* Step 1: Upload Section */}
+        {!dealId && (
+          <div style={styles.card}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: 24, color: '#111827' }}>
+              Step 1: Upload Offering Memorandum
+            </h2>
+            
+            <div
+              style={{
+                ...styles.uploadZone,
+                ...(file ? styles.uploadZoneActive : {})
+              }}
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const droppedFile = e.dataTransfer.files[0];
+                if (droppedFile?.type === 'application/pdf') {
+                  setFile(droppedFile);
+                  setUploadError(null);
+                }
+              }}
+            >
+              <Upload style={styles.uploadIcon} />
+              <div style={styles.uploadText}>
+                {file ? file.name : 'Drop PDF here or click to browse'}
+              </div>
+              <div style={styles.uploadSubtext}>
+                PDF files only • Maximum 50MB
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/pdf"
+                style={{ display: 'none' }}
+                onChange={handleFileChange}
+              />
+            </div>
+
+            {file && (
+              <div style={{ marginTop: 24, textAlign: 'center' }}>
+                <button
+                  style={{
+                    ...styles.button,
+                    ...(isUploading ? styles.buttonDisabled : {})
+                  }}
+                  onClick={handleUpload}
+                  disabled={isUploading}
+                  onMouseEnter={(e) => {
+                    if (!isUploading) {
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 6px 12px rgba(37, 99, 235, 0.4)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isUploading) {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 4px 6px rgba(37, 99, 235, 0.3)';
+                    }
+                  }}
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader size={18} className="spin" />
+                      Parsing with Claude...
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={18} />
+                      Parse & Underwrite
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {uploadError && (
+              <div style={{ ...styles.error, marginTop: 24 }}>
+                <AlertCircle size={20} />
+                {uploadError}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 2: Summary Display */}
+        {dealId && summary && (
+          <>
+            <div style={styles.card}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+                <CheckCircle size={28} color="#10b981" />
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: '#111827' }}>
+                  Deal Summary
+                </h2>
+              </div>
+
+              <div style={styles.summaryGrid}>
+                <div style={styles.summaryCard}>
+                  <div style={styles.summaryLabel}>
+                    <Building size={14} style={{ display: 'inline', marginRight: 6 }} />
+                    Property
+                  </div>
+                  <div style={styles.summaryValue}>{summary.address}</div>
+                  <div style={{ fontSize: 14, color: '#0369a1', marginTop: 4 }}>
+                    {summary.units} {typeof summary.units === 'number' && summary.units !== 1 ? 'Units' : 'Unit'}
+                  </div>
+                </div>
+
+                <div style={styles.summaryCard}>
+                  <div style={styles.summaryLabel}>
+                    <DollarSign size={14} style={{ display: 'inline', marginRight: 6 }} />
+                    Purchase Price
+                  </div>
+                  <div style={styles.summaryValue}>
+                    ${typeof summary.price === 'number' ? summary.price.toLocaleString() : summary.price}
+                  </div>
+                </div>
+
+                <div style={styles.summaryCard}>
+                  <div style={styles.summaryLabel}>
+                    <TrendingUp size={14} style={{ display: 'inline', marginRight: 6 }} />
+                    NOI
+                  </div>
+                  <div style={styles.summaryValue}>
+                    ${typeof summary.noi === 'number' ? summary.noi.toLocaleString() : summary.noi}
+                  </div>
+                </div>
+
+                <div style={styles.summaryCard}>
+                  <div style={styles.summaryLabel}>Cap Rate</div>
+                  <div style={styles.summaryValue}>
+                    {typeof summary.capRate === 'number' ? (summary.capRate * 100).toFixed(2) : summary.capRate}%
+                  </div>
+                </div>
+
+                <div style={styles.summaryCard}>
+                  <div style={styles.summaryLabel}>DSCR</div>
+                  <div style={styles.summaryValue}>
+                    {typeof summary.dscr === 'number' ? summary.dscr.toFixed(2) : summary.dscr}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 3: Chat Interface */}
+            <div style={styles.card}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: 24, color: '#111827' }}>
+                Chat with Your Deal
+              </h2>
+
+              <div style={styles.chatContainer}>
+                <div style={styles.chatHeader}>
+                  <h3 style={styles.chatTitle}>💬 Ask me anything about this deal</h3>
+                </div>
+
+                <div style={styles.chatMessages} ref={chatMessagesRef}>
+                  {messages.map((msg, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        ...styles.message,
+                        ...(msg.role === 'user' ? styles.userMessage : styles.assistantMessage)
+                      }}
+                    >
+                      {msg.content}
+                    </div>
+                  ))}
+                  
+                  {isSending && (
+                    <div style={styles.spinner}>
+                      <Loader size={18} className="spin" />
+                      Thinking...
+                    </div>
+                  )}
+                </div>
+
+                <div style={styles.chatInputContainer}>
+                  <input
+                    type="text"
+                    placeholder="Ask about cap rate, creative financing, buy box fit..."
+                    style={styles.chatInput}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    disabled={isSending}
+                    onFocus={(e) => e.target.style.borderColor = '#2563eb'}
+                    onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                  />
+                  <button
+                    style={{
+                      ...styles.sendButton,
+                      ...((!inputValue.trim() || isSending) ? { opacity: 0.5, cursor: 'not-allowed' } : {})
+                    }}
+                    onClick={handleSendMessage}
+                    disabled={!inputValue.trim() || isSending}
+                    onMouseEnter={(e) => {
+                      if (inputValue.trim() && !isSending) {
+                        e.target.style.transform = 'translateY(-2px)';
+                        e.target.style.boxShadow = '0 6px 12px rgba(37, 99, 235, 0.4)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (inputValue.trim() && !isSending) {
+                        e.target.style.transform = 'translateY(0)';
+                        e.target.style.boxShadow = '0 4px 6px rgba(37, 99, 235, 0.3)';
+                      }
+                    }}
+                  >
+                    {isSending ? (
+                      <>
+                        <Loader size={18} className="spin" />
+                      </>
+                    ) : (
+                      <>
+                        <Send size={18} />
+                        Send
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {chatError && (
+                  <div style={{ ...styles.error, margin: '0 20px 20px' }}>
+                    <AlertCircle size={20} />
+                    {chatError}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Add spinning animation CSS */}
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .spin {
+          animation: spin 1s linear infinite;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+export default UnderwriteV2Page;

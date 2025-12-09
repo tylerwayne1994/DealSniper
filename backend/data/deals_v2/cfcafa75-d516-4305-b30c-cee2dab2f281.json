@@ -1,0 +1,87 @@
+{
+  "id": "cfcafa75-d516-4305-b30c-cee2dab2f281",
+  "created_at": "2025-12-07T01:50:57.586771",
+  "updated_at": "2025-12-07T01:57:26.389593",
+  "original_filename": "1635-1645_E_Mound_St_OM_Clean.pdf",
+  "parser_strategy": "claude_ocr",
+  "summary_address": "1635-1645 E Mound Street, Columbus, OH",
+  "summary_units": 16,
+  "summary_price": 1500000.0,
+  "summary_noi": 132641.0,
+  "summary_cap_rate": 8.84,
+  "parsed_json": {
+    "property": {
+      "address": "1635-1645 E Mound Street",
+      "city": "Columbus",
+      "state": "OH",
+      "zip": "43205",
+      "units": 16,
+      "year_built": 1952,
+      "rba_sqft": 12288,
+      "land_area_acres": 0.57,
+      "property_type": "Multifamily",
+      "property_class": "",
+      "parking_spaces": 14
+    },
+    "pricing_financing": {
+      "price": 1500000,
+      "price_per_unit": 93750,
+      "price_per_sf": 122.07,
+      "loan_amount": 0,
+      "down_payment": 0,
+      "interest_rate": 0,
+      "ltv": 0,
+      "term_years": 0,
+      "amortization_years": 0
+    },
+    "pnl": {
+      "gross_potential_rent": 168360,
+      "other_income": 0,
+      "vacancy_rate": 0,
+      "vacancy_amount": 0,
+      "effective_gross_income": 0,
+      "operating_expenses": 35800,
+      "noi": 132641,
+      "cap_rate": 8.84
+    },
+    "expenses": {
+      "taxes": 17180,
+      "insurance": 0,
+      "utilities": 0,
+      "repairs_maintenance": 0,
+      "management": 0,
+      "payroll": 0,
+      "admin": 0,
+      "marketing": 0,
+      "other": 0,
+      "total": 0
+    },
+    "underwriting": {
+      "holding_period": 0,
+      "exit_cap_rate": 0
+    },
+    "unit_mix": [
+      {
+        "type": "1 bedroom / 1 bath",
+        "units": 16,
+        "unit_sf": 696,
+        "rent_current": 827,
+        "rent_market": 0
+      }
+    ]
+  },
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "I've analyzed your deal at 1635-1645 E Mound Street. I can help you run scenarios, evaluate different assumptions, or discuss creative financing strategies. Try asking: \"What if I bought this for $60,000 less?\""
+    },
+    {
+      "role": "user",
+      "content": "Analyze this deal and provide specific value-add recommendations. Current rent: $13232/unit, Market rent: $15200/unit. Total expenses: $17,180. What creative strategies can we use to increase NOI and property value?"
+    },
+    {
+      "role": "assistant",
+      "content": "### 1. Deal Snapshot\n- **Property:** 1635-1645 E Mound Street\n- **Units:** 16\n- **Current Rent:** $13,232/unit\n- **Market Rent:** $15,200/unit\n- **Total Expenses:** $17,180\n- **Current NOI:** $132,641\n\n### 2. Current Financials\n- **Gross Potential Rent:** $168,360 (16 units x $13,232)\n- **Current NOI:** $132,641\n- **Effective Gross Income:** Needs to be calculated based on the market rent.\n\n### 3. Value-Add Opportunities\nTo increase NOI and property value, consider the following strategies:\n\n#### A. Rent Optimization\n- **Increase Rent to Market:** \n  - Current Rent: $13,232/unit\n  - Market Rent: $15,200/unit\n  - Potential Increase: $1,968/unit\n  - Total Potential Rent Increase: $1,968 x 16 = $31,488\n  - **New Gross Potential Rent:** $168,360 (current) + $31,488 (increase) = $199,848\n  - **New NOI (assuming expenses remain the same):** $199,848 - $35,800 (current expenses) = $164,048.\n\n#### B. Utility Bill-Back (RUBS)\n- Implement Ratio Utility Billing System (RUBS) to charge tenants for utilities based on usage:\n  - Estimate a conservative additional income of $50/month/unit.\n  - Potential Additional Income: $50 x 16 x 12 = $9,600/year.\n  - **New NOI:** $164,048 + $9,600 = $173,648.\n\n#### C. Other Income Opportunities\n- **Laundry Facilities:** If space allows, adding laundry machines can generate additional income. \n  - Estimate $1,000/month from laundry = $12,000/year.\n  - **New NOI:** $173,648 + $12,000 = $185,648.\n\n- **Storage Units:** If applicable, offering storage space for an additional income.\n  - Estimate $500/month from storage = $6,000/year.\n  - **New NOI:** $185,648 + $6,000 = $191,648.\n\n#### D. Expense Optimization\n- **Review Expenses:** Analyze each expense category to identify areas to cut back. For example:\n  - **Repairs & Maintenance:** Normalize to market rates. If currently over budget, aim to reduce by 10-15%.\n  - **Management Fees:** If you are self-managing or can negotiate better rates, aim to save 5-10% here.\n  - **Example:** Reducing expenses from $35,800 to $32,000 could add $3,800 to your NOI.\n  - **New NOI:** $191,648 - $3,800 = $187,848.\n\n### 4. Summary of Potential NOI Increase\n- **Total Potential NOI Increase:**\n  - From Rent Optimization: $164,048\n  - From Utility Bill-Back: $173,648\n  - From Laundry Income: $185,648\n  - From Storage Income: $191,648\n  - From Expense Reduction: $187,848\n\n### 5. New Valuation Calculation\nUsing a conservative cap rate of 8.84%:\n- **New Value = New NOI / Cap Rate:**\n  - $187,848 / 0.0884 = $2,123,436.\n\n### Creative Strategies to Increase NOI:\n1. **Implement Rent Increases:** Gradually increase rents to market levels.\n2. **Introduce RUBS:** Charge tenants for utilities based on usage.\n3. **Add Laundry Facilities:** Create additional income streams.\n4. **Optimize Operational Costs:** Reduce unnecessary expenses to improve NOI.\n5. **Explore Storage Options:** Generate income by offering storage to tenants.\n\nBy executing these strategies, you can significantly increase the property's NOI and overall value, making it a more attractive investment."
+    }
+  ]
+}
