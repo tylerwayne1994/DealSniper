@@ -1,649 +1,687 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  Building2, 
+  DollarSign, 
+  TrendingUp, 
+  Phone, 
+  Mail, 
+  User, 
+  Eye, 
+  FileText, 
+  Trash2,
+  Layers,
+  ArrowLeft,
+  RefreshCw,
+  Search
+} from 'lucide-react';
+import { loadPipelineDeals as loadDealsFromSupabase, deleteDeal } from '../lib/dealsService';
 
-// State management
-let currentView = "pipeline";
-let selectedDeal = null;
+// ============================================================================
+// Helper Functions
+// ============================================================================
 
-// Sample pipeline deals data
-const pipelineDeals = [
-  {
-    deal_id: 1,
-    property: "82 West Apartments",
-    location: "Kansas City, MO",
-    units_or_pads: "78 units",
-    purchase_price: 6000000,
-    day1_cf_per_month: 4500,
-    stabilized_cf_per_month: 12000,
-    refi_value: 7800000,
-    cash_out_at_refi: 1200000,
-    post_refi_cf_per_month: 8500,
-    structure_type: "SELLER_CARRY_SECOND",
-    structure_label: "75% bank + 25% seller carry",
-    status: "OFFER_SENT",
-    priority: "A",
-    next_action: "Follow up on offer response",
-    next_action_due: "2025-11-28",
-    last_touch: "2025-11-22",
-    agent_name: "Sarah Johnson",
-    agent_phone: "(816) 555-0123",
-    agent_email: "sjohnson@realty.com"
-  },
-  {
-    deal_id: 2,
-    property: "Sunset RV Resort",
-    location: "Phoenix, AZ",
-    units_or_pads: "120 pads",
-    purchase_price: 8500000,
-    day1_cf_per_month: 8200,
-    stabilized_cf_per_month: 18000,
-    refi_value: 11000000,
-    cash_out_at_refi: 2100000,
-    post_refi_cf_per_month: 14500,
-    structure_type: "HYBRID_SUB2_SELLER",
-    structure_label: "Sub2 + seller second",
-    status: "UNDER_CONTRACT",
-    priority: "A",
-    next_action: "Send docs to title company",
-    next_action_due: "2025-11-25",
-    last_touch: "2025-11-23",
-    agent_name: "Mike Peterson",
-    agent_phone: "(602) 555-0456",
-    agent_email: "mpeterson@coldwell.com"
-  },
-  {
-    deal_id: 3,
-    property: "Green Valley Mobile Home Park",
-    location: "Austin, TX",
-    units_or_pads: "60 pads + house",
-    purchase_price: 3200000,
-    day1_cf_per_month: 3800,
-    stabilized_cf_per_month: 9500,
-    refi_value: 4500000,
-    cash_out_at_refi: 850000,
-    post_refi_cf_per_month: 7200,
-    structure_type: "EQUITY_5_25_SPLIT",
-    structure_label: "5% in / 25% equity partner",
-    status: "AGENT_CONTACTED",
-    priority: "B",
-    next_action: "Call agent for T-12",
-    next_action_due: "2025-11-26",
-    last_touch: "2025-11-20",
-    agent_name: "Linda Martinez",
-    agent_phone: "(512) 555-0789",
-    agent_email: "lmartinez@kw.com"
-  },
-  {
-    deal_id: 4,
-    property: "Riverside Apartments",
-    location: "Tampa, FL",
-    units_or_pads: "45 units",
-    purchase_price: 4100000,
-    day1_cf_per_month: 2900,
-    stabilized_cf_per_month: 8200,
-    refi_value: 5200000,
-    cash_out_at_refi: 750000,
-    post_refi_cf_per_month: 6100,
-    structure_type: "BANK_DEBT_ONLY",
-    structure_label: "Traditional bank financing",
-    status: "BANK_ENGAGED",
-    priority: "A",
-    next_action: "Prepare offer",
-    next_action_due: "2025-11-27",
-    last_touch: "2025-11-21",
-    agent_name: "Robert Chen",
-    agent_phone: "(813) 555-0321",
-    agent_email: "rchen@remax.com"
-  },
-  {
-    deal_id: 5,
-    property: "Highland Park Estates",
-    location: "Dallas, TX",
-    units_or_pads: "92 units",
-    purchase_price: 7200000,
-    day1_cf_per_month: -1200,
-    stabilized_cf_per_month: 15000,
-    refi_value: 9500000,
-    cash_out_at_refi: 1800000,
-    post_refi_cf_per_month: 11000,
-    structure_type: "SELLER_FINANCE",
-    structure_label: "100% seller financing",
-    status: "DEAD",
-    priority: "C",
-    next_action: "Archive deal",
-    next_action_due: "2025-12-01",
-    last_touch: "2025-11-15",
-    agent_name: "Jennifer White",
-    agent_phone: "(214) 555-0654",
-    agent_email: "jwhite@century21.com"
-  },
-  {
-    deal_id: 6,
-    property: "Oak Creek Community",
-    location: "Charlotte, NC",
-    units_or_pads: "55 units",
-    purchase_price: 4800000,
-    day1_cf_per_month: 5200,
-    stabilized_cf_per_month: 11500,
-    refi_value: 6200000,
-    cash_out_at_refi: 980000,
-    post_refi_cf_per_month: 8900,
-    structure_type: "JV_EQUITY",
-    structure_label: "50/50 JV partnership",
-    status: "NEW",
-    priority: "B",
-    next_action: "Initial property tour",
-    next_action_due: "2025-11-29",
-    last_touch: "2025-11-24",
-    agent_name: "David Thompson",
-    agent_phone: "(704) 555-0987",
-    agent_email: "dthompson@era.com"
+const fmtCompact = (val) => {
+  if (val === null || val === undefined || isNaN(val)) return '-';
+  const num = Number(val);
+  if (num >= 1000000) {
+    return '$' + (num / 1000000).toFixed(2) + 'M';
+  } else if (num >= 1000) {
+    return '$' + (num / 1000).toFixed(0) + 'K';
   }
-];
+  return '$' + num.toLocaleString();
+};
 
-function getLightColor(status) {
-  const activeStatuses = ["NEW", "AGENT_CONTACTED", "OFFER_READY", "OFFER_SENT", "BANK_ENGAGED"];
-  const successStatuses = ["UNDER_CONTRACT", "CLOSED"];
-  
-  if (activeStatuses.includes(status)) {
-    return "#FFD700"; // Yellow/Gold
-  } else if (successStatuses.includes(status)) {
-    return "#4CAF50"; // Green
-  } else {
-    return "#9E9E9E"; // Gray
-  }
-}
+// ============================================================================
+// Table Styles
+// ============================================================================
 
-function formatCurrency(value) {
-  if (value == null) return '-';
-  return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-}
+const thStyle = {
+  padding: '14px 12px',
+  fontSize: '11px',
+  fontWeight: '700',
+  color: '#f0fdfa',
+  textAlign: 'left',
+  textTransform: 'uppercase',
+  letterSpacing: '0.5px',
+  whiteSpace: 'nowrap'
+};
 
-function formatStatusLabel(status) {
-  return status.replace(/_/g, ' ');
-}
+const tdStyle = {
+  padding: '14px 12px',
+  fontSize: '13px',
+  color: '#374151',
+  verticalAlign: 'middle'
+};
+
+// ============================================================================
+// Stat Card Component
+// ============================================================================
+
+const StatCard = ({ label, value, icon: Icon, color }) => (
+  <div style={{
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    border: '1px solid #e5e7eb',
+    padding: '20px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px'
+  }}>
+    <div style={{
+      width: '48px',
+      height: '48px',
+      borderRadius: '12px',
+      backgroundColor: `${color}15`,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}>
+      <Icon size={24} color={color} />
+    </div>
+    <div>
+      <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        {label}
+      </div>
+      <div style={{ fontSize: '24px', fontWeight: '700', color: '#111827', marginTop: '2px' }}>
+        {value}
+      </div>
+    </div>
+  </div>
+);
+
+// ============================================================================
+// Pipeline Page Component
+// ============================================================================
 
 function PipelinePage() {
-  const containerRef = React.useRef(null);
+  const navigate = useNavigate();
+  const [pipelineDeals, setPipelineDeals] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  React.useEffect(() => {
-    if (!containerRef.current) return;
-    
-    renderPipeline(containerRef.current);
+  // Sample deals for demonstration
+  const sampleDeals = [
+    {
+      dealId: 'sample-001',
+      address: '1250 Oakwood Gardens, Dallas, TX 75201',
+      units: 48,
+      purchasePrice: 3200000,
+      dayOneCashFlow: 4250,
+      stabilizedCashFlow: 8500,
+      refiValue: 4800000,
+      cashOutRefiAmount: 1200000,
+      userTotalInPocket: 850000,
+      postRefiCashFlow: 6200,
+      brokerName: 'Marcus Johnson',
+      brokerPhone: '(214) 555-0187',
+      brokerEmail: 'marcus.j@realtypros.com',
+      dealStructure: 'Seller Financing',
+      pushedAt: '2025-12-01T10:30:00Z'
+    },
+    {
+      dealId: 'sample-002',
+      address: '875 Sunrise MHP, Austin, TX 78745',
+      units: 72,
+      purchasePrice: 5500000,
+      dayOneCashFlow: 7800,
+      stabilizedCashFlow: 14500,
+      refiValue: 8200000,
+      cashOutRefiAmount: 2100000,
+      userTotalInPocket: 1450000,
+      postRefiCashFlow: 11200,
+      brokerName: 'Sarah Chen',
+      brokerPhone: '(512) 555-0234',
+      brokerEmail: 'schen@capitalbrokers.com',
+      dealStructure: 'Bank Loan + Equity Partner',
+      pushedAt: '2025-12-05T14:15:00Z'
+    }
+  ];
+
+  const loadPipelineDeals = async () => {
+    setIsLoading(true);
+    try {
+      const deals = await loadDealsFromSupabase();
+      // If no deals from Supabase, show sample deals for demo
+      if (deals.length === 0) {
+        setPipelineDeals(sampleDeals);
+      } else {
+        setPipelineDeals(deals);
+      }
+    } catch (error) {
+      console.error('Error loading pipeline deals:', error);
+      // Fallback to sample deals if Supabase fails
+      setPipelineDeals(sampleDeals);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load deals from Supabase on mount
+  useEffect(() => {
+    loadPipelineDeals();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return React.createElement('div', { ref: containerRef });
-}
-
-function renderPipeline(root) {
-  if (currentView === "dealDetail") {
-    renderDealDetailPage(root, selectedDeal);
-    return;
-  }
-  
-  initPipelineUI(root);
-}
-
-function renderDealDetailPage(root, dealObj) {
-  // Clear root
-  root.innerHTML = '';
-  
-  // Main container
-  const container = document.createElement('div');
-  container.style.maxWidth = '1200px';
-  container.style.margin = '0 auto';
-  container.style.padding = '40px 20px';
-  container.style.fontFamily = 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  
-  // Back button
-  const backButton = document.createElement('button');
-  backButton.textContent = '← Back to Pipeline';
-  backButton.style.backgroundColor = '#ffffff';
-  backButton.style.border = '1px solid #e0e0e0';
-  backButton.style.borderRadius = '6px';
-  backButton.style.padding = '10px 20px';
-  backButton.style.fontSize = '14px';
-  backButton.style.fontWeight = '500';
-  backButton.style.color = '#1a1a1a';
-  backButton.style.cursor = 'pointer';
-  backButton.style.marginBottom = '24px';
-  backButton.style.fontFamily = 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  backButton.onmouseover = () => {
-    backButton.style.backgroundColor = '#f5f5f5';
-  };
-  backButton.onmouseout = () => {
-    backButton.style.backgroundColor = '#ffffff';
-  };
-  backButton.onclick = () => {
-    currentView = "pipeline";
-    selectedDeal = null;
-    renderPipeline(root);
-  };
-  container.appendChild(backButton);
-  
-  // Title
-  const title = document.createElement('h1');
-  title.textContent = 'Deal Details';
-  title.style.fontSize = '32px';
-  title.style.fontWeight = '700';
-  title.style.color = '#1a1a1a';
-  title.style.marginBottom = '24px';
-  container.appendChild(title);
-  
-  // Property info card
-  const infoCard = document.createElement('div');
-  infoCard.style.backgroundColor = '#ffffff';
-  infoCard.style.border = '1px solid #e0e0e0';
-  infoCard.style.borderRadius = '8px';
-  infoCard.style.padding = '24px';
-  infoCard.style.marginBottom = '32px';
-  infoCard.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
-  
-  const propertyName = document.createElement('h2');
-  propertyName.textContent = dealObj.property;
-  propertyName.style.fontSize = '24px';
-  propertyName.style.fontWeight = '600';
-  propertyName.style.color = '#1a1a1a';
-  propertyName.style.marginBottom = '16px';
-  infoCard.appendChild(propertyName);
-  
-  const infoGrid = document.createElement('div');
-  infoGrid.style.display = 'grid';
-  infoGrid.style.gridTemplateColumns = 'repeat(2, 1fr)';
-  infoGrid.style.gap = '12px';
-  
-  const infoItems = [
-    { label: 'Location', value: dealObj.location },
-    { label: 'Units / Pads', value: dealObj.units_or_pads },
-    { label: 'Purchase Price', value: formatCurrency(dealObj.purchase_price) },
-    { label: 'Status', value: formatStatusLabel(dealObj.status) }
-  ];
-  
-  infoItems.forEach(item => {
-    const itemDiv = document.createElement('div');
-    
-    const label = document.createElement('div');
-    label.textContent = item.label;
-    label.style.fontSize = '12px';
-    label.style.color = '#666';
-    label.style.marginBottom = '4px';
-    label.style.textTransform = 'uppercase';
-    label.style.letterSpacing = '0.5px';
-    itemDiv.appendChild(label);
-    
-    const value = document.createElement('div');
-    value.textContent = item.value;
-    value.style.fontSize = '16px';
-    value.style.color = '#1a1a1a';
-    value.style.fontWeight = '500';
-    itemDiv.appendChild(value);
-    
-    infoGrid.appendChild(itemDiv);
-  });
-  
-  infoCard.appendChild(infoGrid);
-  container.appendChild(infoCard);
-  
-  // Placeholder message
-  const placeholderBox = document.createElement('div');
-  placeholderBox.style.backgroundColor = '#f8f8f8';
-  placeholderBox.style.border = '1px solid #e0e0e0';
-  placeholderBox.style.borderRadius = '8px';
-  placeholderBox.style.padding = '48px';
-  placeholderBox.style.textAlign = 'center';
-  
-  const placeholderText = document.createElement('p');
-  placeholderText.textContent = 'Full underwriting details will be displayed here.';
-  placeholderText.style.fontSize = '16px';
-  placeholderText.style.color = '#666';
-  placeholderText.style.margin = '0';
-  placeholderBox.appendChild(placeholderText);
-  
-  container.appendChild(placeholderBox);
-  root.appendChild(container);
-}
-
-function initPipelineUI(root) {
-  // Clear root
-  root.innerHTML = '';
-  
-  // Main container
-  const container = document.createElement('div');
-  container.style.maxWidth = '1600px';
-  container.style.margin = '0 auto';
-  container.style.padding = '40px 20px';
-  container.style.fontFamily = 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  
-  // Title
-  const title = document.createElement('h1');
-  title.textContent = 'Approved Deals Pipeline';
-  title.style.fontSize = '32px';
-  title.style.fontWeight = '700';
-  title.style.color = '#1a1a1a';
-  title.style.marginBottom = '16px';
-  container.appendChild(title);
-  
-  // Legend
-  const legend = document.createElement('div');
-  legend.style.display = 'flex';
-  legend.style.gap = '24px';
-  legend.style.marginBottom = '24px';
-  legend.style.fontSize = '14px';
-  legend.style.color = '#666';
-  
-  const yellowLegend = document.createElement('div');
-  yellowLegend.style.display = 'flex';
-  yellowLegend.style.alignItems = 'center';
-  yellowLegend.style.gap = '8px';
-  
-  const yellowCircle = document.createElement('div');
-  yellowCircle.style.width = '12px';
-  yellowCircle.style.height = '12px';
-  yellowCircle.style.borderRadius = '50%';
-  yellowCircle.style.backgroundColor = '#FFD700';
-  
-  const yellowLabel = document.createElement('span');
-  yellowLabel.textContent = 'Active (pre-contract)';
-  
-  yellowLegend.appendChild(yellowCircle);
-  yellowLegend.appendChild(yellowLabel);
-  
-  const greenLegend = document.createElement('div');
-  greenLegend.style.display = 'flex';
-  greenLegend.style.alignItems = 'center';
-  greenLegend.style.gap = '8px';
-  
-  const greenCircle = document.createElement('div');
-  greenCircle.style.width = '12px';
-  greenCircle.style.height = '12px';
-  greenCircle.style.borderRadius = '50%';
-  greenCircle.style.backgroundColor = '#4CAF50';
-  
-  const greenLabel = document.createElement('span');
-  greenLabel.textContent = 'Under contract / Closed';
-  
-  greenLegend.appendChild(greenCircle);
-  greenLegend.appendChild(greenLabel);
-  
-  const grayLegend = document.createElement('div');
-  grayLegend.style.display = 'flex';
-  grayLegend.style.alignItems = 'center';
-  grayLegend.style.gap = '8px';
-  
-  const grayCircle = document.createElement('div');
-  grayCircle.style.width = '12px';
-  grayCircle.style.height = '12px';
-  grayCircle.style.borderRadius = '50%';
-  grayCircle.style.backgroundColor = '#9E9E9E';
-  
-  const grayLabel = document.createElement('span');
-  grayLabel.textContent = 'Dead';
-  
-  grayLegend.appendChild(grayCircle);
-  grayLegend.appendChild(grayLabel);
-  
-  legend.appendChild(yellowLegend);
-  legend.appendChild(greenLegend);
-  legend.appendChild(grayLegend);
-  container.appendChild(legend);
-  
-  // Table wrapper
-  const tableWrapper = document.createElement('div');
-  tableWrapper.style.backgroundColor = '#ffffff';
-  tableWrapper.style.border = '1px solid #e0e0e0';
-  tableWrapper.style.borderRadius = '8px';
-  tableWrapper.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
-  tableWrapper.style.overflowX = 'auto';
-  
-  // Table
-  const table = document.createElement('div');
-  table.style.display = 'table';
-  table.style.width = '100%';
-  table.style.borderCollapse = 'collapse';
-  
-  // Header row
-  const headerRow = document.createElement('div');
-  headerRow.style.display = 'table-row';
-  headerRow.style.backgroundColor = '#f8f8f8';
-  
-  const headers = [
-    { text: '', width: '40px', align: 'center' }, // Light indicator
-    { text: 'Property', width: '180px', align: 'left' },
-    { text: 'Location', width: '150px', align: 'left' },
-    { text: 'Units / Pads', width: '100px', align: 'left' },
-    { text: 'Purchase Price', width: '130px', align: 'right' },
-    { text: 'Day 1 CF / Month', width: '130px', align: 'right' },
-    { text: 'Stabilized CF / Month', width: '150px', align: 'right' },
-    { text: 'Refi Value', width: '130px', align: 'right' },
-    { text: 'Cash Out at Refi', width: '130px', align: 'right' },
-    { text: 'Post-Refi CF / Month', width: '150px', align: 'right' },
-    { text: 'Structure Type', width: '180px', align: 'left' },
-    { text: 'Status', width: '130px', align: 'left' },
-    { text: 'Priority', width: '80px', align: 'center' },
-    { text: 'Next Action', width: '180px', align: 'left' },
-    { text: 'Next Due', width: '100px', align: 'left' },
-    { text: 'Last Touch', width: '100px', align: 'left' },
-    { text: 'Agent Name', width: '140px', align: 'left' },
-    { text: 'Agent Phone', width: '120px', align: 'left' },
-    { text: 'Agent Email', width: '180px', align: 'left' },
-    { text: 'Actions', width: '200px', align: 'center' }
-  ];
-  
-  headers.forEach(header => {
-    const cell = createHeaderCell(header.text, header.width, header.align);
-    headerRow.appendChild(cell);
-  });
-  
-  table.appendChild(headerRow);
-  
-  // Data rows
-  pipelineDeals.forEach((deal, index) => {
-    const row = document.createElement('div');
-    row.style.display = 'table-row';
-    row.style.backgroundColor = index % 2 === 0 ? '#ffffff' : '#fafafa';
-    row.style.cursor = 'pointer';
-    
-    // Hover effect for row
-    row.onmouseenter = (e) => {
-      const currentBg = row.style.backgroundColor;
-      row.setAttribute('data-original-bg', currentBg);
-      row.style.backgroundColor = '#e8f4f8';
-    };
-    row.onmouseleave = (e) => {
-      const originalBg = row.getAttribute('data-original-bg');
-      row.style.backgroundColor = originalBg || (index % 2 === 0 ? '#ffffff' : '#fafafa');
-    };
-    
-    // Row click handler (navigate to detail page)
-    row.onclick = (e) => {
-      // Don't navigate if clicking action buttons
-      if (e.target.classList.contains('action-button')) {
-        return;
-      }
-      currentView = "dealDetail";
-      selectedDeal = deal;
-      renderPipeline(root);
-    };
-    
-    // Light indicator
-    const lightCell = createCell('', '40px', 'center');
-    const lightIndicator = document.createElement('div');
-    lightIndicator.style.width = '16px';
-    lightIndicator.style.height = '16px';
-    lightIndicator.style.borderRadius = '50%';
-    lightIndicator.style.backgroundColor = getLightColor(deal.status);
-    lightIndicator.style.margin = '0 auto';
-    lightCell.appendChild(lightIndicator);
-    row.appendChild(lightCell);
-    
-    // Property
-    row.appendChild(createCell(deal.property, '180px', 'left'));
-    
-    // Location
-    row.appendChild(createCell(deal.location, '150px', 'left'));
-    
-    // Units / Pads
-    row.appendChild(createCell(deal.units_or_pads, '100px', 'left'));
-    
-    // Purchase Price
-    row.appendChild(createCell(formatCurrency(deal.purchase_price), '130px', 'right'));
-    
-    // Day 1 CF / Month
-    const day1CF = createCell(formatCurrency(deal.day1_cf_per_month), '130px', 'right');
-    if (deal.day1_cf_per_month < 0) {
-      day1CF.style.color = '#d32f2f';
+  const handleViewDeal = (deal) => {
+    // For sample deals, create mock scenario data and pass via state
+    if (deal.dealId.startsWith('sample-')) {
+      // Create mock scenario data for sample deals
+      const mockScenarioData = {
+        property: {
+          address: deal.address,
+          units: deal.units,
+          property_type: 'Multifamily',
+          year_built: 1985,
+          rba_sqft: deal.units * 850
+        },
+        pricing_financing: {
+          price: deal.purchasePrice,
+          purchase_price: deal.purchasePrice
+        },
+        financing: {
+          ltv: 75,
+          interest_rate: 6.5,
+          loan_term_years: 10,
+          amortization_years: 30,
+          io_years: 0,
+          loan_fees_percent: 1.5
+        },
+        pnl: {
+          potential_gross_income: deal.units * 1200 * 12,
+          vacancy_rate: 5,
+          operating_expenses: deal.units * 400 * 12
+        },
+        unit_mix: [
+          { unit_type: '2BR/1BA', units: deal.units, unit_sf: 850, rent_current: 1200 }
+        ],
+        broker: {
+          name: deal.brokerName,
+          phone: deal.brokerPhone,
+          email: deal.brokerEmail
+        }
+      };
+      
+      // Navigate with state for sample deals
+      navigate('/underwrite', {
+        state: {
+          dealId: deal.dealId,
+          verifiedData: mockScenarioData,
+          goToResults: true
+        }
+      });
+    } else {
+      // For real deals, load from Supabase via URL param
+      navigate(`/underwrite?viewDeal=${deal.dealId}`);
     }
-    row.appendChild(day1CF);
-    
-    // Stabilized CF / Month
-    row.appendChild(createCell(formatCurrency(deal.stabilized_cf_per_month), '150px', 'right'));
-    
-    // Refi Value
-    row.appendChild(createCell(formatCurrency(deal.refi_value), '130px', 'right'));
-    
-    // Cash Out at Refi
-    row.appendChild(createCell(formatCurrency(deal.cash_out_at_refi), '130px', 'right'));
-    
-    // Post-Refi CF / Month
-    row.appendChild(createCell(formatCurrency(deal.post_refi_cf_per_month), '150px', 'right'));
-    
-    // Structure Type
-    row.appendChild(createCell(deal.structure_label, '180px', 'left'));
-    
-    // Status
-    const statusCell = createCell(formatStatusLabel(deal.status), '130px', 'left');
-    statusCell.style.fontWeight = '500';
-    row.appendChild(statusCell);
-    
-    // Priority
-    const priorityCell = createCell(deal.priority, '80px', 'center');
-    priorityCell.style.fontWeight = '600';
-    priorityCell.style.color = deal.priority === 'A' ? '#d32f2f' : deal.priority === 'B' ? '#f57c00' : '#666';
-    row.appendChild(priorityCell);
-    
-    // Next Action
-    row.appendChild(createCell(deal.next_action, '180px', 'left'));
-    
-    // Next Due
-    row.appendChild(createCell(deal.next_action_due, '100px', 'left'));
-    
-    // Last Touch
-    row.appendChild(createCell(deal.last_touch, '100px', 'left'));
-    
-    // Agent Name
-    row.appendChild(createCell(deal.agent_name, '140px', 'left'));
-    
-    // Agent Phone
-    row.appendChild(createCell(deal.agent_phone, '120px', 'left'));
-    
-    // Agent Email
-    row.appendChild(createCell(deal.agent_email, '180px', 'left'));
-    
-    // Actions column with buttons
-    const actionsCell = createCell('', '200px', 'center');
-    actionsCell.style.padding = '8px';
-    
-    const actionsContainer = document.createElement('div');
-    actionsContainer.style.display = 'flex';
-    actionsContainer.style.gap = '8px';
-    actionsContainer.style.justifyContent = 'center';
-    actionsContainer.style.alignItems = 'center';
-    
-    // Summary button
-    const summaryBtn = createActionButton('Summary', () => {
-      console.log(`Clicked Summary for deal ${deal.deal_id}: ${deal.property}`);
-    });
-    actionsContainer.appendChild(summaryBtn);
-    
-    // LOI button
-    const loiBtn = createActionButton('LOI', () => {
-      console.log(`Clicked LOI for deal ${deal.deal_id}: ${deal.property}`);
-    });
-    actionsContainer.appendChild(loiBtn);
-    
-    // Deck button
-    const deckBtn = createActionButton('Deck', () => {
-      console.log(`Clicked Deck for deal ${deal.deal_id}: ${deal.property}`);
-    });
-    actionsContainer.appendChild(deckBtn);
-    
-    actionsCell.appendChild(actionsContainer);
-    row.appendChild(actionsCell);
-    
-    table.appendChild(row);
-  });
-  
-  tableWrapper.appendChild(table);
-  container.appendChild(tableWrapper);
-  root.appendChild(container);
-}
-
-function createHeaderCell(text, width, align) {
-  const cell = document.createElement('div');
-  cell.style.display = 'table-cell';
-  cell.style.padding = '12px 16px';
-  cell.style.borderBottom = '2px solid #e0e0e0';
-  cell.style.fontWeight = '600';
-  cell.style.fontSize = '12px';
-  cell.style.color = '#1a1a1a';
-  cell.style.textTransform = 'uppercase';
-  cell.style.letterSpacing = '0.5px';
-  cell.style.textAlign = align;
-  cell.style.width = width;
-  cell.style.minWidth = width;
-  cell.textContent = text;
-  return cell;
-}
-
-function createCell(content, width, align) {
-  const cell = document.createElement('div');
-  cell.style.display = 'table-cell';
-  cell.style.padding = '16px';
-  cell.style.borderBottom = '1px solid #f0f0f0';
-  cell.style.fontSize = '14px';
-  cell.style.color = '#1a1a1a';
-  cell.style.textAlign = align;
-  cell.style.width = width;
-  cell.style.minWidth = width;
-  cell.style.verticalAlign = 'middle';
-  
-  if (typeof content === 'string') {
-    cell.textContent = content;
-  }
-  
-  return cell;
-}
-
-function createActionButton(label, onClick) {
-  const btn = document.createElement('span');
-  btn.textContent = label;
-  btn.className = 'action-button';
-  btn.style.padding = '6px 12px';
-  btn.style.fontSize = '12px';
-  btn.style.fontWeight = '500';
-  btn.style.color = '#1a1a1a';
-  btn.style.backgroundColor = '#f5f5f5';
-  btn.style.border = '1px solid #e0e0e0';
-  btn.style.borderRadius = '4px';
-  btn.style.cursor = 'pointer';
-  btn.style.display = 'inline-block';
-  btn.style.transition = 'all 0.2s';
-  btn.style.fontFamily = 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  
-  btn.onmouseover = () => {
-    btn.style.backgroundColor = '#e8e8e8';
-    btn.style.borderColor = '#d0d0d0';
   };
-  btn.onmouseout = () => {
-    btn.style.backgroundColor = '#f5f5f5';
-    btn.style.borderColor = '#e0e0e0';
+
+  const handleDeleteDeal = async (dealId) => {
+    if (window.confirm('Are you sure you want to remove this deal from the pipeline?')) {
+      try {
+        // Check if it's a sample deal (starts with 'sample-')
+        if (dealId.startsWith('sample-')) {
+          // Just remove from local state for sample deals
+          const updatedDeals = pipelineDeals.filter(d => d.dealId !== dealId);
+          setPipelineDeals(updatedDeals);
+        } else {
+          // Delete from Supabase
+          await deleteDeal(dealId);
+          const updatedDeals = pipelineDeals.filter(d => d.dealId !== dealId);
+          setPipelineDeals(updatedDeals);
+        }
+      } catch (error) {
+        console.error('Error deleting deal:', error);
+        alert('Failed to delete deal: ' + error.message);
+      }
+    }
   };
-  
-  btn.onclick = (e) => {
-    e.stopPropagation(); // Prevent row click
-    onClick();
+
+  const handleGenerateLOI = (deal) => {
+    // Navigate to LOI page with dealId
+    navigate(`/loi?dealId=${deal.dealId}`);
   };
-  
-  return btn;
+
+  // Filter deals based on search
+  const filteredDeals = pipelineDeals.filter(deal => 
+    deal.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    deal.brokerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    deal.dealStructure?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div style={{ 
+      minHeight: '100vh', 
+      backgroundColor: '#ffffff',
+      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    }}>
+      {/* Header */}
+      <div style={{
+        background: 'linear-gradient(135deg, #134e4a 0%, #0f766e 50%, #115e59 100%)',
+        padding: '24px 32px',
+        color: 'white'
+      }}>
+        <div style={{ maxWidth: '1800px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <button
+                onClick={() => navigate('/dashboard')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 16px',
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '8px',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <ArrowLeft size={18} />
+                Dashboard
+              </button>
+              <div>
+                <h1 style={{ margin: 0, fontSize: '28px', fontWeight: '700', letterSpacing: '-0.5px' }}>
+                  Deal Pipeline
+                </h1>
+                <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#99f6e4', opacity: 0.9 }}>
+                  {pipelineDeals.length} {pipelineDeals.length === 1 ? 'deal' : 'deals'} in pipeline
+                </p>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {/* Search */}
+              <div style={{ position: 'relative' }}>
+                <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.5)' }} />
+                <input
+                  type="text"
+                  placeholder="Search deals..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{
+                    padding: '10px 12px 10px 40px',
+                    width: '250px',
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    borderRadius: '8px',
+                    color: 'white',
+                    fontSize: '14px',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+              
+              {/* Refresh */}
+              <button
+                onClick={loadPipelineDeals}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 16px',
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '8px',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer'
+                }}
+              >
+                <RefreshCw size={18} />
+                Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div style={{ maxWidth: '1800px', margin: '0 auto', padding: '24px 32px' }}>
+        
+        {isLoading ? (
+          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+            <RefreshCw size={32} style={{ animation: 'spin 1s linear infinite', color: '#0f766e' }} />
+            <p style={{ marginTop: '16px', color: '#6b7280' }}>Loading pipeline...</p>
+          </div>
+        ) : filteredDeals.length === 0 ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '80px 20px',
+            backgroundColor: '#f9fafb',
+            borderRadius: '16px',
+            border: '2px dashed #e5e7eb'
+          }}>
+            <Building2 size={48} style={{ color: '#9ca3af', marginBottom: '16px' }} />
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: '600', color: '#374151' }}>
+              {searchTerm ? 'No deals match your search' : 'No deals in pipeline yet'}
+            </h3>
+            <p style={{ margin: 0, color: '#6b7280', fontSize: '14px' }}>
+              {searchTerm ? 'Try a different search term' : 'Push deals from the Deal or No Deal tab to see them here'}
+            </p>
+          </div>
+        ) : (
+          /* Pipeline Table */
+          <div style={{ 
+            backgroundColor: 'white', 
+            borderRadius: '12px', 
+            border: '1px solid #e5e7eb',
+            overflow: 'hidden',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1600px' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#1e293b' }}>
+                    <th style={thStyle}>Address</th>
+                    <th style={thStyle}>Units/Pads</th>
+                    <th style={thStyle}>Purchase Price</th>
+                    <th style={thStyle}>Day 1 CF</th>
+                    <th style={thStyle}>Stabilized CF</th>
+                    <th style={thStyle}>Refi Value</th>
+                    <th style={thStyle}>Cash-Out Refi</th>
+                    <th style={thStyle}>In Pocket</th>
+                    <th style={thStyle}>Post-Refi CF</th>
+                    <th style={thStyle}>Agent Name</th>
+                    <th style={thStyle}>Phone</th>
+                    <th style={thStyle}>Email</th>
+                    <th style={thStyle}>Deal Structure</th>
+                    <th style={{ ...thStyle, textAlign: 'center' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredDeals.map((deal, index) => (
+                    <tr 
+                      key={deal.dealId || index}
+                      style={{ 
+                        backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb',
+                        borderBottom: '1px solid #e5e7eb',
+                        transition: 'background-color 0.15s'
+                      }}
+                    >
+                      {/* Address */}
+                      <td style={tdStyle}>
+                        <div style={{ fontWeight: '600', color: '#111827', maxWidth: '200px' }}>
+                          {deal.address || '-'}
+                        </div>
+                      </td>
+                      
+                      {/* Units/Pads */}
+                      <td style={{ ...tdStyle, textAlign: 'center' }}>
+                        <span style={{ 
+                          backgroundColor: '#e0f2fe', 
+                          color: '#0369a1', 
+                          padding: '4px 10px', 
+                          borderRadius: '6px',
+                          fontWeight: '600',
+                          fontSize: '13px'
+                        }}>
+                          {deal.units || '-'}
+                        </span>
+                      </td>
+                      
+                      {/* Purchase Price */}
+                      <td style={tdStyle}>
+                        <span style={{ fontWeight: '700', color: '#111827' }}>
+                          {fmtCompact(deal.purchasePrice)}
+                        </span>
+                      </td>
+                      
+                      {/* Day 1 Cash Flow */}
+                      <td style={tdStyle}>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: deal.dayOneCashFlow >= 0 ? '#059669' : '#dc2626'
+                        }}>
+                          {fmtCompact(deal.dayOneCashFlow)}
+                        </span>
+                      </td>
+                      
+                      {/* Stabilized Cash Flow */}
+                      <td style={tdStyle}>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: deal.stabilizedCashFlow >= 0 ? '#059669' : '#dc2626'
+                        }}>
+                          {fmtCompact(deal.stabilizedCashFlow)}
+                        </span>
+                      </td>
+                      
+                      {/* Refi Value */}
+                      <td style={tdStyle}>
+                        <span style={{ fontWeight: '600', color: '#6366f1' }}>
+                          {fmtCompact(deal.refiValue)}
+                        </span>
+                      </td>
+                      
+                      {/* Cash-Out Refi Amount */}
+                      <td style={tdStyle}>
+                        <span style={{ fontWeight: '700', color: '#059669' }}>
+                          {fmtCompact(deal.cashOutRefiAmount)}
+                        </span>
+                      </td>
+                      
+                      {/* User's Total In Pocket */}
+                      <td style={tdStyle}>
+                        <span style={{ 
+                          fontWeight: '700', 
+                          color: deal.userTotalInPocket >= 0 ? '#059669' : '#dc2626'
+                        }}>
+                          {fmtCompact(deal.userTotalInPocket)}
+                        </span>
+                      </td>
+                      
+                      {/* Post-Refi Cash Flow */}
+                      <td style={tdStyle}>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: deal.postRefiCashFlow >= 0 ? '#059669' : '#dc2626'
+                        }}>
+                          {fmtCompact(deal.postRefiCashFlow)}
+                        </span>
+                      </td>
+                      
+                      {/* Agent Name */}
+                      <td style={tdStyle}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <User size={14} color="#6b7280" />
+                          <span style={{ color: '#374151', fontSize: '13px' }}>
+                            {deal.brokerName || '-'}
+                          </span>
+                        </div>
+                      </td>
+                      
+                      {/* Phone */}
+                      <td style={tdStyle}>
+                        {deal.brokerPhone && deal.brokerPhone !== '-' ? (
+                          <a 
+                            href={`tel:${deal.brokerPhone}`}
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '4px',
+                              color: '#0f766e',
+                              textDecoration: 'none',
+                              fontSize: '13px'
+                            }}
+                          >
+                            <Phone size={12} />
+                            {deal.brokerPhone}
+                          </a>
+                        ) : (
+                          <span style={{ color: '#9ca3af', fontSize: '13px' }}>-</span>
+                        )}
+                      </td>
+                      
+                      {/* Email */}
+                      <td style={tdStyle}>
+                        {deal.brokerEmail && deal.brokerEmail !== '-' ? (
+                          <a 
+                            href={`mailto:${deal.brokerEmail}`}
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '4px',
+                              color: '#0f766e',
+                              textDecoration: 'none',
+                              fontSize: '13px',
+                              maxWidth: '180px',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}
+                          >
+                            <Mail size={12} />
+                            {deal.brokerEmail}
+                          </a>
+                        ) : (
+                          <span style={{ color: '#9ca3af', fontSize: '13px' }}>-</span>
+                        )}
+                      </td>
+                      
+                      {/* Deal Structure */}
+                      <td style={tdStyle}>
+                        <span style={{ 
+                          backgroundColor: '#f0fdf4', 
+                          color: '#166534', 
+                          padding: '4px 10px', 
+                          borderRadius: '6px',
+                          fontWeight: '600',
+                          fontSize: '12px',
+                          display: 'inline-block',
+                          maxWidth: '150px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {deal.dealStructure || 'Traditional'}
+                        </span>
+                      </td>
+                      
+                      {/* Actions */}
+                      <td style={{ ...tdStyle, textAlign: 'center' }}>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                          {/* View Deal Button */}
+                          <button
+                            onClick={() => handleViewDeal(deal)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '8px 14px',
+                              backgroundColor: '#0f766e',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s'
+                            }}
+                          >
+                            <Eye size={14} />
+                            View
+                          </button>
+                          
+                          {/* Generate LOI Button */}
+                          <button
+                            onClick={() => handleGenerateLOI(deal)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '8px 14px',
+                              backgroundColor: '#8b5cf6',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s'
+                            }}
+                          >
+                            <FileText size={14} />
+                            LOI
+                          </button>
+                          
+                          {/* Delete Button */}
+                          <button
+                            onClick={() => handleDeleteDeal(deal.dealId)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              padding: '8px',
+                              backgroundColor: '#fee2e2',
+                              color: '#dc2626',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s'
+                            }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Summary Stats */}
+        {filteredDeals.length > 0 && (
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(4, 1fr)', 
+            gap: '16px',
+            marginTop: '24px'
+          }}>
+            <StatCard 
+              label="Total Pipeline Value"
+              value={fmtCompact(filteredDeals.reduce((sum, d) => sum + (d.purchasePrice || 0), 0))}
+              icon={Building2}
+              color="#0f766e"
+            />
+            <StatCard 
+              label="Total Day 1 Cash Flow"
+              value={fmtCompact(filteredDeals.reduce((sum, d) => sum + (d.dayOneCashFlow || 0), 0))}
+              icon={DollarSign}
+              color="#059669"
+            />
+            <StatCard 
+              label="Total Refi Cash-Out"
+              value={fmtCompact(filteredDeals.reduce((sum, d) => sum + (d.cashOutRefiAmount || 0), 0))}
+              icon={TrendingUp}
+              color="#6366f1"
+            />
+            <StatCard 
+              label="Avg. Stabilized CF"
+              value={fmtCompact(filteredDeals.reduce((sum, d) => sum + (d.stabilizedCashFlow || 0), 0) / filteredDeals.length)}
+              icon={Layers}
+              color="#8b5cf6"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* CSS for spin animation */}
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  );
 }
 
 export default PipelinePage;

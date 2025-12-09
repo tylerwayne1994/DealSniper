@@ -181,12 +181,17 @@ Extract and structure the following information. BE EXTREMELY THOROUGH:
    - Marketing
    - All other expense categories
 
-4. UNIT MIX:
-   - Unit types (Studio, 1BR, 2BR, etc.)
-   - Number of each type
-   - Square footage per unit type
-   - Current rent per unit type
-   - Market rent per unit type
+4. UNIT MIX (CRITICAL - Look for rent roll tables, unit breakdowns, or lease summaries):
+   - SEARCH for tables showing unit types, counts, sizes, and rents
+   - Look for sections labeled "Rent Roll", "Unit Mix", "Unit Summary", "Lease Schedule"
+   - Look for "Current Rent", "In-Place Rent", "Contract Rent" vs "Market Rent", "Pro Forma Rent"
+   - Extract CURRENT rents (what tenants are actually paying now) - this is the most important
+   - Extract MARKET rents (what could be charged at full occupancy)
+   - If only one rent figure is shown, assume it's current rent unless clearly labeled as market/pro forma
+   - Unit types: Studio, 1BR, 1BR/1BA, 2BR, 2BR/2BA, 3BR, etc.
+   - Square footage: average SF per unit type
+   - Be thorough - multifamily deals ALWAYS have unit mix data somewhere
+   - If you can't find detailed breakdown, estimate based on total units and average rents
 
 5. FINANCING:
    - Purchase Price

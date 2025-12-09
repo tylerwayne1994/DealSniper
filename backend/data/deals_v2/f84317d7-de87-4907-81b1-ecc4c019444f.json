@@ -1,0 +1,66 @@
+{
+  "id": "f84317d7-de87-4907-81b1-ecc4c019444f",
+  "created_at": "2025-12-02T22:26:54.761790",
+  "updated_at": "2025-12-02T22:26:54.761845",
+  "original_filename": "Pier 95 RV Park - P&L (2023-2024).pdf",
+  "parser_strategy": "claude_ocr",
+  "summary_address": null,
+  "summary_units": 0,
+  "summary_price": 0.0,
+  "summary_noi": 219115.0,
+  "summary_cap_rate": 0.0,
+  "parsed_json": {
+    "property": {
+      "address": "",
+      "city": "",
+      "state": "",
+      "zip": "",
+      "units": 0,
+      "year_built": 0,
+      "rba_sqft": 0,
+      "land_area_acres": 0,
+      "property_type": "RV Park",
+      "property_class": "",
+      "parking_spaces": 0
+    },
+    "pricing_financing": {
+      "price": 0,
+      "price_per_unit": 0,
+      "price_per_sf": 0,
+      "loan_amount": 0,
+      "down_payment": 0,
+      "interest_rate": 0,
+      "ltv": 0,
+      "term_years": 0,
+      "amortization_years": 0
+    },
+    "pnl": {
+      "gross_potential_rent": 0,
+      "other_income": 0,
+      "vacancy_rate": 0,
+      "vacancy_amount": 0,
+      "effective_gross_income": 316302,
+      "operating_expenses": 97187,
+      "noi": 219115,
+      "cap_rate": 0
+    },
+    "expenses": {
+      "taxes": 0,
+      "insurance": 2744,
+      "utilities": 49653,
+      "repairs_maintenance": 11276,
+      "management": 30991,
+      "payroll": 0,
+      "admin": 769,
+      "marketing": 1754,
+      "other": 0,
+      "total": 97187
+    },
+    "underwriting": {
+      "holding_period": 0,
+      "exit_cap_rate": 0
+    },
+    "unit_mix": []
+  },
+  "chat_history": []
+}

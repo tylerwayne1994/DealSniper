@@ -1,0 +1,79 @@
+Section,InternalField,ValueExample,ExcelCell,Label,DataType,Required,RentRoll_TenantName,RentRoll_Industry,RentRoll_UnitNumber,RentRoll_LeaseType,RentRoll_MonthlyRent,RentRoll_SquareFootage,RentRoll_RentPerSF,RentRoll_LeaseStartDate,RentRoll_LeaseEndDate,RentRoll_SecurityDeposit,RentRoll_CAMperSF,RentRoll_Escalations,RentRoll_RenewalOptions,RentRoll_NewTI,RentRoll_RenewTI,RentRoll_NewLC,RentRoll_RenewLC,RentRoll_FreeRentNew,RentRoll_FreeRentRenew,RentRoll_MarketRent,RentRoll_RenewalProbability,RentRoll_LeaseLengthMonths,RentRoll_Downtime,Expense_Item,Expense_Type,Expense_AnnualAmount,Expense_GrowthRate,Expense_Timing
+Characteristics,characteristics.dealName,5800 Colton Industrial,B7,Deal Name,Text,Yes,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Characteristics,characteristics.propertyAddress,"5800 Colton Rd, Austin TX",B8,Property Address,Text,Yes,R.M.,,1,,1400,759,21,03/01/2023,03/27/2026,0,0,0,,0,0,300%,0%,0,0,21,,60,0,Insurance,$/PSF,0.5,3%,straight-line
+Characteristics,characteristics.city,Austin,B9,City,Text,No,T.G.,,2,,2400,800,36,2023-03-01,2026-03-27,0,0,0,,0,0,3,0,0,0,36,,60,0,Repairs & Maintenance,$/PSF,0.5,3%,straight-line
+Characteristics,characteristics.state,TX,,State,Text,No,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Characteristics,characteristics.zipCode,78723,,ZIP Code,Text,No,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Characteristics,characteristics.startDate,09/01/2025,B9,Analysis Start Date,Date,No,E.B.,,3,,700,800,0,2023-03-01,2026-03-01,0,0,0,,0,0,3,0,0,0,10.5,,60,0,Management,%,0,3%,straight-line
+Characteristics,characteristics.propertyType,Industrial,B10,Property Type,Text,Yes,Billboard,,,,302.5,1,3630,2021-04-02,2026-04-01,0,0,0,,0,0,3,0,0,0,3630,,60,0,Electric,$/PSF,0,3%,straight-line
+Characteristics,characteristics.subPropertyType,QSR/Fast Food,C10,Sub-Property Type,Text,No,,,,,,,,,,,,,,,,,,,,,Taxes,$/Year,9000,3%,straight-line
+Characteristics,characteristics.landSizeSF,1.90875,B11,Land Size (SF),Number,No,,,,,,,,,,,,,,,,,,,,,Flood,$/Year,1200,3%,straight-line
+Characteristics,characteristics.totalRSF,1.527,D11,Total RSF (SF),Number,No,,,,,,,,,,,,,,,,,,,,,,,
+Characteristics,characteristics.floorCount,3,B12,Floor Count,Number,No,,,,,,,,,,,,,,,,,,,,,,,
+Characteristics,characteristics.far,3,C12,FAR,Number,No,,,,,,,,,,,,,,,,,,,,,,,
+Characteristics,characteristics.legalInterest,Fee Simple,D12,Legal Interest,Text,No,,,,,,,,,,,,,,,,,,,,,,,
+Characteristics,characteristics.parkingSpaces,10,B13,Parking Spaces,Number,No,,,,,,,,,,,,,,,,,,,,,,,
+Characteristics,characteristics.structuredSpaces,10,C13,Structured Spaces,Number,No,,,,,,,,,,,,,,,,,,,,,,,
+Characteristics,characteristics.yearBuilt,1950,B14,Year Built,Number,No,,,,,,,,,,,,,,,,,,,,,,,
+Characteristics,characteristics.yearRenovated,1990,C14,Year Renovated,Number,No,,,,,,,,,,,,,,,,,,,,,,,
+Characteristics,characteristics.units,4,,Total Units,Number,No,,,,,,,,,,,,,,,,,,,,,,,
+Characteristics,characteristics.currentOccupancy,95%,,Current Occupancy (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Characteristics,characteristics.sellingCosts,2%,B19,Selling Costs (% of Sale),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Characteristics,characteristics.exitCapRate,5%,B19,Exit Cap Rate (%),Percentage,Yes,,,,,,,,,,,,,,,,,,,,,,,
+Characteristics,characteristics.holdingPeriod,5,C19,Holding Period (Years),Number,Yes,,,,,,,,,,,,,,,,,,,,,,,
+Characteristics,characteristics.discountRate,7.50%,C19,Discount Rate (%),Percentage,Yes,,,,,,,,,,,,,,,,,,,,,,,
+Characteristics,characteristics.incomingCapRate,6.50%,C19,Going-in Cap Rate (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Characteristics,characteristics.replacementCost,0.0728,C19,Replacement Cost ($/SF),Number,No,,,,,,,,,,,,,,,,,,,,,,,
+
+Economics,economics.purchasePrice,475000,B15,Purchase Price,Currency,Yes,,,,,,,,,,,,,,,,,,,,,,,
+Economics,economics.capRate,0.06,F15,Going-in Cap Rate (%),Percentage,Yes,,,,,,,,,,,,,,,,,,,,,,,
+Economics,economics.acquisitionPrice,475000,G16,Final Acquisition Price,Currency,Yes,,,,,,,,,,,,,,,,,,,,,,,
+Economics,economics.acquisitionFees,1%,B16,Acquisition Fees,Currency,No,,,,,,,,,,,,,,,,,,,,,,,
+Economics,economics.dueDiligenceCosts,1%,C16,Due Diligence Costs,Currency,No,,,,,,,,,,,,,,,,,,,,,,,
+Economics,economics.constructionCosts,,D16,Construction/Renovation Costs,Currency,No,,,,,,,,,,,,,,,,,,,,,,,
+Economics,economics.baseRent,14.65,E7,Base Rent ($/SF/Year),Currency,No,,,,,,,,,,,,,,,,,,,,,,,
+Economics,economics.otherIncome,500,E7,Other Income (Annual),Currency,No,,,,,,,,,,,,,,,,,,,,,,,
+Economics,economics.vacancy,10%,E8,Vacancy (% of GPR),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Economics,economics.rentEscalations,3%,E8,Rent Escalations (%/Year),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Economics,economics.otherIncomeEscalations,3%,E8,Other Income Escalations (%/Year),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Economics,economics.immediateCapEx,0,E15,Immediate CapEx,Currency,No,,,,,,,,,,,,,,,,,,,,,,,
+Economics,economics.ongoingCapEx,1.00,F16,Ongoing CapEx ($/SF/Year),Currency,No,,,,,,,,,,,,,,,,,,,,,,,
+Economics,economics.ongoingCapExEscalations,0%,G17,Capex Growth (%/Year),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Economics,economics.propertyTaxGrowth,3%,G17,Property Tax Growth (%/Year),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Economics,economics.irr,0.02,G17,IRR (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Economics,economics.cashOnCashReturn,,G18,Cash-on-Cash Return (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Economics,economics.noi,34596,G19,Net Operating Income (Annual),Currency,No,,,,,,,,,,,,,,,,,,,,,,,
+Economics,economics.recoveries,0,E15,Recoveries (Annual),Currency,No,,,,,,,,,,,,,,,,,,,,,,,
+
+Financing,financing.ltv,75%,G19,Loan-to-Value (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Financing,financing.interestRate,0.06,G19,Interest Rate (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Financing,financing.term,10.00,G19,Loan Term (Years),Number,No,,,,,,,,,,,,,,,,,,,,,,,
+Financing,financing.loanFees,1.5%,G19,Loan Fees (% of Loan),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Financing,financing.amortPeriod,30.00,G19,Amortization Period (Years),Number,No,,,,,,,,,,,,,,,,,,,,,,,
+Financing,financing.IO,0.00,G19,Interest-Only Period (Years),Number,No,,,,,,,,,,,,,,,,,,,,,,,
+
+Waterfall,waterfall.LPEquity,0%,G19,LP Equity (% of Total),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Waterfall,waterfall.preferredReturnType,preferred,G19,Preferred Return Type,Text,No,,,,,,,,,,,,,,,,,,,,,,,
+Waterfall,waterfall.firstHurdle,15%,G19,First Hurdle IRR (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Waterfall,waterfall.firstHurdleLP,0%,G19,First Hurdle LP Share (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Waterfall,waterfall.firstHurdleGP,100%,G19,First Hurdle GP Share (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Waterfall,waterfall.secondHurdle,15%,G19,Second Hurdle IRR (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Waterfall,waterfall.secondHurdleLP,70%,G19,Second Hurdle LP Share (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Waterfall,waterfall.secondHurdleGP,30%,G19,Second Hurdle GP Share (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Waterfall,waterfall.thirdHurdle,15%,G19,Third Hurdle IRR (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Waterfall,waterfall.thirdHurdleLP,70%,G19,Third Hurdle LP Share (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+Waterfall,waterfall.thirdHurdleGP,30%,G19,Third Hurdle GP Share (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
+
+RentRoll,rentRoll.bedrooms,2,,Bedrooms,Number,No,,,,,,,,,,,,,,,,,,,,,,,,,,,
+RentRoll,rentRoll.bathrooms,1,,Bathrooms,Number,No,,,,,,,,,,,,,,,,,,,,,,,,,,,
+RentRoll,rentRoll.unitType,"2x1 Classic",,Unit Type,Text,No,,,,,,,,,,,,,,,,,,,,,,,,,,,
+RentRoll,rentRoll.marketRent,1600,,Market Rent (Monthly),Currency,No,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+Expenses,expenses.badDebt,0,,Bad Debt (Annual),Currency,No,,,,,,,,,,,,,,,,,,Bad Debt,$/Year,0,0%,straight-line
+Expenses,expenses.concessions,0,,Concessions (Annual),Currency,No,,,,,,,,,,,,,,,,,,Concessions,$/Year,0,0%,straight-line
+Expenses,expenses.managementFees,0,,Management Fees (Annual),Currency,No,,,,,,,,,,,,,,,,,,Management,%,0,3%,straight-line
+Expenses,expenses.utilities,0,,Utilities (Annual),Currency,No,,,,,,,,,,,,,,,,,,Utilities,$/Year,0,3%,straight-line
+Expenses,expenses.repairsAndMaintenance,0,,Repairs & Maintenance (Annual),Currency,No,,,,,,,,,,,,,,,,,,Repairs & Maintenance,$/PSF,0.5,3%,straight-line
+Expenses,expenses.propertyTaxes,0,,Property Taxes (Annual),Currency,No,,,,,,,,,,,,,,Property Taxes,$/Year,9000,3%,straight-line
+Expenses,expenses.insurance,0,,Insurance (Annual),Currency,No,,,,,,,,,,,,,,,,Insurance,$/PSF,0.5,3%,straight-line
+Expenses,expenses.floodInsurance,0,,Flood Insurance (Annual),Currency,No,,,,,,,,,,,,Flood,$/Year,1200,3%,straight-line      

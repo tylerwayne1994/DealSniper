@@ -304,6 +304,14 @@ const EnhancedUploadPage = () => {
     }
 
     const pricing = { ...verifiedData.pricing_financing };
+
+    // Set sensible default percentages if not provided
+    if (pricing.realtor_fee_pct == null) {
+      pricing.realtor_fee_pct = 3;
+    }
+    if (pricing.closing_costs_pct == null) {
+      pricing.closing_costs_pct = 1;
+    }
     const financingMode = pricing.financing_mode || 'traditional';
 
     console.log("🔄 DEBUG: Starting financing calculation");
@@ -494,12 +502,33 @@ const EnhancedUploadPage = () => {
       const json = await res.json();
       setBackendData(json);
 
+      // Build pricing_financing with calculated loan_amount
+      const parsedPricing = json.parsed?.pricing_financing || {};
+      const price = parsedPricing.price || parsedPricing.purchase_price || 0;
+      const downPct = parsedPricing.down_payment_pct || 0;
+      const ltv = parsedPricing.ltv || 0;
+      
+      // Calculate loan_amount if not provided
+      let calculatedLoanAmount = parsedPricing.loan_amount || 0;
+      if (!calculatedLoanAmount && price > 0) {
+        if (downPct > 0) {
+          calculatedLoanAmount = price * (1 - downPct / 100);
+        } else if (ltv > 0) {
+          calculatedLoanAmount = price * (ltv / 100);
+        }
+      }
+      
+      console.log("📊 DEBUG: Parsed pricing data:", parsedPricing);
+      console.log("💰 DEBUG: Calculated loan amount:", calculatedLoanAmount);
+      console.log("📋 DEBUG: Parsed PNL data:", json.parsed?.pnl);
+
       setVerifiedData(prev => ({
         ...JSON.parse(JSON.stringify(json.parsed || {})),
         pricing_financing: {
-          ...json.parsed?.pricing_financing,
+          ...parsedPricing,
           ...prev?.pricing_financing,
-          financing_mode: prev?.pricing_financing?.financing_mode || "traditional"
+          financing_mode: prev?.pricing_financing?.financing_mode || "traditional",
+          loan_amount: calculatedLoanAmount || prev?.pricing_financing?.loan_amount || 0
         }
       }));
 
@@ -602,7 +631,18 @@ const EnhancedUploadPage = () => {
     
     const price = parseFloat(verifiedData.pricing_financing?.price) || 0;
     const units = parseFloat(verifiedData.property?.units) || 0;
-    const grossRent = parseFloat(verifiedData.pnl?.gross_potential_rent) || 0;
+    // Derive gross rent: prefer existing value, otherwise compute from unit mix
+    let grossRent = parseFloat(verifiedData.pnl?.gross_potential_rent) || 0;
+    if (!grossRent && Array.isArray(verifiedData.unit_mix)) {
+      grossRent = verifiedData.unit_mix.reduce((sum, row) => {
+        const units = parseFloat(row.units) || 0;
+        const rent = parseFloat(row.rent_current || row.rent || 0) || 0;
+        return sum + units * rent * 12;
+      }, 0);
+      if (grossRent > 0) {
+        verifiedData.pnl.gross_potential_rent = grossRent;
+      }
+    }
     
     // Calculate percentage-based expenses
     let totalExpenses = 0;
@@ -834,11 +874,14 @@ const EnhancedUploadPage = () => {
                   <Upload size={40} color="#fff" />
                 </div>
                 <div style={{ marginBottom: 12, fontWeight: 900, fontSize: 20, color: "#111827" }}>
-                  Drop your PDF here or click to browse
+                  Drop your file here or click to browse
                 </div>
-                <input id="fileInput" type="file" accept=".pdf" onChange={onFileInput} style={{ display: "none" }} />
+                <div style={{ marginBottom: 12, fontSize: 14, color: "#6b7280" }}>
+                  Supports PDF, CSV, Excel (.xlsx, .xls), and Word (.docx, .doc)
+                </div>
+                <input id="fileInput" type="file" accept=".pdf,.csv,.xlsx,.xls,.docx,.doc" onChange={onFileInput} style={{ display: "none" }} />
                 <label htmlFor="fileInput" style={{ ...styles.button, cursor: "pointer" }}>
-                  <Upload size={18} /> Choose PDF
+                  <Upload size={18} /> Choose File
                 </label>
               </div>
             </div>
@@ -1842,7 +1885,7 @@ const EnhancedUploadPage = () => {
                   </div>
                   <div>
                     <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
-                      Monthly Payment
+                      Monthly Debt Service
                     </label>
                     <input
                       type="number"
@@ -1851,8 +1894,14 @@ const EnhancedUploadPage = () => {
                         ...(verifiedData?.pricing_financing?.monthly_payment ? styles.inputSuccess : {})
                       }}
                       value={verifiedData?.pricing_financing?.monthly_payment !== undefined && verifiedData?.pricing_financing?.monthly_payment !== null ? Number(verifiedData.pricing_financing.monthly_payment).toFixed(2) : ""}
-                      onChange={(e) => updateVerifiedField("pricing_financing", "monthly_payment", parseFloat(e.target.value))}
-                      placeholder="Enter monthly payment"
+                      onChange={(e) => {
+                        const v = parseFloat(e.target.value);
+                        updateVerifiedField("pricing_financing", "monthly_payment", v);
+                        if (!isNaN(v)) {
+                          updateVerifiedField("pricing_financing", "annual_debt_service", v * 12);
+                        }
+                      }}
+                      placeholder="Enter monthly debt service"
                     />
                   </div>
                   <div>
@@ -2000,7 +2049,20 @@ const EnhancedUploadPage = () => {
                         ...(verifiedData?.pnl?.gross_potential_rent ? styles.inputSuccess : {})
                       }}
                       value={verifiedData?.pnl?.gross_potential_rent || ""}
-                      onChange={(e) => updateVerifiedField("pnl", "gross_potential_rent", parseFloat(e.target.value))}
+                      onChange={(e) => {
+                        const gross = parseFloat(e.target.value) || 0;
+                        const other = verifiedData?.pnl?.other_income || 0;
+                        const vacRate = verifiedData?.pnl?.vacancy_rate || 0;
+                        const vacancyLoss = gross * vacRate;
+                        setVerifiedData(prev => ({
+                          ...prev,
+                          pnl: {
+                            ...prev.pnl,
+                            gross_potential_rent: gross,
+                            effective_gross_income: gross + other - vacancyLoss
+                          }
+                        }));
+                      }}
                       placeholder="Enter annual gross rent"
                     />
                   </div>
@@ -2015,7 +2077,20 @@ const EnhancedUploadPage = () => {
                         ...(verifiedData?.pnl?.other_income ? styles.inputSuccess : {})
                       }}
                       value={verifiedData?.pnl?.other_income || ""}
-                      onChange={(e) => updateVerifiedField("pnl", "other_income", parseFloat(e.target.value))}
+                      onChange={(e) => {
+                        const other = parseFloat(e.target.value) || 0;
+                        const gross = verifiedData?.pnl?.gross_potential_rent || 0;
+                        const vacRate = verifiedData?.pnl?.vacancy_rate || 0;
+                        const vacancyLoss = gross * vacRate;
+                        setVerifiedData(prev => ({
+                          ...prev,
+                          pnl: {
+                            ...prev.pnl,
+                            other_income: other,
+                            effective_gross_income: gross + other - vacancyLoss
+                          }
+                        }));
+                      }}
                       placeholder="Enter other income"
                     />
                   </div>
@@ -3500,6 +3575,11 @@ const EnhancedUploadPage = () => {
                       <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4, fontWeight: 900 }}>ANNUAL CASH FLOW</div>
                       <div style={{ fontSize: 16, fontWeight: 900 }}>
                         {fmtCurrency((pnl.noi || 0) - (pricing.annual_debt_service || 0))}
+                        {(!pricing.annual_debt_service || pricing.annual_debt_service === 0) && (
+                          <span style={{ fontSize: 11, color: '#9CA3AF', marginLeft: 8 }}>
+                            (No debt modeled)
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div>
