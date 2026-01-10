@@ -412,7 +412,8 @@ function DashboardPage() {
   useEffect(() => {
     const fetchTokenBalance = async () => {
       try {
-        const response = await fetch('http://localhost:8010/api/tokens/balance', {
+        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8010';
+        const response = await fetch(`${API_URL}/api/tokens/balance`, {
           headers: {
             // Add profile ID header if you have auth
             // 'X-Profile-ID': profileId
