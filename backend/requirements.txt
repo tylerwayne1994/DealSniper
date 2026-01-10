@@ -15,6 +15,7 @@ PyMuPDF
 httpx
 numpy-financial
 openpyxl
+pdf2image
 
 # Google OAuth / Gmail API
 google-auth
