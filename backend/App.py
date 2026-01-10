@@ -2816,6 +2816,15 @@ Base it on the actual metrics.
 - Include enrollment numbers (students per year) if available
 - Note: Student housing demand = rental opportunity
 
+### Net Absorption Rate (REQUIRED - Use Web Search)
+**You MUST research and report the NET ABSORPTION RATE for multifamily/apartment units in this market:**
+- Net Absorption Rate: The number of multifamily units absorbed (leased) minus units that became vacant over a specific period (typically quarterly or annually)
+- Report as: "X,XXX units absorbed in [Quarter/Year]" or "Net absorption rate: X.X%" 
+- Include context: Is absorption positive or negative? What does this mean for supply/demand balance?
+- Source: Search for recent multifamily market reports from CBRE, Cushman & Wakefield, CoStar, Apartment List, or local real estate associations
+- If county-level data not available, provide metro area absorption rates
+- This metric is CRITICAL for understanding if new supply is being absorbed or if the market is oversupplied
+
 ### Other Notable Amenities
 - Major shopping centers, entertainment districts
 - Public transit access (if applicable)

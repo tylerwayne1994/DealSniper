@@ -443,7 +443,8 @@ const MarketResearchTab = ({
       const fullAddress = dealAddress || 
         `${marketData.location.city}, ${marketData.location.state} ${marketData.location.zip}`;
 
-      const response = await fetch('http://localhost:8010/api/market-data/summary', {
+      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
+      const response = await fetch(`${API_BASE}/api/market-data/summary`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
