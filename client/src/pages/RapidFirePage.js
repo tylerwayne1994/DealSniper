@@ -3,7 +3,7 @@ import { Upload, AlertCircle, CheckCircle, XCircle, Loader, Building2, BarChart3
 import { saveRapidFireDeals } from '../lib/dealsService';
 
 // NOTE: Keep API_BASE consistent with other pages (e.g. UnderwriteV2Page)
-const API_BASE = "http://127.0.0.1:8010";
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8010";
 
 /**
  * @typedef {Object} RapidFireDeal

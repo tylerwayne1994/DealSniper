@@ -77,7 +77,8 @@ const ResultsPageV2 = ({
       
       setIsRunningAI(true);
       try {
-        const response = await fetch(`http://localhost:8010/v2/deals/${dealId}/underwrite`, {
+        const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
+        const response = await fetch(`${API_BASE}/v2/deals/${dealId}/underwrite`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(scenarioData)
