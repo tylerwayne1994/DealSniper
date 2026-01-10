@@ -1484,7 +1484,7 @@ def health():
     return {
         "ok": True,
         "version": "9.0.0",
-        "parser_default": PARSER_STRATEGY_DEFAULT,
+        "parser_default": "parser_v4",
         "clients": {
             "mistral": MISTRAL is not None,
             "anthropic": ANTHROPIC is not None,
