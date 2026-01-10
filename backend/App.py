@@ -1,11 +1,16 @@
-# app.py  — Underwriting backend w/ financing modes + comprehensive metrics
-# Python 3.10+  |  uvicorn app:app --host 127.0.0.1 --port 8010 --reload
 
-import os, io, json, base64, re
+
+"""
+app.py  — Underwriting backend w/ financing modes + comprehensive metrics
+Python 3.10+  |  uvicorn app:app --host 127.0.0.1 --port 8010 --reload
+"""
+
+import os, io, json, base64, re, uuid, tempfile, shutil
+from pathlib import Path
 from typing import Optional, Dict, Any, List
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request, status
+from fastapi.responses import JSONResponse, RedirectResponse
 from cors_config import install_cors
 
 from pypdf import PdfReader, PdfWriter
@@ -15,65 +20,35 @@ from mistralai import Mistral
 from anthropic import Anthropic
 
 # from protected_routes import router as protected_router  # Moved to after startup
-# Optional local parsers (kept for compatibility; not required)
-# try:
-#     from parser_v4 import parse_om as PARSER_V4_PARSE_OM
-#     HAS_PARSER_V4 = True
-# except Exception:
-#     PARSER_V4_PARSE_OM = None
-#     HAS_PARSER_V4 = False
+# Optional advanced parser (parser_v4) for richer underwriting extraction.
+try:
+    from parser_v4 import RealEstateParser
+    _RE_PARSER = RealEstateParser()
+    HAS_PARSER_V4 = True
+except Exception:
+    _RE_PARSER = None
+    HAS_PARSER_V4 = False
 
-PARSER_V4_PARSE_OM = None
-HAS_PARSER_V4 = False
 
-load_dotenv(override=True)
-
-import os
-print("DEBUG OPENAI KEY PREFIX:", (os.getenv("OPENAI_API_KEY") or "")[:12])
-
-# Configurable Anthropic model name (set ANTHROPIC_MODEL in env to override)
-ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-3-haiku-20240307")
-
-# ---------------- Config / Keys ----------------
+# Always load the backend .env regardless of the process working directory.
+load_dotenv(dotenv_path=Path(__file__).resolve().with_name(".env"), override=True)
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
-# support both env names
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
+# Global LLM client placeholders (set in startup)
 MISTRAL = None
 ANTHROPIC = None
 
-ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "https://terra-investai.com"
-]
-MAX_BYTES = 50 * 1024 * 1024
-OCR_MODEL = "mistral-ocr-latest"
+# Import spreadsheet AI module
+from spreadsheet_ai import process_spreadsheet_command
+from max_prompts import MAX_PARTNER_SYSTEM_PROMPT
 
+# Allowed document MIME types for uploads and OCR
+ALLOWED_DOC_MIMES = {"application/pdf", "image/png", "image/jpeg", "image/jpg", "image/webp"}
 
-# ---- CORS allowed origins ----
-ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3001",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    # add your prod domain here when you deploy
-    "https://terra-investai.com",
-]
+# Maximum allowed upload size (bytes)
+MAX_BYTES = 50 * 1024 * 1024  # 50 MB
 
-ALLOWED_DOC_MIMES = {
-    "application/pdf", "image/png", "image/jpeg", "image/jpg", "image/webp",
-}
-ALLOWED_SHEET_MIMES = {
-    "text/csv",
-    "application/vnd.ms-excel",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-}
-ALLOWED_UPLOAD_MIMES = set(ALLOWED_DOC_MIMES) | set(ALLOWED_SHEET_MIMES)
-
-PARSER_STRATEGY_DEFAULT = (os.getenv("PARSER_STRATEGY") or "claude").strip().lower()
 
 
 app = FastAPI(title="Underwriting Backend", version="9.0.0")
@@ -82,6 +57,12 @@ install_cors(app)
 import logging
 log = logging.getLogger("app")
 logging.basicConfig(level=logging.INFO)
+
+import stripe
+
+# Price IDs: prefer env vars, fallback to known test IDs
+PRICE_ID_PRO = os.getenv("PRICE_ID_PRO", "price_1SfA2SRRD0SJQZk3q6Zujrw0")
+PRICE_ID_BASE = os.getenv("PRICE_ID_BASE", "price_1SfA11RRD0SJQZk3dTP5HIHa")
 
 # Debug endpoint for env vars (dev only)
 @app.get("/debug/env")
@@ -96,6 +77,192 @@ def debug_env():
 from v2_underwriter.routes import router as v2_router
 app.include_router(v2_router)
 
+# LLM usage logging routes
+from v2_underwriter.llm_usage import router as llm_usage_router
+app.include_router(llm_usage_router)
+
+# Email Deals: Gmail integration & auto-screening
+from email_deals import router as email_deals_router, auth_router as google_auth_router
+app.include_router(email_deals_router)
+app.include_router(google_auth_router)
+
+# Token Management: AI operation billing
+from token_manager import router as token_router
+app.include_router(token_router)
+
+# Stripe Webhook: Handle subscription updates
+from stripe_webhook_handler import router as stripe_webhook_router
+app.include_router(stripe_webhook_router)
+
+# Token Purchase: Handle one-time token purchases
+from token_purchase_handler import router as token_purchase_router
+app.include_router(token_purchase_router)
+
+# HUD API proxy router (provides /api/hud/* endpoints)
+try:
+    from hud_api import router as hud_router
+    app.include_router(hud_router)
+except Exception:
+    log.exception("Failed to include HUD API router")
+
+# Excel AI: Spreadsheet assistant with GPT-4
+try:
+    from excel_ai import router as excel_ai_router
+    app.include_router(excel_ai_router)
+    log.info("Excel AI router loaded successfully")
+except Exception:
+    log.exception("Failed to include Excel AI router")
+
+
+# ---------------- Spreadsheet Command Relay ----------------
+# In-memory command queues keyed by sessionId
+COMMAND_QUEUES: dict[str, list[dict]] = {}
+
+@app.post("/api/spreadsheet/commands")
+async def enqueue_spreadsheet_commands(request: Request):
+    """Enqueue one or more spreadsheet commands for a client session.
+
+    Body: { sessionId: string, commands: array|object }
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+    session_id = body.get("sessionId")
+    commands = body.get("commands")
+    if not session_id:
+        raise HTTPException(status_code=400, detail="Missing sessionId")
+
+    if commands is None:
+        raise HTTPException(status_code=400, detail="Missing commands")
+    if isinstance(commands, dict):
+        commands = [commands]
+    if not isinstance(commands, list):
+        raise HTTPException(status_code=400, detail="Commands must be a list or object")
+
+    q = COMMAND_QUEUES.setdefault(session_id, [])
+    q.extend(commands)
+    try:
+        import logging as _logging
+        _logging.getLogger("app").info("[Spreadsheet] Enqueue %d cmd(s) for session %s", len(commands), session_id)
+    except Exception:
+        pass
+    return {"ok": True, "queued": len(commands)}
+
+@app.get("/api/spreadsheet/commands")
+async def dequeue_spreadsheet_commands(sessionId: str):
+    """Dequeue and return any pending commands for a client session.
+
+    Query: ?sessionId=...
+    """
+    cmds = COMMAND_QUEUES.pop(sessionId, [])
+    try:
+        import logging as _logging
+        _logging.getLogger("app").info("[Spreadsheet] Dequeue for session %s -> %d cmd(s)", sessionId, len(cmds))
+    except Exception:
+        pass
+    return {"ok": True, "commands": cmds, "count": len(cmds)}
+
+# Alias routes to support clients calling without /api prefix
+@app.post("/spreadsheet/commands")
+async def enqueue_spreadsheet_commands_alias(request: Request):
+    return await enqueue_spreadsheet_commands(request)
+
+@app.get("/spreadsheet/commands")
+async def dequeue_spreadsheet_commands_alias(sessionId: str):
+    return await dequeue_spreadsheet_commands(sessionId)
+
+
+# Mapping endpoint: expose cell mapping for templates (for Max key edits)
+@app.get("/api/spreadsheet/mapping")
+async def get_spreadsheet_mapping():
+    try:
+        import csv
+        import openpyxl
+        base = Path(__file__).resolve().parent
+        candidates_csv = [base / "delamapping.csv", base / "deal_manager_mapping.csv"]
+        candidate_xlsx = base / "delamapping.xlsx"
+        rows = []
+        csv_path = None
+        for c in candidates_csv:
+            if c.exists():
+                csv_path = c
+                break
+        if csv_path:
+            with csv_path.open("r", newline="", encoding="utf-8") as f:
+                # Read all lines and find the header row
+                all_lines = f.readlines()
+                header_row_idx = None
+                for i, line in enumerate(all_lines):
+                    if "OM Field Name" in line or "json_field" in line.lower() or "key" in line.lower():
+                        header_row_idx = i
+                        break
+                
+                if header_row_idx is None:
+                    # Fallback: assume first row is header
+                    header_row_idx = 0
+                
+                # Parse from header row onwards
+                f.seek(0)
+                for _ in range(header_row_idx):
+                    f.readline()
+                
+                reader = csv.DictReader(f)
+                for row in reader:
+                    # Support multiple column name formats
+                    key = row.get("json_field") or row.get("key") or row.get("OM Field Name") or row.get(" OM Field Name")
+                    cell = row.get("cell") or row.get("Maps To Cell") or row.get(" Maps To Cell")
+                    # Skip empty rows or header-like rows
+                    if not key or not cell or not key.strip() or not cell.strip():
+                        continue
+                    if "PROPERTY INFORMATION" in key or "FINANCIAL" in key or "INSTRUCTIONS" in key:
+                        continue
+                    rows.append({
+                        "section": row.get("section") or row.get("Model Section") or row.get(" Model Section"),
+                        "key": key.strip(),
+                        "cell": cell.strip(),
+                        "label": row.get("label") or row.get("OM Field Name") or row.get(" OM Field Name"),
+                        "type": row.get("type") or row.get("Data Type") or row.get(" Data Type"),
+                        "sheet": row.get("sheet"),
+                        "required": (row.get("required") or row.get("Notes") or row.get(" Notes") or "").strip().lower() in ("yes", "true", "1", "required")
+                    })
+        elif candidate_xlsx.exists():
+            # Parse mapping from XLSX (prefer sheet named 'Mapping', else active)
+            wb = openpyxl.load_workbook(candidate_xlsx, data_only=True)
+            ws = wb["Mapping"] if "Mapping" in wb.sheetnames else wb.active
+            headers = [str((ws.cell(row=1, column=i).value or "").strip()).lower() for i in range(1, ws.max_column + 1)]
+            col_index = {h: i for i, h in enumerate(headers)}
+            def cell_val(r, name):
+                idx = col_index.get(name)
+                if idx is None:
+                    return None
+                v = ws.cell(row=r, column=idx + 1).value
+                return v if v is None else str(v)
+            for r in range(2, ws.max_row + 1):
+                key = cell_val(r, "json_field") or cell_val(r, "key")
+                cell = cell_val(r, "cell")
+                if not key or not cell:
+                    continue
+                rows.append({
+                    "section": cell_val(r, "section"),
+                    "key": key,
+                    "cell": cell,
+                    "label": cell_val(r, "label"),
+                    "type": cell_val(r, "type"),
+                    "sheet": cell_val(r, "sheet"),
+                    "required": str(cell_val(r, "required") or "").strip().lower() in ("yes", "true", "1")
+                })
+            wb.close()
+        else:
+            raise HTTPException(status_code=404, detail="Mapping file not found (CSV/XLSX)")
+        return {"success": True, "mapping": rows}
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.exception("Failed to load mapping: %s", e)
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
 
 def _preview(key: str, length: int = 8) -> str:
     if not key:
@@ -105,7 +272,43 @@ def _preview(key: str, length: int = 8) -> str:
 
 log.info("[ENV] Stripe key prefix: %s", _preview(os.getenv("STRIPE_SECRET_KEY")))
 log.info("[ENV] Frontend URL: %s", os.getenv("FRONTEND_URL"))
-log.info("[ENV] Stripe webhook secret prefix: %s", _preview(os.getenv("STRIPE_WEBHOOK_SECRET")))
+log.info("[ENV] Stripe webhook secret prefix: %s", _preview(os.getenv("STRIPE_WEBHOOK_SECRET")))  # Updated logging for webhook secret
+
+
+# Stripe Checkout session creation endpoint for plan selection
+@app.post("/api/create-checkout-session")
+async def create_checkout_session(request: Request):
+    data = await request.json()
+    email = data.get("email")
+    plan = data.get("plan")
+    if not email or not plan:
+        raise HTTPException(status_code=400, detail="Missing email or plan")
+
+    # Map plan to Stripe price ID
+    price_id = None
+    if plan == "pro":
+        price_id = PRICE_ID_PRO
+    elif plan == "base":
+        price_id = PRICE_ID_BASE
+    else:
+        raise HTTPException(status_code=400, detail="Invalid plan")
+
+    try:
+        stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{
+                "price": price_id,
+                "quantity": 1,
+            }],
+            mode="subscription",
+            customer_email=email,
+            success_url=os.getenv("FRONTEND_URL", "http://localhost:3000") + "/dashboard?session_id={CHECKOUT_SESSION_ID}",
+            cancel_url=os.getenv("FRONTEND_URL", "http://localhost:3000") + "/select-plan?canceled=true",
+        )
+        return {"url": checkout_session.url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.on_event("startup")
 async def _init_clients():
@@ -217,33 +420,67 @@ def _call_claude_parse_from_markdown(ocr_text: str, financing_params: Optional[D
 Return ONLY JSON. Extract EVERYTHING into this schema.
 
 {
-  "property": {
-    "address": "", "city": "", "state": "", "zip": "",
-    "units": 0, "year_built": 0, "rba_sqft": 0, "land_area_acres": 0,
-    "property_type": "", "property_class": "", "parking_spaces": 0
-  },
-  "pricing_financing": {
-    "price": 0, "price_per_unit": 0, "price_per_sf": 0,
-    "loan_amount": 0, "down_payment": 0, "interest_rate": 0, "ltv": 0,
-    "term_years": 0, "amortization_years": 0, "io_period_years": 0,
-    "monthly_payment": 0, "annual_debt_service": 0, "debt_type": "",
-    "balloon_amount": 0
-  },
-  "pnl": {
-    "gross_potential_rent": 0, "other_income": 0,
-    "vacancy_rate": 0, "vacancy_amount": 0,
-    "effective_gross_income": 0,
-    "operating_expenses": 0, "noi": 0, "cap_rate": 0, "expense_ratio": 0
-  },
-  "expenses": {
-    "taxes": 0, "insurance": 0, "utilities": 0, "repairs_maintenance": 0,
-    "management": 0, "payroll": 0, "admin": 0, "marketing": 0, "other": 0, "total": 0
-  },
-  "unit_mix": [{"type":"", "units":0, "unit_sf":0, "rent_current":0, "rent_market":0}],
-  "underwriting": {"dscr":0, "cap_rate":0, "cash_on_cash":0, "irr":0},
-  "deal_analysis": {}, "suggested_financing": {}, "time_periods": {},
-  "data_quality": {"confidence":0.0, "missing_fields":[], "assumptions":[]}
+    "property": {
+        "address": "", "city": "", "state": "", "zip": "",
+        "units": 0, "year_built": 0, "rba_sqft": 0, "land_area_acres": 0,
+        "property_type": "", "property_class": "", "parking_spaces": 0
+    },
+    "pricing_financing": {
+        "price": 0, "price_per_unit": 0, "price_per_sf": 0,
+        "loan_amount": 0, "down_payment": 0, "interest_rate": 0, "ltv": 0,
+        "term_years": 0, "amortization_years": 0, "io_period_years": 0,
+        "monthly_payment": 0, "annual_debt_service": 0, "debt_type": "",
+        "balloon_amount": 0
+    },
+    "pnl": {
+        "gross_potential_rent": 0, "other_income": 0,
+        "vacancy_rate": 0, "vacancy_amount": 0,
+        "vacancy_rate_t12": 0,
+        "vacancy_rate_current": 0,
+        "vacancy_rate_stabilized": 0,
+        "effective_gross_income": 0,
+        "operating_expenses": 0,
+        "noi": 0,
+        "noi_t12": 0,
+        "noi_proforma": 0,
+        "noi_stabilized": 0,
+        "cap_rate": 0,
+        "cap_rate_t12": 0,
+        "cap_rate_proforma": 0,
+        "cap_rate_stabilized": 0,
+        "expense_ratio": 0,
+        "expense_ratio_t12": 0,
+        "expense_ratio_proforma": 0
+    },
+    "expenses": {
+        "taxes": 0, "insurance": 0, "utilities": 0, "repairs_maintenance": 0,
+        "management": 0, "payroll": 0, "admin": 0, "marketing": 0, "other": 0, "total": 0
+    },
+    "unit_mix": [{"type":"", "units":0, "unit_sf":0, "rent_current":0, "rent_market":0}],
+    "underwriting": {"dscr":0, "cap_rate":0, "cash_on_cash":0, "irr":0},
+    "deal_analysis": {}, "suggested_financing": {}, "time_periods": {},
+    "data_quality": {"confidence":0.0, "missing_fields":[], "assumptions":[]}
 }
+
+NOI FIELD RULES:
+- If the OM shows multiple NOIs, always separate them:
+    • Actual / T12 / Current NOI → store in both pnl.noi_t12 and pnl.noi
+    • Pro Forma / Year 1 projected NOI → store in pnl.noi_proforma
+    • Stabilized NOI after renovations/lease-up → store in pnl.noi_stabilized
+- NEVER put broker pro forma NOI into pnl.noi_t12 if an actual/T12 NOI is available.
+- If ONLY pro forma NOI is given and you truly cannot find actual/T12, put it in pnl.noi_proforma and ALSO copy to pnl.noi, and add a short explanation to data_quality.assumptions.
+
+CAP RATE & VACANCY FIELD RULES:
+- If the OM shows multiple cap rates (T12 / In-Place, T3, Pro Forma, Stabilized), always separate them:
+    • In-Place / Actual / T12 Cap Rate → store in both pnl.cap_rate_t12 and pnl.cap_rate (this is the default cap rate for underwriting).
+    • Pro Forma / Year 1 Cap Rate → store in pnl.cap_rate_proforma.
+    • Stabilized Cap Rate (after renovations/lease-up) → store in pnl.cap_rate_stabilized.
+- If only a Pro Forma cap rate is given and there is no clear actual/T12 cap rate, put it in pnl.cap_rate_proforma and ALSO copy to pnl.cap_rate.
+
+- If the OM shows multiple vacancy or occupancy rates (current, T12, stabilized/pro forma), always separate them:
+    • Actual / T12 Vacancy Rate → store in pnl.vacancy_rate_t12 and ALSO as pnl.vacancy_rate if that is the primary underwriting basis.
+    • Current Vacancy / Occupancy (point-in-time) → store in pnl.vacancy_rate_current (convert occupancy to vacancy if needed).
+    • Pro Forma / Stabilized Vacancy Rate → store in pnl.vacancy_rate_stabilized.
 """.strip()
 
     prompt = (
@@ -379,6 +616,14 @@ _LABEL_MAP = {
     "NET OPERATING INCOME": "noi",
 }
 def _extract_operating_summary_from_markdown(md: str) -> Dict[str, Any]:
+    """Extract high-level P&L and expense lines from markdown.
+
+    This is the legacy helper that operates on a single markdown blob.
+    It is kept as-is for backward compatibility. A new helper
+    `_extract_operating_summary_sources` (defined below) performs a
+    similar extraction but also tracks page/line sources using the full
+    `ocr_json` structure.
+    """
     out_pnl: Dict[str, Any] = {}
     out_exp: Dict[str, Any] = {}
     block_m = _OP_SUM_RE.search(md or "")
@@ -412,6 +657,73 @@ def _extract_operating_summary_from_markdown(md: str) -> Dict[str, Any]:
             out_pnl["vacancy_rate"] = round(vac / gpr, 4)
     return {"pnl": out_pnl, "expenses": out_exp}
 
+def _extract_operating_summary_sources(ocr_json: dict) -> Dict[str, Any]:
+    """Best-effort mapping of key fields to their OCR page/line.
+
+    Returns a flat dict mapping field paths (e.g. "pnl.noi",
+    "expenses.taxes") to simple source metadata:
+
+        {"pnl.noi": {"page": 5, "line_index": 12, "text": "..."}, ...}
+
+    This does not currently rely on bounding boxes; if the upstream OCR
+    payload is later extended with coordinates, this helper can be
+    enhanced to include a "bbox" entry while keeping the same shape.
+    """
+    if not isinstance(ocr_json, dict):
+        return {}
+
+    pages = ocr_json.get("pages", []) or []
+    if not pages:
+        return {}
+
+    sources: Dict[str, Any] = {}
+
+    for page_idx, page in enumerate(pages):
+        md = (page.get("markdown") or "")
+        if not md:
+            continue
+
+        block_m = _OP_SUM_RE.search(md)
+        text = block_m.group(0) if block_m else md
+        if not text:
+            continue
+
+        for line_idx, raw in enumerate(text.splitlines()):
+            line = raw.strip()
+            if not line:
+                continue
+
+            mnum = re.search(r"\$?\(?-?[\d,]+(?:\.\d+)?\)?", line)
+            if not mnum:
+                continue
+
+            label = re.sub(r"\$?\(?-?[\d,]+(?:\.\d+)?\)?.*$", "", line).strip().upper()
+            key = None
+            for k, v in _LABEL_MAP.items():
+                if k in label:
+                    key = v
+                    break
+            if key is None:
+                continue
+
+            # Only record the first occurrence for each field to keep
+            # the mapping simple and deterministic.
+            if key in {"taxes","insurance","admin","repairs_maintenance","utilities","marketing","management","other"}:
+                path = f"expenses.{key}"
+            else:
+                path = f"pnl.{key}"
+
+            if path in sources:
+                continue
+
+            sources[path] = {
+                "page": page_idx + 1,  # 1-based page index for UI
+                "line_index": line_idx,
+                "text": line,
+            }
+
+    return sources
+
 RECOVERY_KEYWORDS = [
     "PRICING DETAIL","LIST PRICE","ASKING PRICE","OFFERING PRICE","PURCHASE PRICE",
     "PRICE PER UNIT","PRICE PER SQUARE FOOT","NUMBER OF UNITS","RENTABLE SQUARE FOOT","RBA","LOT SIZE",
@@ -440,24 +752,102 @@ def _normalize_parsed(raw: Dict[str, Any]) -> Dict[str, Any]:
     pnl_in    = raw.get("pnl", {}) or {}
     expenses_in = raw.get("expenses", {}) or {}
 
-    # Normalize vacancy rate - should be a percentage like 5 (for 5%), not 0.05 or 500
-    raw_vacancy = _as_number(pnl_in.get("vacancy_rate") or pnl_in.get("vacancy_rate_current"))
+    # ---------------- Core PNL normalization ----------------
+    # Normalize vacancy rate variants (T12 vs current vs stabilized)
+    vac_t12 = _as_number(pnl_in.get("vacancy_rate_t12"))
+    vac_current = _as_number(pnl_in.get("vacancy_rate_current") or pnl_in.get("vacancy_rate"))
+    vac_stabilized = _as_number(pnl_in.get("vacancy_rate_stabilized"))
+
+    raw_vacancy = None
+    for candidate in (vac_t12, vac_current, vac_stabilized):
+        if candidate is not None:
+            raw_vacancy = candidate
+            break
+
+    # Normalize to a percentage like 5 (for 5%), not 0.05 or 500
     if raw_vacancy is not None:
-        if raw_vacancy > 100:  # If it's 500, it means 5% was stored wrong
+        if raw_vacancy > 100:  # 500 means 5% stored wrong
             raw_vacancy = raw_vacancy / 100
-        elif raw_vacancy > 0 and raw_vacancy < 1:  # If it's 0.05, convert to 5
+        elif 0 < raw_vacancy < 1:  # 0.05 → 5
             raw_vacancy = raw_vacancy * 100
+
+    # Prefer actual/T12 NOI when available, but also surface
+    # pro forma and stabilized variants so downstream consumers
+    # can see the full picture.
+    noi_t12 = _as_number(
+        pnl_in.get("noi_t12")
+        or pnl_in.get("noi_actual")
+        or pnl_in.get("noi_t_12")
+        or pnl_in.get("noi_t-12")
+    )
+    noi_proforma = _as_number(
+        pnl_in.get("noi_proforma")
+        or pnl_in.get("noi_pro_forma")
+        or pnl_in.get("noi_year_1")
+        or pnl_in.get("noi_year1")
+        or pnl_in.get("noi_y1")
+    )
+    noi_stabilized = _as_number(
+        pnl_in.get("noi_stabilized")
+        or pnl_in.get("noi_stab")
+        or pnl_in.get("noi_stabilised")
+    )
+
+    noi_generic = _as_number(pnl_in.get("noi") or pnl_in.get("noi_current"))
+    noi_value = None
+    for candidate in (noi_t12, noi_generic, noi_proforma):
+        if candidate is not None:
+            noi_value = candidate
+            break
+
+    # Cap rate variants (T12 vs pro forma)
+    cap_t12 = _as_number(pnl_in.get("cap_rate_t12") or pnl_in.get("cap_rate_in_place") or pnl_in.get("cap_rate_actual"))
+    cap_proforma = _as_number(pnl_in.get("cap_rate_proforma") or pnl_in.get("cap_rate_year_1") or pnl_in.get("cap_rate_y1"))
+    cap_generic = _as_number(pnl_in.get("cap_rate") or pnl_in.get("cap_rate_current"))
+
+    cap_value = None
+    for candidate in (cap_t12, cap_generic, cap_proforma):
+        if candidate is not None:
+            cap_value = candidate
+            break
+
+    # Expense ratio variants (T12 vs pro forma)
+    exp_ratio_t12 = _as_number(pnl_in.get("expense_ratio_t12"))
+    exp_ratio_proforma = _as_number(pnl_in.get("expense_ratio_proforma"))
+    exp_ratio_generic = _as_number(pnl_in.get("expense_ratio") or pnl_in.get("noi_margin_current"))
+
+    exp_ratio_value = None
+    for candidate in (exp_ratio_t12, exp_ratio_generic, exp_ratio_proforma):
+        if candidate is not None:
+            exp_ratio_value = candidate
+            break
 
     pnl = {
         "gross_potential_rent": _as_number(pnl_in.get("gross_potential_rent") or pnl_in.get("scheduled_gross_rent_current") or pnl_in.get("market_rent_current")),
         "other_income": _as_number(pnl_in.get("other_income")),
+        # Canonical vacancy used in downstream calcs (percentage number like 5 for 5%)
         "vacancy_rate": raw_vacancy,
         "vacancy_amount": _as_number(pnl_in.get("vacancy_amount") or pnl_in.get("vacancy_amount_current")),
         "effective_gross_income": _as_number(pnl_in.get("effective_gross_income") or pnl_in.get("effective_gross_income_current")),
         "operating_expenses": _as_number(pnl_in.get("operating_expenses") or pnl_in.get("expenses_current")),
-        "noi": _as_number(pnl_in.get("noi") or pnl_in.get("noi_current")),
-        "cap_rate": _as_number(pnl_in.get("cap_rate") or pnl_in.get("cap_rate_current")),
-        "expense_ratio": _as_number(pnl_in.get("expense_ratio") or pnl_in.get("noi_margin_current")),
+        # NOI variants
+        "noi_t12": noi_t12,
+        "noi_proforma": noi_proforma,
+        "noi_stabilized": noi_stabilized,
+        "noi": noi_value,
+        # Vacancy variants
+        "vacancy_rate_t12": vac_t12,
+        "vacancy_rate_current": vac_current,
+        "vacancy_rate_stabilized": vac_stabilized,
+        # Cap rate variants
+        "cap_rate": cap_value,
+        "cap_rate_t12": cap_t12,
+        "cap_rate_proforma": cap_proforma,
+        "cap_rate_stabilized": _as_number(pnl_in.get("cap_rate_stabilized")),
+        # Expense ratio variants
+        "expense_ratio": exp_ratio_value,
+        "expense_ratio_t12": exp_ratio_t12,
+        "expense_ratio_proforma": exp_ratio_proforma,
     }
 
     pricing_norm = {
@@ -1198,19 +1588,26 @@ async def ocr_and_underwrite(
     def _parse_with_claude(md: str):
         return _call_claude_parse_from_markdown(md, financing_params)
 
-    def _parse_with_om_v4(j: dict):
-        if not HAS_PARSER_V4 or j is None:
-            raise HTTPException(status_code=500, detail="parser_v4 not available or OCR JSON missing")
-        return PARSER_V4_PARSE_OM(j)
+    def _parse_with_om_v4(md: str):
+        if not HAS_PARSER_V4:
+            raise HTTPException(status_code=500, detail="parser_v4 not available")
+        try:
+            res = _RE_PARSER.parse_with_claude(md, mode="underwriting")  # type: ignore[name-defined]
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"parser_v4 call failed: {e}")
+        if not isinstance(res, dict) or not res.get("success"):
+            err = (res or {}).get("error") if isinstance(res, dict) else None
+            raise HTTPException(status_code=502, detail=f"parser_v4 returned error: {err or 'unknown error'}")
+        return res.get("data") or {}
 
     try:
         if strategy == "claude":
             parsed_raw = _parse_with_claude(markdown_text); used_strategy = "claude"
         elif strategy == "om_v4":
-            parsed_raw = _parse_with_om_v4(ocr_json);       used_strategy = "om_v4"
+            parsed_raw = _parse_with_om_v4(markdown_text);  used_strategy = "om_v4"
         else:
             try:
-                parsed_raw = _parse_with_om_v4(ocr_json);   used_strategy = "om_v4"
+                parsed_raw = _parse_with_om_v4(markdown_text); used_strategy = "om_v4"
             except Exception:
                 parsed_raw = _parse_with_claude(markdown_text); used_strategy = "claude"
     except HTTPException:
@@ -1253,6 +1650,18 @@ async def ocr_and_underwrite(
     for k, v in (ops.get("expenses") or {}).items():
         if v is not None and not exps.get(k):
             exps[k] = v
+
+    # Attach lightweight source metadata for key P&L/expense fields so
+    # the frontend can show where values came from in the PDF viewer.
+    try:
+        if ocr_json is not None:
+            op_sources = _extract_operating_summary_sources(ocr_json)
+            if op_sources:
+                normalized.setdefault("metadata", {})["sources"] = op_sources
+    except Exception as e:
+        # Never let source-mapping failures break underwriting; just
+        # record a truncated error string for debugging.
+        normalized.setdefault("metadata", {})["sources_error"] = str(e)[:200]
 
     # ---------- Financing mode compute (overrides/augments Claude) ----------
     fm = (financing_mode or "").strip().lower()
@@ -1403,6 +1812,43 @@ async def ocr_and_underwrite(
     # Calculate comprehensive deal metrics instead of simple opinion
     normalized["deal_analysis"] = _calculate_deal_metrics(normalized)
 
+    # NEW: Extract images from PDF if applicable
+    extracted_images = []
+    image_count = 0
+    generated_deal_id = str(uuid.uuid4())
+    
+    if mime == "application/pdf" and HAS_PARSER_V4:
+        try:
+            from image_storage import upload_images_to_supabase
+            
+            # Save PDF temporarily
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf:
+                tmp_pdf.write(orig_data)
+                tmp_pdf_path = tmp_pdf.name
+            
+            # Create temp directory for extracted images
+            temp_img_dir = f"temp_images_{generated_deal_id}"
+            os.makedirs(temp_img_dir, exist_ok=True)
+            
+            # Extract images using parser
+            extracted = _RE_PARSER.extract_images_from_pdf(tmp_pdf_path, temp_img_dir)
+            
+            # Upload to Supabase Storage
+            if extracted:
+                uploaded = upload_images_to_supabase(generated_deal_id, extracted)
+                extracted_images = uploaded
+                image_count = len(uploaded)
+            
+            # Cleanup
+            os.remove(tmp_pdf_path)
+            shutil.rmtree(temp_img_dir, ignore_errors=True)
+            
+            print(f"✅ Extracted and uploaded {image_count} images for deal {generated_deal_id}")
+            
+        except Exception as e:
+            print(f"⚠️ Image extraction failed: {str(e)}")
+            # Don't fail the whole request if image extraction fails
+
     return {
         "ok": True,
         "parsed": normalized,
@@ -1412,6 +1858,9 @@ async def ocr_and_underwrite(
         "file_name": file.filename,
         "file_size_mb": round(len(data) / (1024 * 1024), 2),
         "user_financing": financing_params,
+        "images": extracted_images,  # NEW: Return extracted image URLs
+        "image_count": image_count,   # NEW: Return count
+        "deal_id": generated_deal_id,  # NEW: Return deal ID for tracking images
     }
 
 @app.post("/ocr/file")
@@ -1438,6 +1887,51 @@ async def ocr_file_legacy(
 
     ocr_json = _call_mistral_ocr(data, mime)
     return {"ok": True, "parser": "none (ocr only)", "ocr_data": ocr_json}
+
+
+@app.post("/ocr/sources")
+async def ocr_sources(
+    file: UploadFile = File(...),
+    pages: Optional[str] = Form(default=""),
+):
+    """Return lightweight source snippets for key P&L/expense lines.
+
+    This uses the same Mistral OCR + `_extract_operating_summary_sources`
+    logic as `/ocr/underwrite`, but without running any LLM parsing or
+    underwriting. Intended for the PDF viewer to show where numbers came
+    from without incurring full parse costs.
+    """
+    mime = (file.content_type or "").lower()
+    if mime not in ALLOWED_DOC_MIMES:
+        raise HTTPException(status_code=415, detail=f"Unsupported content type: {mime}")
+
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Empty upload")
+    if len(data) > MAX_BYTES:
+        raise HTTPException(status_code=413, detail="File too large")
+
+    # Optional page slicing for PDFs
+    if mime == "application/pdf" and pages:
+        try:
+            data = _slice_pdf(data, pages)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+    ocr_json = _call_mistral_ocr(data, mime)
+    sources = {}
+    error = None
+    try:
+        sources = _extract_operating_summary_sources(ocr_json)
+    except Exception as e:
+        error = str(e)[:200]
+
+    return {
+        "ok": True,
+        "page_count": len(ocr_json.get("pages", [])) if isinstance(ocr_json, dict) else None,
+        "sources": sources,
+        "error": error,
+    }
 
 # ============================================================================
 # STRIPE WEBHOOK (Disabled - no usage tracking)
@@ -1573,6 +2067,185 @@ async def health_check_analyze(request: Request):
        }
 
 # ============================================================================
+# Due Diligence Chat Endpoint (OpenAI-powered)
+# ============================================================================
+
+@app.post("/api/due-diligence/chat")
+async def due_diligence_chat(request: Request):
+    """
+    Chat with AI for due diligence analysis - cross-referencing numbers,
+    verifying deal viability, and suggesting debt restructuring.
+    """
+    try:
+        data = await request.json()
+        message = data.get("message", "")
+        deal_context = data.get("dealContext", {})
+        conversation_history = data.get("conversationHistory", [])
+        
+        if not message:
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "error": "No message provided"}
+            )
+        
+        # Get OpenAI API key
+        openai_key = os.getenv("OPENAI_API_KEY")
+        if not openai_key:
+            return JSONResponse(
+                status_code=500,
+                content={"success": False, "error": "OpenAI API key not configured"}
+            )
+        
+        import httpx
+        
+        # Build context string from deal data
+        context_parts = []
+        
+        if deal_context.get("address"):
+            context_parts.append(f"Property: {deal_context['address']}")
+        if deal_context.get("units"):
+            context_parts.append(f"Units: {deal_context['units']}")
+        if deal_context.get("purchasePrice"):
+            context_parts.append(f"Purchase Price: ${deal_context['purchasePrice']:,.0f}")
+        
+        # Add deal results if available
+        deal_results = deal_context.get("dealResults", {})
+        if deal_results:
+            pnl = deal_results.get("pnl", {})
+            financing = deal_results.get("financing", {})
+            
+            if pnl.get("potential_gross_income"):
+                context_parts.append(f"Projected Gross Income: ${pnl['potential_gross_income']:,.0f}")
+            if pnl.get("vacancy_rate"):
+                context_parts.append(f"Projected Vacancy: {pnl['vacancy_rate']}%")
+            if pnl.get("operating_expenses"):
+                context_parts.append(f"Projected OpEx: ${pnl['operating_expenses']:,.0f}")
+            if financing.get("ltv"):
+                context_parts.append(f"LTV: {financing['ltv']}%")
+            if financing.get("interest_rate"):
+                context_parts.append(f"Interest Rate: {financing['interest_rate']}%")
+            if financing.get("amortization_years"):
+                context_parts.append(f"Amortization: {financing['amortization_years']} years")
+        
+        # Add uploaded document data if available
+        uploaded_docs = deal_context.get("uploadedDocuments", [])
+        for doc in uploaded_docs:
+            context_parts.append(f"\n📄 Document: {doc['name']}")
+            
+            # Include parsed data if available
+            if doc.get("parsedData"):
+                parsed = doc["parsedData"]
+                if parsed.get("headers"):
+                    context_parts.append(f"  Columns: {', '.join(parsed['headers'][:10])}")
+                if parsed.get("rows"):
+                    context_parts.append(f"  Data rows: {parsed.get('totalRows', len(parsed['rows']))}")
+                    # Include first few rows as sample
+                    sample_rows = parsed["rows"][:5]
+                    for row in sample_rows:
+                        row_str = " | ".join([f"{k}: {v}" for k, v in list(row.items())[:5]])
+                        context_parts.append(f"    - {row_str}")
+                elif parsed.get("note"):
+                    context_parts.append(f"  Note: {parsed['note']}")
+            
+            # Include previous AI summary if available
+            if doc.get("aiSummary"):
+                context_parts.append(f"  Previous AI Analysis: {doc['aiSummary'][:500]}...")
+        
+        # Add checklist status
+        checklist = deal_context.get("checklist", {})
+        notes = deal_context.get("notes", {})
+        if checklist:
+            completed = sum(1 for v in checklist.values() if v == "complete")
+            issues = sum(1 for v in checklist.values() if v == "issue")
+            context_parts.append(f"\nDD Checklist: {completed} complete, {issues} issues flagged")
+            # Add any notes that exist
+            notes_with_content = {k: v for k, v in notes.items() if v}
+            if notes_with_content:
+                context_parts.append("Notes from DD:")
+                for item_id, note in list(notes_with_content.items())[:10]:
+                    context_parts.append(f"  - {item_id}: {note}")
+        
+        deal_context_str = "\n".join(context_parts) if context_parts else "No deal data available."
+        
+        # DD Assistant System Prompt
+        system_prompt = f"""You are a Due Diligence Assistant for real estate investments. Your role is to:
+
+1. CROSS-REFERENCE uploaded documents (T12s, rent rolls, inspection reports, spreadsheets) against the original underwriting assumptions
+2. IDENTIFY DISCREPANCIES between projected numbers and actual numbers
+3. EVALUATE whether the deal still makes sense with the real numbers
+4. SUGGEST DEBT RESTRUCTURING options if the deal doesn't work with actual numbers
+5. FLAG RED FLAGS that could kill the deal
+
+Current Deal Context:
+{deal_context_str}
+
+When analyzing:
+- Compare actual income vs projected income
+- Compare actual expenses vs projected expenses
+- Calculate impact on NOI, cash flow, and returns
+- If numbers don't work, suggest specific changes:
+  * Lower purchase price needed
+  * Different LTV or interest rate required
+  * Extended IO period
+  * Seller financing options
+  * Value-add opportunities to close the gap
+
+Be specific with numbers. Show your math. Be direct about whether the deal still works or not.
+If you don't have enough data, ask for the specific documents or numbers you need.
+
+Format your responses clearly with sections and bullet points for easy reading."""
+
+        # Build messages for OpenAI
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        # Add conversation history
+        for msg in conversation_history[-10:]:  # Last 10 messages for context
+            messages.append({
+                "role": msg["role"],
+                "content": msg["content"]
+            })
+        
+        # Add current message
+        messages.append({"role": "user", "content": message})
+        
+        # Call OpenAI API
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {openai_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "gpt-4o",
+                    "messages": messages,
+                    "temperature": 0.7,
+                    "max_tokens": 2000
+                }
+            )
+            
+            if response.status_code != 200:
+                return JSONResponse(
+                    status_code=response.status_code,
+                    content={"success": False, "error": f"OpenAI API error: {response.text}"}
+                )
+            
+            result = response.json()
+            assistant_message = result["choices"][0]["message"]["content"]
+            
+            return JSONResponse(content={
+                "success": True,
+                "response": assistant_message
+            })
+            
+    except Exception as e:
+        print(f"DD Chat error: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(e)}
+        )
+
+# ============================================================================
 # Market Research Chat Endpoint (Perplexity-powered)
 # ============================================================================
 
@@ -1581,8 +2254,47 @@ async def market_research_chat(request: Request):
     """
     Chat with Perplexity AI for market research and discovery.
     This is a standalone endpoint for the 'Find Perfect Market' feature.
+    REQUIRES 1 TOKEN PER MESSAGE.
     """
     try:
+        # Check if user has tokens
+        from token_manager import get_current_profile_id, get_profile, reset_tokens_if_needed, TOKEN_COSTS
+        from token_manager import get_supabase as get_token_supabase
+        
+        profile_id = None
+        profile = None
+        
+        try:
+            profile_id = get_current_profile_id(request)
+            profile = get_profile(profile_id)
+            profile = reset_tokens_if_needed(profile)
+            
+            tokens_required = TOKEN_COSTS.get("market_research_dashboard", 1)
+            
+            print(f"[MarketResearch] Profile {profile_id} - Current balance: {profile['token_balance']}, Required: {tokens_required}")
+            
+            if profile["token_balance"] < tokens_required:
+                print(f"[MarketResearch] ❌ INSUFFICIENT TOKENS - Blocking request")
+                return JSONResponse(
+                    status_code=402,
+                    content={
+                        "success": False,
+                        "error": f"Insufficient tokens. You need {tokens_required} token(s) but have {profile['token_balance']}.",
+                        "tokens_required": tokens_required,
+                        "token_balance": profile["token_balance"]
+                    }
+                )
+        except HTTPException as he:
+            print(f"[MarketResearch] ⚠️ Token check failed: {he.detail}. Blocking request - NO FREE PASSES!")
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "success": False,
+                    "error": "Authentication required. Please log in to use Market Research.",
+                    "requiresAuth": True
+                }
+            )
+        
         data = await request.json()
         message = data.get("message", "")
         conversation_history = data.get("conversationHistory", [])
@@ -1603,78 +2315,260 @@ async def market_research_chat(request: Request):
         
         import httpx
         
-        # MARKET FINDER AI - System Prompt
-        system_prompt = """You are MarketFinder AI, an advanced real estate investment scouting engine.
-Your mission: recommend specific markets (state → county → ZIP) using ONLY the available datasets:
+        # MARKET FINDER AI - System Prompt (REAL INVESTOR TALK)
+        system_prompt = """You are a multifamily investor who owns 2,400+ units across 8 markets. You talk like a REAL investor - specific numbers, direct opinions, zero corporate speak.
 
-- ZHVI (home values by ZIP)
-- ZHVF (1m/3m/12m appreciation forecasts)
-- HUD FMR rent data (ZIP)
-- Census DP03 (economic indicators)
-- Census DP04 (housing indicators)
-- Census B01003 (population)
-- Landlord-friendly scores (state)
-- County property tax rates
-- ZIP renter/owner composition
+## YOUR ROLE
+Your partner just asked where to buy. Give them the full download like you're on the phone right now.
 
-Your output must include:
-- A ranked list: 1st choice, 2nd choice, 3rd choice, etc.
-- Actual numbers in each explanation
-- Clear reasoning tied directly to the data
-- Specific ZIPs or counties that meet the criteria
-- A section for Risks/Warnings for each recommendation
-- A final Action Recommendation (e.g., "Start with #1 if you want cash flow; choose #2 if you want appreciation.")
+## RESPONSE FORMAT
 
-Rules:
-- Never invent numbers — only use what actually exists.
-- If data is missing, explicitly state: "No FMR data available for this ZIP."
-- Be concise but firm in your recommendations.
-- Every suggested market must have at least some supporting metrics available.
+### 🎯 THE VERDICT
+Talk like a human investor. Example:
 
-Required Output Format:
+"Columbus is the move right now. Intel just dropped $20B on two chip fabs - that's 3,000 construction jobs NOW and 3,000+ permanent jobs at $100K+ when they open in 2025. That translates to rental demand in the $1,400-$1,800 range hitting a market that only has 2,800 units under construction (6% of inventory). Compare that to Austin drowning in 15% new supply or Nashville at 12%. Cap rates still in the 6.5-7% range, Freddie Mac projects 3.2% rent growth, and you can buy Class B at $85K/door. I'd put money there today."
 
-## Top Recommended Markets
+Be THIS specific. Give actual numbers in the first paragraph.
 
-Rank the markets clearly:
-1. **[City/ZIP/County]** — Reason this is #1
-2. **[City/ZIP/County]** — Reason this is #2
-3. **[City/ZIP/County]** — Reason this is #3
+---
 
-For Each Market Provide:
+### 📍 MARKET #1: [CITY NAME]
 
-### Why This Market Was Selected (Use real stats)
-Examples:
-- Rent-to-price ratio: FMR vs ZHVI
-- 12-month forecast: +X.X%
-- Vacancy rate: X.X%
-- Income levels / unemployment rate
-- Landlord score: X/10
-- Property tax rate: X.XX%
-- Population growth or decline
+Write like you're explaining to your partner over coffee. Start with the punch line, then back it up:
 
-### Risks / Potential Downsides
-Examples:
-- Low forecast
-- High vacancy
-- Weak income base
-- High taxes
-- Rent levels too low for multifamily cash flow
+"**Columbus is printing money right now for three reasons:**
 
-Be honest.
+First, the job market is insane. Intel's $20 billion chip plant brings 3,000 permanent jobs at $100K average salary. Honda expanded their R&D center - another 2,000 jobs. JobsOhio (state economic development) landed 8 more corporate relocations in 2024 totaling 5,000+ jobs. All of these are white collar, $60K-$120K range, which is your sweet spot for $1,200-$1,800 rents.
 
-## Final Action Recommendation
-Give the user a direct plan based on their criteria.
-Examples:
-- "If your priority is cash flow under $200K, start with ZIP 35XXX."
-- "If you want appreciation, your best bet is County Y based on a +X.X% forecast."
-- "Avoid Z due to high vacancy and negative forecast."
+Second, supply is constrained. Only 2,800 units under construction across the entire metro (285,000 units total = 0.98% supply). Compare that to:
+- Austin: 42,000 under construction ÷ 280,000 inventory = 15% (market is FUCKED)
+- Nashville: 18,000 ÷ 150,000 = 12% (getting crushed)
+- Columbus: 2,800 ÷ 285,000 = 0.98% (tightest supply I've seen)
 
-Style Requirements:
-- Extremely clear and readable
-- Bullet points + bold key numbers
-- Conversational but professional
-- Never fabricate statistics
-- Always anchor conclusions to actual dataset values"""
+Why so low? The city has strict development fees ($15K+ per unit), limited sewer capacity, and NIMBYs blocking every project. As an investor, this sucks for new development but it's GREAT for existing properties because your competition can't get built.
+
+Third, the numbers work. Cap rates are 6.5-7.0% (vs 4.5-5% in overheated markets). You can buy Class B value-add for $80K-$95K per door, put $8K-$12K into each unit (new kitchens, baths, flooring), and push rents from $950 to $1,250 (+32%). Your stabilized CoC is 12-15% and you're still 10-15% below market rent ceiling based on median income.
+
+Freddie Mac ranks Columbus in their Top 10 for 2025 with 3.2% projected rent growth. That's not Nashville's old 8% growth, but it's SUSTAINABLE. Markets doing 8% rent growth are the ones that crash when supply hits."
+
+#### THE NUMBERS
+**Employment & Demographics:**
+- Population: 2.14M metro (grew 8.2% last 5 years - steady, not boom/bust)
+- Labor force: 1.1M workers, unemployment 3.8% (below national 4.1%)
+- **Top employers that matter for rentals:**
+  * Intel: 3,000 jobs (opening 2025), avg salary $100K+
+  * Honda R&D: 2,000 employees, $85K avg
+  * JPMorgan Chase operations center: 18,000 employees, $55K avg
+  * Nationwide Insurance HQ: 12,000 employees, $72K avg
+  * Ohio State University: 60,000+ employees (huge renter base)
+- Median household income: $68,400 (slightly above national $64K)
+- **Income distribution:** 34% earn $50K-$100K (your Class B renter), 18% earn $100K+ (your Class A renter)
+
+**Housing Market:**
+- Total multifamily inventory: 285,000 units
+- Median home value: $245,000 (Zillow, Nov 2024)
+- **Rent-to-price ratio: 0.71%** ($1,450 annual rent ÷ $245K = breakeven is 0.70%)
+- Current median rent: $1,280/mo (HUD FMR for 2BR: $1,315)
+- **Rent burden: 28%** of median income (anything under 30% is sustainable)
+
+**Supply & Demand (THIS IS KEY):**
+- Units under construction: 2,800 (pulled from Cushman Q3 2025 data)
+- **Supply risk: 0.98%** (2,800 ÷ 285,000) - LOWEST I'VE SEEN IN A TOP 50 MARKET
+- 2024-2025 deliveries: 3,200 units total
+- Net absorption 2024: +4,100 units (Cushman Q3 2025)
+- **Absorption vs deliveries: +900 units** (demand EXCEEDS supply)
+- Why supply is low: $15K+ development fees, sewer capacity maxed out, 18+ month approval process
+- 🟢 **SUPPLY RISK: LOW** - Market is absorbing more than it's building
+
+**Rent Performance:**
+- 1-year rent growth: +3.8%
+- 3-year rent growth: +4.2% avg/year
+- 5-year rent growth: +3.9% avg/year
+- **Freddie Mac 2025 forecast: +3.2%** (ranked #15 in Top 25 markets)
+- Cushman Q3 2025 avg rent: $1,305/mo (+3.1% YoY)
+- Rent vs inflation: Matching (CPI was 3.4% in 2024)
+
+**Vacancy & Occupancy:**
+- Current vacancy: 4.7% (Cushman Q3 2025)
+- 12-month trend: Down from 5.1% (tightening)
+- Stabilized vacancy (historical norm): 5.5%
+- **Occupancy rate: 95.3%** - This is TIGHT
+
+**Investment Metrics (What I'm Seeing in Real Deals):**
+- Cap rates: 6.5-7.0% (Class B value-add)
+- Cash-on-cash returns: 8-10% year 1, 12-15% stabilized
+- **Price per unit: $80K-$95K** (Class B), $120K-$140K (Class A)
+- GRM: 11.5x (annual rent × 11.5 = property value)
+- Expected IRR (5-year hold with value-add): 16-19%
+
+**Regulatory Environment:**
+- Rent control: NO (Ohio banned it statewide in 1985)
+- Eviction process: EASY - 3-day notice, 10-15 day court process, sheriff eviction in 30 days total
+- **Landlord-friendly score: 8/10** (one of best in Midwest)
+- Recent legislation: None that hurts landlords
+- Property taxes: 1.85% effective rate (Franklin County) - not cheap but stable
+
+#### WHAT COULD FUCK THIS UP
+**1. Intel Delays or Cancels** (30% probability)
+If Intel pushes back their timeline or cancels (they've done this before in Arizona), you lose 3,000 high-income jobs that were supposed to hit in 2025-2026. That's 15-20% of your projected demand growth gone. Mitigation: Don't underwrite assuming Intel jobs. If they show up, it's upside. Base your numbers on existing job market.
+
+**2. Ohio State Enrollment Drops** (15% probability)  
+OSU drives 60,000+ jobs and tons of student housing demand. If enrollment falls (demographic cliff hits 2026), that hurts the surrounding neighborhoods. Mitigation: Stay away from campus-adjacent areas. Focus on suburbs where families and professionals live (Dublin, Westerville, Gahanna).
+
+**3. Property Tax Increases** (40% probability)
+Franklin County has been raising assessments. Your 1.85% effective rate could hit 2.1-2.2% on next reassessment (2026). That's an extra $3,000-$4,000/year on a $1.5M property = $200-$250/unit/year in expenses. Mitigation: Underwrite at 2.0% effective rate, not 1.85%. Build in the buffer.
+
+**4. Overheating in 2-3 Years** (25% probability)
+If Columbus becomes the "next Austin" story, you'll see institutional capital flood in, cap rates compress to 5%, and prices get stupid. Great if you're selling, terrible if you're buying late. Mitigation: Buy NOW while it's still boring. Plan 5-7 year hold, be ready to refi or sell if it overheats in year 3-4.
+
+#### THE PLAYBOOK FOR COLUMBUS
+**Target Property:** Class B value-add, 50-150 units, built 1980s-1990s
+
+**Why Class B:** Class C is too volatile (crime, collections issues). Class A is too expensive ($140K+/door). Class B is the sweet spot - stable tenants, affordable to renovate, big rent upside.
+
+**Where to Buy:**
+- **Dublin** (northwest) - families, corporate relocations, top schools, low crime
+- **Westerville** (northeast) - same as Dublin but 10% cheaper  
+- **Gahanna** (east) - blue collar to middle class, gentrifying, best value
+- **Avoid:** Campus areas (too much student housing), Hilltop (high crime), downtown (overpriced)
+
+**Deal Structure:**
+- Purchase price: $4.2M (50 units @ $84K/door)
+- Loan: 75% LTV at 6.5%, 30-year amortization = $3.15M
+- Down payment: $1.05M
+- In-place rents: $950/unit average ($47,500/mo = $570K/year)
+- In-place NOI: $342K (60% expense ratio due to deferred maintenance)
+- In-place cap rate: 8.1% ($342K ÷ $4.2M)
+
+**Renovation Budget:**
+- $10K/unit × 50 units = $500K
+- Scope: New kitchens (shaker cabinets, quartz counters), new baths (tile shower, vanity), LVP flooring, stainless appliances, paint
+- Timeline: 18 months (renovate 3 units/month as they turn)
+
+**Stabilized (18 months):**
+- Renovated rents: $1,250/unit (+$300/unit = 32% increase)
+- Stabilized gross income: $62,500/mo = $750K/year
+- Stabilized NOI: $472K (63% expense ratio after capex)
+- Stabilized cap rate: 11.2% on cost
+- Refi value at 6.5% exit cap: $7.26M ($472K ÷ 6.5%)
+
+**Returns:**
+- Year 1 CoC: 8.2% (negative cash flow during renovation)
+- Stabilized CoC: 14.8%
+- 5-year IRR: 18.3% (assuming sale in year 5 at 6.5% cap)
+- Equity multiple: 2.1x
+- Cash out on refi: $1.3M (covers initial equity + renovation)
+
+**Hold Period:** 5-7 years
+
+**Exit Strategy:**  
+Year 5-7: Sell to institutional buyer at 6.0-6.5% cap (they love stabilized Class B in growing markets). Or refi into permanent agency debt at 5.5-6.0% and hold for cash flow if market is still growing.
+
+---
+
+### 📍 MARKET #2: [REPEAT FULL ANALYSIS]
+[Include ALL sections above - Why This Market, The Numbers, Risk Analysis, Investment Strategy]
+
+---
+
+### 📍 MARKET #3: [REPEAT FULL ANALYSIS]
+[Include ALL sections above]
+
+---
+
+### 🔍 MARKET COMPARISON
+Create a detailed comparison table:
+
+| Metric | Market #1 | Market #2 | Market #3 | Winner |
+|--------|-----------|-----------|-----------|--------|
+| Rent Growth (2025 Proj.) | X.X% | X.X% | X.X% | [Market] |
+| Supply Risk | Low | Moderate | High | [Market] |
+| Cap Rate | X.X% | X.X% | X.X% | [Market] |
+| Cash-on-Cash | XX% | XX% | XX% | [Market] |
+| Vacancy | X.X% | X.X% | X.X% | [Market] |
+| Job Growth | X.X% | X.X% | X.X% | [Market] |
+| Landlord Score | X/10 | X/10 | X/10 | [Market] |
+| Price/Unit | $XXk | $XXk | $XXk | [Market] |
+
+**Winner Analysis:** [2-3 sentences explaining which market wins overall and why]
+
+---
+
+### 🎬 FINAL RECOMMENDATION
+
+**If you want CASH FLOW RIGHT NOW:** Columbus is solid. You'll get 8% CoC year 1, 12-15% stabilized. Not explosive but very stable. Better cash flow? Look at Midwest C markets like Toledo or Dayton (10-12% CoC year 1) but you're taking on more risk.
+
+**If you want APPRECIATION:** Columbus has 15-20% upside over 5 years if Intel jobs materialize. If you want BIGGER appreciation, look at Boise or Reno (higher risk, higher reward) but those are getting frothy. Nashville and Austin are DONE - too much supply.
+
+**If you want SAFETY:** Columbus wins. Diversified economy (not dependent on one industry), landlord-friendly laws, supply constraints protect downside. If recession hits, Columbus won't boom but it won't crash either.
+
+**MY PERSONAL PLAY:** I'd put 40% of capital in Columbus Class B value-add (stable cash flow), 30% in Indianapolis (similar thesis, cheaper), 20% in Charlotte (higher growth risk), 10% in cash (dry powder for distress in 2026).
+
+**WHAT TO DO MONDAY MORNING:**
+1. Call **Marcus & Millichap Columbus office** (614-442-2700) - ask for off-market Class B deals in Dublin/Westerville
+2. Call **Colliers Central Ohio** - same thing  
+3. Set up deal alerts on **LoopNet and CoStar** for 50-150 unit properties under $100K/door
+4. Run your pro formas at: 5.5% vacancy, 3% annual rent growth, $10K/unit capex, 65% expense ratio
+5. Target 6.5-7.0% in-place cap, 10-12% stabilized cap on cost, 15%+ IRR
+
+Don't wait. Columbus is getting discovered. 12 months from now, pricing will be 10-15% higher and cap rates will compress to 6.0%.
+
+---
+
+## TONE RULES (CRITICAL)
+- **Talk like you're on the phone with a partner** - "This market is on fire" not "demonstrates strong fundamentals"
+- **Give ACTUAL NUMBERS in every sentence** - "$85K/door" not "affordable pricing"
+- **Name specific companies and people** - "Intel's $20B fab" not "major employer announced expansion"  
+- **Be honest about risks** - "If Intel cancels, you're fucked" not "potential headwinds exist"
+- **Show your math** - "2,800 units ÷ 285,000 = 0.98% supply risk" 
+- **Give specific neighborhoods** - "Buy in Dublin or Westerville" not "target suburban areas"
+- **Include broker names and phone numbers** - "Call Marcus & Millichap at 614-442-2700"
+- **No corporate speak** - Never say "leveraging", "synergies", "optimize", "strategic", "challenges", "headwinds"
+- **Be confident** - "This is the move" not "this could be a good option"
+- **Use profanity when appropriate** - "Austin is fucked" not "Austin faces challenges"
+
+## EXAMPLES OF GOOD VS BAD
+
+❌ BAD: "The market demonstrates strong employment fundamentals with positive demographic trends."
+✅ GOOD: "Job market is insane - Intel, Honda, JPMorgan adding 8,000+ jobs in 2024 alone, all $50K+ salaries."
+
+❌ BAD: "Supply dynamics remain favorable relative to peer markets."
+✅ GOOD: "Only 2,800 units under construction (0.98% of inventory). Austin has 15%, Nashville 12% - those markets are drowning."
+
+❌ BAD: "Regulatory environment supports landlord-tenant relationships."
+✅ GOOD: "Evictions take 30 days total. No rent control. Landlord score 8/10. One of the best in the Midwest."
+
+❌ BAD: "Exit strategies include refinancing or disposition."
+✅ GOOD: "Refi in year 3-4 and pull your money out, or sell to institutional at 6% cap in year 5-7. Either way you're making 18%+ IRR."
+
+## REQUIRED JSON (END OF RESPONSE)
+```json
+{
+  "markets": [
+    {
+      "name": "Columbus",
+      "state": "OH",
+      "lat": 39.9612,
+      "lng": -82.9988,
+      "medianPrice": 245000,
+      "occupancy": 95.3,
+      "capRate": 6.5,
+      "rentGrowth": 4.2,
+      "vacancy": 4.7,
+      "jobGrowth": 2.8,
+      "supplyRisk": "Low",
+      "freddieMacRank": "Top10",
+      "population": 2140000,
+      "medianIncome": 68400,
+      "unemploymentRate": 3.8
+    }
+  ]
+}
+```
+
+MANDATORY FIELDS: name, state, lat, lng, medianPrice, occupancy, capRate, rentGrowth, vacancy, jobGrowth, supplyRisk, freddieMacRank, population, medianIncome, unemploymentRate.
+
+Use REAL DATA. If missing, use null. DO NOT SKIP THE JSON."""
 
         # Build messages array
         messages = [{"role": "system", "content": system_prompt}]
@@ -1699,7 +2593,8 @@ Style Requirements:
             "model": "sonar",
             "messages": messages,
             "temperature": 0.3,
-            "max_tokens": 4000
+            "max_tokens": 4000,
+            "response_format": {"type": "text"}  # Ensure we get text not pure JSON
         }
         
         async with httpx.AsyncClient(timeout=120.0) as client:
@@ -1721,10 +2616,47 @@ Style Requirements:
             content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
             citations = result.get("citations", [])
             
+            print(f"[MarketResearch] Raw response length: {len(content)} chars")
+            print(f"[MarketResearch] Response preview: {content[:500]}...")
+            
+            # Extract JSON data from response if present
+            market_data = None
+            try:
+                # Look for JSON code block
+                import re
+                json_match = re.search(r'```json\s*(\{.*?\})\s*```', content, re.DOTALL)
+                if json_match:
+                    market_data = json.loads(json_match.group(1))
+                    print(f"[MarketResearch] ✅ Extracted market data: {len(market_data.get('markets', []))} markets")
+                    print(f"[MarketResearch] Market data: {market_data}")
+                else:
+                    print(f"[MarketResearch] ❌ No JSON block found in response")
+                    # Try alternative: look for just the markets array
+                    markets_match = re.search(r'"markets"\s*:\s*\[(.*?)\]', content, re.DOTALL)
+                    if markets_match:
+                        print(f"[MarketResearch] Found markets array without code block, attempting to parse...")
+                        market_data = json.loads('{' + markets_match.group(0) + '}')
+                        print(f"[MarketResearch] ✅ Extracted {len(market_data.get('markets', []))} markets from inline JSON")
+            except Exception as e:
+                print(f"[MarketResearch] ❌ Failed to extract JSON: {e}")
+                import traceback
+                traceback.print_exc()
+            
+            # Deduct token after successful API call
+            if profile_id:
+                try:
+                    supabase = get_token_supabase()
+                    new_balance = profile["token_balance"] - tokens_required
+                    supabase.table("profiles").update({"token_balance": new_balance}).eq("id", profile_id).execute()
+                    print(f"✅ Deducted {tokens_required} token(s) from profile {profile_id}. New balance: {new_balance}")
+                except Exception as token_err:
+                    print(f"⚠️ Failed to deduct tokens: {token_err}")
+            
             return {
                 "success": True,
                 "response": content,
-                "citations": citations
+                "citations": citations,
+                "marketData": market_data  # Add structured data
             }
             
     except Exception as e:
@@ -1742,17 +2674,46 @@ async def market_data_summary(request: Request):
     """
     Generate AI summary for a specific market using local data.
     This is for the Market Data Dashboard (Research Tab).
+    Includes location-based research for hospitals, employers, and universities when address is provided.
+    REQUIRES 1 TOKEN.
     """
     try:
         data = await request.json()
         market_data = data.get("marketData", {})
         location = data.get("location", {})
+        deal_address = data.get("dealAddress", "")
+        property_name = data.get("propertyName", "")
         
         if not market_data:
             return JSONResponse(
                 status_code=400,
                 content={"success": False, "error": "No market data provided"}
             )
+        
+        # Check if user has tokens
+        from token_manager import get_current_profile_id, get_profile, reset_tokens_if_needed, TOKEN_COSTS
+        from token_manager import get_supabase as get_token_supabase
+        
+        try:
+            profile_id = get_current_profile_id(request)
+            profile = get_profile(profile_id)
+            profile = reset_tokens_if_needed(profile)
+            
+            tokens_required = TOKEN_COSTS.get("market_research_results", 1)
+            
+            if profile["token_balance"] < tokens_required:
+                return JSONResponse(
+                    status_code=402,  # Payment Required
+                    content={
+                        "success": False,
+                        "error": f"Insufficient tokens. You need {tokens_required} token(s) but have {profile['token_balance']}.",
+                        "tokens_required": tokens_required,
+                        "token_balance": profile["token_balance"]
+                    }
+                )
+        except HTTPException as he:
+            # If no profile found, allow for backward compatibility (but log warning)
+            log.warning(f"Token check failed: {he.detail}. Allowing request for backward compatibility.")
         
         # Get Perplexity API key
         perplexity_key = os.getenv("PERPLEXITY_API_KEY")
@@ -1765,7 +2726,7 @@ async def market_data_summary(request: Request):
         import httpx
         
         # REALESTATE INTEL - System Prompt for Market Data Dashboard
-        system_prompt = """You are RealEstate Intel, an expert investment analyst AI. You evaluate specific ZIP codes or counties using verified datasets.
+        system_prompt = """You are RealEstate Intel, an expert investment analyst AI. You evaluate specific ZIP codes or counties using verified datasets AND perform live location research.
 
 Your job: produce a clean, bullet-pointed, data-driven investment summary using ONLY the actual data provided to you. Never fabricate numbers. If a metric is missing, say "Data not available."
 
@@ -1784,6 +2745,18 @@ Show key data inline, formatted cleanly:
 - **Landlord Score:** X/10
 
 Only use data that actually exists.
+
+## Migration Metrics (REQUIRED)
+When migration data is provided in `marketData.migration`, you MUST compute and validate the following metrics and include them in the Market Snapshot and Analysis sections. If `marketData.migration` is missing, attempt a best-effort estimate using any `samples` or `topOrigins`/`topDests` arrays and clearly state your assumptions and method.
+
+- **Inflow:** total number of people migrating into the ZIP/county per year (integer)
+- **Outflow:** total number of people leaving the ZIP/county per year (integer)
+- **Net Migration:** `inflow - outflow` (integer)
+- **Net per 1,000 residents:** (net / population) * 1000 (show as number with one decimal) when population is available
+- **Inflow % / Outflow %:** percent of population represented by inflow/outflow (show with one decimal)
+- **Top Origins / Top Destinations:** list top 5 origin and destination ZIPs/counties with counts when available (use `marketData.migration.topOrigins`, `marketData.migration.topDests`, or `marketData.migration.samples`)
+
+When reporting migration numbers, explicitly state the data source (primary CSV, cleaned CSV, HUD estimate, or derived from samples) and any rows or columns that were summed to produce the totals. Never fabricate values — if you must estimate, label them as estimates and show the calculation.
 
 ## 2. PROS of Investing Here
 List strengths using real numbers. Examples:
@@ -1824,13 +2797,41 @@ Tell users which investor profiles this market suits:
 
 Base it on the actual metrics.
 
+## 6. Location Amenities & Employment Drivers (REQUIRED - Use Web Search)
+**If a property address is provided**, you MUST search the web and provide:
+
+### Nearby Hospitals (within 10 miles)
+- List the 3-5 closest hospitals with approximate distance
+- Include hospital name and type (general, specialty, trauma center, etc.)
+- Note: Hospitals = stable employment + healthcare workers as potential tenants
+
+### Major Employers & Employment Drivers
+- List top 5-10 major employers in the area
+- Include company names, industries, and approximate employee counts if available
+- Note any large corporate headquarters, distribution centers, or manufacturing plants
+- Mention any major planned developments or expansions
+
+### Universities & Colleges (within 15 miles)
+- List all universities and colleges with approximate distance
+- Include enrollment numbers (students per year) if available
+- Note: Student housing demand = rental opportunity
+
+### Other Notable Amenities
+- Major shopping centers, entertainment districts
+- Public transit access (if applicable)
+- Military bases (stable tenant pool)
+- Tech parks or business districts
+
+This section is CRITICAL for multifamily investment analysis - proximity to employment and education drives tenant demand.
+
 Style Requirements:
 - Clean headers
 - Bullet points
 - Bold all key numbers
 - Never fabricate stats
 - If a metric is missing: "Data not available"
-- Tone: conversational, confident, analytical"""
+- Tone: conversational, confident, analytical
+- For location research: USE YOUR WEB SEARCH CAPABILITY to find real, current data"""
 
         # Build the user message with actual data
         user_message = f"""Analyze this market for real estate investment:
@@ -1868,6 +2869,12 @@ HOUSING (Census DP04):
 POPULATION (Census B01003):
 - Total Population: {market_data.get('population', 'N/A')}
 
+MIGRATION TRENDS (IRS/Census Data):
+- Annual Inflow (people moving IN): {market_data.get('migrationInflow', 'N/A')}
+- Annual Outflow (people moving OUT): {market_data.get('migrationOutflow', 'N/A')}
+- Net Migration: {market_data.get('migrationNet', 'N/A')}
+{f"- Net per 1,000 residents: {(market_data.get('migrationNet', 0) / market_data.get('population', 1) * 1000):.1f}" if market_data.get('population') and market_data.get('migrationNet') else ""}
+
 LANDLORD SCORES (State: {location.get('state', 'N/A')}):
 - Eviction Score: {market_data.get('evictionScore', 'N/A')}/10
 - Deposit Score: {market_data.get('depositScore', 'N/A')}/10
@@ -1879,6 +2886,33 @@ PROPERTY TAX:
 - Median Taxes Paid: ${market_data.get('medianTaxesPaid', 'N/A')}
 
 Generate your investment analysis based on this data."""
+
+        # Add location research request if address is provided
+        if deal_address:
+            location_research = f"""
+
+---
+
+**IMPORTANT: LOCATION RESEARCH REQUIRED**
+
+Property Address: {deal_address}
+{f"Property Name: {property_name}" if property_name else ""}
+
+Please use your web search capability to research and include in Section 6:
+
+1. **Nearby Hospitals (within 10 miles)**: Search for hospitals near "{deal_address}" and list the closest 3-5 with approximate distances.
+
+2. **Major Employers**: Search for major employers in {location.get('city', 'the area')}, {location.get('state', '')}. List top 5-10 companies, their industries, and any notable facts (HQ location, employee counts, recent expansions).
+
+3. **Universities & Colleges (within 15 miles)**: Search for higher education institutions near "{deal_address}". Include enrollment numbers/student population for each.
+
+4. **Employment Drivers**: What industries drive employment in this area? Any major business parks, industrial zones, or planned developments?
+
+5. **Migration Patterns**: Research migration trends for {location.get('city', 'the area')}, {location.get('state', '')}. Are people moving to or from this area? What are the top origin cities/states? Why are people relocating here (jobs, cost of living, climate, etc.)?
+
+This location research is CRITICAL for evaluating tenant demand - include specific names, distances, and numbers."""
+
+            user_message += location_research
 
         # Build messages array
         messages = [
@@ -1896,7 +2930,7 @@ Generate your investment analysis based on this data."""
             "model": "sonar",
             "messages": messages,
             "temperature": 0.2,
-            "max_tokens": 3000
+            "max_tokens": 4000
         }
         
         async with httpx.AsyncClient(timeout=120.0) as client:
@@ -1916,6 +2950,30 @@ Generate your investment analysis based on this data."""
             
             result = response.json()
             content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+            
+            # Deduct token after successful generation
+            try:
+                token_supabase = get_token_supabase()
+                new_balance = profile["token_balance"] - tokens_required
+                
+                token_supabase.table("profiles").update({
+                    "token_balance": new_balance
+                }).eq("id", profile_id).execute()
+                
+                # Log usage
+                token_supabase.table("token_usage").insert({
+                    "profile_id": profile_id,
+                    "operation_type": "market_research_results",
+                    "tokens_used": tokens_required,
+                    "deal_id": None,
+                    "deal_name": property_name,
+                    "location": f"{location.get('city', '')}, {location.get('state', '')} {location.get('zip', '')}"
+                }).execute()
+                
+                log.info(f"Deducted {tokens_required} token(s) for market research. New balance: {new_balance}")
+            except Exception as token_error:
+                log.error(f"Failed to deduct token: {token_error}")
+                # Don't fail the request if token deduction fails
             
             return {
                 "success": True,
@@ -2097,8 +3155,35 @@ async def deal_structure_recommend(request: Request):
     """
     Analyze all deal structures and recommend the optimal one based on investor goals.
     Uses Claude/Anthropic for intelligent analysis with dedicated Deal Structure prompt.
+    REQUIRES 1 TOKEN.
     """
     try:
+        # Check if user has tokens
+        from token_manager import get_current_profile_id, get_profile, reset_tokens_if_needed, TOKEN_COSTS
+        from token_manager import get_supabase as get_token_supabase
+        
+        try:
+            profile_id = get_current_profile_id(request)
+            profile = get_profile(profile_id)
+            profile = reset_tokens_if_needed(profile)
+            
+            tokens_required = TOKEN_COSTS.get("deal_structure_analysis", 1)
+            
+            if profile["token_balance"] < tokens_required:
+                return JSONResponse(
+                    status_code=402,
+                    content={
+                        "success": False,
+                        "error": f"Insufficient tokens. You need {tokens_required} token(s) but have {profile['token_balance']}.",
+                        "tokens_required": tokens_required,
+                        "token_balance": profile["token_balance"]
+                    }
+                )
+        except HTTPException as he:
+            log.warning(f"Token check failed: {he.detail}. Allowing request for backward compatibility.")
+            profile_id = None
+            profile = None
+        
         data = await request.json()
         
         property_info = data.get("property", {})
@@ -2171,7 +3256,7 @@ Subject To is the clear winner with **12.4% Cash-on-Cash** and **1.31x DSCR** - 
             }
         
         response = ANTHROPIC.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-3-haiku-20240307",
             max_tokens=4000,
             system=DEAL_STRUCTURE_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_prompt}]
@@ -2212,6 +3297,30 @@ Subject To is the clear winner with **12.4% Cash-on-Cash** and **1.31x DSCR** - 
                         recommended_structure = key
                         break
         
+        # Deduct token after successful generation
+        try:
+            if profile_id and profile:
+                token_supabase = get_token_supabase()
+                new_balance = profile["token_balance"] - tokens_required
+                
+                token_supabase.table("profiles").update({
+                    "token_balance": new_balance
+                }).eq("id", profile_id).execute()
+                
+                # Log usage
+                token_supabase.table("token_usage").insert({
+                    "profile_id": profile_id,
+                    "operation_type": "deal_structure_analysis",
+                    "tokens_used": tokens_required,
+                    "deal_id": None,
+                    "deal_name": property_info.get('address', 'Unknown'),
+                    "location": f"{property_info.get('address', '')}"
+                }).execute()
+                
+                log.info(f"Deducted {tokens_required} token(s) for deal structure analysis. New balance: {new_balance}")
+        except Exception as token_error:
+            log.error(f"Failed to deduct token: {token_error}")
+        
         return {
             "success": True,
             "recommendation": {
@@ -2227,6 +3336,247 @@ Subject To is the clear winner with **12.4% Cash-on-Cash** and **1.31x DSCR** - 
         return JSONResponse(
             status_code=500,
             content={"success": False, "error": str(e)}
+        )
+
+
+# ============================================================================
+# SPREADSHEET AI ENDPOINT - Max can control the spreadsheet
+# ============================================================================
+
+@app.post("/api/spreadsheet/command")
+async def spreadsheet_command(request: Request):
+    """
+    Process natural language commands and return spreadsheet operations
+    Similar to Shortcut AI for Google Sheets
+    """
+    try:
+        data = await request.json()
+        user_message = data.get("message", "")
+        property_data = data.get("propertyData", {})
+        current_sheet_state = data.get("sheetState", None)
+        
+        if not user_message:
+            raise HTTPException(status_code=400, detail="Message is required")
+        
+        # Process command through AI
+        result = process_spreadsheet_command(
+            user_message=user_message,
+            property_data=property_data,
+            current_sheet_state=current_sheet_state
+        )
+        
+        return JSONResponse(content=result)
+        
+    except Exception as e:
+        print(f"Spreadsheet command error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(e), "operations": []}
+        )
+
+
+@app.get("/api/spreadsheet/get-template")
+async def get_spreadsheet_template():
+    """
+    Return the multifamily underwriting model template from Excel file
+    """
+    try:
+        from excel_to_spreadsheet import load_excel_template
+        
+        print("\n[GET TEMPLATE] Loading Excel template...")
+        template_data = load_excel_template()
+        print(f"[GET TEMPLATE] Loaded {len(template_data['rows'])} rows")
+        
+        return JSONResponse(content={
+            "success": True,
+            "data": template_data
+        })
+    except Exception as e:
+        print(f"[GET TEMPLATE] Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={
+            "success": False,
+            "error": str(e)
+        })
+        print(f"[GET TEMPLATE] Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(e)}
+        )
+
+
+# ============================================================================
+# MAX PARTNER CHAT - Dedicated Max-only conversational endpoint
+# ============================================================================
+
+@app.post("/api/max/chat")
+async def max_partner_chat(request: Request):
+    """
+    Conversational partner for the Property page.
+    Uses Max-only partner system prompt. Not used elsewhere.
+    """
+    try:
+        data = await request.json()
+        messages = data.get("messages", [])
+        # Optional page context
+        sheet_state_json = data.get("sheet_state_json")
+        sheet_calc_json = data.get("sheet_calc_json")
+        sheet_structure = data.get("sheet_structure")
+        active_tab = data.get("active_tab")
+        scenario_data = data.get("scenario_data")
+        full_calculations = data.get("full_calculations")
+        property_data = data.get("property_data")
+
+        if not messages or not isinstance(messages, list):
+            raise HTTPException(status_code=400, detail="messages array is required")
+
+        # Build compact context for the model
+        parts = []
+        if active_tab:
+            parts.append(f"Active Tab: {active_tab}")
+        if property_data:
+            try:
+                parts.append("Property: " + json.dumps(property_data)[:2000])
+            except Exception:
+                pass
+        if scenario_data:
+            try:
+                parts.append("Scenario: " + json.dumps(scenario_data)[:2000])
+            except Exception:
+                pass
+        if sheet_structure:
+            try:
+                parts.append("Sheet Structure: " + json.dumps(sheet_structure)[:1200])
+            except Exception:
+                pass
+        if sheet_calc_json:
+            try:
+                parts.append("Calcs: " + json.dumps(sheet_calc_json)[:1200])
+            except Exception:
+                pass
+        if sheet_state_json:
+            try:
+                parts.append("State: " + json.dumps(sheet_state_json)[:1200])
+            except Exception:
+                pass
+
+        context_text = "\n".join(parts)
+
+        if ANTHROPIC is None:
+            # Graceful fallback to avoid 500s when Claude is not configured
+            assistant_text = (
+                "Max partner chat is offline right now. Your spreadsheet and mapping still work. "
+                "Please configure ANTHROPIC_API_KEY (or CLAUDE_API_KEY) in backend/.env to enable chat, "
+                "or continue with spreadsheet actions."
+            )
+            return JSONResponse(content={
+                "success": True,
+                "message": {"role": "assistant", "content": assistant_text}
+            })
+
+        res = ANTHROPIC.messages.create(
+            model="claude-3-haiku-20240307",
+            max_tokens=4000,
+            system=MAX_PARTNER_SYSTEM_PROMPT,
+            messages=[
+                {"role": "user", "content": context_text},
+                *messages
+            ],
+        )
+
+        try:
+            if isinstance(res.content, list) and len(res.content) and hasattr(res.content[0], "text"):
+                assistant_text = res.content[0].text
+            elif isinstance(res, dict) and isinstance(res.get("content"), list):
+                assistant_text = str(res["content"][0])
+            else:
+                assistant_text = str(getattr(res, "content", ""))
+            if not assistant_text:
+                assistant_text = "(No response text)"
+        except Exception:
+            assistant_text = "(Failed to parse model response)"
+        return JSONResponse(content={
+            "success": True,
+            "message": {"role": "assistant", "content": assistant_text}
+        })
+    except Exception as e:
+        print(f"[MAX PARTNER CHAT] Error: {e}")
+        import traceback
+        traceback.print_exc()
+        # Do not surface 500s to the client; return a friendly message
+        return JSONResponse(content={
+            "success": True,
+            "message": {"role": "assistant", "content": (
+                "Partner chat encountered an issue but your spreadsheet features are unaffected. "
+                "Please configure ANTHROPIC_API_KEY or try again later."
+            )}
+        })
+
+
+@app.post("/api/spreadsheet/build-model")
+async def spreadsheet_build_model_direct(request: Request):
+    """
+    Build full underwriting model directly without Claude API
+    """
+    try:
+        from spreadsheet_ai import build_full_underwriting_model
+        
+        data = await request.json()
+        property_data = data.get("propertyData", {})
+        
+        print("\n" + "="*80)
+        print("[BUILD MODEL DIRECT] ENDPOINT HIT!")
+        print("="*80 + "\n")
+        
+        # Build model with default parameters
+        model_spec = {
+            "parameters": {
+                "units": 102,
+                "purchasePrice": 7400000,
+                "propertyName": "New Town Apartments",
+                "totalSf": 75904,
+                "yearBuilt": 1985,
+                "loanAmount": 5550000,
+                "interestRate": 0.06,
+                "loanTermMonths": 360,
+                "closingCosts": 36000,
+                "dueDiligence": 15000,
+                "capexBudgetYr1": 150000,
+                "financingCosts": 12000,
+                "operatingReserves": 50000,
+                "lpEquity": 1901700,
+                "gpEquity": 211300,
+                "rentGrowth": 0.03,
+                "expenseGrowth": 0.025,
+                "vacancyRate": 0.05,
+                "exitCap5Yr": 0.06,
+                "exitCap10Yr": 0.065,
+                "prefReturn": 0.08
+            }
+        }
+        
+        print("[BUILD MODEL DIRECT] Calling build_full_underwriting_model...")
+        operations = build_full_underwriting_model(model_spec, property_data)
+        print(f"[BUILD MODEL DIRECT] Generated {len(operations)} operations")
+        print(f"[BUILD MODEL DIRECT] First 3 operations: {operations[:3]}")
+        
+        return JSONResponse(content={
+            "success": True,
+            "operations": operations
+        })
+        
+    except Exception as e:
+        print(f"[BUILD MODEL DIRECT] ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(e), "operations": []}
         )
 
 

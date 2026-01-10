@@ -1,79 +1,110 @@
-Section,InternalField,ValueExample,ExcelCell,Label,DataType,Required,RentRoll_TenantName,RentRoll_Industry,RentRoll_UnitNumber,RentRoll_LeaseType,RentRoll_MonthlyRent,RentRoll_SquareFootage,RentRoll_RentPerSF,RentRoll_LeaseStartDate,RentRoll_LeaseEndDate,RentRoll_SecurityDeposit,RentRoll_CAMperSF,RentRoll_Escalations,RentRoll_RenewalOptions,RentRoll_NewTI,RentRoll_RenewTI,RentRoll_NewLC,RentRoll_RenewLC,RentRoll_FreeRentNew,RentRoll_FreeRentRenew,RentRoll_MarketRent,RentRoll_RenewalProbability,RentRoll_LeaseLengthMonths,RentRoll_Downtime,Expense_Item,Expense_Type,Expense_AnnualAmount,Expense_GrowthRate,Expense_Timing
-Characteristics,characteristics.dealName,5800 Colton Industrial,B7,Deal Name,Text,Yes,,,,,,,,,,,,,,,,,,,,,,,,,,,
-Characteristics,characteristics.propertyAddress,"5800 Colton Rd, Austin TX",B8,Property Address,Text,Yes,R.M.,,1,,1400,759,21,03/01/2023,03/27/2026,0,0,0,,0,0,300%,0%,0,0,21,,60,0,Insurance,$/PSF,0.5,3%,straight-line
-Characteristics,characteristics.city,Austin,B9,City,Text,No,T.G.,,2,,2400,800,36,2023-03-01,2026-03-27,0,0,0,,0,0,3,0,0,0,36,,60,0,Repairs & Maintenance,$/PSF,0.5,3%,straight-line
-Characteristics,characteristics.state,TX,,State,Text,No,,,,,,,,,,,,,,,,,,,,,,,,,,,
-Characteristics,characteristics.zipCode,78723,,ZIP Code,Text,No,,,,,,,,,,,,,,,,,,,,,,,,,,,
-Characteristics,characteristics.startDate,09/01/2025,B9,Analysis Start Date,Date,No,E.B.,,3,,700,800,0,2023-03-01,2026-03-01,0,0,0,,0,0,3,0,0,0,10.5,,60,0,Management,%,0,3%,straight-line
-Characteristics,characteristics.propertyType,Industrial,B10,Property Type,Text,Yes,Billboard,,,,302.5,1,3630,2021-04-02,2026-04-01,0,0,0,,0,0,3,0,0,0,3630,,60,0,Electric,$/PSF,0,3%,straight-line
-Characteristics,characteristics.subPropertyType,QSR/Fast Food,C10,Sub-Property Type,Text,No,,,,,,,,,,,,,,,,,,,,,Taxes,$/Year,9000,3%,straight-line
-Characteristics,characteristics.landSizeSF,1.90875,B11,Land Size (SF),Number,No,,,,,,,,,,,,,,,,,,,,,Flood,$/Year,1200,3%,straight-line
-Characteristics,characteristics.totalRSF,1.527,D11,Total RSF (SF),Number,No,,,,,,,,,,,,,,,,,,,,,,,
-Characteristics,characteristics.floorCount,3,B12,Floor Count,Number,No,,,,,,,,,,,,,,,,,,,,,,,
-Characteristics,characteristics.far,3,C12,FAR,Number,No,,,,,,,,,,,,,,,,,,,,,,,
-Characteristics,characteristics.legalInterest,Fee Simple,D12,Legal Interest,Text,No,,,,,,,,,,,,,,,,,,,,,,,
-Characteristics,characteristics.parkingSpaces,10,B13,Parking Spaces,Number,No,,,,,,,,,,,,,,,,,,,,,,,
-Characteristics,characteristics.structuredSpaces,10,C13,Structured Spaces,Number,No,,,,,,,,,,,,,,,,,,,,,,,
-Characteristics,characteristics.yearBuilt,1950,B14,Year Built,Number,No,,,,,,,,,,,,,,,,,,,,,,,
-Characteristics,characteristics.yearRenovated,1990,C14,Year Renovated,Number,No,,,,,,,,,,,,,,,,,,,,,,,
-Characteristics,characteristics.units,4,,Total Units,Number,No,,,,,,,,,,,,,,,,,,,,,,,
-Characteristics,characteristics.currentOccupancy,95%,,Current Occupancy (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Characteristics,characteristics.sellingCosts,2%,B19,Selling Costs (% of Sale),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Characteristics,characteristics.exitCapRate,5%,B19,Exit Cap Rate (%),Percentage,Yes,,,,,,,,,,,,,,,,,,,,,,,
-Characteristics,characteristics.holdingPeriod,5,C19,Holding Period (Years),Number,Yes,,,,,,,,,,,,,,,,,,,,,,,
-Characteristics,characteristics.discountRate,7.50%,C19,Discount Rate (%),Percentage,Yes,,,,,,,,,,,,,,,,,,,,,,,
-Characteristics,characteristics.incomingCapRate,6.50%,C19,Going-in Cap Rate (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Characteristics,characteristics.replacementCost,0.0728,C19,Replacement Cost ($/SF),Number,No,,,,,,,,,,,,,,,,,,,,,,,
-
-Economics,economics.purchasePrice,475000,B15,Purchase Price,Currency,Yes,,,,,,,,,,,,,,,,,,,,,,,
-Economics,economics.capRate,0.06,F15,Going-in Cap Rate (%),Percentage,Yes,,,,,,,,,,,,,,,,,,,,,,,
-Economics,economics.acquisitionPrice,475000,G16,Final Acquisition Price,Currency,Yes,,,,,,,,,,,,,,,,,,,,,,,
-Economics,economics.acquisitionFees,1%,B16,Acquisition Fees,Currency,No,,,,,,,,,,,,,,,,,,,,,,,
-Economics,economics.dueDiligenceCosts,1%,C16,Due Diligence Costs,Currency,No,,,,,,,,,,,,,,,,,,,,,,,
-Economics,economics.constructionCosts,,D16,Construction/Renovation Costs,Currency,No,,,,,,,,,,,,,,,,,,,,,,,
-Economics,economics.baseRent,14.65,E7,Base Rent ($/SF/Year),Currency,No,,,,,,,,,,,,,,,,,,,,,,,
-Economics,economics.otherIncome,500,E7,Other Income (Annual),Currency,No,,,,,,,,,,,,,,,,,,,,,,,
-Economics,economics.vacancy,10%,E8,Vacancy (% of GPR),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Economics,economics.rentEscalations,3%,E8,Rent Escalations (%/Year),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Economics,economics.otherIncomeEscalations,3%,E8,Other Income Escalations (%/Year),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Economics,economics.immediateCapEx,0,E15,Immediate CapEx,Currency,No,,,,,,,,,,,,,,,,,,,,,,,
-Economics,economics.ongoingCapEx,1.00,F16,Ongoing CapEx ($/SF/Year),Currency,No,,,,,,,,,,,,,,,,,,,,,,,
-Economics,economics.ongoingCapExEscalations,0%,G17,Capex Growth (%/Year),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Economics,economics.propertyTaxGrowth,3%,G17,Property Tax Growth (%/Year),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Economics,economics.irr,0.02,G17,IRR (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Economics,economics.cashOnCashReturn,,G18,Cash-on-Cash Return (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Economics,economics.noi,34596,G19,Net Operating Income (Annual),Currency,No,,,,,,,,,,,,,,,,,,,,,,,
-Economics,economics.recoveries,0,E15,Recoveries (Annual),Currency,No,,,,,,,,,,,,,,,,,,,,,,,
-
-Financing,financing.ltv,75%,G19,Loan-to-Value (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Financing,financing.interestRate,0.06,G19,Interest Rate (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Financing,financing.term,10.00,G19,Loan Term (Years),Number,No,,,,,,,,,,,,,,,,,,,,,,,
-Financing,financing.loanFees,1.5%,G19,Loan Fees (% of Loan),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Financing,financing.amortPeriod,30.00,G19,Amortization Period (Years),Number,No,,,,,,,,,,,,,,,,,,,,,,,
-Financing,financing.IO,0.00,G19,Interest-Only Period (Years),Number,No,,,,,,,,,,,,,,,,,,,,,,,
-
-Waterfall,waterfall.LPEquity,0%,G19,LP Equity (% of Total),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Waterfall,waterfall.preferredReturnType,preferred,G19,Preferred Return Type,Text,No,,,,,,,,,,,,,,,,,,,,,,,
-Waterfall,waterfall.firstHurdle,15%,G19,First Hurdle IRR (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Waterfall,waterfall.firstHurdleLP,0%,G19,First Hurdle LP Share (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Waterfall,waterfall.firstHurdleGP,100%,G19,First Hurdle GP Share (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Waterfall,waterfall.secondHurdle,15%,G19,Second Hurdle IRR (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Waterfall,waterfall.secondHurdleLP,70%,G19,Second Hurdle LP Share (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Waterfall,waterfall.secondHurdleGP,30%,G19,Second Hurdle GP Share (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Waterfall,waterfall.thirdHurdle,15%,G19,Third Hurdle IRR (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Waterfall,waterfall.thirdHurdleLP,70%,G19,Third Hurdle LP Share (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-Waterfall,waterfall.thirdHurdleGP,30%,G19,Third Hurdle GP Share (%),Percentage,No,,,,,,,,,,,,,,,,,,,,,,,
-
-RentRoll,rentRoll.bedrooms,2,,Bedrooms,Number,No,,,,,,,,,,,,,,,,,,,,,,,,,,,
-RentRoll,rentRoll.bathrooms,1,,Bathrooms,Number,No,,,,,,,,,,,,,,,,,,,,,,,,,,,
-RentRoll,rentRoll.unitType,"2x1 Classic",,Unit Type,Text,No,,,,,,,,,,,,,,,,,,,,,,,,,,,
-RentRoll,rentRoll.marketRent,1600,,Market Rent (Monthly),Currency,No,,,,,,,,,,,,,,,,,,,,,,,,,,,
-
-Expenses,expenses.badDebt,0,,Bad Debt (Annual),Currency,No,,,,,,,,,,,,,,,,,,Bad Debt,$/Year,0,0%,straight-line
-Expenses,expenses.concessions,0,,Concessions (Annual),Currency,No,,,,,,,,,,,,,,,,,,Concessions,$/Year,0,0%,straight-line
-Expenses,expenses.managementFees,0,,Management Fees (Annual),Currency,No,,,,,,,,,,,,,,,,,,Management,%,0,3%,straight-line
-Expenses,expenses.utilities,0,,Utilities (Annual),Currency,No,,,,,,,,,,,,,,,,,,Utilities,$/Year,0,3%,straight-line
-Expenses,expenses.repairsAndMaintenance,0,,Repairs & Maintenance (Annual),Currency,No,,,,,,,,,,,,,,,,,,Repairs & Maintenance,$/PSF,0.5,3%,straight-line
-Expenses,expenses.propertyTaxes,0,,Property Taxes (Annual),Currency,No,,,,,,,,,,,,,,Property Taxes,$/Year,9000,3%,straight-line
-Expenses,expenses.insurance,0,,Insurance (Annual),Currency,No,,,,,,,,,,,,,,,,Insurance,$/PSF,0.5,3%,straight-line
-Expenses,expenses.floodInsurance,0,,Flood Insurance (Annual),Currency,No,,,,,,,,,,,,Flood,$/Year,1200,3%,straight-line      
+,OM DATA PARSING MAP,,,,,
+,Map incoming Offering Memorandum data to underwriting model cells,,,,,
+,,,,,,
+,INSTRUCTIONS,,,,,
+,1. Paste OM data in Column C (Source Value),,,,,
+,2. Values automatically map to the Model sheet via formulas,,,,,
+,"3. Yellow cells = required inputs, Gray cells = optional",,,,,
+,,,,,,
+,OM Field Name,Source Value (Paste Here),Data Type,Maps To Cell,Model Section,Notes
+,,,,,,
+,PROPERTY INFORMATION,,,,,
+,Property Name,,Text,Model!D6,Key Metrics,
+,Property Address,,Text,Model!D7 (note),Key Metrics,Store in note or separate field
+,Total Units,,Number,Model!D7,Key Metrics,Required
+,Total Square Feet,,Number,Model!D8,Key Metrics,Building SF
+,Year Built,,Number,Model!D22,Assumptions,
+,Lot Size (Acres),,Number,-,Reference,Not mapped - for reference
+,Zoning,,Text,-,Reference,Not mapped - for reference
+,Parking Spaces,,Number,-,Reference,
+,,,,,,
+,ACQUISITION / PRICING,,,,,
+,Asking Price,,Currency,Model!D9,Key Metrics,Purchase Price input
+,Price Per Unit,,Currency,-,Calculated,Auto-calculated from Price/Units
+,Price Per SF,,Currency,-,Calculated,Auto-calculated
+,Current Cap Rate,,Percent,-,Reference,Seller's stated cap
+,Pro Forma Cap Rate,,Percent,-,Reference,Seller's pro forma
+,Closing Costs,,Currency,Model!D23,Assumptions,Estimate if not provided
+,Due Diligence Budget,,Currency,Model!D24,Assumptions,
+,CapEx Budget,,Currency,Model!D25,Assumptions,Renovation/deferred maint
+,,,,,,
+,INCOME (T-12 or Pro Forma),,,,,
+,Gross Potential Rent (Annual),,Currency,Model!D63,Revenue,GPR from OM
+,Vacancy Loss %,,Percent,Model!H22,Assumptions,Economic vacancy rate
+,Loss to Lease (Annual),,Currency,Model!D65,Revenue,Below-market leases
+,Concessions (Annual),,Currency,-,Reference,Use % in Model!H24
+,Bad Debt %,,Percent,Model!H23,Assumptions,
+,Laundry Income,,Currency,Model!C71,Revenue,$/unit/month
+,Parking Income,,Currency,Model!C72,Revenue,$/unit/month
+,Pet Income,,Currency,Model!C73,Revenue,$/unit/month
+,Other Income,,Currency,Model!C74-C76,Revenue,Split across line items
+,RUBS/Utility Reimbursement,,Currency,Model!C81-C84,Revenue,If tenant-paid utilities
+,,,,,,
+,OPERATING EXPENSES (T-12 or Pro Forma),,,,,
+,Real Estate Taxes,,Currency,Model!C93,Expenses,Annual or $/unit/mo
+,Property Insurance,,Currency,Model!C94,Expenses,Annual or $/unit/mo
+,Water/Sewer,,Currency,Model!C95,Expenses,If owner-paid
+,Electric (Common Area),,Currency,Model!C96,Expenses,
+,Gas,,Currency,Model!C97,Expenses,If owner-paid
+,Trash Removal,,Currency,Model!C98,Expenses,If owner-paid
+,Repairs & Maintenance,,Currency,Model!C99,Expenses,
+,Landscaping,,Currency,Model!C100,Expenses,
+,Pest Control,,Currency,Model!C101,Expenses,
+,Snow Removal,,Currency,Model!C102,Expenses,If applicable
+,Unit Turnover/Make Ready,,Currency,Model!C103,Expenses,
+,Management Fee %,,Percent,Model!H25,Assumptions,% of EGI
+,On-Site Payroll,,Currency,Model!C105,Expenses,If applicable
+,Marketing/Advertising,,Currency,Model!C106,Expenses,
+,Legal & Professional,,Currency,Model!C107,Expenses,
+,Accounting,,Currency,Model!C108,Expenses,
+,Administrative/G&A,,Currency,Model!C109,Expenses,
+,Security,,Currency,Model!C110,Expenses,
+,Cable/Internet,,Currency,Model!C111,Expenses,
+,Total Operating Expenses,,Currency,-,Calculated,Sum of above - verify
+,NOI (from OM),,Currency,-,Reference,Compare to model output
+,,,,,,
+,RENT ROLL DATA,,,,,
+,Unit Numbers,,Text,Model!B33:B56,Rent Roll,List of unit IDs
+,"Unit Types (1BR, 2BR, etc)",,Text,Model!C33:C56,Rent Roll,Bedroom/bath config
+,Unit Square Feet,,Number,Model!D33:D56,Rent Roll,Per unit
+,Unit Status,,Text,Model!E33:E56,Rent Roll,Renovated/Classic/Vacant
+,Market Rent,,Currency,Model!F33:F56,Rent Roll,Current market rate
+,In-Place Rent,,Currency,Model!G33:G56,Rent Roll,Actual rent collected
+,Lease Start Date,,Date,Model!I33:I56,Rent Roll,
+,Lease End Date,,Date,Model!J33:J56,Rent Roll,
+,Tenant Name,,Text,Model!K33:K56,Rent Roll,Or 'Vacant'
+,,,,,,
+,EXISTING FINANCING (for Subject-To),,,,,
+,Existing Loan Balance,,Currency,Model!D127,Financing,If assuming existing debt
+,Existing Loan Rate,,Percent,Model!D128,Financing,Current interest rate
+,Remaining Term (Months),,Number,Model!D129,Financing,Months remaining
+,Monthly P&I Payment,,Currency,-,Calculated,Verify against model
+,Loan Maturity Date,,Date,-,Reference,Calculate from term
+,Prepayment Penalty,,Text,-,Reference,Note any restrictions
+,Assumable (Y/N),,Text,-,Reference,Key for subject-to
+,,,,,,
+,GROWTH ASSUMPTIONS (Your Inputs),,,,,
+,Annual Rent Growth %,,Percent,Model!H20,Assumptions,Market rent escalation
+,Annual Expense Growth %,,Percent,Model!H21,Assumptions,Inflation factor
+,Exit Cap Rate (5-Year),,Percent,Model!H26,Assumptions,For reversion calc
+,Exit Cap Rate (10-Year),,Percent,Model!H27,Assumptions,For reversion calc
+,Selling Costs %,,Percent,Model!L20,Assumptions,"Broker fees, transfer tax"
+,CapEx Reserve $/Unit/Year,,Currency,Model!L21,Assumptions,Ongoing reserves
+,,,,,,
+,,,,,,
+,QUICK REFERENCE - KEY MODEL CELLS,,,,,
+,Output,Cell,Output,Cell,,
+,Purchase Price,Model!D9,Total Units,Model!D7,,
+,Year 1 NOI,Model!E117,Year 1 EGI,Model!E87,,
+,Going-In Cap Rate,Model!D13,Stabilized Cap Rate,Model!D14,,
+,Total Debt,Model!D164,Required Equity,Model!D197,,
+,Project IRR (5-Yr),Model!O230,Project IRR (10-Yr),Model!P230,,
+,LP IRR (5-Yr),Model!O231,LP IRR (10-Yr),Model!P231,,
+,RUBS Toggle,Model!D80,"1=Tenant, 0=Owner",-,,
+,,,,,,
+,,,,,,
+,LEGEND,,,,,
+,Yellow cells,Required inputs,,,,
+,Gray cells,Optional inputs,,,,
+,Green cells,Your assumptions (not from OM),,,,
+,Blue text,Cell references in Model sheet,,,,

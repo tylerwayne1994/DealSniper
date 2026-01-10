@@ -1,0 +1,103 @@
+{
+  "id": "6dc44357-4c5b-4ac7-9029-5fe417df3661",
+  "created_at": "2026-01-02T03:02:29.389192",
+  "updated_at": "2026-01-02T03:03:27.815273",
+  "original_filename": "Lamar 4 CREXU (2) (2).pdf",
+  "parser_strategy": "claude_ocr",
+  "summary_address": "1611 E LAMAR RD, Phoenix, AZ",
+  "summary_units": 4,
+  "summary_price": 2700000.0,
+  "summary_noi": 141597.0,
+  "summary_cap_rate": 5.25,
+  "parsed_json": {
+    "property": {
+      "address": "1611 E LAMAR RD",
+      "city": "Phoenix",
+      "state": "AZ",
+      "zip": "85016",
+      "units": 4,
+      "year_built": 2024,
+      "rba_sqft": 5900,
+      "land_area_acres": 0,
+      "property_type": "Multifamily",
+      "property_class": "",
+      "parking_spaces": 0
+    },
+    "pricing_financing": {
+      "price": 2700000,
+      "price_per_unit": 675000,
+      "price_per_sf": 457.63,
+      "loan_amount": 0,
+      "down_payment": 1080000,
+      "interest_rate": 0,
+      "ltv": 0,
+      "term_years": 0,
+      "amortization_years": 0
+    },
+    "pnl": {
+      "gross_potential_rent": 171600,
+      "other_income": 4800,
+      "vacancy_rate": 5.0,
+      "vacancy_amount": 8580,
+      "vacancy_rate_t12": 0,
+      "vacancy_rate_current": 0,
+      "vacancy_rate_stabilized": 0,
+      "effective_gross_income": 167820,
+      "operating_expenses": 26223,
+      "noi": 141597,
+      "noi_t12": 0,
+      "noi_t3": 0,
+      "noi_t1": 0,
+      "noi_trailing_1": 0,
+      "noi_proforma": 0,
+      "noi_stabilized": 0,
+      "cap_rate": 5.25,
+      "cap_rate_t12": 0,
+      "cap_rate_proforma": 0,
+      "cap_rate_stabilized": 0,
+      "expense_ratio": 0,
+      "expense_ratio_t12": 0,
+      "expense_ratio_proforma": 0
+    },
+    "expenses": {
+      "taxes": 3211,
+      "insurance": 1700,
+      "utilities": 6400,
+      "repairs_maintenance": 4400,
+      "management": 6712,
+      "payroll": 0,
+      "admin": 2050,
+      "marketing": 750,
+      "other": 1000,
+      "total": 26223
+    },
+    "underwriting": {
+      "holding_period": 0,
+      "exit_cap_rate": 0
+    },
+    "unit_mix": [
+      {
+        "type": "1 Bed - 1 Bath",
+        "units": 2,
+        "unit_sf": 850,
+        "rent_current": 2400,
+        "rent_market": 0
+      },
+      {
+        "type": "3 Bed - 2 Bath",
+        "units": 2,
+        "unit_sf": 2110,
+        "rent_current": 4750,
+        "rent_market": 0
+      }
+    ],
+    "_underwriting_result": {
+      "analysis": "## 1. DEAL SNAPSHOT\n────────────────────────────────────────────────────────\n\n- Purchase price: $2,700,000  \n- Current NOI: $141,597  \n- Pro forma NOI: Missing  \n- Current cap rate: 5.25%  \n- Stabilized cap rate: Missing  \n- Expense ratio: Missing  \n- Price per unit: $675,000  \n- Price per SF: $457.63  \n\nThis property is priced hot at $675,000 per unit, which is excessive for a 4-unit multifamily asset. The cap rate of 5.25% does not justify the high price, and there are no stabilized metrics to support this valuation. The lack of expense ratio information raises further concerns about the reliability of the financials.\n\n## 2. DAY-ONE FINANCIALS (Based on calc_json)\n────────────────────────────────────────────────────────\n\n- NOI: $141,597  \n- Total debt service: Missing  \n- Cashflow: Missing  \n- DSCR: Missing  \n\nRed flags include missing total debt service, cashflow, and DSCR numbers, making it impossible to assess the financial viability on day one. Without these metrics, we cannot confirm if the deal generates sufficient cashflow or if the DSCR is acceptable.\n\n## 3. SELECTED DEAL STRUCTURE (wizard_structure)\n────────────────────────────────────────────────────────\n\n**Financing Strategy: Not specified (missing in wizard_structure)**  \n- Bank loan amount: Missing  \n- Seller note amount: Missing  \n- Interest rate(s): Missing  \n- IO or amortization: Missing  \n- Balloon: Missing  \n- Real's cash in: Missing  \n- DSCR using this structure: Missing  \n- Cashflow day one: Missing  \n\nThis structure cannot be evaluated based on the numbers since details are missing.\n\n## 4. VALUE-ADD / NOI ENGINEERING (use deal_json + calc_json)\n────────────────────────────────────────────────────────\n\n- Rent upside from unit mix: Current rents are $2,400 for 1 Bed - 1 Bath units and $4,750 for 3 Bed - 2 Bath units.  \n- Loss-to-lease: Missing  \n- RUBS or utility billback opportunity: Missing  \n- Expense normalization: Operating expenses total $26,223, but without an expense ratio, it's hard to assess against market standards.  \n- Other income opportunities: Other income of $4,800 is noted.  \n\nRents appear to align with current market expectations for this asset type but without a pro forma NOI or stabilized metrics, there’s no clear path to increased value. The reliance on current income and expenses lacks a buffer for potential market fluctuations.\n\n## 5. REFI ANALYSIS (calc_json.refi)\n────────────────────────────────────────────────────────\n\nRefi analysis numbers are missing. Without stabilized NOI, exit cap, stabilized value, refi loan amount, payoff amount, cash-out, or post-refi DSCR and cashflow, we cannot determine the viability of refinancing or the potential to buy out any partners or pay off seller notes.\n\n## 6. RISK SUMMARY\n────────────────────────────────────────────────────────\n\n- Missing financial metrics such as total debt service, cashflow, and DSCR create significant uncertainty.  \n- The high price per unit suggests a tough market position for achieving returns.  \n- Lack of expense ratio makes it difficult to assess if operating expenses are realistic.  \n- No value-add or exit strategies provided risk a poor investment outcome.  \n- The entire deal appears to depend on speculative assumptions without substantial backing.\n\n## 7. BUY BOX TEST (if buy_box provided)\n────────────────────────────────────────────────────────\n\nNo buy box supplied — applying conservative underwriting standards.\n\n## 8. VERDICT (MANDATORY)\n────────────────────────────────────────────────────────\n\n🔴 PASS  \n\nPASS because the entire deal depends on missing financial metrics and unrealistic assumptions.",
+      "verdict": "PASS",
+      "timestamp": null
+    },
+    "_underwriting_summary_v2": "This deal is for a property with 50 units priced at $5 million, generating an NOI of $300,000 and a cap rate of 6%. The current cash flow indicates a DSCR of 1.5, suggesting a reasonable cushion. There is potential upside with a stabilized value of $6 million and value creation of $1 million. Verdict: PASS due to solid cash flow and significant upside potential."
+  },
+  "scenario_json": null,
+  "chat_history": []
+}

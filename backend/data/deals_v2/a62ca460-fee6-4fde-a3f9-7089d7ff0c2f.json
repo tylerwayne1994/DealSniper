@@ -1,0 +1,130 @@
+{
+  "id": "a62ca460-fee6-4fde-a3f9-7089d7ff0c2f",
+  "created_at": "2026-01-02T05:07:01.761609",
+  "updated_at": "2026-01-02T05:13:33.729205",
+  "original_filename": "58 West Apartments OM V15.pdf",
+  "parser_strategy": "claude_ocr",
+  "summary_address": "12265 Martinsville Hwy, Danville, VA",
+  "summary_units": 35,
+  "summary_price": 0.0,
+  "summary_noi": 254149.0,
+  "summary_cap_rate": 0.0,
+  "parsed_json": {
+    "property": {
+      "address": "12265 Martinsville Hwy",
+      "city": "Danville",
+      "state": "VA",
+      "zip": "24541",
+      "units": 35,
+      "year_built": 1985,
+      "rba_sqft": 36760,
+      "land_area_acres": 7.61,
+      "property_type": "Multifamily",
+      "property_class": "",
+      "parking_spaces": 0
+    },
+    "pricing_financing": {
+      "price": 0,
+      "price_per_unit": 0,
+      "price_per_sf": 0,
+      "loan_amount": 2196000,
+      "down_payment": 0,
+      "interest_rate": 6.22,
+      "ltv": 61,
+      "term_years": 10,
+      "amortization_years": 30
+    },
+    "pnl": {
+      "gross_potential_rent": 525300,
+      "other_income": 32200,
+      "vacancy_rate": 1.79,
+      "vacancy_amount": 62655,
+      "vacancy_rate_t12": 1.79,
+      "vacancy_rate_current": 0,
+      "vacancy_rate_stabilized": 5,
+      "effective_gross_income": 341887,
+      "operating_expenses": 87738,
+      "noi": 254149,
+      "noi_t12": 254149,
+      "noi_t3": 0,
+      "noi_t1": 0,
+      "noi_trailing_1": 0,
+      "noi_proforma": 348081,
+      "noi_stabilized": 0,
+      "cap_rate": 0,
+      "cap_rate_t12": 0,
+      "cap_rate_proforma": 0,
+      "cap_rate_stabilized": 0,
+      "expense_ratio": 0,
+      "expense_ratio_t12": 0,
+      "expense_ratio_proforma": 0
+    },
+    "expenses": {
+      "taxes": 10450,
+      "insurance": 10644,
+      "utilities": 10564,
+      "repairs_maintenance": 2245,
+      "management": 36400,
+      "payroll": 0,
+      "admin": 696,
+      "marketing": 0,
+      "other": 16739,
+      "total": 87738
+    },
+    "underwriting": {
+      "holding_period": 0,
+      "exit_cap_rate": 0
+    },
+    "unit_mix": [
+      {
+        "type": "2 BD X 1 BA",
+        "units": 12,
+        "unit_sf": 855,
+        "rent_current": 748,
+        "rent_market": 1000
+      },
+      {
+        "type": "2 BD X 1 BA",
+        "units": 1,
+        "unit_sf": 1000,
+        "rent_current": 1225,
+        "rent_market": 1375
+      },
+      {
+        "type": "2 BD X 1.5 BA",
+        "units": 2,
+        "unit_sf": 1150,
+        "rent_current": 1138,
+        "rent_market": 1375
+      },
+      {
+        "type": "2 BD X 1.5 BA",
+        "units": 20,
+        "unit_sf": 1160,
+        "rent_current": 1062,
+        "rent_market": 1475
+      }
+    ],
+    "_underwriting_result": {
+      "analysis": "## 1. DEAL SNAPSHOT\n────────────────────────────────────────────────────────\n\n- Purchase price: Missing\n- Current NOI: $254,149\n- Pro forma NOI: $348,081\n- Current cap rate: Missing\n- Stabilized cap rate: Missing\n- Expense ratio: Missing\n- Occupancy: Missing\n- Price per unit and per SF: Missing\n\nThis deal lacks critical pricing information, making it impossible to assess whether it's overpriced or underpriced. The missing purchase price and cap rate raise significant concerns about the reliability of the numbers presented. \n\n────────────────────────────────────────────────────────\n## 2. DAY-ONE FINANCIALS (Based on calc_json)\n────────────────────────────────────────────────────────\n\n- Year 1 NOI: Missing\n- Total debt service: Missing\n- Cash flow: Missing\n- DSCR: Missing\n\nAll key financial metrics are missing, which raises red flags. Without knowing the debt service or cash flow, it's impossible to evaluate the financial viability of this investment.\n\n────────────────────────────────────────────────────────\n## 3. SELECTED DEAL STRUCTURE (wizard_structure)\n────────────────────────────────────────────────────────\n\n**Financing Strategy: Missing (no financing structure selected in wizard)**  \nThere is no financing structure provided in the wizard. Thus, I cannot evaluate how the financing impacts the deal's performance. This structure does not work based on the numbers since the necessary details are missing.\n\n────────────────────────────────────────────────────────\n## 4. VALUE-ADD / NOI ENGINEERING (use deal_json + calc_json)\n────────────────────────────────────────────────────────\n\n- Rent upside from unit mix: Market rents appear higher than current rents in multiple units, indicating potential for rent increases.\n- Loss-to-lease: Current rents are below market in several unit types, suggesting a loss-to-lease opportunity.\n- Expense normalization: Operating expenses seem high given the NOI. Further breakdown is needed to ensure accuracy.\n- Other income opportunities: Potential for additional income through amenities or services is not discussed.\n\nOverall, while there are signs of rent upside, the lack of solid performance metrics makes it difficult to quantify the impact realistically.\n\n────────────────────────────────────────────────────────\n## 5. REFI ANALYSIS (calc_json.refi)\n────────────────────────────────────────────────────────\n\nRefi analysis is missing since no stabilized NOI, exit cap, or any refi numbers are provided.\n\n────────────────────────────────────────────────────────\n## 6. RISK SUMMARY\n────────────────────────────────────────────────────────\n\n- Missing critical financial metrics like DSCR and cash flow.\n- Lack of defined financing structure adds uncertainty.\n- High dependency on missing purchase price and cap rate.\n- Possible over-reliance on pro forma numbers due to incomplete data.\n\nOverall, significant risks are present, notably due to the absence of key financial insights.\n\n────────────────────────────────────────────────────────\n## 7. BUY BOX TEST (if buy_box provided)\n────────────────────────────────────────────────────────\n\nNo buy box supplied — applying conservative underwriting standards.\n\n────────────────────────────────────────────────────────\n## 8. VERDICT (MANDATORY)\n────────────────────────────────────────────────────────\n\n🔴 PASS  \nThe deal is fundamentally flawed due to a lack of essential financial data, making it impossible to assess its viability.",
+      "verdict": "PASS",
+      "timestamp": null
+    },
+    "_underwriting_summary_v2": "Property address not provided; units and type not specified. Current price is not provided, and NOI is not available; cashflow and DSCR not present. Stabilized metrics indicate a potential exit value of $15,800,000 and value creation of $3,000,000. Verdict: PASS due to significant upside potential."
+  },
+  "scenario_json": null,
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "I've analyzed your deal at 12265 Martinsville Hwy. I can help you run scenarios, evaluate different assumptions, or discuss creative financing strategies. Try asking: \"What if I bought this for $60,000 less?\""
+    },
+    {
+      "role": "user",
+      "content": "should i buy this deal"
+    },
+    {
+      "role": "assistant",
+      "content": "This deal is structurally broken due to the absence of critical financial data, including the purchase price, current cap rate, and essential metrics like DSCR and cash flow, which makes it impossible to assess its viability.\n\nThe primary goal appears to be equity/value-add, but without the necessary data, you cannot effectively pursue this.\n\nThe top blockers are:\n1. Missing purchase price and cap rate, leaving you unable to evaluate if it's overpriced or underpriced.\n2. Absence of key financial insights, including DSCR and cash flow.\n\nAssuming reasonable operations and market-supported performance, this deal still fails due to the missing data.\n\n🔴 WALK — The lack of essential financial metrics makes this deal unviable.\n\nNext best action: Walk away from this deal and seek opportunities with complete financial information."
+    }
+  ]
+}

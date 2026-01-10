@@ -1,0 +1,245 @@
+{
+  "id": "d198bac1-2a33-47ec-b675-c72cc83be2b4",
+  "created_at": "2025-12-12T02:25:17.139718",
+  "updated_at": "2025-12-12T02:31:12.384148",
+  "original_filename": "82 West - OM_2025 (1).pdf",
+  "parser_strategy": "claude_ocr",
+  "summary_address": "8208 Troost Ave, Kansas City, MO",
+  "summary_units": 78,
+  "summary_price": 0.0,
+  "summary_noi": 542288.0,
+  "summary_cap_rate": 0.0,
+  "parsed_json": {
+    "property": {
+      "address": "8208 Troost Ave",
+      "city": "Kansas City",
+      "state": "MO",
+      "zip": "64131",
+      "units": 78,
+      "year_built": 1960,
+      "rba_sqft": 56176,
+      "land_area_acres": 3.3,
+      "property_type": "Multifamily",
+      "property_class": "C",
+      "parking_spaces": 86
+    },
+    "pricing_financing": {
+      "price": 0,
+      "price_per_unit": 0,
+      "price_per_sf": 0,
+      "loan_amount": 0,
+      "down_payment": 0,
+      "interest_rate": 0,
+      "ltv": 0,
+      "term_years": 0,
+      "amortization_years": 0
+    },
+    "pnl": {
+      "gross_potential_rent": 1070246,
+      "other_income": 33044,
+      "vacancy_rate": 5.0,
+      "vacancy_amount": 60120,
+      "vacancy_rate_t12": 0,
+      "vacancy_rate_current": 8.97,
+      "vacancy_rate_stabilized": 5.0,
+      "effective_gross_income": 1139252,
+      "operating_expenses": 533676,
+      "noi": 542288,
+      "noi_t12": 542288,
+      "noi_t3": 485687,
+      "noi_t1": 0,
+      "noi_trailing_1": 414875,
+      "noi_proforma": 605576,
+      "noi_stabilized": 0,
+      "cap_rate": 0,
+      "cap_rate_t12": 0,
+      "cap_rate_proforma": 0,
+      "cap_rate_stabilized": 0,
+      "expense_ratio": 46.84,
+      "expense_ratio_t12": 47.37,
+      "expense_ratio_proforma": 46.84
+    },
+    "expenses": {
+      "taxes": 51622,
+      "insurance": 53953,
+      "utilities": 161588,
+      "repairs_maintenance": 60982,
+      "management": 34178,
+      "payroll": 85494,
+      "admin": 15416,
+      "marketing": 2780,
+      "other": 23400,
+      "total": 533676
+    },
+    "underwriting": {
+      "holding_period": 0,
+      "exit_cap_rate": 0
+    },
+    "unit_mix": [
+      {
+        "type": "1 Bedroom / 1 Bathroom",
+        "units": 42,
+        "unit_sf": 688,
+        "rent_current": 1100,
+        "rent_market": 1220
+      },
+      {
+        "type": "2 Bedroom / 1 Bathroom",
+        "units": 36,
+        "unit_sf": 758,
+        "rent_current": 1194,
+        "rent_market": 1360
+      }
+    ],
+    "_underwriting_result": {
+      "analysis": "# UNDERWRITING ANALYSIS: 8208 Troost Ave\n\n────────────────────────────────────────────────────────\n## 1. DEAL SNAPSHOT\n────────────────────────────────────────────────────────\n\n**Purchase Price:** $6,000,000  \n**Current NOI (T12):** $542,288  \n**Pro Forma NOI:** $605,576  \n**Current Cap Rate (T12):** 9.04%  \n**Pro Forma Cap Rate:** 10.09%  \n**Expense Ratio (T12):** 47.37%  \n**Expense Ratio (Pro Forma):** 46.84%  \n**Occupancy:** 91.03% current (8.97% vacant)  \n**Price Per Unit:** $76,923  \n**Price Per SF:** $106.80  \n\n**Reality Check:**  \nThis is a 1960s Class C multifamily in Kansas City trading at a 9% going-in cap. The price per unit ($77K) is reasonable for this vintage and market. The broker is projecting a 10% cap on pro forma, which implies they're pushing $63K in additional NOI through rent bumps and lease-up of vacant units. \n\nThe property is currently 91% occupied, which is decent but not strong. Expense ratio at 47% is acceptable for Class C, but they're claiming it stays flat even as rents rise — that's broker math. The bigger issue: **this deal is 100% vacant units in the underwriting**. Every single unit shows as vacant in the rent roll analysis. Something is fundamentally broken in the data.\n\n────────────────────────────────────────────────────────\n## 2. DAY-ONE FINANCIALS (Based on calc_json)\n────────────────────────────────────────────────────────\n\n**Year 1 NOI:** $509,494  \n**Total Debt Service:** $461,317  \n**Cash Flow:** $48,177  \n**DSCR:** 1.10  \n\n**Reality Check:**  \nYear 1 NOI is **$509K**, which is LOWER than the T12 NOI of $542K. This means the underwriting is modeling backward performance in Year 1, likely due to vacancy assumptions or turn costs that aren't showing up cleanly in the data.\n\nDSCR of 1.10 is **dangerously tight** for a C-class property with 9% vacancy and a 60-year-old building. You have essentially zero margin for error. One HVAC failure, one eviction wave, one bad winter and you're underwater on debt service.\n\nCashflow of $48K on a $1.5M equity check (partner + your $75K) is a **3.2% cash-on-cash return**. That's garbage. You're not getting paid for the risk you're taking day one.\n\n**Red Flags:**  \n- Year 1 NOI is **worse** than trailing NOI  \n- DSCR leaves no cushion  \n- Expense ratio assumes zero normalization of repairs/maintenance  \n- Cashflow is anemic and depends entirely on lease-up execution  \n\n────────────────────────────────────────────────────────\n## 3. SELECTED DEAL STRUCTURE (wizard_structure)\n────────────────────────────────────────────────────────\n\n**Financing Strategy: Equity Partner (selected in wizard)**  \n\n**Structure Breakdown:**  \n- **Bank Loan Amount:** $4,500,000  \n- **LTV:** 75%  \n- **Interest Rate:** 6.5%  \n- **Loan Term:** 10 years  \n- **Amortization:** 30 years  \n- **IO Period:** 0 years (fully amortizing from day one)  \n- **Monthly Payment:** $38,443  \n- **Annual Debt Service:** $461,317  \n\n**Equity Structure:**  \n- **Partner Contribution:** $1,500,000  \n- **Partner Preferred Return:** $120,000 annually (8% pref)  \n- **Your Cash In (Real's Equity):** $75,000  \n- **Total Equity Required:** $1,575,000  \n\n**DSCR Using This Structure:** 1.10  \n**Cashflow Day One (Before Partner Pref):** $48,177  \n**Cashflow After Partner Pref:** -$71,823  \n\n**Does This Structure Work?**  \n**Absolutely not.** \n\nThe partner is getting $120K annually in preferred return. Your Year 1 cashflow is $48K. That means you're **$72K short** on paying the partner pref in Year 1 alone. You're accruing unpaid pref from day one, which means your equity partner is funding a negative cashflow deal while you control it with $75K in.\n\nThis structure only works if:  \n1. You can execute the rent lift and lease-up immediately (unlikely in a C property)  \n2. Expenses stay flat (never happens)  \n3. The partner is willing to eat negative cashflow for 2+ years (stupid capital)  \n\n────────────────────────────────────────────────────────\n## 4. VALUE-ADD / NOI ENGINEERING (use deal_json + calc_json)\n────────────────────────────────────────────────────────\n\n**Rent Upside:**  \n- 42 × 1BR units currently at $1,100, market rent $1,220 = **$120/unit/month upside**  \n- 36 × 2BR units currently at $1,194, market rent $1,360 = **$166/unit/month upside**  \n- **Total Annual Rent Upside:** ~$132,000 if you hit market rents  \n\n**Loss-to-Lease:**  \nThe rent roll shows **100% vacancy** across all 78 units, which is clearly a data error. However, the deal_json shows current in-place rents that are 10–14% below market. Real loss-to-lease is likely in the $130K range annually.\n\n**Expense Normalization Opportunities:**  \n- **Utilities:** $161,588 annually. This is being paid by the property. RUBS or direct tenant billing could push $80–100K of this to residents.  \n- **Repairs & Maintenance:** $60,982. For a 60-year-old property, this is artificially low. Real run rate is likely $80–90K.  \n- **Payroll:** $85,494. This is high for 78 units. You could potentially trim $10–15K if you right-size staffing.  \n\n**Other Income Opportunities:**  \n- Pet fees, parking, laundry, late fees, lease renewal fees could add $15–20K annually  \n\n**Realistic Stabilized NOI:**  \nIf you execute perfectly:  \n- Rent upside: +$130K  \n- RUBS implementation: +$90K  \n- Other income: +$18K  \n- Less: normalized repairs: -$20K  \n\n**Stabilized NOI = ~$728K** (vs. broker pro forma of $605K, which undershoots reality if you execute)\n\n────────────────────────────────────────────────────────\n## 5. REFI ANALYSIS (calc_json.refi)\n────────────────────────────────────────────────────────\n\n**Year 5 Exit Scenario (from calc_json.exit):**  \n- **Stabilized NOI (Year 5):** $449,121  \n- **Exit Cap Rate:** 7.25%  \n- **Stabilized Value:** $6,194,768  \n- **Loan Balance at Year 5:** $4,212,494  \n- **Gross Sales Proceeds:** $6,194,768  \n- **Selling Costs:** $123,895  \n- **Net Proceeds:** $6,070,872  \n- **Loan Payoff:** $4,212,494  \n- **Cash to Equity:** $1,858,378  \n- **Post-Refi DSCR:** 0.97  \n- **Post-Refi Cashflow:** -$12,199  \n\n**Wait — What the Fuck Happened Here?**  \n\nYear 5 NOI is **$449K**, which is **LOWER** than Year 1 NOI of $509K. This model is projecting **declining NOI** over the hold period, which makes zero sense given the value-add story. This is either:  \n1. A calculation error in the model  \n2. Expenses are blowing out faster than revenue  \n3. Occupancy is cratering  \n\nThe exit value of $6.19M is basically a **3% gain** over 5 years on a $6M purchase. After selling costs and loan payoff, you're returning $1.86M to equity vs. $1.5M invested. That's a **24% total return over 5 years**, or **4.4% annualized**. \n\n**Refi Verdict:**  \nYou cannot refi this deal. Post-refi DSCR is 0.97, which means **you cannot service the debt** with operating cashflow. No lender will touch this. The only exit is a sale, and the sale barely covers your cost basis.\n\n**Can You Buy Out the Partner?**  \nNo. There's not enough proceeds to pay off the $1.5M partner contribution AND the $120K annual pref that's been accruing.\n\n────────────────────────────────────────────────────────\n## 6. RISK SUMMARY\n────────────────────────────────────────────────────────\n\n**REAL Risks in Order of Severity:**\n\n1. **DSCR of 1.10 is a ticking time bomb.** One bad quarter and you're asking the partner for more money or you're defaulting.\n\n2. **Cashflow is negative after partner pref from day one.** You owe $120K annually in pref and only generate $48K in Year 1 cashflow. You're underwater immediately.\n\n3. **The model shows DECLINING NOI over the hold period.** Year 5 NOI is lower than Year 1. This is either a broken model or expenses are cannibalizing income. Either way, it's bad.\n\n4. **100% of the value-add depends on execution.** You need to lease up vacant units, push rents 10–14%, and bill back utilities. If you miss on any of these, the deal implodes.\n\n5. **Expense ratio is being gamed.** They're showing flat expenses as income rises. Real-world: repairs, insurance, and taxes will ALL rise as you renovate and increase rents. Budget +$50K annually in expense bleed.\n\n6. **No refi exit.** Post-refi DSCR is sub-1.0. You MUST sell to exit, and the exit value barely covers basis. You're trapped.\n\n7. **60-year-old building in Class C location.** Deferred maintenance, capital needs, tenant quality issues, eviction costs — all of this will hit you and none of it is modeled.\n\n8. **Rent roll data is fucked.** Every unit shows as vacant. If the data is this broken, what else is wrong?\n\n────────────────────────────────────────────────────────\n## 7. BUY BOX TEST (if buy_box provided)\n────────────────────────────────────────────────────────\n\n**No buy box supplied — applying conservative underwriting standards.**\n\n**Conservative Underwriting Minimums:**  \n- **Min DSCR:** 1.25 → **ACTUAL: 1.10** ❌ FAIL  \n- **Min Cash-on-Cash:** 8% → **ACTUAL: 3.2%** ❌ FAIL  \n- **Day-One Positive Cashflow After Pref:** Required → **ACTUAL: -$71,823** ❌ FAIL  \n- **Refi Viability:** DSCR > 1.20 → **ACTUAL: 0.97** ❌ FAIL  \n- **Expense Ratio:** < 50% → **ACTUAL: 47%** ✅ PASS (barely)  \n\n**This deal fails every meaningful conservative underwriting test.**\n\n────────────────────────────────────────────────────────\n## 8. VERDICT (MANDATORY)\n────────────────────────────────────────────────────────\n\n🔴 **PASS**  \n\n**You're buying a deal that loses money from day one, has no margin for error, cannot refi, and requires perfect execution on a 60-year-old Class C building just to get your money back in 5 years.**",
+      "verdict": "PASS",
+      "timestamp": null
+    }
+  },
+  "scenario_json": {
+    "property": {
+      "address": "8208 Troost Ave",
+      "city": "Kansas City",
+      "state": "MO",
+      "zip": "64131",
+      "units": 78,
+      "year_built": 1960,
+      "rba_sqft": 56176,
+      "land_area_acres": 3.3,
+      "property_type": "Multifamily",
+      "property_class": "C",
+      "parking_spaces": 86
+    },
+    "pricing_financing": {
+      "price": 6000000,
+      "price_per_unit": 0,
+      "price_per_sf": 0,
+      "loan_amount": 4500000,
+      "down_payment": 1500000,
+      "interest_rate": 0.065,
+      "ltv": 0,
+      "term_years": 10,
+      "amortization_years": 30,
+      "purchase_price": 6000000,
+      "down_payment_pct": 40,
+      "monthly_payment": 38443.06105718344,
+      "annual_debt_service": 461316.7326862012
+    },
+    "pnl": {
+      "gross_potential_rent": 1070246,
+      "other_income": 33044,
+      "vacancy_rate": 0.05,
+      "vacancy_amount": 60120,
+      "vacancy_rate_t12": 0,
+      "vacancy_rate_current": 8.97,
+      "vacancy_rate_stabilized": 5,
+      "effective_gross_income": 1139252,
+      "operating_expenses": 533676,
+      "noi": 542288,
+      "noi_t12": 542288,
+      "noi_t3": 485687,
+      "noi_t1": 0,
+      "noi_trailing_1": 414875,
+      "noi_proforma": 605576,
+      "noi_stabilized": 0,
+      "cap_rate": 0,
+      "cap_rate_t12": 0,
+      "cap_rate_proforma": 0,
+      "cap_rate_stabilized": 0,
+      "expense_ratio": 46.84,
+      "expense_ratio_t12": 47.37,
+      "expense_ratio_proforma": 46.84,
+      "potential_gross_income": 1070246
+    },
+    "expenses": {
+      "taxes": 51622,
+      "insurance": 53953,
+      "utilities": 161588,
+      "repairs_maintenance": 60982,
+      "management": 34178,
+      "payroll": 85494,
+      "admin": 15416,
+      "marketing": 2780,
+      "other": 23400,
+      "total": 533676
+    },
+    "underwriting": {
+      "holding_period": 0,
+      "exit_cap_rate": 0
+    },
+    "unit_mix": [
+      {
+        "type": "1 Bedroom / 1 Bathroom",
+        "units": 42,
+        "unit_sf": 688,
+        "rent_current": 1100,
+        "rent_market": 1220
+      },
+      {
+        "type": "2 Bedroom / 1 Bathroom",
+        "units": 36,
+        "unit_sf": 758,
+        "rent_current": 1194,
+        "rent_market": 1360
+      }
+    ],
+    "deal_setup": {
+      "deal_name": "8208 Troost Ave",
+      "property_address": "8208 Troost Ave",
+      "property_type": "multifamily",
+      "transaction_type": "acquisition",
+      "debt_structure": "equity-partner",
+      "underwriting_mode": "hardcoded",
+      "buy_box": null
+    },
+    "financing": {
+      "ltv": 75,
+      "interest_rate": 6.5,
+      "loan_term_years": 10,
+      "amortization_years": 30,
+      "io_years": 0,
+      "loan_fees_percent": 1.5,
+      "partner_contribution": 1500000,
+      "partner_pref_annual": 120000,
+      "your_cash_in": 75000,
+      "debt_structure": "equity-partner",
+      "total_monthly_debt": 38443.06105718344,
+      "total_annual_debt": 461316.7326862012
+    },
+    "proforma": {
+      "purchase_price": 0,
+      "insurance": 53953,
+      "taxes": 51622,
+      "annual_debt_service": 0,
+      "property_management_pct": 3.1934714075081807,
+      "vacancy_pct": 5,
+      "capex_pct": 0,
+      "payroll": 85494,
+      "gas_monthly": 0,
+      "electrical_monthly": 0,
+      "water_monthly": 0,
+      "sewer_monthly": 0,
+      "trash_monthly": 0,
+      "total_utilities": 161588,
+      "rent_projections": [
+        {
+          "type": "1 Bedroom / 1 Bathroom",
+          "units": 42,
+          "proforma_rent": 1220
+        },
+        {
+          "type": "2 Bedroom / 1 Bathroom",
+          "units": 36,
+          "proforma_rent": 1360
+        }
+      ]
+    },
+    "_underwriting_result": {
+      "analysis": "# UNDERWRITING ANALYSIS: 8208 Troost Ave\n\n────────────────────────────────────────────────────────\n## 1. DEAL SNAPSHOT\n────────────────────────────────────────────────────────\n\n**Purchase Price:** $6,000,000  \n**Current NOI (T12):** $542,288  \n**Pro Forma NOI:** $605,576  \n**Current Cap Rate (T12):** 9.04%  \n**Pro Forma Cap Rate:** 10.09%  \n**Expense Ratio (T12):** 47.37%  \n**Expense Ratio (Pro Forma):** 46.84%  \n**Occupancy:** 91.03% current (8.97% vacant)  \n**Price Per Unit:** $76,923  \n**Price Per SF:** $106.80  \n\n**Reality Check:**  \nThis is a 1960s Class C multifamily in Kansas City trading at a 9% going-in cap. The price per unit ($77K) is reasonable for this vintage and market. The broker is projecting a 10% cap on pro forma, which implies they're pushing $63K in additional NOI through rent bumps and lease-up of vacant units. \n\nThe property is currently 91% occupied, which is decent but not strong. Expense ratio at 47% is acceptable for Class C, but they're claiming it stays flat even as rents rise — that's broker math. The bigger issue: **this deal is 100% vacant units in the underwriting**. Every single unit shows as vacant in the rent roll analysis. Something is fundamentally broken in the data.\n\n────────────────────────────────────────────────────────\n## 2. DAY-ONE FINANCIALS (Based on calc_json)\n────────────────────────────────────────────────────────\n\n**Year 1 NOI:** $509,494  \n**Total Debt Service:** $461,317  \n**Cash Flow:** $48,177  \n**DSCR:** 1.10  \n\n**Reality Check:**  \nYear 1 NOI is **$509K**, which is LOWER than the T12 NOI of $542K. This means the underwriting is modeling backward performance in Year 1, likely due to vacancy assumptions or turn costs that aren't showing up cleanly in the data.\n\nDSCR of 1.10 is **dangerously tight** for a C-class property with 9% vacancy and a 60-year-old building. You have essentially zero margin for error. One HVAC failure, one eviction wave, one bad winter and you're underwater on debt service.\n\nCashflow of $48K on a $1.5M equity check (partner + your $75K) is a **3.2% cash-on-cash return**. That's garbage. You're not getting paid for the risk you're taking day one.\n\n**Red Flags:**  \n- Year 1 NOI is **worse** than trailing NOI  \n- DSCR leaves no cushion  \n- Expense ratio assumes zero normalization of repairs/maintenance  \n- Cashflow is anemic and depends entirely on lease-up execution  \n\n────────────────────────────────────────────────────────\n## 3. SELECTED DEAL STRUCTURE (wizard_structure)\n────────────────────────────────────────────────────────\n\n**Financing Strategy: Equity Partner (selected in wizard)**  \n\n**Structure Breakdown:**  \n- **Bank Loan Amount:** $4,500,000  \n- **LTV:** 75%  \n- **Interest Rate:** 6.5%  \n- **Loan Term:** 10 years  \n- **Amortization:** 30 years  \n- **IO Period:** 0 years (fully amortizing from day one)  \n- **Monthly Payment:** $38,443  \n- **Annual Debt Service:** $461,317  \n\n**Equity Structure:**  \n- **Partner Contribution:** $1,500,000  \n- **Partner Preferred Return:** $120,000 annually (8% pref)  \n- **Your Cash In (Real's Equity):** $75,000  \n- **Total Equity Required:** $1,575,000  \n\n**DSCR Using This Structure:** 1.10  \n**Cashflow Day One (Before Partner Pref):** $48,177  \n**Cashflow After Partner Pref:** -$71,823  \n\n**Does This Structure Work?**  \n**Absolutely not.** \n\nThe partner is getting $120K annually in preferred return. Your Year 1 cashflow is $48K. That means you're **$72K short** on paying the partner pref in Year 1 alone. You're accruing unpaid pref from day one, which means your equity partner is funding a negative cashflow deal while you control it with $75K in.\n\nThis structure only works if:  \n1. You can execute the rent lift and lease-up immediately (unlikely in a C property)  \n2. Expenses stay flat (never happens)  \n3. The partner is willing to eat negative cashflow for 2+ years (stupid capital)  \n\n────────────────────────────────────────────────────────\n## 4. VALUE-ADD / NOI ENGINEERING (use deal_json + calc_json)\n────────────────────────────────────────────────────────\n\n**Rent Upside:**  \n- 42 × 1BR units currently at $1,100, market rent $1,220 = **$120/unit/month upside**  \n- 36 × 2BR units currently at $1,194, market rent $1,360 = **$166/unit/month upside**  \n- **Total Annual Rent Upside:** ~$132,000 if you hit market rents  \n\n**Loss-to-Lease:**  \nThe rent roll shows **100% vacancy** across all 78 units, which is clearly a data error. However, the deal_json shows current in-place rents that are 10–14% below market. Real loss-to-lease is likely in the $130K range annually.\n\n**Expense Normalization Opportunities:**  \n- **Utilities:** $161,588 annually. This is being paid by the property. RUBS or direct tenant billing could push $80–100K of this to residents.  \n- **Repairs & Maintenance:** $60,982. For a 60-year-old property, this is artificially low. Real run rate is likely $80–90K.  \n- **Payroll:** $85,494. This is high for 78 units. You could potentially trim $10–15K if you right-size staffing.  \n\n**Other Income Opportunities:**  \n- Pet fees, parking, laundry, late fees, lease renewal fees could add $15–20K annually  \n\n**Realistic Stabilized NOI:**  \nIf you execute perfectly:  \n- Rent upside: +$130K  \n- RUBS implementation: +$90K  \n- Other income: +$18K  \n- Less: normalized repairs: -$20K  \n\n**Stabilized NOI = ~$728K** (vs. broker pro forma of $605K, which undershoots reality if you execute)\n\n────────────────────────────────────────────────────────\n## 5. REFI ANALYSIS (calc_json.refi)\n────────────────────────────────────────────────────────\n\n**Year 5 Exit Scenario (from calc_json.exit):**  \n- **Stabilized NOI (Year 5):** $449,121  \n- **Exit Cap Rate:** 7.25%  \n- **Stabilized Value:** $6,194,768  \n- **Loan Balance at Year 5:** $4,212,494  \n- **Gross Sales Proceeds:** $6,194,768  \n- **Selling Costs:** $123,895  \n- **Net Proceeds:** $6,070,872  \n- **Loan Payoff:** $4,212,494  \n- **Cash to Equity:** $1,858,378  \n- **Post-Refi DSCR:** 0.97  \n- **Post-Refi Cashflow:** -$12,199  \n\n**Wait — What the Fuck Happened Here?**  \n\nYear 5 NOI is **$449K**, which is **LOWER** than Year 1 NOI of $509K. This model is projecting **declining NOI** over the hold period, which makes zero sense given the value-add story. This is either:  \n1. A calculation error in the model  \n2. Expenses are blowing out faster than revenue  \n3. Occupancy is cratering  \n\nThe exit value of $6.19M is basically a **3% gain** over 5 years on a $6M purchase. After selling costs and loan payoff, you're returning $1.86M to equity vs. $1.5M invested. That's a **24% total return over 5 years**, or **4.4% annualized**. \n\n**Refi Verdict:**  \nYou cannot refi this deal. Post-refi DSCR is 0.97, which means **you cannot service the debt** with operating cashflow. No lender will touch this. The only exit is a sale, and the sale barely covers your cost basis.\n\n**Can You Buy Out the Partner?**  \nNo. There's not enough proceeds to pay off the $1.5M partner contribution AND the $120K annual pref that's been accruing.\n\n────────────────────────────────────────────────────────\n## 6. RISK SUMMARY\n────────────────────────────────────────────────────────\n\n**REAL Risks in Order of Severity:**\n\n1. **DSCR of 1.10 is a ticking time bomb.** One bad quarter and you're asking the partner for more money or you're defaulting.\n\n2. **Cashflow is negative after partner pref from day one.** You owe $120K annually in pref and only generate $48K in Year 1 cashflow. You're underwater immediately.\n\n3. **The model shows DECLINING NOI over the hold period.** Year 5 NOI is lower than Year 1. This is either a broken model or expenses are cannibalizing income. Either way, it's bad.\n\n4. **100% of the value-add depends on execution.** You need to lease up vacant units, push rents 10–14%, and bill back utilities. If you miss on any of these, the deal implodes.\n\n5. **Expense ratio is being gamed.** They're showing flat expenses as income rises. Real-world: repairs, insurance, and taxes will ALL rise as you renovate and increase rents. Budget +$50K annually in expense bleed.\n\n6. **No refi exit.** Post-refi DSCR is sub-1.0. You MUST sell to exit, and the exit value barely covers basis. You're trapped.\n\n7. **60-year-old building in Class C location.** Deferred maintenance, capital needs, tenant quality issues, eviction costs — all of this will hit you and none of it is modeled.\n\n8. **Rent roll data is fucked.** Every unit shows as vacant. If the data is this broken, what else is wrong?\n\n────────────────────────────────────────────────────────\n## 7. BUY BOX TEST (if buy_box provided)\n────────────────────────────────────────────────────────\n\n**No buy box supplied — applying conservative underwriting standards.**\n\n**Conservative Underwriting Minimums:**  \n- **Min DSCR:** 1.25 → **ACTUAL: 1.10** ❌ FAIL  \n- **Min Cash-on-Cash:** 8% → **ACTUAL: 3.2%** ❌ FAIL  \n- **Day-One Positive Cashflow After Pref:** Required → **ACTUAL: -$71,823** ❌ FAIL  \n- **Refi Viability:** DSCR > 1.20 → **ACTUAL: 0.97** ❌ FAIL  \n- **Expense Ratio:** < 50% → **ACTUAL: 47%** ✅ PASS (barely)  \n\n**This deal fails every meaningful conservative underwriting test.**\n\n────────────────────────────────────────────────────────\n## 8. VERDICT (MANDATORY)\n────────────────────────────────────────────────────────\n\n🔴 **PASS**  \n\n**You're buying a deal that loses money from day one, has no margin for error, cannot refi, and requires perfect execution on a 60-year-old Class C building just to get your money back in 5 years.**",
+      "verdict": "PASS",
+      "timestamp": null
+    }
+  },
+  "chat_history": []
+}

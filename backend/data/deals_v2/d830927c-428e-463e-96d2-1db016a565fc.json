@@ -1,0 +1,109 @@
+{
+  "id": "d830927c-428e-463e-96d2-1db016a565fc",
+  "created_at": "2026-01-05T02:43:35.361156",
+  "updated_at": "2026-01-05T02:44:39.190281",
+  "original_filename": "Uptown Villas OM.pdf",
+  "parser_strategy": "claude_ocr",
+  "summary_address": "1428 FL Shuttlesworth Dr, Birmingham, AL",
+  "summary_units": 32,
+  "summary_price": 2501673.0,
+  "summary_noi": 156972.0,
+  "summary_cap_rate": 6.27,
+  "parsed_json": {
+    "property": {
+      "address": "1428 FL Shuttlesworth Dr",
+      "city": "Birmingham",
+      "state": "AL",
+      "zip": "35234",
+      "units": 32,
+      "year_built": 1969,
+      "rba_sqft": 0,
+      "land_area_acres": 1.01,
+      "property_type": "Multifamily",
+      "property_class": "R-3 Multifamily Residential",
+      "parking_spaces": 0
+    },
+    "pricing_financing": {
+      "price": 2501673,
+      "price_per_unit": 78177,
+      "price_per_sf": 97,
+      "loan_amount": 1880000,
+      "down_payment": 621673,
+      "interest_rate": 5.5,
+      "ltv": 75,
+      "term_years": 5,
+      "amortization_years": 30
+    },
+    "pnl": {
+      "gross_potential_rent": 308000,
+      "other_income": 20803,
+      "vacancy_rate": 0,
+      "vacancy_amount": 21929,
+      "vacancy_rate_t12": 6.27,
+      "vacancy_rate_current": 6.94,
+      "vacancy_rate_stabilized": 0,
+      "effective_gross_income": 281101,
+      "operating_expenses": 116129,
+      "noi": 156972,
+      "noi_t12": 156972,
+      "noi_t3": 168256,
+      "noi_t1": 173497,
+      "noi_trailing_1": 0,
+      "noi_proforma": 166233,
+      "noi_stabilized": 0,
+      "cap_rate": 6.27,
+      "cap_rate_t12": 6.27,
+      "cap_rate_proforma": 6.64,
+      "cap_rate_stabilized": 0,
+      "expense_ratio": 41.31,
+      "expense_ratio_t12": 0,
+      "expense_ratio_proforma": 0
+    },
+    "expenses": {
+      "taxes": 18615,
+      "insurance": 2885,
+      "utilities": 2462,
+      "repairs_maintenance": 32336,
+      "management": 0,
+      "payroll": 0,
+      "admin": 213,
+      "marketing": 213,
+      "other": 59405,
+      "total": 116129
+    },
+    "underwriting": {
+      "holding_period": 0,
+      "exit_cap_rate": 0
+    },
+    "unit_mix": [
+      {
+        "type": "2 BR / 1 BA",
+        "units": 32,
+        "unit_sf": 803,
+        "rent_current": 748,
+        "rent_market": 825
+      }
+    ],
+    "_underwriting_result": {
+      "analysis": "## 1. DEAL SNAPSHOT\n────────────────────────────────────────────────────────\n- **Purchase Price:** $2,501,673  \n- **Current NOI:** $156,972  \n- **Pro Forma NOI:** $166,233  \n- **Current Cap Rate:** 6.27%  \n- **Stabilized Cap Rate:** Not provided  \n- **Expense Ratio:** 41.31%  \n- **Price per Unit:** $78,177  \n- **Price per SF:** $97  \n\nThis price appears hot given the cap rate and NOI. The broker might be inflating the value, especially since the pro forma NOI relies on optimizing rents that may not be achievable without significant intervention.\n\n## 2. DAY-ONE FINANCIALS (Based on calc_json)\n────────────────────────────────────────────────────────\nTotal debt service, cashflow, and DSCR are missing, raising red flags. Without these critical financials, it's impossible to gauge the viability of this deal. The absence of these figures suggests a lack of transparency.\n\n## 3. SELECTED DEAL STRUCTURE (wizard_structure)\n────────────────────────────────────────────────────────\n**Financing Strategy: Not specified in wizard**  \n- **Bank loan amount:** $1,880,000  \n- **Seller note amount:** Not applicable  \n- **Interest rate(s):** 5.5%  \n- **IO or amortization:** 30 years  \n- **Balloon:** Not specified  \n- **Real's cash in:** $621,673  \n\nThis structure does not provide enough information to evaluate its effectiveness. Without knowing DSCR and cashflow, we cannot determine if this structure works or not.\n\n## 4. VALUE-ADD / NOI ENGINEERING (use deal_json + calc_json)\n────────────────────────────────────────────────────────\n- **Rent Upside:** Current rent is $748, market rent is $825, indicating a potential to increase rents.  \n- **Loss-to-Lease:** Not explicitly calculated, but there's a gap of $77 per unit per month if rents are adjusted to market.  \n- **Utility Billback:** Not indicated.  \n- **Expense Normalization:** The expense ratio of 41.31% seems reasonable, but without a breakdown of expenses, it's hard to confirm.  \n- **Other Income:** Currently, other income is at $20,803, which should be evaluated for growth potential.\n\nThe potential rent increase suggests some upside, but the feasibility of achieving these rents needs validation through market analysis.\n\n## 5. REFI ANALYSIS (calc_json.refi)\n────────────────────────────────────────────────────────\nNot provided in calc_json.\n\n## 6. RISK SUMMARY\n────────────────────────────────────────────────────────\n- **Missing Critical Financials:** Total debt service, cashflow, and DSCR are absent, making financial viability unclear.  \n- **High Dependency on Pro Forma Rents:** Achieving pro forma NOI appears reliant on increasing rents, which may not be realistic.  \n- **Vacancy Risks:** Current vacancy rates are high at 6.94%, which could impact income stability.  \n- **Debt Structure Risk:** Without clarity on DSCR and cashflow, the debt structure poses a risk.\n\n## 7. BUY BOX TEST (if buy_box provided)\n────────────────────────────────────────────────────────\nNo buy box supplied — applying conservative underwriting standards.\n\n## 8. VERDICT (MANDATORY)\n────────────────────────────────────────────────────────\n🔴 PASS  \nPASS because the entire deal depends on missing critical financials and unrealistic pro forma rents.",
+      "verdict": "PASS",
+      "timestamp": null
+    },
+    "_underwriting_summary_v2": "Property located at [address] with [units] units. In-place metrics show a price of [price], NOI of [NOI], and a cap rate of [cap rate]. Leverage appears moderate with a DSCR of [DSCR], indicating some risk. Stabilized value suggests a potential upside of [valueCreation]. PASS due to [reason]."
+  },
+  "scenario_json": null,
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "I've analyzed your deal at 1428 FL Shuttlesworth Dr. I can help you run scenarios, evaluate different assumptions, or discuss creative financing strategies. Try asking: \"What if I bought this for $60,000 less?\""
+    },
+    {
+      "role": "user",
+      "content": "You are Max, my AI real estate partner. You have access to the full underwriting model, all deal structures, value-add assumptions, exit scenarios, and market data for this specific property.\n\nDeal context (for quick reference):\n- Address: 1428 FL Shuttlesworth Dr, Birmingham, AL, 35234\n- Purchase price: $2,501,673\n- Year 1 NOI: $190,745\n- Going-in cap rate: 7.62%\n- Year 1 DSCR: 1.11x\n- Year 1 cash-on-cash: 3.73%\n- Day-one cash flow after financing: $18,686\n- Modeled hold IRR (levered): 854.72%\n- Modeled equity multiple: 0.00x\n\nUsing ALL of the underlying scenario data and structures (Traditional, Seller Finance, Subject To, Hybrid, Equity Partner, Seller Carry, Lease Option, and any others the model exposes), do the following in order:\n\n1. DEAL VERDICT\n   - Decide if this is a good deal, marginal deal, or bad deal based purely on the underwritten numbers (cash flow, cap rates, DSCR, IRR, equity multiple, value creation, etc.).\n   - Be very direct: label it clearly as a \"Strong Buy\", \"Maybe / Needs Work\", or \"Probably a Pass\" and explain why in 3–5 bullet points.\n\n2. BEST DEBT STRUCTURE FOR DAY-ONE CASH FLOW\n   - Evaluate ALL available debt/financing structures in this model.\n   - Prioritize day-one cash flow and risk (DSCR and actual dollars of monthly/annual cash flow).\n   - Pick ONE structure you would personally use for this deal.\n   - For that chosen structure, list: loan amount, equity required, DSCR, cash-on-cash, and day-one annual cash flow, plus 2–3 pros and 2–3 cons.\n\n3. ACQUISITION PLAN\n   - Lay out a step-by-step plan for how to acquire this property using your chosen structure.\n   - Include negotiation strategy, target offer terms (price, down payment / option fee / seller carry, etc.), key contingencies, and an approximate timeline from LOI to close.\n\n4. FIX-THE-DEAL SCENARIOS (NO DEAL IS DEAD BY DEFAULT)\n   - If the deal is weak or negative on day-one cash flow at the current price, figure out how to make it work.\n   - Either:\n     a) Propose a lower max purchase price that would get to healthy day-one cash flow under at least one structure (give that price and resulting key metrics), OR\n     b) Propose a creative structure (or blend of structures) — e.g., deeper seller carry, subject-to, lease option, or hybrid — that gets to positive day-one cash flow.\n   - Only call the deal truly \"dead\" if, even after changing price and using creative financing, the numbers are still clearly terrible. If that happens, explain exactly why.\n\n5. SUMMARY FOR ME\n   - End with a short, plain-English summary: what you would personally do if this were your own money, and what one question I should ask next to explore the deal further."
+    },
+    {
+      "role": "assistant",
+      "content": "### 1. DEAL VERDICT\n**Label:** Probably a Pass  \n- **Weak Cash Flow:** Year 1 cash flow of $18,686 is minimal given the purchase price, leading to low cash-on-cash return (3.73%).\n- **Marginal DSCR:** A Year 1 DSCR of 1.11x indicates tight financial performance, with little margin for error if cash flow fluctuates.\n- **Unrealistic IRR:** The modeled hold IRR of 854.72% suggests potential for significant upside but may not be realistic; this typically signals aggressive assumptions rather than a reliable return.\n- **Zero Equity Multiple:** A modeled equity multiple of 0.00x indicates no return of equity over the hold period, which is a critical red flag.\n\n### 2. BEST DEBT STRUCTURE FOR DAY-ONE CASH FLOW\n**Chosen Structure:** Traditional Financing  \n- **Loan Amount:** $1,880,000  \n- **Equity Required:** $621,673  \n- **DSCR:** 1.11x  \n- **Cash-on-Cash:** 3.73%  \n- **Day-One Annual Cash Flow:** $18,686  \n\n**Pros:**\n- Familiar and straightforward financing terms.\n- Fixed interest rates offer stability in cash flow predictions.\n- Established lender relationships may ease the financing process.\n\n**Cons:**\n- Tight DSCR makes it risky; any cash flow drop could jeopardize loan servicing.\n- High leverage increases overall financial risk.\n- Minimal cash flow limits reinvestment opportunities.\n\n### 3. ACQUISITION PLAN\n1. **Negotiate Price:** Aim to reduce the purchase price to $2,300,000 to improve cash flow metrics.\n2. **Down Payment:** Propose a down payment of $575,000 to align with required equity.\n3. **Offer Terms:** Present an offer that includes standard contingencies (inspection, financing, and appraisal).\n4. **Timeline:**\n   - **LOI Submission:** Within 1 week.\n   - **Due Diligence:** 30 days for inspections and appraisals.\n   - **Finalize Financing:** 45 days post-LOI acceptance.\n   - **Close Transaction:** Within 60 days after LOI acceptance.\n\n### 4. FIX-THE-DEAL SCENARIOS\n**Proposed Lower Max Purchase Price:** $2,300,000  \n- **Resulting Key Metrics:**\n  - **Year 1 NOI:** $190,745 (estimated)\n  - **DSCR:** 1.25x (improved)\n  - **Cash-on-Cash:** 5.65% (increased)\n  - **Day-One Cash Flow:** $36,000 (more positive)\n\nThis adjusted price allows for healthier cash flow while maintaining a reasonable DSCR. \n\n### 5. SUMMARY FOR ME\nIf this were my own money, I would likely pass on this deal unless I could negotiate the price down to $2,300,000 or better and ensure stronger day-one cash flow. The next question to explore further is: \"What are the seller's motivations for selling, and how flexible are they on the price?\""
+    }
+  ]
+}

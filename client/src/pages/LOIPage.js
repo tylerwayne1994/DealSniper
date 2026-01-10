@@ -390,6 +390,42 @@ function LOIPage() {
   const generateLOI = async () => {
     if (!deal) return;
     
+    // Check token balance first
+    try {
+      const tokenCheck = await fetch('http://localhost:8010/api/tokens/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation_type: 'loi_generation' })
+      });
+      
+      const tokenData = await tokenCheck.json();
+      
+      if (!tokenData.has_tokens) {
+        const userConfirmed = window.confirm(
+          `This will use AI to generate a Letter of Intent.\n\n` +
+          `Cost: ${tokenData.tokens_required} token\n` +
+          `Your balance: ${tokenData.token_balance} tokens\n\n` +
+          `You need more tokens. Check your Dashboard Profile to upgrade.`
+        );
+        return;
+      }
+      
+      // Confirm token usage
+      const userConfirmed = window.confirm(
+        `This will use AI to generate a Letter of Intent.\n\n` +
+        `Cost: ${tokenData.tokens_required} token\n` +
+        `Your balance: ${tokenData.token_balance} tokens\n\n` +
+        `Continue?`
+      );
+      
+      if (!userConfirmed) return;
+      
+    } catch (err) {
+      console.error('Token check failed:', err);
+      setError('Failed to check token balance. Please try again.');
+      return;
+    }
+    
     setIsGenerating(true);
     setError('');
     // Reset signature when regenerating
@@ -433,6 +469,13 @@ function LOIPage() {
           }
         })
       });
+
+      // Handle token errors (402 Payment Required)
+      if (response.status === 402) {
+        const data = await response.json();
+        setError(`⚠️ Insufficient Tokens: ${data.detail || 'You need 1 token to generate an LOI. Check your Dashboard Profile to see your balance and upgrade your plan.'}`);
+        return;
+      }
 
       if (!response.ok) {
         throw new Error('Failed to generate LOI');
@@ -561,7 +604,7 @@ function LOIPage() {
 
       {/* Header */}
       <div style={{
-        background: 'linear-gradient(135deg, #134e4a 0%, #0f766e 50%, #115e59 100%)',
+        backgroundColor: '#1e293b',
         padding: '20px 32px',
         color: 'white'
       }}>

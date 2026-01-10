@@ -16,7 +16,7 @@ const API_BASE = "http://127.0.0.1:8010";
 const styles = {
   page: {
     minHeight: '100vh',
-    background: 'linear-gradient(to bottom, #f8fafc, #ffffff)',
+    background: '#ffffff',
     fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     padding: '40px 20px'
   },
@@ -148,12 +148,21 @@ function UnderwriteV2Page() {
   const location = useLocation();
   const fileInputRef = useRef(null);
   const chatMessagesRef = useRef(null);
+  const pdfDocRef = useRef(null);
+  const pdfCanvasRef = useRef(null);
 
   // Step control: 'upload' | 'verify' | 'results'
   const [step, setStep] = useState('upload');
 
   // Upload state
   const [file, setFile] = useState(null);
+  const [pdfPages, setPdfPages] = useState([]);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [sourceSnippets, setSourceSnippets] = useState({});
+  const [currentPageNum, setCurrentPageNum] = useState(1);
+  const [activeFieldPath, setActiveFieldPath] = useState(null);
+  const [zoom, setZoom] = useState(1.4); // zoom factor for main PDF canvas
+  const [pageHighlights, setPageHighlights] = useState({}); // per-page highlight rects
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   
@@ -163,6 +172,7 @@ function UnderwriteV2Page() {
   const [propertyType, setPropertyType] = useState('multifamily');
   const [transactionType, setTransactionType] = useState('acquisition');
   const [debtStructure, setDebtStructure] = useState('traditional');
+  const [subjectToAvailable, setSubjectToAvailable] = useState(true);
   const [underwritingMode, setUnderwritingMode] = useState('hardcoded'); // 'hardcoded' | 'buybox'
   
   // Buy Box parameters (user-defined)
@@ -190,6 +200,7 @@ function UnderwriteV2Page() {
   // Results page state (live scenario modeling)
   const [scenarioData, setScenarioData] = useState(null);
   const [modifiedFields, setModifiedFields] = useState({});
+  const [underwritingResult, setUnderwritingResult] = useState(null);
   
   // Market cap rate state (from LLM research)
   const [marketCapRate, setMarketCapRate] = useState(null);
@@ -204,7 +215,13 @@ function UnderwriteV2Page() {
   // Handle navigation state (coming back from AI analysis page)
   useEffect(() => {
     if (location.state) {
-      const { dealId: incomingDealId, verifiedData: incomingData, goToResults, returnToWizard } = location.state;
+      const {
+        dealId: incomingDealId,
+        verifiedData: incomingData,
+        goToResults,
+        returnToWizard,
+        underwritingResult: incomingUnderwritingResult
+      } = location.state;
       
       if (incomingDealId) {
         setDealId(incomingDealId);
@@ -212,6 +229,9 @@ function UnderwriteV2Page() {
       
       if (incomingData) {
         setVerifiedData(incomingData);
+        if (incomingUnderwritingResult) {
+          setUnderwritingResult(incomingUnderwritingResult);
+        }
         
         // Transform and go to results if requested
         if (goToResults) {
@@ -425,12 +445,166 @@ function UnderwriteV2Page() {
     fetchMarketCapRate();
   }, [scenarioData?.property?.address]);
 
+  // Compute approximate highlight rectangles for a given snippet text on a page
+  const computeHighlightRects = async (page, viewport, searchText) => {
+    if (!searchText || !window.pdfjsLib || !window.pdfjsLib.Util) return [];
+    try {
+      const textContent = await page.getTextContent();
+      const loweredSearch = searchText.toLowerCase();
+      const rects = [];
+
+      textContent.items.forEach((item) => {
+        const rawStr = (item.str || '').trim();
+        if (!rawStr || rawStr.length < 3) return;
+        const lowerStr = rawStr.toLowerCase();
+        if (!lowerStr) return;
+
+        // Simple fuzzy match: either the snippet contains this run or vice versa
+        if (loweredSearch.includes(lowerStr) || lowerStr.includes(loweredSearch)) {
+          try {
+            const tx = window.pdfjsLib.Util.transform(viewport.transform, item.transform);
+            const x = tx[4];
+            const yFromBottom = tx[5];
+            const width = (item.width || 0) * viewport.scale;
+            const height = (item.height || 0) * viewport.scale;
+
+            // Convert PDF bottom-left origin to canvas top-left coordinates
+            const yTop = viewport.height - yFromBottom;
+
+            rects.push({
+              leftPct: (x / viewport.width) * 100,
+              topPct: (yTop / viewport.height) * 100,
+              widthPct: (width / viewport.width) * 100,
+              heightPct: (height / viewport.height) * 100,
+            });
+          } catch (e) {
+            // Ignore individual text-run failures
+          }
+        }
+      });
+
+      return rects;
+    } catch (e) {
+      console.error('[V2] Failed computing highlight rects', e);
+      return [];
+    }
+  };
+
+  const renderMainPdfPage = async (pageNum = 1, highlightMeta = null) => {
+    const doc = pdfDocRef.current;
+    const canvas = pdfCanvasRef.current;
+    if (!doc || !canvas) return;
+    try {
+      const page = await doc.getPage(pageNum);
+      const viewport = page.getViewport({ scale: zoom });
+      const ctx = canvas.getContext('2d');
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      await page.render({ canvasContext: ctx, viewport }).promise;
+
+      // After rendering, compute highlight rectangles for the active snippet on this page
+      if (highlightMeta && highlightMeta.text) {
+        const rects = await computeHighlightRects(page, viewport, highlightMeta.text);
+        setPageHighlights((prev) => ({
+          ...prev,
+          [pageNum]: rects,
+        }));
+      } else {
+        // If no highlight requested, clear any existing highlights for this page
+        setPageHighlights((prev) => ({
+          ...prev,
+          [pageNum]: [],
+        }));
+      }
+    } catch (err) {
+      console.error('[V2] Main PDF render failed', err);
+    }
+  };
+
+  // Re-render current page whenever zoom changes (and doc is loaded)
+  useEffect(() => {
+    if (pdfDocRef.current && pdfCanvasRef.current && pdfPages.length > 0) {
+      let highlightMeta = null;
+      if (activeFieldPath && sourceSnippets && sourceSnippets[activeFieldPath]) {
+        const meta = sourceSnippets[activeFieldPath];
+        if (typeof meta.page === 'number' && meta.page === currentPageNum) {
+          highlightMeta = meta;
+        }
+      }
+      renderMainPdfPage(currentPageNum, highlightMeta);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoom]);
+
+  // Generate PDF thumbnails + store doc for big viewer
+  const genPdfThumbs = async (pdfFile) => {
+    setLoadingPreview(true);
+    try {
+      let pdfjsLib = window.pdfjsLib;
+      if (!pdfjsLib) {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+          s.onload = () => {
+            pdfjsLib = window.pdfjsLib;
+            if (pdfjsLib) {
+              pdfjsLib.GlobalWorkerOptions.workerSrc =
+                'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+              resolve();
+            } else {
+              reject(new Error('Failed to load pdf.js'));
+            }
+          };
+          s.onerror = () => reject(new Error('Failed to load pdf.js'));
+          document.head.appendChild(s);
+        });
+      }
+
+      const ab = await pdfFile.arrayBuffer();
+  const doc = await window.pdfjsLib.getDocument({ data: ab }).promise;
+  pdfDocRef.current = doc;
+  setCurrentPageNum(1);
+
+      const pages = [];
+      const MAX = Math.min(doc.numPages, 40);
+      for (let p = 1; p <= MAX; p++) {
+        const page = await doc.getPage(p);
+        const viewport = page.getViewport({ scale: 0.35 });
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        const thumb = canvas.toDataURL('image/png');
+        pages.push({ pageNum: p, thumbnail: thumb });
+      }
+
+      setPdfPages(pages);
+      // Render the first page large so text is readable
+      await renderMainPdfPage(1);
+    } catch (err) {
+      console.error('[V2] PDF preview failed', err);
+      setPdfPages([]);
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
+
   // Handle file selection
   const handleFileChange = (e) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
+      if (selectedFile.type !== 'application/pdf') {
+        setUploadError(`Only PDF is supported. Got: ${selectedFile.type || 'unknown'}`);
+        return;
+      }
       setFile(selectedFile);
       setUploadError(null);
+      setSourceSnippets({});
+      setActiveFieldPath(null);
+      setPageHighlights({});
+      setCurrentPageNum(1);
+      genPdfThumbs(selectedFile);
     }
   };
 
@@ -471,6 +645,21 @@ function UnderwriteV2Page() {
       // Initialize verifiedData as editable copy with default financing
       const parsedCopy = JSON.parse(JSON.stringify(data.parsed));
       
+      // Add extracted images from backend response
+      if (data.images && data.images.length > 0) {
+        parsedCopy.images = data.images;
+        console.log(`[IMAGES] Added ${data.images.length} extracted images to parsed data`);
+      }
+
+      // Normalize vacancy rate from parser so 5 (5%) doesn't become 500%
+      if (parsedCopy.pnl && typeof parsedCopy.pnl.vacancy_rate === 'number') {
+        const rawVacancy = parsedCopy.pnl.vacancy_rate;
+        // If parser gave a whole-number percent (e.g. 5 for 5%), convert to decimal 0.05
+        if (rawVacancy > 1) {
+          parsedCopy.pnl.vacancy_rate = rawVacancy / 100;
+        }
+      }
+      
       // Store deal setup info
       parsedCopy.deal_setup = {
         deal_name: dealName || parsedCopy.property?.address || 'Untitled Deal',
@@ -478,6 +667,7 @@ function UnderwriteV2Page() {
         property_type: propertyType,
         transaction_type: transactionType,
         debt_structure: debtStructure,
+        subject_to_available: subjectToAvailable,
         underwriting_mode: underwritingMode,
         buy_box: underwritingMode === 'buybox' ? buyBoxParams : null
       };
@@ -508,6 +698,25 @@ function UnderwriteV2Page() {
         loan_fees_percent: parsedCopy.financing.loan_fees_percent || 1.5,
         ...parsedCopy.financing
       };
+
+      // Fire off a best-effort request for OCR-based source snippets so the
+      // verify step can show exactly which lines drove the key numbers.
+      if (file) {
+        try {
+          const srcForm = new FormData();
+          srcForm.append('file', file);
+          const srcResp = await fetch(`${API_BASE}/ocr/sources`, {
+            method: 'POST',
+            body: srcForm,
+          });
+          if (srcResp.ok) {
+            const srcJson = await srcResp.json();
+            setSourceSnippets(srcJson.sources || {});
+          }
+        } catch (err) {
+          console.warn('[V2] /ocr/sources call failed', err);
+        }
+      }
       
       // Initialize proforma with current parsed values as defaults
       const rentProjections = (parsedCopy.unit_mix || []).map(unit => ({
@@ -540,6 +749,51 @@ function UnderwriteV2Page() {
       };
       
       setVerifiedData(parsedCopy);
+
+      // Flag ANY important fields that did NOT auto-populate so they show red immediately
+      const initialErrors = {};
+
+      // Property tab
+      if (!parsedCopy?.property?.address) initialErrors['property.address'] = true;
+      if (!parsedCopy?.property?.city) initialErrors['property.city'] = true;
+      if (!parsedCopy?.property?.state) initialErrors['property.state'] = true;
+      if (!parsedCopy?.property?.zip) initialErrors['property.zip'] = true;
+      if (!parsedCopy?.property?.units) initialErrors['property.units'] = true;
+      if (!parsedCopy?.property?.year_built) initialErrors['property.year_built'] = true;
+      if (!parsedCopy?.property?.rba_sqft) initialErrors['property.rba_sqft'] = true;
+      if (!parsedCopy?.property?.property_type) initialErrors['property.property_type'] = true;
+
+      // Financials tab (T12)
+      if (!parsedCopy?.pricing_financing?.price) initialErrors['pricing_financing.price'] = true;
+      if (!parsedCopy?.pnl?.gross_potential_rent) initialErrors['pnl.gross_potential_rent'] = true;
+      if (parsedCopy?.pnl?.other_income == null || parsedCopy.pnl.other_income === 0)
+        initialErrors['pnl.other_income'] = true;
+      if (!parsedCopy?.pnl?.vacancy_rate) initialErrors['pnl.vacancy_rate'] = true;
+      if (!parsedCopy?.pnl?.operating_expenses) initialErrors['pnl.operating_expenses'] = true;
+      if (!parsedCopy?.pnl?.noi) initialErrors['pnl.noi'] = true;
+
+      // Expenses tab
+      if (!parsedCopy?.expenses?.taxes) initialErrors['expenses.taxes'] = true;
+      if (!parsedCopy?.expenses?.insurance) initialErrors['expenses.insurance'] = true;
+      if (!parsedCopy?.expenses?.utilities) initialErrors['expenses.utilities'] = true;
+      if (!parsedCopy?.expenses?.repairs_maintenance) initialErrors['expenses.repairs_maintenance'] = true;
+      if (!parsedCopy?.expenses?.management) initialErrors['expenses.management'] = true;
+      if (!parsedCopy?.expenses?.payroll) initialErrors['expenses.payroll'] = true;
+      if (!parsedCopy?.expenses?.marketing) initialErrors['expenses.marketing'] = true;
+
+      // Proforma tab (all optional but highlight if parser could not auto-fill at all)
+      if (!parsedCopy?.proforma?.purchase_price) initialErrors['proforma.purchase_price'] = true;
+      if (!parsedCopy?.proforma?.insurance) initialErrors['proforma.insurance'] = true;
+      if (!parsedCopy?.proforma?.taxes) initialErrors['proforma.taxes'] = true;
+      if (!parsedCopy?.proforma?.annual_debt_service) initialErrors['proforma.annual_debt_service'] = true;
+      if (!parsedCopy?.proforma?.property_management_pct) initialErrors['proforma.property_management_pct'] = true;
+      if (!parsedCopy?.proforma?.vacancy_pct) initialErrors['proforma.vacancy_pct'] = true;
+      if (!parsedCopy?.proforma?.capex_pct) initialErrors['proforma.capex_pct'] = true;
+      if (!parsedCopy?.proforma?.payroll) initialErrors['proforma.payroll'] = true;
+
+      if (Object.keys(initialErrors).length > 0) {
+        setValidationErrors(initialErrors);
+      }
       
       // Move to wizard step
       setStep('verify');
@@ -570,6 +824,91 @@ function UnderwriteV2Page() {
     });
   };
 
+  // Get confidence level for a field from parsed data
+  const getFieldConfidence = (section, field) => {
+    const confidence = verifiedData?._confidence;
+    if (!confidence) return null;
+    
+    const fieldPath = `${section}.${field}`;
+    return confidence[fieldPath] || null;
+  };
+
+  // Get input style based on confidence level
+  const getConfidenceInputStyle = (section, field, baseStyle = {}) => {
+    const confidence = getFieldConfidence(section, field);
+    const value = verifiedData?.[section]?.[field];
+    
+    // Default border
+    let borderColor = '#d1d5db';
+    let backgroundColor = '#fff';
+    let boxShadow = 'none';
+    
+    if (confidence) {
+      switch (confidence.level) {
+        case 'missing':
+          // Red - data not found, user must fill
+          borderColor = '#ef4444';
+          backgroundColor = '#fef2f2';
+          boxShadow = '0 0 0 2px rgba(239, 68, 68, 0.2)';
+          break;
+        case 'low':
+          // Orange - estimated/inferred
+          borderColor = '#f97316';
+          backgroundColor = '#fff7ed';
+          boxShadow = '0 0 0 2px rgba(249, 115, 22, 0.2)';
+          break;
+        case 'medium':
+          // Yellow - ambiguous, has alternatives
+          borderColor = '#eab308';
+          backgroundColor = '#fefce8';
+          boxShadow = '0 0 0 2px rgba(234, 179, 8, 0.2)';
+          break;
+        case 'high':
+          // Green subtle - confident
+          borderColor = '#22c55e';
+          backgroundColor = '#f0fdf4';
+          break;
+        default:
+          break;
+      }
+    } else if (!value && value !== 0) {
+      // No confidence data but field is empty - flag as needing attention
+      borderColor = '#ef4444';
+      backgroundColor = '#fef2f2';
+    }
+    
+    return {
+      ...baseStyle,
+      border: `1px solid ${borderColor}`,
+      backgroundColor,
+      boxShadow,
+      transition: 'all 0.2s ease'
+    };
+  };
+
+  // Get confidence indicator (icon/badge) for a field
+  const getConfidenceIndicator = (section, field) => {
+    const confidence = getFieldConfidence(section, field);
+    if (!confidence) return null;
+    
+    const indicators = {
+      missing: { icon: '⚠️', color: '#ef4444', label: 'Not found in document' },
+      low: { icon: '🔶', color: '#f97316', label: 'Estimated value' },
+      medium: { icon: '⚡', color: '#eab308', label: 'Multiple values found - verify' },
+      high: { icon: '✓', color: '#22c55e', label: 'Confident' }
+    };
+    
+    const ind = indicators[confidence.level];
+    if (!ind) return null;
+    
+    return {
+      ...ind,
+      note: confidence.note,
+      source: confidence.source,
+      alternatives: confidence.alternatives
+    };
+  };
+
   // Validate required fields
   const validateWizard = () => {
     const errors = {};
@@ -589,6 +928,19 @@ function UnderwriteV2Page() {
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
+  };
+
+  const getValueAtPath = (obj, path) => {
+    if (!obj || !path) return undefined;
+    const keys = path.split('.');
+    let current = obj;
+    for (const key of keys) {
+      if (current == null || typeof current !== 'object' || !(key in current)) {
+        return undefined;
+      }
+      current = current[key];
+    }
+    return current;
   };
 
   // Complete wizard → move to chat
@@ -736,7 +1088,17 @@ function UnderwriteV2Page() {
     // Ensure required fields for calculations
     if (transformedData.pnl) {
       transformedData.pnl.potential_gross_income = transformedData.pnl.gross_potential_rent || transformedData.pnl.potential_gross_income || 0;
-      transformedData.pnl.vacancy_rate = (transformedData.pnl.vacancy_rate || 0.05) * 100; // Convert to percentage
+      // Keep vacancy_rate as a DECIMAL fraction (e.g. 0.05 for 5%). The
+      // parser normalization step has already converted whole-number
+      // percentages to decimals, so here we only guard against missing/edge
+      // values instead of scaling again (which previously produced 500%+
+      // vacancy in projections).
+      const rawVacancy = transformedData.pnl.vacancy_rate;
+      if (typeof rawVacancy === 'number') {
+        transformedData.pnl.vacancy_rate = rawVacancy > 1 ? rawVacancy / 100 : rawVacancy;
+      } else {
+        transformedData.pnl.vacancy_rate = 0.05;
+      }
     }
     
     console.log('[WIZARD COMPLETE] Original Data:', verifiedData);
@@ -771,12 +1133,160 @@ function UnderwriteV2Page() {
       debt_structure: verifiedData?.deal_setup?.debt_structure || 'traditional'
     };
     localStorage.setItem('dealParams', JSON.stringify(dealParams));
-    
+
+    // Build a full underwriting scenario from the wizard data using the
+    // same transformation logic as the Results page, so the JS
+    // calculation engine and the AI underwriter see the exact same
+    // structure and numbers.
+    const scenarioForAI = JSON.parse(JSON.stringify(verifiedData));
+
+    if (scenarioForAI.pricing_financing) {
+      scenarioForAI.pricing_financing.purchase_price = scenarioForAI.pricing_financing.price || scenarioForAI.pricing_financing.purchase_price;
+      scenarioForAI.pricing_financing.down_payment_pct = scenarioForAI.pricing_financing.down_payment_pct || (scenarioForAI.pricing_financing.down_payment && scenarioForAI.pricing_financing.price ? (scenarioForAI.pricing_financing.down_payment / scenarioForAI.pricing_financing.price) * 100 : 40);
+    }
+
+    if (!scenarioForAI.financing) {
+      scenarioForAI.financing = {};
+    }
+    scenarioForAI.financing.ltv = scenarioForAI.financing.ltv || 75;
+    scenarioForAI.financing.interest_rate = scenarioForAI.financing.interest_rate || 6.0;
+    scenarioForAI.financing.loan_term_years = scenarioForAI.financing.loan_term_years || 10;
+    scenarioForAI.financing.amortization_years = scenarioForAI.financing.amortization_years || 30;
+    scenarioForAI.financing.io_years = scenarioForAI.financing.io_years || 0;
+    scenarioForAI.financing.loan_fees_percent = scenarioForAI.financing.loan_fees_percent || 1.5;
+
+    const purchasePriceAI = scenarioForAI.pricing_financing?.price || 0;
+    const structureAI = scenarioForAI.deal_setup?.debt_structure || dealParams.debt_structure || 'traditional';
+    const finAI = scenarioForAI.financing;
+
+    const calcMonthlyPaymentAI = (principal, annualRate, amortMonths) => {
+      if (principal <= 0 || amortMonths <= 0) return 0;
+      const r = annualRate / 100 / 12;
+      if (r === 0) return principal / amortMonths;
+      return principal * (r * Math.pow(1 + r, amortMonths)) / (Math.pow(1 + r, amortMonths) - 1);
+    };
+
+    let totalMonthlyDebtAI = 0;
+    let totalAnnualDebtAI = 0;
+    let primaryLoanAmountAI = 0;
+    let downPaymentAmountAI = 0;
+
+    if (structureAI === 'traditional' || structureAI === 'seller-finance') {
+      primaryLoanAmountAI = purchasePriceAI * (finAI.ltv || 75) / 100;
+      downPaymentAmountAI = purchasePriceAI - primaryLoanAmountAI;
+      const monthlyPaymentAI = calcMonthlyPaymentAI(primaryLoanAmountAI, finAI.interest_rate || 6.0, (finAI.amortization_years || 30) * 12);
+      totalMonthlyDebtAI = monthlyPaymentAI;
+      totalAnnualDebtAI = monthlyPaymentAI * 12;
+    } else if (structureAI === 'subject-to') {
+      totalMonthlyDebtAI = finAI.monthly_payment || 0;
+      totalAnnualDebtAI = totalMonthlyDebtAI * 12;
+      primaryLoanAmountAI = finAI.current_loan_balance || 0;
+      downPaymentAmountAI = finAI.cash_to_seller || 0;
+    } else if (structureAI === 'hybrid') {
+      const subtoMonthlyAI = finAI.subto_monthly_payment || 0;
+      const newLoanAmountAI = finAI.new_loan_amount || 0;
+      const newLoanMonthlyAI = calcMonthlyPaymentAI(newLoanAmountAI, finAI.interest_rate || 6.0, (finAI.amortization_years || 30) * 12);
+      totalMonthlyDebtAI = subtoMonthlyAI + newLoanMonthlyAI;
+      totalAnnualDebtAI = totalMonthlyDebtAI * 12;
+      primaryLoanAmountAI = (finAI.subto_loan_balance || 0) + newLoanAmountAI;
+      downPaymentAmountAI = purchasePriceAI - primaryLoanAmountAI;
+    } else if (structureAI === 'equity-partner') {
+      primaryLoanAmountAI = purchasePriceAI * (finAI.ltv || 75) / 100;
+      downPaymentAmountAI = purchasePriceAI - primaryLoanAmountAI;
+      const partnerContributionAI = downPaymentAmountAI * (finAI.partner_down_payment_pct || 100) / 100;
+      const partnerPrefAnnualAI = partnerContributionAI * (finAI.partner_pref_return || 8) / 100;
+      const loanMonthlyAI = calcMonthlyPaymentAI(primaryLoanAmountAI, finAI.interest_rate || 6.5, (finAI.amortization_years || 30) * 12);
+      totalMonthlyDebtAI = loanMonthlyAI + (partnerPrefAnnualAI / 12);
+      totalAnnualDebtAI = (loanMonthlyAI * 12) + partnerPrefAnnualAI;
+      scenarioForAI.financing.partner_contribution = partnerContributionAI;
+      scenarioForAI.financing.partner_pref_annual = partnerPrefAnnualAI;
+      scenarioForAI.financing.your_cash_in = downPaymentAmountAI * (finAI.your_equity_pct || 5) / 100;
+    } else if (structureAI === 'seller-carry') {
+      primaryLoanAmountAI = purchasePriceAI * (finAI.ltv || 75) / 100;
+      const sellerCarryAmountAI = purchasePriceAI * (finAI.seller_carry_pct || 15) / 100;
+      const yourCashDownAI = purchasePriceAI - primaryLoanAmountAI - sellerCarryAmountAI;
+      downPaymentAmountAI = yourCashDownAI;
+
+      const loanMonthlyAI = calcMonthlyPaymentAI(primaryLoanAmountAI, finAI.interest_rate || 6.5, (finAI.amortization_years || 30) * 12);
+
+      let sellerCarryMonthlyAI = 0;
+      if (finAI.seller_carry_io) {
+        sellerCarryMonthlyAI = sellerCarryAmountAI * (finAI.seller_carry_rate || 5) / 100 / 12;
+      } else {
+        sellerCarryMonthlyAI = calcMonthlyPaymentAI(sellerCarryAmountAI, finAI.seller_carry_rate || 5, finAI.seller_carry_term_months || 60);
+      }
+
+      totalMonthlyDebtAI = loanMonthlyAI + sellerCarryMonthlyAI;
+      totalAnnualDebtAI = totalMonthlyDebtAI * 12;
+
+      scenarioForAI.financing.seller_carry_amount = sellerCarryAmountAI;
+      scenarioForAI.financing.seller_carry_monthly = sellerCarryMonthlyAI;
+      scenarioForAI.financing.primary_loan_monthly = loanMonthlyAI;
+      scenarioForAI.financing.your_cash_down = yourCashDownAI;
+    }
+
+    if (!scenarioForAI.pricing_financing) {
+      scenarioForAI.pricing_financing = {};
+    }
+    scenarioForAI.pricing_financing.loan_amount = primaryLoanAmountAI;
+    scenarioForAI.pricing_financing.monthly_payment = totalMonthlyDebtAI;
+    scenarioForAI.pricing_financing.annual_debt_service = totalAnnualDebtAI;
+    scenarioForAI.pricing_financing.down_payment = downPaymentAmountAI;
+    scenarioForAI.pricing_financing.interest_rate = (finAI.interest_rate || 6.0) / 100;
+    scenarioForAI.pricing_financing.term_years = finAI.loan_term_years || 10;
+    scenarioForAI.pricing_financing.amortization_years = finAI.amortization_years || 30;
+
+    scenarioForAI.financing.debt_structure = structureAI;
+    scenarioForAI.financing.total_monthly_debt = totalMonthlyDebtAI;
+    scenarioForAI.financing.total_annual_debt = totalAnnualDebtAI;
+
+    if (scenarioForAI.pnl) {
+      scenarioForAI.pnl.potential_gross_income = scenarioForAI.pnl.gross_potential_rent || scenarioForAI.pnl.potential_gross_income || 0;
+      const rawVacancyAI = scenarioForAI.pnl.vacancy_rate;
+      if (typeof rawVacancyAI === 'number') {
+        scenarioForAI.pnl.vacancy_rate = rawVacancyAI > 1 ? rawVacancyAI / 100 : rawVacancyAI;
+      } else {
+        scenarioForAI.pnl.vacancy_rate = 0.05;
+      }
+    }
+
+    // Run the exact same full analysis used by the Results page so the AI
+    // sees the identical calc_json that powers Deal / No Deal.
+    const { calculateFullAnalysis } = require('../utils/realEstateCalculations');
+    const fullAnalysisForAI = calculateFullAnalysis(scenarioForAI);
+
+    // Build wizard structure snapshot for the AI prompt.
+    const wizardStructure = {
+      strategy: scenarioForAI.deal_setup?.debt_structure || dealParams.debt_structure || 'traditional',
+      deal_setup: scenarioForAI.deal_setup || {},
+      financing: scenarioForAI.financing || {}
+    };
+
+    // Best-effort: push the latest wizard-edited data to the backend as the
+    // current scenario JSON so the AI analysis prompt uses THESE numbers,
+    // not just the original parsed OM snapshot.
+    if (dealId && verifiedData) {
+      try {
+        fetch(`${API_BASE}/v2/deals/${dealId}/scenario`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scenario: scenarioForAI })
+        }).catch(err => {
+          console.warn('[V2] Failed to update scenario before AI analysis', err);
+        });
+      } catch (err) {
+        console.warn('[V2] Error scheduling scenario update', err);
+      }
+    }
+
     // Navigate to the AI analysis page with deal data
     navigate('/underwrite/analysis', {
       state: {
         dealId,
-        verifiedData
+        verifiedData: scenarioForAI,
+        scenarioData: scenarioForAI,
+        fullCalcs: fullAnalysisForAI,
+        wizardStructure
       }
     });
   };
@@ -868,10 +1378,10 @@ function UnderwriteV2Page() {
       <div style={styles.page}>
         <div style={{ ...styles.container, maxWidth: 800 }}>
           <div style={styles.header}>
-            <h1 style={styles.title}>🎯 Deal Sniper</h1>
+            <h1 style={styles.title}>Deal Sniper</h1>
             <button 
               style={styles.homeButton}
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/dashboard')}
             >
               <Home size={18} />
               Home
@@ -955,7 +1465,57 @@ function UnderwriteV2Page() {
                 <option value="hybrid">Hybrid (Subject To + Traditional/Seller Finance)</option>
                 <option value="equity-partner">Equity Partner</option>
                 <option value="seller-carry">Seller Carry</option>
+                <option value="lease-option">Lease Option</option>
               </select>
+            </div>
+
+            {/* Subject-To availability toggle */}
+            <div style={{
+              marginBottom: 24,
+              padding: 12,
+              borderRadius: 10,
+              border: '1px solid #e5e7eb',
+              backgroundColor: '#f9fafb',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12
+            }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 2 }}>
+                  Is "Subject To" actually available on this deal?
+                </div>
+                <div style={{ fontSize: 12, color: '#6b7280' }}>
+                  If not, AI will ignore Subject To / Hybrid structures and choose the next best option.
+                </div>
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                <span style={{ fontSize: 12, color: '#4b5563' }}>{subjectToAvailable ? 'Yes' : 'No'}</span>
+                <div
+                  onClick={() => setSubjectToAvailable(!subjectToAvailable)}
+                  style={{
+                    width: 40,
+                    height: 22,
+                    borderRadius: 999,
+                    backgroundColor: subjectToAvailable ? '#22c55e' : '#d1d5db',
+                    padding: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: subjectToAvailable ? 'flex-end' : 'flex-start',
+                    transition: 'all 0.15s ease-in-out'
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 18,
+                      height: 18,
+                      borderRadius: '999px',
+                      backgroundColor: '#ffffff',
+                      boxShadow: '0 1px 2px rgba(15,23,42,0.3)'
+                    }}
+                  />
+                </div>
+              </label>
             </div>
 
             {/* Underwriting Mode Toggle */}
@@ -1186,6 +1746,26 @@ function UnderwriteV2Page() {
                 </>
               )}
             </button>
+
+            {/* OR divider + Manual Entry button */}
+            <div style={{ margin: '32px 0', textAlign: 'center', position: 'relative' }}>
+              <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', height: 1, background: '#e5e7eb' }} />
+              <span style={{ position: 'relative', background: '#fff', padding: '0 16px', color: '#6b7280', fontSize: 14, fontWeight: 600 }}>OR</span>
+            </div>
+            <button
+              onClick={() => navigate('/manual-entry')}
+              style={{ 
+                ...styles.button, 
+                width: '100%',
+                padding: '16px 24px',
+                fontSize: 16,
+                justifyContent: 'center',
+                background: 'linear-gradient(135deg, #10b981, #059669)', 
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)' 
+              }}
+            >
+              <FileText size={20} /> Enter Manually
+            </button>
           </div>
         </div>
 
@@ -1202,11 +1782,17 @@ function UnderwriteV2Page() {
 
   // STEP 2: Verify/Edit Wizard
   if (step === 'verify') {
+    const sourcedFields = Object.entries(sourceSnippets || {}).map(([path, meta]) => ({
+      path,
+      page: meta?.page,
+      text: meta?.text,
+    }));
+
     return (
       <div style={styles.page}>
         <div style={styles.container}>
           <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
-            <button onClick={() => navigate('/')} style={styles.homeButton}>
+            <button onClick={() => navigate('/dashboard')} style={styles.homeButton}>
               <Home size={16} /> Home
             </button>
             <button 
@@ -1228,6 +1814,48 @@ function UnderwriteV2Page() {
             <div style={{ marginBottom: 20, padding: 16, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, display: 'flex', gap: 12 }}>
               <AlertCircle size={20} color="#b91c1c" />
               <span style={{ color: '#991b1b', fontSize: 14 }}>{uploadError}</span>
+            </div>
+          )}
+
+          {/* Confidence Legend */}
+          {verifiedData?._confidence && (
+            <div style={{ 
+              marginBottom: 20, 
+              padding: '12px 16px', 
+              background: '#f8fafc', 
+              border: '1px solid #e2e8f0', 
+              borderRadius: 10,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 20,
+              flexWrap: 'wrap'
+            }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#475569' }}>Field Confidence:</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 12, height: 12, borderRadius: 3, background: '#fef2f2', border: '2px solid #ef4444' }} />
+                <span style={{ fontSize: 12, color: '#64748b' }}>Not found</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 12, height: 12, borderRadius: 3, background: '#fefce8', border: '2px solid #eab308' }} />
+                <span style={{ fontSize: 12, color: '#64748b' }}>Multiple values - verify</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 12, height: 12, borderRadius: 3, background: '#f0fdf4', border: '2px solid #22c55e' }} />
+                <span style={{ fontSize: 12, color: '#64748b' }}>Confident</span>
+              </div>
+              {verifiedData?.data_quality?.critical_missing?.length > 0 && (
+                <span style={{ 
+                  marginLeft: 'auto', 
+                  fontSize: 12, 
+                  color: '#dc2626', 
+                  fontWeight: 600,
+                  background: '#fef2f2',
+                  padding: '4px 10px',
+                  borderRadius: 20
+                }}>
+                  ⚠️ {verifiedData.data_quality.critical_missing.length} fields need attention
+                </span>
+              )}
             </div>
           )}
 
@@ -1271,66 +1899,115 @@ function UnderwriteV2Page() {
                 <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>Property Information</h3>
                 <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 6 }}>Address</label>
+                    <label style={{ display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 6 }}>
+                      Address
+                      {getConfidenceIndicator('property', 'address')?.icon && (
+                        <span title={getConfidenceIndicator('property', 'address')?.note || getConfidenceIndicator('property', 'address')?.label} style={{ marginLeft: 6 }}>
+                          {getConfidenceIndicator('property', 'address')?.icon}
+                        </span>
+                      )}
+                    </label>
                     <input
                       type="text"
                       value={verifiedData?.property?.address || ''}
                       onChange={(e) => updateVerifiedField('property', 'address', e.target.value)}
-                      style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 6 }}
+                      style={getConfidenceInputStyle('property', 'address', { width: '100%', padding: 8, borderRadius: 6 })}
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 6 }}>City</label>
+                    <label style={{ display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 6 }}>
+                      City
+                      {getConfidenceIndicator('property', 'city')?.icon && (
+                        <span title={getConfidenceIndicator('property', 'city')?.note || getConfidenceIndicator('property', 'city')?.label} style={{ marginLeft: 6 }}>
+                          {getConfidenceIndicator('property', 'city')?.icon}
+                        </span>
+                      )}
+                    </label>
                     <input
                       type="text"
                       value={verifiedData?.property?.city || ''}
                       onChange={(e) => updateVerifiedField('property', 'city', e.target.value)}
-                      style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 6 }}
+                      style={getConfidenceInputStyle('property', 'city', { width: '100%', padding: 8, borderRadius: 6 })}
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 6 }}>State</label>
+                    <label style={{ display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 6 }}>
+                      State
+                      {getConfidenceIndicator('property', 'state')?.icon && (
+                        <span title={getConfidenceIndicator('property', 'state')?.note || getConfidenceIndicator('property', 'state')?.label} style={{ marginLeft: 6 }}>
+                          {getConfidenceIndicator('property', 'state')?.icon}
+                        </span>
+                      )}
+                    </label>
                     <input
                       type="text"
                       value={verifiedData?.property?.state || ''}
                       onChange={(e) => updateVerifiedField('property', 'state', e.target.value)}
-                      style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 6 }}
+                      style={getConfidenceInputStyle('property', 'state', { width: '100%', padding: 8, borderRadius: 6 })}
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 6 }}>ZIP</label>
+                    <label style={{ display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 6 }}>
+                      ZIP
+                      {getConfidenceIndicator('property', 'zip')?.icon && (
+                        <span title={getConfidenceIndicator('property', 'zip')?.note || getConfidenceIndicator('property', 'zip')?.label} style={{ marginLeft: 6 }}>
+                          {getConfidenceIndicator('property', 'zip')?.icon}
+                        </span>
+                      )}
+                    </label>
                     <input
                       type="text"
                       value={verifiedData?.property?.zip || ''}
                       onChange={(e) => updateVerifiedField('property', 'zip', e.target.value)}
-                      style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 6 }}
+                      style={getConfidenceInputStyle('property', 'zip', { width: '100%', padding: 8, borderRadius: 6 })}
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 6 }}>Total Units</label>
+                    <label style={{ display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 6 }}>
+                      Total Units
+                      {getConfidenceIndicator('property', 'units')?.icon && (
+                        <span title={getConfidenceIndicator('property', 'units')?.note || getConfidenceIndicator('property', 'units')?.label} style={{ marginLeft: 6 }}>
+                          {getConfidenceIndicator('property', 'units')?.icon}
+                        </span>
+                      )}
+                    </label>
                     <input
                       type="number"
                       value={verifiedData?.property?.units || ''}
                       onChange={(e) => updateVerifiedField('property', 'units', parseInt(e.target.value || 0))}
-                      style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 6 }}
+                      style={getConfidenceInputStyle('property', 'units', { width: '100%', padding: 8, borderRadius: 6 })}
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 6 }}>Year Built</label>
+                    <label style={{ display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 6 }}>
+                      Year Built
+                      {getConfidenceIndicator('property', 'year_built')?.icon && (
+                        <span title={getConfidenceIndicator('property', 'year_built')?.note || getConfidenceIndicator('property', 'year_built')?.label} style={{ marginLeft: 6 }}>
+                          {getConfidenceIndicator('property', 'year_built')?.icon}
+                        </span>
+                      )}
+                    </label>
                     <input
                       type="number"
                       value={verifiedData?.property?.year_built || ''}
                       onChange={(e) => updateVerifiedField('property', 'year_built', parseInt(e.target.value || 0))}
-                      style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 6 }}
+                      style={getConfidenceInputStyle('property', 'year_built', { width: '100%', padding: 8, borderRadius: 6 })}
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 6 }}>Building SF</label>
+                    <label style={{ display: 'block', fontSize: 12, color: '#6b7280', marginBottom: 6 }}>
+                      Building SF
+                      {getConfidenceIndicator('property', 'rba_sqft')?.icon && (
+                        <span title={getConfidenceIndicator('property', 'rba_sqft')?.note || getConfidenceIndicator('property', 'rba_sqft')?.label} style={{ marginLeft: 6 }}>
+                          {getConfidenceIndicator('property', 'rba_sqft')?.icon}
+                        </span>
+                      )}
+                    </label>
                     <input
                       type="number"
                       value={verifiedData?.property?.rba_sqft || ''}
                       onChange={(e) => updateVerifiedField('property', 'rba_sqft', parseInt(e.target.value || 0))}
-                      style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 6 }}
+                      style={getConfidenceInputStyle('property', 'rba_sqft', { width: '100%', padding: 8, borderRadius: 6 })}
                     />
                   </div>
                 </div>
@@ -1348,30 +2025,43 @@ function UnderwriteV2Page() {
                 <div>
                   <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
                     Purchase Price *
+                    {getConfidenceIndicator('pricing_financing', 'price')?.icon && (
+                      <span title={getConfidenceIndicator('pricing_financing', 'price')?.note || getConfidenceIndicator('pricing_financing', 'price')?.label} style={{ marginLeft: 6 }}>
+                        {getConfidenceIndicator('pricing_financing', 'price')?.icon}
+                      </span>
+                    )}
                   </label>
                   <input
                     type="number"
-                    style={{
+                    style={getConfidenceInputStyle('pricing_financing', 'price', {
                       ...styles.input,
-                      ...(validationErrors['pricing_financing.price'] ? styles.inputError : {}),
-                      ...(verifiedData?.pricing_financing?.price ? styles.inputSuccess : {})
-                    }}
+                      ...(validationErrors['pricing_financing.price'] ? styles.inputError : {})
+                    })}
                     value={verifiedData?.pricing_financing?.price || ''}
                     onChange={(e) => updateVerifiedField('pricing_financing', 'price', parseFloat(e.target.value))}
                     placeholder="$0"
                   />
+                  {getConfidenceIndicator('pricing_financing', 'price')?.alternatives && (
+                    <div style={{ marginTop: 4, fontSize: 11, color: '#eab308' }}>
+                      Alternatives found: {getConfidenceIndicator('pricing_financing', 'price').alternatives.map(v => `$${v.toLocaleString()}`).join(', ')}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
                     Gross Potential Rent *
+                    {getConfidenceIndicator('pnl', 'gross_potential_rent')?.icon && (
+                      <span title={getConfidenceIndicator('pnl', 'gross_potential_rent')?.note || getConfidenceIndicator('pnl', 'gross_potential_rent')?.label} style={{ marginLeft: 6 }}>
+                        {getConfidenceIndicator('pnl', 'gross_potential_rent')?.icon}
+                      </span>
+                    )}
                   </label>
                   <input
                     type="number"
-                    style={{
+                    style={getConfidenceInputStyle('pnl', 'gross_potential_rent', {
                       ...styles.input,
-                      ...(validationErrors['pnl.gross_potential_rent'] ? styles.inputError : {}),
-                      ...(verifiedData?.pnl?.gross_potential_rent ? styles.inputSuccess : {})
-                    }}
+                      ...(validationErrors['pnl.gross_potential_rent'] ? styles.inputError : {})
+                    })}
                     value={verifiedData?.pnl?.gross_potential_rent || ''}
                     onChange={(e) => updateVerifiedField('pnl', 'gross_potential_rent', parseFloat(e.target.value))}
                     placeholder="$0"
@@ -1380,10 +2070,15 @@ function UnderwriteV2Page() {
                 <div>
                   <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
                     Other Income
+                    {getConfidenceIndicator('pnl', 'other_income')?.icon && (
+                      <span title={getConfidenceIndicator('pnl', 'other_income')?.note || getConfidenceIndicator('pnl', 'other_income')?.label} style={{ marginLeft: 6 }}>
+                        {getConfidenceIndicator('pnl', 'other_income')?.icon}
+                      </span>
+                    )}
                   </label>
                   <input
                     type="number"
-                    style={styles.input}
+                    style={getConfidenceInputStyle('pnl', 'other_income', styles.input)}
                     value={verifiedData?.pnl?.other_income || ''}
                     onChange={(e) => updateVerifiedField('pnl', 'other_income', parseFloat(e.target.value))}
                     placeholder="$0"
@@ -1392,10 +2087,15 @@ function UnderwriteV2Page() {
                 <div>
                   <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
                     Vacancy Rate (%)
+                    {getConfidenceIndicator('pnl', 'vacancy_rate')?.icon && (
+                      <span title={getConfidenceIndicator('pnl', 'vacancy_rate')?.note || getConfidenceIndicator('pnl', 'vacancy_rate')?.label} style={{ marginLeft: 6 }}>
+                        {getConfidenceIndicator('pnl', 'vacancy_rate')?.icon}
+                      </span>
+                    )}
                   </label>
                   <input
                     type="number"
-                    style={styles.input}
+                    style={getConfidenceInputStyle('pnl', 'vacancy_rate', styles.input)}
                     value={verifiedData?.pnl?.vacancy_rate ? (verifiedData.pnl.vacancy_rate * 100) : ''}
                     onChange={(e) => updateVerifiedField('pnl', 'vacancy_rate', parseFloat(e.target.value) / 100)}
                     placeholder="5"
@@ -1404,14 +2104,18 @@ function UnderwriteV2Page() {
                 <div>
                   <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
                     Operating Expenses *
+                    {getConfidenceIndicator('pnl', 'operating_expenses')?.icon && (
+                      <span title={getConfidenceIndicator('pnl', 'operating_expenses')?.note || getConfidenceIndicator('pnl', 'operating_expenses')?.label} style={{ marginLeft: 6 }}>
+                        {getConfidenceIndicator('pnl', 'operating_expenses')?.icon}
+                      </span>
+                    )}
                   </label>
                   <input
                     type="number"
-                    style={{
+                    style={getConfidenceInputStyle('pnl', 'operating_expenses', {
                       ...styles.input,
-                      ...(validationErrors['pnl.operating_expenses'] ? styles.inputError : {}),
-                      ...(verifiedData?.pnl?.operating_expenses ? styles.inputSuccess : {})
-                    }}
+                      ...(validationErrors['pnl.operating_expenses'] ? styles.inputError : {})
+                    })}
                     value={verifiedData?.pnl?.operating_expenses || ''}
                     onChange={(e) => updateVerifiedField('pnl', 'operating_expenses', parseFloat(e.target.value))}
                     placeholder="$0"
@@ -1420,20 +2124,216 @@ function UnderwriteV2Page() {
                 <div>
                   <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
                     Net Operating Income (NOI) *
+                    {getConfidenceIndicator('pnl', 'noi')?.icon && (
+                      <span title={getConfidenceIndicator('pnl', 'noi')?.note || getConfidenceIndicator('pnl', 'noi')?.label} style={{ marginLeft: 6 }}>
+                        {getConfidenceIndicator('pnl', 'noi')?.icon}
+                      </span>
+                    )}
                   </label>
                   <input
                     type="number"
-                    style={{
+                    style={getConfidenceInputStyle('pnl', 'noi', {
                       ...styles.input,
-                      ...(validationErrors['pnl.noi'] ? styles.inputError : {}),
-                      ...(verifiedData?.pnl?.noi ? styles.inputSuccess : {})
-                    }}
+                      ...(validationErrors['pnl.noi'] ? styles.inputError : {})
+                    })}
                     value={verifiedData?.pnl?.noi || ''}
                     onChange={(e) => updateVerifiedField('pnl', 'noi', parseFloat(e.target.value))}
                     placeholder="$0"
                   />
+                  {getConfidenceIndicator('pnl', 'noi')?.alternatives && (
+                    <div style={{ marginTop: 4, fontSize: 11, color: '#eab308' }}>
+                      Alternatives: {getConfidenceIndicator('pnl', 'noi').alternatives.map(v => `$${v.toLocaleString()}`).join(', ')}
+                    </div>
+                  )}
                 </div>
               </div>
+
+              {/* Compact panel to show all NOI variants the parser found */}
+              {verifiedData?.pnl && (
+                (() => {
+                  const pnl = verifiedData.pnl || {};
+                  const variants = [
+                    { key: 'noi', label: 'Default NOI (used in underwriting)' },
+                    { key: 'noi_t12', label: 'T-12 NOI' },
+                    { key: 'noi_t3', label: 'T-3 NOI' },
+                    { key: 'noi_t1', label: 'T-1 NOI' },
+                    { key: 'noi_trailing_1', label: 'Trailing 1 Month NOI' },
+                    { key: 'noi_proforma', label: 'Pro Forma NOI' },
+                    { key: 'noi_stabilized', label: 'Stabilized NOI' },
+                  ].filter(v => typeof pnl[v.key] === 'number' && pnl[v.key] !== 0);
+
+                  if (!variants.length) return null;
+
+                  return (
+                    <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #e5e7eb' }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#111827', marginBottom: 8 }}>
+                        NOI Versions Found in OM
+                      </div>
+                      <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
+                        These are all distinct NOI figures the parser detected (T-12, T-3, Pro Forma, etc.) so you can see exactly what the OM shows.
+                      </div>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: '2fr 1fr',
+                        gap: 8,
+                        fontSize: 13,
+                        background: '#f9fafb',
+                        borderRadius: 8,
+                        padding: 8,
+                        border: '1px solid #e5e7eb',
+                      }}>
+                        <div style={{ fontWeight: 600, color: '#4b5563' }}>Label</div>
+                        <div style={{ fontWeight: 600, color: '#4b5563', textAlign: 'right' }}>Amount</div>
+                        {variants.map(v => (
+                          <React.Fragment key={v.key}>
+                            <div style={{ color: '#111827' }}>{v.label}</div>
+                            <div style={{ color: '#111827', textAlign: 'right' }}>
+                              {pnl[v.key]?.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            </div>
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()
+              )}
+
+              {/* Compact panels to show cap rate and vacancy variants when present */}
+              {verifiedData?.pnl && (() => {
+                const pnl = verifiedData.pnl || {};
+
+                const capVariants = [
+                  { key: 'cap_rate', label: 'Default Cap Rate (used in underwriting)' },
+                  { key: 'cap_rate_t12', label: 'T-12 / In-Place Cap Rate' },
+                  { key: 'cap_rate_proforma', label: 'Pro Forma Cap Rate' },
+                  { key: 'cap_rate_stabilized', label: 'Stabilized Cap Rate' },
+                ].filter(v => typeof pnl[v.key] === 'number' && pnl[v.key] !== 0);
+
+                const vacVariants = [
+                  { key: 'vacancy_rate', label: 'Default Vacancy Rate (used in underwriting)' },
+                  { key: 'vacancy_rate_t12', label: 'T-12 Vacancy Rate' },
+                  { key: 'vacancy_rate_current', label: 'Current Point-in-Time Vacancy' },
+                  { key: 'vacancy_rate_stabilized', label: 'Pro Forma / Stabilized Vacancy' },
+                ].filter(v => typeof pnl[v.key] === 'number' && pnl[v.key] !== 0);
+
+                if (!capVariants.length && !vacVariants.length) return null;
+
+                const formatPct = (val) => {
+                  if (typeof val !== 'number') return '';
+                  const pct = val > 1 ? val : val * 100;
+                  return `${pct.toFixed(1)}%`;
+                };
+
+                return (
+                  <div style={{ marginTop: 24, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+                    {capVariants.length > 0 && (
+                      <div style={{
+                        fontSize: 13,
+                        background: '#f9fafb',
+                        borderRadius: 8,
+                        padding: 8,
+                        border: '1px solid #e5e7eb',
+                      }}>
+                        <div style={{ fontWeight: 700, color: '#111827', marginBottom: 4 }}>Cap Rate Versions Found</div>
+                        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>
+                          Multiple cap rates (T-12, Pro Forma, Stabilized) from the OM.
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 6 }}>
+                          <div style={{ fontWeight: 600, color: '#4b5563' }}>Label</div>
+                          <div style={{ fontWeight: 600, color: '#4b5563', textAlign: 'right' }}>Cap Rate</div>
+                          {capVariants.map(v => (
+                            <React.Fragment key={v.key}>
+                              <div style={{ color: '#111827' }}>{v.label}</div>
+                              <div style={{ color: '#111827', textAlign: 'right' }}>
+                                {formatPct(pnl[v.key])}
+                              </div>
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {vacVariants.length > 0 && (
+                      <div style={{
+                        fontSize: 13,
+                        background: '#f9fafb',
+                        borderRadius: 8,
+                        padding: 8,
+                        border: '1px solid #e5e7eb',
+                      }}>
+                        <div style={{ fontWeight: 700, color: '#111827', marginBottom: 4 }}>Vacancy Versions Found</div>
+                        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>
+                          Different vacancy assumptions (T-12, current, stabilized) extracted from the OM.
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 6 }}>
+                          <div style={{ fontWeight: 600, color: '#4b5563' }}>Label</div>
+                          <div style={{ fontWeight: 600, color: '#4b5563', textAlign: 'right' }}>Vacancy</div>
+                          {vacVariants.map(v => (
+                            <React.Fragment key={v.key}>
+                              <div style={{ color: '#111827' }}>{v.label}</div>
+                              <div style={{ color: '#111827', textAlign: 'right' }}>
+                                {formatPct(pnl[v.key])}
+                              </div>
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Generic panel listing any fields where the parser found multiple candidate values */}
+              {verifiedData?._confidence && (() => {
+                const entries = Object.entries(verifiedData._confidence || {}).filter(([, info]) => info && Array.isArray(info.alternatives) && info.alternatives.length > 0);
+                if (!entries.length) return null;
+
+                return (
+                  <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #e5e7eb' }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#111827', marginBottom: 6 }}>
+                      Fields With Multiple Values Found in OM
+                    </div>
+                    <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
+                      These fields had more than one plausible value in the documents. The value shown in the wizard is the one currently selected for underwriting.
+                    </div>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '2fr 1fr 2fr',
+                      gap: 8,
+                      fontSize: 12,
+                      background: '#f9fafb',
+                      borderRadius: 8,
+                      padding: 8,
+                      border: '1px solid #e5e7eb',
+                    }}>
+                      <div style={{ fontWeight: 600, color: '#4b5563' }}>Field</div>
+                      <div style={{ fontWeight: 600, color: '#4b5563', textAlign: 'right' }}>Used in Wizard</div>
+                      <div style={{ fontWeight: 600, color: '#4b5563' }}>Other Values Found</div>
+                      {entries.map(([path, info]) => {
+                        const currentVal = getValueAtPath(verifiedData, path);
+                        const formatVal = (v) => {
+                          if (v === null || v === undefined) return '—';
+                          if (typeof v === 'number') return v.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                          return String(v);
+                        };
+                        return (
+                          <React.Fragment key={path}>
+                            <div style={{ color: '#111827' }}>{path}</div>
+                            <div style={{ color: '#111827', textAlign: 'right' }}>{formatVal(currentVal)}</div>
+                            <div style={{ color: '#111827' }}>
+                              {info.alternatives.map((alt, idx) => (
+                                <span key={idx}>
+                                  {idx > 0 ? ', ' : ''}{formatVal(alt)}
+                                </span>
+                              ))}
+                            </div>
+                          </React.Fragment>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -1446,10 +2346,15 @@ function UnderwriteV2Page() {
                 <div>
                   <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
                     Property Taxes
+                    {getConfidenceIndicator('expenses', 'taxes')?.icon && (
+                      <span title={getConfidenceIndicator('expenses', 'taxes')?.note || getConfidenceIndicator('expenses', 'taxes')?.label} style={{ marginLeft: 6 }}>
+                        {getConfidenceIndicator('expenses', 'taxes')?.icon}
+                      </span>
+                    )}
                   </label>
                   <input
                     type="number"
-                    style={styles.input}
+                    style={getConfidenceInputStyle('expenses', 'taxes', styles.input)}
                     value={verifiedData?.expenses?.taxes || ''}
                     onChange={(e) => updateVerifiedField('expenses', 'taxes', parseFloat(e.target.value))}
                     placeholder="$0"
@@ -1458,10 +2363,15 @@ function UnderwriteV2Page() {
                 <div>
                   <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
                     Insurance
+                    {getConfidenceIndicator('expenses', 'insurance')?.icon && (
+                      <span title={getConfidenceIndicator('expenses', 'insurance')?.note || getConfidenceIndicator('expenses', 'insurance')?.label} style={{ marginLeft: 6 }}>
+                        {getConfidenceIndicator('expenses', 'insurance')?.icon}
+                      </span>
+                    )}
                   </label>
                   <input
                     type="number"
-                    style={styles.input}
+                    style={getConfidenceInputStyle('expenses', 'insurance', styles.input)}
                     value={verifiedData?.expenses?.insurance || ''}
                     onChange={(e) => updateVerifiedField('expenses', 'insurance', parseFloat(e.target.value))}
                     placeholder="$0"
@@ -1470,10 +2380,15 @@ function UnderwriteV2Page() {
                 <div>
                   <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
                     Utilities
+                    {getConfidenceIndicator('expenses', 'utilities')?.icon && (
+                      <span title={getConfidenceIndicator('expenses', 'utilities')?.note || getConfidenceIndicator('expenses', 'utilities')?.label} style={{ marginLeft: 6 }}>
+                        {getConfidenceIndicator('expenses', 'utilities')?.icon}
+                      </span>
+                    )}
                   </label>
                   <input
                     type="number"
-                    style={styles.input}
+                    style={getConfidenceInputStyle('expenses', 'utilities', styles.input)}
                     value={verifiedData?.expenses?.utilities || ''}
                     onChange={(e) => updateVerifiedField('expenses', 'utilities', parseFloat(e.target.value))}
                     placeholder="$0"
@@ -1482,10 +2397,15 @@ function UnderwriteV2Page() {
                 <div>
                   <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
                     Repairs & Maintenance
+                    {getConfidenceIndicator('expenses', 'repairs_maintenance')?.icon && (
+                      <span title={getConfidenceIndicator('expenses', 'repairs_maintenance')?.note || getConfidenceIndicator('expenses', 'repairs_maintenance')?.label} style={{ marginLeft: 6 }}>
+                        {getConfidenceIndicator('expenses', 'repairs_maintenance')?.icon}
+                      </span>
+                    )}
                   </label>
                   <input
                     type="number"
-                    style={styles.input}
+                    style={getConfidenceInputStyle('expenses', 'repairs_maintenance', styles.input)}
                     value={verifiedData?.expenses?.repairs_maintenance || ''}
                     onChange={(e) => updateVerifiedField('expenses', 'repairs_maintenance', parseFloat(e.target.value))}
                     placeholder="$0"
@@ -1494,10 +2414,15 @@ function UnderwriteV2Page() {
                 <div>
                   <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
                     Management & Leasing
+                    {getConfidenceIndicator('expenses', 'management')?.icon && (
+                      <span title={getConfidenceIndicator('expenses', 'management')?.note || getConfidenceIndicator('expenses', 'management')?.label} style={{ marginLeft: 6 }}>
+                        {getConfidenceIndicator('expenses', 'management')?.icon}
+                      </span>
+                    )}
                   </label>
                   <input
                     type="number"
-                    style={styles.input}
+                    style={getConfidenceInputStyle('expenses', 'management', styles.input)}
                     value={verifiedData?.expenses?.management || ''}
                     onChange={(e) => updateVerifiedField('expenses', 'management', parseFloat(e.target.value))}
                     placeholder="$0"
@@ -1506,10 +2431,15 @@ function UnderwriteV2Page() {
                 <div>
                   <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
                     Marketing & Turnover
+                    {getConfidenceIndicator('expenses', 'marketing')?.icon && (
+                      <span title={getConfidenceIndicator('expenses', 'marketing')?.note || getConfidenceIndicator('expenses', 'marketing')?.label} style={{ marginLeft: 6 }}>
+                        {getConfidenceIndicator('expenses', 'marketing')?.icon}
+                      </span>
+                    )}
                   </label>
                   <input
                     type="number"
-                    style={styles.input}
+                    style={getConfidenceInputStyle('expenses', 'marketing', styles.input)}
                     value={verifiedData?.expenses?.marketing || ''}
                     onChange={(e) => updateVerifiedField('expenses', 'marketing', parseFloat(e.target.value))}
                     placeholder="$0"
@@ -1763,6 +2693,19 @@ function UnderwriteV2Page() {
                         placeholder="0"
                       />
                       <span style={{ fontSize: 12, color: '#9ca3af' }}>Months left on the loan</span>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
+                        Down Payment Amount
+                      </label>
+                      <input
+                        type="number"
+                        style={styles.input}
+                        value={verifiedData?.financing?.down_payment || ''}
+                        onChange={(e) => updateVerifiedField('financing', 'down_payment', parseFloat(e.target.value))}
+                        placeholder="$0"
+                      />
+                      <span style={{ fontSize: 12, color: '#9ca3af' }}>Cash down payment at closing</span>
                     </div>
                     <div>
                       <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
@@ -2935,10 +3878,61 @@ function UnderwriteV2Page() {
 
   // STEP 3: Results + Chat (side-by-side)
   if (step === 'results') {
+    const handleRunAIFromResults = () => {
+      if (!dealId || !scenarioData) return;
+
+      // Derive buy box / underwriting mode from scenarioData if present
+      const setup = scenarioData.deal_setup || verifiedData?.deal_setup || {};
+      const dealParams = {
+        underwriting_mode: setup.underwriting_mode || 'hardcoded',
+        buy_box: setup.buy_box || null,
+        property_type: setup.property_type || 'multifamily',
+        transaction_type: setup.transaction_type || 'acquisition',
+        debt_structure: setup.debt_structure || 'traditional'
+      };
+      localStorage.setItem('dealParams', JSON.stringify(dealParams));
+
+      // Use the already-transformed scenario and full calculation engine
+      // output so the AI underwriter sees the exact same numbers as the
+      // Results / Deal-or-No-Deal views.
+      const fullCalcs = calculations?.fullAnalysis || calculations || null;
+
+      const wizardStructure = {
+        strategy: setup.debt_structure || setup.strategy || 'traditional',
+        deal_setup: setup,
+        financing: scenarioData.financing || {}
+      };
+
+      // Push latest scenario (results-edited) into backend so AI sees it
+      try {
+        fetch(`${API_BASE}/v2/deals/${dealId}/scenario`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scenario: scenarioData })
+        }).catch(err => {
+          console.warn('[V2] Failed to update scenario from results before AI analysis', err);
+        });
+      } catch (err) {
+        console.warn('[V2] Error scheduling scenario update from results', err);
+      }
+
+      navigate('/underwrite/analysis', {
+        state: {
+          dealId,
+          verifiedData: scenarioData,
+          scenarioData,
+          fullCalcs,
+          wizardStructure
+        }
+      });
+    };
+
     return (
       <ResultsPageV2
         scenarioData={scenarioData}
         dealId={dealId}
+        underwritingResult={underwritingResult}
+        setUnderwritingResult={setUnderwritingResult}
         modifiedFields={modifiedFields}
         calculations={calculations}
         messages={messages}
@@ -2948,12 +3942,13 @@ function UnderwriteV2Page() {
         handleSendMessage={handleSendMessage}
         chatMessagesRef={chatMessagesRef}
         onEditData={(path, value) => modifyScenarioField(path, value)}
-        onGoHome={() => navigate('/')}
+        onGoHome={() => navigate('/dashboard')}
         onReturnToWizard={() => setStep('wizard')}
         isChatMinimized={isChatMinimized}
         setIsChatMinimized={setIsChatMinimized}
         marketCapRate={marketCapRate}
         marketCapRateLoading={marketCapRateLoading}
+        onRunAIAnalysis={handleRunAIFromResults}
       />
     );
   }

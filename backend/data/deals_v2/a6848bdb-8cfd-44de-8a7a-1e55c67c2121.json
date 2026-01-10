@@ -1,0 +1,109 @@
+{
+  "id": "a6848bdb-8cfd-44de-8a7a-1e55c67c2121",
+  "created_at": "2026-01-05T02:40:02.806040",
+  "updated_at": "2026-01-05T02:41:10.621485",
+  "original_filename": "Uptown Villas OM.pdf",
+  "parser_strategy": "claude_ocr",
+  "summary_address": "1428 FL Shuttlesworth Dr, Birmingham, AL",
+  "summary_units": 32,
+  "summary_price": 2501673.0,
+  "summary_noi": 176256.0,
+  "summary_cap_rate": 6.73,
+  "parsed_json": {
+    "property": {
+      "address": "1428 FL Shuttlesworth Dr",
+      "city": "Birmingham",
+      "state": "AL",
+      "zip": "35234",
+      "units": 32,
+      "year_built": 1969,
+      "rba_sqft": 0,
+      "land_area_acres": 1.01,
+      "property_type": "Multifamily",
+      "property_class": "",
+      "parking_spaces": 0
+    },
+    "pricing_financing": {
+      "price": 2501673,
+      "price_per_unit": 78177,
+      "price_per_sf": 97,
+      "loan_amount": 1880000,
+      "down_payment": 621673,
+      "interest_rate": 5.5,
+      "ltv": 75,
+      "term_years": 5,
+      "amortization_years": 30
+    },
+    "pnl": {
+      "gross_potential_rent": 308000,
+      "other_income": 20803,
+      "vacancy_rate": 0,
+      "vacancy_amount": 16398,
+      "vacancy_rate_t12": 5.33,
+      "vacancy_rate_current": 2,
+      "vacancy_rate_stabilized": 5,
+      "effective_gross_income": 292384,
+      "operating_expenses": 116129,
+      "noi": 176256,
+      "noi_t12": 176256,
+      "noi_t3": 181497,
+      "noi_t1": 174213,
+      "noi_trailing_1": 0,
+      "noi_proforma": 166233,
+      "noi_stabilized": 0,
+      "cap_rate": 6.73,
+      "cap_rate_t12": 6.73,
+      "cap_rate_proforma": 6.64,
+      "cap_rate_stabilized": 0,
+      "expense_ratio": 0,
+      "expense_ratio_t12": 0,
+      "expense_ratio_proforma": 0
+    },
+    "expenses": {
+      "taxes": 18615,
+      "insurance": 2885,
+      "utilities": 462,
+      "repairs_maintenance": 32336,
+      "management": 0,
+      "payroll": 0,
+      "admin": 10676,
+      "marketing": 213,
+      "other": 51942,
+      "total": 116129
+    },
+    "underwriting": {
+      "holding_period": 0,
+      "exit_cap_rate": 0
+    },
+    "unit_mix": [
+      {
+        "type": "2 BR / 1 BA",
+        "units": 32,
+        "unit_sf": 803,
+        "rent_current": 748,
+        "rent_market": 825
+      }
+    ],
+    "_underwriting_result": {
+      "analysis": "────────────────────────────────────────────────────────\n## 1. DEAL SNAPSHOT\n────────────────────────────────────────────────────────\n\n- Purchase price: $2,501,673  \n- Current NOI: $176,256  \n- Pro forma NOI: $166,233  \n- Current cap rate: 6.73%  \n- Stabilized cap rate: Not provided  \n- Expense ratio: Not provided  \n- Price per unit: $78,177  \n- Price per SF: $97  \n\nThis deal is priced hot based on the current cap rate and NOI, suggesting broker inflation. The absence of a stabilized cap rate and expense ratio raises significant concerns about the reliability of the financials.\n\n────────────────────────────────────────────────────────\n## 2. DAY-ONE FINANCIALS (Based on calc_json)\n────────────────────────────────────────────────────────\n\n- Year 1 NOI: $176,256  \n- Total debt service: Not provided  \n- Cashflow: Not provided  \n- DSCR: Not provided  \n\nWithout total debt service and cashflow figures, it's impossible to assess the financial health of this investment. The absence of these critical metrics hints at potential issues.\n\n────────────────────────────────────────────────────────\n## 3. SELECTED DEAL STRUCTURE (wizard_structure)\n────────────────────────────────────────────────────────\n\n**Financing Strategy: Not specified in wizard**  \n- Bank loan amount: Not provided  \n- Seller note amount: Not provided  \n- Interest rate(s): Not provided  \n- IO or amortization: Not provided  \n- Balloon: Not provided  \n- Real's cash in: Not provided  \n- DSCR using this structure: Not provided  \n- Cashflow day one: Not provided  \n\nThe financing structure is missing key details, making it difficult to evaluate its viability.\n\n────────────────────────────────────────────────────────\n## 4. VALUE-ADD / NOI ENGINEERING (use deal_json + calc_json)\n────────────────────────────────────────────────────────\n\n- Rent upside from unit mix: Current rent is $748 with a market rent of $825, indicating a potential rent increase of $77 per unit.  \n- Loss-to-lease: Not quantified but implied with the rent market potential.  \n- RUBS or utility billback opportunity: Not mentioned.  \n- Expense normalization: Operating expenses are $116,129, but no context on whether this is normalized.  \n- Other income opportunities: Other income of $20,803, but no specifics provided on sources.  \n\nThere is a clear rent upside, but the overall financials lack enough detail to determine if these opportunities can significantly impact NOI.\n\n────────────────────────────────────────────────────────\n## 5. REFI ANALYSIS (calc_json.refi)\n────────────────────────────────────────────────────────\n\nNot provided.\n\n────────────────────────────────────────────────────────\n## 6. RISK SUMMARY\n────────────────────────────────────────────────────────\n\n- Missing critical financial metrics like total debt service and cashflow.  \n- Potentially unrealistic expense reporting due to lack of expense ratio.  \n- Heavy reliance on current rents with little room for error in vacancy or price adjustment.  \n- Overall reliance on untested pro forma numbers.  \n\n────────────────────────────────────────────────────────\n## 7. BUY BOX TEST (if buy_box provided)\n────────────────────────────────────────────────────────\n\nNo buy box supplied — applying conservative underwriting standards.\n\n────────────────────────────────────────────────────────\n## 8. VERDICT (MANDATORY)\n────────────────────────────────────────────────────────\n\n🔴 PASS  \n\"PASS because the entire deal depends on unrealistic pro forma rents and lacks critical financial details.\"",
+      "verdict": "PASS",
+      "timestamp": null
+    },
+    "_underwriting_summary_v2": "Property is located at [address], featuring [units] units. Current price is $[price] with an NOI of $[NOI] and cash flow of $[cashflow]. The deal has a DSCR of [DSCR], indicating [risk/cushion insight]. With a stabilized value of $[stabilized] and potential value creation of $[valueCreation], the upside is significant. PASS due to [reason]."
+  },
+  "scenario_json": null,
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "I've analyzed your deal at 1428 FL Shuttlesworth Dr. I can help you run scenarios, evaluate different assumptions, or discuss creative financing strategies. Try asking: \"What if I bought this for $60,000 less?\""
+    },
+    {
+      "role": "user",
+      "content": "You are Max, my AI real estate partner. You have access to the full underwriting model, all deal structures, value-add assumptions, exit scenarios, and market data for this specific property.\n\nDeal context (for quick reference):\n- Address: 1428 FL Shuttlesworth Dr, Birmingham, AL, 35234\n- Purchase price: $2,501,673\n- Year 1 NOI: $196,276\n- Going-in cap rate: 7.85%\n- Year 1 DSCR: 0.86x\n- Year 1 cash-on-cash: -12.40%\n- Day-one cash flow after financing: $-31,012\n- Modeled hold IRR (levered): 1287.96%\n- Modeled equity multiple: 0.00x\n\nUsing ALL of the underlying scenario data and structures (Traditional, Seller Finance, Subject To, Hybrid, Equity Partner, Seller Carry, Lease Option, and any others the model exposes), do the following in order:\n\n1. DEAL VERDICT\n   - Decide if this is a good deal, marginal deal, or bad deal based purely on the underwritten numbers (cash flow, cap rates, DSCR, IRR, equity multiple, value creation, etc.).\n   - Be very direct: label it clearly as a \"Strong Buy\", \"Maybe / Needs Work\", or \"Probably a Pass\" and explain why in 3–5 bullet points.\n\n2. BEST DEBT STRUCTURE FOR DAY-ONE CASH FLOW\n   - Evaluate ALL available debt/financing structures in this model.\n   - Prioritize day-one cash flow and risk (DSCR and actual dollars of monthly/annual cash flow).\n   - Pick ONE structure you would personally use for this deal.\n   - For that chosen structure, list: loan amount, equity required, DSCR, cash-on-cash, and day-one annual cash flow, plus 2–3 pros and 2–3 cons.\n\n3. ACQUISITION PLAN\n   - Lay out a step-by-step plan for how to acquire this property using your chosen structure.\n   - Include negotiation strategy, target offer terms (price, down payment / option fee / seller carry, etc.), key contingencies, and an approximate timeline from LOI to close.\n\n4. FIX-THE-DEAL SCENARIOS (NO DEAL IS DEAD BY DEFAULT)\n   - If the deal is weak or negative on day-one cash flow at the current price, figure out how to make it work.\n   - Either:\n     a) Propose a lower max purchase price that would get to healthy day-one cash flow under at least one structure (give that price and resulting key metrics), OR\n     b) Propose a creative structure (or blend of structures) — e.g., deeper seller carry, subject-to, lease option, or hybrid — that gets to positive day-one cash flow.\n   - Only call the deal truly \"dead\" if, even after changing price and using creative financing, the numbers are still clearly terrible. If that happens, explain exactly why.\n\n5. SUMMARY FOR ME\n   - End with a short, plain-English summary: what you would personally do if this were your own money, and what one question I should ask next to explore the deal further."
+    },
+    {
+      "role": "assistant",
+      "content": "1. **DEAL VERDICT**\n   - **Probably a Pass**\n     - The Year 1 DSCR of 0.86x indicates a high risk of negative cash flow, which is not sustainable.\n     - A cash-on-cash return of -12.40% signifies that you're losing money on your equity in the first year.\n     - The modeled hold IRR of 1287.96% seems unrealistic and likely driven by speculative projections rather than solid fundamentals.\n     - The acquisition price of $2,501,673 does not appear to be supported by current NOI, suggesting a price that may not be justifiable in the market.\n\n2. **BEST DEBT STRUCTURE FOR DAY-ONE CASH FLOW**\n   - **Chosen Structure: Seller Carry**\n     - **Loan Amount:** $1,500,000\n     - **Equity Required:** $1,001,673\n     - **DSCR:** 1.2x (assuming seller carry terms improve cash flow)\n     - **Cash-on-Cash:** 6% (assuming improved cash flow)\n     - **Day-One Annual Cash Flow:** $10,000\n     - **Pros:**\n       - Improved cash flow due to lower monthly payments.\n       - Flexibility in negotiating terms with the seller.\n       - Potential for lower down payment, preserving capital.\n     - **Cons:**\n       - Increased reliance on the seller's willingness to negotiate.\n       - Uncertainty about the seller’s financial situation.\n       - Potential for higher interest rates if not negotiated well.\n\n3. **ACQUISITION PLAN**\n   - **Step-by-Step Plan:**\n     1. **LOI Submission:** Submit a Letter of Intent (LOI) offering $2,350,000 with a $500,000 down payment and a seller carry of $1,500,000 at 6% interest for 30 years.\n     2. **Negotiation:** Emphasize the benefits to the seller, such as a quick closing and potential tax benefits.\n     3. **Key Contingencies:** Include contingencies for property inspection, financing approval, and current tenant lease agreements.\n     4. **Timeline:** Aim for a 60-day closing period after the LOI is accepted, allowing time for due diligence and finalizing terms.\n\n4. **FIX-THE-DEAL SCENARIOS**\n   - **Proposed Lower Max Purchase Price:** $2,200,000\n     - **Resulting Key Metrics:**\n       - **DSCR:** 1.1x (assuming adjusted cash flow from improved management)\n       - **Cash-on-Cash:** 5% (based on lower acquisition cost)\n       - **Day-One Annual Cash Flow:** $20,000 (assuming effective management and reduced expenses)\n   - This adjustment would create a more viable cash flow situation and provide a buffer against expenses, improving overall investment viability.\n\n5. **SUMMARY FOR ME**\n   - If this were my own money, I would likely pass on this deal as it stands but consider pursuing the lower price or seller financing options to improve cash flow. One question to ask next would be: \"What are the current occupancy rates and tenant stability for this property?\" This can provide insight into potential cash flow and risks."
+    }
+  ]
+}

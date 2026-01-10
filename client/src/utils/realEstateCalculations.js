@@ -94,15 +94,32 @@ export function calculateLoanBalance(principal, annualRate, amortYears, yearsPai
 // === CORE HELPER FUNCTIONS (aligned with master underwriting formulas) ===
 
 // 1. Effective Gross Income (EGI) = Gross Scheduled Rent + Other Income – Vacancy Loss
+// Prefer computing EGI directly from its components when they exist, and only
+// fall back to a pre-computed effective_gross_income line when inputs are
+// missing. This prevents a bad backend EGI/NOI pair from overriding corrected
+// income/expense edits in the wizard.
 function computeEGI({ potentialGrossIncome = 0, otherIncome = 0, vacancyLoss = 0, effectiveGrossIncome }) {
-  if (effectiveGrossIncome != null && effectiveGrossIncome !== 0) return effectiveGrossIncome;
-  return (potentialGrossIncome + otherIncome) - vacancyLoss;
+  const hasExplicitComponents = (potentialGrossIncome > 0) || (otherIncome > 0) || (vacancyLoss > 0);
+  if (hasExplicitComponents) {
+    return (potentialGrossIncome + otherIncome) - vacancyLoss;
+  }
+  if (effectiveGrossIncome != null && effectiveGrossIncome !== 0) {
+    return effectiveGrossIncome;
+  }
+  return 0;
 }
 
 // 3. Net Operating Income (NOI) = EGI – Operating Expenses
-function computeNOI({ egi = 0, operatingExpenses = 0, noi }) {
-  if (noi != null && noi !== 0) return noi;
-  return egi - operatingExpenses;
+function computeNOI({ egi = 0, operatingExpenses = 0, noiOverride = null }) {
+  // Prefer computed NOI when we have both EGI and expenses
+  if (egi > 0 && operatingExpenses > 0) {
+    return egi - operatingExpenses;
+  }
+  // Fall back to an override only when inputs are missing
+  if (noiOverride != null && noiOverride !== 0) {
+    return noiOverride;
+  }
+  return 0;
 }
 
 // 8. Bank Loan Amount (LTV) and 9. Down Payment
@@ -147,6 +164,9 @@ function computeBreakEvenOccupancy({ operatingExpenses = 0, debtService = 0, gro
  * @returns {Object} Complete financial analysis
  */
 export function calculateFullAnalysis(scenarioData, options = {}) {
+  const enableDebug = options.debug === true;
+  const debug = enableDebug ? { inputs: {}, intermediates: {}, mappings: {} } : null;
+
   const {
     property = {},
     pricing_financing = {},
@@ -163,6 +183,13 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   const closingCostsPct = (pricing_financing.closing_costs_percent || 2.0) / 100;
   const acquisitionFeePct = (pricing_financing.acquisition_fee_percent || 1.0) / 100;
   const upfrontCapEx = pricing_financing.upfront_capex || 0;
+
+  if (debug) {
+    debug.inputs.purchasePrice = purchasePrice;
+    debug.inputs.closingCostsPct = closingCostsPct;
+    debug.inputs.acquisitionFeePct = acquisitionFeePct;
+    debug.inputs.upfrontCapEx = upfrontCapEx;
+  }
   
   // Discount rate for DCF valuation
   const discountRate = (underwriting?.discount_rate || 7.5) / 100;
@@ -178,12 +205,13 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   const annualDebtService = pricing_financing.annual_debt_service || 0;
   const downPayment = pricing_financing.down_payment || 0;
   const monthlyPayment = pricing_financing.monthly_payment || 0;
-  const interestRate = pricing_financing.interest_rate || 0;
+  const rawInterestRate = pricing_financing.interest_rate || 0;
+  const interestRate = rawInterestRate > 1 ? rawInterestRate / 100 : rawInterestRate;
   const loanTermYears = pricing_financing.term_years || 10;
   const amortYears = pricing_financing.amortization_years || 30;
   
-  // For display only
-  const ltv = loanAmount > 0 && purchasePrice > 0 ? (loanAmount / purchasePrice) * 100 : 0;
+  // For display only (percentage 0-100)
+  const ltvDecimal = loanAmount > 0 && purchasePrice > 0 ? (loanAmount / purchasePrice) : 0;
   const ioYears = 0;
   const loanFeesPct = 0;
   const financingFeesPct = 0;
@@ -191,6 +219,17 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   const financingFees = 0;
   const netLoanFunding = loanAmount;
   const totalEquityRequired = downPayment > 0 ? downPayment : (purchasePrice - loanAmount);
+
+  if (debug) {
+    debug.inputs.loanAmount = loanAmount;
+    debug.inputs.annualDebtService = annualDebtService;
+    debug.inputs.downPayment = downPayment;
+    debug.inputs.rawInterestRate = rawInterestRate;
+    debug.inputs.interestRate = interestRate;
+    debug.inputs.loanTermYears = loanTermYears;
+    debug.inputs.amortYears = amortYears;
+    debug.inputs.totalEquityRequired = totalEquityRequired;
+  }
   
   // === REVENUE CALCULATIONS ===
   // Prefer backend parsed data, but fall back to explicit formulas when needed
@@ -200,7 +239,10 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   const vacancyRate = pnl.vacancy_rate || 0;
 
   const effectiveGrossIncomeBackend = pnl.effective_gross_income || 0;
-  const totalOperatingExpenses = pnl.operating_expenses || 0;
+  const totalOperatingExpenses =
+    pnl.operating_expenses_t12 != null
+      ? pnl.operating_expenses_t12
+      : (pnl.operating_expenses != null ? pnl.operating_expenses : 0);
   
   const effectiveGrossIncome = computeEGI({
     potentialGrossIncome,
@@ -209,12 +251,28 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
     effectiveGrossIncome: effectiveGrossIncomeBackend
   });
 
-  const noiBackend = pnl.noi || 0;
+  const noiBackend =
+    pnl.noi_t12 != null
+      ? pnl.noi_t12
+      : (pnl.noi != null ? pnl.noi : 0);
   const noi = computeNOI({
     egi: effectiveGrossIncome,
     operatingExpenses: totalOperatingExpenses,
-    noi: noiBackend
+    noiOverride: noiBackend
   });
+
+  if (debug) {
+    debug.inputs.potentialGrossIncome = potentialGrossIncome;
+    debug.inputs.otherIncome = otherIncome;
+    debug.inputs.vacancyLoss = vacancyLoss;
+    debug.inputs.vacancyRate = vacancyRate;
+    debug.inputs.effectiveGrossIncomeBackend = effectiveGrossIncomeBackend;
+    debug.inputs.totalOperatingExpenses = totalOperatingExpenses;
+    debug.inputs.noiBackend = noiBackend;
+
+    debug.intermediates.effectiveGrossIncome = effectiveGrossIncome;
+    debug.intermediates.noi = noi;
+  }
   
   const expenseItems = {
     taxes: expenses.taxes || 0,
@@ -222,6 +280,7 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
     utilities: expenses.utilities || 0,
     repairs_maintenance: expenses.repairs_maintenance || 0,
     management: expenses.management || 0,
+    payroll: expenses.payroll || 0,
     admin: expenses.admin || 0,
     marketing: expenses.marketing || 0
   };
@@ -233,6 +292,15 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   const debtYield = loanAmount > 0 && noi > 0 ? (noi / loanAmount) * 100 : 0;
   const cashOnCash = totalEquityRequired > 0 ? (cashFlowAfterDebt / totalEquityRequired) * 100 : 0;
   const expenseRatio = effectiveGrossIncome > 0 && totalOperatingExpenses > 0 ? (totalOperatingExpenses / effectiveGrossIncome) * 100 : 0;
+
+  if (debug) {
+    debug.intermediates.capRate = capRate;
+    debug.intermediates.cashFlowAfterDebt = cashFlowAfterDebt;
+    debug.intermediates.dscr = dscr;
+    debug.intermediates.debtYield = debtYield;
+    debug.intermediates.cashOnCash = cashOnCash;
+    debug.intermediates.expenseRatio = expenseRatio;
+  }
   
   // === GROWTH RATES ===
   const incomeGrowthRate = (underwriting?.income_growth_rate || 0.0) / 100;
@@ -245,23 +313,36 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   const leasingCommissionsPct = (income_details?.leasing_commissions_pct || 0.0) / 100;
   
   // === MULTI-YEAR PROJECTIONS ===
+  // Use a single canonical holding period so all tabs match
   const holdingPeriod = underwriting?.holding_period || financing?.holding_period || 5;
   // Robust exit cap handling: avoid zero/insane values
   let rawExitCap =
     underwriting?.exit_cap_rate ??
     financing?.exit_cap_rate ??
-    (capRate || 6); // fall back to 6% if nothing provided
+    7.25; // default visible base-case exit cap used across UI
 
   if (!rawExitCap || rawExitCap <= 0 || rawExitCap > 20) {
-    rawExitCap = 6;
+    rawExitCap = 7.25;
   }
 
   const exitCapRate = rawExitCap / 100;
-  const marketCapRateY1 = (underwriting?.market_cap_rate_y1 || 6.5) / 100;
+  const marketCapRateY1 = (underwriting?.market_cap_rate_y1 || rawExitCap) / 100;
+
+  if (debug) {
+    debug.inputs.holdingPeriod = holdingPeriod;
+    debug.inputs.rawExitCap = rawExitCap;
+    debug.inputs.exitCapRate = exitCapRate;
+    debug.inputs.marketCapRateY1 = marketCapRateY1;
+  }
   
   const projections = [];
   const exitScenarios = []; // IRR for exit in each year
-  let currentRevenue = potentialGrossIncome;
+
+  // Base year for projections should line up with the Year 1
+  // effective gross income and normalized expenses already
+  // calculated above so that Year 1 in projections matches
+  // the core Year 1 metrics the rest of the app uses.
+  let currentEGI = effectiveGrossIncome;
   let currentExpenses = totalOperatingExpenses;
   let currentTaxes = expenseItems.taxes;
   let currentLoanBalance = loanAmount;
@@ -269,13 +350,16 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   for (let year = 1; year <= 10; year++) {
     // Apply growth rates
     if (year > 1) {
-      currentRevenue *= (1 + incomeGrowthRate);
+      currentEGI *= (1 + incomeGrowthRate);
       currentExpenses *= (1 + expenseGrowthRate);
       currentTaxes *= (1 + taxGrowthRate);
     }
-    
-    const yearVacancyLoss = currentRevenue * vacancyRate;
-    const yearEGI = currentRevenue - yearVacancyLoss + otherIncome;
+
+    // Treat EGI as the base "revenue" line; vacancy has already
+    // been accounted for in the Year 1 effectiveGrossIncome and
+    // we grow that net of vacancy going forward. This keeps the
+    // NOI path consistent with the value-add tab and core Year 1.
+    const yearEGI = currentEGI;
     const yearNOI = yearEGI - currentExpenses;
     
     // Capital expenditures (Tenant Improvements + Leasing Commissions + Recurring)
@@ -291,11 +375,11 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
     
     // Leasing commissions based on rent roll turnover (simplified: assume some units turn)
     if (year > 1) {
-      leasingCommissions = currentRevenue * leasingCommissionsPct;
+      leasingCommissions = yearEGI * leasingCommissionsPct;
     }
     
-    // Misc recurring CapEx (small amount each year)
-    miscCapEx = year > 1 ? 2 : 0; // $2 per year for misc items
+    // Misc recurring CapEx (set to 0 by default; handled explicitly elsewhere if needed)
+    miscCapEx = 0;
     
     const totalCapEx = tenantImprovements + leasingCommissions + miscCapEx;
     
@@ -326,7 +410,7 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
     const yearCashOnCash = totalEquityRequired > 0 ? (yearCashFlowAfterFinancing / totalEquityRequired) * 100 : 0;
     
     // Per SF metrics
-    const rentPerSF = currentRevenue / netRentableSF;
+    const rentPerSF = yearEGI / netRentableSF;
     const expensesPerSF = currentExpenses / netRentableSF;
     const noiPerSF = yearNOI / netRentableSF;
     
@@ -338,8 +422,8 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
     projections.push({
       year,
       // Income
-      potentialGrossIncome: Math.round(currentRevenue),
-      vacancyLoss: Math.round(yearVacancyLoss),
+      potentialGrossIncome: Math.round(yearEGI + vacancyLoss - otherIncome),
+      vacancyLoss: Math.round(vacancyLoss),
       otherIncome: Math.round(otherIncome),
       effectiveGrossIncome: Math.round(yearEGI),
       
@@ -444,6 +528,12 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   const terminalNOI = Math.max(projections[holdingPeriod - 1].noi, 0);
   const safeTerminalCap = exitCapRate > 0 ? exitCapRate : 0.06;
   const terminalValue = terminalNOI > 0 ? terminalNOI / safeTerminalCap : 0;
+
+  if (debug) {
+    debug.intermediates.terminalNOI = terminalNOI;
+    debug.intermediates.safeTerminalCap = safeTerminalCap;
+    debug.intermediates.terminalValue = terminalValue;
+  }
   
   // Calculate NPV of all cash flows
   const dcfCashFlows = projections.slice(0, holdingPeriod).map((p, idx) => {
@@ -456,6 +546,12 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   
   // Calculated purchase price based on Year 1 NOI and market cap rate
   const calculatedPurchasePrice = noi / marketCapRateY1;
+
+   if (debug) {
+    debug.intermediates.discountRate = discountRate;
+    debug.intermediates.dcfValue = dcfValue;
+    debug.intermediates.calculatedPurchasePrice = calculatedPurchasePrice;
+  }
   
   // === SOURCES & USES ===
   const sourcesAndUses = {
@@ -474,6 +570,100 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
       total: Math.round(totalAcquisitionCosts)
     }
   };
+
+  // === EXIT TIMELINES (DEBT & EQUITY) ===
+
+  // Debt timeline: derive from existing projections and financing inputs only.
+  // We treat loanBalance as end-of-year balance and back into principal/interest
+  // using the already-computed annualDebtService.
+  const debtTimeline = [];
+  if (loanAmount > 0 && projections.length > 0) {
+    let beginningBalance = loanAmount;
+    let cumulativePrincipalPaid = 0;
+
+    for (let i = 0; i < projections.length; i++) {
+      const p = projections[i];
+
+      // Only model through the loan term
+      if (p.year > loanTermYears) break;
+
+      const endingBalance = p.loanBalance;
+      const principalPaid = Math.max(0, beginningBalance - endingBalance);
+      const interestPaid = Math.max(0, annualDebtService - principalPaid);
+      cumulativePrincipalPaid += principalPaid;
+
+      const isExitYear = p.year === holdingPeriod;
+      const isMaturityYear = p.year === loanTermYears;
+
+      debtTimeline.push({
+        year: p.year,
+        beginningBalance: Math.round(beginningBalance),
+        endingBalance: Math.round(endingBalance),
+        annualDebtService: Math.round(annualDebtService),
+        principalPaid: Math.round(principalPaid),
+        interestPaid: Math.round(interestPaid),
+        cumulativePrincipalPaid: Math.round(cumulativePrincipalPaid),
+        loanPayoff: Math.round(p.loanPayoff || 0),
+        isExitYear,
+        isMaturityYear
+      });
+
+      beginningBalance = endingBalance;
+    }
+  }
+
+  // Equity exit timeline: track how levered cash flows return and grow equity
+  // over the modeled holding period. This is a pure reformat of existing
+  // projections/leveredCashFlows, not new economics.
+  const equityExitTimeline = {
+    initialEquity: Math.round(totalEquityRequired),
+    exitYear: holdingPeriod,
+    paybackYear: null,
+    finalEquityMultiple: leveredEquityMultiple,
+    finalIRR: leveredIRR,
+    rows: []
+  };
+
+  if (projections.length > 0 && holdingPeriod > 0 && holdingPeriod <= projections.length) {
+    let cumulativeDistributions = 0;
+
+    for (let yearIdx = 0; yearIdx < holdingPeriod; yearIdx++) {
+      const p = projections[yearIdx];
+
+      // Base annual distribution: cash flow after financing
+      let annualDistribution = p.cashFlowAfterFinancing;
+
+      // In the exit year, include the reversion cash flow as well
+      let exitDistribution = 0;
+      if (p.year === holdingPeriod) {
+        exitDistribution = p.reversionCashFlow || 0;
+      }
+
+      const totalDistribution = annualDistribution + exitDistribution;
+      cumulativeDistributions += totalDistribution;
+
+      const equityReturned = Math.min(totalEquityRequired, cumulativeDistributions);
+      const equityRemaining = Math.max(0, totalEquityRequired - cumulativeDistributions);
+      const equityReturnPct = totalEquityRequired > 0
+        ? Math.min(100, (equityReturned / totalEquityRequired) * 100)
+        : 0;
+
+      if (!equityExitTimeline.paybackYear && equityReturned >= totalEquityRequired && totalEquityRequired > 0) {
+        equityExitTimeline.paybackYear = p.year;
+      }
+
+      equityExitTimeline.rows.push({
+        year: p.year,
+        annualDistribution: Math.round(annualDistribution),
+        exitDistribution: Math.round(exitDistribution),
+        totalDistribution: Math.round(totalDistribution),
+        cumulativeDistributions: Math.round(cumulativeDistributions),
+        equityReturned: Math.round(equityReturned),
+        equityRemaining: Math.round(equityRemaining),
+        equityReturnPct
+      });
+    }
+  }
   
   // === ADVANCED FEATURES ===
   
@@ -521,9 +711,60 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
       { type: 'promote', lpPct: 0.80, gpPct: 0.20 }
     ]
   });
+
+  if (debug) {
+    debug.mappings.summary = {
+      currentNOI: 'year1.noi',
+      goingInCapRate: 'year1.capRate',
+      dscr: 'year1.dscr',
+      cashOnCash: 'year1.cashOnCash',
+      expenseRatio: 'year1.expenseRatio'
+    };
+    debug.mappings.dealStructure = {
+      totalEquityRequired: 'financing.totalEquityRequired',
+      loanAmount: 'financing.loanAmount',
+      ltv: 'financing.ltv',
+      annualDebtService: 'financing.annualDebtService'
+    };
+    debug.mappings.exit = {
+      exitNOI: `projections[${holdingPeriod - 1}].noi`,
+      grossSalesPrice: `projections[${holdingPeriod - 1}].grossSalesPrice`,
+      netSalesProceeds: `projections[${holdingPeriod - 1}].netSalesProceeds`,
+      reversionCashFlow: `projections[${holdingPeriod - 1}].reversionCashFlow`
+    };
+    debug.mappings.valueAdd = {
+      terminalValue: 'returns.terminalValue',
+      unleveredIRR: 'returns.unleveredIRR',
+      leveredIRR: 'returns.leveredIRR'
+    };
+  }
   
   // === RETURN OBJECT ===
   return {
+    // Normalized current/stabilized views used by AI + UI
+    current: {
+      price: Math.round(purchasePrice),
+      noi: Math.round(noi),
+      capRate: capRate,
+      dscr: dscr,
+      cashflow: Math.round(cashFlowAfterDebt),
+      expenseRatio: expenseRatio,
+      debtService: Math.round(annualDebtService),
+      occupancy: vacancyRate > 0 ? 1 - vacancyRate : null
+    },
+
+    stabilized: {
+      noi: projections[holdingPeriod - 1] ? Math.round(projections[holdingPeriod - 1].noi) : 0,
+      dscr: projections[holdingPeriod - 1] ? projections[holdingPeriod - 1].dscr : 0,
+      cashflow: projections[holdingPeriod - 1] ? Math.round(projections[holdingPeriod - 1].cashFlowAfterFinancing) : 0,
+      value: Math.round(terminalValue),
+      equityMultiple: leveredEquityMultiple,
+      irr: leveredIRR
+    },
+
+    total_project_cost: Math.round(totalAcquisitionCosts),
+    valueCreation: Math.round(terminalValue - totalAcquisitionCosts),
+
     // Year 1 Metrics
     year1: {
       potentialGrossIncome: Math.round(potentialGrossIncome),
@@ -548,7 +789,9 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
       upfrontCapEx: Math.round(upfrontCapEx),
       totalAcquisitionCosts: Math.round(totalAcquisitionCosts),
       pricePerSF: property.net_rentable_sf > 0 ? Math.round(purchasePrice / property.net_rentable_sf) : 0,
-      pricePerUnit: unit_mix.length > 0 ? Math.round(purchasePrice / unit_mix.length) : 0,
+      pricePerUnit: (property.total_units || property.units) > 0
+        ? Math.round(purchasePrice / (property.total_units || property.units))
+        : 0,
       dcfValue: Math.round(dcfValue),
       calculatedPurchasePrice: Math.round(calculatedPurchasePrice),
       replacementCost: property.net_rentable_sf > 0 ? Math.round(property.net_rentable_sf * replacementCostPSF) : 0,
@@ -558,7 +801,7 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
     // Financing
     financing: {
       loanAmount: Math.round(loanAmount),
-      ltv: ltv * 100,
+      ltv: ltvDecimal * 100,
       interestRate: interestRate * 100,
       loanTermYears,
       amortYears,
@@ -590,7 +833,13 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
     },
     
     // Exit (at holding period)
-    exit: projections[holdingPeriod - 1],
+    exit: projections[holdingPeriod - 1]
+      ? {
+          ...projections[holdingPeriod - 1],
+          debtTimeline,
+          equityExitTimeline
+        }
+      : null,
     
     // Projections
     projections: projections,
@@ -610,7 +859,8 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
     managementFees: managementFees,
     taxAnalysis: taxAnalysis,
     monthlyYear1: monthlyYear1,
-    multiTierWaterfall: multiTierWaterfall
+    multiTierWaterfall: multiTierWaterfall,
+    debug: debug
   };
 }
 

@@ -22,6 +22,12 @@ class DealV2(BaseModel):
     
     # Full parsed JSON from RealEstateParser
     parsed_json: Dict[str, Any]
+
+    # Optional scenario JSON reflecting user-edited wizard values
+    # If present, this should be used for AI underwriting instead of
+    # the original parsed_json so analysis matches what the user sees
+    # in the DealSniper wizard/results.
+    scenario_json: Optional[Dict[str, Any]] = None
     
     # Optional chat history
     chat_history: list = []
@@ -53,6 +59,7 @@ class DealV2(BaseModel):
             summary_noi=pnl.get("noi"),
             summary_cap_rate=pnl.get("cap_rate"),
             parsed_json=parsed_json,
+            scenario_json=None,
             chat_history=[]
         )
 
@@ -69,6 +76,8 @@ class ChatRequest(BaseModel):
     llm: str = "openai"
     model: str = "gpt-4o-mini"
     buy_box: dict = None
+    calc_json: dict = None
+    wizard_structure: dict = None
 
 
 class ChatResponse(BaseModel):
