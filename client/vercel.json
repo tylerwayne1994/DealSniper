@@ -28,8 +28,5 @@
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ],
-  "env": {
-    "REACT_APP_MAPBOX_TOKEN": "@react_app_mapbox_token"
-  }
+  ]
 }
