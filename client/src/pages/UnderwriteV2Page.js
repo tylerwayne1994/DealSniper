@@ -10,7 +10,7 @@ import {
 import ResultsPageV2 from '../components/ResultsPageV2';
 import { loadDealForResults } from '../lib/dealsService';
 
-const API_BASE = "http://127.0.0.1:8010";
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8010";
 
 // Styles (keeping consistent with V1)
 const styles = {
