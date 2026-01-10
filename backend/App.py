@@ -2816,14 +2816,39 @@ Base it on the actual metrics.
 - Include enrollment numbers (students per year) if available
 - Note: Student housing demand = rental opportunity
 
-### Net Absorption Rate (REQUIRED - Use Web Search)
-**You MUST research and report the NET ABSORPTION RATE for multifamily/apartment units in this market:**
-- Net Absorption Rate: The number of multifamily units absorbed (leased) minus units that became vacant over a specific period (typically quarterly or annually)
-- Report as: "X,XXX units absorbed in [Quarter/Year]" or "Net absorption rate: X.X%" 
-- Include context: Is absorption positive or negative? What does this mean for supply/demand balance?
-- Source: Search for recent multifamily market reports from CBRE, Cushman & Wakefield, CoStar, Apartment List, or local real estate associations
-- If county-level data not available, provide metro area absorption rates
-- This metric is CRITICAL for understanding if new supply is being absorbed or if the market is oversupplied
+### Net Absorption Rate (REQUIRED - NEVER SAY "DATA NOT AVAILABLE")
+**MANDATORY SECTION - You MUST actively search the web and find NET ABSORPTION RATE data:**
+
+**DO NOT skip this section. DO NOT say "data not available."**
+
+Search Strategy (use ALL of these):
+1. Search: "[City/Metro] multifamily net absorption Q4 2025" or "Q3 2025"
+2. Search: "[City] apartment market report CBRE 2025"
+3. Search: "[City] CoStar multifamily absorption 2025"
+4. Search: "[Metro] apartment vacancy and absorption Cushman Wakefield"
+5. Search: "[City] apartment market trends Yardi Matrix"
+6. Check local real estate association reports
+
+**What to Report (you MUST find at least one of these):**
+- **Quarterly Net Absorption:** "X,XXX units absorbed in Q[X] 2025" (positive = demand > supply, negative = oversupply)
+- **Annual Net Absorption:** "X,XXX units absorbed in 2024" or latest full year
+- **Metro-level absorption:** If ZIP/county data unavailable, use metro area figures (Kansas City metro, Phoenix metro, etc.)
+- **Absorption Rate %:** Absorption as % of total inventory
+- **Supply vs Demand Context:** "Market absorbed X units while X units delivered = balanced/tight/oversupplied"
+
+**Sources to cite:**
+- CBRE Quarterly Apartment Reports
+- Cushman & Wakefield Marketbeat Reports
+- CoStar Market Analytics
+- Yardi Matrix Multifamily Reports
+- Marcus & Millichap Research
+- Apartment List Market Reports
+- Local REALTOR associations
+
+**Why This Matters:**
+Net absorption tells investors if NEW supply is being leased quickly (tight market, rent growth) or sitting vacant (oversupply, rent pressure).
+
+**If you cannot find Q4 2025 data, use Q3 2025, Q2 2025, or latest 2024 annual figures. ALWAYS provide the most recent data available - do NOT leave this section empty.**
 
 ### Other Notable Amenities
 - Major shopping centers, entertainment districts
