@@ -9,6 +9,9 @@ ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://terra-investai.com",
+    "https://dealsniper.org",
+    "https://www.dealsniper.org",
+    "https://deal-sniper-ochre.vercel.app",
 ]
 
 def install_cors(app):
