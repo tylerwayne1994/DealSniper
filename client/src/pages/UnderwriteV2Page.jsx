@@ -167,6 +167,9 @@ function UnderwriteV2Page() {
   const [scenarioData, setScenarioData] = useState(null);
   const [modifiedFields, setModifiedFields] = useState({});
   
+  // AI Underwriting result
+  const [underwritingResult, setUnderwritingResult] = useState(null);
+  
   // Chat state
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
@@ -341,7 +344,8 @@ function UnderwriteV2Page() {
     const required = {
       property: ['address', 'units'],
       pricing_financing: ['price'],
-      pnl: ['gross_potential_rent', 'operating_expenses', 'noi']
+      // Require T12 income & expense inputs, not pro forma
+      pnl: ['gross_potential_rent', 'operating_expenses_t12', 'noi_t12']
     };
 
     Object.keys(required).forEach(section => {
@@ -409,6 +413,17 @@ function UnderwriteV2Page() {
     
     // Ensure required fields for calculations
     if (transformedData.pnl) {
+      // Map T12 vs pro forma NOI/expenses explicitly
+      transformedData.pnl.noi_t12 = transformedData.pnl.noi_t12 || transformedData.pnl.noi || 0;
+      transformedData.pnl.noi_proforma = transformedData.pnl.noi_proforma || 0;
+
+      transformedData.pnl.operating_expenses_t12 = transformedData.pnl.operating_expenses_t12 || transformedData.pnl.operating_expenses || 0;
+      transformedData.pnl.operating_expenses_proforma = transformedData.pnl.operating_expenses_proforma || 0;
+
+      // Backwards-compat: base legacy fields on T12
+      transformedData.pnl.noi = transformedData.pnl.noi_t12;
+      transformedData.pnl.operating_expenses = transformedData.pnl.operating_expenses_t12;
+
       transformedData.pnl.potential_gross_income = transformedData.pnl.gross_potential_rent || transformedData.pnl.potential_gross_income || 0;
       transformedData.pnl.vacancy_rate = (transformedData.pnl.vacancy_rate || 0.05) * 100; // Convert to percentage
     }
@@ -533,7 +548,7 @@ function UnderwriteV2Page() {
       <div style={styles.page}>
         <div style={styles.container}>
           <div style={styles.header}>
-            <h1 style={styles.title}>🎯 V2 Automatic Underwriter</h1>
+            <h1 style={styles.title}>V2 Automatic Underwriter</h1>
             <button 
               style={styles.homeButton}
               onClick={() => navigate('/')}
@@ -596,6 +611,24 @@ function UnderwriteV2Page() {
               </div>
             )}
 
+            {/* OR divider + Manual Entry button */}
+            <div style={{ margin: '32px 0', textAlign: 'center', position: 'relative' }}>
+              <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', height: 1, background: '#e5e7eb' }} />
+              <span style={{ position: 'relative', background: '#fff', padding: '0 16px', color: '#6b7280', fontSize: 14, fontWeight: 600 }}>OR</span>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <button
+                onClick={() => navigate('/manual-entry')}
+                style={{ 
+                  ...styles.button, 
+                  background: 'linear-gradient(135deg, #10b981, #059669)', 
+                  boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)' 
+                }}
+              >
+                <FileText size={18} /> Enter Manually
+              </button>
+            </div>
+
             {uploadError && (
               <div style={{ marginTop: 24, padding: 16, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
                 <AlertCircle size={20} color="#b91c1c" />
@@ -630,6 +663,17 @@ function UnderwriteV2Page() {
               style={{ ...styles.homeButton, background: '#f3f4f6' }}
             >
               <ArrowLeft size={16} /> Back to Upload
+            </button>
+            <button
+              onClick={() => navigate('/manual-entry')}
+              style={{ 
+                ...styles.homeButton, 
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                color: '#fff',
+                borderColor: '#10b981'
+              }}
+            >
+              <FileText size={16} /> Enter Manually
             </button>
           </div>
 
@@ -861,33 +905,45 @@ function UnderwriteV2Page() {
                 </div>
                 <div>
                   <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Operating Expenses *
+                    Total Operating Expenses - T12 *
                   </label>
                   <input
                     type="number"
                     style={{
                       ...styles.input,
-                      ...(validationErrors['pnl.operating_expenses'] ? styles.inputError : {}),
-                      ...(verifiedData?.pnl?.operating_expenses ? styles.inputSuccess : {})
+                      ...(validationErrors['pnl.operating_expenses_t12'] ? styles.inputError : {}),
+                      ...(verifiedData?.pnl?.operating_expenses_t12 ? styles.inputSuccess : {})
                     }}
-                    value={verifiedData?.pnl?.operating_expenses || ''}
-                    onChange={(e) => updateVerifiedField('pnl', 'operating_expenses', parseFloat(e.target.value))}
+                    value={verifiedData?.pnl?.operating_expenses_t12 || ''}
+                    onChange={(e) => updateVerifiedField('pnl', 'operating_expenses_t12', parseFloat(e.target.value))}
                     placeholder="$0"
                   />
                 </div>
                 <div>
                   <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Net Operating Income (NOI) *
+                    Net Operating Income (NOI) - T12 *
                   </label>
                   <input
                     type="number"
                     style={{
                       ...styles.input,
-                      ...(validationErrors['pnl.noi'] ? styles.inputError : {}),
-                      ...(verifiedData?.pnl?.noi ? styles.inputSuccess : {})
+                      ...(validationErrors['pnl.noi_t12'] ? styles.inputError : {}),
+                      ...(verifiedData?.pnl?.noi_t12 ? styles.inputSuccess : {})
                     }}
-                    value={verifiedData?.pnl?.noi || ''}
-                    onChange={(e) => updateVerifiedField('pnl', 'noi', parseFloat(e.target.value))}
+                    value={verifiedData?.pnl?.noi_t12 || ''}
+                    onChange={(e) => updateVerifiedField('pnl', 'noi_t12', parseFloat(e.target.value))}
+                    placeholder="$0"
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
+                    Net Operating Income (NOI) - Pro Forma (Optional)
+                  </label>
+                  <input
+                    type="number"
+                    style={styles.input}
+                    value={verifiedData?.pnl?.noi_proforma || ''}
+                    onChange={(e) => updateVerifiedField('pnl', 'noi_proforma', parseFloat(e.target.value))}
                     placeholder="$0"
                   />
                 </div>
@@ -958,6 +1014,18 @@ function UnderwriteV2Page() {
                     style={styles.input}
                     value={verifiedData?.expenses?.management || ''}
                     onChange={(e) => updateVerifiedField('expenses', 'management', parseFloat(e.target.value))}
+                    placeholder="$0"
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
+                    Payroll
+                  </label>
+                  <input
+                    type="number"
+                    style={styles.input}
+                    value={verifiedData?.expenses?.payroll || ''}
+                    onChange={(e) => updateVerifiedField('expenses', 'payroll', parseFloat(e.target.value))}
                     placeholder="$0"
                   />
                 </div>
@@ -1369,9 +1437,12 @@ function UnderwriteV2Page() {
   if (step === 'results') {
     return (
       <ResultsPageV2
+        dealId={dealId}
         scenarioData={scenarioData}
         modifiedFields={modifiedFields}
         calculations={calculations}
+        underwritingResult={underwritingResult}
+        setUnderwritingResult={setUnderwritingResult}
         messages={messages}
         inputValue={inputValue}
         setInputValue={setInputValue}

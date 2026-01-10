@@ -1,0 +1,103 @@
+{
+  "id": "8c9fbe51-e13e-41d4-b25f-be7bd7bbd785",
+  "created_at": "2026-01-03T00:15:21.524166",
+  "updated_at": "2026-01-03T00:16:30.290560",
+  "original_filename": "82 West - OM_2025 (1).pdf",
+  "parser_strategy": "claude_ocr",
+  "summary_address": "8208 Troost Ave, Kansas City, MO",
+  "summary_units": 78,
+  "summary_price": 0.0,
+  "summary_noi": 542288.0,
+  "summary_cap_rate": 0.0,
+  "parsed_json": {
+    "property": {
+      "address": "8208 Troost Ave",
+      "city": "Kansas City",
+      "state": "MO",
+      "zip": "64131",
+      "units": 78,
+      "year_built": 1960,
+      "rba_sqft": 56176,
+      "land_area_acres": 3.3,
+      "property_type": "Multifamily",
+      "property_class": "",
+      "parking_spaces": 86
+    },
+    "pricing_financing": {
+      "price": 0,
+      "price_per_unit": 0,
+      "price_per_sf": 0,
+      "loan_amount": 0,
+      "down_payment": 0,
+      "interest_rate": 0,
+      "ltv": 0,
+      "term_years": 0,
+      "amortization_years": 0
+    },
+    "pnl": {
+      "gross_potential_rent": 1070246,
+      "other_income": 33044,
+      "vacancy_rate": 5.0,
+      "vacancy_amount": 60120,
+      "vacancy_rate_t12": 0,
+      "vacancy_rate_current": 9.0,
+      "vacancy_rate_stabilized": 5.0,
+      "effective_gross_income": 1139252,
+      "operating_expenses": 533676,
+      "noi": 542288,
+      "noi_t12": 542288,
+      "noi_t3": 485687,
+      "noi_t1": 0,
+      "noi_trailing_1": 0,
+      "noi_proforma": 605576,
+      "noi_stabilized": 0,
+      "cap_rate": 0,
+      "cap_rate_t12": 0,
+      "cap_rate_proforma": 0,
+      "cap_rate_stabilized": 0,
+      "expense_ratio": 46.84,
+      "expense_ratio_t12": 47.37,
+      "expense_ratio_proforma": 46.84
+    },
+    "expenses": {
+      "taxes": 51622,
+      "insurance": 53953,
+      "utilities": 161588,
+      "repairs_maintenance": 60982,
+      "management": 34178,
+      "payroll": 85494,
+      "admin": 15416,
+      "marketing": 2780,
+      "other": 44263,
+      "total": 486970
+    },
+    "underwriting": {
+      "holding_period": 0,
+      "exit_cap_rate": 0
+    },
+    "unit_mix": [
+      {
+        "type": "1 Bedroom / 1 Bathroom",
+        "units": 42,
+        "unit_sf": 688,
+        "rent_current": 1100,
+        "rent_market": 1220
+      },
+      {
+        "type": "2 Bedroom / 1 Bathroom",
+        "units": 36,
+        "unit_sf": 758,
+        "rent_current": 1194,
+        "rent_market": 1360
+      }
+    ],
+    "_underwriting_result": {
+      "analysis": "────────────────────────────────────────────────────────\n## 1. DEAL SNAPSHOT\n────────────────────────────────────────────────────────\n\n- Purchase price: Not provided\n- Current NOI: $542,288\n- Pro forma NOI: $605,576\n- Current cap rate: Not provided\n- Stabilized cap rate: Not provided\n- Expense ratio: 46.84%\n- Occupancy: Not available\n- Price per unit: Not available\n- Price per SF: Not available\n\nThis deal is a total mess with no established purchase price or cap rate provided. Broker seems to be inflating expectations without basis, and key numbers are missing. Something definitely smells off here.\n\n────────────────────────────────────────────────────────\n## 2. DAY-ONE FINANCIALS (Based on calc_json)\n────────────────────────────────────────────────────────\n\nCritical financials like total debt service, cashflow, and DSCR are completely missing. This lack of basic information makes it impossible to assess the viability of the deal.\n\nRed flags all around — without these key metrics, we cannot evaluate the risk and potential returns effectively.\n\n────────────────────────────────────────────────────────\n## 3. SELECTED DEAL STRUCTURE (wizard_structure)\n────────────────────────────────────────────────────────\n\n**Financing Strategy: Not provided (missing in wizard structure)**  \n- Bank loan amount: Missing  \n- Seller note amount: Missing  \n- Interest rate(s): Missing  \n- IO or amortization: Missing  \n- Balloon: Missing  \n- Real's cash in: Missing  \n- DSCR using this structure: Missing  \n- Cashflow day one: Missing  \n\nThis structure does not work based on the numbers because there is no information available to analyze.\n\n────────────────────────────────────────────────────────\n## 4. VALUE-ADD / NOI ENGINEERING (use deal_json + calc_json)\n────────────────────────────────────────────────────────\n\n- Rent upside from unit mix: Current rents are below market levels; however, specific numbers are not provided.\n- Loss-to-lease: Not quantifiable without current vs market rent details.\n- RUBS or utility billback opportunity: Not specified.\n- Expense normalization: Expense ratio is relatively high, but specific benchmarks are missing for full analysis.\n- Other income opportunities: Not detailed.\n\nThe potential for value-add is mentioned, but without concrete numbers, it’s hard to gauge what the real upside could be. There’s a lack of specifics on how to execute any value-add strategy effectively.\n\n────────────────────────────────────────────────────────\n## 5. REFI ANALYSIS (calc_json.refi)\n────────────────────────────────────────────────────────\n\nRefi analysis is entirely missing, including:\n- Stabilized NOI: Missing\n- Exit cap: Missing\n- Stabilized value: Missing\n- Refi loan amount: Missing\n- Payoff amount: Missing\n- Cash-out: Missing\n- Post-refi DSCR: Missing\n- Post-refi cashflow: Missing\n\nSince the refi numbers are not provided, we can’t assess any potential buyout of partners or payoff of seller notes. This exclusion is a significant risk.\n\n────────────────────────────────────────────────────────\n## 6. RISK SUMMARY\n────────────────────────────────────────────────────────\n\n- Critical financial metrics are missing, making it impossible to determine viability.\n- DSCR and cashflow metrics that would show financial health are absent.\n- High dependency on broker pro forma with no realistic backing.\n- Vacancy risk is not assessed due to lack of current occupancy data.\n- Overall, the deal lacks transparency and essential data.\n\nThis is a high-risk situation with no solid foundation for investment.\n\n────────────────────────────────────────────────────────\n## 7. BUY BOX TEST (if buy_box provided)\n────────────────────────────────────────────────────────\n\nNo buy box supplied — applying conservative underwriting standards.\n\n────────────────────────────────────────────────────────\n## 8. VERDICT (MANDATORY)\n────────────────────────────────────────────────────────\n\n🔴 PASS  \n\nPASS because the entire deal depends on missing critical metrics and unrealistic expectations.",
+      "verdict": "PASS",
+      "timestamp": null
+    },
+    "_underwriting_summary_v2": "Property located at [address], consisting of [units] units. Current price is [price] with an NOI of [NOI] and a cap rate of [cap rate]. Leverage is indicated, but DSCR and cashflow metrics are not provided, implying potential risk. The exit value shows significant upside with a value creation of [valueCreation]. Verdict: PASS due to strong upside potential."
+  },
+  "scenario_json": null,
+  "chat_history": []
+}

@@ -185,6 +185,7 @@ export const CostSegAnalysisView = ({ dealId, scenarioData, fullCalcs }) => {
     hold_period_years: 5,
     exit_sale_price: 0,
     exit_cap_rate: 6,
+    exit_noi: 0,
     initial_equity: 0
   });
   
@@ -194,13 +195,15 @@ export const CostSegAnalysisView = ({ dealId, scenarioData, fullCalcs }) => {
       const pricing = scenarioData.pricing_financing || {};
       const property = scenarioData.property || {};
       
+      const purchasePrice = pricing.price || pricing.purchase_price || 0;
       setInputs(prev => ({
         ...prev,
-        purchase_price: pricing.price || pricing.purchase_price || prev.purchase_price,
-        closing_costs: pricing.closing_costs || (pricing.price || 0) * 0.02,
+        purchase_price: purchasePrice,
+        closing_costs: pricing.closing_costs || purchasePrice * 0.02,
         hold_period_years: pricing.hold_period || 5,
         exit_cap_rate: pricing.exit_cap_rate || 6,
-        initial_equity: (pricing.price || 0) * 0.25 + (pricing.closing_costs || 0),
+        exit_sale_price: purchasePrice,  // Default to same as purchase price
+        initial_equity: purchasePrice * 0.25 + (pricing.closing_costs || purchasePrice * 0.02),
         is_residential: (property.type || '').toLowerCase().includes('multifamily') || 
                         (property.type || '').toLowerCase().includes('apartment')
       }));
@@ -208,11 +211,13 @@ export const CostSegAnalysisView = ({ dealId, scenarioData, fullCalcs }) => {
   }, [scenarioData]);
   
   // Fetch cost seg analysis
-  const fetchCostSegAnalysis = useCallback(async () => {
+  const fetchCostSegAnalysis = useCallback(async (overrideInputs) => {
     if (!dealId) {
       setError('No deal ID available');
       return;
     }
+
+    const payload = overrideInputs || inputs;
     
     setLoading(true);
     setError(null);
@@ -221,7 +226,7 @@ export const CostSegAnalysisView = ({ dealId, scenarioData, fullCalcs }) => {
       const response = await fetch(`http://localhost:8010/v2/deals/${dealId}/costseg`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(inputs)
+        body: JSON.stringify(payload)
       });
       
       const data = await response.json();
@@ -243,12 +248,16 @@ export const CostSegAnalysisView = ({ dealId, scenarioData, fullCalcs }) => {
     }
   }, [dealId, inputs]);
   
-  // Calculate on mount
+  // Auto-calculate whenever inputs are ready / change (debounced)
   useEffect(() => {
-    if (dealId && inputs.purchase_price > 0) {
+    if (!dealId || !inputs.purchase_price || inputs.purchase_price <= 0) return;
+
+    const timeoutId = setTimeout(() => {
       fetchCostSegAnalysis();
-    }
-  }, [dealId]); // Only on mount/dealId change
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [dealId, inputs, fetchCostSegAnalysis]);
   
   // Handle input change
   const handleInputChange = (field, value) => {
@@ -462,6 +471,12 @@ export const CostSegAnalysisView = ({ dealId, scenarioData, fullCalcs }) => {
                 max={10}
                 step={0.25}
               />
+              <NumberInput
+                label="Exit Sale Price"
+                value={inputs.exit_sale_price}
+                onChange={(v) => handleInputChange('exit_sale_price', v)}
+                description="Override estimated exit value"
+              />
             </div>
           </div>
         </div>
@@ -472,12 +487,12 @@ export const CostSegAnalysisView = ({ dealId, scenarioData, fullCalcs }) => {
         <>
           {/* Top Metric Cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px', marginBottom: '24px' }}>
-            <div style={{ backgroundColor: '#1e293b', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', top: '10px', right: '10px', opacity: 0.1 }}>
-                <TrendingUp size={48} color="white" />
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+              <div style={{ position: 'absolute', top: '10px', right: '10px', opacity: 0.06 }}>
+                <TrendingUp size={48} color="#0f172a" />
               </div>
-              <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>After-Tax IRR</div>
-              <div style={{ fontSize: '28px', fontWeight: '800', color: 'white', marginBottom: '6px' }}>
+              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>After-Tax IRR</div>
+              <div style={{ fontSize: '28px', fontWeight: '800', color: '#111827', marginBottom: '6px' }}>
                 {pct(costSegData.metrics?.after_tax_irr)}
               </div>
               <div style={{ fontSize: '11px', color: '#10b981', fontWeight: '600' }}>
@@ -487,17 +502,17 @@ export const CostSegAnalysisView = ({ dealId, scenarioData, fullCalcs }) => {
               </div>
             </div>
 
-            <div style={{ backgroundColor: '#1e293b', borderRadius: '12px', padding: '20px' }}>
-              <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>After-Tax Multiple</div>
-              <div style={{ fontSize: '28px', fontWeight: '800', color: 'white', marginBottom: '6px' }}>
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #e5e7eb' }}>
+              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>After-Tax Multiple</div>
+              <div style={{ fontSize: '28px', fontWeight: '800', color: '#111827', marginBottom: '6px' }}>
                 {(costSegData.metrics?.after_tax_equity_multiple || 0).toFixed(2)}x
               </div>
-              <div style={{ fontSize: '11px', color: '#94a3b8' }}>Return on equity</div>
+              <div style={{ fontSize: '11px', color: '#6b7280' }}>Return on equity</div>
             </div>
 
-            <div style={{ backgroundColor: '#1e293b', borderRadius: '12px', padding: '20px' }}>
-              <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>Year-1 Bonus</div>
-              <div style={{ fontSize: '28px', fontWeight: '800', color: 'white', marginBottom: '6px' }}>
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #e5e7eb' }}>
+              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>Year-1 Bonus</div>
+              <div style={{ fontSize: '28px', fontWeight: '800', color: '#111827', marginBottom: '6px' }}>
                 {fmt(costSegData.metrics?.year_1_bonus_depreciation)}
               </div>
               <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600' }}>
@@ -505,22 +520,22 @@ export const CostSegAnalysisView = ({ dealId, scenarioData, fullCalcs }) => {
               </div>
             </div>
 
-            <div style={{ backgroundColor: '#1e293b', borderRadius: '12px', padding: '20px' }}>
-              <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>Year-1 Tax Shield</div>
-              <div style={{ fontSize: '28px', fontWeight: '800', color: 'white', marginBottom: '6px' }}>
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #e5e7eb' }}>
+              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>Year-1 Tax Shield</div>
+              <div style={{ fontSize: '28px', fontWeight: '800', color: '#111827', marginBottom: '6px' }}>
                 {fmt(costSegData.metrics?.year_1_tax_shield)}
               </div>
-              <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+              <div style={{ fontSize: '11px', color: '#6b7280' }}>
                 {(inputs.federal_tax_rate + inputs.state_tax_rate).toFixed(0)}% marginal
               </div>
             </div>
 
-            <div style={{ backgroundColor: '#1e293b', borderRadius: '12px', padding: '20px' }}>
-              <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>Total Depr (Hold)</div>
-              <div style={{ fontSize: '28px', fontWeight: '800', color: 'white', marginBottom: '6px' }}>
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #e5e7eb' }}>
+              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>Total Depr (Hold)</div>
+              <div style={{ fontSize: '28px', fontWeight: '800', color: '#111827', marginBottom: '6px' }}>
                 {fmt(costSegData.metrics?.total_depreciation_over_hold)}
               </div>
-              <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+              <div style={{ fontSize: '11px', color: '#6b7280' }}>
                 Over {inputs.hold_period_years} years
               </div>
             </div>

@@ -1,0 +1,2578 @@
+[
+  {
+    "id": "u-1766200307085",
+    "timestamp": "2025-12-19T19:11:47.085543",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766200394673",
+    "timestamp": "2025-12-19T19:13:14.673821",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766200457766",
+    "timestamp": "2025-12-19T19:14:17.766984",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766200872683",
+    "timestamp": "2025-12-19T19:21:12.683227",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766203048842",
+    "timestamp": "2025-12-19T19:57:28.842220",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766203600513",
+    "timestamp": "2025-12-19T20:06:40.513522",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766203665465",
+    "timestamp": "2025-12-19T20:07:45.466001",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766205434587",
+    "timestamp": "2025-12-19T20:37:14.587677",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766205923506",
+    "timestamp": "2025-12-19T20:45:23.506584",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766207676639",
+    "timestamp": "2025-12-19T21:14:36.639605",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766215607914",
+    "timestamp": "2025-12-19T23:26:47.914708",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766218456558",
+    "timestamp": "2025-12-20T00:14:16.558170",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766218980475",
+    "timestamp": "2025-12-20T00:23:00.475629",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766219842767",
+    "timestamp": "2025-12-20T00:37:22.767496",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766222489482",
+    "timestamp": "2025-12-20T01:21:29.482103",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766226393495",
+    "timestamp": "2025-12-20T02:26:33.495154",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766230559704",
+    "timestamp": "2025-12-20T03:35:59.704442",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766232030442",
+    "timestamp": "2025-12-20T04:00:30.442202",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766279374200",
+    "timestamp": "2025-12-20T17:09:34.200783",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766279396032",
+    "timestamp": "2025-12-20T17:09:56.032564",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1766279398014",
+    "timestamp": "2025-12-20T17:09:58.014075",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1766279421305",
+    "timestamp": "2025-12-20T17:10:21.305736",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1766279423371",
+    "timestamp": "2025-12-20T17:10:23.371773",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1766279449422",
+    "timestamp": "2025-12-20T17:10:49.422866",
+    "user_id": null,
+    "action": "noi_analysis",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1766279462293",
+    "timestamp": "2025-12-20T17:11:02.293692",
+    "user_id": null,
+    "action": "structure_analysis",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1766280336614",
+    "timestamp": "2025-12-20T17:25:36.614266",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1766280338377",
+    "timestamp": "2025-12-20T17:25:38.377802",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1766280356215",
+    "timestamp": "2025-12-20T17:25:56.215793",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1766280358513",
+    "timestamp": "2025-12-20T17:25:58.513778",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1766280640663",
+    "timestamp": "2025-12-20T17:30:40.663861",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1766280642616",
+    "timestamp": "2025-12-20T17:30:42.616378",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1766280663586",
+    "timestamp": "2025-12-20T17:31:03.586685",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1766280665229",
+    "timestamp": "2025-12-20T17:31:05.229500",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1766280672550",
+    "timestamp": "2025-12-20T17:31:12.550086",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766586420673",
+    "timestamp": "2025-12-24T06:27:00.673734",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1766586437415",
+    "timestamp": "2025-12-24T06:27:17.415195",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1766586439764",
+    "timestamp": "2025-12-24T06:27:19.764154",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1766586458406",
+    "timestamp": "2025-12-24T06:27:38.406655",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1766586460739",
+    "timestamp": "2025-12-24T06:27:40.739078",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767350373293",
+    "timestamp": "2026-01-02T02:39:33.293180",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767350391422",
+    "timestamp": "2026-01-02T02:39:51.422460",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767350393467",
+    "timestamp": "2026-01-02T02:39:53.467543",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767350409547",
+    "timestamp": "2026-01-02T02:40:09.547062",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767350411590",
+    "timestamp": "2026-01-02T02:40:11.590584",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767351268216",
+    "timestamp": "2026-01-02T02:54:28.216968",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767351283152",
+    "timestamp": "2026-01-02T02:54:43.152537",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767351285251",
+    "timestamp": "2026-01-02T02:54:45.251236",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767351301285",
+    "timestamp": "2026-01-02T02:55:01.285441",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767351303305",
+    "timestamp": "2026-01-02T02:55:03.305285",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767351575339",
+    "timestamp": "2026-01-02T02:59:35.339333",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767351770268",
+    "timestamp": "2026-01-02T03:02:50.268873",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767351787498",
+    "timestamp": "2026-01-02T03:03:07.498225",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767351789605",
+    "timestamp": "2026-01-02T03:03:09.605935",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767351805089",
+    "timestamp": "2026-01-02T03:03:25.089373",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767351807814",
+    "timestamp": "2026-01-02T03:03:27.814136",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767353159109",
+    "timestamp": "2026-01-02T03:25:59.109776",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767353171180",
+    "timestamp": "2026-01-02T03:26:11.180868",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767353173889",
+    "timestamp": "2026-01-02T03:26:13.889175",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767353186443",
+    "timestamp": "2026-01-02T03:26:26.443678",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767353187443",
+    "timestamp": "2026-01-02T03:26:27.443782",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767355954489",
+    "timestamp": "2026-01-02T04:12:34.489912",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767355966808",
+    "timestamp": "2026-01-02T04:12:46.808050",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767355968682",
+    "timestamp": "2026-01-02T04:12:48.682042",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767355981494",
+    "timestamp": "2026-01-02T04:13:01.494976",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767355983997",
+    "timestamp": "2026-01-02T04:13:03.997576",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767357019187",
+    "timestamp": "2026-01-02T04:30:19.187466",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767357037909",
+    "timestamp": "2026-01-02T04:30:37.909562",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767357039082",
+    "timestamp": "2026-01-02T04:30:39.082246",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767357059408",
+    "timestamp": "2026-01-02T04:30:59.408557",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767357061056",
+    "timestamp": "2026-01-02T04:31:01.056889",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767357425909",
+    "timestamp": "2026-01-02T04:37:05.909132",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767357441072",
+    "timestamp": "2026-01-02T04:37:21.072699",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767357443124",
+    "timestamp": "2026-01-02T04:37:23.124877",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767357460933",
+    "timestamp": "2026-01-02T04:37:40.933591",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767357462708",
+    "timestamp": "2026-01-02T04:37:42.708281",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767358417395",
+    "timestamp": "2026-01-02T04:53:37.395581",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767358430879",
+    "timestamp": "2026-01-02T04:53:50.879247",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767358432406",
+    "timestamp": "2026-01-02T04:53:52.406089",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767358454662",
+    "timestamp": "2026-01-02T04:54:14.662901",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767358456441",
+    "timestamp": "2026-01-02T04:54:16.441855",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767359253647",
+    "timestamp": "2026-01-02T05:07:33.647173",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767359255172",
+    "timestamp": "2026-01-02T05:07:35.172465",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767359268922",
+    "timestamp": "2026-01-02T05:07:48.922929",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767359270651",
+    "timestamp": "2026-01-02T05:07:50.651235",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767359278186",
+    "timestamp": "2026-01-02T05:07:58.186849",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767360884537",
+    "timestamp": "2026-01-02T05:34:44.537066",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767360903978",
+    "timestamp": "2026-01-02T05:35:03.978465",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767360905764",
+    "timestamp": "2026-01-02T05:35:05.764395",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767360920708",
+    "timestamp": "2026-01-02T05:35:20.708082",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767360922108",
+    "timestamp": "2026-01-02T05:35:22.108967",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767361049555",
+    "timestamp": "2026-01-02T05:37:29.555542",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767361065495",
+    "timestamp": "2026-01-02T05:37:45.495574",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767361067259",
+    "timestamp": "2026-01-02T05:37:47.259018",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767361085093",
+    "timestamp": "2026-01-02T05:38:05.093811",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767361087055",
+    "timestamp": "2026-01-02T05:38:07.055605",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767428150414",
+    "timestamp": "2026-01-03T00:15:50.414083",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767428167064",
+    "timestamp": "2026-01-03T00:16:07.064098",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767428170442",
+    "timestamp": "2026-01-03T00:16:10.442242",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767428188013",
+    "timestamp": "2026-01-03T00:16:28.013084",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767428190288",
+    "timestamp": "2026-01-03T00:16:30.288762",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767429651835",
+    "timestamp": "2026-01-03T00:40:51.835094",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767429669485",
+    "timestamp": "2026-01-03T00:41:09.485400",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767429671814",
+    "timestamp": "2026-01-03T00:41:11.814678",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767429686989",
+    "timestamp": "2026-01-03T00:41:26.989538",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767429690876",
+    "timestamp": "2026-01-03T00:41:30.876762",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767431221393",
+    "timestamp": "2026-01-03T01:07:01.393600",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767431234036",
+    "timestamp": "2026-01-03T01:07:14.036532",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767431235572",
+    "timestamp": "2026-01-03T01:07:15.572325",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767431250420",
+    "timestamp": "2026-01-03T01:07:30.420788",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767431252980",
+    "timestamp": "2026-01-03T01:07:32.980752",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767437238994",
+    "timestamp": "2026-01-03T02:47:18.994692",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767437252668",
+    "timestamp": "2026-01-03T02:47:32.668514",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767437255061",
+    "timestamp": "2026-01-03T02:47:35.061393",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767437273163",
+    "timestamp": "2026-01-03T02:47:53.163992",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767437275016",
+    "timestamp": "2026-01-03T02:47:55.016510",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767441518539",
+    "timestamp": "2026-01-03T03:58:38.540015",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767441542492",
+    "timestamp": "2026-01-03T03:59:02.492198",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767441544710",
+    "timestamp": "2026-01-03T03:59:04.710986",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767441557781",
+    "timestamp": "2026-01-03T03:59:17.781685",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767441559705",
+    "timestamp": "2026-01-03T03:59:19.705937",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767444986765",
+    "timestamp": "2026-01-03T04:56:26.765019",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767445008844",
+    "timestamp": "2026-01-03T04:56:48.844233",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767445010498",
+    "timestamp": "2026-01-03T04:56:50.498199",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767445024855",
+    "timestamp": "2026-01-03T04:57:04.855724",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767445027117",
+    "timestamp": "2026-01-03T04:57:07.117088",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767505056991",
+    "timestamp": "2026-01-03T21:37:36.991840",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767505096097",
+    "timestamp": "2026-01-03T21:38:16.097870",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767505099215",
+    "timestamp": "2026-01-03T21:38:19.215917",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767505122951",
+    "timestamp": "2026-01-03T21:38:42.951218",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767505124824",
+    "timestamp": "2026-01-03T21:38:44.824221",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767508837321",
+    "timestamp": "2026-01-03T22:40:37.321983",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767508858792",
+    "timestamp": "2026-01-03T22:40:58.792132",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767508860582",
+    "timestamp": "2026-01-03T22:41:00.582700",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767508872549",
+    "timestamp": "2026-01-03T22:41:12.549562",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767508875018",
+    "timestamp": "2026-01-03T22:41:15.018737",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767609633198",
+    "timestamp": "2026-01-05T02:40:33.198153",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767609655253",
+    "timestamp": "2026-01-05T02:40:55.253663",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767609657749",
+    "timestamp": "2026-01-05T02:40:57.749578",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767609668743",
+    "timestamp": "2026-01-05T02:41:08.743920",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767609670619",
+    "timestamp": "2026-01-05T02:41:10.619223",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767609827369",
+    "timestamp": "2026-01-05T02:43:47.369335",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767609841165",
+    "timestamp": "2026-01-05T02:44:01.165224",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767609843907",
+    "timestamp": "2026-01-05T02:44:03.907184",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767609863980",
+    "timestamp": "2026-01-05T02:44:23.980416",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767609865366",
+    "timestamp": "2026-01-05T02:44:25.366722",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767689020696",
+    "timestamp": "2026-01-06T00:43:40.696136",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767689050068",
+    "timestamp": "2026-01-06T00:44:10.068868",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767689052421",
+    "timestamp": "2026-01-06T00:44:12.421516",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767689068597",
+    "timestamp": "2026-01-06T00:44:28.597379",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767689070860",
+    "timestamp": "2026-01-06T00:44:30.860961",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767691990919",
+    "timestamp": "2026-01-06T01:33:10.919947",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767692021529",
+    "timestamp": "2026-01-06T01:33:41.529158",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767692023730",
+    "timestamp": "2026-01-06T01:33:43.730013",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767692037880",
+    "timestamp": "2026-01-06T01:33:57.880544",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767692039651",
+    "timestamp": "2026-01-06T01:33:59.651498",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767692208729",
+    "timestamp": "2026-01-06T01:36:48.729561",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767692210018",
+    "timestamp": "2026-01-06T01:36:50.018219",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767692217238",
+    "timestamp": "2026-01-06T01:36:57.238746",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767692237156",
+    "timestamp": "2026-01-06T01:37:17.156313",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767692238908",
+    "timestamp": "2026-01-06T01:37:18.908420",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767695925818",
+    "timestamp": "2026-01-06T02:38:45.818414",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767695928106",
+    "timestamp": "2026-01-06T02:38:48.106471",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767695944895",
+    "timestamp": "2026-01-06T02:39:04.895933",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767695946448",
+    "timestamp": "2026-01-06T02:39:06.448770",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767695954626",
+    "timestamp": "2026-01-06T02:39:14.626934",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767704239321",
+    "timestamp": "2026-01-06T04:57:19.321827",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767704242290",
+    "timestamp": "2026-01-06T04:57:22.290100",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767704256501",
+    "timestamp": "2026-01-06T04:57:36.501974",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767704258644",
+    "timestamp": "2026-01-06T04:57:38.644887",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767704737249",
+    "timestamp": "2026-01-06T05:05:37.249017",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767704739428",
+    "timestamp": "2026-01-06T05:05:39.428186",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767704759896",
+    "timestamp": "2026-01-06T05:05:59.896133",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767704761881",
+    "timestamp": "2026-01-06T05:06:01.881620",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767861225088",
+    "timestamp": "2026-01-08T00:33:45.088903",
+    "user_id": null,
+    "action": "market_cap_rate",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767861254653",
+    "timestamp": "2026-01-08T00:34:14.653743",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767861257492",
+    "timestamp": "2026-01-08T00:34:17.492677",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767861274704",
+    "timestamp": "2026-01-08T00:34:34.704647",
+    "user_id": null,
+    "action": "underwrite_full",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767861277140",
+    "timestamp": "2026-01-08T00:34:37.140269",
+    "user_id": null,
+    "action": "underwrite_summary",
+    "model": "gpt-4o-mini",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {
+      "messages_count": 1
+    }
+  },
+  {
+    "id": "u-1767862757910",
+    "timestamp": "2026-01-08T00:59:17.910360",
+    "user_id": null,
+    "action": "generate_pitch_deck",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767863141545",
+    "timestamp": "2026-01-08T01:05:41.545506",
+    "user_id": null,
+    "action": "generate_pitch_deck",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767864252744",
+    "timestamp": "2026-01-08T01:24:12.744380",
+    "user_id": null,
+    "action": "generate_pitch_deck",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767864458677",
+    "timestamp": "2026-01-08T01:27:38.677043",
+    "user_id": null,
+    "action": "generate_pitch_deck",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767864625128",
+    "timestamp": "2026-01-08T01:30:25.128742",
+    "user_id": null,
+    "action": "generate_pitch_deck",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767865452988",
+    "timestamp": "2026-01-08T01:44:12.988995",
+    "user_id": null,
+    "action": "generate_pitch_deck",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767870869315",
+    "timestamp": "2026-01-08T03:14:29.315690",
+    "user_id": null,
+    "action": "generate_pitch_deck",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767872948919",
+    "timestamp": "2026-01-08T03:49:08.919746",
+    "user_id": null,
+    "action": "generate_pitch_deck",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767873581483",
+    "timestamp": "2026-01-08T03:59:41.483026",
+    "user_id": null,
+    "action": "generate_pitch_deck",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1767874670611",
+    "timestamp": "2026-01-08T04:17:50.611507",
+    "user_id": null,
+    "action": "generate_pitch_deck",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1768037510160",
+    "timestamp": "2026-01-10T01:31:50.160305",
+    "user_id": null,
+    "action": "generate_pitch_deck",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1768038244281",
+    "timestamp": "2026-01-10T01:44:04.281403",
+    "user_id": null,
+    "action": "generate_pitch_deck",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1768042174078",
+    "timestamp": "2026-01-10T02:49:34.078207",
+    "user_id": null,
+    "action": "generate_pitch_deck",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1768047197595",
+    "timestamp": "2026-01-10T04:13:17.595302",
+    "user_id": null,
+    "action": "generate_pitch_deck",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  },
+  {
+    "id": "u-1768047965184",
+    "timestamp": "2026-01-10T04:26:05.184274",
+    "user_id": null,
+    "action": "generate_pitch_deck",
+    "model": "claude-sonnet-4-5-20250929",
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "metadata": {}
+  }
+]

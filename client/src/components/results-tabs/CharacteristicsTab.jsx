@@ -53,7 +53,46 @@ export default function CharacteristicsTab(props) {
   const totalUtilitiesMonthly = ((expensesData.gas || 0) + (expensesData.electrical || 0) + (expensesData.water || 0) + (expensesData.sewer || 0) + (expensesData.trash || 0)) / 12;
   const grossPotentialRent = pnl.scheduled_gross_rent_current || scenarioData.income?.gross_potential_rent || 0;
   const otherIncome = scenarioData.income?.other_income || 0;
-  const effectiveGrossIncome = pnl.effective_gross_income_current || (grossPotentialRent - (grossPotentialRent * (expensesData.vacancy_rate || 5) / 100) + otherIncome);
+
+  // Derive default vacancy, management, and CapEx rates from parsed data so sliders aren’t zero
+  let vacancyFraction = 0;
+  if (pnl.vacancy_rate != null) {
+    vacancyFraction = pnl.vacancy_rate > 1 ? pnl.vacancy_rate / 100 : pnl.vacancy_rate;
+  } else if (expensesData.vacancy_rate != null) {
+    vacancyFraction = expensesData.vacancy_rate > 1 ? expensesData.vacancy_rate / 100 : (expensesData.vacancy_rate / 100);
+  } else {
+    vacancyFraction = 0.05;
+  }
+  const vacancyRatePct = expensesData.vacancy_rate != null
+    ? expensesData.vacancy_rate
+    : (vacancyFraction * 100);
+
+  let managementRatePct = expensesData.management_rate;
+  if (managementRatePct == null) {
+    const managementAnnual = expensesData.management || 0;
+    if (grossPotentialRent > 0 && managementAnnual > 0) {
+      managementRatePct = (managementAnnual / grossPotentialRent) * 100;
+    }
+  }
+  if (managementRatePct == null) {
+    managementRatePct = 5;
+  }
+
+  let capexRatePct = expensesData.capex_rate;
+  if (capexRatePct == null) {
+    const capexMonthly = expensesData.capex || scenarioData.expenses?.capex || 0;
+    const monthlyGpr = (pnl.gross_potential_rent || grossPotentialRent) / 12 || 0;
+    if (monthlyGpr > 0 && capexMonthly > 0) {
+      capexRatePct = (capexMonthly / monthlyGpr) * 100;
+    } else if (expensesData.capex_pct != null) {
+      capexRatePct = expensesData.capex_pct;
+    }
+  }
+  if (capexRatePct == null) {
+    capexRatePct = 5;
+  }
+
+  const effectiveGrossIncome = pnl.effective_gross_income_current || (grossPotentialRent - (grossPotentialRent * vacancyRatePct / 100) + otherIncome);
   const totalInitialCash = (fullCalcs.financing?.totalEquityRequired || 0) + ((pricing_financing?.price || 0) * ((scenarioData.acquisition_costs?.closing_costs_pct || 0) / 100)) + (scenarioData.acquisition_costs?.rehab_cost || 0);
 
   return (
@@ -235,15 +274,15 @@ export default function CharacteristicsTab(props) {
           <SectionCard title="Percentage Expenses" icon="📊" color="#6366f1">
             <div style={{ marginBottom: '12px' }}>
               <label style={labelStyle}>Vacancy Rate (%)</label>
-              <input type="number" step="0.1" style={inputStyle} value={expensesData.vacancy_rate || ''} onChange={(e) => onEditData && onEditData('expenses.vacancy_rate', parseFloat(e.target.value) || 0)} />
+              <input type="number" step="0.1" style={inputStyle} value={vacancyRatePct || ''} onChange={(e) => onEditData && onEditData('expenses.vacancy_rate', parseFloat(e.target.value) || 0)} />
             </div>
             <div style={{ marginBottom: '12px' }}>
               <label style={labelStyle}>Property Management (%)</label>
-              <input type="number" step="0.1" style={inputStyle} value={expensesData.management_rate || ''} onChange={(e) => onEditData && onEditData('expenses.management_rate', parseFloat(e.target.value) || 0)} />
+              <input type="number" step="0.1" style={inputStyle} value={managementRatePct || ''} onChange={(e) => onEditData && onEditData('expenses.management_rate', parseFloat(e.target.value) || 0)} />
             </div>
             <div>
               <label style={labelStyle}>Capital Expenditures (%)</label>
-              <input type="number" step="0.1" style={inputStyle} value={expensesData.capex_rate || ''} onChange={(e) => onEditData && onEditData('expenses.capex_rate', parseFloat(e.target.value) || 0)} />
+              <input type="number" step="0.1" style={inputStyle} value={capexRatePct || ''} onChange={(e) => onEditData && onEditData('expenses.capex_rate', parseFloat(e.target.value) || 0)} />
             </div>
           </SectionCard>
 

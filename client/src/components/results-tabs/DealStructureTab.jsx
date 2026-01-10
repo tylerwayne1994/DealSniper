@@ -171,6 +171,26 @@ const calculateAllStructures = (purchasePrice, noi, financing, capRate) => {
     sellerCarryAmount: scSellerCarry,
     sellerCarryRate: scSellerRate
   };
+
+  // 7. LEASE OPTION (control now, finance later)
+  const optionFee = purchasePrice * 0.03; // 3% option fee
+  const leaseMonthlyRent = noi / 12; // approximate using NOI
+  const leaseAnnualDebt = leaseMonthlyRent * 12; // treated as "debt" for coverage math
+  const leaseCashflow = noi - leaseAnnualDebt; // typically ~0 by design
+  const leaseDSCR = leaseAnnualDebt > 0 ? noi / leaseAnnualDebt : 0;
+  structures['lease-option'] = {
+    name: 'Lease Option',
+    loanAmount: 0,
+    downPayment: optionFee,
+    interestRate: 0,
+    monthlyPayment: leaseMonthlyRent,
+    annualDebtService: leaseAnnualDebt,
+    cashflow: leaseCashflow,
+    dscr: leaseDSCR,
+    cashOutOfPocket: optionFee,
+    ltv: 0,
+    note: 'Control the property with an option fee and rent credits; finance at exercise.'
+  };
   
   return structures;
 };
@@ -187,15 +207,18 @@ const pct = (val) => {
   return `${val.toFixed(2)}%`;
 };
 
-export default function DealStructureTab({ scenarioData, calculations, fullCalcs, marketCapRate }) {
+export default function DealStructureTab({ scenarioData, calculations, fullCalcs, marketCapRate, onRecommendationChange, onSelectedStructureMetricsChange }) {
   const [aiRecommendation, setAiRecommendation] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [allStructures, setAllStructures] = useState(null);
+
+  const subjectToAvailable = scenarioData?.deal_setup?.subject_to_available !== false;
   
-  // Extract key data
+  // Extract key data - USE FULLCALCS AS PRIMARY SOURCE FOR CONSISTENCY
   const purchasePrice = scenarioData?.pricing_financing?.price || scenarioData?.pricing_financing?.purchase_price || 0;
-  const noi = scenarioData?.pnl?.noi || fullCalcs?.year1?.noi || 0;
+  // CRITICAL: Use fullCalcs.year1.noi as primary source to match Summary and Proforma tabs
+  const noi = fullCalcs?.year1?.noi || scenarioData?.pnl?.noi_t12 || scenarioData?.pnl?.noi || 0;
   const financing = scenarioData?.financing || {};
   const debtStructure = scenarioData?.deal_setup?.debt_structure || financing?.debt_structure || 'traditional';
   const goingInCapRate = purchasePrice > 0 && noi > 0 ? (noi / purchasePrice) * 100 : 5.5;
@@ -203,8 +226,8 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
   // Use market cap rate for exit valuation if available, otherwise use going-in cap rate
   const exitCapRate = marketCapRate?.market_cap_rate || goingInCapRate;
   
-  // Proforma NOI for value-add analysis
-  const proformaNOI = scenarioData?.proforma?.projected_noi || noi * 1.15; // Default 15% upside
+  // Proforma NOI for value-add analysis - use fullCalcs if available
+  const proformaNOI = fullCalcs?.stabilized?.noi || scenarioData?.proforma?.projected_noi || noi * 1.15; // Default 15% upside
   const asIsValue = goingInCapRate > 0 ? noi / (goingInCapRate / 100) : purchasePrice;
   const stabilizedValue = exitCapRate > 0 ? proformaNOI / (exitCapRate / 100) : purchasePrice * 1.15;
   const valueAdd = stabilizedValue - asIsValue;
@@ -219,17 +242,127 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
   
   // Get user's preferred structure data
   const userStructure = allStructures?.[debtStructure] || null;
+
+  // Compute quick health metrics for UI + parent consumers
+  const userCashOnCash = userStructure && userStructure.cashOutOfPocket > 0
+    ? (userStructure.cashflow / userStructure.cashOutOfPocket) * 100
+    : 0;
+
+  // Derive a simple AI-style verdict + confidence score from structure metrics
+  let verdictLabel = 'Load a deal to see AI verdict';
+  let verdictSubtitle = 'Upload or auto-fill a deal to unlock structure insights.';
+  let verdictTheme = {
+    background: 'linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)',
+    textColor: '#111827',
+    badgeBg: '#111827',
+    badgeColor: '#ffffff',
+    confidenceAccent: '#4b5563',
+  };
+  let confidenceScore = null;
+
+  if (userStructure) {
+    const dscr = userStructure.dscr || 0;
+    const coc = userCashOnCash || 0;
+
+    // Simple heuristic buckets similar to "Strong Buy" / "Avoid" UI
+    if (dscr >= 1.3 && coc >= 10) {
+      verdictLabel = 'Strong Buy';
+      verdictSubtitle = 'Debt coverage and cash-on-cash look strong for this deal.';
+      verdictTheme = {
+        background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 45%, #0f766e 100%)',
+        textColor: '#ecfdf5',
+        badgeBg: '#f0fdf4',
+        badgeColor: '#16a34a',
+        confidenceAccent: '#bbf7d0',
+      };
+      confidenceScore = 92;
+    } else if (dscr < 1.0 || coc < 4) {
+      verdictLabel = 'Avoid';
+      verdictSubtitle = 'Current structure struggles to cover debt or generate enough cash flow.';
+      verdictTheme = {
+        background: 'linear-gradient(135deg, #f97373 0%, #ef4444 40%, #991b1b 100%)',
+        textColor: '#fef2f2',
+        badgeBg: '#fef2f2',
+        badgeColor: '#b91c1c',
+        confidenceAccent: '#fecaca',
+      };
+      confidenceScore = 28;
+    } else {
+      verdictLabel = 'Watch Closely';
+      verdictSubtitle = 'Borderline coverage and returns – may work with tighter execution or better pricing.';
+      verdictTheme = {
+        background: 'linear-gradient(135deg, #facc15 0%, #eab308 40%, #b45309 100%)',
+        textColor: '#fefce8',
+        badgeBg: '#fefce8',
+        badgeColor: '#854d0e',
+        confidenceAccent: '#fef3c7',
+      };
+      confidenceScore = 68;
+    }
+  }
+
+  // Lift selected structure metrics to parent for use in Deal Execution
+  useEffect(() => {
+    if (!userStructure) return;
+    const selectedMetrics = {
+      name: userStructure.name,
+      key: debtStructure,
+      annualCashFlow: userStructure.cashflow,
+      cashOnCash: userCashOnCash,
+      dscr: userStructure.dscr,
+      capRate: goingInCapRate,
+    };
+    if (onSelectedStructureMetricsChange) {
+      onSelectedStructureMetricsChange(selectedMetrics);
+    }
+  }, [userStructure, debtStructure, goingInCapRate, onSelectedStructureMetricsChange, userCashOnCash]);
   
   // Fetch AI recommendation
   const fetchAIRecommendation = async () => {
+    // Check token balance first
+    try {
+      const tokenCheck = await fetch('http://localhost:8010/api/tokens/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation_type: 'deal_structure_analysis' })
+      });
+      
+      const tokenData = await tokenCheck.json();
+      
+      if (!tokenData.has_tokens) {
+        const userConfirmed = window.confirm(
+          `This will use AI to analyze all deal structures.\n\n` +
+          `Cost: ${tokenData.tokens_required} token\n` +
+          `Your balance: ${tokenData.token_balance} tokens\n\n` +
+          `You need more tokens. Check your Dashboard Profile to upgrade.`
+        );
+        return;
+      }
+      
+      // Confirm token usage
+      const userConfirmed = window.confirm(
+        `This will use AI to analyze all deal structures.\n\n` +
+        `Cost: ${tokenData.tokens_required} token\n` +
+        `Your balance: ${tokenData.token_balance} tokens\n\n` +
+        `Continue?`
+      );
+      
+      if (!userConfirmed) return;
+      
+    } catch (err) {
+      console.error('Token check failed:', err);
+      setError('Failed to check token balance. Please try again.');
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
     
     try {
       // Prepare all structure calculations for the LLM
       const structureComparison = Object.entries(allStructures || {}).map(([key, s]) => ({
-        structure: s.name,
         key,
+        structure: s.name,
         loanAmount: s.loanAmount,
         downPayment: s.downPayment,
         cashOutOfPocket: s.cashOutOfPocket,
@@ -240,6 +373,10 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
         dscr: s.dscr,
         cashOnCash: s.cashOutOfPocket > 0 ? (s.cashflow / s.cashOutOfPocket) * 100 : 0
       }));
+
+      const comparisonForAI = subjectToAvailable
+        ? structureComparison
+        : structureComparison.filter(s => s.key !== 'subject-to' && s.key !== 'hybrid');
       
       // Build comprehensive deal data for LLM
       const dealData = {
@@ -260,7 +397,7 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
           exitCapRate,
           marketCapRate: marketCapRate?.market_cap_rate || null
         },
-        structures: structureComparison,
+        structures: comparisonForAI,
         userPreferredStructure: debtStructure
       };
       
@@ -275,7 +412,49 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
       }
       
       const data = await response.json();
+
+      // Post-process recommendation: if Subject To / Hybrid are disabled,
+      // never allow them to be the final pick.
+      if (data.recommendation) {
+        let recKey = data.recommendation.recommendedStructure;
+
+        if (!subjectToAvailable && (recKey === 'subject-to' || recKey === 'hybrid')) {
+          const allowed = structureComparison.filter(s => s.key !== 'subject-to' && s.key !== 'hybrid');
+          if (allowed.length > 0) {
+            const ranked = [...allowed].sort((a, b) => {
+              const scoreA = (a.dscr >= 1.2 ? 100 : 0) + a.cashOnCash;
+              const scoreB = (b.dscr >= 1.2 ? 100 : 0) + b.cashOnCash;
+              return scoreB - scoreA;
+            });
+            recKey = ranked[0].key;
+            data.recommendation = {
+              ...data.recommendation,
+              recommendedStructure: recKey,
+              summary:
+                (data.recommendation.summary || '') +
+                '\n\nNote: Subject To / Hybrid were disabled for this deal, so the assistant recommended the strongest alternative structure instead.'
+            };
+          }
+        }
+      }
+
       setAiRecommendation(data.recommendation);
+      
+      // Notify parent of the recommended structure
+      if (onRecommendationChange && data.recommendation?.recommendedStructure) {
+        // Map the key to a user-friendly name
+        const structureNames = {
+          'traditional': 'Traditional Financing',
+          'seller-finance': 'Seller Financing',
+          'subject-to': 'Subject To',
+          'hybrid': 'Hybrid (SubTo + Seller Carry)',
+          'equity-partner': 'Equity Partner',
+          'seller-carry': 'Seller Carry (Bank + Seller 2nd)',
+          'lease-option': 'Lease Option'
+        };
+        const structureName = structureNames[data.recommendation.recommendedStructure] || data.recommendation.recommendedStructure;
+        onRecommendationChange(structureName);
+      }
     } catch (err) {
       console.error('AI Recommendation error:', err);
       setError(err.message);
@@ -293,13 +472,15 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
       : 0;
     
     return (
-      <div style={{
-        backgroundColor: isRecommended ? '#f0fdf4' : '#ffffff',
-        borderRadius: '12px',
-        padding: '20px',
-        border: isRecommended ? '2px solid #10b981' : '1px solid #e5e7eb',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-      }}>
+      <div
+        style={{
+          backgroundColor: '#ffffff',
+          borderRadius: '16px',
+          padding: '22px 24px',
+          border: isRecommended ? '2px solid #22c55e' : '2px solid #4f46e5',
+          boxShadow: '0 10px 30px rgba(15, 23, 42, 0.08)',
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
           {isRecommended ? (
             <Sparkles size={20} color="#10b981" />
@@ -325,50 +506,61 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
         </div>
         
         {/* Structure Name */}
-        <div style={{
-          backgroundColor: isRecommended ? '#dcfce7' : '#f3f4f6',
-          padding: '12px',
-          borderRadius: '8px',
-          marginBottom: '16px',
-          textAlign: 'center'
-        }}>
-          <div style={{ fontSize: '14px', fontWeight: '700', color: isRecommended ? '#166534' : '#374151' }}>
+        <div
+          style={{
+            backgroundColor: isRecommended ? '#dcfce7' : '#eff6ff',
+            padding: '12px 16px',
+            borderRadius: '10px',
+            marginBottom: '18px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '14px',
+              fontWeight: '700',
+              color: isRecommended ? '#166534' : '#1d4ed8',
+            }}
+          >
             {structure.name}
           </div>
+          <div style={{ fontSize: '11px', color: '#6b7280' }}>{title}</div>
         </div>
         
         {/* Financing Breakdown */}
         <div style={{ marginBottom: '16px' }}>
-          <div style={{ fontSize: '12px', fontWeight: '700', color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '12px', fontWeight: '700', color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             Financing Breakdown
           </div>
           <div style={{ display: 'grid', gap: '8px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#f9fafb', borderRadius: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
               <span style={{ fontSize: '13px', color: '#6b7280' }}>Total Loan Amount</span>
               <span style={{ fontSize: '13px', fontWeight: '600', color: '#111827' }}>{fmt(structure.loanAmount)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#f9fafb', borderRadius: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
               <span style={{ fontSize: '13px', color: '#6b7280' }}>Down Payment</span>
               <span style={{ fontSize: '13px', fontWeight: '600', color: '#111827' }}>{fmt(structure.downPayment)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#f9fafb', borderRadius: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
               <span style={{ fontSize: '13px', color: '#6b7280' }}>Interest Rate</span>
               <span style={{ fontSize: '13px', fontWeight: '600', color: '#111827' }}>{pct(structure.interestRate)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#f9fafb', borderRadius: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
               <span style={{ fontSize: '13px', color: '#6b7280' }}>LTV</span>
               <span style={{ fontSize: '13px', fontWeight: '600', color: '#111827' }}>{pct(structure.ltv)}</span>
             </div>
             
             {/* Special fields for certain structures */}
             {structure.partnerContribution && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#dbeafe', borderRadius: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#dbeafe', borderRadius: '8px' }}>
                 <span style={{ fontSize: '13px', color: '#1e40af' }}>Partner Contribution</span>
                 <span style={{ fontSize: '13px', fontWeight: '600', color: '#1e40af' }}>{fmt(structure.partnerContribution)}</span>
               </div>
             )}
             {structure.sellerCarryAmount && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#f3e8ff', borderRadius: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#f3e8ff', borderRadius: '8px' }}>
                 <span style={{ fontSize: '13px', color: '#6b21a8' }}>Seller Carry</span>
                 <span style={{ fontSize: '13px', fontWeight: '600', color: '#6b21a8' }}>{fmt(structure.sellerCarryAmount)}</span>
               </div>
@@ -378,15 +570,15 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
         
         {/* Debt Service */}
         <div style={{ marginBottom: '16px' }}>
-          <div style={{ fontSize: '12px', fontWeight: '700', color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '12px', fontWeight: '700', color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             Debt Service
           </div>
           <div style={{ display: 'grid', gap: '8px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#fef3c7', borderRadius: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#fef3c7', borderRadius: '8px' }}>
               <span style={{ fontSize: '13px', color: '#92400e' }}>Monthly Payment</span>
               <span style={{ fontSize: '13px', fontWeight: '700', color: '#92400e' }}>{fmt(structure.monthlyPayment)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#fef3c7', borderRadius: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#fef3c7', borderRadius: '8px' }}>
               <span style={{ fontSize: '13px', color: '#92400e' }}>Annual Debt Service</span>
               <span style={{ fontSize: '13px', fontWeight: '700', color: '#92400e' }}>{fmt(structure.annualDebtService)}</span>
             </div>
@@ -395,14 +587,14 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
         
         {/* Performance Metrics */}
         <div style={{ marginBottom: '16px' }}>
-          <div style={{ fontSize: '12px', fontWeight: '700', color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '12px', fontWeight: '700', color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             Performance
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <div style={{ 
               padding: '12px', 
-              backgroundColor: structure.cashflow >= 0 ? '#f0fdf4' : '#fef2f2', 
-              borderRadius: '8px',
+              backgroundColor: structure.cashflow >= 0 ? '#ecfdf5' : '#fef2f2', 
+              borderRadius: '10px',
               textAlign: 'center'
             }}>
               <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>Annual Cashflow</div>
@@ -415,8 +607,8 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
             </div>
             <div style={{ 
               padding: '12px', 
-              backgroundColor: structure.dscr >= 1.25 ? '#f0fdf4' : structure.dscr >= 1.0 ? '#fef3c7' : '#fef2f2', 
-              borderRadius: '8px',
+              backgroundColor: structure.dscr >= 1.25 ? '#ecfdf5' : structure.dscr >= 1.0 ? '#fef3c7' : '#fef2f2', 
+              borderRadius: '10px',
               textAlign: 'center'
             }}>
               <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>DSCR</div>
@@ -432,7 +624,7 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
             <div style={{ 
               padding: '12px', 
               backgroundColor: '#f3f4f6', 
-              borderRadius: '8px',
+              borderRadius: '10px',
               textAlign: 'center'
             }}>
               <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>Cash on Cash</div>
@@ -443,7 +635,7 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
             <div style={{ 
               padding: '12px', 
               backgroundColor: '#dbeafe', 
-              borderRadius: '8px',
+              borderRadius: '10px',
               textAlign: 'center'
             }}>
               <div style={{ fontSize: '11px', color: '#1e40af', marginBottom: '4px' }}>Cash Out of Pocket</div>
@@ -458,23 +650,99 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
   };
 
   return (
-    <div style={{ padding: '24px', backgroundColor: '#f9fafb', minHeight: '100vh' }}>
+    <div style={{ padding: '24px', backgroundColor: '#f9fafb', minHeight: '100%' }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        
+
+        {/* Verdict banner - Strong Buy / Avoid style */}
+        <div
+          style={{
+            ...{
+              marginBottom: '20px',
+              borderRadius: '16px',
+              padding: '18px 22px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              boxShadow: '0 10px 30px rgba(15, 23, 42, 0.25)',
+            },
+            background: verdictTheme.background,
+            color: verdictTheme.textColor,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '999px',
+                backgroundColor: verdictTheme.badgeBg,
+                color: verdictTheme.badgeColor,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+              }}
+            >
+              <DollarSign size={20} />
+            </div>
+            <div>
+              <div
+                style={{
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  opacity: 0.9,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                }}
+              >
+                AI Deal Verdict
+              </div>
+              <div style={{ fontSize: '22px', fontWeight: 800, marginTop: 2 }}>{verdictLabel}</div>
+              <div style={{ fontSize: '13px', marginTop: 4, maxWidth: 520 }}>{verdictSubtitle}</div>
+            </div>
+          </div>
+
+          <div style={{ textAlign: 'right' }}>
+            <div
+              style={{
+                fontSize: '13px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                opacity: 0.9,
+              }}
+            >
+              {confidenceScore != null ? 'Confidence' : 'Status'}
+            </div>
+            <div
+              style={{
+                fontSize: '30px',
+                fontWeight: 800,
+                marginTop: 4,
+                color: verdictTheme.confidenceAccent,
+              }}
+            >
+              {confidenceScore != null ? `${confidenceScore}%` : 'Waiting...'}
+            </div>
+            <div style={{ fontSize: '11px', marginTop: 4, opacity: 0.9 }}>
+              Based on structure DSCR and cash-on-cash
+            </div>
+          </div>
+        </div>
+
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px' }}>
-          <div style={{ 
-            width: '32px', 
-            height: '32px', 
-            borderRadius: '50%', 
-            backgroundColor: '#6366f1', 
-            color: 'white', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            fontWeight: '700', 
+          <div style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: '50%',
+            backgroundColor: '#6366f1',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: '700',
             fontSize: '14px',
-            marginRight: '12px'
+            marginRight: '12px',
           }}>
             <DollarSign size={18} />
           </div>
@@ -503,7 +771,7 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
                 fontSize: '14px',
                 fontWeight: '600',
                 cursor: isLoading ? 'not-allowed' : 'pointer',
-                opacity: isLoading ? 0.7 : 1
+                opacity: isLoading ? 0.7 : 1,
               }}
             >
               <RefreshCw size={16} className={isLoading ? 'spin' : ''} />
@@ -512,65 +780,77 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
           )}
         </div>
         
-        {/* Value-Add Summary Bar - Dark Theme */}
-        <div style={{
-          backgroundColor: '#111827',
-          borderRadius: '12px',
-          padding: '24px',
-          marginBottom: '24px',
-          boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
-        }}>
+        {/* Value-Add Summary Bar - light card with blue outline (equity-style UI) */}
+        <div
+          style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '18px',
+            padding: '24px 28px',
+            marginBottom: '24px',
+            boxShadow: '0 10px 30px rgba(15, 23, 42, 0.08)',
+            border: '2px solid #4f46e5',
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-            <TrendingUp size={20} color="#10b981" />
-            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: 'white', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <TrendingUp size={20} color="#4f46e5" />
+            <h3
+              style={{
+                margin: 0,
+                fontSize: '18px',
+                fontWeight: '700',
+                color: '#111827',
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+              }}
+            >
               Value-Add Analysis
             </h3>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px' }}>
             <div style={{ 
               padding: '16px', 
-              backgroundColor: '#1e293b', 
+              backgroundColor: '#f9fafb', 
               borderRadius: '12px',
-              border: '1px solid #334155'
+              border: '1px solid #e5e7eb'
             }}>
-              <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Current NOI</div>
-              <div style={{ fontSize: '24px', fontWeight: '700', color: 'white' }}>{fmt(noi)}</div>
+              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Current NOI</div>
+              <div style={{ fontSize: '22px', fontWeight: '700', color: '#111827' }}>{fmt(noi)}</div>
             </div>
             <div style={{ 
               padding: '16px', 
-              backgroundColor: '#064e3b', 
+              backgroundColor: '#ecfdf5', 
               borderRadius: '12px',
-              border: '1px solid #065f46'
+              border: '1px solid #6ee7b7'
             }}>
-              <div style={{ fontSize: '11px', color: '#6ee7b7', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Proforma NOI</div>
-              <div style={{ fontSize: '24px', fontWeight: '700', color: '#10b981' }}>{fmt(proformaNOI)}</div>
+              <div style={{ fontSize: '11px', color: '#047857', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Proforma NOI</div>
+              <div style={{ fontSize: '22px', fontWeight: '700', color: '#047857' }}>{fmt(proformaNOI)}</div>
             </div>
             <div style={{ 
               padding: '16px', 
-              backgroundColor: '#1e293b', 
+              backgroundColor: '#f9fafb', 
               borderRadius: '12px',
-              border: '1px solid #334155'
+              border: '1px solid #e5e7eb'
             }}>
-              <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>As-Is Value</div>
-              <div style={{ fontSize: '24px', fontWeight: '700', color: 'white' }}>{fmt(asIsValue)}</div>
+              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>As-Is Value</div>
+              <div style={{ fontSize: '22px', fontWeight: '700', color: '#111827' }}>{fmt(asIsValue)}</div>
             </div>
             <div style={{ 
               padding: '16px', 
-              backgroundColor: '#1e3a5f', 
+              backgroundColor: '#eff6ff', 
               borderRadius: '12px',
-              border: '1px solid #1e40af'
+              border: '1px solid #60a5fa'
             }}>
-              <div style={{ fontSize: '11px', color: '#93c5fd', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Forced Appreciation</div>
-              <div style={{ fontSize: '24px', fontWeight: '700', color: '#60a5fa' }}>{fmt(valueAdd)}</div>
+              <div style={{ fontSize: '11px', color: '#1d4ed8', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Forced Appreciation</div>
+              <div style={{ fontSize: '22px', fontWeight: '700', color: '#1d4ed8' }}>{fmt(valueAdd)}</div>
             </div>
             <div style={{ 
               padding: '16px', 
-              backgroundColor: '#4c1d95', 
+              backgroundColor: '#f5f3ff', 
               borderRadius: '12px',
-              border: '1px solid #6d28d9'
+              border: '1px solid #a855f7'
             }}>
-              <div style={{ fontSize: '11px', color: '#c4b5fd', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Value</div>
-              <div style={{ fontSize: '24px', fontWeight: '700', color: '#a78bfa' }}>{fmt(stabilizedValue)}</div>
+              <div style={{ fontSize: '11px', color: '#6b21a8', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Value</div>
+              <div style={{ fontSize: '22px', fontWeight: '700', color: '#6b21a8' }}>{fmt(stabilizedValue)}</div>
             </div>
           </div>
           
@@ -578,55 +858,71 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginTop: '16px' }}>
             <div style={{ 
               padding: '16px', 
-              backgroundColor: '#1e293b', 
+              backgroundColor: '#f9fafb', 
               borderRadius: '12px',
-              border: '1px solid #334155',
+              border: '1px solid #e5e7eb',
               textAlign: 'center'
             }}>
-              <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Going-In Cap Rate</div>
-              <div style={{ fontSize: '28px', fontWeight: '700', color: 'white' }}>{pct(goingInCapRate)}</div>
-              <div style={{ fontSize: '10px', color: '#64748b', marginTop: '4px' }}>Your Basis</div>
+              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Going-In Cap Rate</div>
+              <div style={{ fontSize: '26px', fontWeight: '700', color: '#111827' }}>{pct(goingInCapRate)}</div>
+              <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '4px' }}>Your Basis</div>
             </div>
             <div style={{ 
               padding: '16px', 
-              backgroundColor: marketCapRate ? '#0c4a6e' : '#1e293b', 
+              backgroundColor: marketCapRate ? '#e0f2fe' : '#f9fafb', 
               borderRadius: '12px',
-              border: marketCapRate ? '2px solid #0ea5e9' : '1px solid #334155',
+              border: marketCapRate ? '2px solid #0ea5e9' : '1px solid #e5e7eb',
               textAlign: 'center'
             }}>
-              <div style={{ fontSize: '11px', color: marketCapRate ? '#7dd3fc' : '#94a3b8', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <div style={{ fontSize: '11px', color: marketCapRate ? '#0369a1' : '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Market Cap Rate {marketCapRate ? '✓' : ''}
               </div>
-              <div style={{ fontSize: '28px', fontWeight: '700', color: marketCapRate ? '#38bdf8' : '#64748b' }}>
+              <div style={{ fontSize: '26px', fontWeight: '700', color: marketCapRate ? '#0ea5e9' : '#9ca3af' }}>
                 {marketCapRate ? pct(marketCapRate.market_cap_rate) : 'Loading...'}
               </div>
-              <div style={{ fontSize: '10px', color: marketCapRate ? '#7dd3fc' : '#64748b', marginTop: '4px' }}>
+              <div style={{ fontSize: '10px', color: marketCapRate ? '#0369a1' : '#9ca3af', marginTop: '4px' }}>
                 {marketCapRate ? `${marketCapRate.asset_class} Class • ${marketCapRate.confidence} confidence` : 'LLM Estimate'}
               </div>
             </div>
             <div style={{ 
               padding: '16px', 
-              backgroundColor: marketCapRate && (goingInCapRate > marketCapRate.market_cap_rate) ? '#064e3b' : '#7f1d1d', 
+              backgroundColor: marketCapRate && (goingInCapRate > marketCapRate.market_cap_rate) ? '#ecfdf5' : '#fef2f2', 
               borderRadius: '12px',
               border: marketCapRate && (goingInCapRate > marketCapRate.market_cap_rate) ? '2px solid #10b981' : '2px solid #ef4444',
               textAlign: 'center'
             }}>
-              <div style={{ fontSize: '11px', color: marketCapRate && (goingInCapRate > marketCapRate.market_cap_rate) ? '#6ee7b7' : '#fca5a5', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <div style={{ fontSize: '11px', color: marketCapRate && (goingInCapRate > marketCapRate.market_cap_rate) ? '#047857' : '#b91c1c', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Spread
               </div>
-              <div style={{ fontSize: '28px', fontWeight: '700', color: marketCapRate && (goingInCapRate > marketCapRate.market_cap_rate) ? '#10b981' : '#ef4444' }}>
+              <div style={{ fontSize: '26px', fontWeight: '700', color: marketCapRate && (goingInCapRate > marketCapRate.market_cap_rate) ? '#10b981' : '#ef4444' }}>
                 {marketCapRate ? `${(goingInCapRate - marketCapRate.market_cap_rate) > 0 ? '+' : ''}${(goingInCapRate - marketCapRate.market_cap_rate).toFixed(2)}%` : '-'}
               </div>
-              <div style={{ fontSize: '10px', color: marketCapRate && (goingInCapRate > marketCapRate.market_cap_rate) ? '#6ee7b7' : '#fca5a5', marginTop: '4px', fontWeight: '600' }}>
+              <div style={{ fontSize: '10px', color: marketCapRate && (goingInCapRate > marketCapRate.market_cap_rate) ? '#047857' : '#b91c1c', marginTop: '4px', fontWeight: '600' }}>
                 {marketCapRate ? (goingInCapRate > marketCapRate.market_cap_rate ? '✓ Buying Below Market' : '⚠ Above Market') : '-'}
               </div>
             </div>
           </div>
           
-          <div style={{ marginTop: '16px', padding: '14px 16px', backgroundColor: '#1e293b', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px', border: '1px solid #fbbf24' }}>
-            <Target size={18} color="#fbbf24" />
-            <span style={{ fontSize: '13px', color: '#fcd34d' }}>
-              <strong style={{ color: '#fbbf24' }}>Value Creation:</strong> NOI ÷ Cap Rate = Value. Increase NOI by {fmt(proformaNOI - noi)} to create {fmt(valueAdd)} in equity at {marketCapRate ? pct(marketCapRate.market_cap_rate) : pct(goingInCapRate)} cap.
+          <div
+            style={{
+              marginTop: '18px',
+              padding: '14px 16px',
+              backgroundColor: '#eff6ff',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              border: '1px dashed #3b82f6',
+            }}
+          >
+            <Target size={18} color="#1d4ed8" />
+            <span style={{ fontSize: '13px', color: '#1e3a8a' }}>
+              <strong style={{ color: '#1d4ed8' }}>Value Creation:</strong> NOI ÷ Cap Rate = Value. Increase NOI by {fmt(
+                proformaNOI - noi,
+              )} to create {fmt(valueAdd)} in equity at {marketCapRate
+                ? pct(marketCapRate.market_cap_rate)
+                : pct(goingInCapRate)}{' '}
+              cap.
             </span>
           </div>
         </div>
@@ -757,7 +1053,7 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
                   AI Structure Analysis
                 </h4>
                 <p style={{ color: '#6b7280', marginBottom: '20px', fontSize: '14px' }}>
-                  Let AI analyze all 6 financing structures and recommend the optimal one based on your deal metrics
+                  Let AI analyze all 7 financing structures and recommend the optimal one based on your deal metrics
                 </p>
                 <button
                   onClick={fetchAIRecommendation}

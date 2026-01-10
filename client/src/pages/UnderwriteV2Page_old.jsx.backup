@@ -404,7 +404,7 @@ function UnderwriteV2Page() {
       <div style={styles.container}>
         {/* Header */}
         <div style={styles.header}>
-          <h1 style={styles.title}>🎯 V2 Automatic Underwriter</h1>
+          <h1 style={styles.title}>V2 Automatic Underwriter</h1>
           <button 
             style={styles.homeButton}
             onClick={() => navigate('/')}

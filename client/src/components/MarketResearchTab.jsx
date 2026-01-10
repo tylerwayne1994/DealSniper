@@ -491,6 +491,43 @@ const MarketResearchTab = ({ dealId, scenarioData }) => {
   };
   
   const runResearch = async (tier) => {
+    // Check token balance first
+    try {
+      const operationType = tier === 'quick' ? 'market_research_results' : 'market_research_dashboard';
+      const tokenCheck = await fetch('http://localhost:8010/api/tokens/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation_type: operationType })
+      });
+      
+      const tokenData = await tokenCheck.json();
+      
+      if (!tokenData.has_tokens) {
+        const userConfirmed = window.confirm(
+          `This will use AI to run ${tier === 'quick' ? 'Quick' : 'Deep'} Market Research.\n\n` +
+          `Cost: ${tokenData.tokens_required} token\n` +
+          `Your balance: ${tokenData.token_balance} tokens\n\n` +
+          `You need more tokens. Check your Dashboard Profile to upgrade.`
+        );
+        return;
+      }
+      
+      // Confirm token usage
+      const userConfirmed = window.confirm(
+        `This will use AI to run ${tier === 'quick' ? 'Quick' : 'Deep'} Market Research.\n\n` +
+        `Cost: ${tokenData.tokens_required} token\n` +
+        `Your balance: ${tokenData.token_balance} tokens\n\n` +
+        `Continue?`
+      );
+      
+      if (!userConfirmed) return;
+      
+    } catch (err) {
+      console.error('Token check failed:', err);
+      setError('Failed to check token balance. Please try again.');
+      return;
+    }
+    
     setLoading(prev => ({ ...prev, [tier]: true }));
     setError(null);
     

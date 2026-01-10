@@ -36,6 +36,32 @@ export const MetricCard = ({ label, value, subtext, icon: Icon, color = COLORS.p
   </div>
 );
 
+// Section Card Component (shared, matches Results/Deal styling)
+export const SectionCard = ({ title, icon: Icon, children }) => (
+  <div style={{
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    border: '1px solid #e5e7eb',
+    overflow: 'hidden'
+  }}>
+    <div style={{
+      padding: '12px 16px',
+      backgroundColor: '#1e293b',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px'
+    }}>
+      {Icon && <Icon size={16} color="white" />}
+      <h3 style={{ margin: 0, fontSize: '14px', fontWeight: '700', color: 'white', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        {title}
+      </h3>
+    </div>
+    <div style={{ padding: '16px' }}>
+      {children}
+    </div>
+  </div>
+);
+
 // Rent Roll Analysis View
 export const RentRollView = ({ analysis }) => {
   if (!analysis) {

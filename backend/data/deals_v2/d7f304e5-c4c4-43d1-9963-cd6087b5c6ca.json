@@ -1,0 +1,110 @@
+{
+  "id": "d7f304e5-c4c4-43d1-9963-cd6087b5c6ca",
+  "created_at": "2025-12-19T20:07:22.962641",
+  "updated_at": "2025-12-19T20:16:34.371699",
+  "original_filename": "82 West - OM_2025 (1).pdf",
+  "parser_strategy": "claude_ocr",
+  "summary_address": "8208 Troost Ave, Kansas City, MO",
+  "summary_units": 78,
+  "summary_price": 0.0,
+  "summary_noi": 542288.0,
+  "summary_cap_rate": 0.0,
+  "parsed_json": {
+    "property": {
+      "address": "8208 Troost Ave",
+      "city": "Kansas City",
+      "state": "MO",
+      "zip": "64131",
+      "units": 78,
+      "year_built": 1960,
+      "rba_sqft": 56176,
+      "land_area_acres": 3.3,
+      "property_type": "Multifamily",
+      "property_class": "",
+      "parking_spaces": 86
+    },
+    "pricing_financing": {
+      "price": 0,
+      "price_per_unit": 0,
+      "price_per_sf": 0,
+      "loan_amount": 0,
+      "down_payment": 0,
+      "interest_rate": 0,
+      "ltv": 0,
+      "term_years": 0,
+      "amortization_years": 0
+    },
+    "pnl": {
+      "gross_potential_rent": 1070246,
+      "other_income": 33044,
+      "vacancy_rate": 5.0,
+      "vacancy_amount": 60120,
+      "vacancy_rate_t12": 0,
+      "vacancy_rate_current": 9.0,
+      "vacancy_rate_stabilized": 5.0,
+      "effective_gross_income": 1139252,
+      "operating_expenses": 533676,
+      "noi": 542288,
+      "noi_t12": 542288,
+      "noi_t3": 485687,
+      "noi_t1": 0,
+      "noi_trailing_1": 414875,
+      "noi_proforma": 605576,
+      "noi_stabilized": 0,
+      "cap_rate": 0,
+      "cap_rate_t12": 0,
+      "cap_rate_proforma": 0,
+      "cap_rate_stabilized": 0,
+      "expense_ratio": 46.84,
+      "expense_ratio_t12": 47.37,
+      "expense_ratio_proforma": 46.84
+    },
+    "expenses": {
+      "taxes": 51622,
+      "insurance": 53953,
+      "utilities": 161588,
+      "repairs_maintenance": 60982,
+      "management": 34178,
+      "payroll": 85494,
+      "admin": 15416,
+      "marketing": 2780,
+      "other": 23400,
+      "total": 486970
+    },
+    "underwriting": {
+      "holding_period": 0,
+      "exit_cap_rate": 0
+    },
+    "unit_mix": [
+      {
+        "type": "1 Bedroom",
+        "units": 42,
+        "unit_sf": 688,
+        "rent_current": 1100,
+        "rent_market": 1220
+      },
+      {
+        "type": "2 Bedroom",
+        "units": 36,
+        "unit_sf": 758,
+        "rent_current": 1194,
+        "rent_market": 1360
+      }
+    ]
+  },
+  "scenario_json": null,
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "I've analyzed your deal at 8208 Troost Ave. I can help you run scenarios, evaluate different assumptions, or discuss creative financing strategies. Try asking: \"What if I bought this for $60,000 less?\""
+    },
+    {
+      "role": "user",
+      "content": "Analyze this deal and provide specific value-add recommendations. Current rent: $89184/unit, Market rent: $100200/unit. Total expenses: $489,413. What creative strategies can we use to increase NOI and property value?"
+    },
+    {
+      "role": "assistant",
+      "content": "Let's analyze the deal at 8208 Troost Ave with the provided rent information and total expenses. \n\n### 1. Deal Snapshot\n- **Current Rent Per Unit:** $89,184\n- **Market Rent Per Unit:** $100,200\n- **Units:** 78\n- **Total Expenses:** $489,413\n- **Current NOI:** $542,288\n\n### 2. Current Income Analysis\n- **Current Gross Potential Rent (GPR):** \n  \\[\n  \\text{Current GPR} = \\text{Current Rent Per Unit} \\times \\text{Units} = 89,184 \\times 78 = 6,946,272\n  \\]\n\n- **Market Gross Potential Rent (Market GPR):** \n  \\[\n  \\text{Market GPR} = \\text{Market Rent Per Unit} \\times \\text{Units} = 100,200 \\times 78 = 7,815,600\n  \\]\n\n### 3. Value-Add Recommendations\n#### A. Rent Optimization\n1. **Achieve Market Rent:** \n   - **Increase Rent to Market Rate:** The potential increase is from $89,184 to $100,200 per unit.\n   - **Monthly Increase:** \n   \\[\n   \\text{Monthly Increase} = \\frac{100,200 - 89,184}{12} = 8,426.33\n   \\]\n   - **Annual Increase for 78 Units:** \n   \\[\n   \\text{Annual Increase} = 8,426.33 \\times 78 = 657,000\n   \\]\n   - **New NOI Post-Rent Increase:**\n   \\[\n   \\text{New NOI} = \\text{Current NOI} + \\text{Annual Increase} = 542,288 + 657,000 = 1,199,288\n   \\]\n\n#### B. Utility Bill-Back (RUBS)\n2. **Implement RUBS:** \n   - If you can implement a utility bill-back program, this could help capture additional income. Assuming you could bill back 50% of utilities to tenants, this could add roughly $30,000-$50,000 to NOI annually.\n\n#### C. Other Income Opportunities\n3. **Additional Income Streams:**\n   - **Laundry Facilities:** If not already in place, adding laundry facilities could generate additional income. Estimate potential income of $20,000 annually.\n   - **Storage Units:** Convert unused space into storage units for an estimated additional income of $15,000 annually.\n   - **Pet Fees:** If pets are allowed, introduce a pet fee. Assuming 25% of tenants have pets, this could add another $10,000 annually.\n\n#### D. Expense Optimization\n4. **Expense Reduction:**\n   - **Audit Current Expenses:** Review each line item for potential reductions. For example, if you could reduce total expenses by 10%, you would save approximately $48,941.\n   - **Management Fee Review:** If management fees are higher than industry standards, consider renegotiating or switching property management companies.\n\n### 4. Total Potential NOI Increase\nConsidering the above recommendations:\n- **Rent Optimization:** $657,000\n- **RUBS Implementation:** $50,000\n- **Laundry Income:** $20,000\n- **Storage Income:** $15,000\n- **Pet Fees:** $10,000\n- **Expense Reduction:** $48,941\n\n#### Total Increase:\n\\[\n\\text{Total Potential Increase} = 657,000 + 50,000 + 20,000 + 15,000 + 10,000 + 48,941 = 800,941\n\\]\n\n### 5. New Projected NOI\n\\[\n\\text{New Projected NOI} = \\text{Current NOI} + \\text{Total Potential Increase} = 542,288 + 800,941 = 1,343,229\n\\]\n\n### 6. Valuation Impact\nUsing a conservative cap rate of 6% for valuation:\n\\[\n\\text{Value} = \\frac{\\text{New Projected NOI}}{\\text{Cap Rate}} = \\frac{1,343,229}{0.06} \\approx 22,387,150\n\\]\n\n### Conclusion\nBy implementing these value-add strategies, the property could significantly increase its NOI and overall valuation. Focus on achieving market rent, optimizing expenses, and creating new income streams to maximize property value."
+    }
+  ]
+}

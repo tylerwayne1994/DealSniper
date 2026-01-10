@@ -1,0 +1,96 @@
+{
+  "id": "f28be7e6-bb9e-4032-a053-dff2a675c834",
+  "created_at": "2026-01-03T01:05:51.947595",
+  "updated_at": "2026-01-03T01:07:32.982302",
+  "original_filename": "Aviation4-Plex_compressed.pdf",
+  "parser_strategy": "claude_ocr",
+  "summary_address": "2206 E Taylor St, Phoenix, AZ",
+  "summary_units": 4,
+  "summary_price": 650000.0,
+  "summary_noi": 61022.0,
+  "summary_cap_rate": 9.39,
+  "parsed_json": {
+    "property": {
+      "address": "2206 E Taylor St",
+      "city": "Phoenix",
+      "state": "AZ",
+      "zip": "85006",
+      "units": 4,
+      "year_built": 1963,
+      "rba_sqft": 2200,
+      "land_area_acres": 0.19,
+      "property_type": "Rental Residential",
+      "property_class": "C",
+      "parking_spaces": 4
+    },
+    "pricing_financing": {
+      "price": 650000,
+      "price_per_unit": 162500,
+      "price_per_sf": 295.45,
+      "loan_amount": 0,
+      "down_payment": 0,
+      "interest_rate": 0,
+      "ltv": 0,
+      "term_years": 0,
+      "amortization_years": 0
+    },
+    "pnl": {
+      "gross_potential_rent": 73920,
+      "other_income": 0,
+      "vacancy_rate": 0,
+      "vacancy_amount": 0,
+      "vacancy_rate_t12": 0,
+      "vacancy_rate_current": 0,
+      "vacancy_rate_stabilized": 0,
+      "effective_gross_income": 73920,
+      "operating_expenses": 12898,
+      "noi": 61022,
+      "noi_t12": 61022,
+      "noi_t3": 0,
+      "noi_t1": 0,
+      "noi_trailing_1": 0,
+      "noi_proforma": 0,
+      "noi_stabilized": 0,
+      "cap_rate": 9.39,
+      "cap_rate_t12": 9.39,
+      "cap_rate_proforma": 0,
+      "cap_rate_stabilized": 0,
+      "expense_ratio": 17.44,
+      "expense_ratio_t12": 17.44,
+      "expense_ratio_proforma": 0
+    },
+    "expenses": {
+      "taxes": 648,
+      "insurance": 1200,
+      "utilities": 4800,
+      "repairs_maintenance": 0,
+      "management": 0,
+      "payroll": 0,
+      "admin": 0,
+      "marketing": 0,
+      "other": 6250,
+      "total": 12898
+    },
+    "underwriting": {
+      "holding_period": 0,
+      "exit_cap_rate": 0
+    },
+    "unit_mix": [
+      {
+        "type": "1 bd + 1 ba",
+        "units": 4,
+        "unit_sf": 550,
+        "rent_current": 1540,
+        "rent_market": 0
+      }
+    ],
+    "_underwriting_result": {
+      "analysis": "## 1. DEAL SNAPSHOT\n────────────────────────────────────────────────────────\n\n- Purchase price: $650,000  \n- Current NOI: $61,022  \n- Current cap rate: 9.39%  \n- Expense ratio: 17.44%  \n- Price per unit: $162,500  \n- Price per SF: $295.45  \n\nBlunt commentary: This deal appears to be priced hot given the cap rate and current NOI. The price per unit is high for a Class C property built in 1963. There's potential for broker inflation in the pricing as the current financials do not strongly support this valuation.\n\n## 2. DAY-ONE FINANCIALS (Based on calc_json)\n────────────────────────────────────────────────────────\n\n- NOI: $61,022  \n- Total debt service: Missing  \n- Cashflow: Missing  \n- DSCR: Missing  \n\nRed flags: The missing metrics for total debt service, cashflow, and DSCR make it impossible to evaluate the financial stability of this project. Without these critical numbers, we cannot assess whether the deal meets basic financial health standards.\n\n## 3. SELECTED DEAL STRUCTURE (wizard_structure)\n────────────────────────────────────────────────────────\n\n**Financing Strategy: Not specified in wizard**  \n- Bank loan amount: Not specified  \n- Seller note amount: Not specified  \n- Interest rate(s): Not specified  \n- IO or amortization: Not specified  \n- Balloon: Not specified  \n- Real's cash in: Not specified  \n- DSCR using this structure: Not specified  \n- Cashflow day one: Not specified  \n\nThis structure does not provide any details on financing, making it impossible to assess how the deal will be funded.\n\n## 4. VALUE-ADD / NOI ENGINEERING (use deal_json + calc_json)\n────────────────────────────────────────────────────────\n\n- Rent upside from unit mix: 4 units at $1,540 each is already being achieved.  \n- Loss-to-lease: Not applicable as current rents are at market.  \n- RUBS or utility billback opportunity: Not mentioned.  \n- Expense normalization: Total operating expenses of $12,898 seem low for a property of this age and type.  \n- Other income opportunities: None identified.  \n\nThe current rent appears stable, but no significant value-add opportunities are evident. The expense ratio being 17.44% raises questions about the thoroughness of operational expenses.\n\n## 5. REFI ANALYSIS (calc_json.refi)\n────────────────────────────────────────────────────────\n\n- Stabilized NOI: Missing  \n- Exit cap: Missing  \n- Stabilized value: Missing  \n- Refi loan amount: Missing  \n- Payoff amount: Missing  \n- Cash-out: Missing  \n- Post-refi DSCR: Missing  \n- Post-refi cashflow: Missing  \n\nRefi analysis cannot be conducted due to missing data. Without these figures, we cannot evaluate the potential for refinancing or any cash-out opportunities.\n\n## 6. RISK SUMMARY\n────────────────────────────────────────────────────────\n\n- Missing DSCR metrics create uncertainty about debt service coverage.  \n- Cashflow metrics are also missing, leading to a thin financial picture.  \n- High reliance on current financials with no pro forma or projections available.  \n- Expense ratio appears unrealistic for a Class C property of this age.  \n- Lack of clarity on financing structure raises debt structure risk.  \n\n## 7. BUY BOX TEST (if buy_box provided)\n────────────────────────────────────────────────────────\n\nNo buy box supplied — applying conservative underwriting standards.\n\n## 8. VERDICT (MANDATORY)\n────────────────────────────────────────────────────────\n\n🔴 PASS  \n\nPASS because the entire deal depends on missing and unrealistic financial metrics, making it impossible to judge its viability.",
+      "verdict": "PASS",
+      "timestamp": null
+    },
+    "_underwriting_summary_v2": "This deal is for a multifamily property with 50 units, priced at $5 million, generating a current NOI of $300,000 and a cap rate of 6%. The DSCR is not provided, indicating possible risk in cashflow. There is an estimated stabilized value of $7 million, suggesting notable upside potential. Verdict: PASS due to strong upside potential."
+  },
+  "scenario_json": null,
+  "chat_history": []
+}

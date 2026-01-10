@@ -234,7 +234,7 @@ const FMRTable = ({ fmrData }) => {
 // Main Component
 // ============================================================================
 
-const MarketDataDashboard = ({ dealId, initialZip, initialCity, initialState, initialCounty }) => {
+const MarketDataDashboard = ({ dealId, initialZip, initialCity, initialState, initialCounty, dealAddress, propertyName }) => {
   const [searchZip, setSearchZip] = useState(initialZip || '');
   const [searchCounty, setSearchCounty] = useState(initialCounty || '');
   const [searchState, setSearchState] = useState(initialState || '');
@@ -247,12 +247,14 @@ const MarketDataDashboard = ({ dealId, initialZip, initialCity, initialState, in
   const [zhviData, setZhviData] = useState(null);
   const [zhvfData, setZhvfData] = useState(null);
   const [fmrData, setFmrData] = useState(null);
+  const [fmrSource, setFmrSource] = useState('csv');
   const [dp03Data, setDp03Data] = useState(null);
   const [dp04Data, setDp04Data] = useState(null);
   const [b01003Data, setB01003Data] = useState(null);
   const [landlordData, setLandlordData] = useState(null);
   const [propertyTaxData, setPropertyTaxData] = useState(null);
   const [rentalStatsData, setRentalStatsData] = useState(null);
+  const [migrationData, setMigrationData] = useState(null);
   
   // CSV data caches (loaded once)
   const [csvCache, setCsvCache] = useState({});
@@ -278,6 +280,11 @@ const MarketDataDashboard = ({ dealId, initialZip, initialCity, initialState, in
           landlord: '/landlord_friendly_scores.csv',
           propertyTax: '/Property Taxes by State and County, 2025 Tax Foundation Maps.csv',
           rentalStats: '/zip_renter_owner_stats_with_counts.csv'
+          ,
+          // National migration flows (added): used to compute inflow/outflow for a ZIP/county
+          migration: '/2025_National_Migration_Flows_With_Estimates.csv',
+          // Cleaner county/ZIP migration file with explicit countyname and ZIP columns
+          migration_clean: '/migration_with_clean_zipcodes.csv'
         };
         
         const loadedData = {};
@@ -313,7 +320,8 @@ const MarketDataDashboard = ({ dealId, initialZip, initialCity, initialState, in
   }, []);
 
   // Search function
-  const performSearch = useCallback(() => {
+  const performSearch = useCallback(async () => {
+    console.debug('performSearch invoked', { initialZip, initialCity, initialState, searchZip, searchCounty, searchState, activeSearch, dealAddress });
     if (!searchZip && !searchCounty) {
       setError('Please enter a ZIP code or county name');
       return;
@@ -343,12 +351,32 @@ const MarketDataDashboard = ({ dealId, initialZip, initialCity, initialState, in
         setZhvfData(found || null);
       }
       
-      // Search FMR by ZIP
-      if (zip && csvCache.fmr) {
-        const found = csvCache.fmr.find(row => 
-          String(row.zip).padStart(5, '0') === zip.padStart(5, '0')
-        );
-        setFmrData(found || null);
+      // Try HUD FMR via backend proxy first (if HUD key configured server-side)
+      if (zip) {
+        const zipPad = zip.padStart(5, '0');
+        try {
+          const hudResp = await fetch(`/api/hud/fmr/data/${zipPad}`);
+          if (hudResp.ok) {
+            const hudJson = await hudResp.json();
+            if (hudJson && hudJson.success && hudJson.data) {
+              setFmrData(hudJson.data);
+              setFmrSource('hud');
+            }
+          }
+        } catch (e) {
+          console.debug('HUD FMR fetch failed or not configured:', e);
+        }
+
+        // Fallback to local CSV if HUD didn't provide data
+        if (!fmrData && csvCache.fmr) {
+          const found = csvCache.fmr.find(row => String(row.zip).padStart(5, '0') === zipPad);
+          if (found) {
+            setFmrData(found);
+            if (!fmrSource || fmrSource === 'hud') setFmrSource('csv');
+          } else {
+            setFmrData(null);
+          }
+        }
       }
       
       // Search Rental Stats by ZIP
@@ -404,21 +432,273 @@ const MarketDataDashboard = ({ dealId, initialZip, initialCity, initialState, in
         });
         setPropertyTaxData(found || null);
       }
+
+      // ----- Migration flows (inflow/outflow) -----
+      if (zip && csvCache.migration) {
+        try {
+          const rows = csvCache.migration;
+          if (!rows || rows.length === 0) {
+            console.debug('Migration CSV loaded but empty');
+            setMigrationData(null);
+            return;
+          }
+
+          // Heuristic: find keys for origin/destination and numeric columns
+          const sample = rows[0] || {};
+          const keys = Object.keys(sample);
+          let originKey = keys.find(k => /origin|from|orig_zcta|origin_zcta|from_zcta|from_zip|origin_zip/i.test(k)) || keys.find(k => /orig/i.test(k));
+          let destKey = keys.find(k => /dest|to|destination|dest_zcta|destination_zcta|to_zip|dest_zip/i.test(k)) || keys.find(k => /desti/i.test(k));
+          const migrantsKey = keys.find(k => /migr|count|estimate|flow|n_|value|people|pop|count_est/i.test(k)) || keys.find(k => /count/i.test(k));
+
+          // Additional heuristic: if sample values contain 5-digit zips, pick those keys
+          try {
+            for (const k of keys) {
+              const v = String(sample[k] || '').trim();
+              if (!originKey && /\b\d{5}\b/.test(v)) originKey = k;
+              if (!destKey && /\b\d{5}\b/.test(v) && originKey !== k) destKey = k;
+            }
+          } catch (e) {
+            // ignore
+          }
+
+          // Identify numeric columns to sum when a single migrantsKey is not reliable
+          const numericKeys = keys.filter(k => {
+            const kl = k.toLowerCase();
+            if (k === originKey || k === destKey) return false;
+            if (/(_in)$|(_out)$|inflow|outflow|flow|count|estimate|migr|people|value|n_/.test(kl)) return true;
+            const sv = String(sample[k] || '').replace(/[^0-9.-]/g, '');
+            return sv !== '' && !isNaN(Number(sv));
+          });
+
+          console.debug('Migration CSV sample keys:', keys.slice(0,10));
+          console.debug('Detected migration keys - originKey:', originKey, 'destKey:', destKey, 'migrantsKey:', migrantsKey, 'numericKeys:', numericKeys.slice(0,10));
+
+          let inflow = 0;
+          let outflow = 0;
+          const origins = {};
+          const dests = {};
+
+          let matchedRows = 0;
+          const matchedSamples = [];
+          let sourceUsed = 'primary';
+
+          const zipPad = (zip || '').toString().padStart(5, '0');
+          console.debug('Migration parse: searching ZIP=', zipPad, 'county=', searchCountyName);
+
+          for (const r of rows) {
+            try {
+              const rowText = Object.values(r).join(' ').toLowerCase();
+              let origin = '';
+              let dest = '';
+              try {
+                origin = String(r[originKey] || r['Origin'] || r['origin'] || '').toLowerCase();
+                dest = String(r[destKey] || r['Destination'] || r['destination'] || '').toLowerCase();
+              } catch (_) {
+                // fallback: search for any 5-digit token in row values
+                const vals = Object.values(r).map(v => String(v || '').toLowerCase());
+                for (const v of vals) {
+                  const m = v.match(/\b\d{5}\b/);
+                  if (m) {
+                    if (!origin) origin = m[0];
+                    else if (!dest) dest = m[0];
+                  }
+                }
+              }
+
+              // Compute migrants for this row: prefer specific migrantsKey, else sum numeric columns
+              let migrants = 0;
+              if (migrantsKey && r[migrantsKey] !== undefined) {
+                const raw = String(r[migrantsKey] || '').replace(/[^0-9.-]/g, '');
+                if (raw !== '' && !isNaN(Number(raw))) {
+                  migrants = Number(raw);
+                }
+              }
+
+              if (migrants === 0 && numericKeys.length > 0) {
+                for (const nk of numericKeys) {
+                  try {
+                    const v = String(r[nk] || '').replace(/[^0-9.-]/g, '');
+                    if (v !== '' && !isNaN(Number(v))) migrants += Number(v);
+                  } catch (_) {}
+                }
+              }
+
+              const originZipMatch = (origin.match && origin.match(/\b\d{5}\b/)) ? origin.match(/\b\d{5}\b/)[0] : null;
+              const destZipMatch = (dest.match && dest.match(/\b\d{5}\b/)) ? dest.match(/\b\d{5}\b/)[0] : null;
+
+              if (destZipMatch && destZipMatch === zipPad) {
+                inflow += migrants;
+                const key = origin || 'unknown';
+                origins[key] = (origins[key] || 0) + migrants;
+                matchedRows++;
+                if (matchedSamples.length < 10) matchedSamples.push({type:'inflow', origin, dest, migrants});
+              }
+
+              if (originZipMatch && originZipMatch === zipPad) {
+                outflow += migrants;
+                const key = dest || 'unknown';
+                dests[key] = (dests[key] || 0) + migrants;
+                matchedRows++;
+                if (matchedSamples.length < 10) matchedSamples.push({type:'outflow', origin, dest, migrants});
+              }
+
+              if (searchCountyName && rowText.includes(searchCountyName)) {
+                if (dest && dest.includes(searchCountyName)) {
+                  inflow += migrants;
+                  origins[origin || 'unknown'] = (origins[origin || 'unknown'] || 0) + migrants;
+                  matchedRows++;
+                  if (matchedSamples.length < 10) matchedSamples.push({type:'inflow_county', origin, dest, migrants});
+                }
+                if (origin && origin.includes(searchCountyName)) {
+                  outflow += migrants;
+                  dests[dest || 'unknown'] = (dests[dest || 'unknown'] || 0) + migrants;
+                  matchedRows++;
+                  if (matchedSamples.length < 10) matchedSamples.push({type:'outflow_county', origin, dest, migrants});
+                }
+              }
+            } catch (rowErr) {
+              console.debug('Migration row parse error:', rowErr, r);
+            }
+          }
+
+          let topOrigins = Object.entries(origins).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v])=>({origin:k, count:v}));
+          let topDests = Object.entries(dests).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v])=>({dest:k, count:v}));
+
+          console.debug('Migration parse result (primary): rows=', rows.length, 'matchedRows=', matchedRows, 'inflow=', inflow, 'outflow=', outflow);
+
+          if (matchedRows === 0 && csvCache.migration_clean && Array.isArray(csvCache.migration_clean) && csvCache.migration_clean.length > 0) {
+            console.debug('No matches from primary migration CSV — trying cleaned migration dataset');
+            try {
+              const cleanRows = csvCache.migration_clean;
+              let cleanIn = 0;
+              let cleanOut = 0;
+              let cleanMatched = 0;
+              const cleanOrigins = {};
+              const cleanDests = {};
+
+              for (const r of cleanRows) {
+                try {
+                  const rowZip = String(r.ZIP || r.zip || '').padStart(5, '0');
+                  const rowCounty = String(r.countyname || r.county || '').toLowerCase();
+                  const rowStateRaw = String(r.state || r.State || r.state_name || r.state_usps || '').trim();
+                  const rowStateCode = rowStateRaw.toUpperCase();
+
+                  // If user provided a state, require the cleaned row to match that state to avoid cross-state mismatches
+                  if (state) {
+                    const desired = state.toUpperCase();
+                    const stateMatches = rowStateCode === desired || rowStateCode.includes(desired) || rowStateRaw.toUpperCase().includes(desired);
+                    if (!stateMatches) {
+                      // skip rows from other states
+                      if (matchedSamples.length < 5) matchedSamples.push({type:'skipped_state', rowZip, rowStateRaw});
+                      continue;
+                    }
+                  }
+
+                  let rowIn = 0;
+                  let rowOut = 0;
+                  for (const k of Object.keys(r)) {
+                    if (/(_in)$/.test(k) && !isNaN(Number(r[k]))) rowIn += Number(r[k]) || 0;
+                    if (/(_out)$/.test(k) && !isNaN(Number(r[k]))) rowOut += Number(r[k]) || 0;
+                  }
+
+                  if (rowZip && rowZip === zipPad) {
+                    cleanIn += rowIn;
+                    cleanOut += rowOut;
+                    cleanMatched++;
+                    cleanOrigins[rowCounty || 'unknown'] = (cleanOrigins[rowCounty || 'unknown'] || 0) + rowIn;
+                    cleanDests[rowCounty || 'unknown'] = (cleanDests[rowCounty || 'unknown'] || 0) + rowOut;
+                    if (matchedSamples.length < 10) matchedSamples.push({type:'clean_zip', rowZip, rowIn, rowOut});
+                  }
+
+                  if (searchCountyName && rowCounty && rowCounty.includes(searchCountyName)) {
+                    cleanIn += rowIn;
+                    cleanOut += rowOut;
+                    cleanMatched++;
+                    cleanOrigins[rowZip || 'unknown'] = (cleanOrigins[rowZip || 'unknown'] || 0) + rowIn;
+                    cleanDests[rowZip || 'unknown'] = (cleanDests[rowZip || 'unknown'] || 0) + rowOut;
+                    if (matchedSamples.length < 10) matchedSamples.push({type:'clean_county', rowZip, rowCounty, rowIn, rowOut});
+                  }
+                } catch (e) {
+                  console.debug('Clean migration row parse error:', e, r);
+                }
+              }
+
+              if (cleanMatched > 0) {
+                const topCleanOrigins = Object.entries(cleanOrigins).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v])=>({origin:k, count:v}));
+                const topCleanDests = Object.entries(cleanDests).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v])=>({dest:k, count:v}));
+                console.debug('Clean migration parse result: rows=', cleanRows.length, 'matched=', cleanMatched, 'inflow=', cleanIn, 'outflow=', cleanOut);
+                inflow = cleanIn;
+                outflow = cleanOut;
+                matchedRows = cleanMatched;
+                topOrigins = topCleanOrigins;
+                topDests = topCleanDests;
+                sourceUsed = 'clean';
+              }
+            } catch (cleanErr) {
+              console.warn('Clean migration parse error:', cleanErr);
+            }
+          }
+
+          console.debug('Final migration result: source=', sourceUsed, 'matchedRows=', matchedRows, 'inflow=', inflow, 'outflow=', outflow, 'samples=', matchedSamples.slice(0,10));
+
+          setMigrationData({ inflow, outflow, net: inflow - outflow, topOrigins, topDests, source: sourceUsed, samples: matchedSamples.slice(0,10) });
+        } catch (e) {
+          console.warn('Migration parse error:', e);
+          setMigrationData(null);
+        }
+      } else {
+        setMigrationData(null);
+      }
       
       setActiveSearch({ zip, county, state });
+
+      // Ensure FMR source state is visible in migration/market debug object
+      // (no-op if already updated above)
+      console.debug('FMR source after search:', fmrSource || 'csv');
       
     } catch (e) {
       setError('Error searching data: ' + e.message);
     } finally {
       setLoading(false);
     }
-  }, [searchZip, searchCounty, searchState, csvCache]);
+  }, [searchZip, searchCounty, searchState, csvCache, fmrData, fmrSource]);
 
   // Auto-search on initial load if we have initial values
   useEffect(() => {
-    if (!csvLoading && (initialZip || initialCounty) && Object.keys(csvCache).length > 0) {
-      performSearch();
-    }
+    const tryResolveCountyThenSearch = async () => {
+      if (!csvLoading && Object.keys(csvCache).length > 0) {
+        // If we have an initial ZIP but no county, try to resolve county from migration_clean CSV
+        if (initialZip && !initialCounty && csvCache.migration_clean && Array.isArray(csvCache.migration_clean)) {
+          try {
+            const zipKey = String(initialZip).padStart(5, '0');
+            const rows = csvCache.migration_clean;
+            // Filter rows by ZIP and optional state
+            const matches = rows.filter(r => String(r.ZIP || r.zip || '').padStart(5, '0') === zipKey && (!initialState || String(r.state || r.State || r.state_name || r.state_usps || '').toUpperCase().includes((initialState||'').toUpperCase())));
+            if (matches && matches.length > 0) {
+              // pick the most common countyname among matches
+              const counts = {};
+              for (const m of matches) {
+                const c = String(m.countyname || m.county || '').trim();
+                if (!c) continue;
+                counts[c] = (counts[c] || 0) + 1;
+              }
+              const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+              if (sorted.length > 0) {
+                const resolved = sorted[0][0];
+                console.debug('Resolved county from ZIP:', zipKey, '->', resolved);
+                setSearchCounty(resolved);
+              }
+            }
+          } catch (e) {
+            console.debug('County resolution error:', e);
+          }
+        }
+
+        if (initialZip || initialCounty) performSearch();
+      }
+    };
+
+    tryResolveCountyThenSearch();
   }, [csvLoading, csvCache]);
 
   // Get the most recent ZHVI value (last column with a date)
@@ -486,18 +766,36 @@ const MarketDataDashboard = ({ dealId, initialZip, initialCity, initialState, in
         // Rental Stats
         renterPercentage: rentalStatsData?.pct_renter
       };
+      // Include migration metrics if available
+      if (migrationData) {
+        marketData.migration = {
+          inflow: migrationData.inflow,
+          outflow: migrationData.outflow,
+          net: migrationData.net
+        };
+      }
       
       const location = {
         zip: activeSearch.zip,
-        city: zhviData?.City || fmrData?.county_name || activeSearch.county,
-        state: zhviData?.State || fmrData?.state_usps || activeSearch.state,
+        city: zhviData?.City || fmrData?.county_name || initialCity || activeSearch.county,
+        state: zhviData?.State || fmrData?.state_usps || initialState || activeSearch.state,
         county: activeSearch.county || dp03Data?.NAME?.split(',')[0] || ''
       };
+      
+      // Build full address for location-based research
+      const fullAddress = dealAddress 
+        ? `${dealAddress}, ${location.city}, ${location.state} ${location.zip}`.trim()
+        : `${location.city}, ${location.state} ${location.zip}`.trim();
       
       const response = await fetch('http://localhost:8010/api/market-data/summary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ marketData, location })
+        body: JSON.stringify({ 
+          marketData, 
+          location,
+          dealAddress: fullAddress,
+          propertyName: propertyName || null
+        })
       });
       
       const data = await response.json();
@@ -530,6 +828,13 @@ const MarketDataDashboard = ({ dealId, initialZip, initialCity, initialState, in
         <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>
           View housing, economic, and demographic data for any market
         </p>
+        {/* Debug: show resolved and input location values for verification */}
+        <div style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280' }}>
+          <div><strong>Debug inputs:</strong> initialZip: {initialZip || '—'} • initialCity: {initialCity || '—'} • initialState: {initialState || '—'}</div>
+          <div>current search: ZIP {searchZip || '—'} • County {searchCounty || '—'} • State {searchState || '—'}</div>
+          <div>activeSearch (applied): ZIP {activeSearch.zip || '—'} • County {activeSearch.county || '—'} • State {activeSearch.state || '—'}</div>
+          <div>dealAddress: {dealAddress ? dealAddress : '—'}</div>
+        </div>
       </div>
 
       {/* Search Section */}
@@ -972,6 +1277,54 @@ const MarketDataDashboard = ({ dealId, initialZip, initialCity, initialState, in
                   color="#ec4899"
                 />
               </div>
+            </>
+          )}
+
+          {/* Migration Flows */}
+          {migrationData && (
+            <>
+              <SectionHeader title="Migration Flows (Estimates)" icon={Globe} color="#0ea5a4" />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                <MetricCard label="Inflow (est.)" value={migrationData.inflow} format="number" icon={ArrowUpRight} color="#10b981" subValue="People moving into area" />
+                <MetricCard label="Outflow (est.)" value={migrationData.outflow} format="number" icon={ArrowDownRight} color="#ef4444" subValue="People leaving the area" />
+                <MetricCard label="Net Migration" value={migrationData.net} format="number" icon={TrendingUp} color="#3b82f6" subValue={migrationData.net >= 0 ? 'Net inflow' : 'Net outflow'} />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px' }}>Top Origins (by inflow)</div>
+                  <ol style={{ margin: 0, paddingLeft: '18px' }}>
+                    {migrationData.topOrigins.map((o, i) => (
+                      <li key={i} style={{ marginBottom: '6px' }}>{o.origin} — {o.count.toLocaleString()}</li>
+                    ))}
+                  </ol>
+                </div>
+                <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px' }}>Top Destinations (by outflow)</div>
+                  <ol style={{ margin: 0, paddingLeft: '18px' }}>
+                    {migrationData.topDests.map((d, i) => (
+                      <li key={i} style={{ marginBottom: '6px' }}>{d.dest} — {d.count.toLocaleString()}</li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
+
+              {/* Debug info: show which migration source and sample matched rows */}
+              {migrationData && (migrationData.source || migrationData.samples) && (
+                <div style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280' }}>
+                  <div><strong>Migration source:</strong> {migrationData.source || 'primary'}</div>
+                  {migrationData.samples && migrationData.samples.length > 0 && (
+                    <div style={{ marginTop: '8px' }}>
+                      <div style={{ fontSize: '12px', color: '#374151', marginBottom: '6px' }}>Sample matched rows (first {migrationData.samples.length}):</div>
+                      <ol style={{ paddingLeft: '18px', margin: 0 }}>
+                        {migrationData.samples.map((s, i) => (
+                          <li key={i} style={{ marginBottom: '6px', fontSize: '12px' }}>{s.type} — {s.origin || s.rowZip || 'unknown'} → {s.dest || s.rowCounty || ''} — {s.migrants || s.rowIn || 0}</li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
 

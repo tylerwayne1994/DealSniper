@@ -883,6 +883,16 @@ const EnhancedUploadPage = () => {
                 <label htmlFor="fileInput" style={{ ...styles.button, cursor: "pointer" }}>
                   <Upload size={18} /> Choose File
                 </label>
+                <div style={{ margin: "24px 0", textAlign: "center", position: "relative" }}>
+                  <div style={{ position: "absolute", left: 0, right: 0, top: "50%", height: 1, background: "#e5e7eb" }} />
+                  <span style={{ position: "relative", background: "#f8fafc", padding: "0 16px", color: "#6b7280", fontSize: 14, fontWeight: 600 }}>OR</span>
+                </div>
+                <button
+                  onClick={() => navigate('/manual-entry')}
+                  style={{ ...styles.button, background: "linear-gradient(135deg, #10b981, #059669)", boxShadow: "0 4px 14px rgba(16, 185, 129, 0.3)" }}
+                >
+                  <FileText size={18} /> Enter Manually
+                </button>
               </div>
             </div>
           </div>
@@ -1066,6 +1076,14 @@ const EnhancedUploadPage = () => {
 
     const financingMode = verifiedData?.pricing_financing?.financing_mode || 'traditional';
 
+    // Source metadata from backend (where in the PDF each key field came from)
+    const sources = backendData?.parsed?.metadata?.sources || {};
+    const sourcedFields = Object.entries(sources).map(([path, meta]) => ({
+      path,
+      page: meta.page,
+      text: meta.text,
+    }));
+
     return (
       <div style={styles.page}>
         <div style={styles.container}>
@@ -1119,6 +1137,84 @@ const EnhancedUploadPage = () => {
               </div>
             </div>
           )}
+
+          {/* PDF preview + sourced field snippets (visual cross-check before the wizard) */}
+          <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', marginBottom: 24 }}>
+            {/* LEFT: PDF thumbnails */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ ...styles.card, marginBottom: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>PDF Preview</h2>
+                  <span style={{ fontSize: 12, color: '#6b7280' }}>
+                    {pdfPages.length > 0 ? `${pdfPages.length} pages` : 'No preview available'}
+                  </span>
+                </div>
+                {pdfPages.length > 0 ? (
+                  <div style={{ maxHeight: 260, overflowY: 'auto', borderRadius: 12, border: '1px solid #e5e7eb', padding: 8, background: '#f9fafb' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 8 }}>
+                      {pdfPages.map((p) => (
+                        <div key={p.pageNum} style={{ textAlign: 'center' }}>
+                          <img
+                            src={p.thumbnail}
+                            alt={`Page ${p.pageNum}`}
+                            style={{ width: '100%', borderRadius: 8, border: '1px solid #e5e7eb' }}
+                          />
+                          <div style={{ fontSize: 12, marginTop: 4, color: '#4b5563' }}>Page {p.pageNum}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ padding: 24, textAlign: 'center', fontSize: 14, color: '#6b7280' }}>
+                    PDF preview is only available for PDF uploads.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* RIGHT: list of sourced fields and the exact lines used */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ ...styles.card, marginBottom: 0 }}>
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Highlighted Fields From PDF</div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>
+                    These are the lines the parser used for key T12 income and expenses.
+                  </div>
+                </div>
+                {sourcedFields.length === 0 ? (
+                  <div style={{ fontSize: 13, color: '#9ca3af' }}>
+                    No source metadata available for this document yet.
+                  </div>
+                ) : (
+                  <div style={{ maxHeight: 260, overflowY: 'auto', borderTop: '1px solid #e5e7eb', marginTop: 8, paddingTop: 8 }}>
+                    {sourcedFields.map((f) => (
+                      <div
+                        key={f.path}
+                        style={{
+                          padding: '6px 8px',
+                          borderRadius: 8,
+                          marginBottom: 6,
+                          background: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          fontSize: 12,
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <span style={{ fontWeight: 600, color: '#111827' }}>{f.path}</span>
+                          {typeof f.page === 'number' && (
+                            <span style={{ color: '#4b5563' }}>Page {f.page}</span>
+                          )}
+                        </div>
+                        <div style={{ color: '#374151', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' }}>
+                          {f.text}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
           <div style={{ display: "flex", gap: 4, marginBottom: 24, background: "#f9fafb", padding: 4, borderRadius: 12 }}>
             {[...tabs, { id: "proforma", label: "Proforma", icon: FileText }].map(tab => {

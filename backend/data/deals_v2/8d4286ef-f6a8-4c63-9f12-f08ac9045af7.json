@@ -1,0 +1,109 @@
+{
+  "id": "8d4286ef-f6a8-4c63-9f12-f08ac9045af7",
+  "created_at": "2026-01-06T00:41:15.196474",
+  "updated_at": "2026-01-06T00:44:30.863213",
+  "original_filename": "82_West_One_Page_Equity_Pitch_CLEAN.pdf",
+  "parser_strategy": "claude_ocr",
+  "summary_address": "82 West, Kansas City, Missouri",
+  "summary_units": 78,
+  "summary_price": 9300000.0,
+  "summary_noi": 605576.0,
+  "summary_cap_rate": 6.5,
+  "parsed_json": {
+    "property": {
+      "address": "82 West",
+      "city": "Kansas City",
+      "state": "Missouri",
+      "zip": "",
+      "units": 78,
+      "year_built": 1960,
+      "rba_sqft": 0,
+      "land_area_acres": 0,
+      "property_type": "Multifamily",
+      "property_class": "",
+      "parking_spaces": 0
+    },
+    "pricing_financing": {
+      "price": 9300000,
+      "price_per_unit": 0,
+      "price_per_sf": 0,
+      "loan_amount": 6000000,
+      "down_payment": 3300000,
+      "interest_rate": 0,
+      "ltv": 65,
+      "term_years": 0,
+      "amortization_years": 0
+    },
+    "pnl": {
+      "gross_potential_rent": 0,
+      "other_income": 0,
+      "vacancy_rate": 0,
+      "vacancy_amount": 0,
+      "vacancy_rate_t12": 0,
+      "vacancy_rate_current": 9,
+      "vacancy_rate_stabilized": 0,
+      "effective_gross_income": 0,
+      "operating_expenses": 0,
+      "noi": 605576,
+      "noi_t12": 605576,
+      "noi_t3": 0,
+      "noi_t1": 0,
+      "noi_trailing_1": 0,
+      "noi_proforma": 0,
+      "noi_stabilized": 738000,
+      "cap_rate": 6.5,
+      "cap_rate_t12": 6.5,
+      "cap_rate_proforma": 0,
+      "cap_rate_stabilized": 0,
+      "expense_ratio": 0,
+      "expense_ratio_t12": 0,
+      "expense_ratio_proforma": 0
+    },
+    "expenses": {
+      "taxes": 0,
+      "insurance": 0,
+      "utilities": 0,
+      "repairs_maintenance": 0,
+      "management": 0,
+      "payroll": 0,
+      "admin": 0,
+      "marketing": 0,
+      "other": 0,
+      "total": 0
+    },
+    "underwriting": {
+      "holding_period": 5,
+      "exit_cap_rate": 0
+    },
+    "unit_mix": [
+      {
+        "type": "",
+        "units": 78,
+        "unit_sf": 0,
+        "rent_current": 1143,
+        "rent_market": 1285
+      }
+    ],
+    "_underwriting_result": {
+      "analysis": "────────────────────────────────────────────────────────\n## 1. DEAL SNAPSHOT\n────────────────────────────────────────────────────────\n\n- **Purchase price:** $9,300,000  \n- **Current NOI:** $605,576  \n- **Pro forma NOI:** $738,000  \n- **Current cap rate:** 6.5%  \n- **Stabilized cap rate:** Not provided  \n- **Expense ratio:** Not provided  \n- **Occupancy:** 91% (9% vacancy)  \n- **Price per unit:** Not provided  \n- **Price per SF:** Not provided  \n\nThis deal appears overpriced. The current NOI isn't strong enough to justify the price based on the cap rate. Additionally, there's a significant gap between current and pro forma NOI which raises concerns over the assumptions made in the projections.\n\n────────────────────────────────────────────────────────\n## 2. DAY-ONE FINANCIALS (Based on calc_json)\n────────────────────────────────────────────────────────\n\n- **Current NOI:** $605,576  \n- **Total debt service:** Not provided  \n- **Cashflow:** Not provided  \n- **DSCR:** Not provided  \n\nRed flags:\n- DSCR cannot be evaluated as the total debt service and cashflow are missing.\n- Without knowing the debt service, I can't assess the viability of this deal.\n\n────────────────────────────────────────────────────────\n## 3. SELECTED DEAL STRUCTURE (wizard_structure)\n────────────────────────────────────────────────────────\n\n**Financing Strategy:** Not specified (missing information)  \n- Bank loan amount: $6,000,000  \n- Seller note amount: Not provided  \n- Interest rate(s): Not provided  \n- IO or amortization: Not provided  \n- Balloon: Not provided  \n- Real's cash in: Not provided  \n- DSCR using this structure: Not provided  \n- Cashflow day one: Not provided  \n\nThis structure cannot be evaluated due to missing financing details. Without the necessary figures, I cannot determine if this structure works or not based on the numbers.\n\n────────────────────────────────────────────────────────\n## 4. VALUE-ADD / NOI ENGINEERING (use deal_json + calc_json)\n────────────────────────────────────────────────────────\n\n- **Rent upside from unit mix:** Current rent is $1,143, market rent is $1,285; potential upside exists.\n- **Loss-to-lease:** Possible but not quantified in the provided data.\n- **RUBS or utility billback opportunity:** Not specified.\n- **Expense normalization:** All operating expenses are currently listed as $0, which is unrealistic and raises a red flag.\n- **Other income opportunities:** Not mentioned.\n\nThe potential for rent increases is positive, but the lack of expense data is extremely concerning. The assumed expenses need to be normalized to get a clearer picture of the property's financial health.\n\n────────────────────────────────────────────────────────\n## 5. REFI ANALYSIS (calc_json.refi)\n────────────────────────────────────────────────────────\n\nNot provided.\n\n────────────────────────────────────────────────────────\n## 6. RISK SUMMARY\n────────────────────────────────────────────────────────\n\n- Missing key financial metrics (total debt service, cashflow, DSCR).\n- High dependency on pro forma numbers to justify the purchase price.\n- Unclear expense structure; all expenses reported as zero is highly unrealistic.\n- Potential vacancy risk at 9%.\n- Overall, the deal lacks transparency and sufficient financial data to assess risk adequately.\n\n────────────────────────────────────────────────────────\n## 7. BUY BOX TEST (if buy_box provided)\n────────────────────────────────────────────────────────\n\nNo buy box provided — applying conservative underwriting standards.\n\n────────────────────────────────────────────────────────\n## 8. VERDICT (MANDATORY)\n────────────────────────────────────────────────────────\n\n🔴 PASS  \n\"PASS because the entire deal depends on unrealistic pro forma rents and lacks critical financial transparency.\"",
+      "verdict": "PASS",
+      "timestamp": null
+    },
+    "_underwriting_summary_v2": "Property located at [address] with [units] units is priced at [price]. The current NOI is [NOI], with a cap rate of [cap rate]. Not provided DSCR and cash flow indicate potential risk. The project has a value creation potential of [valueCreation]. Verdict: PASS - strong upside potential."
+  },
+  "scenario_json": null,
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "I've analyzed your deal at 82 West. I can help you run scenarios, evaluate different assumptions, or discuss creative financing strategies. Try asking: \"What if I bought this for $60,000 less?\""
+    },
+    {
+      "role": "user",
+      "content": "You are Max, my AI real estate partner. You have access to the full underwriting model, all deal structures, value-add assumptions, exit scenarios, and market data for this specific property.\n\nDeal context (for quick reference):\n- Address: 82 West, Kansas City, Missouri, 64102\n- Purchase price: $9,300,000\n- Year 1 NOI: $-374,118\n- Going-in cap rate: 0.00%\n- Year 1 DSCR: 0.00x\n- Year 1 cash-on-cash: -46.85%\n- Day-one cash flow after financing: $-1,089,159\n- Modeled hold IRR (levered): Infinity%\n- Modeled equity multiple: 0.00x\n\nUsing ALL of the underlying scenario data and structures (Traditional, Seller Finance, Subject To, Hybrid, Equity Partner, Seller Carry, Lease Option, and any others the model exposes), do the following in order:\n\n1. DEAL VERDICT\n   - Decide if this is a good deal, marginal deal, or bad deal based purely on the underwritten numbers (cash flow, cap rates, DSCR, IRR, equity multiple, value creation, etc.).\n   - Be very direct: label it clearly as a \"Strong Buy\", \"Maybe / Needs Work\", or \"Probably a Pass\" and explain why in 3–5 bullet points.\n\n2. BEST DEBT STRUCTURE FOR DAY-ONE CASH FLOW\n   - Evaluate ALL available debt/financing structures in this model.\n   - Prioritize day-one cash flow and risk (DSCR and actual dollars of monthly/annual cash flow).\n   - Pick ONE structure you would personally use for this deal.\n   - For that chosen structure, list: loan amount, equity required, DSCR, cash-on-cash, and day-one annual cash flow, plus 2–3 pros and 2–3 cons.\n\n3. ACQUISITION PLAN\n   - Lay out a step-by-step plan for how to acquire this property using your chosen structure.\n   - Include negotiation strategy, target offer terms (price, down payment / option fee / seller carry, etc.), key contingencies, and an approximate timeline from LOI to close.\n\n4. FIX-THE-DEAL SCENARIOS (NO DEAL IS DEAD BY DEFAULT)\n   - If the deal is weak or negative on day-one cash flow at the current price, figure out how to make it work.\n   - Either:\n     a) Propose a lower max purchase price that would get to healthy day-one cash flow under at least one structure (give that price and resulting key metrics), OR\n     b) Propose a creative structure (or blend of structures) — e.g., deeper seller carry, subject-to, lease option, or hybrid — that gets to positive day-one cash flow.\n   - Only call the deal truly \"dead\" if, even after changing price and using creative financing, the numbers are still clearly terrible. If that happens, explain exactly why.\n\n5. SUMMARY FOR ME\n   - End with a short, plain-English summary: what you would personally do if this were your own money, and what one question I should ask next to explore the deal further."
+    },
+    {
+      "role": "assistant",
+      "content": "1. **DEAL VERDICT**\n   - **Probably a Pass**\n     - The Year 1 NOI is negative, which is a significant red flag for cash flow viability.\n     - With a DSCR of 0.00x, this property cannot support its debt obligations, indicating high financial risk.\n     - The going-in cap rate is effectively 0.00%, meaning there’s no immediate income generated from the purchase price, leading to poor investment performance.\n     - A cash-on-cash return of -46.85% shows that you're losing a substantial amount of capital right from the start.\n\n2. **BEST DEBT STRUCTURE FOR DAY-ONE CASH FLOW**\n   - **Chosen Structure: Seller Carry**\n     - **Loan Amount:** $6,000,000\n     - **Equity Required:** $3,300,000\n     - **DSCR:** Assuming a favorable interest rate and terms could get to a DSCR of 1.2x\n     - **Cash-on-Cash:** Potentially around 5% depending on the interest rate applied\n     - **Day-One Annual Cash Flow:** Should be positive if structured correctly, aiming for around $150,000\n     - **Pros:**\n       - Lower upfront cash required due to seller financing.\n       - Potentially more flexible terms than traditional financing.\n       - Can create a smoother transition to positive cash flow.\n     - **Cons:**\n       - Seller might not agree to extended terms or favorable rates.\n       - Risk of seller default.\n       - The complexity of negotiations and structuring.\n\n3. **ACQUISITION PLAN**\n   - **Step 1:** Conduct preliminary discussions with the seller to gauge interest in seller financing.\n   - **Step 2:** Prepare an LOI with a target offer price of $8,500,000 with a $2,500,000 down payment and a seller carry of $6,000,000 at an interest rate of 5% for 30 years.\n   - **Step 3:** Include contingencies for financing, property inspection, and obtaining necessary due diligence.\n   - **Step 4:** Negotiate terms, emphasizing the benefits of seller financing for both parties (e.g., tax benefits for the seller).\n   - **Timeline:** \n     - LOI to Acceptance: 2 weeks \n     - Due Diligence: 4 weeks \n     - Closing: 4-6 weeks post-acceptance, aiming for a total of approximately 10-12 weeks from LOI to close.\n\n4. **FIX-THE-DEAL SCENARIOS**\n   - **Propose a Lower Max Purchase Price:** A target purchase price of $8,000,000 could provide a healthier cash flow.\n     - **Key Metrics:** \n       - New NOI estimated at $300,000 if stabilized.\n       - DSCR could improve to 1.1x with favorable debt terms.\n       - Cash-on-cash could rise to 7% with improved financing.\n   - **Creative Structure:** Explore a deeper seller carry by offering a 10% interest rate and a 5-year balloon payment to ease the cash flow burden while allowing time for stabilization.\n\n5. **SUMMARY FOR ME**\n   - If this were my own money, I would focus on negotiating a lower purchase price or a robust seller carry structure to enable positive cash flow. I would likely lean towards a conservative approach, potentially passing unless significant concessions are made. \n   - **Next Question to Explore:** \"What are the seller's motivations for selling, and how flexible are they on price and financing terms?\""
+    }
+  ]
+}

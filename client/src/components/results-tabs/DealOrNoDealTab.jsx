@@ -16,7 +16,8 @@ import {
   Mail,
   Layers,
   ArrowRight,
-  Rocket
+  Rocket,
+  Sparkles
 } from 'lucide-react';
 import { saveDeal } from '../../lib/dealsService';
 
@@ -179,12 +180,14 @@ const DealVerdict = ({ capRate, cashOnCash, dscr, occupancyRate }) => {
       justifyContent: 'center',
       gap: '16px',
       padding: '24px 32px',
-      backgroundColor: '#1e293b',
-      borderRadius: '16px'
+      backgroundColor: '#ffffff',
+      borderRadius: '16px',
+      border: '1px solid #e5e7eb',
+      boxShadow: '0 8px 24px rgba(15,23,42,0.12)'
     }}>
       <Icon size={48} color={color} />
       <div>
-        <div style={{ fontSize: '14px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px' }}>
+        <div style={{ fontSize: '14px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px' }}>
           Verdict
         </div>
         <div style={{ fontSize: '42px', fontWeight: '800', color, letterSpacing: '2px' }}>
@@ -229,11 +232,12 @@ const SectionCard = ({ title, icon: Icon, children }) => (
     backgroundColor: 'white',
     borderRadius: '12px',
     border: '1px solid #e5e7eb',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    boxShadow: '0 4px 10px rgba(15,23,42,0.08)'
   }}>
     <div style={{
       padding: '16px 20px',
-      backgroundColor: '#1e293b',
+      backgroundColor: '#1d4ed8',
       display: 'flex',
       alignItems: 'center',
       gap: '10px'
@@ -253,9 +257,12 @@ const SectionCard = ({ title, icon: Icon, children }) => (
 // Main Component
 // ============================================================================
 
-const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, marketCapRateLoading, onPushToPipeline }) => {
+const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, marketCapRateLoading, onPushToPipeline, underwritingResult, recommendedStructure }) => {
   const [isPushing, setIsPushing] = useState(false);
   const [pushSuccess, setPushSuccess] = useState(false);
+
+  // Optional AI underwriting summary (from v3 underwriter)
+  const aiSummary = underwritingResult?.summaryText || underwritingResult?.summary_text || null;
 
   // Extract all data
   const property = scenarioData?.property || {};
@@ -274,8 +281,12 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
   const totalUnits = property.units || unitMix.reduce((sum, u) => sum + (u.units || 0), 0) || 0;
   const netRentableSF = property.rba_sqft || unitMix.reduce((sum, u) => sum + ((u.units || 0) * (u.unit_sf || 0)), 0) || 0;
   
-  // Occupancy - handle both decimal (0.95) and percentage (95) formats
-  let occupancyRate = fullCalcs?.occupancy?.rate || property.occupancy_rate || property.occupancy || 0;
+  // Occupancy - prefer normalized calc_json.current.occupancy, then fall back
+  // to parsed property fields. Handles both decimal (0.95) and percentage (95).
+  let occupancyRate = fullCalcs?.current?.occupancy;
+  if (occupancyRate == null) {
+    occupancyRate = fullCalcs?.occupancy?.rate || property.occupancy_rate || property.occupancy || 0;
+  }
   if (occupancyRate > 1) {
     occupancyRate = occupancyRate / 100; // Convert from percentage to decimal
   }
@@ -294,7 +305,9 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
   const pricePerSF = netRentableSF > 0 ? purchasePrice / netRentableSF : 0;
   const capitalImprovements = pricingFinancing.capex_budget || pricingFinancing.renovation_budget || 0;
   const closingCosts = fullCalcs?.acquisition?.closingCosts || (purchasePrice * 0.02) || 0;
-  const totalProjectCost = fullCalcs?.acquisition?.totalAcquisitionCosts || (purchasePrice + capitalImprovements + closingCosts);
+  const totalProjectCost = fullCalcs?.total_project_cost
+    || fullCalcs?.acquisition?.totalAcquisitionCosts
+    || (purchasePrice + capitalImprovements + closingCosts);
 
   // Financing
   const loanAmount = fullCalcs?.financing?.loanAmount || 0;
@@ -321,9 +334,11 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
   const amortization = pricingFinancing.amortization_period || financing.amortization || 30;
 
   // Returns
-  const projectIRR = fullCalcs?.returns?.irr || 0;
+  // Use the core engine's levered IRR and Year 1 metrics so
+  // Deal-or-No-Deal, Results, and AI all see the same values.
+  const projectIRR = fullCalcs?.returns?.leveredIRR || 0;
   const avgCashOnCash = fullCalcs?.year1?.cashOnCash || 0;
-  const inPlaceCapRate = fullCalcs?.year1?.capRate || 0;
+  const inPlaceCapRate = fullCalcs?.current?.capRate ?? fullCalcs?.year1?.capRate ?? 0;
   
   // Exit cap rate - handle decimal vs percentage
   let exitCapRate = pricingFinancing.exit_cap_rate || financing.exit_cap_rate || 6;
@@ -331,38 +346,35 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
     exitCapRate = exitCapRate * 100;
   }
   
-  const dscr = fullCalcs?.year1?.dscr || 0;
+  const dscr = fullCalcs?.current?.dscr ?? fullCalcs?.year1?.dscr ?? 0;
   const noiYear1 = fullCalcs?.year1?.noi || 0;
-  const noiAtSale = fullCalcs?.returns?.exitNOI || (noiYear1 * Math.pow(1.03, holdingPeriod));
+  // NOI at sale / stabilized NOI from engine only (no new math)
+  const noiAtSale = fullCalcs?.stabilized?.noi
+    ?? fullCalcs?.returns?.exitNOI
+    ?? 0;
   const equityMultiple = fullCalcs?.returns?.equityMultiple || 0;
 
   // Cash Flow Analysis
   const dayOneCashFlow = fullCalcs?.year1?.cashFlowAfterFinancing || fullCalcs?.year1?.cashFlow || 0;
-  const stabilizedCashFlow = fullCalcs?.stabilized?.cashFlow || (noiYear1 * 1.1 - (fullCalcs?.financing?.annualDebtService || 0));
+  // Stabilized cash flow from calc_json.stabilized (single source of truth)
+  const stabilizedCashFlow = fullCalcs?.stabilized?.cashflow ?? 0;
   
   // Refinance Analysis - use percentage for cap rate calculation
-  const stabilizedNOI = noiAtSale || noiYear1 * 1.1;
-  const refiCapRate = exitCapRate || 6;
-  const refiValue = refiCapRate > 0 ? (stabilizedNOI / (refiCapRate / 100)) : 0;
-  const refiLTV = 0.75;
-  const refiLoanAmount = refiValue * refiLTV;
-  const cashOutRefi = Math.max(0, refiLoanAmount - loanAmount);
+  // Exit / refi metrics from engine only (no new math)
+  const refiValue = fullCalcs?.stabilized?.value
+    ?? fullCalcs?.returns?.terminalValue
+    ?? 0;
+  const cashOutRefi = fullCalcs?.exit?.reversionCashFlow ?? 0;
   const pricePerUnit = totalUnits > 0 ? purchasePrice / totalUnits : 0;
-
-  // Post-Refi Cash Flow (rough estimate)
-  const postRefiDebtService = refiLoanAmount * (interestRate / 100) * 1.1; // Rough annual payment estimate
-  const postRefiCashFlow = stabilizedNOI - postRefiDebtService;
-
-  // User's total after paying off (simplified)
-  const userTotalInPocket = cashOutRefi > 0 ? cashOutRefi - totalEquity : 0;
+  const valueCreation = fullCalcs?.valueCreation ?? 0;
 
   // Broker Info
   const brokerName = broker.name || property.listing_broker || 'Not Specified';
   const brokerPhone = broker.phone || property.broker_phone || '-';
   const brokerEmail = broker.email || property.broker_email || '-';
 
-  // Best Deal Structure (from deal structure analysis if available)
-  const dealStructure = scenarioData?.recommended_structure || scenarioData?.deal_structure?.recommended || 'Traditional Financing';
+  // Best Deal Structure - prioritize AI recommendation from DealStructureTab, then fall back to saved data
+  const dealStructure = recommendedStructure || scenarioData?.recommended_structure || scenarioData?.deal_structure?.recommended || 'Traditional Financing';
 
   // Generate Summary
   const dealSummary = useMemo(() => generateDealSummary({
@@ -385,6 +397,8 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
     cashOutRefi
   }), [propertyName, address, totalUnits, purchasePrice, inPlaceCapRate, avgCashOnCash, dscr, ltv, noiYear1, pricePerUnit, occupancyRate]);
 
+  const effectiveSummaryText = aiSummary || dealSummary;
+
   // Push to Pipeline Handler
   const handlePushToPipeline = async () => {
     setIsPushing(true);
@@ -405,17 +419,17 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
             stabilizedCashFlow,
             refiValue,
             cashOutRefiAmount: cashOutRefi,
-            userTotalInPocket,
-            postRefiCashFlow,
             inPlaceCapRate,
             avgCashOnCash,
             dscr,
             ltv,
             noiYear1,
-            pricePerUnit
+            pricePerUnit,
+            valueCreation
           }
         },
         marketCapRate: marketCapRate,  // LLM-derived cap rate
+        images: scenarioData?.images || [],  // NEW: Include extracted images
         brokerName,
         brokerPhone,
         brokerEmail,
@@ -440,8 +454,8 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
     <div style={{ padding: '24px', backgroundColor: '#f9fafb', minHeight: '100vh' }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
         
-        {/* Header with Push to Pipeline Button */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+        {/* Header with Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <div style={{ 
               width: '32px', 
@@ -460,42 +474,49 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
               DEAL OR NO DEAL ANALYSIS
             </h2>
           </div>
-          
-          <button
-            onClick={handlePushToPipeline}
-            disabled={isPushing}
-            style={{
-              padding: '14px 28px',
-              backgroundColor: pushSuccess ? '#10b981' : isPushing ? '#9ca3af' : '#8b5cf6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '10px',
-              fontSize: '15px',
-              fontWeight: '700',
-              cursor: isPushing ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-              transition: 'all 0.2s',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}
-          >
-            {pushSuccess ? (
-              <>
-                <CheckCircle size={20} />
-                Added to Pipeline!
-              </>
-            ) : isPushing ? (
-              'Pushing...'
-            ) : (
-              <>
-                <Rocket size={20} />
-                Push to Pipeline
-              </>
-            )}
-          </button>
+        </div>
+
+        {/* Top action bar: Push to Pipeline (left) + Run AI Underwriting (right, existing elsewhere) */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <div>
+            <button
+              onClick={handlePushToPipeline}
+              disabled={isPushing}
+              style={{
+                padding: '12px 24px',
+                backgroundColor: pushSuccess ? '#10b981' : isPushing ? '#9ca3af' : '#111827',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '700',
+                cursor: isPushing ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 2px 4px rgba(15,23,42,0.2)',
+                transition: 'all 0.2s',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}
+            >
+              {pushSuccess ? (
+                <>
+                  <CheckCircle size={18} />
+                  Added to Pipeline
+                </>
+              ) : isPushing ? (
+                'Pushing...'
+              ) : (
+                <>
+                  <Rocket size={18} />
+                  Push to Pipeline
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* The Run AI Underwriting button lives in the parent header on this page; this layout leaves space on the right for it */}
         </div>
 
         {/* Deal Verdict */}
@@ -508,24 +529,25 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
           />
         </div>
 
-        {/* Deal Summary */}
-        <div style={{
-          backgroundColor: 'white',
-          borderRadius: '12px',
-          border: '1px solid #e5e7eb',
-          padding: '24px',
-          marginBottom: '24px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-            <FileText size={20} color="#3b82f6" />
-            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#111827' }}>Investment Summary</h3>
+        {/* AI Analysis - Only show if available */}
+        {aiSummary && (
+          <div style={{
+            backgroundColor: '#f0f9ff',
+            borderRadius: '12px',
+            border: '2px solid #3b82f6',
+            padding: '24px',
+            marginBottom: '24px'
+          }}>
+            <div style={{ marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#111827' }}>AI Investment Analysis</h3>
+            </div>
+            <div style={{ fontSize: '14px', lineHeight: '1.8', color: '#374151', whiteSpace: 'pre-wrap' }}>
+              {(aiSummary || '').split('**').map((part, i) => 
+                i % 2 === 1 ? <strong key={i}>{part}</strong> : part
+              )}
+            </div>
           </div>
-          <div style={{ fontSize: '14px', lineHeight: '1.8', color: '#374151', whiteSpace: 'pre-wrap' }}>
-            {dealSummary.split('**').map((part, i) => 
-              i % 2 === 1 ? <strong key={i}>{part}</strong> : part
-            )}
-          </div>
-        </div>
+        )}
 
         {/* Main Content Grid - 4 Sections */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
@@ -571,6 +593,7 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
             <InfoRow label="Debt Coverage Ratio" value={dscr > 0 ? `${dscr.toFixed(2)}x` : '-'} />
             <InfoRow label="NOI Year 1" value={fmt(noiYear1)} />
             <InfoRow label="NOI at Sale" value={fmt(noiAtSale)} />
+            <InfoRow label="Value Creation" value={fmt(valueCreation)} />
             <InfoRow label="Equity Multiple" value={equityMultiple > 0 ? `${equityMultiple.toFixed(2)}x` : '-'} />
           </SectionCard>
         </div>
@@ -578,15 +601,16 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
         {/* Market Cap Rate Analysis */}
         {(marketCapRate || marketCapRateLoading) && (
           <div style={{
-            backgroundColor: '#0f172a',
+            backgroundColor: '#ffffff',
             borderRadius: '12px',
-            border: '2px solid #3b82f6',
+            border: '1px solid #e5e7eb',
             padding: '20px',
-            marginBottom: '24px'
+            marginBottom: '24px',
+            boxShadow: '0 4px 10px rgba(15,23,42,0.08)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
               <TrendingUp size={20} color="#3b82f6" />
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: 'white' }}>Market Cap Rate Analysis</h3>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#111827' }}>Market Cap Rate Analysis</h3>
               {marketCapRateLoading && (
                 <span style={{ fontSize: '12px', color: '#60a5fa', marginLeft: 'auto' }}>Loading...</span>
               )}
@@ -595,7 +619,7 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
             {marketCapRate && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
                 {/* Market Cap Rate */}
-                <div style={{ backgroundColor: '#1e293b', borderRadius: '10px', padding: '16px', textAlign: 'center' }}>
+                <div style={{ backgroundColor: '#f9fafb', borderRadius: '10px', padding: '16px', textAlign: 'center', border: '1px solid #e5e7eb' }}>
                   <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px', textTransform: 'uppercase', fontWeight: '600' }}>
                     Market Cap Rate
                   </div>
@@ -608,7 +632,7 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
                 </div>
                 
                 {/* Deal Cap Rate */}
-                <div style={{ backgroundColor: '#1e293b', borderRadius: '10px', padding: '16px', textAlign: 'center' }}>
+                <div style={{ backgroundColor: '#f9fafb', borderRadius: '10px', padding: '16px', textAlign: 'center', border: '1px solid #e5e7eb' }}>
                   <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px', textTransform: 'uppercase', fontWeight: '600' }}>
                     Deal Cap Rate
                   </div>
@@ -621,7 +645,7 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
                 </div>
                 
                 {/* Spread / Value Assessment */}
-                <div style={{ backgroundColor: '#1e293b', borderRadius: '10px', padding: '16px', textAlign: 'center' }}>
+                <div style={{ backgroundColor: '#f9fafb', borderRadius: '10px', padding: '16px', textAlign: 'center', border: '1px solid #e5e7eb' }}>
                   <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px', textTransform: 'uppercase', fontWeight: '600' }}>
                     Cap Rate Spread
                   </div>
@@ -645,9 +669,9 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
             
             {/* Market Context */}
             {marketCapRate && (
-              <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#1e293b', borderRadius: '8px' }}>
-                <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '6px', fontWeight: '600' }}>Market Context</div>
-                <div style={{ fontSize: '13px', color: '#e2e8f0', lineHeight: '1.5' }}>
+              <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <div style={{ fontSize: '12px', color: '#4b5563', marginBottom: '6px', fontWeight: '600' }}>Market Context</div>
+                <div style={{ fontSize: '13px', color: '#374151', lineHeight: '1.5' }}>
                   {marketCapRate.rationale || 'Market cap rate analysis based on property type, location, and asset class.'}
                 </div>
                 {marketCapRate.market_trends && (
@@ -667,36 +691,36 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
 
         {/* Cash Flow & Refinance Analysis */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-          <div style={{ backgroundColor: '#1e293b', borderRadius: '12px', padding: '20px' }}>
-            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>Day One Cash Flow</div>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '20px', border: '1px solid #e5e7eb', boxShadow: '0 4px 10px rgba(15,23,42,0.08)' }}>
+            <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>Day One Cash Flow</div>
             <div style={{ fontSize: '28px', fontWeight: '800', color: dayOneCashFlow >= 0 ? '#10b981' : '#ef4444' }}>
               {fmt(dayOneCashFlow)}
             </div>
-            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>annual</div>
+            <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>annual</div>
           </div>
           
-          <div style={{ backgroundColor: '#1e293b', borderRadius: '12px', padding: '20px' }}>
-            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>Stabilized Cash Flow</div>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '20px', border: '1px solid #e5e7eb', boxShadow: '0 4px 10px rgba(15,23,42,0.08)' }}>
+            <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>Stabilized Cash Flow</div>
             <div style={{ fontSize: '28px', fontWeight: '800', color: stabilizedCashFlow >= 0 ? '#10b981' : '#ef4444' }}>
               {fmt(stabilizedCashFlow)}
             </div>
-            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>projected</div>
+            <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>projected</div>
           </div>
           
-          <div style={{ backgroundColor: '#1e293b', borderRadius: '12px', padding: '20px' }}>
-            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>Refi Value</div>
-            <div style={{ fontSize: '28px', fontWeight: '800', color: 'white' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '20px', border: '1px solid #e5e7eb', boxShadow: '0 4px 10px rgba(15,23,42,0.08)' }}>
+            <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>Refi Value</div>
+            <div style={{ fontSize: '28px', fontWeight: '800', color: '#111827' }}>
               {fmt(refiValue)}
             </div>
-            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>at {refiCapRate}% cap</div>
+            <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>terminal / exit value</div>
           </div>
           
-          <div style={{ backgroundColor: '#1e293b', borderRadius: '12px', padding: '20px' }}>
-            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>Cash-Out Refi</div>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '20px', border: '1px solid #e5e7eb', boxShadow: '0 4px 10px rgba(15,23,42,0.08)' }}>
+            <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase' }}>Cash-Out Refi</div>
             <div style={{ fontSize: '28px', fontWeight: '800', color: '#10b981' }}>
               {fmt(cashOutRefi)}
             </div>
-            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>at 75% LTV</div>
+            <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>levered equity at exit</div>
           </div>
         </div>
 

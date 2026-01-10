@@ -364,10 +364,10 @@ def calculate_cost_seg_analysis(inputs: CostSegInputs) -> CostSegResult:
     # Calculate sale price
     if inputs.exit_sale_price > 0:
         sale_price = inputs.exit_sale_price
-    elif inputs.exit_noi > 0 and inputs.exit_cap_rate > 0:
-        sale_price = inputs.exit_noi / (inputs.exit_cap_rate / 100.0)
     else:
-        sale_price = inputs.purchase_price * 1.2  # Default 20% appreciation
+        # Default to purchase price (no appreciation assumed)
+        # User can override via exit_sale_price input
+        sale_price = inputs.purchase_price
     
     selling_costs = sale_price * (inputs.selling_costs_percent / 100.0)
     net_sale_proceeds = sale_price - selling_costs

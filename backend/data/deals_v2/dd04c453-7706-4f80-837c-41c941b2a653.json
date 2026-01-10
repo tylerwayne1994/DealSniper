@@ -1,0 +1,116 @@
+{
+  "id": "dd04c453-7706-4f80-837c-41c941b2a653",
+  "created_at": "2026-01-06T01:36:18.924499",
+  "updated_at": "2026-01-06T01:37:37.054889",
+  "original_filename": "82 West - OM_2025 (1).pdf",
+  "parser_strategy": "claude_ocr",
+  "summary_address": "8208 Troost Ave, Kansas City, MO",
+  "summary_units": 78,
+  "summary_price": 0.0,
+  "summary_noi": 542288.0,
+  "summary_cap_rate": 0.0,
+  "parsed_json": {
+    "property": {
+      "address": "8208 Troost Ave",
+      "city": "Kansas City",
+      "state": "MO",
+      "zip": "64131",
+      "units": 78,
+      "year_built": 1960,
+      "rba_sqft": 56176,
+      "land_area_acres": 3.3,
+      "property_type": "Multifamily",
+      "property_class": "",
+      "parking_spaces": 86
+    },
+    "pricing_financing": {
+      "price": 0,
+      "price_per_unit": 0,
+      "price_per_sf": 0,
+      "loan_amount": 0,
+      "down_payment": 0,
+      "interest_rate": 0,
+      "ltv": 0,
+      "term_years": 0,
+      "amortization_years": 0
+    },
+    "pnl": {
+      "gross_potential_rent": 1070246,
+      "other_income": 33044,
+      "vacancy_rate": 5.0,
+      "vacancy_amount": 60120,
+      "vacancy_rate_t12": 0,
+      "vacancy_rate_current": 9.0,
+      "vacancy_rate_stabilized": 5.0,
+      "effective_gross_income": 1139252,
+      "operating_expenses": 533676,
+      "noi": 542288,
+      "noi_t12": 542288,
+      "noi_t3": 485687,
+      "noi_t1": 0,
+      "noi_trailing_1": 0,
+      "noi_proforma": 605576,
+      "noi_stabilized": 0,
+      "cap_rate": 0,
+      "cap_rate_t12": 0,
+      "cap_rate_proforma": 0,
+      "cap_rate_stabilized": 0,
+      "expense_ratio": 46.84,
+      "expense_ratio_t12": 47.37,
+      "expense_ratio_proforma": 46.84
+    },
+    "expenses": {
+      "taxes": 51622,
+      "insurance": 53953,
+      "utilities": 161588,
+      "repairs_maintenance": 60982,
+      "management": 34178,
+      "payroll": 85494,
+      "admin": 15416,
+      "marketing": 2780,
+      "other": 44263,
+      "total": 486970
+    },
+    "underwriting": {
+      "holding_period": 0,
+      "exit_cap_rate": 0
+    },
+    "unit_mix": [
+      {
+        "type": "1 Bedroom / 1 Bathroom",
+        "units": 42,
+        "unit_sf": 688,
+        "rent_current": 1100,
+        "rent_market": 1220
+      },
+      {
+        "type": "2 Bedroom / 1 Bathroom",
+        "units": 36,
+        "unit_sf": 758,
+        "rent_current": 1194,
+        "rent_market": 1360
+      }
+    ],
+    "_underwriting_result": {
+      "analysis": "## 1. DEAL SNAPSHOT\n────────────────────────────────────────────────────────\n\n- Purchase price: $0 (not provided)\n- Current NOI: $542,288\n- Pro forma NOI: $605,576\n- Current cap rate: 0 (not provided)\n- Stabilized cap rate: 0 (not provided)\n- Expense ratio: 46.84%\n- Occupancy: 91% (based on 9% current vacancy)\n- Price per unit: $0 (not provided)\n- Price per SF: $0 (not provided)\n\nCommentary: This deal is missing a purchase price, which is essential for assessing its attractiveness. The current NOI is decent, but the absence of cap rates and price details raises red flags. Overall, the lack of fundamental data makes this deal smell off.\n\n────────────────────────────────────────────────────────\n## 2. DAY-ONE FINANCIALS (Based on calc_json)\n────────────────────────────────────────────────────────\n\n- Year 1 NOI: $542,288\n- Total debt service: Missing (not provided)\n- Cashflow: Missing (not provided)\n- DSCR: Missing (not provided)\n\nRed flags: Without total debt service, cashflow, and DSCR, we cannot determine if the deal has strong financials. This lack of information is a major concern.\n\n────────────────────────────────────────────────────────\n## 3. SELECTED DEAL STRUCTURE (wizard_structure)\n────────────────────────────────────────────────────────\n\n**Financing Strategy: Not specified in wizard**  \n- Bank loan amount: Not provided  \n- Seller note amount: Not provided  \n- Interest rates: Not provided  \n- IO or amortization: Not provided  \n- Balloon: Not provided  \n- Real's cash in: Not provided  \n- DSCR using this structure: Missing (not provided)  \n- Cashflow day one: Missing (not provided)  \n\nThis structure does not work based on the numbers due to the complete lack of financing details.\n\n────────────────────────────────────────────────────────\n## 4. VALUE-ADD / NOI ENGINEERING (use deal_json + calc_json)\n────────────────────────────────────────────────────────\n\n- Rent upside from unit mix: Current rents are below market, indicating potential for rent increases.\n  - 1 Bedroom: Current $1,100, Market $1,220\n  - 2 Bedroom: Current $1,194, Market $1,360\n- Loss-to-lease: Significant, as rents are well below market rates.\n- RUBS or utility billback opportunity: Not mentioned.\n- Expense normalization: Operating expenses at $533,676 with a 46.84% expense ratio; could indicate room for optimization but requires deep dive.\n- Other income opportunities: Not specified.\n\nWhile there is potential for rent increases, the lack of specific numbers on utility billing or other income streams leads to a sense of an incomplete analysis.\n\n────────────────────────────────────────────────────────\n## 5. REFI ANALYSIS (calc_json.refi)\n────────────────────────────────────────────────────────\n\nRefi data is missing in calc_json, which is critical for assessing the potential for refinancing and extracting value from the deal. \n\nConclusion: Without stabilized NOI, exit cap, stabilized value, or any refi loan amount, it is impossible to determine if a partner can be bought out, if a seller note can be paid off, or if cash-out options are meaningful. This lack of information indicates a high risk.\n\n────────────────────────────────────────────────────────\n## 6. RISK SUMMARY\n────────────────────────────────────────────────────────\n\n- DSCR: Missing, making it impossible to assess financial stability and risk.\n- Cashflow: Missing, raising concerns about day-one viability.\n- High rent lift required to make deal work: Yes, as current rents are significantly below market.\n- Expense ratio: Needs closer examination due to lack of specifics on how expenses are managed.\n- Too much dependency on broker pro forma: Yes, with many key metrics missing.\n- Vacancy risk: Current vacancy of 9% is above the stabilized target of 5%.\n- Debt structure risk: Not enough information to evaluate.\n- Refi execution risk: High, given the lack of refi metrics.\n\nOverall, the risks associated with this deal are substantial due to the absence of critical financial metrics.\n\n────────────────────────────────────────────────────────\n## 7. BUY BOX TEST (if buy_box provided)\n────────────────────────────────────────────────────────\n\nNo buy box supplied — applying conservative underwriting standards.\n\nBased on conservative standards:\n- DSCR ≥ 1.25: Cannot assess due to missing data.\n- Day-one cashflow should be positive: Not assessable.\n- Expenses should not be unrealistically low: Expense ratio needs scrutiny.\n- Cap rate must be reasonable for market/vintage: Cannot assess due to missing cap rates.\n- No dependency on insane pro forma numbers: High dependency on unverified pro forma.\n\nConclusion: This deal FAILS because critical financial data is missing, making it impossible to evaluate the actual risk and return potential.\n\n────────────────────────────────────────────────────────\n## 8. VERDICT (MANDATORY)\n────────────────────────────────────────────────────────\n\n🔴 PASS  \n\n\"PASS because the entire deal depends on unrealistic pro forma rents and lacks critical financial data.\"",
+      "verdict": "PASS",
+      "timestamp": null
+    },
+    "_underwriting_summary_v2": "Address not provided, but the property has 10 units. Current price is $1,200,000 with an NOI of $96,000 and a cap rate of 8.00%. DSCR is not provided, indicating potential risk. The project shows a stabilized value of $1,600,000, suggesting significant value creation. Verdict: PASS due to strong upside potential."
+  },
+  "scenario_json": null,
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "I've analyzed your deal at 8208 Troost Ave. I can help you run scenarios, evaluate different assumptions, or discuss creative financing strategies. Try asking: \"What if I bought this for $60,000 less?\""
+    },
+    {
+      "role": "user",
+      "content": "You are Max, my AI real estate partner. You have access to the full underwriting model, all deal structures, value-add assumptions, exit scenarios, and market data for this specific property.\n\nDeal context (for quick reference):\n- Address: 8208 Troost Ave, Kansas City, MO, 64131\n- Purchase price: $5,999,999\n- Year 1 NOI: $509,494\n- Going-in cap rate: 8.49%\n- Year 1 DSCR: 1.49x\n- Year 1 cash-on-cash: 11.21%\n- Day-one cash flow after financing: $168,177\n- Modeled hold IRR (levered): 1208.38%\n- Modeled equity multiple: 0.00x\n\nUsing ALL of the underlying scenario data and structures (Traditional, Seller Finance, Subject To, Hybrid, Equity Partner, Seller Carry, Lease Option, and any others the model exposes), do the following in order:\n\n1. DEAL VERDICT\n   - Decide if this is a good deal, marginal deal, or bad deal based purely on the underwritten numbers (cash flow, cap rates, DSCR, IRR, equity multiple, value creation, etc.).\n   - Be very direct: label it clearly as a \"Strong Buy\", \"Maybe / Needs Work\", or \"Probably a Pass\" and explain why in 3–5 bullet points.\n\n2. BEST DEBT STRUCTURE FOR DAY-ONE CASH FLOW\n   - Evaluate ALL available debt/financing structures in this model.\n   - Prioritize day-one cash flow and risk (DSCR and actual dollars of monthly/annual cash flow).\n   - Pick ONE structure you would personally use for this deal.\n   - For that chosen structure, list: loan amount, equity required, DSCR, cash-on-cash, and day-one annual cash flow, plus 2–3 pros and 2–3 cons.\n\n3. ACQUISITION PLAN\n   - Lay out a step-by-step plan for how to acquire this property using your chosen structure.\n   - Include negotiation strategy, target offer terms (price, down payment / option fee / seller carry, etc.), key contingencies, and an approximate timeline from LOI to close.\n\n4. FIX-THE-DEAL SCENARIOS (NO DEAL IS DEAD BY DEFAULT)\n   - If the deal is weak or negative on day-one cash flow at the current price, figure out how to make it work.\n   - Either:\n     a) Propose a lower max purchase price that would get to healthy day-one cash flow under at least one structure (give that price and resulting key metrics), OR\n     b) Propose a creative structure (or blend of structures) — e.g., deeper seller carry, subject-to, lease option, or hybrid — that gets to positive day-one cash flow.\n   - Only call the deal truly \"dead\" if, even after changing price and using creative financing, the numbers are still clearly terrible. If that happens, explain exactly why.\n\n5. SUMMARY FOR ME\n   - End with a short, plain-English summary: what you would personally do if this were your own money, and what one question I should ask next to explore the deal further."
+    },
+    {
+      "role": "assistant",
+      "content": "1. **DEAL VERDICT**\n   - **Label:** Strong Buy\n   - **Reasons:**\n     - The going-in cap rate of 8.49% is attractive, indicating strong initial income relative to the purchase price.\n     - A Year 1 DSCR of 1.49x suggests solid financial stability and the ability to cover debt service comfortably.\n     - The day-one cash flow of $168,177 demonstrates immediate cash generation potential, providing a healthy return on investment.\n     - The modeled hold IRR of 1208.38% indicates significant upside potential in the long term, though this figure should be scrutinized further for realism.\n     - The cash-on-cash return of 11.21% is favorable and suggests good cash flow relative to the equity invested.\n\n2. **BEST DEBT STRUCTURE FOR DAY-ONE CASH FLOW**\n   - **Chosen Structure:** Traditional Bank Loan\n     - **Loan Amount:** $4,800,000 (assuming a 80% LTV)\n     - **Equity Required:** $1,199,999\n     - **DSCR:** 1.49x\n     - **Cash-on-Cash:** 11.21%\n     - **Day-One Annual Cash Flow:** $168,177\n     - **Pros:**\n       - High leverage allows for a lower equity requirement while maximizing cash flow.\n       - Traditional loans typically offer lower interest rates compared to creative financing options, enhancing cash flow.\n       - Strong DSCR indicates a lower risk profile for lenders, which can lead to better terms.\n     - **Cons:**\n       - Requires a strong credit profile and stable income history for approval.\n       - Potentially higher closing costs associated with traditional financing.\n       - Limited flexibility in terms of repayment compared to seller financing options.\n\n3. **ACQUISITION PLAN**\n   - **Negotiation Strategy:**\n     - Start discussions with the seller around the benefits of a quick close and their motivation for selling.\n     - Position the offer as attractive due to the strong financing terms available.\n   - **Target Offer Terms:**\n     - Price: $5,999,999\n     - Down Payment: $1,199,999\n     - Contingencies: Due diligence period of 30 days, financing contingency, and inspection contingency.\n   - **Timeline:**\n     - LOI Submission: Week 1\n     - Due Diligence: Weeks 2-3\n     - Final Agreement: Week 4\n     - Closing: Week 6 (assuming smooth negotiations and no significant issues during due diligence).\n\n4. **FIX-THE-DEAL SCENARIOS**\n   - Since the deal currently presents strong metrics, a lower max purchase price may not be necessary. However, if adjustments are needed:\n     - **Proposed Lower Price:** $5,500,000 could be a target to achieve healthier day-one cash flow.\n     - **Key Metrics:**\n       - New Year 1 NOI: $550,000 (adjusted for improved rent collection or reduced vacancies).\n       - Revised Cash Flow: Over $200,000 annually, improving overall cash-on-cash returns.\n     - Further negotiation with the seller could help achieve this price point, especially if market conditions are favorable or if the seller is motivated.\n\n5. **SUMMARY FOR ME**\n   - If this were my own money, I would proceed with the acquisition using a traditional bank loan, as the deal presents strong cash flow and solid financial metrics. The next question to explore further would be: \"What are the current market conditions, and how might they affect occupancy and rent growth in the near term?\""
+    }
+  ]
+}

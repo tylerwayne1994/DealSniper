@@ -1,0 +1,2312 @@
+[
+  {
+    "name": "Model",
+    "celldata": [
+      {
+        "r": 0,
+        "c": 0,
+        "v": {
+          "v": "s",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "s"
+        }
+      },
+      {
+        "r": 1,
+        "c": 1,
+        "v": {
+          "v": "MULTIFAMILY UNDERWRITING MODEL",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "MULTIFAMILY UNDERWRITING MODEL"
+        }
+      },
+      {
+        "r": 2,
+        "c": 1,
+        "v": {
+          "v": "Comprehensive Analysis with Creative Financing",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Comprehensive Analysis with Creative Financing"
+        }
+      },
+      {
+        "r": 4,
+        "c": 1,
+        "v": {
+          "v": "KEY DEAL METRICS",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "KEY DEAL METRICS"
+        }
+      },
+      {
+        "r": 4,
+        "c": 5,
+        "v": {
+          "v": "SOURCES OF FUNDS",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "SOURCES OF FUNDS"
+        }
+      },
+      {
+        "r": 4,
+        "c": 9,
+        "v": {
+          "v": "USES OF FUNDS",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "USES OF FUNDS"
+        }
+      },
+      {
+        "r": 4,
+        "c": 13,
+        "v": {
+          "v": "RETURN SUMMARY",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "RETURN SUMMARY"
+        }
+      },
+      {
+        "r": 5,
+        "c": 1,
+        "v": {
+          "v": "Property Name",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Property Name"
+        }
+      },
+      {
+        "r": 5,
+        "c": 5,
+        "v": {
+          "v": "Source",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Source"
+        }
+      },
+      {
+        "r": 5,
+        "c": 6,
+        "v": {
+          "v": "Amount",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Amount"
+        }
+      },
+      {
+        "r": 5,
+        "c": 7,
+        "v": {
+          "v": "%",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "%"
+        }
+      },
+      {
+        "r": 5,
+        "c": 9,
+        "v": {
+          "v": "Use",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Use"
+        }
+      },
+      {
+        "r": 5,
+        "c": 10,
+        "v": {
+          "v": "Amount",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Amount"
+        }
+      },
+      {
+        "r": 5,
+        "c": 11,
+        "v": {
+          "v": "%",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "%"
+        }
+      },
+      {
+        "r": 5,
+        "c": 13,
+        "v": {
+          "v": "Metric",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Metric"
+        }
+      },
+      {
+        "r": 5,
+        "c": 14,
+        "v": {
+          "v": "5-Year",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "5-Year"
+        }
+      },
+      {
+        "r": 5,
+        "c": 15,
+        "v": {
+          "v": "10-Year",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "10-Year"
+        }
+      },
+      {
+        "r": 6,
+        "c": 1,
+        "v": {
+          "v": "Total Units",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Total Units"
+        }
+      },
+      {
+        "r": 6,
+        "c": 5,
+        "v": {
+          "v": "Subject-To Mortgage",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Subject-To Mortgage"
+        }
+      },
+      {
+        "r": 6,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 6,
+        "c": 9,
+        "v": {
+          "v": "Purchase Price",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Purchase Price"
+        }
+      },
+      {
+        "r": 6,
+        "c": 11,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 6,
+        "c": 13,
+        "v": {
+          "v": "Project IRR",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Project IRR"
+        }
+      },
+      {
+        "r": 6,
+        "c": 14,
+        "v": {
+          "v": "#DIV/0!",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "#DIV/0!"
+        }
+      },
+      {
+        "r": 6,
+        "c": 15,
+        "v": {
+          "v": "#DIV/0!",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "#DIV/0!"
+        }
+      },
+      {
+        "r": 7,
+        "c": 1,
+        "v": {
+          "v": "Total SF",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Total SF"
+        }
+      },
+      {
+        "r": 7,
+        "c": 5,
+        "v": {
+          "v": "Seller Financing",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Seller Financing"
+        }
+      },
+      {
+        "r": 7,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 7,
+        "c": 9,
+        "v": {
+          "v": "Closing Costs",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Closing Costs"
+        }
+      },
+      {
+        "r": 7,
+        "c": 11,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 7,
+        "c": 13,
+        "v": {
+          "v": "LP IRR",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "LP IRR"
+        }
+      },
+      {
+        "r": 7,
+        "c": 14,
+        "v": {
+          "v": "#DIV/0!",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "#DIV/0!"
+        }
+      },
+      {
+        "r": 7,
+        "c": 15,
+        "v": {
+          "v": "#DIV/0!",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "#DIV/0!"
+        }
+      },
+      {
+        "r": 8,
+        "c": 1,
+        "v": {
+          "v": "Purchase Price",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Purchase Price"
+        }
+      },
+      {
+        "r": 8,
+        "c": 5,
+        "v": {
+          "v": "Seller Carryback",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Seller Carryback"
+        }
+      },
+      {
+        "r": 8,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 8,
+        "c": 9,
+        "v": {
+          "v": "Due Diligence",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Due Diligence"
+        }
+      },
+      {
+        "r": 8,
+        "c": 11,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 8,
+        "c": 13,
+        "v": {
+          "v": "GP IRR",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "GP IRR"
+        }
+      },
+      {
+        "r": 8,
+        "c": 14,
+        "v": {
+          "v": "#DIV/0!",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "#DIV/0!"
+        }
+      },
+      {
+        "r": 8,
+        "c": 15,
+        "v": {
+          "v": "#DIV/0!",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "#DIV/0!"
+        }
+      },
+      {
+        "r": 9,
+        "c": 1,
+        "v": {
+          "v": "Price Per Unit",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Price Per Unit"
+        }
+      },
+      {
+        "r": 9,
+        "c": 3,
+        "v": {
+          "v": "#DIV/0!",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "#DIV/0!"
+        }
+      },
+      {
+        "r": 9,
+        "c": 5,
+        "v": {
+          "v": "DSCR Loan",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "DSCR Loan"
+        }
+      },
+      {
+        "r": 9,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 9,
+        "c": 9,
+        "v": {
+          "v": "CapEx Budget",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "CapEx Budget"
+        }
+      },
+      {
+        "r": 9,
+        "c": 11,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 9,
+        "c": 13,
+        "v": {
+          "v": "Equity Multiple",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Equity Multiple"
+        }
+      },
+      {
+        "r": 9,
+        "c": 14,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 9,
+        "c": 15,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 10,
+        "c": 1,
+        "v": {
+          "v": "Price Per SF",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Price Per SF"
+        }
+      },
+      {
+        "r": 10,
+        "c": 3,
+        "v": {
+          "v": "#DIV/0!",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "#DIV/0!"
+        }
+      },
+      {
+        "r": 10,
+        "c": 5,
+        "v": {
+          "v": "LP Equity",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "LP Equity"
+        }
+      },
+      {
+        "r": 10,
+        "c": 6,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 10,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 10,
+        "c": 9,
+        "v": {
+          "v": "Financing Costs",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Financing Costs"
+        }
+      },
+      {
+        "r": 10,
+        "c": 11,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 10,
+        "c": 13,
+        "v": {
+          "v": "LP Eq Multiple",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "LP Eq Multiple"
+        }
+      },
+      {
+        "r": 10,
+        "c": 14,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 10,
+        "c": 15,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 11,
+        "c": 1,
+        "v": {
+          "v": "Year 1 NOI",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Year 1 NOI"
+        }
+      },
+      {
+        "r": 11,
+        "c": 3,
+        "v": {
+          "v": "#DIV/0!",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "#DIV/0!"
+        }
+      },
+      {
+        "r": 11,
+        "c": 5,
+        "v": {
+          "v": "GP Equity",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "GP Equity"
+        }
+      },
+      {
+        "r": 11,
+        "c": 6,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 11,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 11,
+        "c": 9,
+        "v": {
+          "v": "Operating Reserves",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Operating Reserves"
+        }
+      },
+      {
+        "r": 11,
+        "c": 11,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 11,
+        "c": 13,
+        "v": {
+          "v": "GP Eq Multiple",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "GP Eq Multiple"
+        }
+      },
+      {
+        "r": 11,
+        "c": 14,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 11,
+        "c": 15,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 12,
+        "c": 1,
+        "v": {
+          "v": "Going-In Cap Rate",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Going-In Cap Rate"
+        }
+      },
+      {
+        "r": 12,
+        "c": 3,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 12,
+        "c": 5,
+        "v": {
+          "v": "Total Sources",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Total Sources"
+        }
+      },
+      {
+        "r": 12,
+        "c": 6,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 12,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 12,
+        "c": 9,
+        "v": {
+          "v": "Total Uses",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Total Uses"
+        }
+      },
+      {
+        "r": 12,
+        "c": 10,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 12,
+        "c": 11,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 12,
+        "c": 13,
+        "v": {
+          "v": "Avg CoC Return",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Avg CoC Return"
+        }
+      },
+      {
+        "r": 12,
+        "c": 14,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 12,
+        "c": 15,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 13,
+        "c": 1,
+        "v": {
+          "v": "Stabilized Cap Rate",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Stabilized Cap Rate"
+        }
+      },
+      {
+        "r": 13,
+        "c": 3,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 15,
+        "c": 1,
+        "v": {
+          "v": "═══════════════════════════════════════════════════════════════════════════════════════════════════════════════",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "═══════════════════════════════════════════════════════════════════════════════════════════════════════════════"
+        }
+      },
+      {
+        "r": 17,
+        "c": 1,
+        "v": {
+          "v": "PROPERTY & ACQUISITION ASSUMPTIONS",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "PROPERTY & ACQUISITION ASSUMPTIONS"
+        }
+      },
+      {
+        "r": 18,
+        "c": 1,
+        "v": {
+          "v": "Acquisition",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Acquisition"
+        }
+      },
+      {
+        "r": 18,
+        "c": 5,
+        "v": {
+          "v": "Growth Assumptions",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Growth Assumptions"
+        }
+      },
+      {
+        "r": 18,
+        "c": 9,
+        "v": {
+          "v": "Sale Assumptions",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Sale Assumptions"
+        }
+      },
+      {
+        "r": 19,
+        "c": 1,
+        "v": {
+          "v": "Acquisition Date",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Acquisition Date"
+        }
+      },
+      {
+        "r": 19,
+        "c": 5,
+        "v": {
+          "v": "Annual Rent Growth",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Annual Rent Growth"
+        }
+      },
+      {
+        "r": 19,
+        "c": 9,
+        "v": {
+          "v": "Selling Costs %",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Selling Costs %"
+        }
+      },
+      {
+        "r": 20,
+        "c": 1,
+        "v": {
+          "v": "Hold Period (Years)",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Hold Period (Years)"
+        }
+      },
+      {
+        "r": 20,
+        "c": 5,
+        "v": {
+          "v": "Annual Expense Growth",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Annual Expense Growth"
+        }
+      },
+      {
+        "r": 20,
+        "c": 9,
+        "v": {
+          "v": "CapEx Reserve $/Unit/Yr",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "CapEx Reserve $/Unit/Yr"
+        }
+      },
+      {
+        "r": 21,
+        "c": 1,
+        "v": {
+          "v": "Year Built",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Year Built"
+        }
+      },
+      {
+        "r": 21,
+        "c": 5,
+        "v": {
+          "v": "Vacancy Rate",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Vacancy Rate"
+        }
+      },
+      {
+        "r": 21,
+        "c": 9,
+        "v": {
+          "v": "Annual CapEx (Ongoing)",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Annual CapEx (Ongoing)"
+        }
+      },
+      {
+        "r": 21,
+        "c": 10,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 22,
+        "c": 1,
+        "v": {
+          "v": "Closing Costs",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Closing Costs"
+        }
+      },
+      {
+        "r": 22,
+        "c": 5,
+        "v": {
+          "v": "Bad Debt Rate",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Bad Debt Rate"
+        }
+      },
+      {
+        "r": 22,
+        "c": 9,
+        "v": {
+          "v": "Renovated Unit Premium",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Renovated Unit Premium"
+        }
+      },
+      {
+        "r": 23,
+        "c": 1,
+        "v": {
+          "v": "Due Diligence",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Due Diligence"
+        }
+      },
+      {
+        "r": 23,
+        "c": 5,
+        "v": {
+          "v": "Concessions",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Concessions"
+        }
+      },
+      {
+        "r": 23,
+        "c": 9,
+        "v": {
+          "v": "Classic Rent Avg",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Classic Rent Avg"
+        }
+      },
+      {
+        "r": 24,
+        "c": 1,
+        "v": {
+          "v": "CapEx Budget (Year 1)",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "CapEx Budget (Year 1)"
+        }
+      },
+      {
+        "r": 24,
+        "c": 5,
+        "v": {
+          "v": "Management Fee %",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Management Fee %"
+        }
+      },
+      {
+        "r": 24,
+        "c": 9,
+        "v": {
+          "v": "Renovated Rent Avg",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Renovated Rent Avg"
+        }
+      },
+      {
+        "r": 24,
+        "c": 10,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 25,
+        "c": 1,
+        "v": {
+          "v": "Financing Costs",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Financing Costs"
+        }
+      },
+      {
+        "r": 25,
+        "c": 5,
+        "v": {
+          "v": "Exit Cap Rate (5-Yr)",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Exit Cap Rate (5-Yr)"
+        }
+      },
+      {
+        "r": 26,
+        "c": 1,
+        "v": {
+          "v": "Operating Reserves",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Operating Reserves"
+        }
+      },
+      {
+        "r": 26,
+        "c": 5,
+        "v": {
+          "v": "Exit Cap Rate (10-Yr)",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Exit Cap Rate (10-Yr)"
+        }
+      },
+      {
+        "r": 28,
+        "c": 1,
+        "v": {
+          "v": "═══════════════════════════════════════════════════════════════════════════════════════════════════════════════",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "═══════════════════════════════════════════════════════════════════════════════════════════════════════════════"
+        }
+      },
+      {
+        "r": 30,
+        "c": 1,
+        "v": {
+          "v": "UNIT MIX & RENT ROLL",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "UNIT MIX & RENT ROLL"
+        }
+      },
+      {
+        "r": 30,
+        "c": 12,
+        "v": {
+          "v": "UNIT MIX SUMMARY",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "UNIT MIX SUMMARY"
+        }
+      },
+      {
+        "r": 31,
+        "c": 1,
+        "v": {
+          "v": "Unit #",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Unit #"
+        }
+      },
+      {
+        "r": 31,
+        "c": 2,
+        "v": {
+          "v": "Type",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Type"
+        }
+      },
+      {
+        "r": 31,
+        "c": 3,
+        "v": {
+          "v": "SF",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "SF"
+        }
+      },
+      {
+        "r": 31,
+        "c": 4,
+        "v": {
+          "v": "Status",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Status"
+        }
+      },
+      {
+        "r": 31,
+        "c": 5,
+        "v": {
+          "v": "Market Rent",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Market Rent"
+        }
+      },
+      {
+        "r": 31,
+        "c": 6,
+        "v": {
+          "v": "In-Place Rent",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "In-Place Rent"
+        }
+      },
+      {
+        "r": 31,
+        "c": 7,
+        "v": {
+          "v": "Loss to Lease",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Loss to Lease"
+        }
+      },
+      {
+        "r": 31,
+        "c": 8,
+        "v": {
+          "v": "Lease Start",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Lease Start"
+        }
+      },
+      {
+        "r": 31,
+        "c": 9,
+        "v": {
+          "v": "Lease End",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Lease End"
+        }
+      },
+      {
+        "r": 31,
+        "c": 10,
+        "v": {
+          "v": "Tenant Name",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Tenant Name"
+        }
+      },
+      {
+        "r": 31,
+        "c": 12,
+        "v": {
+          "v": "Unit Type",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Unit Type"
+        }
+      },
+      {
+        "r": 31,
+        "c": 13,
+        "v": {
+          "v": "Count",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Count"
+        }
+      },
+      {
+        "r": 31,
+        "c": 14,
+        "v": {
+          "v": "Avg SF",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Avg SF"
+        }
+      },
+      {
+        "r": 31,
+        "c": 15,
+        "v": {
+          "v": "Avg Rent",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Avg Rent"
+        }
+      },
+      {
+        "r": 32,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 32,
+        "c": 13,
+        "v": {
+          "v": "1BR/1BA",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "1BR/1BA"
+        }
+      },
+      {
+        "r": 32,
+        "c": 14,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 32,
+        "c": 15,
+        "v": {
+          "v": "#DIV/0!",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "#DIV/0!"
+        }
+      },
+      {
+        "r": 32,
+        "c": 16,
+        "v": {
+          "v": "#DIV/0!",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "#DIV/0!"
+        }
+      },
+      {
+        "r": 33,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 33,
+        "c": 13,
+        "v": {
+          "v": "2BR/1BA",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "2BR/1BA"
+        }
+      },
+      {
+        "r": 33,
+        "c": 14,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 33,
+        "c": 15,
+        "v": {
+          "v": "#DIV/0!",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "#DIV/0!"
+        }
+      },
+      {
+        "r": 33,
+        "c": 16,
+        "v": {
+          "v": "#DIV/0!",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "#DIV/0!"
+        }
+      },
+      {
+        "r": 34,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 34,
+        "c": 13,
+        "v": {
+          "v": "2BR/2BA",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "2BR/2BA"
+        }
+      },
+      {
+        "r": 34,
+        "c": 14,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 34,
+        "c": 15,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 34,
+        "c": 16,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 35,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 35,
+        "c": 13,
+        "v": {
+          "v": "Total/Avg",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Total/Avg"
+        }
+      },
+      {
+        "r": 35,
+        "c": 14,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 35,
+        "c": 15,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 35,
+        "c": 16,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 36,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 37,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 37,
+        "c": 13,
+        "v": {
+          "v": "STATUS SUMMARY",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "STATUS SUMMARY"
+        }
+      },
+      {
+        "r": 38,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 38,
+        "c": 13,
+        "v": {
+          "v": "Status",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Status"
+        }
+      },
+      {
+        "r": 38,
+        "c": 14,
+        "v": {
+          "v": "Count",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Count"
+        }
+      },
+      {
+        "r": 38,
+        "c": 15,
+        "v": {
+          "v": "% of Total",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "% of Total"
+        }
+      },
+      {
+        "r": 38,
+        "c": 16,
+        "v": {
+          "v": "Avg Rent",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Avg Rent"
+        }
+      },
+      {
+        "r": 39,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 39,
+        "c": 13,
+        "v": {
+          "v": "Renovated",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Renovated"
+        }
+      },
+      {
+        "r": 39,
+        "c": 14,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 39,
+        "c": 15,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 39,
+        "c": 16,
+        "v": {
+          "v": "#DIV/0!",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "#DIV/0!"
+        }
+      },
+      {
+        "r": 40,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 40,
+        "c": 13,
+        "v": {
+          "v": "Classic",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Classic"
+        }
+      },
+      {
+        "r": 40,
+        "c": 14,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 40,
+        "c": 15,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 40,
+        "c": 16,
+        "v": {
+          "v": "#DIV/0!",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "#DIV/0!"
+        }
+      },
+      {
+        "r": 41,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 41,
+        "c": 13,
+        "v": {
+          "v": "Vacant",
+          "ct": {
+            "fa": "General",
+            "t": "g"
+          },
+          "m": "Vacant"
+        }
+      },
+      {
+        "r": 41,
+        "c": 14,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 41,
+        "c": 15,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 41,
+        "c": 16,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 42,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 43,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 44,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 45,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 46,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 47,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 48,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 49,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 50,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 51,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 52,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 53,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 54,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 55,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 56,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 57,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 58,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 59,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 60,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      },
+      {
+        "r": 61,
+        "c": 7,
+        "v": {
+          "v": "0",
+          "ct": {
+            "fa": "General",
+            "t": "n"
+          },
+          "m": "0"
+        }
+      }
+    ],
+    "config": { "merge": {}, "rowlen": {}, "columnlen": {} }
+  }
+]

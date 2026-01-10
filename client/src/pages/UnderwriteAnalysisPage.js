@@ -354,13 +354,14 @@ function UnderwriteAnalysisPage() {
   const textareaRef = useRef(null);
   
   // Get deal data from navigation state
-  const { dealId, verifiedData } = location.state || {};
+  const { dealId, verifiedData, scenarioData, fullCalcs, wizardStructure } = location.state || {};
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [analysis, setAnalysis] = useState(null);
   const [verdict, setVerdict] = useState(null);
   const [summary, setSummary] = useState(null);
+  const [summaryText, setSummaryText] = useState(null);
   const [loadingStep, setLoadingStep] = useState('Initializing...');
   
   // Chat state
@@ -428,6 +429,28 @@ function UnderwriteAnalysisPage() {
         };
       }
 
+      // Attach calc_json and wizard_structure so the backend v3 analyzer
+      // can underwrite using the exact numbers and structure from the JS
+      // engine and wizard.
+      const calcJson = fullCalcs || null;
+
+      let resolvedWizardStructure = wizardStructure || null;
+      if (!resolvedWizardStructure && scenarioData) {
+        const setup = scenarioData.deal_setup || {};
+        resolvedWizardStructure = {
+          strategy: setup.debt_structure || setup.strategy || dealParams.debt_structure || 'traditional',
+          deal_setup: setup,
+          financing: scenarioData.financing || {}
+        };
+      }
+
+      if (calcJson) {
+        payload.calc_json = calcJson;
+      }
+      if (resolvedWizardStructure) {
+        payload.wizard_structure = resolvedWizardStructure;
+      }
+
       const response = await fetch(`${API_BASE}/v2/deals/${dealId}/underwrite`, {
         method: 'POST',
         headers: {
@@ -446,6 +469,7 @@ function UnderwriteAnalysisPage() {
       setAnalysis(data.analysis);
       setVerdict(data.verdict);
       setSummary(data.summary);
+      setSummaryText(data.summary_text || null);
       
       // Initialize chat with the analysis context
       setChatMessages([{
@@ -609,7 +633,8 @@ function UnderwriteAnalysisPage() {
         underwritingResult: {
           analysis,
           verdict,
-          summary
+          summary,
+          summaryText
         }
       }
     });

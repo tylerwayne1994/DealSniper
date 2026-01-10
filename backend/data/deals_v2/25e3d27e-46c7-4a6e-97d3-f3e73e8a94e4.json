@@ -1,0 +1,103 @@
+{
+  "id": "25e3d27e-46c7-4a6e-97d3-f3e73e8a94e4",
+  "created_at": "2026-01-02T05:37:14.679071",
+  "updated_at": "2026-01-02T05:38:07.057113",
+  "original_filename": "Lamar 4 CREXU (2) (1).pdf",
+  "parser_strategy": "claude_ocr",
+  "summary_address": "1611 E LAMAR RD, Phoenix, AZ",
+  "summary_units": 4,
+  "summary_price": 2700000.0,
+  "summary_noi": 141597.0,
+  "summary_cap_rate": 5.25,
+  "parsed_json": {
+    "property": {
+      "address": "1611 E LAMAR RD",
+      "city": "Phoenix",
+      "state": "AZ",
+      "zip": "85016",
+      "units": 4,
+      "year_built": 2024,
+      "rba_sqft": 5900,
+      "land_area_acres": 0,
+      "property_type": "Multifamily",
+      "property_class": "",
+      "parking_spaces": 0
+    },
+    "pricing_financing": {
+      "price": 2700000,
+      "price_per_unit": 675000,
+      "price_per_sf": 457.63,
+      "loan_amount": 0,
+      "down_payment": 1080000,
+      "interest_rate": 0,
+      "ltv": 0,
+      "term_years": 0,
+      "amortization_years": 0
+    },
+    "pnl": {
+      "gross_potential_rent": 171600,
+      "other_income": 4800,
+      "vacancy_rate": 5.0,
+      "vacancy_amount": 8580,
+      "vacancy_rate_t12": 0,
+      "vacancy_rate_current": 0,
+      "vacancy_rate_stabilized": 0,
+      "effective_gross_income": 167820,
+      "operating_expenses": 26223,
+      "noi": 141597,
+      "noi_t12": 0,
+      "noi_t3": 0,
+      "noi_t1": 0,
+      "noi_trailing_1": 0,
+      "noi_proforma": 0,
+      "noi_stabilized": 0,
+      "cap_rate": 5.25,
+      "cap_rate_t12": 0,
+      "cap_rate_proforma": 0,
+      "cap_rate_stabilized": 0,
+      "expense_ratio": 0,
+      "expense_ratio_t12": 0,
+      "expense_ratio_proforma": 0
+    },
+    "expenses": {
+      "taxes": 3211,
+      "insurance": 1700,
+      "utilities": 6400,
+      "repairs_maintenance": 4400,
+      "management": 6712,
+      "payroll": 0,
+      "admin": 2050,
+      "marketing": 750,
+      "other": 1000,
+      "total": 26223
+    },
+    "underwriting": {
+      "holding_period": 0,
+      "exit_cap_rate": 0
+    },
+    "unit_mix": [
+      {
+        "type": "1 Bed - 1 Bath",
+        "units": 2,
+        "unit_sf": 850,
+        "rent_current": 2400,
+        "rent_market": 0
+      },
+      {
+        "type": "3 Bed - 2 Bath",
+        "units": 2,
+        "unit_sf": 2110,
+        "rent_current": 4750,
+        "rent_market": 0
+      }
+    ],
+    "_underwriting_result": {
+      "analysis": "## 1. DEAL SNAPSHOT\n────────────────────────────────────────────────────────\n- Purchase price: $2,700,000  \n- Current NOI: $141,597  \n- Pro forma NOI: Missing  \n- Current cap rate: 5.25%  \n- Stabilized cap rate: Missing  \n- Expense ratio: Missing  \n- Occupancy: Missing  \n- Price per unit: $675,000  \n- Price per SF: $457.63  \n\nThis property is priced excessively high for a four-unit building at $675,000 per unit. The cap rate of 5.25% is unattractive, especially given the lack of clarity around expenses and potential upside. The numbers indicate possible broker inflation or overestimation.\n\n## 2. DAY-ONE FINANCIALS (Based on calc_json)\n────────────────────────────────────────────────────────\n- NOI: Missing  \n- Total debt service: Missing  \n- Cashflow: Missing  \n- DSCR: Missing  \n\nWithout key metrics like NOI, total debt service, and DSCR, it’s impossible to gauge financial viability. This is a major red flag. The absence of these figures makes it hard to assess the deal's sustainability or cashflow situation.\n\n## 3. SELECTED DEAL STRUCTURE (wizard_structure)\n────────────────────────────────────────────────────────\n**Financing Strategy: Missing (no financing structure provided)**  \n- Bank loan amount: Missing  \n- Seller note amount: Missing  \n- Interest rate(s): Missing  \n- IO or amortization: Missing  \n- Balloon: Missing  \n- Real's cash in: Missing  \n- DSCR using this structure: Missing  \n- Cashflow day one: Missing  \n\nThis structure cannot be analyzed due to the complete lack of financing details. Without this crucial information, I cannot evaluate how the deal is intended to be financed or its implications on cashflow and returns.\n\n## 4. VALUE-ADD / NOI ENGINEERING (use deal_json + calc_json)\n────────────────────────────────────────────────────────\n- Rent upside from unit mix: Current rents are $2,400 for 1 Bed units and $4,750 for 3 Bed units; no market rents provided to assess upside.  \n- Loss-to-lease: Not calculated.  \n- RUBS or utility billback opportunity: Not mentioned.  \n- Expense normalization: Total operating expenses are $26,223, which seems low for a multifamily property of this size.  \n- Other income opportunities: Other income of $4,800 is mentioned, but specifics are unclear.  \n\nThe absence of market rents to determine potential rent increases and the unclear expense structure raises concerns. The current income and expenses appear to lack context for realistic valuation or growth.\n\n## 5. REFI ANALYSIS (calc_json.refi)\n────────────────────────────────────────────────────────\n- Stabilized NOI: Missing  \n- Exit cap: Missing  \n- Stabilized value: Missing  \n- Refi loan amount: Missing  \n- Payoff amount: Missing  \n- Cash-out: Missing  \n- Post-refi DSCR: Missing  \n- Post-refi cashflow: Missing  \n\nAll refi analysis components are missing. This makes it impossible to ascertain the viability of refinancing or whether existing debts can be managed or paid off.\n\n## 6. RISK SUMMARY\n────────────────────────────────────────────────────────\n- DSCR is completely unknown, which is a fundamental risk.  \n- Cashflow situation is unclear due to missing figures.  \n- High price per unit raises concerns about market viability.  \n- Unclear expense ratios could indicate manipulation or unrealistic projections.  \n- No dependency on broker pro forma can be evaluated due to missing data.  \n- Vacancy risk is not assessed, which is critical for understanding potential income loss.  \n\n## 7. BUY BOX TEST (if buy_box provided)\n────────────────────────────────────────────────────────\nNo buy box supplied — applying conservative underwriting standards.\n\n## 8. VERDICT (MANDATORY)\n────────────────────────────────────────────────────────\n🔴 PASS  \nThis deal FAILS because there is a complete lack of crucial financial data, making it impossible to evaluate its viability.",
+      "verdict": "PASS",
+      "timestamp": null
+    },
+    "_underwriting_summary_v2": "Address: Not provided; Units: Not provided; Property type: Not provided. Current price is Not provided with NOI at Not provided and cashflow at Not provided. DSCR is Not provided, indicating potential risk. Stabilized value suggests an upside of $1,546,000 with value creation of $1,546,000. Verdict: PASS due to significant upside potential."
+  },
+  "scenario_json": null,
+  "chat_history": []
+}
