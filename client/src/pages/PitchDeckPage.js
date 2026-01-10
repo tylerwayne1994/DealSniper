@@ -247,7 +247,8 @@ function PitchDeckPage() {
         });
       }, 500);
 
-      const response = await fetch(`http://127.0.0.1:8010/v2/deals/${selectedDeal.dealId}/pitch-deck`, {
+      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
+      const response = await fetch(`${API_BASE}/v2/deals/${selectedDeal.dealId}/pitch-deck`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),

@@ -223,7 +223,8 @@ export const CostSegAnalysisView = ({ dealId, scenarioData, fullCalcs }) => {
     setError(null);
     
     try {
-      const response = await fetch(`http://localhost:8010/v2/deals/${dealId}/costseg`, {
+      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
+      const response = await fetch(`${API_BASE}/v2/deals/${dealId}/costseg`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

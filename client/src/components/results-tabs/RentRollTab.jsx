@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const API_BASE = 'http://127.0.0.1:8010';
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
 
 export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
   const unitMixData = scenarioData?.unit_mix || [];

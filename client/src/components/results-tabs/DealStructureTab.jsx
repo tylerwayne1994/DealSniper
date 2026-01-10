@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
-const API_BASE = "http://localhost:8010";
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8010";
 
 // Helper function to calculate monthly payment
 const calcMonthlyPayment = (principal, annualRate, amortMonths) => {
