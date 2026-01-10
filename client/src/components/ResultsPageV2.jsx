@@ -125,12 +125,22 @@ const ResultsPageV2 = ({
   // Track if user has made changes that need recalculation
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
+  const changeTimeoutRef = useRef(null);
   
-  // Wrapper for onEditData that tracks changes
+  // Wrapper for onEditData that tracks changes with debounce to prevent flickering
   const handleFieldChange = (path, value) => {
     if (onEditData) {
       onEditData(path, value);
-      setHasUnsavedChanges(true);
+      
+      // Clear previous timeout
+      if (changeTimeoutRef.current) {
+        clearTimeout(changeTimeoutRef.current);
+      }
+      
+      // Debounce to prevent rapid state changes
+      changeTimeoutRef.current = setTimeout(() => {
+        setHasUnsavedChanges(true);
+      }, 300);
     }
   };
   
@@ -144,6 +154,15 @@ const ResultsPageV2 = ({
       setHasUnsavedChanges(false);
     }, 500);
   };
+  
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (changeTimeoutRef.current) {
+        clearTimeout(changeTimeoutRef.current);
+      }
+    };
+  }, []);
   
   // Chat position state for dragging
   const [chatPosition, setChatPosition] = useState({ x: window.innerWidth - 420, y: 100 });
