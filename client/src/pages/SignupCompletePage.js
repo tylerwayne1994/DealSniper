@@ -11,43 +11,70 @@ function SignupCompletePage() {
   useEffect(() => {
     const completeSignup = async () => {
       try {
-        // Check if user is already logged in from signup
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
+        // Get session_id from URL params
+        const params = new URLSearchParams(window.location.search);
+        const sessionId = params.get('session_id');
+
+        if (!sessionId) {
           setStatus('error');
-          setMessage('No active session found. Please log in.');
-          setTimeout(() => navigate('/login'), 3000);
+          setMessage('No session ID found. Please try signing up again.');
           return;
         }
 
-        // Get plan from URL params (Stripe will pass it back)
-        const params = new URLSearchParams(window.location.search);
-        const plan = params.get('plan') || 'base';
+        // Fetch Stripe session metadata from backend
+        const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
+        const res = await fetch(`${API_BASE}/api/get-checkout-session?session_id=${sessionId}`);
+        if (!res.ok) throw new Error('Failed to retrieve payment information');
+        
+        const { metadata } = await res.json();
+        const { email, password, first_name, last_name, phone, company, title, city, state, plan } = metadata;
 
-        // Update subscription tier in Supabase
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            subscription_tier: plan,
-            token_balance: plan === 'pro' ? 100 : 25,
-            monthly_limit: plan === 'pro' ? 100 : 25
-          })
-          .eq('id', user.id);
+        // Create Supabase account
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+          email: email,
+          password: password,
+          options: {
+            data: {
+              first_name: first_name,
+              last_name: last_name,
+              phone: phone,
+              company: company,
+              title: title,
+              city: city,
+              state: state
+            }
+          }
+        });
 
-        if (profileError) {
-          console.error('Profile update error:', profileError);
+        if (signUpError) {
+          console.error('Supabase signup error:', signUpError);
           setStatus('error');
-          setMessage('Failed to update subscription: ' + profileError.message);
+          setMessage('Failed to create account: ' + signUpError.message);
           return;
+        }
+
+        // Update profile with subscription details
+        if (authData.user) {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({
+              subscription_tier: plan,
+              token_balance: plan === 'pro' ? 100 : 25,
+              monthly_limit: plan === 'pro' ? 100 : 25
+            })
+            .eq('id', authData.user.id);
+
+          if (profileError) {
+            console.error('Profile update error:', profileError);
+          }
         }
 
         // Success!
         setStatus('success');
-        setMessage('Account created successfully! Redirecting to dashboard...');
+        setMessage('Account created successfully! Redirecting to login...');
         
-        // Redirect to dashboard
-        setTimeout(() => navigate('/dashboard'), 2000);
+        // Redirect to login page
+        setTimeout(() => navigate('/login'), 2000);
 
       } catch (error) {
         console.error('Signup completion error:', error);
