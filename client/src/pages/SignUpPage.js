@@ -61,6 +61,20 @@ function SignUpPage() {
     setLoading(true);
 
     try {
+      // Store signup data in localStorage before Stripe redirect
+      localStorage.setItem('pendingSignup', JSON.stringify({
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone,
+        company: formData.company,
+        title: formData.title,
+        city: formData.city,
+        state: formData.state,
+        plan: plan
+      }));
+
       // 2. Call backend to create Stripe Checkout session (send plan name)
       const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
       const res = await fetch(`${API_BASE}/api/create-checkout-session`, {
