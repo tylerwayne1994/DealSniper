@@ -303,8 +303,8 @@ async def create_checkout_session(request: Request):
             }],
             mode="subscription",
             customer_email=email,
-            success_url=os.getenv("FRONTEND_URL", "http://localhost:3000") + "/dashboard?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=os.getenv("FRONTEND_URL", "http://localhost:3000") + "/select-plan?canceled=true",
+            success_url=os.getenv("FRONTEND_URL", "http://localhost:3000") + "/login?payment_success=true",
+            cancel_url=os.getenv("FRONTEND_URL", "http://localhost:3000") + "/signup?canceled=true",
         )
         return {"url": checkout_session.url}
     except Exception as e:
