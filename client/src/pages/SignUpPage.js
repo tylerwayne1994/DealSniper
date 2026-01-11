@@ -61,68 +61,22 @@ function SignUpPage() {
     setLoading(true);
 
     try {
-      // 1. Create Supabase account FIRST
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: window.location.origin + '/dashboard',
-          data: {
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            phone: formData.phone,
-            company: formData.company,
-            title: formData.title,
-            city: formData.city,
-            state: formData.state
-          }
-        }
-      });
-
-      if (authError) {
-        console.error('Supabase signup error:', authError);
-        // If user already exists, try to sign in and continue
-        if (authError.message.includes('already registered') || authError.message.includes('User already registered')) {
-          const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-            email: formData.email,
-            password: formData.password
-          });
-          
-          if (loginError || !loginData.user) {
-            setError('Account exists but login failed. Please use the login page.');
-            setLoading(false);
-            return;
-          }
-          
-          // Continue with existing user
-          console.log('User logged in:', loginData.user.id);
-          authData.user = loginData.user;
-        } else {
-          setError('Account creation failed: ' + authError.message);
-          setLoading(false);
-          return;
-        }
-      }
-
-      if (!authData || !authData.user) {
-        setError('Account creation failed: No user returned');
-        setLoading(false);
-        return;
-      }
-
-      console.log('Supabase user ready:', authData.user.id);
-
-      // 2. Call backend to create Stripe Checkout session
+      // Call backend to create Stripe Checkout session
       const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
       const res = await fetch(`${API_BASE}/api/create-checkout-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: formData.email,
-          plan: plan,
-          userId: authData.user.id,
+          password: formData.password,
           firstName: formData.firstName,
-          lastName: formData.lastName
+          lastName: formData.lastName,
+          phone: formData.phone,
+          company: formData.company,
+          title: formData.title,
+          city: formData.city,
+          state: formData.state,
+          plan: plan
         })
       });
       if (!res.ok) throw new Error('Failed to create Stripe Checkout session');
