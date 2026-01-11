@@ -499,6 +499,23 @@ const MarketResearchTab = ({
       
       if (data.success) {
         setAiSummary(data.summary);
+        
+        // Show token deduction notification
+        if (data.tokens_deducted && data.new_balance !== undefined) {
+          console.log(`✓ Token deducted! Used: ${data.tokens_deducted}, New balance: ${data.new_balance}`);
+          
+          // Show temporary success message
+          const successMsg = `✓ ${data.tokens_deducted} token deducted. Remaining: ${data.new_balance}`;
+          const tempDiv = document.createElement('div');
+          tempDiv.style.cssText = 'position: fixed; top: 80px; right: 20px; background: #10b981; color: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; font-weight: 600; animation: slideIn 0.3s ease;';
+          tempDiv.textContent = successMsg;
+          document.body.appendChild(tempDiv);
+          setTimeout(() => {
+            tempDiv.style.transition = 'opacity 0.3s';
+            tempDiv.style.opacity = '0';
+            setTimeout(() => document.body.removeChild(tempDiv), 300);
+          }, 3000);
+        }
       } else {
         setAiError(data.error || 'Failed to generate AI summary');
       }

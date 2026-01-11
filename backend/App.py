@@ -3011,7 +3011,10 @@ This location research is CRITICAL for evaluating tenant demand - include specif
             
             return {
                 "success": True,
-                "summary": content
+                "summary": content,
+                "tokens_deducted": tokens_required,
+                "new_balance": new_balance,
+                "message": f"✓ {tokens_required} token deducted. Remaining balance: {new_balance}"
             }
             
     except Exception as e:
