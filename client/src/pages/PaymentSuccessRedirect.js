@@ -10,6 +10,9 @@ export default function PaymentSuccessRedirect() {
   useEffect(() => {
     const finishSignup = async () => {
       try {
+        // Ensure we aren't using any existing session (old account)
+        try { await supabase.auth.signOut(); } catch {}
+
         const params = new URLSearchParams(location.search);
         const sessionId = params.get('session_id') || params.get('session');
 
@@ -56,6 +59,8 @@ export default function PaymentSuccessRedirect() {
         }
 
         setMessage('Account created. Redirecting to login...');
+        // Explicitly sign out to avoid staying logged into old/new session
+        try { await supabase.auth.signOut(); } catch {}
         setTimeout(() => navigate('/login'), 1500);
       } catch (err) {
         console.error('Payment success handling error:', err);
