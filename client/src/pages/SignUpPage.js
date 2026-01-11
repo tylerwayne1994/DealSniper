@@ -61,28 +61,40 @@ function SignUpPage() {
     setLoading(true);
 
     try {
-      // Store signup data in localStorage before Stripe redirect
-      localStorage.setItem('pendingSignup', JSON.stringify({
+      // 1. Create Supabase account FIRST
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phone: formData.phone,
-        company: formData.company,
-        title: formData.title,
-        city: formData.city,
-        state: formData.state,
-        plan: plan
-      }));
+        options: {
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            phone: formData.phone,
+            company: formData.company,
+            title: formData.title,
+            city: formData.city,
+            state: formData.state
+          }
+        }
+      });
 
-      // 2. Call backend to create Stripe Checkout session (send plan name)
+      if (authError) {
+        setError('Account creation failed: ' + authError.message);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Call backend to create Stripe Checkout session
       const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
       const res = await fetch(`${API_BASE}/api/create-checkout-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: formData.email,
-          plan: plan // 'pro' or 'base'
+          plan: plan,
+          userId: authData.user.id,
+          firstName: formData.firstName,
+          lastName: formData.lastName
         })
       });
       if (!res.ok) throw new Error('Failed to create Stripe Checkout session');

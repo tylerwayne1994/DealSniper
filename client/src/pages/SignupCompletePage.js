@@ -11,66 +11,36 @@ function SignupCompletePage() {
   useEffect(() => {
     const completeSignup = async () => {
       try {
-        // Get stored signup data
-        const signupDataStr = localStorage.getItem('pendingSignup');
-        if (!signupDataStr) {
-          setStatus('error');
-          setMessage('No signup data found. Please try signing up again.');
-          setTimeout(() => navigate('/signup'), 3000);
-          return;
-        }
-
-        const signupData = JSON.parse(signupDataStr);
+        // Check if user is already logged in from signup
+        const { data: { user } } = await supabase.auth.getUser();
         
-        // Create Supabase account
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: signupData.email,
-          password: signupData.password,
-          options: {
-            data: {
-              first_name: signupData.firstName,
-              last_name: signupData.lastName,
-              phone: signupData.phone,
-              company: signupData.company,
-              title: signupData.title,
-              city: signupData.city,
-              state: signupData.state
-            }
-          }
-        });
-
-        if (authError) {
-          console.error('Supabase signup error:', authError);
+        if (!user) {
           setStatus('error');
-          setMessage('Failed to create account: ' + authError.message);
+          setMessage('No active session found. Please log in.');
+          setTimeout(() => navigate('/login'), 3000);
           return;
         }
 
-        // Update profile with additional data
-        if (authData.user) {
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .update({
-              first_name: signupData.firstName,
-              last_name: signupData.lastName,
-              phone: signupData.phone,
-              company: signupData.company,
-              title: signupData.title,
-              city: signupData.city,
-              state: signupData.state,
-              subscription_tier: signupData.plan === 'pro' ? 'pro' : 'base',
-              token_balance: signupData.plan === 'pro' ? 100 : 25,
-              monthly_limit: signupData.plan === 'pro' ? 100 : 25
-            })
-            .eq('id', authData.user.id);
+        // Get plan from URL params (Stripe will pass it back)
+        const params = new URLSearchParams(window.location.search);
+        const plan = params.get('plan') || 'base';
 
-          if (profileError) {
-            console.error('Profile update error:', profileError);
-          }
+        // Update subscription tier in Supabase
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            subscription_tier: plan,
+            token_balance: plan === 'pro' ? 100 : 25,
+            monthly_limit: plan === 'pro' ? 100 : 25
+          })
+          .eq('id', user.id);
+
+        if (profileError) {
+          console.error('Profile update error:', profileError);
+          setStatus('error');
+          setMessage('Failed to update subscription: ' + profileError.message);
+          return;
         }
-
-        // Clear stored data
-        localStorage.removeItem('pendingSignup');
 
         // Success!
         setStatus('success');
