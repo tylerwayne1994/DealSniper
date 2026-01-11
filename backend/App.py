@@ -331,6 +331,15 @@ async def create_checkout_session(request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/get-checkout-session")
+async def get_checkout_session(session_id: str):
+    try:
+        stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+        session = stripe.checkout.Session.retrieve(session_id)
+        return {"metadata": session.get("metadata", {})}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.on_event("startup")
 async def _init_clients():
     global MISTRAL, ANTHROPIC
