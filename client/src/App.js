@@ -13,6 +13,7 @@ import MarketResearchPage from './pages/MarketResearchPage'; // Market Discovery
 import DueDiligencePage from './pages/DueDiligencePage'; // Due Diligence Checklist
 import EmailDealsPage from './pages/EmailDealsPage'; // Email Deal Screener
 import SignUpPage from './pages/SignUpPage'; // Sign Up
+import SignupCompletePage from './pages/SignupCompletePage'; // Signup Complete
 import LoginPage from './pages/LoginPage'; // Login
 import ManualEntryPage from './pages/ManualEntryPage'; // Manual Entry
 import PitchDeckPage from './pages/PitchDeckPage'; // Pitch Deck Generator
@@ -25,6 +26,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/map" element={<MapViewPage />} />
         <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/signup-complete" element={<SignupCompletePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/manual-entry" element={<ManualEntryPage />} />
         <Route path="/pitch-deck" element={<PitchDeckPage />} />
