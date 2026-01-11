@@ -19,7 +19,8 @@ import {
   AlertCircle,
   Presentation,
   BarChart3,
-  FileSpreadsheet
+  FileSpreadsheet,
+  LogOut
 } from 'lucide-react';
 import { loadProfile, saveProfile } from '../lib/dealsService';
 import { supabase } from '../lib/supabase';
@@ -928,6 +929,38 @@ function DashboardPage() {
       >
         <Save size={18} />
         {saving ? 'Saving...' : 'Save Profile'}
+      </button>
+
+      {/* Sign Out Button */}
+      <button
+        onClick={async () => {
+          try {
+            const { error } = await supabase.auth.signOut();
+            if (error) throw error;
+            navigate('/');
+          } catch (error) {
+            console.error('Sign out error:', error);
+            alert('Failed to sign out. Please try again.');
+          }
+        }}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          padding: '14px 28px',
+          backgroundColor: '#ef4444',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          fontSize: '14px',
+          fontWeight: '600',
+          cursor: 'pointer',
+          alignSelf: 'flex-start'
+        }}
+      >
+        <LogOut size={18} />
+        Sign Out
       </button>
 
       {/* Token Packages for Purchase */}
