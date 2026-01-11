@@ -8,6 +8,10 @@ import { supabase } from '../lib/supabase';
 // Sign Up Page - Create account with profile fields
 // ============================================================================
 
+// Initialize Stripe once outside component (prevents multiple instances)
+const STRIPE_PUBLISHABLE_KEY = 'pk_test_51Sf9IJRRD0SJQZk3CyZb1eweP0dpjdba4gQpIk0PxQRlFn4Zn4qarExANcYwdxI1MwMRXuM8LapyQCASNy4KypWJ00RxuONolG';
+const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
+
 function SignUpPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
@@ -28,10 +32,6 @@ function SignUpPage() {
     state: ''
   });
   const [plan, setPlan] = useState('base');
-
-  // Stripe publishable key (test)
-  const STRIPE_PUBLISHABLE_KEY = 'pk_test_51Sf9IJRRD0SJQZk3CyZb1eweP0dpjdba4gQpIk0PxQRlFn4Zn4qarExANcYwdxI1MwMRXuM8LapyQCASNy4KypWJ00RxuONolG';
-  const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

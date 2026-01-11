@@ -281,12 +281,17 @@ async def create_checkout_session(request: Request):
     data = await request.json()
     email = data.get("email")
     plan = data.get("plan")
-    user_id = data.get("userId")
+    password = data.get("password")
     first_name = data.get("firstName", "")
     last_name = data.get("lastName", "")
+    phone = data.get("phone", "")
+    company = data.get("company", "")
+    title = data.get("title", "")
+    city = data.get("city", "")
+    state = data.get("state", "")
     
-    if not email or not plan or not user_id:
-        raise HTTPException(status_code=400, detail="Missing required fields")
+    if not email or not plan or not password:
+        raise HTTPException(status_code=400, detail="Missing required fields: email, plan, password")
 
     # Map plan to Stripe price ID
     price_id = None
@@ -308,12 +313,18 @@ async def create_checkout_session(request: Request):
             mode="subscription",
             customer_email=email,
             metadata={
-                "user_id": user_id,
-                "plan": plan,
+                "email": email,
+                "password": password,
                 "first_name": first_name,
-                "last_name": last_name
+                "last_name": last_name,
+                "phone": phone,
+                "company": company,
+                "title": title,
+                "city": city,
+                "state": state,
+                "plan": plan
             },
-            success_url=os.getenv("FRONTEND_URL", "http://localhost:3000") + f"/signup-complete?plan={plan}",
+            success_url=os.getenv("FRONTEND_URL", "http://localhost:3000") + f"/signup-complete?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=os.getenv("FRONTEND_URL", "http://localhost:3000") + "/signup?canceled=true",
         )
         return {"url": checkout_session.url}
