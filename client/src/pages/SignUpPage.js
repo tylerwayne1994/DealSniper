@@ -62,7 +62,8 @@ function SignUpPage() {
 
     try {
       // 2. Call backend to create Stripe Checkout session (send plan name)
-      const res = await fetch('http://localhost:8010/api/create-checkout-session', {
+      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
+      const res = await fetch(`${API_BASE}/api/create-checkout-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
