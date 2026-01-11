@@ -173,24 +173,41 @@ async def stripe_webhook(request: Request):
             price_id = subscription["items"]["data"][0]["price"]["id"]
             tier = STRIPE_PRICE_TO_TIER.get(price_id, "base")
             
+            # Get metadata from session
+            metadata = session.get("metadata", {})
+            user_id = metadata.get("user_id")
+            plan = metadata.get("plan", "base")
+            
             # Update or create profile with stripe customer ID
             supabase = get_supabase()
             
-            # First, try to find profile by email (from checkout session)
-            customer_email = session.get("customer_email") or session.get("customer_details", {}).get("email")
-            
-            if customer_email:
-                # Update existing profile or create if needed
-                result = supabase.table("profiles").update({
-                    "stripe_customer_id": customer_id
-                }).eq("email", customer_email).execute()
+            if user_id:
+                # Update profile with Stripe info and token balance
+                token_balance = 100 if plan == "pro" else 25
+                monthly_limit = 100 if plan == "pro" else 25
                 
-                if not result.data:
-                    # Create new profile
-                    supabase.table("profiles").insert({
-                        "email": customer_email,
-                        "stripe_customer_id": customer_id
-                    }).execute()
+                supabase.table("profiles").update({
+                    "stripe_customer_id": customer_id,
+                    "subscription_tier": plan,
+                    "token_balance": token_balance,
+                    "monthly_limit": monthly_limit,
+                    "stripe_subscription_id": subscription_id
+                }).eq("id", user_id).execute()
+                
+                log.info(f"✅ SUBSCRIPTION ACTIVATED: User {user_id} | Plan: {plan} | Tokens: {token_balance}")
+            else:
+                # Fallback: try to find profile by email
+                customer_email = session.get("customer_email") or session.get("customer_details", {}).get("email")
+                
+                if customer_email:
+                    result = supabase.table("profiles").update({
+                        "stripe_customer_id": customer_id,
+                        "subscription_tier": tier,
+                        "stripe_subscription_id": subscription_id
+                    }).eq("email", customer_email).execute()
+                    
+                    if not result.data:
+                        log.error(f"❌ No profile found for email: {customer_email}")
             
             # Update subscription tier
             update_subscription_tier(customer_id, tier, subscription_id)

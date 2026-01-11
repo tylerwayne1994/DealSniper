@@ -281,8 +281,12 @@ async def create_checkout_session(request: Request):
     data = await request.json()
     email = data.get("email")
     plan = data.get("plan")
-    if not email or not plan:
-        raise HTTPException(status_code=400, detail="Missing email or plan")
+    user_id = data.get("userId")
+    first_name = data.get("firstName", "")
+    last_name = data.get("lastName", "")
+    
+    if not email or not plan or not user_id:
+        raise HTTPException(status_code=400, detail="Missing required fields")
 
     # Map plan to Stripe price ID
     price_id = None
@@ -303,7 +307,13 @@ async def create_checkout_session(request: Request):
             }],
             mode="subscription",
             customer_email=email,
-            success_url=os.getenv("FRONTEND_URL", "http://localhost:3000") + "/signup-complete",
+            metadata={
+                "user_id": user_id,
+                "plan": plan,
+                "first_name": first_name,
+                "last_name": last_name
+            },
+            success_url=os.getenv("FRONTEND_URL", "http://localhost:3000") + f"/signup-complete?plan={plan}",
             cancel_url=os.getenv("FRONTEND_URL", "http://localhost:3000") + "/signup?canceled=true",
         )
         return {"url": checkout_session.url}
