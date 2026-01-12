@@ -44,12 +44,13 @@ export default function PaymentSuccessRedirect() {
         }
 
         if (authData?.user) {
+          const monthly = plan === 'pro' ? 55 : 25; // align with backend limits
           const { error: profileError } = await supabase
             .from('profiles')
             .update({
               subscription_tier: plan,
-              token_balance: plan === 'pro' ? 100 : 25,
-              monthly_limit: plan === 'pro' ? 100 : 25
+              token_balance: monthly,
+              monthly_token_limit: monthly
             })
             .eq('id', authData.user.id);
 

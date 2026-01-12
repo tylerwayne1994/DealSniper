@@ -183,14 +183,13 @@ async def stripe_webhook(request: Request):
             
             if user_id:
                 # Update profile with Stripe info and token balance
-                token_balance = 100 if plan == "pro" else 25
-                monthly_limit = 100 if plan == "pro" else 25
+                monthly = 55 if plan == "pro" else 25
                 
                 supabase.table("profiles").update({
                     "stripe_customer_id": customer_id,
                     "subscription_tier": plan,
-                    "token_balance": token_balance,
-                    "monthly_limit": monthly_limit,
+                    "token_balance": monthly,
+                    "monthly_token_limit": monthly,
                     "stripe_subscription_id": subscription_id
                 }).eq("id", user_id).execute()
                 

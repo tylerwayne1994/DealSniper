@@ -81,20 +81,12 @@ def get_supabase() -> Client:
 def get_current_profile_id(request: Request) -> str:
     """
     Get current user's profile ID from request.
-    In production, integrate with your auth system.
+    Requires explicit `X-Profile-ID` header or `profile_id` cookie.
+    This avoids cross-account data bleed.
     """
-    # Check for profile_id in headers or cookies
     profile_id = request.headers.get("X-Profile-ID") or request.cookies.get("profile_id")
-    
     if not profile_id:
-        # For development - get the first profile
-        supabase = get_supabase()
-        result = supabase.table("profiles").select("id").limit(1).execute()
-        if result.data:
-            profile_id = result.data[0]["id"]
-        else:
-            raise HTTPException(status_code=401, detail="No profile found. Please create a profile first.")
-    
+        raise HTTPException(status_code=401, detail="Missing profile ID. Pass 'X-Profile-ID' header.")
     return profile_id
 
 def get_profile(profile_id: str) -> Dict[str, Any]:

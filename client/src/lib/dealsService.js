@@ -1,6 +1,13 @@
 // Deals Service - Supabase integration for saving/loading deals
 import { supabase } from './supabase';
 
+// Helper: get current authenticated user id
+async function getCurrentUserId() {
+  const { data, error } = await supabase.auth.getUser();
+  if (error) throw error;
+  return data?.user?.id || null;
+}
+
 /**
  * Save a deal to Supabase
  * @param {Object} dealData - The complete deal data to save
@@ -27,12 +34,27 @@ export async function saveDeal(dealData) {
     longitude          // NEW: Geocoded longitude
   } = dealData;
 
+  const userId = await getCurrentUserId();
+
   // Check if deal already exists (update vs insert)
-  const { data: existing } = await supabase
-    .from('deals')
-    .select('id')
-    .eq('deal_id', dealId)
-    .single();
+  let existing = null;
+  try {
+    const { data } = await supabase
+      .from('deals')
+      .select('id')
+      .eq('deal_id', dealId)
+      .eq('user_id', userId)
+      .single();
+    existing = data || null;
+  } catch (e) {
+    // Fallback if user_id column doesn't exist yet
+    const { data } = await supabase
+      .from('deals')
+      .select('id')
+      .eq('deal_id', dealId)
+      .single();
+    existing = data || null;
+  }
 
   const dealRecord = {
     deal_id: dealId,
@@ -56,6 +78,11 @@ export async function saveDeal(dealData) {
     updated_at: new Date().toISOString()
   };
 
+  // Attach user scoping if available
+  if (userId) {
+    dealRecord.user_id = userId;
+  }
+
   let result;
   
   if (existing) {
@@ -64,6 +91,7 @@ export async function saveDeal(dealData) {
       .from('deals')
       .update(dealRecord)
       .eq('deal_id', dealId)
+      .eq('user_id', userId)
       .select()
       .single();
     
@@ -73,11 +101,29 @@ export async function saveDeal(dealData) {
     // Insert new deal
     dealRecord.created_at = new Date().toISOString();
     
-    const { data, error } = await supabase
+    // Attempt insert with user_id; fallback if column missing
+    let insertError, insertData;
+    const attempt = await supabase
       .from('deals')
       .insert(dealRecord)
       .select()
       .single();
+    insertError = attempt.error;
+    insertData = attempt.data;
+    if (insertError && (insertError.message || '').toLowerCase().includes('column "user_id"')) {
+      const fallback = await supabase
+        .from('deals')
+        .insert({
+          ...dealRecord,
+          user_id: undefined
+        })
+        .select()
+        .single();
+      insertError = fallback.error;
+      insertData = fallback.data;
+    }
+    const error = insertError;
+    const data = insertData;
     
     if (error) throw error;
     result = data;
@@ -92,11 +138,26 @@ export async function saveDeal(dealData) {
  * @returns {Object|null} - The deal data or null if not found
  */
 export async function loadDeal(dealId) {
-  const { data, error } = await supabase
-    .from('deals')
-    .select('*')
-    .eq('deal_id', dealId)
-    .single();
+  const userId = await getCurrentUserId();
+  let data, error;
+  try {
+    const resp = await supabase
+      .from('deals')
+      .select('*')
+      .eq('deal_id', dealId)
+      .eq('user_id', userId)
+      .single();
+    data = resp.data;
+    error = resp.error;
+  } catch (e) {
+    const resp = await supabase
+      .from('deals')
+      .select('*')
+      .eq('deal_id', dealId)
+      .single();
+    data = resp.data;
+    error = resp.error;
+  }
 
   if (error) {
     if (error.code === 'PGRST116') {
@@ -142,28 +203,60 @@ export async function loadDeal(dealId) {
  * @returns {Array} - Array of deal summaries
  */
 export async function loadPipelineDeals() {
-  const { data, error } = await supabase
-    .from('deals')
-    .select(`
-      id,
-      deal_id,
-      address,
-      units,
-      purchase_price,
-      deal_structure,
-      broker_name,
-      broker_phone,
-      broker_email,
-      pipeline_status,
-      created_at,
-      updated_at,
-      scenario_data,
-      parsed_data,
-      latitude,
-      longitude
-    `)
-    .eq('pipeline_status', 'pipeline')
-    .order('created_at', { ascending: false });
+  const userId = await getCurrentUserId();
+  let data, error;
+  try {
+    const resp = await supabase
+      .from('deals')
+      .select(`
+        id,
+        deal_id,
+        address,
+        units,
+        purchase_price,
+        deal_structure,
+        broker_name,
+        broker_phone,
+        broker_email,
+        pipeline_status,
+        created_at,
+        updated_at,
+        scenario_data,
+        parsed_data,
+        latitude,
+        longitude
+      `)
+      .eq('pipeline_status', 'pipeline')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    data = resp.data;
+    error = resp.error;
+  } catch (e) {
+    const resp = await supabase
+      .from('deals')
+      .select(`
+        id,
+        deal_id,
+        address,
+        units,
+        purchase_price,
+        deal_structure,
+        broker_name,
+        broker_phone,
+        broker_email,
+        pipeline_status,
+        created_at,
+        updated_at,
+        scenario_data,
+        parsed_data,
+        latitude,
+        longitude
+      `)
+      .eq('pipeline_status', 'pipeline')
+      .order('created_at', { ascending: false });
+    data = resp.data;
+    error = resp.error;
+  }
 
   if (error) throw error;
 
@@ -300,11 +393,26 @@ export async function loadRapidFireDeals() {
  * @returns {Object} - Full deal data ready for Results page
  */
 export async function loadDealForResults(dealId) {
-  const { data, error } = await supabase
-    .from('deals')
-    .select('*')
-    .eq('deal_id', dealId)
-    .single();
+  const userId = await getCurrentUserId();
+  let data, error;
+  try {
+    const resp = await supabase
+      .from('deals')
+      .select('*')
+      .eq('deal_id', dealId)
+      .eq('user_id', userId)
+      .single();
+    data = resp.data;
+    error = resp.error;
+  } catch (e) {
+    const resp = await supabase
+      .from('deals')
+      .select('*')
+      .eq('deal_id', dealId)
+      .single();
+    data = resp.data;
+    error = resp.error;
+  }
 
   if (error) {
     if (error.code === 'PGRST116') {
@@ -424,11 +532,25 @@ export async function loadDueDiligenceData(dealId) {
  * @returns {Object|null} - Profile data or null
  */
 export async function loadProfile() {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .limit(1)
-    .single();
+  const userId = await getCurrentUserId();
+  let data, error;
+  if (userId) {
+    const resp = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    data = resp.data;
+    error = resp.error;
+  } else {
+    const resp = await supabase
+      .from('profiles')
+      .select('*')
+      .limit(1)
+      .single();
+    data = resp.data;
+    error = resp.error;
+  }
 
   if (error) {
     if (error.code === 'PGRST116') return null;
@@ -456,11 +578,12 @@ export async function loadProfile() {
  * @param {Object} profile - Profile data to save
  */
 export async function saveProfile(profile) {
-  // First check if profile exists
+  const userId = await getCurrentUserId();
+  // First check if profile exists for current user
   const { data: existing } = await supabase
     .from('profiles')
     .select('id')
-    .limit(1)
+    .eq('id', userId)
     .single();
 
   const profileRecord = {
@@ -488,7 +611,7 @@ export async function saveProfile(profile) {
     profileRecord.created_at = new Date().toISOString();
     const { error } = await supabase
       .from('profiles')
-      .insert(profileRecord);
+      .insert({ ...profileRecord, id: userId });
     
     if (error) throw error;
   }
