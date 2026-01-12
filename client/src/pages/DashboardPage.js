@@ -322,6 +322,22 @@ function DashboardPage() {
     state: ''
   });
 
+  // Require an auth session; otherwise redirect to login
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!data?.session) {
+          navigate('/login');
+          return;
+        }
+      } catch (e) {
+        navigate('/login');
+      }
+    };
+    checkSession();
+  }, [navigate]);
+
   // Check for payment success/cancel in URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
