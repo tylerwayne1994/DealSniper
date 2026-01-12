@@ -413,11 +413,11 @@ function DashboardPage() {
   useEffect(() => {
     const fetchTokenBalance = async () => {
       try {
+        if (!profile.id) return; // Wait until profile is loaded
         const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8010';
         const response = await fetch(`${API_URL}/api/tokens/balance`, {
           headers: {
-            // Add profile ID header if you have auth
-            // 'X-Profile-ID': profileId
+            'X-Profile-ID': profile.id
           }
         });
         const data = await response.json();
@@ -431,7 +431,7 @@ function DashboardPage() {
       }
     };
     fetchTokenBalance();
-  }, []);
+  }, [profile.id]);
 
   const handleProfileChange = (e) => {
     const { name, value } = e.target;

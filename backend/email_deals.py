@@ -83,13 +83,11 @@ def get_supabase() -> Client:
 def get_current_user_id(request: Request) -> str:
     """
     Get current user ID from request.
-    For now, we use a simple approach. In production, integrate with your auth system.
+    Requires explicit X-User-ID header or user_id cookie.
     """
-    # Check for user_id in headers or cookies
     user_id = request.headers.get("X-User-ID") or request.cookies.get("user_id")
     if not user_id:
-        # Default user for development
-        user_id = "dev_user_1"
+        raise HTTPException(status_code=401, detail="Missing user ID. Provide 'X-User-ID' header.")
     return user_id
 
 def normalize_url(url: str) -> str:
