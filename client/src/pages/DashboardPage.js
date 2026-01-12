@@ -712,13 +712,13 @@ function DashboardPage() {
         )}
       </div>
 
-      {/* Cancel Subscription Card */}
-      <div style={{
-        ...cardStyle,
-        border: '2px solid #fecaca',
-        backgroundColor: '#fef2f2'
-      }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                   // Prefer auth user id via imported supabase; fallback to loaded profile id
+                   let profileId = profile.id;
+                   try {
+                     const { data: userData } = await supabase.auth.getUser();
+                     if (userData?.user?.id) profileId = userData.user.id;
+                   } catch {}
+                   if (!profileId) return; // wait until we have an id
           <div>
             <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '700', color: '#dc2626' }}>
               Cancel Subscription
