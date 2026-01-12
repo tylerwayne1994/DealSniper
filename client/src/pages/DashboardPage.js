@@ -413,16 +413,26 @@ function DashboardPage() {
   useEffect(() => {
     const fetchTokenBalance = async () => {
       try {
-        if (!profile.id) return; // Wait until profile is loaded
         const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8010';
+        // Prefer auth user id; fallback to loaded profile id
+        let userId = null;
+        try {
+          const { data } = await window.supabase?.auth?.getUser?.() || {};
+          userId = data?.user?.id || null;
+        } catch {}
+        const profileId = userId || profile.id;
+        if (!profileId) return; // wait until we have an id
+
         const response = await fetch(`${API_URL}/api/tokens/balance`, {
           headers: {
-            'X-Profile-ID': profile.id
+            'X-Profile-ID': profileId
           }
         });
         const data = await response.json();
-        if (data) {
+        if (data && !data.detail) {
           setTokenBalance(data);
+        } else {
+          console.warn('Token balance error:', data);
         }
       } catch (error) {
         console.error('Error loading token balance:', error);
