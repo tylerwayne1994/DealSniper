@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { loadProfile, saveProfile } from '../lib/dealsService';
 import { supabase } from '../lib/supabase';
+import { API_ENDPOINTS } from '../config/api';
 import RapidFirePage from './RapidFirePage';
 import DashboardShell from '../components/DashboardShell';
 import HomeMapView from '../components/HomeMapView';
@@ -38,7 +39,7 @@ function TokenPackageCard({ name, tokens, price, description, packageId, profile
   const handlePurchase = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8010/api/create-token-checkout', {
+      const response = await fetch(API_ENDPOINTS.createTokenCheckout, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -358,7 +359,7 @@ function DashboardPage() {
         try {
           console.log('Crediting tokens:', { profile_id: profile.id, tokens: parseInt(tokensPurchased) });
           
-          const response = await fetch('http://localhost:8010/api/credit-tokens', {
+          const response = await fetch(API_ENDPOINTS.creditTokens, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -429,17 +430,18 @@ function DashboardPage() {
   useEffect(() => {
     const fetchTokenBalance = async () => {
       try {
-        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8010';
-        // Prefer auth user id; fallback to loaded profile id
-        let userId = null;
+        // Prefer auth user id via imported supabase; fallback to loaded profile id
+        let profileId = profile.id;
         try {
-          const { data } = await window.supabase?.auth?.getUser?.() || {};
-          userId = data?.user?.id || null;
+          const userRes = await supabase.auth.getUser();
+          const userData = userRes?.data;
+          if (userData && userData.user && userData.user.id) {
+            profileId = userData.user.id;
+          }
         } catch {}
-        const profileId = userId || profile.id;
         if (!profileId) return; // wait until we have an id
-
-        const response = await fetch(`${API_URL}/api/tokens/balance`, {
+        
+        const response = await fetch(API_ENDPOINTS.tokensBalance, {
           headers: {
             'X-Profile-ID': profileId
           }
@@ -728,21 +730,14 @@ function DashboardPage() {
         )}
       </div>
 
-                   // Prefer auth user id via imported supabase; fallback to loaded profile id
-                   let profileId = profile.id;
-                   try {
-                     const { data: userData } = await supabase.auth.getUser();
-                     if (userData?.user?.id) profileId = userData.user.id;
-                   } catch {}
-                   if (!profileId) return; // wait until we have an id
-          <div>
+                   
+          <div style={cardStyle}>
             <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '700', color: '#dc2626' }}>
               Cancel Subscription
             </h3>
             <p style={{ margin: 0, fontSize: '14px', color: '#6b7280', lineHeight: '1.5' }}>
               To cancel your subscription, send an email to:
             </p>
-          </div>
           <div style={{
             padding: '16px',
             backgroundColor: 'white',
@@ -792,7 +787,6 @@ function DashboardPage() {
             </button>
           </div>
         </div>
-      </div>
 
       {/* Personal Information Card */}
       <div style={cardStyle}>
