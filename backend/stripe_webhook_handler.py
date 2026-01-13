@@ -193,7 +193,7 @@ async def stripe_webhook(request: Request):
                     "stripe_subscription_id": subscription_id
                 }).eq("id", user_id).execute()
                 
-                log.info(f"✅ SUBSCRIPTION ACTIVATED: User {user_id} | Plan: {plan} | Tokens: {token_balance}")
+                log.info(f"✅ SUBSCRIPTION ACTIVATED: User {user_id} | Plan: {plan} | Tokens: {monthly}")
             else:
                 # Fallback: try to find profile by email
                 customer_email = session.get("customer_email") or session.get("customer_details", {}).get("email")
@@ -229,24 +229,27 @@ async def stripe_webhook(request: Request):
             cancel_subscription(customer_id)
     
     elif event["type"] == "invoice.payment_succeeded":
-        # Recurring payment successful - reset tokens for the month
+        # Recurring payment successful - grant monthly tokens (rollover adds to balance)
         invoice = event["data"]["object"]
         customer_id = invoice.get("customer")
         subscription_id = invoice.get("subscription")
-        
+
         if customer_id and subscription_id:
-            # Get current subscription tier
             supabase = get_supabase()
-            result = supabase.table("profiles").select("subscription_tier, monthly_token_limit").eq("stripe_customer_id", customer_id).single().execute()
-            
+            # Fetch current balance and monthly limit
+            result = supabase.table("profiles").select("token_balance, monthly_token_limit").eq("stripe_customer_id", customer_id).single().execute()
+
             if result.data:
-                # Reset tokens to monthly limit
+                current_balance = result.data.get("token_balance", 0)
+                monthly_limit = result.data.get("monthly_token_limit", 0)
+                new_balance = current_balance + monthly_limit
                 tokens_reset_at = datetime.now() + timedelta(days=30)
+
                 supabase.table("profiles").update({
-                    "token_balance": result.data["monthly_token_limit"],
+                    "token_balance": new_balance,
                     "tokens_reset_at": tokens_reset_at.isoformat()
                 }).eq("stripe_customer_id", customer_id).execute()
-                
-                log.info(f"Reset tokens for customer {customer_id} after payment")
+
+                log.info(f"Rollover: Added {monthly_limit} tokens for customer {customer_id}. New balance: {new_balance}")
     
     return {"status": "success"}
