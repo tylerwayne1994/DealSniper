@@ -710,6 +710,10 @@ function DashboardPage() {
                   <span style={{ color: '#6366f1', fontWeight: '700', marginLeft: '6px' }}>1 token</span>
                 </div>
                 <div style={{ color: '#374151' }}>
+                  <span style={{ fontWeight: '600' }}>Rapid Fire (Reonomy AI):</span>
+                  <span style={{ color: '#6366f1', fontWeight: '700', marginLeft: '6px' }}>1 token</span>
+                </div>
+                <div style={{ color: '#374151' }}>
                   <span style={{ fontWeight: '600' }}>OM Parsing:</span>
                   <span style={{ color: '#10b981', fontWeight: '700', marginLeft: '6px' }}>FREE</span>
                 </div>
