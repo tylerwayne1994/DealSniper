@@ -1,8 +1,10 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { Upload, AlertCircle, CheckCircle, XCircle, Loader, Building2, BarChart3 } from 'lucide-react';
 import { saveRapidFireDeals } from '../lib/dealsService';
+import { API_ENDPOINTS } from '../config/api';
+import { supabase } from '../lib/supabase';
 
-// NOTE: Keep API_BASE consistent with other pages (e.g. UnderwriteV2Page)
+// NOTE: Backend base remains used for underwriting endpoint only
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8010";
 
 /**
@@ -372,6 +374,48 @@ const RapidFireSetupModal = ({ isOpen, onClose, onSubmit, settings, onChange, ha
   );
 };
 
+// Token confirmation modal shown before starting AI-powered underwriting (Reonomy)
+const TokenConfirmModal = ({ isOpen, onCancel, onConfirm, tokensRequired, tokenBalance }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100,
+      padding: '20px'
+    }}>
+      <div style={{ backgroundColor: 'white', borderRadius: '14px', padding: '24px', width: '100%', maxWidth: '520px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#111827' }}>Confirm AI Token Use</h3>
+          <button onClick={onCancel} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+            <XCircle size={20} color="#6b7280" />
+          </button>
+        </div>
+        <p style={{ marginTop: 6, color: '#374151', fontSize: '14px' }}>
+          Running AI underwriting on Reonomy spreadsheets uses tokens.
+        </p>
+        <div style={{
+          marginTop: 12,
+          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'
+        }}>
+          <div style={{ padding: '12px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: '#6b7280', fontWeight: 600 }}>Cost</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#111827' }}>{tokensRequired} token</div>
+          </div>
+          <div style={{ padding: '12px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: '#6b7280', fontWeight: 600 }}>Your Balance</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#111827' }}>{tokenBalance?.token_balance ?? '—'}</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
+          <button onClick={onCancel} style={{ padding: '10px 16px', borderRadius: 8, border: '1px solid #e5e7eb', background: '#fff', color: '#374151', fontWeight: 600 }}>Cancel</button>
+          <button onClick={onConfirm} style={{ padding: '10px 16px', borderRadius: 8, border: 'none', background: '#0f766e', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Use 1 Token & Continue</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Mock deals used if backend is not yet implemented or request fails
 /** @type {RapidFireDeal[]} */
 const MOCK_DEALS = [
@@ -429,6 +473,20 @@ function RapidFirePage() {
   const [sortDirection, setSortDirection] = useState('asc');
   const [validationErrors, setValidationErrors] = useState({ acquisitionFee: '' });
   const [isPushingToPipeline, setIsPushingToPipeline] = useState(false);
+  const [profileId, setProfileId] = useState('');
+
+  // Token confirmation modal state
+  const [isTokenConfirmOpen, setIsTokenConfirmOpen] = useState(false);
+  const [pendingTokenInfo, setPendingTokenInfo] = useState({ required: 1, balance: null });
+
+  // Toast state
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('success');
+  const showToast = (msg, type = 'success') => {
+    setToastMessage(msg);
+    setToastType(type);
+    setTimeout(() => setToastMessage(''), 4000);
+  };
 
   const [settings, setSettings] = useState({
     vacancyRate: 5,
@@ -484,6 +542,17 @@ function RapidFirePage() {
     e.preventDefault();
   };
 
+  // Load auth user id for protected token endpoints
+  useEffect(() => {
+    (async () => {
+      try {
+        const userRes = await supabase.auth.getUser();
+        const uid = userRes?.data?.user?.id;
+        if (uid) setProfileId(uid);
+      } catch {}
+    })();
+  }, []);
+
   const validateSettings = () => {
     const errors = { acquisitionFee: '' };
     const fee = Number(settings.acquisitionFee);
@@ -519,8 +588,13 @@ function RapidFirePage() {
     if (usingAI) {
       try {
         console.log('🪙 Checking token balance...');
-        const tokenCheckResponse = await fetch(`${API_BASE}/api/tokens/balance`, {
+        if (!profileId) {
+          alert('Please sign in to use AI underwriting.');
+          return;
+        }
+        const tokenCheckResponse = await fetch(API_ENDPOINTS.tokensBalance, {
           method: 'GET',
+          headers: { 'X-Profile-ID': profileId },
           credentials: 'include',
         });
         
@@ -537,26 +611,19 @@ function RapidFirePage() {
           alert(`Insufficient tokens! You need ${tokensRequired} token but have ${tokenData.token_balance}. AI-powered analysis for Reonomy files requires tokens.`);
           return;
         }
-        
-        // Confirm with user
-        const confirmed = window.confirm(
-          `This will use AI to analyze properties with limited data.\n\n` +
-          `Cost: ${tokensRequired} token\n` +
-          `Your balance: ${tokenData.token_balance} tokens\n\n` +
-          `Continue?`
-        );
-        
-        if (!confirmed) {
-          console.log('❌ User cancelled token deduction');
-          return;
-        }
+
+        // Open confirmation modal instead of native confirm
+        setPendingTokenInfo({ required: tokensRequired, balance: tokenData });
+        setIsTokenConfirmOpen(true);
+        // Pause here; onConfirm handler continues the flow
+        return;
       } catch (error) {
         console.error('💥 Token check failed:', error);
         alert(`Failed to check tokens: ${error.message}`);
         return;
       }
     }
-    
+    // If not using AI, continue directly
     setIsSubmitting(true);
     setIsLoadingResults(true);
 
@@ -602,7 +669,7 @@ function RapidFirePage() {
           console.log('🪙 Deducting token after successful AI analysis...');
           const deductResponse = await fetch(`${API_BASE}/api/tokens/use`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-Profile-ID': profileId },
             credentials: 'include',
             body: JSON.stringify({
               operation_type: 'rapid_fire_ai',
@@ -613,19 +680,20 @@ function RapidFirePage() {
           
           if (!deductResponse.ok) {
             console.error('⚠️ Token deduction failed but results were successful');
+            showToast('Token deduction failed. Please refresh.', 'warning');
           } else {
             const deductData = await deductResponse.json();
             console.log('✅ Token deducted:', deductData);
-            // Show subtle notification
             if (deductData.success) {
-              setTimeout(() => {
-                alert(`Success! ${data.deals.length} properties analyzed.\n\nToken used: ${tokensRequired}\nRemaining balance: ${deductData.new_balance}`);
-              }, 500);
+              showToast(`1 token deducted. New balance: ${deductData.new_balance}`);
+            } else {
+              showToast('Token deduction failed. Please refresh.', 'warning');
             }
           }
         } catch (tokenError) {
           console.error('💥 Token deduction error:', tokenError);
           // Don't block the results just because token deduction failed
+          showToast('Token deduction error. Please refresh.', 'warning');
         }
       }
       
@@ -635,6 +703,72 @@ function RapidFirePage() {
     } catch (error) {
       console.error('💥 Rapid fire underwriting failed:', error);
       console.error('💥 Error details:', error.message, error.stack);
+      alert(`Failed to run rapid fire: ${error.message}`);
+      setDeals([]);
+      setIsModalOpen(false);
+    } finally {
+      setIsSubmitting(false);
+      setIsLoadingResults(false);
+    }
+  };
+
+  // Handler to continue after user confirms token use
+  const handleConfirmTokenAndRun = async () => {
+    setIsTokenConfirmOpen(false);
+    // Proceed as if usingAI=false block had just run
+    setIsSubmitting(true);
+    setIsLoadingResults(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('settings', JSON.stringify(settings));
+      formData.append('sourceType', 'reonomy');
+
+      const response = await fetch(`${API_BASE}/v2/rapid-fire/underwrite`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Rapid fire endpoint error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+
+      // Deduct one token now that results succeeded
+      if (data.deals && data.deals.length > 0) {
+        try {
+          const deductResponse = await fetch(`${API_BASE}/api/tokens/use`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Profile-ID': profileId },
+            credentials: 'include',
+            body: JSON.stringify({
+              operation_type: 'rapid_fire_ai',
+              deal_name: `Rapid Fire - ${selectedFile.name}`,
+              location: `${data.deals.length} properties analyzed`
+            })
+          });
+          if (!deductResponse.ok) {
+            console.error('⚠️ Token deduction failed but results were successful');
+            showToast('Token deduction failed. Please refresh.', 'warning');
+          }
+          else {
+            const dd = await deductResponse.json();
+            if (dd?.success) showToast(`1 token deducted. New balance: ${dd.new_balance}`);
+            else showToast('Token deduction failed. Please refresh.', 'warning');
+          }
+        } catch (e) {
+          console.error('💥 Token deduction error:', e);
+          showToast('Token deduction error. Please refresh.', 'warning');
+        }
+      }
+
+      setDeals(Array.isArray(data.deals) ? data.deals : []);
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('💥 Rapid fire underwriting failed:', error);
       alert(`Failed to run rapid fire: ${error.message}`);
       setDeals([]);
       setIsModalOpen(false);
@@ -1127,6 +1261,38 @@ function RapidFirePage() {
         validationErrors={validationErrors}
         isSubmitting={isSubmitting}
       />
+
+      {/* Token confirmation modal */}
+      <TokenConfirmModal
+        isOpen={isTokenConfirmOpen}
+        onCancel={() => setIsTokenConfirmOpen(false)}
+        onConfirm={handleConfirmTokenAndRun}
+        tokensRequired={pendingTokenInfo.required}
+        tokenBalance={pendingTokenInfo.balance}
+      />
+
+      {/* Toast notification */}
+      {toastMessage && (
+        <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 1300 }}>
+          <div style={{
+            backgroundColor: toastType === 'success' ? '#10b981' : '#f59e0b',
+            color: 'white',
+            padding: '10px 14px',
+            borderRadius: 8,
+            boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            minWidth: 260
+          }}>
+            <span style={{ fontWeight: 700 }}>{toastType === 'success' ? 'Success' : 'Notice'}</span>
+            <span style={{ flex: 1 }}>{toastMessage}</span>
+            <button onClick={() => setToastMessage('')} style={{
+              background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', fontSize: 16, fontWeight: 700
+            }}>×</button>
+          </div>
+        </div>
+      )}
 
       {/* Spin animation keyframes */}
       <style>{`
