@@ -296,7 +296,7 @@ export async function saveRapidFireDeals(rapidFireDeals) {
 
   const nowIso = new Date().toISOString();
 
-  const rows = rapidFireDeals.map((deal, index) => {
+  let rows = rapidFireDeals.map((deal, index) => {
     const baseName = (deal.name || 'rapidfire-deal').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40) || 'rapidfire-deal';
     const dealId = `${baseName}-${Date.now()}-${index}`;
 
@@ -334,11 +334,26 @@ export async function saveRapidFireDeals(rapidFireDeals) {
     };
   });
 
-  const { error } = await supabase
+  // Attach current user id to ensure per-member scoping
+  const userId = await getCurrentUserId();
+  if (userId) {
+    rows = rows.map(r => ({ ...r, user_id: userId }));
+  }
+
+  // Attempt insert with user_id; fallback if column missing
+  let insertError;
+  const attempt = await supabase
     .from('deals')
     .insert(rows);
+  insertError = attempt.error;
+  if (insertError && (insertError.message || '').toLowerCase().includes('column "user_id"')) {
+    const fallback = await supabase
+      .from('deals')
+      .insert(rows.map(r => { const { user_id, ...rest } = r; return rest; }));
+    insertError = fallback.error;
+  }
 
-  if (error) throw error;
+  if (insertError) throw insertError;
 }
 
 /**
@@ -346,19 +361,42 @@ export async function saveRapidFireDeals(rapidFireDeals) {
  * These are deals pushed from the Rapid Fire screen with pipeline_status = 'rapidfire'.
  */
 export async function loadRapidFireDeals() {
-  const { data, error } = await supabase
-    .from('deals')
-    .select(`
-      deal_id,
-      address,
-      units,
-      purchase_price,
-      listing_url,
-      parsed_data,
-      created_at
-    `)
-    .eq('pipeline_status', 'rapidfire')
-    .order('created_at', { ascending: false });
+  const userId = await getCurrentUserId();
+  let data, error;
+  try {
+    const resp = await supabase
+      .from('deals')
+      .select(`
+        deal_id,
+        address,
+        units,
+        purchase_price,
+        listing_url,
+        parsed_data,
+        created_at
+      `)
+      .eq('pipeline_status', 'rapidfire')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    data = resp.data;
+    error = resp.error;
+  } catch (e) {
+    const resp = await supabase
+      .from('deals')
+      .select(`
+        deal_id,
+        address,
+        units,
+        purchase_price,
+        listing_url,
+        parsed_data,
+        created_at
+      `)
+      .eq('pipeline_status', 'rapidfire')
+      .order('created_at', { ascending: false });
+    data = resp.data;
+    error = resp.error;
+  }
 
   if (error) throw error;
 
