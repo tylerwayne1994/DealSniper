@@ -644,7 +644,7 @@ function DashboardPage() {
             {/* Token Stats Cards */}
             <div style={{ 
               display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
+              gridTemplateColumns: 'repeat(2, 1fr)',
               gap: '16px'
             }}>
               {/* Monthly Limit */}
@@ -659,21 +659,6 @@ function DashboardPage() {
                 </div>
                 <div style={{ fontSize: '24px', fontWeight: '700', color: '#111827' }}>
                   {tokenBalance.monthly_limit || 25}
-                </div>
-              </div>
-
-              {/* Used This Month */}
-              <div style={{ 
-                padding: '16px',
-                backgroundColor: '#f9fafb',
-                borderRadius: '10px',
-                border: '1px solid #e5e7eb'
-              }}>
-                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', fontWeight: '600' }}>
-                  USED THIS MONTH
-                </div>
-                <div style={{ fontSize: '24px', fontWeight: '700', color: '#6366f1' }}>
-                  {(tokenBalance.monthly_limit || 25) - (tokenBalance.token_balance !== undefined ? tokenBalance.token_balance : 0)}
                 </div>
               </div>
 
