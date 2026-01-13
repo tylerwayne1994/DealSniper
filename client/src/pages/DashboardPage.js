@@ -694,15 +694,23 @@ function DashboardPage() {
                   <span style={{ color: '#6366f1', fontWeight: '700', marginLeft: '6px' }}>1 token</span>
                 </div>
                 <div style={{ color: '#374151' }}>
-                  <span style={{ fontWeight: '600' }}>Market Research:</span>
+                  <span style={{ fontWeight: '600' }}>Market Report (Results v2):</span>
                   <span style={{ color: '#6366f1', fontWeight: '700', marginLeft: '6px' }}>1 token</span>
                 </div>
                 <div style={{ color: '#374151' }}>
-                  <span style={{ fontWeight: '600' }}>OM Parsing:</span>
-                  <span style={{ color: '#10b981', fontWeight: '700', marginLeft: '6px' }}>FREE</span>
+                  <span style={{ fontWeight: '600' }}>Market Report (Dashboard):</span>
+                  <span style={{ color: '#6366f1', fontWeight: '700', marginLeft: '6px' }}>1 token</span>
                 </div>
                 <div style={{ color: '#374151' }}>
-                  <span style={{ fontWeight: '600' }}>Value-Add Chat:</span>
+                  <span style={{ fontWeight: '600' }}>Pitch Deck:</span>
+                  <span style={{ color: '#6366f1', fontWeight: '700', marginLeft: '6px' }}>1 token</span>
+                </div>
+                <div style={{ color: '#374151' }}>
+                  <span style={{ fontWeight: '600' }}>Deal Structure:</span>
+                  <span style={{ color: '#6366f1', fontWeight: '700', marginLeft: '6px' }}>1 token</span>
+                </div>
+                <div style={{ color: '#374151' }}>
+                  <span style={{ fontWeight: '600' }}>Max:</span>
                   <span style={{ color: '#10b981', fontWeight: '700', marginLeft: '6px' }}>FREE</span>
                 </div>
               </div>
