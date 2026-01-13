@@ -100,23 +100,25 @@ def get_profile(profile_id: str) -> Dict[str, Any]:
     return result.data
 
 def reset_tokens_if_needed(profile: Dict[str, Any]) -> Dict[str, Any]:
-    """Check if tokens need to be reset and reset them if needed."""
+    """Check if tokens need to be reset and, if so, add monthly tokens (rollover)."""
     tokens_reset_at = datetime.fromisoformat(profile["tokens_reset_at"].replace("Z", "+00:00"))
-    
+
     if datetime.now(tokens_reset_at.tzinfo) >= tokens_reset_at:
-        # Reset tokens
         supabase = get_supabase()
         new_reset_date = datetime.now(tokens_reset_at.tzinfo) + timedelta(days=30)
-        
+        current_balance = profile.get("token_balance", 0)
+        monthly_limit = profile.get("monthly_token_limit", 0)
+        new_balance = current_balance + monthly_limit
+
         result = supabase.table("profiles").update({
-            "token_balance": profile["monthly_token_limit"],
+            "token_balance": new_balance,
             "tokens_reset_at": new_reset_date.isoformat()
         }).eq("id", profile["id"]).execute()
-        
+
         if result.data:
             profile = result.data[0]
-            log.info(f"Reset tokens for profile {profile['id']} to {profile['monthly_token_limit']}")
-    
+            log.info(f"Rollover: Added {monthly_limit} tokens for profile {profile['id']}. New balance: {new_balance}")
+
     return profile
 
 # ============================================================================
