@@ -174,6 +174,7 @@ function UnderwriteV2Page() {
   const [debtStructure, setDebtStructure] = useState('traditional');
   const [subjectToAvailable, setSubjectToAvailable] = useState(true);
   const [underwritingMode, setUnderwritingMode] = useState('hardcoded'); // 'hardcoded' | 'buybox'
+  const [autoRunAIAfterUpload, setAutoRunAIAfterUpload] = useState(false);
   
   // Buy Box parameters (user-defined)
   const [buyBoxParams, setBuyBoxParams] = useState({
@@ -795,8 +796,40 @@ function UnderwriteV2Page() {
         setValidationErrors(initialErrors);
       }
       
-      // Move to wizard step
-      setStep('verify');
+      // Decide next step: verify wizard or auto-run AI results
+      if (autoRunAIAfterUpload) {
+        try {
+          const transformedData = JSON.parse(JSON.stringify(parsedCopy));
+          if (transformedData.pricing_financing) {
+            transformedData.pricing_financing.purchase_price = transformedData.pricing_financing.price || transformedData.pricing_financing.purchase_price;
+            transformedData.pricing_financing.down_payment_pct = transformedData.pricing_financing.down_payment_pct || 40;
+          }
+          if (!transformedData.financing) {
+            transformedData.financing = {};
+          }
+          transformedData.financing.ltv = transformedData.financing.ltv || 75;
+          transformedData.financing.interest_rate = transformedData.financing.interest_rate || 6.0;
+          transformedData.financing.loan_term_years = transformedData.financing.loan_term_years || 10;
+          transformedData.financing.amortization_years = transformedData.financing.amortization_years || 30;
+          transformedData.financing.io_years = transformedData.financing.io_years || 0;
+          transformedData.financing.loan_fees_percent = transformedData.financing.loan_fees_percent || 1.5;
+          if (transformedData.pnl) {
+            transformedData.pnl.potential_gross_income = transformedData.pnl.gross_potential_rent || transformedData.pnl.potential_gross_income || 0;
+            transformedData.pnl.vacancy_rate = (transformedData.pnl.vacancy_rate || 0.05) * 100;
+          }
+          setScenarioData(transformedData);
+          setModifiedFields({});
+          setStep('results');
+        } catch (e) {
+          console.warn('[V2] Failed to auto-prepare scenario for AI run, falling back to wizard', e);
+          setStep('verify');
+        } finally {
+          setAutoRunAIAfterUpload(false);
+        }
+      } else {
+        // Move to wizard step
+        setStep('verify');
+      }
 
     } catch (err) {
       console.error('Upload error:', err);
@@ -1683,6 +1716,31 @@ function UnderwriteV2Page() {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Run AI Underwriting (quick start) */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+              <button
+                onClick={() => { setAutoRunAIAfterUpload(true); handleUpload(); }}
+                disabled={!file || isUploading}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: !file ? '#9ca3af' : 'linear-gradient(135deg, #10b981, #059669)',
+                  color: 'white',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: !file || isUploading ? 'not-allowed' : 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  boxShadow: '0 4px 14px rgba(16, 185, 129, 0.25)'
+                }}
+              >
+                <Calculator size={18} />
+                {isUploading ? 'Preparing AI Run...' : 'Run AI Underwriting'}
+              </button>
             </div>
 
             {/* File Upload Zone */}
