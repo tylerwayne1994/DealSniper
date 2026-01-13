@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   User,
   Layers,
-  Inbox,
   Zap,
   Presentation,
   BarChart3,
@@ -167,7 +166,6 @@ const tabs = [
   { id: 'profile', label: 'Profile', icon: User },
   { id: 'pipeline', label: 'Pipeline', icon: Layers },
   { id: 'underwrite', label: 'Underwrite', icon: FileSpreadsheet },
-  { id: 'email-deals', label: 'Email Deals', icon: Inbox },
   { id: 'rapid-fire', label: 'Rapid Fire', icon: Zap },
   { id: 'market', label: 'Market', icon: BarChart3 },
   { id: 'pitch-deck', label: 'Pitch Deck', icon: Presentation },
