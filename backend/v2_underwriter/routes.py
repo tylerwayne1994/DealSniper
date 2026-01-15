@@ -17,6 +17,7 @@ from .llm_client import call_openai_chat
 from .chat_prompts import build_deal_partner_chat_prompt, build_sheet_underwriter_chat_prompt
 from .value_add_prompts import build_noi_engineering_prompt, build_deal_structure_prompt
 from .prompts_v3 import build_underwriter_system_prompt_v3, build_summary_prompt_v2
+from .prompts_max_ai import build_max_ai_underwriting_prompt
 from . import llm_usage
 from .cost_seg import (
     CostSegInputs, 
@@ -1548,6 +1549,130 @@ async def underwrite_deal(deal_id: str, request: Request):
             "summary_text": summary_text,
             "calc_json": calc_json,
             "wizard_structure": wizard_structure,
+            "numeric_summary": {
+                "address": address,
+                "units": units,
+                "price": price,
+                "noi": noi,
+                "cap_rate": cap_rate,
+                "dscr": dscr_header,
+                "cashflow": cashflow_header,
+                "expense_ratio": expense_ratio_header
+            }
+        })
+
+    except Exception as e:
+        log.error(f"[V2] Underwriting error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/deals/{deal_id}/max-underwrite")
+async def max_underwrite_deal(deal_id: str, request: Request):
+    """
+    MAX AI Underwriting - Exhaustive principal-level underwriting.
+    Uses the specialized MAX AI prompt for:
+    - Never stopping early (no speed kills)
+    - Always running full stress tests
+    - Always attempting creative restructuring
+    - Using buy box presets as exact user criteria
+    """
+    from .llm_client import call_openai_chat
+
+    log.info(f"[MAX AI] Underwrite request for deal: {deal_id}")
+    
+    # Get inputs from request body
+    try:
+        body = await request.json()
+        body = body or {}
+        buy_box_presets = body.get("buy_box") or body.get("buyBoxPresets") or {}
+        deal_data = body.get("scenario") or body.get("dealData") or {}
+        
+        log.info(
+            f"[MAX AI] Buy box keys: {list(buy_box_presets.keys()) if isinstance(buy_box_presets, dict) else 'None'}, "
+            f"Deal data keys: {list(deal_data.keys()) if isinstance(deal_data, dict) else 'None'}"
+        )
+    except Exception as e:
+        log.error(f"[MAX AI] Error parsing request body: {e}")
+        buy_box_presets = {}
+        deal_data = {}
+    
+    deal = storage.get_deal(deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+    
+    try:
+        # If deal_data not provided, use latest scenario or parsed JSON
+        if not deal_data or len(deal_data) == 0:
+            deal_data = getattr(deal, "scenario_json", None) or deal.parsed_json
+
+        # Build the MAX AI exhaustive underwriting prompt
+        system_prompt = build_max_ai_underwriting_prompt(
+            buy_box_presets=buy_box_presets,
+            deal_data=deal_data
+        )
+        
+        log.info("[MAX AI] Calling OpenAI (GPT-4o-mini) for exhaustive underwriting...")
+
+        # Build the user message - MAX AI expects JSON input
+        input_json = {
+            "buyBoxPresets": buy_box_presets,
+            "dealData": deal_data
+        }
+        
+        user_message = {
+            "role": "user",
+            "content": f"Underwrite this deal:\n\n```json\n{json.dumps(input_json, indent=2)}\n```"
+        }
+
+        analysis_text = call_openai_chat(
+            system_prompt=system_prompt,
+            messages=[user_message],
+            model="gpt-4o-mini",
+            user_id=request.headers.get('X-User-ID') or request.cookies.get('user_id'),
+            action='max_ai_underwrite',
+            deduct_from_balance=True,
+        )
+
+        analysis_text = analysis_text.strip() if isinstance(analysis_text, str) else str(analysis_text)
+        log.info(f"[MAX AI] Underwriting complete. Response length: {len(analysis_text)} chars")
+        
+        # Extract verdict from the response
+        verdict = "MAYBE"  # default
+        if "✅ WORKS AS-IS" in analysis_text:
+            verdict = "BUY"
+        elif "⚠️ WORKS ONLY IF RESTRUCTURED" in analysis_text:
+            verdict = "MAYBE"
+        elif "🟡 BORDERLINE / FRAGILE" in analysis_text:
+            verdict = "MAYBE"
+        elif "❌ DEAD DEAL" in analysis_text:
+            verdict = "PASS"
+        
+        # Store MAX AI result in deal
+        result_payload = {
+            "analysis": analysis_text,
+            "verdict": verdict,
+            "source": "max_ai",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        deal.parsed_json["_max_ai_result"] = result_payload
+        if getattr(deal, "scenario_json", None) is not None:
+            deal.scenario_json["_max_ai_result"] = result_payload
+        storage.save_deal(deal)
+
+        return JSONResponse({
+            "deal_id": deal_id,
+            "verdict": verdict,
+            "analysis": analysis_text,
+            "summary_text": analysis_text,  # MAX AI analysis is the summary
+            "source": "max_ai"
+        })
+
+    except Exception as e:
+        log.error(f"[MAX AI] Underwriting error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/deals/{deal_id}/scenario")
             "buy_box": buy_box or {},
             "summary": {
                 "address": address,

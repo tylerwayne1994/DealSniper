@@ -9,6 +9,7 @@ import DashboardPage from './pages/DashboardPage';
 import PaymentSuccessRedirect from './pages/PaymentSuccessRedirect';
 import UnderwriteV2Page from './pages/UnderwriteV2Page'; // V2 Underwriter
 import UnderwriteAnalysisPage from './pages/UnderwriteAnalysisPage'; // AI Analysis Page
+import MaxAIUnderwritePage from './pages/MaxAIUnderwritePage'; // MAX AI Underwriting
 import MarketResearchPage from './pages/MarketResearchPage'; // Market Discovery AI
 import DueDiligencePage from './pages/DueDiligencePage'; // Due Diligence Checklist
 import EmailDealsPage from './pages/EmailDealsPage'; // Email Deal Screener
@@ -38,6 +39,7 @@ function App() {
         <Route path="/payment-success" element={<PaymentSuccessRedirect />} />
         <Route path="/underwrite" element={<UnderwriteV2Page />} /> {/* V2 Underwriter */}
         <Route path="/underwrite/analysis" element={<UnderwriteAnalysisPage />} /> {/* AI Analysis */}
+        <Route path="/underwrite/max" element={<MaxAIUnderwritePage />} /> {/* MAX AI Underwriting */}
         <Route path="/market-research" element={<MarketResearchPage />} /> {/* Market Discovery */}
         <Route path="/due-diligence" element={<DueDiligencePage />} /> {/* Due Diligence Checklist */}
         <Route path="/email-deals" element={<EmailDealsPage />} /> {/* Email Deal Screener */}
