@@ -1718,28 +1718,28 @@ function UnderwriteV2Page() {
               )}
             </div>
 
-            {/* Run AI Underwriting (quick start) */}
+            {/* Run AI Underwriting - navigate to MAX AI page */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
               <button
-                onClick={() => { setAutoRunAIAfterUpload(true); handleUpload(); }}
-                disabled={!file || isUploading}
+                onClick={() => navigate('/underwrite/max')}
+                disabled={isUploading}
                 style={{
-                  padding: '10px 16px',
+                  padding: '12px 24px',
                   borderRadius: 8,
                   border: 'none',
-                  background: !file ? '#9ca3af' : 'linear-gradient(135deg, #10b981, #059669)',
+                  background: isUploading ? '#9ca3af' : 'linear-gradient(135deg, #10b981, #059669)',
                   color: 'white',
                   fontSize: 14,
                   fontWeight: 700,
-                  cursor: !file || isUploading ? 'not-allowed' : 'pointer',
+                  cursor: isUploading ? 'not-allowed' : 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 8,
-                  boxShadow: '0 4px 14px rgba(16, 185, 129, 0.25)'
+                  boxShadow: isUploading ? 'none' : '0 4px 14px rgba(16, 185, 129, 0.25)'
                 }}
               >
-                <Calculator size={18} />
-                {isUploading ? 'Preparing AI Run...' : 'Run AI Underwriting'}
+                <CheckCircle size={18} />
+                🤖 Run AI Underwriting
               </button>
             </div>
 
@@ -3910,23 +3910,12 @@ function UnderwriteV2Page() {
               onClick={handleCompleteWizard}
               style={{
                 ...styles.button,
-                background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
-                boxShadow: '0 4px 6px rgba(107, 114, 128, 0.3)'
-              }}
-            >
-              <ArrowLeft size={18} />
-              Skip to Results
-            </button>
-            <button
-              onClick={handleRunAIAnalysis}
-              style={{
-                ...styles.button,
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                boxShadow: '0 4px 6px rgba(16, 185, 129, 0.3)'
+                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                boxShadow: '0 4px 6px rgba(59, 130, 246, 0.3)'
               }}
             >
               <CheckCircle size={18} />
-              🤖 Run AI Underwriting
+              Skip to Results
             </button>
           </div>
         </div>
