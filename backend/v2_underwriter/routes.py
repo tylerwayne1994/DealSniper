@@ -1605,13 +1605,20 @@ async def max_underwrite_deal(deal_id: str, request: Request):
     try:
         # If deal_data not provided, use latest scenario or parsed JSON
         if not deal_data or len(deal_data) == 0:
-            deal_data = getattr(deal, "scenario_json", None) or deal.parsed_json
+            deal_data = getattr(deal, "scenario_json", None) or getattr(deal, "parsed_json", {})
+            if not isinstance(deal_data, dict):
+                deal_data = {}
+                log.warning(f"[MAX AI] deal_data was not a dict, using empty dict")
 
         # Build the MAX AI exhaustive underwriting prompt
-        system_prompt = build_max_ai_underwriting_prompt(
-            buy_box_presets=buy_box_presets,
-            deal_data=deal_data
-        )
+        try:
+            system_prompt = build_max_ai_underwriting_prompt(
+                buy_box_presets=buy_box_presets,
+                deal_data=deal_data
+            )
+        except Exception as prompt_err:
+            log.error(f"[MAX AI] Prompt building failed: {prompt_err}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Prompt generation error: {str(prompt_err)}")
         
         log.info("[MAX AI] Calling OpenAI (GPT-4o-mini) for exhaustive underwriting...")
 
@@ -1656,22 +1663,29 @@ async def max_underwrite_deal(deal_id: str, request: Request):
             "source": "max_ai",
             "timestamp": datetime.utcnow().isoformat()
         }
-        deal.parsed_json["_max_ai_result"] = result_payload
-        if getattr(deal, "scenario_json", None) is not None:
+        
+        # Safely store results
+        if hasattr(deal, 'parsed_json') and isinstance(deal.parsed_json, dict):
+            deal.parsed_json["_max_ai_result"] = result_payload
+        if hasattr(deal, 'scenario_json') and isinstance(deal.scenario_json, dict):
             deal.scenario_json["_max_ai_result"] = result_payload
-        storage.save_deal(deal)
+        
+        try:
+            storage.save_deal(deal)
+        except Exception as save_err:
+            log.warning(f"[MAX AI] Could not save deal: {save_err}")
 
         return JSONResponse({
             "deal_id": deal_id,
             "verdict": verdict,
             "analysis": analysis_text,
-            "summary_text": analysis_text,  # MAX AI analysis is the summary
+            "summary_text": analysis_text,
             "source": "max_ai"
         })
 
     except Exception as e:
         log.error(f"[MAX AI] Underwriting error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"MAX AI underwriting failed: {str(e)}")
 
 
 @router.post("/deals/{deal_id}/scenario")
