@@ -116,7 +116,7 @@ const MaxAIUnderwritePage = () => {
         const formData = new FormData();
         formData.append('file', fileObj.file);
 
-        const parseResponse = await fetch(`${API_BASE}/upload_pdf`, {
+        const parseResponse = await fetch(`${API_BASE}/v2/deals/parse`, {
           method: 'POST',
           body: formData
         });
