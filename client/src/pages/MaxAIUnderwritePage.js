@@ -134,11 +134,36 @@ const MaxAIUnderwritePage = () => {
         });
       }
 
-      // Step 2: For each parsed deal, run underwriting
+      // Step 2: For each parsed deal, run V2 underwriting first
       for (const deal of parsedDeals) {
-        // Build scenario with buy box and debt structure
+        // Call V2 underwrite to compute numbers and summary
+        const v2Response = await fetch(`${API_BASE}/v2/deals/${deal.dealId}/underwrite`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            buy_box: buyBoxParams,
+            underwriting_mode: 'buybox',
+            calc_json: {},
+            wizard_structure: {}
+          })
+        });
+
+        if (!v2Response.ok) {
+          throw new Error(`V2 underwriting failed for ${deal.fileName}`);
+        }
+
+        const v2Result = await v2Response.json();
+
+        // Show V2 summary in chat
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: v2Result.summary_text || 'Underwrite V2 summary ready.'
+        }]);
+
+        // Build scenario enriched with V2 calc_json for MAX
         const scenario = {
           ...deal.parsedData,
+          calc_json: v2Result.calc_json || {},
           deal_setup: {
             underwriting_mode: 'buybox',
             buy_box: buyBoxParams,
@@ -148,7 +173,7 @@ const MaxAIUnderwritePage = () => {
           }
         };
 
-        // Step 3: Send to MAX AI for analysis
+        // Step 3: Send to MAX AI for principal-level analysis
         const aiResponse = await fetch(`${API_BASE}/v2/deals/${deal.dealId}/max-underwrite`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -164,10 +189,10 @@ const MaxAIUnderwritePage = () => {
 
         const aiResult = await aiResponse.json();
         
-        // Add AI response to chat
+        // Add MAX AI response to chat
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: aiResult.summary_text || aiResult.summaryText || 'Analysis complete.'
+          content: aiResult.summary_text || aiResult.summaryText || 'MAX analysis complete.'
         }]);
       }
 
