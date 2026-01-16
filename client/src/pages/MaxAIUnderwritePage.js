@@ -21,7 +21,7 @@ const MaxAIUnderwritePage = () => {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: '👋 Hi! I\'m **MAX**, your AI underwriting assistant.\n\nUpload 1-2 OMs (offering memorandums) and I\'ll analyze them against your buy box criteria. Set your preferences using the button below, then upload your files and click **Underwrite Now**.'
+      content: 'Hi! I\'m **MAX**, your AI underwriting assistant.\n\nUpload 1-2 OMs (offering memorandums) and I\'ll analyze them against your buy box criteria. Set your preferences using the button below, then upload your files and click **Underwrite Now**.'
     }
   ]);
   const [inputValue, setInputValue] = useState('');
@@ -78,14 +78,14 @@ const MaxAIUnderwritePage = () => {
       // Add system message
       setMessages(prev => [...prev, {
         role: 'system',
-        content: `📎 **Uploaded:** ${files.map(f => f.name).join(', ')}\n\nClick **Underwrite Now** to analyze ${files.length === 1 ? 'this deal' : 'these deals'}.`
+        content: `**Uploaded:** ${files.map(f => f.name).join(', ')}\n\nClick **Underwrite Now** to analyze ${files.length === 1 ? 'this deal' : 'these deals'}.`
       }]);
       
     } catch (error) {
       console.error('Upload error:', error);
       setMessages(prev => [...prev, {
         role: 'system',
-        content: '❌ Upload failed. Please try again.'
+        content: 'Upload failed. Please try again.'
       }]);
     } finally {
       setIsUploading(false);
@@ -97,7 +97,7 @@ const MaxAIUnderwritePage = () => {
     if (uploadedFiles.length === 0) {
       setMessages(prev => [...prev, {
         role: 'system',
-        content: '⚠️ Please upload at least one OM before underwriting.'
+        content: 'Please upload at least one OM before underwriting.'
       }]);
       return;
     }
@@ -105,7 +105,7 @@ const MaxAIUnderwritePage = () => {
     setIsUnderwriting(true);
     setMessages(prev => [...prev, {
       role: 'system',
-      content: '⏳ Parsing OMs and running underwriting analysis...'
+      content: 'Parsing OMs and running underwriting analysis...'
     }]);
 
     try {
@@ -181,7 +181,7 @@ const MaxAIUnderwritePage = () => {
       console.error('Underwriting error:', error);
       setMessages(prev => [...prev, {
         role: 'system',
-        content: `❌ **Error:** ${error.message}\n\nPlease try again or contact support.`
+        content: `**Error:** ${error.message}\n\nPlease try again or contact support.`
       }]);
     } finally {
       setIsUnderwriting(false);
@@ -212,14 +212,15 @@ const MaxAIUnderwritePage = () => {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(to bottom, #f8fafc, #ffffff)',
+      background: '#ffffff',
       display: 'flex',
-      flexDirection: 'column'
+      flexDirection: 'column',
+      fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
     }}>
       
       {/* Header */}
       <div style={{
-        padding: '20px 32px',
+        padding: '16px 24px',
         borderBottom: '1px solid #e5e7eb',
         background: '#ffffff',
         display: 'flex',
@@ -227,9 +228,8 @@ const MaxAIUnderwritePage = () => {
         alignItems: 'center'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Sparkles size={28} color="#10b981" />
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827' }}>
+            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>
               MAX AI Underwriting
             </h1>
             <p style={{ margin: '2px 0 0', fontSize: '0.875rem', color: '#6b7280' }}>
@@ -312,32 +312,31 @@ const MaxAIUnderwritePage = () => {
             >
               {/* Avatar */}
               <div style={{
-                width: 36,
-                height: 36,
+                width: 32,
+                height: 32,
                 borderRadius: '50%',
-                background: msg.role === 'assistant' ? 'linear-gradient(135deg, #10b981, #059669)' : 
-                            msg.role === 'system' ? '#f3f4f6' : '#3b82f6',
+                background: msg.role === 'assistant' ? '#19c37d' : 
+                            msg.role === 'system' ? '#f3f4f6' : '#5436da',
                 color: msg.role === 'system' ? '#6b7280' : '#ffffff',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontWeight: 700,
-                fontSize: '0.875rem',
+                fontWeight: 600,
+                fontSize: '0.75rem',
                 flexShrink: 0
               }}>
-                {msg.role === 'assistant' ? '🤖' : msg.role === 'system' ? 'ℹ️' : 'You'}
+                {msg.role === 'assistant' ? 'M' : msg.role === 'system' ? 'i' : 'Y'}
               </div>
               
               {/* Message Content */}
               <div style={{
                 flex: 1,
-                background: msg.role === 'user' ? '#f0f9ff' : '#ffffff',
-                border: msg.role === 'system' ? '1px solid #e5e7eb' : 'none',
-                borderRadius: 12,
-                padding: '16px 20px',
+                background: '#ffffff',
+                borderRadius: 8,
+                padding: '12px 16px',
                 fontSize: '0.9375rem',
-                lineHeight: 1.6,
-                color: '#111827'
+                lineHeight: 1.5,
+                color: '#374151'
               }}>
                 <ReactMarkdown
                   components={{
@@ -361,23 +360,23 @@ const MaxAIUnderwritePage = () => {
               alignItems: 'flex-start'
             }}>
               <div style={{
-                width: 36,
-                height: 36,
+                width: 32,
+                height: 32,
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #10b981, #059669)',
+                background: '#19c37d',
                 color: '#ffffff',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontWeight: 700,
-                fontSize: '0.875rem'
+                fontWeight: 600,
+                fontSize: '0.75rem'
               }}>
-                🤖
+                M
               </div>
               <div style={{
                 background: '#ffffff',
-                borderRadius: 12,
-                padding: '16px 20px',
+                borderRadius: 8,
+                padding: '12px 16px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10
@@ -414,11 +413,11 @@ const MaxAIUnderwritePage = () => {
                     alignItems: 'center',
                     gap: 8,
                     padding: '8px 12px',
-                    background: '#f0fdf4',
-                    border: '1px solid #bbf7d0',
-                    borderRadius: 8,
+                    background: '#f3f4f6',
+                    border: '1px solid #d1d5db',
+                    borderRadius: 6,
                     fontSize: '0.875rem',
-                    color: '#166534'
+                    color: '#374151'
                   }}
                 >
                   <FileText size={14} />
@@ -430,7 +429,7 @@ const MaxAIUnderwritePage = () => {
                       border: 'none',
                       padding: 0,
                       cursor: 'pointer',
-                      color: '#166534'
+                      color: '#374151'
                     }}
                   >
                     <X size={14} />
@@ -448,17 +447,16 @@ const MaxAIUnderwritePage = () => {
                 disabled={isUnderwriting}
                 style={{
                   padding: '12px 32px',
-                  background: isUnderwriting ? '#9ca3af' : 'linear-gradient(135deg, #10b981, #059669)',
+                  background: isUnderwriting ? '#9ca3af' : '#10a37f',
                   color: '#ffffff',
                   border: 'none',
-                  borderRadius: 10,
+                  borderRadius: 8,
                   fontSize: '1rem',
-                  fontWeight: 700,
+                  fontWeight: 600,
                   cursor: isUnderwriting ? 'not-allowed' : 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 10,
-                  boxShadow: isUnderwriting ? 'none' : '0 4px 14px rgba(16, 185, 129, 0.3)'
+                  gap: 10
                 }}
               >
                 {isUnderwriting ? (
@@ -469,7 +467,7 @@ const MaxAIUnderwritePage = () => {
                 ) : (
                   <>
                     <CheckCircle size={18} />
-                    🤖 Underwrite Now
+                    Underwrite Now
                   </>
                 )}
               </button>
@@ -535,21 +533,20 @@ const MaxAIUnderwritePage = () => {
               onClick={handleSendMessage}
               disabled={!inputValue.trim() || isUnderwriting}
               style={{
-                padding: '12px 20px',
-                background: !inputValue.trim() || isUnderwriting ? '#e5e7eb' : '#111827',
+                padding: '10px 16px',
+                background: !inputValue.trim() || isUnderwriting ? '#f3f4f6' : '#10a37f',
                 color: !inputValue.trim() || isUnderwriting ? '#9ca3af' : '#ffffff',
                 border: 'none',
-                borderRadius: 10,
+                borderRadius: 8,
                 cursor: !inputValue.trim() || isUnderwriting ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
+                gap: 6,
                 fontSize: '0.875rem',
                 fontWeight: 600
               }}
             >
               <Send size={16} />
-              Send
             </button>
           </div>
         </div>
@@ -711,10 +708,10 @@ const MaxAIUnderwritePage = () => {
                 <h3 style={{
                   margin: '0 0 16px',
                   fontSize: '1rem',
-                  fontWeight: 700,
+                  fontWeight: 600,
                   color: '#111827'
                 }}>
-                  📋 Your Buy Box Criteria
+                  Your Buy Box Criteria
                 </h3>
                 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -970,15 +967,14 @@ const MaxAIUnderwritePage = () => {
                 <button
                   onClick={() => setShowBuyBoxModal(false)}
                   style={{
-                    padding: '12px 28px',
-                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    padding: '10px 24px',
+                    background: '#10a37f',
                     color: '#ffffff',
                     border: 'none',
-                    borderRadius: 10,
+                    borderRadius: 8,
                     fontSize: '0.9375rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                    fontWeight: 600,
+                    cursor: 'pointer'
                   }}
                 >
                   Save Preferences
