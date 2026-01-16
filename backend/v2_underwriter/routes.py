@@ -1673,22 +1673,36 @@ async def max_underwrite_deal(deal_id: str, request: Request):
 
 
 @router.post("/deals/{deal_id}/scenario")
-            "buy_box": buy_box or {},
-            "summary": {
-                "address": address,
-                "units": units,
-                "price": price,
-                "noi": noi,
-                "cap_rate": cap_rate,
-                "dscr": dscr_header,
-                "cashflow": cashflow_header,
-                "expense_ratio": expense_ratio_header,
-            },
-        })
-        
-    except Exception as e:
-        log.exception(f"[V2] Underwriting failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+async def save_scenario(deal_id: str, request: Request):
+    """Update the stored scenario JSON for a deal.
+
+    The frontend wizard/results should POST the full, user-edited deal
+    payload here before calling the AI underwriting endpoint so the
+    analysis prompt uses the same data the user is seeing.
+    """
+    from pydantic import ValidationError
+
+    deal = storage.get_deal(deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+    scenario = body.get("scenario")
+    if not isinstance(scenario, dict):
+        raise HTTPException(status_code=400, detail="'scenario' must be an object")
+
+    # Assign scenario_json directly; pydantic will validate on save
+    try:
+        deal.scenario_json = scenario
+        storage.save_deal(deal)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid scenario payload: {e}")
+
+    return {"ok": True}
 
 
 @router.post("/deals/{deal_id}/chat")
