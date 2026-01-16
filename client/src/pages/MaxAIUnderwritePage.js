@@ -129,7 +129,8 @@ const MaxAIUnderwritePage = () => {
         parsedDeals.push({
           fileName: fileObj.name,
           dealId: parseResult.deal_id,
-          parsedData: parseResult.parsed_data
+          // Backend returns { deal_id, parsed, summary }
+          parsedData: parseResult.parsed
         });
       }
 
