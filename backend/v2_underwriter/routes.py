@@ -1575,6 +1575,8 @@ async def max_underwrite_deal(deal_id: str, request: Request):
     - Always running full stress tests
     - Always attempting creative restructuring
     - Using buy box presets as exact user criteria
+    
+    Deployed: 2026-01-15
     """
     from .llm_client import call_openai_chat
 
