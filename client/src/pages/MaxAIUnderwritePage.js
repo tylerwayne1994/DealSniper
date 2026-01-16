@@ -6,7 +6,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Home, Upload, Send, Settings, X, CheckCircle, 
-  Loader, AlertCircle, Sparkles, FileText
+  Loader, FileText
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
@@ -146,10 +146,6 @@ const MaxAIUnderwritePage = () => {
             debt_structure: debtStructure
           }
         };
-
-        // Calculate full analysis (reuse calculation engine)
-        const { calculateFullAnalysis } = require('../utils/realEstateCalculations');
-        const fullCalcs = calculateFullAnalysis(scenario);
 
         // Step 3: Send to MAX AI for analysis
         const aiResponse = await fetch(`${API_BASE}/v2/deals/${deal.dealId}/max-underwrite`, {
