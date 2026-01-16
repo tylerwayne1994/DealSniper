@@ -188,13 +188,13 @@ For EACH rule in hardRules, state:
 - PASS/FAIL/UNKNOWN
 
 Example:
-- minUnits: User requires {buyBoxPresets.hardRules.minUnits}+ units → Deal has X units → PASS/FAIL
-- maxPurchasePrice: User max ${buyBoxPresets.hardRules.maxPurchasePrice} → Deal is $X → PASS/FAIL
-- minInPlaceDSCR: User requires {buyBoxPresets.hardRules.minInPlaceDSCR} → Calculated DSCR is X → PASS/FAIL
-- minMonthlyCashFlow: User requires ${buyBoxPresets.hardRules.minMonthlyCashFlow}/mo → Calculated $X/mo → PASS/FAIL
-- minCashFlowPerUnitMonthly: User requires ${buyBoxPresets.hardRules.minCashFlowPerUnitMonthly}/unit/mo → Calculated $X → PASS/FAIL
-- minCashOnCash: User requires {buyBoxPresets.hardRules.minCashOnCash * 100}% → Calculated X% → PASS/FAIL
-- maxTotalCashToClose: User max ${buyBoxPresets.hardRules.maxTotalCashToClose} → Required $X → PASS/FAIL
+- minUnits: User requires {{buyBoxPresets.hardRules.minUnits}}+ units → Deal has X units → PASS/FAIL
+- maxPurchasePrice: User max ${{buyBoxPresets.hardRules.maxPurchasePrice}} → Deal is $X → PASS/FAIL
+- minInPlaceDSCR: User requires {{buyBoxPresets.hardRules.minInPlaceDSCR}} → Calculated DSCR is X → PASS/FAIL
+- minMonthlyCashFlow: User requires ${{buyBoxPresets.hardRules.minMonthlyCashFlow}}/mo → Calculated $X/mo → PASS/FAIL
+- minCashFlowPerUnitMonthly: User requires ${{buyBoxPresets.hardRules.minCashFlowPerUnitMonthly}}/unit/mo → Calculated $X → PASS/FAIL
+- minCashOnCash: User requires {{buyBoxPresets.hardRules.minCashOnCash * 100}}% → Calculated X% → PASS/FAIL
+- maxTotalCashToClose: User max ${{buyBoxPresets.hardRules.maxTotalCashToClose}} → Required $X → PASS/FAIL
 - requireCashFlowDayOne: User requires day-one cash flow → Deal cash flows $X → PASS/FAIL
 - requireTenantPaidUtilities: User requires tenant-paid utilities → Deal has tenant/owner paid → PASS/FAIL
 
