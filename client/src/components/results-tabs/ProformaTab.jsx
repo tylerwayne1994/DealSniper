@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { DollarSign, TrendingUp, Calendar, FileText } from 'lucide-react';
+import { calculateAmortizationSchedule } from '../../utils/realEstateCalculations';
 
 const ProformaTab = ({ 
   fullCalcs, 
@@ -85,6 +86,23 @@ const ProformaTab = ({
   };
   
   const proformaYears = generateProforma();
+  
+  // Principal paydown (cumulative) line; compute via amortization schedule when possible
+  const pricing = scenarioData?.pricing_financing || {};
+  let loanAmount = fullCalcs?.financing?.loanAmount || pricing.loan_amount || 0;
+  const purchasePriceResolved = purchasePrice || pricing.purchase_price || pricing.price || 0;
+  const ltvPct = pricing.ltv || (fullCalcs?.financing?.ltv ? fullCalcs.financing.ltv * 100 : 0);
+  if (!loanAmount && purchasePriceResolved > 0 && ltvPct > 0) {
+    loanAmount = purchasePriceResolved * (ltvPct / 100);
+  }
+  const interestRate = pricing.interest_rate || fullCalcs?.financing?.interestRate || 0;
+  const amortYears = pricing.amortization_years || fullCalcs?.financing?.amortizationYears || 0;
+  const amortSchedule = (loanAmount > 0 && interestRate > 0 && amortYears > 0)
+    ? calculateAmortizationSchedule(loanAmount, interestRate, amortYears, yearsToShow)
+    : [];
+  const principalCumulativeSeries = amortSchedule.length > 0
+    ? amortSchedule.map(r => r.cumulativePrincipal)
+    : new Array(yearsToShow).fill(0);
   
   // Calculate totals
   const totalCashFlow = proformaYears.reduce((sum, y) => sum + y.cashFlow, 0);
@@ -351,7 +369,7 @@ const ProformaTab = ({
         </div>
       </div>
 
-      {/* Growth Chart Visualization */}
+      {/* Dual Line Chart: Cash Flow vs Principal Paydown */}
       <div style={{
         marginTop: '24px',
         backgroundColor: 'white',
@@ -360,125 +378,82 @@ const ProformaTab = ({
         padding: '20px',
         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
       }}>
-        <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '700', color: '#111827' }}>
-          Cash Flow Growth
+        <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', fontWeight: '700', color: '#111827' }}>
+          Trajectory: Cash Flow vs Debt Paydown
         </h3>
-        <div style={{ 
-          display: 'flex', 
-          gap: '12px', 
-          alignItems: 'flex-end', 
-          height: '240px',
-          padding: '20px 0',
-          borderBottom: '2px solid #e5e7eb',
-          position: 'relative'
-        }}>
-          {/* Zero line for negative values */}
-          <div style={{
-            position: 'absolute',
-            bottom: '0',
-            left: '0',
-            right: '0',
-            height: '1px',
-            backgroundColor: '#9ca3af',
-            zIndex: 1
-          }} />
-          
-          {proformaYears.map((yearData, idx) => {
-            // Find max absolute value for scaling
-            const maxAbsCF = Math.max(...proformaYears.map(y => Math.abs(y.cashFlow)));
-            const isPositive = yearData.cashFlow >= 0;
-            const heightPct = maxAbsCF > 0 ? (Math.abs(yearData.cashFlow) / maxAbsCF) * 85 : 5;
-            
-            return (
-              <div key={idx} style={{ 
-                flex: 1, 
-                display: 'flex', 
-                flexDirection: 'column', 
-                alignItems: 'center',
-                justifyContent: 'flex-end',
-                height: '100%'
-              }}>
-                <div style={{
-                  position: 'relative',
-                  width: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'flex-end',
-                  height: '85%'
-                }}>
-                  {/* Value label above bar */}
-                  <div style={{
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    color: isPositive ? '#10b981' : '#ef4444',
-                    marginBottom: '4px',
-                    whiteSpace: 'nowrap'
-                  }}>
-                    {fmt(yearData.cashFlow)}
-                  </div>
-                  
-                  {/* Bar */}
-                  <div style={{
-                    width: '80%',
-                    height: `${heightPct}%`,
-                    backgroundColor: isPositive ? '#10b981' : '#ef4444',
-                    borderRadius: '6px 6px 0 0',
-                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                    transition: 'all 0.3s ease',
-                    minHeight: '8px'
-                  }} />
-                </div>
-                
-                {/* Year label */}
-                <div style={{
-                  marginTop: '12px',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  color: '#374151'
-                }}>
-                  Year {yearData.year}
-                </div>
-              </div>
-            );
-          })}
+        {/* Legend */}
+        <div style={{ display: 'flex', gap: '16px', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: 24, height: 2, backgroundColor: '#10b981' }}></div>
+            <span style={{ fontSize: 12, color: '#374151', fontWeight: 600 }}>Cash Flow</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: 24, height: 2, backgroundColor: '#0ea5e9' }}></div>
+            <span style={{ fontSize: 12, color: '#374151', fontWeight: 600 }}>Cumulative Principal Paid</span>
+          </div>
         </div>
-        
+
+        {(() => {
+          const width = 960; // fixed svg width
+          const height = 240;
+          const padding = 32;
+          const seriesCF = proformaYears.map(y => y.cashFlow);
+          const seriesPP = principalCumulativeSeries;
+          const allVals = [...seriesCF, ...seriesPP];
+          const yMin = Math.min(...allVals);
+          const yMax = Math.max(...allVals);
+          const yRange = yMax - yMin || 1;
+          const xStep = (width - padding * 2) / (yearsToShow - 1 || 1);
+          const xFor = (i) => padding + i * xStep;
+          const yFor = (v) => padding + (height - padding * 2) - ((v - yMin) / yRange) * (height - padding * 2);
+          const cfPoints = seriesCF.map((v, i) => `${xFor(i)},${yFor(v)}`).join(' ');
+          const ppPoints = seriesPP.map((v, i) => `${xFor(i)},${yFor(v)}`).join(' ');
+          const zeroY = yFor(0);
+          return (
+            <div>
+              <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" aria-label="Cash flow and principal paydown chart">
+                {/* zero line */}
+                <line x1={padding} y1={zeroY} x2={width - padding} y2={zeroY} stroke="#e5e7eb" strokeWidth="1" />
+                {/* cash flow line */}
+                <polyline points={cfPoints} fill="none" stroke="#10b981" strokeWidth="2" />
+                {/* principal paydown line */}
+                <polyline points={ppPoints} fill="none" stroke="#0ea5e9" strokeWidth="2" />
+              </svg>
+              {/* X labels */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, padding: '0 16px' }}>
+                {proformaYears.map((y) => (
+                  <div key={y.year} style={{ fontSize: 12, color: '#6b7280', fontWeight: 600 }}>Year {y.year}</div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Summary below chart */}
         <div style={{
-          marginTop: '16px',
+          marginTop: '12px',
           padding: '12px',
           backgroundColor: '#f9fafb',
           borderRadius: '8px',
-          display: 'flex',
-          justifyContent: 'space-around'
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '12px'
         }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase' }}>
-              Year 1 Cash Flow
-            </div>
-            <div style={{ fontSize: '16px', fontWeight: '700', color: proformaYears[0]?.cashFlow >= 0 ? '#10b981' : '#ef4444', marginTop: '4px' }}>
-              {fmt(proformaYears[0]?.cashFlow || 0)}
-            </div>
+            <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase' }}>Year 1 Cash Flow</div>
+            <div style={{ fontSize: '16px', fontWeight: '700', color: proformaYears[0]?.cashFlow >= 0 ? '#10b981' : '#ef4444', marginTop: '4px' }}>{fmt(proformaYears[0]?.cashFlow || 0)}</div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase' }}>
-              Year {yearsToShow} Cash Flow
-            </div>
-            <div style={{ fontSize: '16px', fontWeight: '700', color: '#10b981', marginTop: '4px' }}>
-              {fmt(proformaYears[yearsToShow - 1]?.cashFlow || 0)}
-            </div>
+            <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase' }}>Year {yearsToShow} Cash Flow</div>
+            <div style={{ fontSize: '16px', fontWeight: '700', color: '#10b981', marginTop: '4px' }}>{fmt(proformaYears[yearsToShow - 1]?.cashFlow || 0)}</div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase' }}>
-              Growth
-            </div>
-            <div style={{ fontSize: '16px', fontWeight: '700', color: '#6366f1', marginTop: '4px' }}>
-              {proformaYears[0]?.cashFlow > 0 
-                ? `${(((proformaYears[yearsToShow - 1]?.cashFlow || 0) / proformaYears[0]?.cashFlow - 1) * 100).toFixed(1)}%`
-                : 'N/A'
-              }
-            </div>
+            <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase' }}>Year 1 Principal Paid</div>
+            <div style={{ fontSize: '16px', fontWeight: '700', color: '#0ea5e9', marginTop: '4px' }}>{fmt(principalCumulativeSeries[0] || 0)}</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase' }}>Year {yearsToShow} Principal Paid</div>
+            <div style={{ fontSize: '16px', fontWeight: '700', color: '#0ea5e9', marginTop: '4px' }}>{fmt(principalCumulativeSeries[yearsToShow - 1] || 0)}</div>
           </div>
         </div>
       </div>
