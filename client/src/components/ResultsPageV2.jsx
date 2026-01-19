@@ -5319,6 +5319,7 @@ Keep the answer tight but specific to this property and the numbers above.`;
           <ProformaTab
             fullCalcs={fullCalcs}
             scenarioData={scenarioData}
+            onFieldChange={handleFieldChange}
           />
         );
 
