@@ -58,6 +58,7 @@ function DashboardMapTab() {
   const [chat, setChat] = useState({ input: '', messages: [], loading: false });
   const [pendingCommands, setPendingCommands] = useState([]);
   const [rapidFireQueue, setRapidFireQueue] = useState([]);
+  const [processingStatus, setProcessingStatus] = useState('');
 
   const baseMarkers = useMemo(() => ([
     // Healthcare (rose)
@@ -280,18 +281,60 @@ function DashboardMapTab() {
 
   // Add all Rapid Fire queue items to map (geocode each)
   const addAllRapidFireToMap = async () => {
-    if (!rapidFireQueue.length) return;
+    if (!rapidFireQueue.length) {
+      setProcessingStatus('No items in queue to add.');
+      return;
+    }
+    
+    setProcessingStatus(`Processing ${rapidFireQueue.length} properties...`);
+    console.log('🗺️ Starting to add all Rapid Fire items to map:', rapidFireQueue.length);
+    
+    let processed = 0;
+    let succeeded = 0;
+    let failed = 0;
+    
     for (const item of rapidFireQueue) {
       const addr = item.address;
-      if (!addr) continue;
+      console.log(`🔍 Processing item ${processed + 1}/${rapidFireQueue.length}:`, item.name, addr);
+      
+      if (!addr || !addr.trim()) {
+        console.warn('⚠️ Skipping item with no address:', item.name);
+        processed++;
+        failed++;
+        continue;
+      }
+      
       enqueueGeocode(addr, (latlng) => {
+        processed++;
         if (latlng) {
-          const pin = { id: `rf-${item.id}-${Date.now()}`, name: item.name, category: 'custom', position: [latlng.lat, latlng.lng], insight: item.units != null ? `${item.units} units` : 'Rapid Fire' };
+          succeeded++;
+          console.log('✅ Geocoded:', item.name, latlng);
+          const pin = { 
+            id: `rf-${item.id}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, 
+            name: item.name, 
+            category: 'custom', 
+            position: [latlng.lat, latlng.lng], 
+            insight: item.units != null ? `${item.units} units` : 'Rapid Fire' 
+          };
           setCustomPins(prev => [...prev, pin]);
-          supabase.from('map_prospects').insert({ name: item.name, address: addr, units: item.units || null, lat: latlng.lat, lng: latlng.lng, source: 'rapid_fire' }).catch(() => {});
+          supabase.from('map_prospects').insert({ 
+            name: item.name, 
+            address: addr, 
+            units: item.units || null, 
+            lat: latlng.lat, 
+            lng: latlng.lng, 
+            source: 'rapid_fire' 
+          }).catch(() => {});
+          setProcessingStatus(`Added ${succeeded} of ${rapidFireQueue.length} (${failed} failed)`);
+        } else {
+          failed++;
+          console.error('❌ Failed to geocode:', item.name, addr);
+          setProcessingStatus(`Added ${succeeded} of ${rapidFireQueue.length} (${failed} failed)`);
         }
       });
     }
+    
+    setProcessingStatus(`Queued ${rapidFireQueue.length} properties for geocoding. Pins will appear as they resolve...`);
   };
 
   // Upload Prospects: parse file and add pins
@@ -576,6 +619,9 @@ function DashboardMapTab() {
             {/* Rapid Fire queue list preview */}
             <div className="mt-2 rounded-xl border border-slate-200 bg-white/60 p-2">
               <div className="text-xs font-semibold text-slate-500">Rapid Fire Queue ({rapidFireQueue.length})</div>
+              {processingStatus && (
+                <div className="text-xs text-indigo-600 font-semibold py-1">{processingStatus}</div>
+              )}
               <div className="max-h-40 overflow-auto text-xs text-slate-700">
                 {rapidFireQueue.length === 0 ? (
                   <div className="text-slate-400">Click "Load Rapid Fire Queue" to load.</div>
