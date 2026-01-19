@@ -1,4 +1,5 @@
 -- Create table to store prospect properties mapped on dashboard
+create extension if not exists pgcrypto;
 create table if not exists public.map_prospects (
   id uuid default gen_random_uuid() primary key,
   name text,
