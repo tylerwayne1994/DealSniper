@@ -13,7 +13,6 @@ import {
   Cog,
   CheckCircle,
   XCircle,
-  Home,
   Building2,
   Filter
 } from 'lucide-react';
@@ -115,7 +114,7 @@ function DashboardMapTab() {
     fetchUser();
   }, []);
 
-  const baseMarkers = useMemo(() => ([]), [activeCity]);
+  const baseMarkers = useMemo(() => ([]), []);
 
   const handleSubmitProperty = async (e) => {
     e.preventDefault();
@@ -225,7 +224,7 @@ function DashboardMapTab() {
   const extractCommands = (text) => {
     if (!text) return [];
     // Look for a JSON block containing "commands": [...]
-    const jsonMatch = text.match(/\{[\s\S]*\"commands\"[\s\S]*\}/);
+    const jsonMatch = text.match(/\{[\s\S]*"commands"[\s\S]*\}/);
     if (jsonMatch) {
       try {
         const obj = JSON.parse(jsonMatch[0]);
@@ -378,6 +377,7 @@ function DashboardMapTab() {
     let failed = 0;
     const failedAddresses = [];
     
+    // eslint-disable-next-line no-restricted-syntax
     for (const item of rapidFireQueue) {
       const addr = item.address;
       
@@ -390,6 +390,7 @@ function DashboardMapTab() {
       }
       
       const itemIndex = processed + 1;
+      // eslint-disable-next-line no-loop-func
       enqueueGeocode(addr, (latlng) => {
         processed++;
         if (latlng) {
@@ -453,7 +454,7 @@ function DashboardMapTab() {
   };
 
   // Upload Prospects: parse file and add pins
-  const [uploadState, setUploadState] = useState({ parsing: false, rows: 0, geocoded: 0, errors: 0 });
+  const [, setUploadState] = useState({ parsing: false, rows: 0, geocoded: 0, errors: 0 });
   const handleProspectsFile = async (file) => {
     if (!file) return;
     setUploadState({ parsing: true, rows: 0, geocoded: 0, errors: 0 });
@@ -521,114 +522,620 @@ function DashboardMapTab() {
     }
   };
 
-  // Save all current pins to Supabase
-  const saveAllPins = async () => {
-    try {
-      const rows = customPins.map(p => ({ name: p.name, address: p.address || null, units: (p.insight && /units/.test(p.insight)) ? parseInt(p.insight, 10) : null, lat: p.position[0], lng: p.position[1], source: 'manual', user_id: userId }));
-      await supabase.from('map_prospects').insert(rows);
-    } catch (e) {
-      // ignore
-    }
-  };
-
   // Auto-load toggle
-  const [autoLoadSaved, setAutoLoadSaved] = useState(() => localStorage.getItem('atlas.autoLoadProspects') === 'true');
+  const [autoLoadSaved] = useState(() => localStorage.getItem('atlas.autoLoadProspects') === 'true');
   useEffect(() => {
     if (autoLoadSaved) loadSavedProspects();
   }, [autoLoadSaved]);
 
-  // Intelligence cards per city (placeholder content)
-  const intelligenceForCity = (key) => {
-    const city = CITIES[key];
-    return (
-      <div className="space-y-3">
-        <div className="rounded-2xl bg-white/70 backdrop-blur p-4 shadow-2xl">
-          <div className="text-xs font-semibold text-slate-500">Crime Trends</div>
-          <div className="text-sm text-slate-800">Stable to improving in core neighborhoods of {city.name}.</div>
-        </div>
-        <div className="rounded-2xl bg-white/70 backdrop-blur p-4 shadow-2xl">
-          <div className="text-xs font-semibold text-slate-500">Property Tax</div>
-          <div className="text-sm text-slate-800">Moderate and predictable; verify county-specific variations.</div>
-        </div>
-        <div className="rounded-2xl bg-white/70 backdrop-blur p-4 shadow-2xl">
-          <div className="text-xs font-semibold text-slate-500">Eviction Timelines</div>
-          <div className="text-sm text-slate-800">Reasonable timelines; ensure documentation and local counsel.</div>
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <div className="w-screen h-[calc(100vh-56px)] flex bg-slate-50">
-      {/* Sidebar */}
-      <div className="w-[450px] h-full border-r border-slate-200 bg-white/80 backdrop-blur p-4 space-y-4">
-        {/* Header */}
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow">
-            <MapPin size={16} />
-          </div>
-          <div className="text-sm font-bold text-slate-800">AtlasAI — Market Navigator</div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-2">
+    <div style={{ 
+      display: 'flex',
+      height: 'calc(100vh - 56px)',
+      backgroundColor: '#ffffff',
+      overflow: 'hidden'
+    }}>
+      {/* Main Map Area - Left Side */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        
+        {/* Top Navigation - City Buttons */}
+        <div style={{
+          padding: '12px 16px',
+          backgroundColor: 'white',
+          borderBottom: '1px solid #e5e7eb',
+          display: 'flex',
+          gap: '8px',
+          alignItems: 'center'
+        }}>
           <button
-            className={`px-3 py-2 text-xs rounded-xl border ${activeTab === 'assistant' ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-slate-200 text-slate-600'}`}
-            onClick={() => setActiveTab('assistant')}
+            onClick={() => setActiveCityKey('kansasCity')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: activeCityKey === 'kansasCity' ? '#3b82f6' : 'white',
+              color: activeCityKey === 'kansasCity' ? 'white' : '#6b7280',
+              border: activeCityKey === 'kansasCity' ? 'none' : '1px solid #d1d5db',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
           >
-            <span className="inline-flex items-center gap-1"><MessageSquare size={14} /> Market Assistant</span>
+            Kansas City
           </button>
           <button
-            className={`px-3 py-2 text-xs rounded-xl border ${activeTab === 'add' ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-slate-200 text-slate-600'}`}
+            onClick={() => setActiveCityKey('indianapolis')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: activeCityKey === 'indianapolis' ? '#3b82f6' : 'white',
+              color: activeCityKey === 'indianapolis' ? 'white' : '#6b7280',
+              border: activeCityKey === 'indianapolis' ? 'none' : '1px solid #d1d5db',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            Indianapolis
+          </button>
+          <button
+            onClick={() => setActiveCityKey('columbus')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: activeCityKey === 'columbus' ? '#3b82f6' : 'white',
+              color: activeCityKey === 'columbus' ? 'white' : '#6b7280',
+              border: activeCityKey === 'columbus' ? 'none' : '1px solid #d1d5db',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            Columbus
+          </button>
+        </div>
+
+        {/* Secondary Row - Tab Buttons */}
+        <div style={{ 
+          display: 'flex',
+          gap: '4px',
+          padding: '0 16px',
+          borderBottom: '1px solid #e5e7eb',
+          backgroundColor: '#f9fafb',
+          overflowX: 'auto',
+          flexWrap: 'nowrap'
+        }}>
+          <button
             onClick={() => setActiveTab('add')}
+            style={{
+              padding: '12px 16px',
+              backgroundColor: activeTab === 'add' ? 'white' : 'transparent',
+              color: activeTab === 'add' ? '#111827' : '#6b7280',
+              border: 'none',
+              borderBottom: activeTab === 'add' ? '2px solid #3b82f6' : '2px solid transparent',
+              fontSize: '13px',
+              fontWeight: activeTab === 'add' ? '600' : '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              whiteSpace: 'nowrap',
+              transition: 'all 0.2s'
+            }}
           >
-            <span className="inline-flex items-center gap-1"><Star size={14} /> Add Property</span>
+            <MapPin size={16} color={activeTab === 'add' ? '#000000' : '#6b7280'} />
+            Add Property
           </button>
           <button
-            className={`px-3 py-2 text-xs rounded-xl border ${activeTab === 'upload' ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-slate-200 text-slate-600'}`}
             onClick={() => setActiveTab('upload')}
+            style={{
+              padding: '12px 16px',
+              backgroundColor: activeTab === 'upload' ? 'white' : 'transparent',
+              color: activeTab === 'upload' ? '#111827' : '#6b7280',
+              border: 'none',
+              borderBottom: activeTab === 'upload' ? '2px solid #3b82f6' : '2px solid transparent',
+              fontSize: '13px',
+              fontWeight: activeTab === 'upload' ? '600' : '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              whiteSpace: 'nowrap',
+              transition: 'all 0.2s'
+            }}
           >
-            <span className="inline-flex items-center gap-1"><Star size={14} /> Upload Prospects</span>
+            <Building2 size={16} color={activeTab === 'upload' ? '#000000' : '#6b7280'} />
+            Upload
+          </button>
+          <button
+            onClick={() => setActiveTab('tools')}
+            style={{
+              padding: '12px 16px',
+              backgroundColor: activeTab === 'tools' ? 'white' : 'transparent',
+              color: activeTab === 'tools' ? '#111827' : '#6b7280',
+              border: 'none',
+              borderBottom: activeTab === 'tools' ? '2px solid #3b82f6' : '2px solid transparent',
+              fontSize: '13px',
+              fontWeight: activeTab === 'tools' ? '600' : '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              whiteSpace: 'nowrap',
+              transition: 'all 0.2s'
+            }}
+          >
+            <Cog size={16} color={activeTab === 'tools' ? '#000000' : '#6b7280'} />
+            Tools
           </button>
         </div>
 
-        {/* Active Tab Content */}
-        {activeTab === 'assistant' ? (
-          <div className="rounded-2xl bg-white/70 backdrop-blur p-4 shadow-2xl space-y-3">
-            <div className="text-xs font-semibold text-slate-500">City Intelligence</div>
-            {intelligenceForCity(activeCityKey)}
-            <div className="text-xs font-semibold text-slate-500">Ask AtlasAI</div>
-            <div className="space-y-2">
-              <div className="h-24 overflow-auto rounded-xl border border-slate-200 p-2 text-xs text-slate-700 bg-white/60">
-                {chat.messages.length === 0 ? (
-                  <div className="text-slate-400">No messages yet. Ask about crime, taxes, or evictions.</div>
-                ) : chat.messages.map((m, i) => (
-                  <div key={i} className="mb-1">
-                    {m.role === 'user' ? (
-                      <span className="font-semibold">You:</span>
-                    ) : (
-                      <span className="font-semibold text-indigo-700">MAX:</span>
-                    )}
-                    {' '}{m.content}
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <input
-                  className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white/70"
-                  placeholder="Type a question..."
-                  value={chat.input}
-                  onChange={(e) => setChat({ ...chat, input: e.target.value })}
+        {/* Tab Content Area */}
+        <div style={{ 
+          padding: '16px',
+          backgroundColor: '#f9fafb',
+          borderBottom: '1px solid #e5e7eb',
+          overflowY: 'auto',
+          maxHeight: '200px'
+        }}>
+          {activeTab === 'add' && (
+            <form onSubmit={handleSubmitProperty} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <input 
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  fontSize: '13px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  backgroundColor: 'white'
+                }}
+                placeholder="Property Name" 
+                value={form.name} 
+                onChange={(e) => setForm({ ...form, name: e.target.value })} 
+              />
+              <input 
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  fontSize: '13px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  backgroundColor: 'white'
+                }}
+                placeholder="Street Address, City, ST ZIP" 
+                value={form.address} 
+                onChange={(e) => setForm({ ...form, address: e.target.value })} 
+              />
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <input 
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    fontSize: '13px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    backgroundColor: 'white'
+                  }}
+                  placeholder="Units (optional)" 
+                  value={form.units} 
+                  onChange={(e) => setForm({ ...form, units: e.target.value })} 
                 />
+                <button 
+                  type="submit"
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Add Pin
+                </button>
+              </div>
+            </form>
+          )}
+
+          {activeTab === 'upload' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <input 
+                type="file" 
+                accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" 
+                onChange={(e) => handleProspectsFile(e.target.files?.[0])}
+                style={{ fontSize: '13px' }}
+              />
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <button
-                  className="px-3 py-2 text-xs rounded-xl bg-indigo-600 text-white shadow"
-                  disabled={chat.loading}
-                  onClick={async () => {
-                    const trimmed = chat.input.trim();
-                    if (!trimmed || chat.loading) return;
-                    setChat(prev => ({ ...prev, loading: true, messages: [...prev.messages, { role: 'user', content: trimmed }], input: '' }));
+                  style={{
+                    padding: '6px 12px',
+                    backgroundColor: 'white',
+                    color: '#374151',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    cursor: 'pointer'
+                  }}
+                  onClick={loadRapidFireQueue}
+                >
+                  Load Rapid Fire Queue
+                </button>
+                <button
+                  style={{
+                    padding: '6px 12px',
+                    backgroundColor: 'white',
+                    color: '#374151',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    opacity: !rapidFireQueue.length ? 0.5 : 1
+                  }}
+                  onClick={addAllRapidFireToMap}
+                  disabled={!rapidFireQueue.length}
+                >
+                  Add All to Map
+                </button>
+                <button
+                  style={{
+                    padding: '6px 12px',
+                    backgroundColor: 'white',
+                    color: '#374151',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    cursor: 'pointer'
+                  }}
+                  onClick={loadSavedProspects}
+                >
+                  Load Saved Prospects
+                </button>
+              </div>
+              {processingStatus && (
+                <div style={{ fontSize: '12px', color: '#3b82f6', fontWeight: '600' }}>
+                  {processingStatus}
+                </div>
+              )}
+              {rapidFireQueue.length > 0 && (
+                <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                  Queue: {rapidFireQueue.length} properties
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'tools' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Filter size={14} style={{ color: '#6b7280' }} />
+                <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>Show on Map:</label>
+                <select 
+                  value={mapFilter} 
+                  onChange={(e) => setMapFilter(e.target.value)}
+                  style={{
+                    padding: '6px 10px',
+                    fontSize: '13px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    backgroundColor: 'white',
+                    color: '#374151'
+                  }}
+                >
+                  <option value="all">All Pins</option>
+                  <option value="rapidfire">🔥 Rapid Fire Only</option>
+                  <option value="prospects">🏘️ Prospect Cities Only</option>
+                </select>
+                <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                  ({customPins.filter(p => {
+                    if (mapFilter === 'all') return true;
+                    if (mapFilter === 'rapidfire') return p.category === 'rapidfire';
+                    if (mapFilter === 'prospects') return p.category === 'prospect';
+                    return true;
+                  }).length} visible)
+                </span>
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MapPin size={14} style={{ color: '#6b7280' }} />
+                <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>Map Style:</label>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    onClick={() => setMapStyle('voyager')}
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: mapStyle === 'voyager' ? '#3b82f6' : 'white',
+                      color: mapStyle === 'voyager' ? 'white' : '#6b7280',
+                      border: mapStyle === 'voyager' ? 'none' : '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Clean
+                  </button>
+                  <button
+                    onClick={() => setMapStyle('satellite')}
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: mapStyle === 'satellite' ? '#3b82f6' : 'white',
+                      color: mapStyle === 'satellite' ? 'white' : '#6b7280',
+                      border: mapStyle === 'satellite' ? 'none' : '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Satellite
+                  </button>
+                  <button
+                    onClick={() => setMapStyle('streets')}
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: mapStyle === 'streets' ? '#3b82f6' : 'white',
+                      color: mapStyle === 'streets' ? 'white' : '#6b7280',
+                      border: mapStyle === 'streets' ? 'none' : '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Streets
+                  </button>
+                  <button
+                    onClick={() => setMapStyle('dark')}
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: mapStyle === 'dark' ? '#3b82f6' : 'white',
+                      color: mapStyle === 'dark' ? 'white' : '#6b7280',
+                      border: mapStyle === 'dark' ? 'none' : '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Dark
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Map Container */}
+        <div style={{ flex: 1, position: 'relative' }}>
+          <MapContainer center={activeCity.center} zoom={activeCity.zoom} style={{ width: '100%', height: '100%' }}>
+            <CityNavigator city={activeCity} />
+            <TileLayer url={tileUrl} attribution={attribution} />
+            <CommandExecutor commands={pendingCommands} onDone={() => setPendingCommands([])} addPin={addPinFromCommand} />
+
+            {/* Base categorized markers */}
+            {baseMarkers.map((m) => (
+              <Marker key={m.id} position={m.position} icon={categoryIcon(m.category)}>
+                <Popup>
+                  <div style={{ minWidth: '220px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>{m.name}</div>
+                    <div style={{ fontSize: '12px', color: '#64748b' }}>Influence zone radius ~2 miles</div>
+                    <div style={{ borderRadius: '8px', backgroundColor: '#e0e7ff', padding: '8px', fontSize: '12px', color: '#1e293b' }}>
+                      Research Insight: {m.insight}
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
+            {/* Influence zones (2 miles ~ 3219m) */}
+            {baseMarkers.map((m) => (
+              <Circle key={`${m.id}-circle`} center={m.position} radius={3219} pathOptions={{ color: '#64748b', fillColor: '#64748b', fillOpacity: 0.15 }} />
+            ))}
+
+            {/* Custom pins from form */}
+            {customPins
+              .filter(p => {
+                if (mapFilter === 'all') return true;
+                if (mapFilter === 'rapidfire') return p.category === 'rapidfire';
+                if (mapFilter === 'prospects') return p.category === 'prospect';
+                return true;
+              })
+              .map((p) => (
+              <Marker key={p.id} position={p.position} icon={categoryIcon(p.category, p.source)}>
+                <Popup>
+                  <div style={{ minWidth: '220px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>{p.name}</div>
+                    <div style={{ fontSize: '12px', color: '#64748b' }}>
+                      {p.category === 'rapidfire' ? '🔥 Rapid Fire Queue' : 
+                       p.category === 'prospect' ? '🏘️ Prospect City' : 
+                       'Manual pin — custom research'}
+                    </div>
+                    <div style={{
+                      borderRadius: '8px',
+                      padding: '8px',
+                      fontSize: '12px',
+                      color: '#1e293b',
+                      backgroundColor: p.category === 'rapidfire' ? '#fed7aa' : 
+                                     p.category === 'prospect' ? '#bfdbfe' : 
+                                     '#e9d5ff'
+                    }}>
+                      {p.insight}
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
+            {customPins
+              .filter(p => {
+                if (mapFilter === 'all') return true;
+                if (mapFilter === 'rapidfire') return p.category === 'rapidfire';
+                if (mapFilter === 'prospects') return p.category === 'prospect';
+                return true;
+              })
+              .filter(p => p.category !== 'rapidfire' && p.category !== 'prospect')
+              .map((p) => {
+                const color = '#7c3aed';
+                return (
+                  <Circle key={`${p.id}-circle`} center={p.position} radius={3219} pathOptions={{ color, fillColor: color, fillOpacity: 0.08 }} />
+                );
+              })}
+          </MapContainer>
+        </div>
+
+      </div>
+
+      {/* Max AI Sidebar - Right Side */}
+      <div style={{
+        width: 420,
+        minWidth: 420,
+        maxWidth: 420,
+        flexShrink: 0,
+        borderLeft: '1px solid #e5e7eb',
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: '#ffffff',
+        overflow: 'hidden'
+      }}>
+        {/* AI Header */}
+        <div style={{
+          padding: '10px 14px',
+          borderBottom: '1px solid #e5e7eb',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          fontSize: 15,
+          fontWeight: 600,
+          color: '#111827'
+        }}>
+          <span>Max</span>
+          <button
+            type="button"
+            style={{ border: 'none', background: 'transparent', cursor: 'default', color: '#9ca3af' }}
+          >
+            <MessageSquare size={15} />
+          </button>
+        </div>
+
+        {/* AI Body - Messages */}
+        <div style={{
+          flex: 1,
+          padding: '12px 14px',
+          overflowY: 'auto',
+          minHeight: 0
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: '#111827' }}>
+            Ask Max about property clusters, market trends, or new investment markets.
+          </div>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px'
+          }}>
+            {chat.messages.map((msg, idx) => (
+              <div
+                key={idx}
+                style={{
+                  marginBottom: 8,
+                  padding: '10px 12px',
+                  borderRadius: 6,
+                  backgroundColor: msg.role === 'user' ? '#e5f0ff' : '#f9fafb',
+                  color: '#111827',
+                  fontSize: 13,
+                  lineHeight: 1.5
+                }}
+              >
+                {msg.content}
+              </div>
+            ))}
+            {chat.loading && (
+              <div style={{
+                padding: '10px 12px',
+                borderRadius: 6,
+                backgroundColor: '#f9fafb',
+                color: '#6b7280',
+                fontSize: 13,
+                fontStyle: 'italic'
+              }}>
+                Max is thinking...
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* AI Input */}
+        <div style={{
+          padding: '12px 14px',
+          borderTop: '1px solid #e5e7eb',
+          backgroundColor: '#ffffff'
+        }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                fontSize: 13,
+                border: '1px solid #d1d5db',
+                borderRadius: 6,
+                backgroundColor: 'white',
+                outline: 'none'
+              }}
+              placeholder="Ask about markets, trends, or request map commands..."
+              value={chat.input}
+              onChange={(e) => setChat({ ...chat, input: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  const trimmed = chat.input.trim();
+                  if (!trimmed || chat.loading) return;
+                  setChat(prev => ({ ...prev, loading: true, messages: [...prev.messages, { role: 'user', content: trimmed }], input: '' }));
+                  (async () => {
                     try {
-                      const system = `You are MAX. When asked about the map, output a JSON object at the end with a commands array to control the map. Example:\n{\n  \"commands\": [\n    { \"type\": \"panTo\", \"payload\": { \"center\": [39.0997, -94.5786], \"zoom\": 12 } },\n    { \"type\": \"addPin\", \"payload\": { \"name\": \"Prospect Deal\", \"lat\": 39.101, \"lng\": -94.57, \"notes\": \"Near hospital hub\" } }\n  ]\n}\nOnly include valid numeric lat/lng. Do not include code fences in the JSON.`;
+                      const system = `You are Max, an AI real estate market analyst with access to comprehensive market data. You help users analyze property clusters, identify market trends, and discover new investment markets.
+
+CAPABILITIES:
+- Analyze property patterns and clusters on the map
+- Access US Census data (demographics, housing, employment)
+- Access migration data, rent data (FMR, SAFMR), property tax rates
+- Access Zillow home value indices and growth rates
+- Access Cushman & Wakefield market reports
+- Perform web searches for current market conditions
+- Create map pins, pan/zoom map programmatically
+
+AVAILABLE DATA FILES (in /build folder):
+- 2025_National_Migration_Flows_With_Estimates.csv
+- ACSDP5Y2023.DP03-Data.csv (Demographics & Economics)
+- ACSDP5Y2023.DP04-Data.csv (Housing Characteristics)
+- cushman_q32025_full_markets.csv (Commercial market data)
+- fmr_by_zip_clean.csv, fy2026_safmrs_fullrange.csv (Fair Market Rents)
+- landlord_friendly_scores.csv
+- Property Taxes by State and County, 2025.csv
+- Zip_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv (Zillow Home Values)
+- Zip_zhvf_growth_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv (Growth Forecasts)
+- zip_renter_owner_stats_with_counts.csv
+- migration_with_clean_zipcodes.csv
+
+When analyzing markets or responding to questions:
+1. Reference specific data from these CSV files when relevant
+2. Identify trends in property clusters the user has mapped
+3. Suggest new markets based on data analysis
+4. Perform web searches for current local conditions (crime, development, employers)
+5. Use map commands to visualize findings
+
+MAP COMMANDS (output JSON at end of response):
+{
+  "commands": [
+    { "type": "panTo", "payload": { "center": [lat, lng], "zoom": 12 } },
+    { "type": "addPin", "payload": { "name": "Property Name", "lat": XX.XXX, "lng": -XX.XXX, "notes": "reason" } }
+  ]
+}`;
                       const res = await fetch(API_ENDPOINTS.marketResearchChat, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -640,257 +1147,87 @@ function DashboardMapTab() {
                       if (commands.length > 0) setPendingCommands(commands);
                       setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: text }] }));
                     } catch (err) {
-                      setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: 'Error contacting MAX.' }] }));
+                      setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: 'Error contacting Max.' }] }));
                     }
-                  }}
-                >{chat.loading ? 'Sending...' : 'Send'}</button>
-              </div>
-            </div>
-          </div>
-        ) : activeTab === 'add' ? (
-          <form onSubmit={handleSubmitProperty} className="rounded-2xl bg-white/70 backdrop-blur p-4 shadow-2xl space-y-3">
-            <div className="text-xs font-semibold text-slate-500">Add Property</div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="col-span-2">
-                <input className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white" placeholder="Property Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              </div>
-              <div className="col-span-2">
-                <input className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white" placeholder="Street Address, City, ST ZIP" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-              </div>
-              <input className="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white" placeholder="Units (optional)" value={form.units} onChange={(e) => setForm({ ...form, units: e.target.value })} />
-              <div className="col-span-2">
-                <textarea className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white" rows={3} placeholder="Research Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-              </div>
-            </div>
-            <button type="submit" className="px-3 py-2 text-xs rounded-xl bg-purple-600 text-white shadow">Add Pin</button>
-            <div className="flex items-center gap-2 pt-2">
-              <input id="auto-load" type="checkbox" className="rounded" checked={autoLoadSaved} onChange={(e) => {
-                const v = e.target.checked; setAutoLoadSaved(v); localStorage.setItem('atlas.autoLoadProspects', v ? 'true' : 'false');
-              }} />
-              <label htmlFor="auto-load" className="text-xs text-slate-600">Auto-load saved prospects on open</label>
-            </div>
-          </form>
-        ) : (
-          <div className="rounded-2xl bg-white/70 backdrop-blur p-4 shadow-2xl space-y-3">
-            <div className="text-xs font-semibold text-slate-500">Upload Prospect Properties</div>
-            <div className="text-xs text-slate-700">Upload a CSV or Excel file with address columns; we geocode and pin them.</div>
-            <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" onChange={(e) => handleProspectsFile(e.target.files?.[0])} />
-            <div className="text-xs text-slate-600">Rows: {uploadState.rows} • Geocoded: {uploadState.geocoded} • Errors: {uploadState.errors}</div>
-            <div className="flex gap-2">
-              <button
-                className="px-3 py-2 text-xs rounded-xl border bg-white border-slate-200 text-slate-600"
-                onClick={async () => {
-                  // Load Rapid Fire "passed" deals from Supabase (screened_deals)
-                  try {
-                    const { data, error } = await supabase
-                      .from('screened_deals')
-                      .select('property_address,units,score')
-                      .eq('score', 'pass')
-                      .limit(500);
-                    if (error) return;
-                    const rows = (data || [])
-                      .filter(d => d?.property_address)
-                      .map(d => ({ Address: d.property_address, Units: d.units || null, Name: d.property_address }));
-                    setUploadState({ parsing: false, rows: rows.length, geocoded: 0, errors: 0 });
-                    rows.forEach(r => {
-                      const address = r.Address;
-                      const units = r.Units;
-                      const name = r.Name;
-                      enqueueGeocode(address, (latlng) => {
-                        if (latlng) {
-                          setUploadState(s => ({ ...s, geocoded: s.geocoded + 1 }));
-                          const pin = { id: `pros-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name, category: 'custom', position: [latlng.lat, latlng.lng], insight: units != null ? `${units} units` : 'Prospect' };
-                          setCustomPins(prev => [...prev, pin]);
-                          supabase.from('map_prospects').insert({ name, address, units: units || null, lat: latlng.lat, lng: latlng.lng, source: 'rapid_fire', user_id: userId }).catch(() => {});
-                        } else {
-                          setUploadState(s => ({ ...s, errors: s.errors + 1 }));
-                        }
-                      });
-                    });
-                  } catch (e) {
-                    // ignore
-                  }
-                }}
-              >Load Rapid Fire Passed</button>
-              <button
-                className="px-3 py-2 text-xs rounded-xl border bg-white border-slate-200 text-slate-600"
-                onClick={loadSavedProspects}
-              >Load Saved Prospects</button>
-              <button
-                className="px-3 py-2 text-xs rounded-xl border bg-white border-slate-200 text-slate-600"
-                onClick={saveAllPins}
-              >Save All Pins</button>
-              <button
-                className="px-3 py-2 text-xs rounded-xl border bg-white border-slate-200 text-slate-600"
-                onClick={loadRapidFireQueue}
-              >Load Rapid Fire Queue</button>
-              <button
-                className="px-3 py-2 text-xs rounded-xl border bg-white border-slate-200 text-slate-600"
-                onClick={addAllRapidFireToMap}
-                disabled={!rapidFireQueue.length}
-              >Add All to Map</button>
-            </div>
+                  })();
+                }
+              }}
+            />
+            <button
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: 6,
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: 'pointer',
+                opacity: chat.loading ? 0.6 : 1
+              }}
+              disabled={chat.loading}
+              onClick={async () => {
+                const trimmed = chat.input.trim();
+                if (!trimmed || chat.loading) return;
+                setChat(prev => ({ ...prev, loading: true, messages: [...prev.messages, { role: 'user', content: trimmed }], input: '' }));
+                try {
+                  const system = `You are Max, an AI real estate market analyst with access to comprehensive market data. You help users analyze property clusters, identify market trends, and discover new investment markets.
 
-            {/* Rapid Fire queue list preview */}
-            <div className="mt-2 rounded-xl border border-slate-200 bg-white/60 p-2">
-              <div className="text-xs font-semibold text-slate-500">Rapid Fire Queue ({rapidFireQueue.length})</div>
-              {processingStatus && (
-                <div className="text-xs text-indigo-600 font-semibold py-1">{processingStatus}</div>
-              )}
-              <div className="max-h-40 overflow-auto text-xs text-slate-700">
-                {rapidFireQueue.length === 0 ? (
-                  <div className="text-slate-400">Click "Load Rapid Fire Queue" to load.</div>
-                ) : rapidFireQueue.map((rf) => (
-                  <div key={rf.id} className="py-1 border-b border-slate-100">
-                    <div className="font-semibold text-slate-800">{rf.name}</div>
-                    <div className="text-slate-600">{rf.address}</div>
-                    <div className="text-slate-500">{rf.units != null ? `${rf.units} units` : ''}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+CAPABILITIES:
+- Analyze property patterns and clusters on the map
+- Access US Census data (demographics, housing, employment)
+- Access migration data, rent data (FMR, SAFMR), property tax rates
+- Access Zillow home value indices and growth rates
+- Access Cushman & Wakefield market reports
+- Perform web searches for current market conditions
+- Create map pins, pan/zoom map programmatically
 
-        {/* City Navigation */}
-        <div className="flex gap-2">
-          {Object.entries(CITIES).map(([key, city]) => (
-            <button
-              key={key}
-              className={`px-3 py-2 text-xs rounded-xl border ${activeCityKey === key ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-slate-200 text-slate-600'}`}
-              onClick={() => setActiveCityKey(key)}
-            >
-              {city.name}
-            </button>
-          ))}
-        </div>
+AVAILABLE DATA FILES (in /build folder):
+- 2025_National_Migration_Flows_With_Estimates.csv
+- ACSDP5Y2023.DP03-Data.csv (Demographics & Economics)
+- ACSDP5Y2023.DP04-Data.csv (Housing Characteristics)
+- cushman_q32025_full_markets.csv (Commercial market data)
+- fmr_by_zip_clean.csv, fy2026_safmrs_fullrange.csv (Fair Market Rents)
+- landlord_friendly_scores.csv
+- Property Taxes by State and County, 2025.csv
+- Zip_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv (Zillow Home Values)
+- Zip_zhvf_growth_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv (Growth Forecasts)
+- zip_renter_owner_stats_with_counts.csv
+- migration_with_clean_zipcodes.csv
 
-        {/* Map Filter Dropdown */}
-        <div className="mt-4 flex items-center gap-2">
-          <Filter className="w-4 h-4 text-slate-500" />
-          <label className="text-xs font-semibold text-slate-600">Show on Map:</label>
-          <select 
-            value={mapFilter} 
-            onChange={(e) => setMapFilter(e.target.value)}
-            className="px-3 py-2 text-xs rounded-xl border bg-white border-slate-200 text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-          >
-            <option value="all">All Pins</option>
-            <option value="rapidfire">🔥 Rapid Fire Only</option>
-            <option value="prospects">🏘️ Prospect Cities Only</option>
-          </select>
-          <div className="text-xs text-slate-500">
-            ({customPins.filter(p => {
-              if (mapFilter === 'all') return true;
-              if (mapFilter === 'rapidfire') return p.category === 'rapidfire';
-              if (mapFilter === 'prospects') return p.category === 'prospect';
-              return true;
-            }).length} pins visible)
-          </div>
-        </div>
+When analyzing markets or responding to questions:
+1. Reference specific data from these CSV files when relevant
+2. Identify trends in property clusters the user has mapped
+3. Suggest new markets based on data analysis
+4. Perform web searches for current local conditions (crime, development, employers)
+5. Use map commands to visualize findings
 
-        {/* Map Style Selector */}
-        <div className="mt-2 flex items-center gap-2">
-          <MapPin className="w-4 h-4 text-slate-500" />
-          <label className="text-xs font-semibold text-slate-600">Map Style:</label>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setMapStyle('voyager')}
-              className={`px-3 py-1.5 text-xs rounded-lg border ${mapStyle === 'voyager' ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold' : 'bg-white border-slate-200 text-slate-600'}`}
+MAP COMMANDS (output JSON at end of response):
+{
+  "commands": [
+    { "type": "panTo", "payload": { "center": [lat, lng], "zoom": 12 } },
+    { "type": "addPin", "payload": { "name": "Property Name", "lat": XX.XXX, "lng": -XX.XXX, "notes": "reason" } }
+  ]
+}`;
+                  const res = await fetch(API_ENDPOINTS.marketResearchChat, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: trimmed, system })
+                  });
+                  const data = await res.json().catch(() => null);
+                  const text = data?.message || data?.content || data?.assistant || 'No response';
+                  const commands = extractCommands(text);
+                  if (commands.length > 0) setPendingCommands(commands);
+                  setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: text }] }));
+                } catch (err) {
+                  setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: 'Error contacting Max.' }] }));
+                }
+              }}
             >
-              Clean
-            </button>
-            <button
-              onClick={() => setMapStyle('satellite')}
-              className={`px-3 py-1.5 text-xs rounded-lg border ${mapStyle === 'satellite' ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold' : 'bg-white border-slate-200 text-slate-600'}`}
-            >
-              Satellite
-            </button>
-            <button
-              onClick={() => setMapStyle('streets')}
-              className={`px-3 py-1.5 text-xs rounded-lg border ${mapStyle === 'streets' ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold' : 'bg-white border-slate-200 text-slate-600'}`}
-            >
-              Streets
-            </button>
-            <button
-              onClick={() => setMapStyle('dark')}
-              className={`px-3 py-1.5 text-xs rounded-lg border ${mapStyle === 'dark' ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold' : 'bg-white border-slate-200 text-slate-600'}`}
-            >
-              Dark
+              Send
             </button>
           </div>
         </div>
-      </div>
-
-      {/* Map */}
-      <div className="flex-1 h-full">
-        <MapContainer center={activeCity.center} zoom={activeCity.zoom} className="w-full h-full">
-          <CityNavigator city={activeCity} />
-          <TileLayer url={tileUrl} attribution={attribution} />
-          <CommandExecutor commands={pendingCommands} onDone={() => setPendingCommands([])} addPin={addPinFromCommand} />
-
-          {/* Base categorized markers */}
-          {baseMarkers.map((m) => (
-            <Marker key={m.id} position={m.position} icon={categoryIcon(m.category)}>
-              <Popup>
-                <div className="min-w-[220px] space-y-1">
-                  <div className="text-sm font-bold text-slate-800">{m.name}</div>
-                  <div className="text-xs text-slate-600">Influence zone radius ~2 miles</div>
-                  <div className="rounded-xl bg-indigo-50 p-2 text-xs text-slate-700">Research Insight: {m.insight}</div>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-
-          {/* Influence zones (2 miles ~ 3219m) */}
-          {baseMarkers.map((m) => (
-            <Circle key={`${m.id}-circle`} center={m.position} radius={3219} pathOptions={{ color: '#64748b', fillColor: '#64748b', fillOpacity: 0.15 }} />
-          ))}
-
-          {/* Custom pins from form */}
-          {customPins
-            .filter(p => {
-              if (mapFilter === 'all') return true;
-              if (mapFilter === 'rapidfire') return p.category === 'rapidfire';
-              if (mapFilter === 'prospects') return p.category === 'prospect';
-              return true;
-            })
-            .map((p) => (
-            <Marker key={p.id} position={p.position} icon={categoryIcon(p.category, p.source)}>
-              <Popup>
-                <div className="min-w-[220px] space-y-1">
-                  <div className="text-sm font-bold text-slate-800">{p.name}</div>
-                  <div className="text-xs text-slate-600">
-                    {p.category === 'rapidfire' ? '🔥 Rapid Fire Queue' : 
-                     p.category === 'prospect' ? '🏘️ Prospect City' : 
-                     'Manual pin — custom research'}
-                  </div>
-                  <div className={`rounded-xl p-2 text-xs text-slate-700 ${
-                    p.category === 'rapidfire' ? 'bg-orange-50' : 
-                    p.category === 'prospect' ? 'bg-blue-50' : 
-                    'bg-purple-50'
-                  }`}>
-                    {p.insight}
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-
-          {customPins
-            .filter(p => {
-              if (mapFilter === 'all') return true;
-              if (mapFilter === 'rapidfire') return p.category === 'rapidfire';
-              if (mapFilter === 'prospects') return p.category === 'prospect';
-              return true;
-            })
-            .filter(p => p.category !== 'rapidfire' && p.category !== 'prospect')
-            .map((p) => {
-              const color = '#7c3aed';
-              return (
-                <Circle key={`${p.id}-circle`} center={p.position} radius={3219} pathOptions={{ color, fillColor: color, fillOpacity: 0.08 }} />
-              );
-            })}
-        </MapContainer>
       </div>
     </div>
   );
