@@ -131,10 +131,10 @@ const RUBSTab = ({ scenarioData, fullCalcs }) => {
         closingCostsPct: fullCalcsData.acquisition?.closingCostsPct || pricing_financing?.closing_costs_pct || 2.0,
         
         // Financing - USE CANONICAL VALUES FROM FULLCALCS
-        ltv: pricing_financing?.ltv || fullCalcsData.financing?.ltv || financing.ltv || 75.0,
-        interestRate: pricing_financing?.interest_rate || fullCalcsData.financing?.interestRate || financing.interest_rate || financing.rate || 6.5,
-        amortizationYears: pricing_financing?.amortization_years || fullCalcsData.financing?.amortizationYears || financing.amortization_years || financing.amortization || 30,
-        loanTermYears: pricing_financing?.term_years || financing.loan_term_years || financing.term || 5,
+        ltv: fullCalcsData.financing?.ltv || pricing_financing?.ltv || 75.0,
+        interestRate: (fullCalcsData.financing?.interestRate != null) ? fullCalcsData.financing.interestRate : (pricing_financing?.interest_rate != null ? pricing_financing.interest_rate * 100 : 6.5),
+        amortizationYears: fullCalcsData.financing?.amortizationYears || pricing_financing?.amortization_years || 30,
+        loanTermYears: fullCalcsData.financing?.loanTermYears || pricing_financing?.term_years || 5,
         
         // Equity - USE CANONICAL VALUES FROM FULLCALCS
         renovationBudget: fullCalcsData.acquisition?.capexBudget || equity.renovation_budget || pricing_financing?.capex_budget || pricing_financing?.renovation_budget || 0,

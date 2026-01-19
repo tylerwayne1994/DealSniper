@@ -179,7 +179,7 @@ export default function CharacteristicsTab(props) {
           <SectionCard title="Pricing & Financing" icon="💰" color="#0d9488">
             <div style={{ marginBottom: '12px' }}>
               <label style={labelStyle}>Financing Type *</label>
-              <select style={selectStyle} value={financing.financing_type || 'traditional'} onChange={(e) => onEditData && onEditData('financing.financing_type', e.target.value)}>
+              <select style={selectStyle} value={pricing_financing?.financing_type || financing.financing_type || 'traditional'} onChange={(e) => onEditData && onEditData('pricing_financing.financing_type', e.target.value)}>
                 <option value="traditional">Traditional</option>
                 <option value="subject_to">Subject To</option>
                 <option value="seller_carry">Seller Carry</option>
@@ -196,26 +196,26 @@ export default function CharacteristicsTab(props) {
             <div style={{ marginBottom: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
               <div>
                 <label style={labelStyle}>Down Payment %</label>
-                <input type="number" style={inputStyle} value={(100 - (financing.ltv || 75)).toFixed(1)} onChange={(e) => onEditData && onEditData('financing.ltv', 100 - (parseFloat(e.target.value) || 0))} />
+                <input type="number" style={inputStyle} value={(100 - (pricing_financing?.ltv || 75)).toFixed(1)} onChange={(e) => onEditData && onEditData('pricing_financing.ltv', 100 - (parseFloat(e.target.value) || 0))} />
               </div>
               <div>
                 <label style={labelStyle}>LTV %</label>
-                <input type="number" style={inputStyle} value={financing.ltv || 75} onChange={(e) => onEditData && onEditData('financing.ltv', parseFloat(e.target.value) || 0)} />
+                <input type="number" style={inputStyle} value={pricing_financing?.ltv || 75} onChange={(e) => onEditData && onEditData('pricing_financing.ltv', parseFloat(e.target.value) || 0)} />
               </div>
             </div>
             <div style={{ marginBottom: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
               <div>
                 <label style={labelStyle}>Term (Years)</label>
-                <input type="number" style={inputStyle} value={financing.term_years || financing.amortization_years || 30} onChange={(e) => onEditData && onEditData('financing.term_years', parseInt(e.target.value) || 0)} />
+                <input type="number" style={inputStyle} value={pricing_financing?.term_years || pricing_financing?.amortization_years || 30} onChange={(e) => onEditData && onEditData('pricing_financing.term_years', parseInt(e.target.value) || 0)} />
               </div>
               <div>
                 <label style={labelStyle}>Amortization (Years)</label>
-                <input type="number" style={inputStyle} value={financing.amortization_years || 30} onChange={(e) => onEditData && onEditData('financing.amortization_years', parseInt(e.target.value) || 0)} />
+                <input type="number" style={inputStyle} value={pricing_financing?.amortization_years || 30} onChange={(e) => onEditData && onEditData('pricing_financing.amortization_years', parseInt(e.target.value) || 0)} />
               </div>
             </div>
             <div style={{ marginBottom: '12px' }}>
               <label style={labelStyle}>Interest Rate % *</label>
-              <input type="number" step="0.1" style={inputStyle} value={financing.interest_rate || 6} onChange={(e) => onEditData && onEditData('financing.interest_rate', parseFloat(e.target.value) || 0)} />
+              <input type="number" step="0.1" style={inputStyle} value={pricing_financing?.interest_rate || 6} onChange={(e) => onEditData && onEditData('pricing_financing.interest_rate', parseFloat(e.target.value) || 0)} />
             </div>
             <div style={{ marginBottom: '12px' }}>
               <label style={labelStyle}>Loan Amount</label>
