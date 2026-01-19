@@ -397,8 +397,8 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
       // Calculate postRefiCashFlow: stabilized cash flow after refinance
       // After refinance, there's new debt service based on refi loan
       const refiLoanAmount = refiValue * 0.75; // Assuming 75% LTV on refi
-      const refiInterestRate = financing.interest_rate || financing.rate || fullCalcs?.financing?.interestRate || 6.5;
-      const refiAmortYears = financing.amortization_years || financing.amortization || fullCalcs?.financing?.amortizationYears || 30;
+      const refiInterestRate = pricingFinancing.interest_rate || financing.interest_rate || financing.rate || fullCalcs?.financing?.interestRate || 6.5;
+      const refiAmortYears = pricingFinancing.amortization_years || financing.amortization_years || financing.amortization || fullCalcs?.financing?.amortizationYears || 30;
       
       // Monthly payment formula: P * [r(1+r)^n] / [(1+r)^n - 1]
       const monthlyRate = (refiInterestRate / 100) / 12;
@@ -2245,30 +2245,30 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                       <div>
                         <label style={labelStyle}>Down Payment %</label>
-                        <input type="number" style={inputStyle} value={(100 - (financing.ltv || 75)).toFixed(1)} 
-                          onChange={(e) => handleFieldChange('financing.ltv', 100 - (parseFloat(e.target.value) || 0))} />
+                        <input type="number" style={inputStyle} value={(100 - (pricingFinancing.ltv || 75)).toFixed(1)} 
+                          onChange={(e) => handleFieldChange('pricing_financing.ltv', 100 - (parseFloat(e.target.value) || 0))} />
                       </div>
                       <div>
                         <label style={labelStyle}>LTV %</label>
-                        <input type="number" style={inputStyle} value={financing.ltv || 75} 
-                          onChange={(e) => handleFieldChange('financing.ltv', parseFloat(e.target.value) || 0)} />
+                        <input type="number" style={inputStyle} value={pricingFinancing.ltv || 75} 
+                          onChange={(e) => handleFieldChange('pricing_financing.ltv', parseFloat(e.target.value) || 0)} />
                       </div>
                     </div>
                     <div>
                       <label style={labelStyle}>Interest Rate %</label>
-                      <input type="number" step="0.1" style={inputStyle} value={financing.interest_rate || 6} 
-                        onChange={(e) => handleFieldChange('financing.interest_rate', parseFloat(e.target.value) || 0)} />
+                      <input type="number" step="0.1" style={inputStyle} value={pricingFinancing.interest_rate || 6} 
+                        onChange={(e) => handleFieldChange('pricing_financing.interest_rate', parseFloat(e.target.value) || 0)} />
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                       <div>
                         <label style={labelStyle}>Term (Years)</label>
-                        <input type="number" style={inputStyle} value={financing.term_years || financing.amortization_years || 30} 
-                          onChange={(e) => handleFieldChange('financing.term_years', parseInt(e.target.value) || 0)} />
+                        <input type="number" style={inputStyle} value={pricingFinancing.term_years || pricingFinancing.amortization_years || 30} 
+                          onChange={(e) => handleFieldChange('pricing_financing.term_years', parseInt(e.target.value) || 0)} />
                       </div>
                       <div>
                         <label style={labelStyle}>Amort (Years)</label>
                         <input type="number" style={inputStyle} value={financing.amortization_years || 30} 
-                          onChange={(e) => handleFieldChange('financing.amortization_years', parseInt(e.target.value) || 0)} />
+                          onChange={(e) => handleFieldChange('pricing_financing.amortization_years', parseInt(e.target.value) || 0)} />
                       </div>
                     </div>
                     <div>
