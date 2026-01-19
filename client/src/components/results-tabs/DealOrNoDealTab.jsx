@@ -267,7 +267,6 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
   // Extract all data
   const property = scenarioData?.property || {};
   const pricingFinancing = scenarioData?.pricing_financing || {};
-  const financing = scenarioData?.financing || {};
   const unitMix = scenarioData?.unit_mix || [];
   const broker = scenarioData?.broker || {};
   
@@ -298,7 +297,7 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
   // Default to 90% if still 0
   if (occupancyRate === 0) occupancyRate = 0.9;
   
-  const holdingPeriod = pricingFinancing.hold_period || financing.hold_period || 5;
+  const holdingPeriod = pricingFinancing.hold_period || scenarioData?.underwriting?.holding_period || 5;
 
   // Transaction Details
   const purchasePrice = pricingFinancing.purchase_price || pricingFinancing.price || 0;
@@ -315,6 +314,9 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
   
   // LTV - handle correctly (should be a percentage like 80, not 0.80 or 8000)
   let ltv = fullCalcs?.financing?.ltv || 0;
+  if (ltv === 0) {
+    ltv = pricingFinancing.ltv || 0;
+  }
   if (ltv === 0 && purchasePrice > 0 && loanAmount > 0) {
     ltv = (loanAmount / purchasePrice) * 100;
   }
@@ -324,14 +326,15 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
   }
   
   // Interest rate - should be like 6.00, not 0.06
-  let interestRate = pricingFinancing.interest_rate || financing.interest_rate || financing.rate || 6;
-  // If it's a tiny decimal like 0.06, multiply by 100
+  let interestRate = (fullCalcs?.financing?.interestRate != null)
+    ? fullCalcs.financing.interestRate
+    : (pricingFinancing.interest_rate != null ? pricingFinancing.interest_rate * 100 : 6);
   if (interestRate < 1) {
     interestRate = interestRate * 100;
   }
   
-  const loanTerm = pricingFinancing.term_years || financing.term_years || financing.loan_term || financing.term || 30;
-  const amortization = pricingFinancing.amortization_years || financing.amortization_years || financing.amortization || 30;
+  const loanTerm = pricingFinancing.term_years || fullCalcs?.financing?.loanTermYears || 30;
+  const amortization = pricingFinancing.amortization_years || fullCalcs?.financing?.amortizationYears || 30;
 
   // Returns
   // Use the core engine's levered IRR and Year 1 metrics so
@@ -341,7 +344,7 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
   const inPlaceCapRate = fullCalcs?.current?.capRate ?? fullCalcs?.year1?.capRate ?? 0;
   
   // Exit cap rate - handle decimal vs percentage
-  let exitCapRate = pricingFinancing.exit_cap_rate || financing.exit_cap_rate || 6;
+  let exitCapRate = scenarioData?.underwriting?.exit_cap_rate ?? pricingFinancing.exit_cap_rate ?? fullCalcs?.exit?.capRate ?? 6;
   if (exitCapRate < 1) {
     exitCapRate = exitCapRate * 100;
   }
