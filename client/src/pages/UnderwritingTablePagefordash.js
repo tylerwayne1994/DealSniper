@@ -1597,6 +1597,9 @@ function UnderwritingTablePage({ initialScenarioData, initialCalculations }) {
         notes: ''
       });
       
+      // Notify pipeline and map to reload
+      window.dispatchEvent(new Event('pipelineDealsUpdated'));
+      
       setPushSuccess(true);
       setTimeout(() => setPushSuccess(false), 3000);
     } catch (error) {
