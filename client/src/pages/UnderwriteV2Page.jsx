@@ -188,21 +188,34 @@ function UnderwriteV2Page() {
     setScenarioData(prev => {
       const updated = { ...prev };
       const keys = path.split('.');
-      let current = updated;
-      
-      for (let i = 0; i < keys.length - 1; i++) {
-        // Create nested object if it doesn't exist
-        if (!current[keys[i]]) {
-          current[keys[i]] = {};
+      let cursor = updated;
+      let i = 0;
+
+      while (i < keys.length - 1) {
+        const key = keys[i];
+        const next = keys[i + 1];
+
+        // If next segment is a numeric index, treat current key as an array
+        if (next !== undefined && /^\d+$/.test(next)) {
+          const arr = Array.isArray(cursor[key]) ? [...cursor[key]] : [];
+          cursor[key] = arr;
+          const idx = parseInt(next, 10);
+          arr[idx] = { ...(arr[idx] || {}) };
+          cursor = arr[idx];
+          i += 2; // consumed key and index
+        } else {
+          // Ensure nested object exists and clone it
+          cursor[key] = { ...(cursor[key] || {}) };
+          cursor = cursor[key];
+          i += 1;
         }
-        current[keys[i]] = { ...current[keys[i]] };
-        current = current[keys[i]];
       }
-      
-      current[keys[keys.length - 1]] = newValue;
+
+      const lastKey = keys[keys.length - 1];
+      cursor[lastKey] = newValue;
       return updated;
     });
-    
+
     setModifiedFields(prev => ({
       ...prev,
       [path]: { original: originalValue, new: newValue }
