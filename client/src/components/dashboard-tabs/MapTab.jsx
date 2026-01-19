@@ -2,6 +2,9 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { API_ENDPOINTS } from '../../config/api';
+import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
+import { supabase } from '../../lib/supabase';
 import {
   MessageSquare,
   MapPin,
@@ -51,7 +54,7 @@ function DashboardMapTab() {
 
   const [customPins, setCustomPins] = useState([]);
   const [form, setForm] = useState({ name: '', lat: '', lng: '', notes: '' });
-  const [activeTab, setActiveTab] = useState('assistant'); // 'assistant' | 'add'
+  const [activeTab, setActiveTab] = useState('assistant'); // 'assistant' | 'add' | 'upload'
   const [chat, setChat] = useState({ input: '', messages: [], loading: false });
   const [pendingCommands, setPendingCommands] = useState([]);
 
@@ -179,6 +182,116 @@ function DashboardMapTab() {
     setCustomPins(prev => [...prev, pin]);
   };
 
+  // Heuristic parser for spreadsheet rows -> address + units
+  const buildAddressFromRow = (row) => {
+    const keys = Object.keys(row);
+    const get = (predicates) => {
+      const key = keys.find(k => predicates.some(p => k.toLowerCase().includes(p)));
+      return key ? (row[key] ?? '') : '';
+    };
+    const address = get(['address', 'street', 'st', 'rd', 'ave']);
+    const city = get(['city']);
+    let state = get(['state']);
+    const zip = get(['zip', 'zipcode', 'postal']);
+    // Normalize state (extract 2-letter code if embedded)
+    if (state && state.length > 2) {
+      const match = state.match(/[A-Z]{2}/);
+      state = match ? match[0] : state;
+    }
+    const parts = [address, city, state, zip].filter(Boolean);
+    return parts.join(', ');
+  };
+
+  const extractUnitsFromRow = (row) => {
+    const keys = Object.keys(row);
+    const key = keys.find(k => ['units', 'unit_count', 'total_units', '# units', 'unit'].some(p => k.toLowerCase().includes(p)));
+    const val = key ? row[key] : null;
+    const n = parseInt(val, 10);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  // Nominatim geocoding with simple throttle
+  const geocodeQueue = [];
+  let geocodeRunning = false;
+  const runGeocodeQueue = () => {
+    if (geocodeRunning) return;
+    geocodeRunning = true;
+    const step = async () => {
+      const job = geocodeQueue.shift();
+      if (!job) { geocodeRunning = false; return; }
+      const { address, onResult } = job;
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(address)}&addressdetails=1`;
+        const res = await fetch(url, { headers: { 'Accept-Language': 'en-US' } });
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const best = data[0];
+          onResult({ lat: parseFloat(best.lat), lng: parseFloat(best.lon) });
+        } else {
+          onResult(null);
+        }
+      } catch (e) {
+        onResult(null);
+      }
+      setTimeout(step, 1100); // ~1 req/sec
+    };
+    step();
+  };
+
+  const enqueueGeocode = (address, onResult) => {
+    geocodeQueue.push({ address, onResult });
+    runGeocodeQueue();
+  };
+
+  // Upload Prospects: parse file and add pins
+  const [uploadState, setUploadState] = useState({ parsing: false, rows: 0, geocoded: 0, errors: 0 });
+  const handleProspectsFile = async (file) => {
+    if (!file) return;
+    setUploadState({ parsing: true, rows: 0, geocoded: 0, errors: 0 });
+    const pushProspect = (name, address, units, latlng) => {
+      const pin = { id: `pros-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name: name || address, category: 'custom', position: [latlng.lat, latlng.lng], insight: units != null ? `${units} units` : 'Prospect' };
+      setCustomPins(prev => [...prev, pin]);
+      // Save to Supabase
+      supabase.from('map_prospects').insert({ name: pin.name, address, units: units || null, lat: latlng.lat, lng: latlng.lng, source: 'upload' }).catch(() => {});
+    };
+
+    const processRows = (rows) => {
+      setUploadState(s => ({ ...s, parsing: false, rows: rows.length }));
+      rows.forEach(row => {
+        const address = buildAddressFromRow(row);
+        const units = extractUnitsFromRow(row);
+        const nameKey = Object.keys(row).find(k => ['name', 'property', 'address'].some(p => k.toLowerCase().includes(p)));
+        const name = nameKey ? row[nameKey] : null;
+        if (!address) {
+          setUploadState(s => ({ ...s, errors: s.errors + 1 }));
+          return;
+        }
+        enqueueGeocode(address, (latlng) => {
+          if (latlng) {
+            setUploadState(s => ({ ...s, geocoded: s.geocoded + 1 }));
+            pushProspect(name, address, units, latlng);
+          } else {
+            setUploadState(s => ({ ...s, errors: s.errors + 1 }));
+          }
+        });
+      });
+    };
+
+    if (file.type.includes('csv')) {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => processRows(results.data)
+      });
+    } else {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws);
+      processRows(rows);
+    }
+  };
+
   // Intelligence cards per city (placeholder content)
   const intelligenceForCity = (key) => {
     const city = CITIES[key];
@@ -225,6 +338,12 @@ function DashboardMapTab() {
             onClick={() => setActiveTab('add')}
           >
             <span className="inline-flex items-center gap-1"><Star size={14} /> Add Property</span>
+          </button>
+          <button
+            className={`px-3 py-2 text-xs rounded-xl border ${activeTab === 'upload' ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-slate-200 text-slate-600'}`}
+            onClick={() => setActiveTab('upload')}
+          >
+            <span className="inline-flex items-center gap-1"><Star size={14} /> Upload Prospects</span>
           </button>
         </div>
 
@@ -283,7 +402,7 @@ function DashboardMapTab() {
               </div>
             </div>
           </div>
-        ) : (
+        ) : activeTab === 'add' ? (
           <form onSubmit={handleSubmitProperty} className="rounded-2xl bg-white/70 backdrop-blur p-4 shadow-2xl space-y-3">
             <div className="text-xs font-semibold text-slate-500">Add Property</div>
             <div className="grid grid-cols-2 gap-2">
@@ -298,6 +417,45 @@ function DashboardMapTab() {
             </div>
             <button type="submit" className="px-3 py-2 text-xs rounded-xl bg-purple-600 text-white shadow">Add Pin</button>
           </form>
+        ) : (
+          <div className="rounded-2xl bg-white/70 backdrop-blur p-4 shadow-2xl space-y-3">
+            <div className="text-xs font-semibold text-slate-500">Upload Prospect Properties</div>
+            <div className="text-xs text-slate-700">Upload a CSV or Excel file with address columns; we geocode and pin them.</div>
+            <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" onChange={(e) => handleProspectsFile(e.target.files?.[0])} />
+            <div className="text-xs text-slate-600">Rows: {uploadState.rows} • Geocoded: {uploadState.geocoded} • Errors: {uploadState.errors}</div>
+            <div className="flex gap-2">
+              <button
+                className="px-3 py-2 text-xs rounded-xl border bg-white border-slate-200 text-slate-600"
+                onClick={async () => {
+                  // Load Rapid Fire "passed" deals (if available)
+                  try {
+                    const res = await fetch(API_ENDPOINTS.emailDealsList('pass'));
+                    const data = await res.json();
+                    const items = Array.isArray(data?.deals) ? data.deals : (Array.isArray(data) ? data : []);
+                    const rows = items.map(d => ({ Address: [d.address, d.city, d.state, d.zip].filter(Boolean).join(', '), Units: d.units || d.total_units || null, Name: d.name || d.title || d.address }));
+                    setUploadState({ parsing: false, rows: rows.length, geocoded: 0, errors: 0 });
+                    rows.forEach(r => {
+                      const address = r.Address;
+                      const units = r.Units;
+                      const name = r.Name;
+                      enqueueGeocode(address, (latlng) => {
+                        if (latlng) {
+                          setUploadState(s => ({ ...s, geocoded: s.geocoded + 1 }));
+                          const pin = { id: `pros-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name, category: 'custom', position: [latlng.lat, latlng.lng], insight: units != null ? `${units} units` : 'Prospect' };
+                          setCustomPins(prev => [...prev, pin]);
+                          supabase.from('map_prospects').insert({ name, address, units: units || null, lat: latlng.lat, lng: latlng.lng, source: 'rapid_fire' }).catch(() => {});
+                        } else {
+                          setUploadState(s => ({ ...s, errors: s.errors + 1 }));
+                        }
+                      });
+                    });
+                  } catch (e) {
+                    // ignore
+                  }
+                }}
+              >Load Rapid Fire Passed</button>
+            </div>
+          </div>
         )}
 
         {/* City Navigation */}
