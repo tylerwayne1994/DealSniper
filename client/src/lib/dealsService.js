@@ -205,10 +205,8 @@ export async function loadDeal(dealId) {
 export async function loadPipelineDeals() {
   const userId = await getCurrentUserId();
   let data, error;
-  try {
-    const resp = await supabase
-      .from('deals')
-      .select(`
+  // Only filter by user_id when available; otherwise query without user filter
+  const baseSelect = `
         id,
         deal_id,
         address,
@@ -225,38 +223,18 @@ export async function loadPipelineDeals() {
         parsed_data,
         latitude,
         longitude
-      `)
-      .eq('pipeline_status', 'pipeline')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    data = resp.data;
-    error = resp.error;
-  } catch (e) {
-    const resp = await supabase
-      .from('deals')
-      .select(`
-        id,
-        deal_id,
-        address,
-        units,
-        purchase_price,
-        deal_structure,
-        broker_name,
-        broker_phone,
-        broker_email,
-        pipeline_status,
-        created_at,
-        updated_at,
-        scenario_data,
-        parsed_data,
-        latitude,
-        longitude
-      `)
-      .eq('pipeline_status', 'pipeline')
-      .order('created_at', { ascending: false });
-    data = resp.data;
-    error = resp.error;
+      `;
+  let query = supabase
+    .from('deals')
+    .select(baseSelect)
+    .eq('pipeline_status', 'pipeline')
+    .order('created_at', { ascending: false });
+  if (userId) {
+    query = query.eq('user_id', userId);
   }
+  const resp = await query;
+  data = resp.data;
+  error = resp.error;
 
   if (error) throw error;
 
@@ -363,10 +341,7 @@ export async function saveRapidFireDeals(rapidFireDeals) {
 export async function loadRapidFireDeals() {
   const userId = await getCurrentUserId();
   let data, error;
-  try {
-    const resp = await supabase
-      .from('deals')
-      .select(`
+  const baseSelect = `
         deal_id,
         address,
         units,
@@ -374,29 +349,18 @@ export async function loadRapidFireDeals() {
         listing_url,
         parsed_data,
         created_at
-      `)
-      .eq('pipeline_status', 'rapidfire')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    data = resp.data;
-    error = resp.error;
-  } catch (e) {
-    const resp = await supabase
-      .from('deals')
-      .select(`
-        deal_id,
-        address,
-        units,
-        purchase_price,
-        listing_url,
-        parsed_data,
-        created_at
-      `)
-      .eq('pipeline_status', 'rapidfire')
-      .order('created_at', { ascending: false });
-    data = resp.data;
-    error = resp.error;
+      `;
+  let query = supabase
+    .from('deals')
+    .select(baseSelect)
+    .eq('pipeline_status', 'rapidfire')
+    .order('created_at', { ascending: false });
+  if (userId) {
+    query = query.eq('user_id', userId);
   }
+  const resp = await query;
+  data = resp.data;
+  error = resp.error;
 
   if (error) throw error;
 

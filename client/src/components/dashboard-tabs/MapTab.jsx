@@ -282,7 +282,8 @@ function DashboardMapTab() {
       });
     };
 
-    if (file.type.includes('csv')) {
+    const isCsv = (file.name || '').toLowerCase().endsWith('.csv') || (file.type || '').toLowerCase().includes('csv');
+    if (isCsv) {
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
