@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   TrendingUp, DollarSign, Home, Wrench, Sparkles, 
   Calculator, Target, ArrowRight, CheckCircle, Clock,
@@ -27,6 +27,13 @@ const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
   const currentRent = scenarioData?.income?.current_rent || 0;
   const purchasePrice = property.purchase_price || 0;
   const unitMix = Array.isArray(scenarioData?.unit_mix) ? scenarioData.unit_mix : [];
+  const originalUnitMixRef = useRef(null);
+  const lastAppliedRef = useRef(null);
+  useEffect(() => {
+    if (!originalUnitMixRef.current && unitMix && unitMix.length > 0) {
+      originalUnitMixRef.current = JSON.parse(JSON.stringify(unitMix));
+    }
+  }, [unitMix]);
 
   const styles = {
     container: {
@@ -309,6 +316,7 @@ const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
 
   const applyIncreaseToUnitMix = () => {
     if (!onFieldChange) return;
+    lastAppliedRef.current = JSON.parse(JSON.stringify(unitMix));
     const inc = perUnitIncrease || 0;
     const updated = unitMix.map((u) => {
       const base = (u.rent_market ?? u.rent_current ?? 0);
@@ -319,6 +327,7 @@ const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
 
   const applyIncreaseToCurrentRents = () => {
     if (!onFieldChange) return;
+    lastAppliedRef.current = JSON.parse(JSON.stringify(unitMix));
     const inc = perUnitIncrease || 0;
     const updated = unitMix.map((u) => {
       const base = (u.rent_current ?? u.rent_market ?? 0);
@@ -329,6 +338,7 @@ const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
 
   const applyGroupToMarket = (key) => {
     if (!onFieldChange) return;
+    lastAppliedRef.current = JSON.parse(JSON.stringify(unitMix));
     const pct = ((groupPercents[key] ?? percentIncrease) || 0) / 100;
     const updated = unitMix.map((u) => {
       const uKey = makeGroupKey(u);
@@ -344,6 +354,7 @@ const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
 
   const applyGroupToCurrent = (key) => {
     if (!onFieldChange) return;
+    lastAppliedRef.current = JSON.parse(JSON.stringify(unitMix));
     const pct = ((groupPercents[key] ?? percentIncrease) || 0) / 100;
     const updated = unitMix.map((u) => {
       const uKey = makeGroupKey(u);
@@ -355,6 +366,22 @@ const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
       return u;
     });
     onFieldChange('unit_mix', updated);
+  };
+
+  const undoLastApply = () => {
+    if (!onFieldChange) return;
+    if (lastAppliedRef.current) {
+      onFieldChange('unit_mix', JSON.parse(JSON.stringify(lastAppliedRef.current)));
+      lastAppliedRef.current = null;
+    }
+  };
+
+  const resetToOriginal = () => {
+    if (!onFieldChange) return;
+    if (originalUnitMixRef.current) {
+      onFieldChange('unit_mix', JSON.parse(JSON.stringify(originalUnitMixRef.current)));
+      lastAppliedRef.current = null;
+    }
   };
 
   return (
@@ -500,6 +527,36 @@ const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
           <div style={{ fontSize: 12, color: '#6b7280', alignSelf: 'center' }}>
             Updates scenarioData.unit_mix[].rent_current by {increaseMode === 'amount' ? `+$${perUnitIncrease}` : `+${percentIncrease}%`} /unit
           </div>
+          <button
+            onClick={undoLastApply}
+            style={{
+              padding: '10px 14px',
+              backgroundColor: '#f59e0b',
+              color: 'white',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
+          >
+            Undo Last Apply
+          </button>
+          <button
+            onClick={resetToOriginal}
+            style={{
+              padding: '10px 14px',
+              backgroundColor: '#ef4444',
+              color: 'white',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
+          >
+            Reset To Original
+          </button>
         </div>
 
         {/* Per-Type Overrides */}
