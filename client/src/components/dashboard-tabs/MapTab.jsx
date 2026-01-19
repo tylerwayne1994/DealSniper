@@ -12,7 +12,10 @@ import {
   Heart,
   Cog,
   CheckCircle,
-  XCircle
+  XCircle,
+  Home,
+  Building2,
+  Filter
 } from 'lucide-react';
 
 // City coordinates
@@ -23,17 +26,21 @@ const CITIES = {
 };
 
 // Helper to create Tailwind-styled divIcon
-function createDivIcon({ bgClass, borderClass = 'border-white/60', icon: Icon, iconColor = '#fff' }) {
+function createDivIcon({ bgClass, borderClass = 'border-white/60', icon: Icon, iconColor = '#fff', size = 'normal' }) {
+  const sizeClasses = size === 'small' ? 'w-7 h-7' : 'w-9 h-9';
+  const iconAnchor = size === 'small' ? [14, 14] : [18, 18];
+  const popupAnchor = size === 'small' ? [0, -14] : [0, -18];
+  
   return L.divIcon({
     className: 'atlasai-divicon',
     html: `
-      <div class="relative flex items-center justify-center w-9 h-9 rounded-full ${bgClass} border ${borderClass} shadow-2xl backdrop-blur">
-        <div class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-white/70"></div>
+      <div class="relative flex items-center justify-center ${sizeClasses} rounded-full ${bgClass} border ${borderClass} shadow-lg backdrop-blur">
+        <div class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-white/70"></div>
         <span id="icon-slot"></span>
       </div>
     `,
-    iconAnchor: [18, 18],
-    popupAnchor: [0, -18]
+    iconAnchor: iconAnchor,
+    popupAnchor: popupAnchor
   });
 }
 
@@ -59,6 +66,7 @@ function DashboardMapTab() {
   const [pendingCommands, setPendingCommands] = useState([]);
   const [rapidFireQueue, setRapidFireQueue] = useState([]);
   const [processingStatus, setProcessingStatus] = useState('');
+  const [mapFilter, setMapFilter] = useState('all'); // 'all' | 'rapidfire' | 'prospects'
 
   const baseMarkers = useMemo(() => ([
     // Healthcare (rose)
@@ -125,16 +133,20 @@ function DashboardMapTab() {
   const attribution = '&copy; OpenStreetMap contributors, Humanitarian style';
 
   // Marker styles by category
-  const categoryIcon = (category) => {
-    switch (category) {
+  const categoryIcon = (cat, source) => {
+    switch (cat) {
       case 'healthcare':
-        return createDivIcon({ bgClass: 'bg-rose-500/90', icon: Heart });
+        return createDivIcon({ bgClass: 'bg-rose-600/90', icon: Heart });
       case 'manufacturing':
-        return createDivIcon({ bgClass: 'bg-amber-500/90', icon: Cog });
+        return createDivIcon({ bgClass: 'bg-amber-600/90', icon: Cog });
       case 'buy':
-        return createDivIcon({ bgClass: 'bg-green-500/90', icon: CheckCircle });
+        return createDivIcon({ bgClass: 'bg-green-600/90', icon: CheckCircle });
       case 'avoid':
-        return createDivIcon({ bgClass: 'bg-red-500/90', icon: XCircle });
+        return createDivIcon({ bgClass: 'bg-red-600/90', icon: XCircle });
+      case 'rapidfire':
+        return createDivIcon({ bgClass: 'bg-orange-500/90', borderClass: 'border-orange-200/70', icon: Building2, size: 'small' });
+      case 'prospect':
+        return createDivIcon({ bgClass: 'bg-blue-500/90', borderClass: 'border-blue-200/70', icon: Home, size: 'small' });
       case 'custom':
       default:
         return createDivIcon({ bgClass: 'bg-purple-600/90', icon: Star });
@@ -354,9 +366,10 @@ function DashboardMapTab() {
             const pin = { 
               id: `rf-${item.id}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, 
               name: item.name, 
-              category: 'custom', 
+              category: 'rapidfire', 
               position: [latlng.lat, latlng.lng], 
-              insight: item.units != null ? `${item.units} units` : 'Rapid Fire' 
+              insight: item.units != null ? `${item.units} units` : 'Rapid Fire',
+              source: 'rapid_fire'
             };
             setCustomPins(prev => [...prev, pin]);
             
@@ -410,7 +423,7 @@ function DashboardMapTab() {
     if (!file) return;
     setUploadState({ parsing: true, rows: 0, geocoded: 0, errors: 0 });
     const pushProspect = (name, address, units, latlng) => {
-      const pin = { id: `pros-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name: name || address, category: 'custom', position: [latlng.lat, latlng.lng], insight: units != null ? `${units} units` : 'Prospect' };
+      const pin = { id: `pros-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name: name || address, category: 'prospect', position: [latlng.lat, latlng.lng], insight: units != null ? `${units} units` : 'Prospect', source: 'prospect_upload' };
       setCustomPins(prev => [...prev, pin]);
       // Save to Supabase
       supabase.from('map_prospects').insert({ name: pin.name, address, units: units || null, lat: latlng.lat, lng: latlng.lng, source: 'upload' }).catch(() => {});
@@ -716,6 +729,29 @@ function DashboardMapTab() {
             </button>
           ))}
         </div>
+
+        {/* Map Filter Dropdown */}
+        <div className="mt-4 flex items-center gap-2">
+          <Filter className="w-4 h-4 text-slate-500" />
+          <label className="text-xs font-semibold text-slate-600">Show on Map:</label>
+          <select 
+            value={mapFilter} 
+            onChange={(e) => setMapFilter(e.target.value)}
+            className="px-3 py-2 text-xs rounded-xl border bg-white border-slate-200 text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          >
+            <option value="all">All Pins</option>
+            <option value="rapidfire">🔥 Rapid Fire Only</option>
+            <option value="prospects">🏘️ Prospect Cities Only</option>
+          </select>
+          <div className="text-xs text-slate-500">
+            ({customPins.filter(p => {
+              if (mapFilter === 'all') return true;
+              if (mapFilter === 'rapidfire') return p.category === 'rapidfire';
+              if (mapFilter === 'prospects') return p.category === 'prospect';
+              return true;
+            }).length} pins visible)
+          </div>
+        </div>
       </div>
 
       {/* Map */}
@@ -744,21 +780,48 @@ function DashboardMapTab() {
           ))}
 
           {/* Custom pins from form */}
-          {customPins.map((p) => (
-            <Marker key={p.id} position={p.position} icon={categoryIcon('custom')}>
+          {customPins
+            .filter(p => {
+              if (mapFilter === 'all') return true;
+              if (mapFilter === 'rapidfire') return p.category === 'rapidfire';
+              if (mapFilter === 'prospects') return p.category === 'prospect';
+              return true;
+            })
+            .map((p) => (
+            <Marker key={p.id} position={p.position} icon={categoryIcon(p.category, p.source)}>
               <Popup>
                 <div className="min-w-[220px] space-y-1">
                   <div className="text-sm font-bold text-slate-800">{p.name}</div>
-                  <div className="text-xs text-slate-600">Manual pin — custom research</div>
-                  <div className="rounded-xl bg-purple-50 p-2 text-xs text-slate-700">Research Insight: {p.insight}</div>
+                  <div className="text-xs text-slate-600">
+                    {p.category === 'rapidfire' ? '🔥 Rapid Fire Queue' : 
+                     p.category === 'prospect' ? '🏘️ Prospect City' : 
+                     'Manual pin — custom research'}
+                  </div>
+                  <div className={`rounded-xl p-2 text-xs text-slate-700 ${
+                    p.category === 'rapidfire' ? 'bg-orange-50' : 
+                    p.category === 'prospect' ? 'bg-blue-50' : 
+                    'bg-purple-50'
+                  }`}>
+                    {p.insight}
+                  </div>
                 </div>
               </Popup>
             </Marker>
           ))}
 
-          {customPins.map((p) => (
-            <Circle key={`${p.id}-circle`} center={p.position} radius={3219} pathOptions={{ color: '#7c3aed', fillColor: '#7c3aed', fillOpacity: 0.1 }} />
-          ))}
+          {customPins
+            .filter(p => {
+              if (mapFilter === 'all') return true;
+              if (mapFilter === 'rapidfire') return p.category === 'rapidfire';
+              if (mapFilter === 'prospects') return p.category === 'prospect';
+              return true;
+            })
+            .map((p) => {
+              const color = p.category === 'rapidfire' ? '#f97316' : p.category === 'prospect' ? '#3b82f6' : '#7c3aed';
+              return (
+                <Circle key={`${p.id}-circle`} center={p.position} radius={3219} pathOptions={{ color, fillColor: color, fillOpacity: 0.08 }} />
+              );
+            })}
         </MapContainer>
       </div>
     </div>
