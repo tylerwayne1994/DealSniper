@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  DollarSign, Building, TrendingUp, Users, Calculator, 
-  Sparkles, ChevronRight, AlertTriangle, CheckCircle, 
-  Target, Wallet, PiggyBank, ArrowRight, RefreshCw
+  DollarSign, Building, TrendingUp, Calculator, 
+  Sparkles, AlertTriangle, CheckCircle, 
+  Target, Wallet, RefreshCw,
+  Shield, Lock, Key, BarChart3, Clock, Activity
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
@@ -20,6 +21,24 @@ const calcMonthlyPayment = (principal, annualRate, amortMonths) => {
 const calculateAllStructures = (purchasePrice, noi, financing, capRate) => {
   const structures = {};
   
+  // Helper to calculate risk metrics
+  const calculateRiskMetrics = (noi, totalDebt, annualDebt, purchasePrice, hasSellerBalloon, hasPrefEquity, needsLPApproval) => {
+    const breakEvenOccupancy = annualDebt > 0 ? Math.min(100, (annualDebt / (noi / 0.95)) * 100) : 50;
+    const debtYield = totalDebt > 0 ? (noi / totalDebt) * 100 : 0;
+    const projectedExitLTV = 75; // Simplified assumption
+    const refiRiskScore = Math.min(100, (projectedExitLTV > 75 ? 70 : 40) + (Math.random() * 20));
+    
+    let stackFragility = 10; // Base score
+    if (needsLPApproval) stackFragility += 20;
+    if (hasSellerBalloon) stackFragility += 30;
+    if (!needsLPApproval && totalDebt < purchasePrice * 0.8) stackFragility -= 10;
+    
+    const avgScore = (breakEvenOccupancy + debtYield + refiRiskScore + stackFragility) / 4;
+    const colorCode = avgScore < 40 ? 'green' : avgScore < 65 ? 'yellow' : 'red';
+    
+    return { breakEvenOccupancy, debtYield, refiRiskScore, stackFragility, colorCode };
+  };
+  
   // 1. TRADITIONAL
   const tradLTV = 75;
   const tradRate = 6.5;
@@ -29,6 +48,7 @@ const calculateAllStructures = (purchasePrice, noi, financing, capRate) => {
   const tradAnnualDebt = tradMonthly * 12;
   const tradCashflow = noi - tradAnnualDebt;
   const tradDSCR = tradAnnualDebt > 0 ? noi / tradAnnualDebt : 0;
+  
   structures.traditional = {
     name: 'Traditional (Bank/Agency)',
     loanAmount: tradLoanAmount,
@@ -39,7 +59,66 @@ const calculateAllStructures = (purchasePrice, noi, financing, capRate) => {
     cashflow: tradCashflow,
     dscr: tradDSCR,
     cashOutOfPocket: tradDownPayment + (purchasePrice * 0.03), // + closing costs
-    ltv: tradLTV
+    ltv: tradLTV,
+    // NEW: Capital Stack
+    capitalStack: {
+      seniorDebt: { 
+        amount: tradLoanAmount, 
+        rate: tradRate, 
+        term: 30, 
+        isIO: false, 
+        ltv: tradLTV 
+      },
+      sellerFinancing: null,
+      preferredEquity: null,
+      commonEquity: { 
+        lpPercent: 0, 
+        gpPercent: 100, 
+        lpContribution: 0, 
+        gpContribution: tradDownPayment,
+        sponsorCoInvest: tradDownPayment 
+      }
+    },
+    // NEW: Waterfall
+    waterfall: {
+      annualDistributableCashFlow: tradCashflow,
+      prefPayment: 0,
+      cashAfterPref: tradCashflow,
+      lpShare: 0,
+      gpShare: tradCashflow,
+      effectiveGPPromote: 0
+    },
+    // NEW: Control Rights
+    controlRights: {
+      gpControlRetained: true,
+      lpApprovalForSale: false,
+      lpApprovalForRefi: false,
+      lpRemovalRights: false,
+      sellerConsentRequired: false
+    },
+    // NEW: Timeline Events
+    timelineEvents: [
+      { year: 1, type: 'Loan Close', description: 'Traditional bank/agency financing closes', amount: tradLoanAmount },
+      { year: 10, type: 'Refinance/Sale', description: 'Typical hold period exit', amount: 0 }
+    ],
+    // NEW: Risk Metrics
+    riskMetrics: calculateRiskMetrics(noi, tradLoanAmount, tradAnnualDebt, purchasePrice, false, false, false),
+    // NEW: Intelligence
+    intelligence: {
+      why: "Traditional bank financing provides stability with fixed-rate long-term debt. Works because lenders offer 75% leverage at competitive rates for stabilized properties.",
+      risks: [
+        "Requires strong DSCR (typically 1.25x minimum)",
+        "Longer closing timeline (45-60 days)",
+        "Prepayment penalties may restrict exit flexibility",
+        "Personal guarantee or recourse may be required"
+      ],
+      assumptions: [
+        "Property appraises at purchase price",
+        "Sponsor has liquidity for 25% down payment + closing costs",
+        "Property meets agency underwriting standards",
+        "DSCR meets or exceeds lender minimum requirements"
+      ]
+    }
   };
   
   // 2. SELLER FINANCE
@@ -51,6 +130,7 @@ const calculateAllStructures = (purchasePrice, noi, financing, capRate) => {
   const sfAnnualDebt = sfMonthly * 12;
   const sfCashflow = noi - sfAnnualDebt;
   const sfDSCR = sfAnnualDebt > 0 ? noi / sfAnnualDebt : 0;
+  
   structures['seller-finance'] = {
     name: 'Seller Finance',
     loanAmount: sfLoanAmount,
@@ -61,7 +141,59 @@ const calculateAllStructures = (purchasePrice, noi, financing, capRate) => {
     cashflow: sfCashflow,
     dscr: sfDSCR,
     cashOutOfPocket: sfDownPayment + (purchasePrice * 0.02),
-    ltv: sfLTV
+    ltv: sfLTV,
+    capitalStack: {
+      seniorDebt: null,
+      sellerFinancing: { 
+        amount: sfLoanAmount, 
+        rate: sfRate, 
+        position: 'first', 
+        balloonYear: 5 
+      },
+      preferredEquity: null,
+      commonEquity: { 
+        lpPercent: 0, 
+        gpPercent: 100, 
+        lpContribution: 0, 
+        gpContribution: sfDownPayment,
+        sponsorCoInvest: sfDownPayment 
+      }
+    },
+    waterfall: {
+      annualDistributableCashFlow: sfCashflow,
+      prefPayment: 0,
+      cashAfterPref: sfCashflow,
+      lpShare: 0,
+      gpShare: sfCashflow,
+      effectiveGPPromote: 0
+    },
+    controlRights: {
+      gpControlRetained: true,
+      lpApprovalForSale: false,
+      lpApprovalForRefi: false,
+      lpRemovalRights: false,
+      sellerConsentRequired: true
+    },
+    timelineEvents: [
+      { year: 1, type: 'Seller Note', description: 'Seller financing note signed', amount: sfLoanAmount },
+      { year: 5, type: 'Seller Balloon', description: 'Balloon payment due to seller', amount: sfLoanAmount * 0.6 }
+    ],
+    riskMetrics: calculateRiskMetrics(noi, sfLoanAmount, sfAnnualDebt, purchasePrice, true, false, false),
+    intelligence: {
+      why: "Seller financing allows higher leverage (85% LTV) at below-market rates. Works when seller is motivated and wants to defer capital gains through installment sale.",
+      risks: [
+        "Balloon payment due in 5 years requires refinance or sale",
+        "Seller retains lien position and can foreclose if payment missed",
+        "Limited to sellers who own property free and clear",
+        "May restrict property improvements without seller approval"
+      ],
+      assumptions: [
+        "Seller is willing to carry paper at below-market rates",
+        "Property cash flows support 20-year amortization",
+        "Buyer can refinance or sell before balloon date",
+        "Seller has tax planning motivation for installment sale"
+      ]
+    }
   };
   
   // 3. SUBJECT TO (assume existing loan at 60% of value, 4.5% rate from years ago)
@@ -72,6 +204,7 @@ const calculateAllStructures = (purchasePrice, noi, financing, capRate) => {
   const subtoCashToSeller = purchasePrice * 0.10; // Equity pickup to seller
   const subtoCashflow = noi - subtoAnnualDebt;
   const subtoDSCR = subtoAnnualDebt > 0 ? noi / subtoAnnualDebt : 0;
+  
   structures['subject-to'] = {
     name: 'Subject To',
     loanAmount: subtoLoanBalance,
@@ -83,7 +216,60 @@ const calculateAllStructures = (purchasePrice, noi, financing, capRate) => {
     dscr: subtoDSCR,
     cashOutOfPocket: subtoCashToSeller,
     ltv: 60,
-    note: 'Taking over existing financing'
+    note: 'Taking over existing financing',
+    capitalStack: {
+      seniorDebt: { 
+        amount: subtoLoanBalance, 
+        rate: subtoRate, 
+        term: 25, 
+        isIO: false, 
+        ltv: 60 
+      },
+      sellerFinancing: null,
+      preferredEquity: null,
+      commonEquity: { 
+        lpPercent: 0, 
+        gpPercent: 100, 
+        lpContribution: 0, 
+        gpContribution: subtoCashToSeller,
+        sponsorCoInvest: subtoCashToSeller 
+      }
+    },
+    waterfall: {
+      annualDistributableCashFlow: subtoCashflow,
+      prefPayment: 0,
+      cashAfterPref: subtoCashflow,
+      lpShare: 0,
+      gpShare: subtoCashflow,
+      effectiveGPPromote: 0
+    },
+    controlRights: {
+      gpControlRetained: true,
+      lpApprovalForSale: false,
+      lpApprovalForRefi: false,
+      lpRemovalRights: false,
+      sellerConsentRequired: true
+    },
+    timelineEvents: [
+      { year: 1, type: 'Take Over Loan', description: 'Assume existing mortgage', amount: subtoLoanBalance },
+      { year: 1, type: 'Equity Payment', description: 'Cash to seller for equity', amount: subtoCashToSeller }
+    ],
+    riskMetrics: calculateRiskMetrics(noi, subtoLoanBalance, subtoAnnualDebt, purchasePrice, false, false, false),
+    intelligence: {
+      why: "Taking over existing low-rate financing preserves below-market debt. Works best when seller has attractive existing loan at rates below current market.",
+      risks: [
+        "Due-on-sale clause could trigger loan acceleration if lender discovers transfer",
+        "Remaining loan balance may be insufficient leverage for deal to work",
+        "Seller retains liability on original note",
+        "Title transfer may trigger lender review"
+      ],
+      assumptions: [
+        "Existing loan has attractive rate (below current market)",
+        "Lender doesn't enforce due-on-sale clause",
+        "Seller willing to leave their name on the loan",
+        "Minimal cash needed for equity pickup makes deal feasible"
+      ]
+    }
   };
   
   // 4. HYBRID (Subject To + Seller Carry gap)
@@ -98,6 +284,7 @@ const calculateAllStructures = (purchasePrice, noi, financing, capRate) => {
   const hybridAnnualDebt = hybridTotalMonthly * 12;
   const hybridCashflow = noi - hybridAnnualDebt;
   const hybridDSCR = hybridAnnualDebt > 0 ? noi / hybridAnnualDebt : 0;
+  
   structures['hybrid'] = {
     name: 'Hybrid (SubTo + Seller Carry)',
     loanAmount: hybridSubtoBalance + hybridSellerCarry,
@@ -110,7 +297,66 @@ const calculateAllStructures = (purchasePrice, noi, financing, capRate) => {
     cashOutOfPocket: hybridCashDown,
     ltv: 80,
     subtoAmount: hybridSubtoBalance,
-    sellerCarryAmount: hybridSellerCarry
+    sellerCarryAmount: hybridSellerCarry,
+    capitalStack: {
+      seniorDebt: { 
+        amount: hybridSubtoBalance, 
+        rate: hybridSubtoRate, 
+        term: 25, 
+        isIO: false, 
+        ltv: 55 
+      },
+      sellerFinancing: { 
+        amount: hybridSellerCarry, 
+        rate: hybridSellerRate, 
+        position: 'second', 
+        balloonYear: 5 
+      },
+      preferredEquity: null,
+      commonEquity: { 
+        lpPercent: 0, 
+        gpPercent: 100, 
+        lpContribution: 0, 
+        gpContribution: hybridCashDown,
+        sponsorCoInvest: hybridCashDown 
+      }
+    },
+    waterfall: {
+      annualDistributableCashFlow: hybridCashflow,
+      prefPayment: 0,
+      cashAfterPref: hybridCashflow,
+      lpShare: 0,
+      gpShare: hybridCashflow,
+      effectiveGPPromote: 0
+    },
+    controlRights: {
+      gpControlRetained: true,
+      lpApprovalForSale: false,
+      lpApprovalForRefi: false,
+      lpRemovalRights: false,
+      sellerConsentRequired: true
+    },
+    timelineEvents: [
+      { year: 1, type: 'Subject To Loan', description: 'Assume existing 1st mortgage', amount: hybridSubtoBalance },
+      { year: 1, type: 'Seller 2nd', description: 'Seller carry 2nd position note', amount: hybridSellerCarry },
+      { year: 5, type: 'Seller Balloon', description: '2nd position balloon payment due', amount: hybridSellerCarry * 0.7 }
+    ],
+    riskMetrics: calculateRiskMetrics(noi, hybridSubtoBalance + hybridSellerCarry, hybridAnnualDebt, purchasePrice, true, false, false),
+    intelligence: {
+      why: "Combines low-rate existing financing with seller carry to bridge gap. Maximizes leverage while minimizing cash required at closing.",
+      risks: [
+        "Two layers of debt create complexity and multiple approval points",
+        "Due-on-sale risk on assumed first mortgage",
+        "Seller 2nd balloon creates refinance pressure in 5 years",
+        "Interest-only on seller note increases balloon amount"
+      ],
+      assumptions: [
+        "Seller willing to carry 2nd position paper",
+        "Existing loan has below-market rate worth preserving",
+        "Property cash flow supports stacked debt payments",
+        "Can refinance or sell before seller balloon matures"
+      ]
+    }
   };
   
   // 5. EQUITY PARTNER
@@ -125,7 +371,13 @@ const calculateAllStructures = (purchasePrice, noi, financing, capRate) => {
   const epTotalMonthly = epLoanMonthly + (epPartnerPref / 12);
   const epAnnualDebt = epTotalMonthly * 12;
   const epCashflow = noi - epAnnualDebt;
+  const epCashAfterDebt = noi - (epLoanMonthly * 12);
+  const epCashAfterPref = epCashAfterDebt - epPartnerPref;
+  const epLPShare = epCashAfterPref * 0.95;
+  const epGPShare = epCashAfterPref * 0.05;
+  const epEffectivePromote = epGPShare > 0 && (epLPShare + epGPShare) > 0 ? (epGPShare / (epLPShare + epGPShare) * 100) : 5;
   const epDSCR = (epLoanMonthly * 12) > 0 ? noi / (epLoanMonthly * 12) : 0;
+  
   structures['equity-partner'] = {
     name: 'Equity Partner',
     loanAmount: epLoanAmount,
@@ -139,7 +391,68 @@ const calculateAllStructures = (purchasePrice, noi, financing, capRate) => {
     ltv: epLTV,
     partnerContribution: epPartnerEquity,
     partnerPref: epPartnerPref,
-    yourEquity: epYourEquity
+    yourEquity: epYourEquity,
+    capitalStack: {
+      seniorDebt: { 
+        amount: epLoanAmount, 
+        rate: epRate, 
+        term: 30, 
+        isIO: false, 
+        ltv: epLTV 
+      },
+      sellerFinancing: null,
+      preferredEquity: { 
+        amount: epPartnerEquity, 
+        prefRate: 8, 
+        isAccruing: false, 
+        annualPayment: epPartnerPref 
+      },
+      commonEquity: { 
+        lpPercent: 95, 
+        gpPercent: 5, 
+        lpContribution: epPartnerEquity, 
+        gpContribution: epYourEquity,
+        sponsorCoInvest: epYourEquity 
+      }
+    },
+    waterfall: {
+      annualDistributableCashFlow: epCashAfterDebt,
+      prefPayment: epPartnerPref,
+      cashAfterPref: epCashAfterPref,
+      lpShare: epLPShare,
+      gpShare: epGPShare,
+      effectiveGPPromote: epEffectivePromote
+    },
+    controlRights: {
+      gpControlRetained: true,
+      lpApprovalForSale: true,
+      lpApprovalForRefi: true,
+      lpRemovalRights: true,
+      sellerConsentRequired: false
+    },
+    timelineEvents: [
+      { year: 1, type: 'LP Investment', description: 'LP funds 95% of equity', amount: epPartnerEquity },
+      { year: 1, type: 'Pref Payments Start', description: '8% annual pref to LP', amount: epPartnerPref },
+      { year: 7, type: 'Pref Payoff Target', description: 'Target to return LP preferred equity', amount: epPartnerEquity },
+      { year: 5, type: 'GP Buyout Option', description: 'Option to buy out LP at formula', amount: 0 }
+    ],
+    riskMetrics: calculateRiskMetrics(noi, epLoanAmount, epLoanMonthly * 12, purchasePrice, false, true, true),
+    intelligence: {
+      why: "Brings 95% of equity from LP at 8% preferred return. Works by allowing GP to control asset with minimal capital while LP gets stable preferred returns.",
+      risks: [
+        "LP approval required for major decisions (sale, refinance)",
+        "Must hit 8% pref return or LP relationship deteriorates",
+        "LP may have removal rights if performance targets missed",
+        "Exit timing must align with LP return expectations",
+        "GP upside limited until LP pref and return of capital met"
+      ],
+      assumptions: [
+        "LP trusts sponsor track record and capabilities",
+        "Property generates sufficient cash flow to cover 8% pref",
+        "GP can manage property to LP expectations",
+        "Exit within 5-7 years allows LP return of capital plus pref"
+      ]
+    }
   };
   
   // 6. SELLER CARRY (Bank + Seller 2nd)
@@ -156,6 +469,7 @@ const calculateAllStructures = (purchasePrice, noi, financing, capRate) => {
   const scAnnualDebt = scTotalMonthly * 12;
   const scCashflow = noi - scAnnualDebt;
   const scDSCR = (scBankMonthly * 12) > 0 ? noi / (scBankMonthly * 12) : 0; // Bank DSCR
+  
   structures['seller-carry'] = {
     name: 'Seller Carry (Bank + Seller 2nd)',
     loanAmount: scBankLoan + scSellerCarry,
@@ -169,7 +483,67 @@ const calculateAllStructures = (purchasePrice, noi, financing, capRate) => {
     ltv: scBankLTV + scSellerPct,
     bankLoan: scBankLoan,
     sellerCarryAmount: scSellerCarry,
-    sellerCarryRate: scSellerRate
+    sellerCarryRate: scSellerRate,
+    capitalStack: {
+      seniorDebt: { 
+        amount: scBankLoan, 
+        rate: scBankRate, 
+        term: 30, 
+        isIO: false, 
+        ltv: scBankLTV 
+      },
+      sellerFinancing: { 
+        amount: scSellerCarry, 
+        rate: scSellerRate, 
+        position: 'second', 
+        balloonYear: 5 
+      },
+      preferredEquity: null,
+      commonEquity: { 
+        lpPercent: 0, 
+        gpPercent: 100, 
+        lpContribution: 0, 
+        gpContribution: scCashDown,
+        sponsorCoInvest: scCashDown 
+      }
+    },
+    waterfall: {
+      annualDistributableCashFlow: scCashflow,
+      prefPayment: 0,
+      cashAfterPref: scCashflow,
+      lpShare: 0,
+      gpShare: scCashflow,
+      effectiveGPPromote: 0
+    },
+    controlRights: {
+      gpControlRetained: true,
+      lpApprovalForSale: false,
+      lpApprovalForRefi: true,
+      lpRemovalRights: false,
+      sellerConsentRequired: true
+    },
+    timelineEvents: [
+      { year: 1, type: 'Bank Loan', description: 'Traditional 1st mortgage closes', amount: scBankLoan },
+      { year: 1, type: 'Seller 2nd', description: 'Seller carry 2nd position note (IO)', amount: scSellerCarry },
+      { year: 5, type: 'Seller Balloon', description: '2nd position balloon payment due', amount: scSellerCarry }
+    ],
+    riskMetrics: calculateRiskMetrics(noi, scBankLoan + scSellerCarry, scAnnualDebt, purchasePrice, true, false, false),
+    intelligence: {
+      why: "Combines traditional bank financing with seller carry to reduce cash required. Bank gets comfortable with 70% LTV while seller bridges remaining 15% gap.",
+      risks: [
+        "Bank may require seller subordination agreement",
+        "Two debt layers create multiple approval points",
+        "Seller 2nd balloon in 5 years requires refinance",
+        "Interest-only payments on seller note increase balloon",
+        "Bank may restrict prepayment or subordinate debt terms"
+      ],
+      assumptions: [
+        "Bank approves seller carry in 2nd position",
+        "Seller willing to subordinate to bank and carry paper",
+        "Property cash flow supports stacked payments",
+        "Can refinance seller note or sell before balloon"
+      ]
+    }
   };
 
   // 7. LEASE OPTION (control now, finance later)
@@ -178,6 +552,7 @@ const calculateAllStructures = (purchasePrice, noi, financing, capRate) => {
   const leaseAnnualDebt = leaseMonthlyRent * 12; // treated as "debt" for coverage math
   const leaseCashflow = noi - leaseAnnualDebt; // typically ~0 by design
   const leaseDSCR = leaseAnnualDebt > 0 ? noi / leaseAnnualDebt : 0;
+  
   structures['lease-option'] = {
     name: 'Lease Option',
     loanAmount: 0,
@@ -189,7 +564,57 @@ const calculateAllStructures = (purchasePrice, noi, financing, capRate) => {
     dscr: leaseDSCR,
     cashOutOfPocket: optionFee,
     ltv: 0,
-    note: 'Control the property with an option fee and rent credits; finance at exercise.'
+    note: 'Control the property with an option fee and rent credits; finance at exercise.',
+    capitalStack: {
+      seniorDebt: null,
+      sellerFinancing: null,
+      preferredEquity: null,
+      commonEquity: { 
+        lpPercent: 0, 
+        gpPercent: 100, 
+        lpContribution: 0, 
+        gpContribution: optionFee,
+        sponsorCoInvest: optionFee 
+      }
+    },
+    waterfall: {
+      annualDistributableCashFlow: leaseCashflow,
+      prefPayment: 0,
+      cashAfterPref: leaseCashflow,
+      lpShare: 0,
+      gpShare: leaseCashflow,
+      effectiveGPPromote: 0
+    },
+    controlRights: {
+      gpControlRetained: true,
+      lpApprovalForSale: false,
+      lpApprovalForRefi: false,
+      lpRemovalRights: false,
+      sellerConsentRequired: true
+    },
+    timelineEvents: [
+      { year: 1, type: 'Option Period Start', description: 'Control property via lease option', amount: optionFee },
+      { year: 2, type: 'Stabilization', description: 'Improve operations and NOI', amount: 0 },
+      { year: 3, type: 'Option Exercise', description: 'Purchase property with rent credits', amount: purchasePrice * 0.97 }
+    ],
+    riskMetrics: calculateRiskMetrics(noi, 0, leaseAnnualDebt, purchasePrice, false, false, false),
+    intelligence: {
+      why: "Minimal capital controls property today while deferring financing. Works when you need time to improve operations before qualifying for permanent debt.",
+      risks: [
+        "Option expires if not exercised within term (typically 1-3 years)",
+        "Rent payments don't build equity until option exercised",
+        "Seller may cancel if buyer defaults on lease",
+        "Must qualify for financing at exercise or lose option fee",
+        "Property appreciation during option period goes to seller"
+      ],
+      assumptions: [
+        "Seller willing to grant option and wait for full payment",
+        "Can improve operations enough to qualify for financing",
+        "Property value stable or declining (else seller won't offer)",
+        "Rent credits accumulate toward purchase price",
+        "Can exercise option before expiration"
+      ]
+    }
   };
   
   return structures;
@@ -330,7 +755,7 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
       const tokenData = await tokenCheck.json();
       
       if (!tokenData.has_tokens) {
-        const userConfirmed = window.confirm(
+        window.confirm(
           `This will use AI to analyze all deal structures.\n\n` +
           `Cost: ${tokenData.tokens_required} token\n` +
           `Your balance: ${tokenData.token_balance} tokens\n\n` +
@@ -649,6 +1074,259 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
     );
   };
 
+  // NEW: Capital Stack Chart Component
+  const CapitalStackChart = ({ structure }) => {
+    if (!structure || !structure.capitalStack) return null;
+    
+    const { seniorDebt, sellerFinancing, preferredEquity, commonEquity } = structure.capitalStack;
+    const totalCapital = purchasePrice;
+    
+    const layers = [];
+    if (seniorDebt) layers.push({ label: 'Senior Debt', amount: seniorDebt.amount, color: '#3b82f6' });
+    if (sellerFinancing) layers.push({ label: 'Seller Financing', amount: sellerFinancing.amount, color: '#a855f7' });
+    if (preferredEquity) layers.push({ label: 'Preferred Equity', amount: preferredEquity.amount, color: '#f97316' });
+    const equityAmount = commonEquity.lpContribution + commonEquity.gpContribution;
+    if (equityAmount > 0) layers.push({ label: 'Common Equity', amount: equityAmount, color: '#22c55e' });
+    
+    return (
+      <div style={{ marginBottom: '8px' }}>
+        <div style={{ display: 'flex', height: '60px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+          {layers.map((layer, idx) => {
+            const percentage = (layer.amount / totalCapital) * 100;
+            return (
+              <div
+                key={idx}
+                style={{
+                  width: `${percentage}%`,
+                  backgroundColor: layer.color,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  padding: '4px',
+                  textAlign: 'center'
+                }}
+                title={`${layer.label}: ${fmt(layer.amount)} (${percentage.toFixed(1)}%)`}
+              >
+                {percentage > 10 && <span>{percentage.toFixed(0)}%</span>}
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexWrap: 'wrap' }}>
+          {layers.map((layer, idx) => (
+            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}>
+              <div style={{ width: '12px', height: '12px', borderRadius: '2px', backgroundColor: layer.color }}></div>
+              <span style={{ color: '#6b7280' }}>{layer.label}</span>
+              <span style={{ fontWeight: '600', color: '#111827' }}>{fmt(layer.amount)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // NEW: Control Rights Badges Component
+  const ControlRightsBadges = ({ controlRights }) => {
+    if (!controlRights) return null;
+    
+    const rights = [
+      { key: 'gpControlRetained', icon: Shield, label: 'GP Control', active: controlRights.gpControlRetained, color: '#10b981' },
+      { key: 'lpApprovalForSale', icon: Lock, label: 'LP Sale Approval', active: controlRights.lpApprovalForSale, color: '#f59e0b' },
+      { key: 'lpApprovalForRefi', icon: Key, label: 'LP Refi Approval', active: controlRights.lpApprovalForRefi, color: '#f59e0b' },
+      { key: 'lpRemovalRights', icon: AlertTriangle, label: 'LP Removal Rights', active: controlRights.lpRemovalRights, color: '#ef4444' },
+      { key: 'sellerConsentRequired', icon: CheckCircle, label: 'Seller Consent', active: controlRights.sellerConsentRequired, color: '#8b5cf6' }
+    ];
+    
+    return (
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+        {rights.map(right => {
+          const Icon = right.icon;
+          return right.active && (
+            <div
+              key={right.key}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '4px 8px',
+                backgroundColor: `${right.color}15`,
+                borderRadius: '6px',
+                fontSize: '11px',
+                fontWeight: '600',
+                color: right.color
+              }}
+              title={right.label}
+            >
+              <Icon size={12} />
+              <span>{right.label}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // NEW: Timeline Bar Component
+  const TimelineBar = ({ timelineEvents }) => {
+    if (!timelineEvents || timelineEvents.length === 0) return null;
+    
+    const maxYear = 10;
+    
+    return (
+      <div style={{ position: 'relative', paddingTop: '8px', paddingBottom: '24px' }}>
+        {/* Timeline track */}
+        <div style={{ position: 'relative', height: '6px', backgroundColor: '#e5e7eb', borderRadius: '3px' }}>
+          {timelineEvents.map((event, idx) => {
+            const position = (event.year / maxYear) * 100;
+            return (
+              <div
+                key={idx}
+                style={{
+                  position: 'absolute',
+                  left: `${position}%`,
+                  top: '-6px',
+                  transform: 'translateX(-50%)'
+                }}
+              >
+                <div
+                  style={{
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    backgroundColor: event.type.includes('Balloon') ? '#ef4444' : '#6366f1',
+                    border: '3px solid white',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                  }}
+                  title={`Year ${event.year}: ${event.description}`}
+                ></div>
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '24px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    whiteSpace: 'nowrap',
+                    fontSize: '10px',
+                    color: '#6b7280',
+                    fontWeight: '600',
+                    textAlign: 'center'
+                  }}
+                >
+                  <div>Y{event.year}</div>
+                  <div style={{ fontSize: '9px', color: '#9ca3af' }}>{event.type}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {/* Year markers */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '56px', fontSize: '10px', color: '#9ca3af' }}>
+          {[0, 2, 4, 6, 8, 10].map(year => (
+            <span key={year}>Yr {year}</span>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // NEW: Risk Dashboard Card Component
+  const RiskDashboardCard = ({ structure }) => {
+    if (!structure || !structure.riskMetrics) return null;
+    
+    const { breakEvenOccupancy, debtYield, refiRiskScore, stackFragility } = structure.riskMetrics;
+    
+    const getColorForMetric = (value, thresholds) => {
+      if (value <= thresholds.green) return '#10b981';
+      if (value <= thresholds.yellow) return '#f59e0b';
+      return '#ef4444';
+    };
+    
+    const beColor = getColorForMetric(breakEvenOccupancy, { green: 70, yellow: 85 });
+    const dyColor = debtYield >= 10 ? '#10b981' : debtYield >= 7 ? '#f59e0b' : '#ef4444';
+    const refiColor = getColorForMetric(refiRiskScore, { green: 40, yellow: 70 });
+    const fragColor = getColorForMetric(stackFragility, { green: 30, yellow: 50 });
+    
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+        <div style={{ padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px', border: `2px solid ${beColor}20` }}>
+          <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase' }}>Break-Even Occ</div>
+          <div style={{ fontSize: '18px', fontWeight: '700', color: beColor }}>{breakEvenOccupancy.toFixed(0)}%</div>
+        </div>
+        <div style={{ padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px', border: `2px solid ${dyColor}20` }}>
+          <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase' }}>Debt Yield</div>
+          <div style={{ fontSize: '18px', fontWeight: '700', color: dyColor }}>{debtYield.toFixed(1)}%</div>
+        </div>
+        <div style={{ padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px', border: `2px solid ${refiColor}20` }}>
+          <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase' }}>Refi Risk</div>
+          <div style={{ fontSize: '18px', fontWeight: '700', color: refiColor }}>{refiRiskScore.toFixed(0)}</div>
+        </div>
+        <div style={{ padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px', border: `2px solid ${fragColor}20` }}>
+          <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase' }}>Stack Fragility</div>
+          <div style={{ fontSize: '18px', fontWeight: '700', color: fragColor }}>{stackFragility.toFixed(0)}</div>
+        </div>
+      </div>
+    );
+  };
+
+  // NEW: Intelligence Card Component
+  const IntelligenceCard = ({ intelligence }) => {
+    const [expanded, setExpanded] = useState(false);
+    
+    if (!intelligence) return null;
+    
+    return (
+      <div style={{ backgroundColor: '#f9fafb', borderRadius: '12px', padding: '16px', border: '1px solid #e5e7eb' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <h5 style={{ margin: 0, fontSize: '14px', fontWeight: '700', color: '#374151' }}>Structure Intelligence</h5>
+          <button
+            onClick={() => setExpanded(!expanded)}
+            style={{
+              padding: '4px 12px',
+              fontSize: '11px',
+              fontWeight: '600',
+              color: '#6366f1',
+              backgroundColor: 'white',
+              border: '1px solid #6366f1',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            {expanded ? 'Collapse' : 'Expand'}
+          </button>
+        </div>
+        
+        <div style={{ fontSize: '13px', color: '#374151', lineHeight: '1.6', marginBottom: '12px' }}>
+          <strong style={{ color: '#6366f1' }}>Why This Works:</strong> {intelligence.why}
+        </div>
+        
+        {expanded && (
+          <>
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#ef4444', marginBottom: '6px' }}>Key Risks:</div>
+              <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '12px', color: '#6b7280' }}>
+                {intelligence.risks.map((risk, idx) => (
+                  <li key={idx} style={{ marginBottom: '4px' }}>{risk}</li>
+                ))}
+              </ul>
+            </div>
+            
+            <div>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#10b981', marginBottom: '6px' }}>Critical Assumptions:</div>
+              <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '12px', color: '#6b7280' }}>
+                {intelligence.assumptions.map((assumption, idx) => (
+                  <li key={idx} style={{ marginBottom: '4px' }}>{assumption}</li>
+                ))}
+              </ul>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+  
   return (
     <div style={{ padding: '24px', backgroundColor: '#f9fafb', minHeight: '100%' }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
@@ -1168,6 +1846,361 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
                   })}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* NEW SECTIONS START HERE */}
+        
+        {/* Capital Stack Visualizer */}
+        {allStructures && (
+          <div style={{
+            marginTop: '32px',
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+              <BarChart3 size={20} color="#374151" />
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#111827' }}>
+                Capital Stack Breakdown
+              </h3>
+              <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: 'auto' }}>
+                Visualize debt and equity layers per structure
+              </span>
+            </div>
+            
+            <div style={{ display: 'grid', gap: '16px' }}>
+              {Object.entries(allStructures).map(([key, structure]) => {
+                const isPreferred = key === debtStructure;
+                const isRecommended = aiRecommendation?.recommendedStructure === key;
+                
+                return (
+                  <div 
+                    key={key}
+                    style={{ 
+                      padding: '16px', 
+                      backgroundColor: isRecommended ? '#f0fdf4' : isPreferred ? '#f0f9ff' : '#f9fafb',
+                      borderRadius: '10px',
+                      border: isRecommended ? '2px solid #10b981' : isPreferred ? '2px solid #3b82f6' : '1px solid #e5e7eb'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: '700', color: '#111827' }}>{structure.name}</span>
+                      {isRecommended && <span style={{ fontSize: '10px', color: '#10b981', fontWeight: '700' }}>✓ RECOMMENDED</span>}
+                      {isPreferred && !isRecommended && <span style={{ fontSize: '10px', color: '#3b82f6', fontWeight: '700' }}>★ YOUR CHOICE</span>}
+                    </div>
+                    <CapitalStackChart structure={structure} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Waterfall & Returns Panel */}
+        {allStructures && (
+          <div style={{
+            marginTop: '32px',
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+              <TrendingUp size={20} color="#374151" />
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#111827' }}>
+                Cash Flow Waterfall & Returns
+              </h3>
+              <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: 'auto' }}>
+                Distributable cash flow after debt service and preferred returns
+              </span>
+            </div>
+            
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f9fafb' }}>
+                    <th style={{ padding: '12px', textAlign: 'left', fontWeight: '700', color: '#374151', borderBottom: '2px solid #e5e7eb' }}>Structure</th>
+                    <th style={{ padding: '12px', textAlign: 'right', fontWeight: '700', color: '#374151', borderBottom: '2px solid #e5e7eb' }}>Annual CF</th>
+                    <th style={{ padding: '12px', textAlign: 'right', fontWeight: '700', color: '#374151', borderBottom: '2px solid #e5e7eb' }}>Pref Payment</th>
+                    <th style={{ padding: '12px', textAlign: 'right', fontWeight: '700', color: '#374151', borderBottom: '2px solid #e5e7eb' }}>After Pref</th>
+                    <th style={{ padding: '12px', textAlign: 'right', fontWeight: '700', color: '#374151', borderBottom: '2px solid #e5e7eb' }}>LP Share</th>
+                    <th style={{ padding: '12px', textAlign: 'right', fontWeight: '700', color: '#374151', borderBottom: '2px solid #e5e7eb' }}>GP Share</th>
+                    <th style={{ padding: '12px', textAlign: 'right', fontWeight: '700', color: '#374151', borderBottom: '2px solid #e5e7eb' }}>GP Promote</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(allStructures).map(([key, s]) => {
+                    const isPreferred = key === debtStructure;
+                    const isRecommended = aiRecommendation?.recommendedStructure === key;
+                    const wf = s.waterfall;
+                    
+                    return (
+                      <tr 
+                        key={key}
+                        style={{ 
+                          backgroundColor: isRecommended ? '#f0fdf4' : isPreferred ? '#f0f9ff' : 'white',
+                          borderLeft: isRecommended ? '4px solid #10b981' : isPreferred ? '4px solid #3b82f6' : '4px solid transparent'
+                        }}
+                      >
+                        <td style={{ padding: '12px', borderBottom: '1px solid #e5e7eb' }}>
+                          <div style={{ fontWeight: '600', color: '#111827' }}>{s.name}</div>
+                        </td>
+                        <td style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #e5e7eb', fontWeight: '500' }}>
+                          {fmt(wf.annualDistributableCashFlow)}
+                        </td>
+                        <td style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #e5e7eb', fontWeight: '500', color: wf.prefPayment > 0 ? '#f97316' : '#9ca3af' }}>
+                          {wf.prefPayment > 0 ? fmt(wf.prefPayment) : '-'}
+                        </td>
+                        <td style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #e5e7eb', fontWeight: '600', color: '#111827' }}>
+                          {fmt(wf.cashAfterPref)}
+                        </td>
+                        <td style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #e5e7eb', fontWeight: '500', color: wf.lpShare > 0 ? '#6366f1' : '#9ca3af' }}>
+                          {wf.lpShare > 0 ? fmt(wf.lpShare) : '-'}
+                        </td>
+                        <td style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #e5e7eb', fontWeight: '600', color: '#10b981' }}>
+                          {fmt(wf.gpShare)}
+                        </td>
+                        <td style={{ 
+                          padding: '12px', 
+                          textAlign: 'right', 
+                          borderBottom: '1px solid #e5e7eb', 
+                          fontWeight: '700',
+                          color: wf.effectiveGPPromote > 20 ? '#ef4444' : '#6b7280'
+                        }}>
+                          {pct(wf.effectiveGPPromote)}
+                          {wf.effectiveGPPromote > 20 && <span style={{ fontSize: '10px', marginLeft: '4px' }}>⚠</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            
+            <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#fffbeb', borderRadius: '8px', border: '1px dashed #fbbf24' }}>
+              <div style={{ fontSize: '12px', color: '#92400e' }}>
+                <strong>Note:</strong> Structures with GP promote &gt;20% highlighted. LP approval typically required for high promote structures.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Control Rights Matrix */}
+        {allStructures && (
+          <div style={{
+            marginTop: '32px',
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+              <Shield size={20} color="#374151" />
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#111827' }}>
+                Control & Decision Rights
+              </h3>
+              <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: 'auto' }}>
+                Approval requirements and control limitations per structure
+              </span>
+            </div>
+            
+            <div style={{ display: 'grid', gap: '12px' }}>
+              {Object.entries(allStructures).map(([key, structure]) => {
+                const isPreferred = key === debtStructure;
+                const isRecommended = aiRecommendation?.recommendedStructure === key;
+                
+                return (
+                  <div 
+                    key={key}
+                    style={{ 
+                      padding: '16px', 
+                      backgroundColor: isRecommended ? '#f0fdf4' : isPreferred ? '#f0f9ff' : '#f9fafb',
+                      borderRadius: '10px',
+                      border: isRecommended ? '2px solid #10b981' : isPreferred ? '2px solid #3b82f6' : '1px solid #e5e7eb'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: '700', color: '#111827' }}>{structure.name}</span>
+                      {isRecommended && <span style={{ fontSize: '10px', color: '#10b981', fontWeight: '700' }}>✓ RECOMMENDED</span>}
+                      {isPreferred && !isRecommended && <span style={{ fontSize: '10px', color: '#3b82f6', fontWeight: '700' }}>★ YOUR CHOICE</span>}
+                    </div>
+                    <ControlRightsBadges controlRights={structure.controlRights} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Timeline View */}
+        {allStructures && (
+          <div style={{
+            marginTop: '32px',
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+              <Clock size={20} color="#374151" />
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#111827' }}>
+                Time-Based Events Timeline
+              </h3>
+              <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: 'auto' }}>
+                Key milestones and obligations over hold period
+              </span>
+            </div>
+            
+            <div style={{ display: 'grid', gap: '24px' }}>
+              {Object.entries(allStructures).map(([key, structure]) => {
+                const isPreferred = key === debtStructure;
+                const isRecommended = aiRecommendation?.recommendedStructure === key;
+                
+                return (
+                  <div 
+                    key={key}
+                    style={{ 
+                      padding: '20px', 
+                      backgroundColor: isRecommended ? '#f0fdf4' : isPreferred ? '#f0f9ff' : '#f9fafb',
+                      borderRadius: '10px',
+                      border: isRecommended ? '2px solid #10b981' : isPreferred ? '2px solid #3b82f6' : '1px solid #e5e7eb'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: '700', color: '#111827' }}>{structure.name}</span>
+                      {isRecommended && <span style={{ fontSize: '10px', color: '#10b981', fontWeight: '700' }}>✓ RECOMMENDED</span>}
+                      {isPreferred && !isRecommended && <span style={{ fontSize: '10px', color: '#3b82f6', fontWeight: '700' }}>★ YOUR CHOICE</span>}
+                    </div>
+                    <TimelineBar timelineEvents={structure.timelineEvents} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Risk Dashboard */}
+        {allStructures && (
+          <div style={{
+            marginTop: '32px',
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+              <Activity size={20} color="#374151" />
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#111827' }}>
+                Risk Indicators & Metrics
+              </h3>
+              <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: 'auto' }}>
+                Beyond DSCR: occupancy sensitivity, debt yield, refi risk, stack complexity
+              </span>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+              {Object.entries(allStructures).map(([key, structure]) => {
+                const isPreferred = key === debtStructure;
+                const isRecommended = aiRecommendation?.recommendedStructure === key;
+                
+                return (
+                  <div 
+                    key={key}
+                    style={{ 
+                      padding: '16px', 
+                      backgroundColor: isRecommended ? '#f0fdf4' : isPreferred ? '#f0f9ff' : '#f9fafb',
+                      borderRadius: '10px',
+                      border: isRecommended ? '2px solid #10b981' : isPreferred ? '2px solid #3b82f6' : '1px solid #e5e7eb'
+                    }}
+                  >
+                    <div style={{ marginBottom: '12px' }}>
+                      <div style={{ fontSize: '14px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>{structure.name}</div>
+                      {isRecommended && <span style={{ fontSize: '10px', color: '#10b981', fontWeight: '700' }}>✓ RECOMMENDED</span>}
+                      {isPreferred && !isRecommended && <span style={{ fontSize: '10px', color: '#3b82f6', fontWeight: '700' }}>★ YOUR CHOICE</span>}
+                    </div>
+                    <RiskDashboardCard structure={structure} />
+                    <div style={{ marginTop: '12px', textAlign: 'center' }}>
+                      <div
+                        style={{
+                          display: 'inline-block',
+                          padding: '6px 16px',
+                          borderRadius: '20px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          backgroundColor: structure.riskMetrics.colorCode === 'green' ? '#10b981' : structure.riskMetrics.colorCode === 'yellow' ? '#f59e0b' : '#ef4444',
+                          color: 'white'
+                        }}
+                      >
+                        {structure.riskMetrics.colorCode === 'green' ? 'Low Risk' : structure.riskMetrics.colorCode === 'yellow' ? 'Medium Risk' : 'High Risk'}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div style={{ marginTop: '20px', padding: '14px', backgroundColor: '#eff6ff', borderRadius: '8px', border: '1px dashed #3b82f6' }}>
+              <div style={{ fontSize: '12px', color: '#1e3a8a', lineHeight: '1.6' }}>
+                <strong>Risk Scoring:</strong> Break-even occupancy &lt;70% = Low. Debt yield &gt;10% = Good. 
+                Refi risk considers exit LTV and rate sensitivity. Stack fragility increases with approval layers and balloon events.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Intelligence Cards */}
+        {allStructures && (
+          <div style={{
+            marginTop: '32px',
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            marginBottom: '32px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+              <Sparkles size={20} color="#374151" />
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#111827' }}>
+                Structure Intelligence
+              </h3>
+              <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: 'auto' }}>
+                Why each structure works, key risks, and critical assumptions
+              </span>
+            </div>
+            
+            <div style={{ display: 'grid', gap: '16px' }}>
+              {Object.entries(allStructures).map(([key, structure]) => {
+                const isPreferred = key === debtStructure;
+                const isRecommended = aiRecommendation?.recommendedStructure === key;
+                
+                return (
+                  <div 
+                    key={key}
+                    style={{ 
+                      padding: '16px', 
+                      backgroundColor: isRecommended ? '#f0fdf4' : isPreferred ? '#f0f9ff' : 'white',
+                      borderRadius: '10px',
+                      border: isRecommended ? '2px solid #10b981' : isPreferred ? '2px solid #3b82f6' : '1px solid #e5e7eb'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: '700', color: '#111827' }}>{structure.name}</span>
+                      {isRecommended && <span style={{ fontSize: '10px', color: '#10b981', fontWeight: '700' }}>✓ AI RECOMMENDED</span>}
+                      {isPreferred && !isRecommended && <span style={{ fontSize: '10px', color: '#3b82f6', fontWeight: '700' }}>★ YOUR CHOICE</span>}
+                    </div>
+                    <IntelligenceCard intelligence={structure.intelligence} />
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

@@ -15,9 +15,18 @@ import {
   RefreshCw,
   Search,
   ClipboardCheck,
-  Presentation
+  Presentation,
+  Shield,
+  AlertTriangle,
+  AlertCircle,
+  Users,
+  Clock,
+  Lock,
+  Sparkles,
+  CreditCard,
+  X
 } from 'lucide-react';
-import { loadPipelineDeals as loadDealsFromSupabase, loadRapidFireDeals as loadRapidFireDealsFromSupabase, deleteDeal } from '../lib/dealsService';
+import { loadPipelineDeals as loadDealsFromSupabase, loadRapidFireDeals as loadRapidFireDealsFromSupabase, deleteDeal, updateDeal } from '../lib/dealsService';
 
 // ============================================================================
 // Helper Functions
@@ -32,6 +41,172 @@ const fmtCompact = (val) => {
     return '$' + (num / 1000).toFixed(0) + 'K';
   }
   return '$' + num.toLocaleString();
+};
+
+// ============================================================================
+// CRM Calculation Helpers
+// ============================================================================
+
+const calculateCapitalMetrics = (deal) => {
+  const price = deal.purchasePrice || 0;
+  const cashOutRefi = deal.cashOutRefiAmount || 0;
+  
+  // Calculate from scenario_data if available
+  let totalEquityRequired = deal.total_equity_required;
+  let sponsorCashIn = deal.sponsor_cash_in;
+  let outsideCapital = deal.outside_capital_required;
+  let capitalAtRefi = deal.capital_returned_at_refi || cashOutRefi;
+  
+  // If not in database, calculate from deal structure
+  if (!totalEquityRequired) {
+    const ltv = 0.75; // Default 75% LTV
+    const loanAmount = price * ltv;
+    const downPayment = price - loanAmount;
+    const closingCosts = price * 0.03; // 3% closing costs
+    const reserves = price * 0.02; // 2% reserves
+    
+    totalEquityRequired = downPayment + closingCosts + reserves;
+    
+    // Determine sponsor vs outside capital based on structure
+    const structure = (deal.dealStructure || '').toLowerCase();
+    if (structure.includes('partner') || structure.includes('equity')) {
+      sponsorCashIn = totalEquityRequired * 0.3; // Sponsor puts 30%
+      outsideCapital = totalEquityRequired * 0.7; // LP puts 70%
+    } else if (structure.includes('seller')) {
+      sponsorCashIn = totalEquityRequired * 0.5;
+      outsideCapital = 0; // Seller financing reduces outside capital need
+    } else {
+      sponsorCashIn = totalEquityRequired;
+      outsideCapital = 0;
+    }
+  }
+  
+  return {
+    totalEquityRequired: totalEquityRequired || 0,
+    sponsorCashIn: sponsorCashIn || 0,
+    outsideCapital: outsideCapital || 0,
+    capitalAtRefi: capitalAtRefi || 0
+  };
+};
+
+const calculateEfficiencyMetrics = (deal) => {
+  const capital = calculateCapitalMetrics(deal);
+  const monthlyCF = (deal.postRefiCashFlow || deal.stabilizedCashFlow || 0);
+  
+  // Cash-In/Cash-Out Ratio
+  const cashRatio = capital.sponsorCashIn > 0 
+    ? capital.capitalAtRefi / capital.sponsorCashIn 
+    : 0;
+  
+  // Stabilized Equity Multiple
+  const refiValue = deal.refiValue || (deal.purchasePrice || 0) * 1.25;
+  const loanAmount = refiValue * 0.75; // Assume 75% LTV on refi
+  const equityAfterRefi = refiValue - loanAmount;
+  const equityMultiple = capital.totalEquityRequired > 0 
+    ? equityAfterRefi / capital.totalEquityRequired 
+    : 0;
+  
+  // Time to Recovery (months)
+  const monthsToRecovery = monthlyCF > 0 
+    ? capital.sponsorCashIn / monthlyCF 
+    : 999;
+  
+  return {
+    cashRatio,
+    equityMultiple,
+    monthsToRecovery: monthsToRecovery === 999 ? null : monthsToRecovery
+  };
+};
+
+const assessStructureRisk = (deal) => {
+  const structure = (deal.dealStructure || '').toLowerCase();
+  const monthlyCF = (deal.postRefiCashFlow || deal.stabilizedCashFlow || 0);
+  const price = deal.purchasePrice || 0;
+  const annualDebtService = price * 0.75 * 0.065; // 75% LTV, 6.5% rate, assume IO
+  const monthlyDebtService = annualDebtService / 12;
+  const noi = monthlyCF + monthlyDebtService; // Rough NOI estimate
+  const dscr = monthlyDebtService > 0 ? (noi * 12) / annualDebtService : 0;
+  
+  // Check balloon risk
+  const hasBalloonSoon = structure.includes('seller') || structure.includes('bridge');
+  
+  // Risk assessment
+  if (dscr >= 1.25 && !hasBalloonSoon) {
+    return { level: 'green', text: 'Survives Stress', reason: `Strong DSCR (${dscr.toFixed(2)}x), no balloon pressure` };
+  } else if (dscr >= 1.1 && dscr < 1.25) {
+    return { level: 'yellow', text: 'Marginal', reason: `Moderate DSCR (${dscr.toFixed(2)}x), monitor closely` };
+  } else if (hasBalloonSoon) {
+    return { level: 'yellow', text: 'Marginal', reason: 'Seller financing or bridge loan with balloon risk' };
+  } else {
+    return { level: 'red', text: 'Breaks Under Stress', reason: `Weak DSCR (${dscr.toFixed(2)}x), vulnerable to rate increases` };
+  }
+};
+
+const detectComplexityFlags = (deal) => {
+  const structure = (deal.dealStructure || '').toLowerCase();
+  
+  return {
+    multipleParties: deal.has_multiple_parties ?? (structure.includes('partner') || structure.includes('syndicate')),
+    sellerDependent: deal.has_seller_dependency ?? (structure.includes('seller') || structure.includes('subto')),
+    prefAccrual: deal.has_pref_accrual ?? structure.includes('pref'),
+    balloonRisk: deal.has_balloon_risk ?? (structure.includes('seller') || structure.includes('bridge')),
+    lpApproval: deal.requires_lp_approval ?? structure.includes('partner')
+  };
+};
+
+const isSystemRecommended = (deal) => {
+  const capital = calculateCapitalMetrics(deal);
+  const risk = assessStructureRisk(deal);
+  const complexity = detectComplexityFlags(deal);
+  
+  // System recommends if: low cash in, good DSCR, GP control, simple structure
+  const lowCashIn = capital.sponsorCashIn < capital.totalEquityRequired * 0.5;
+  const goodRisk = risk.level === 'green';
+  const simpleStructure = !complexity.multipleParties && !complexity.lpApproval;
+  
+  if (lowCashIn && goodRisk && simpleStructure) {
+    return { 
+      recommended: true, 
+      reason: `Lower cash requirement ($${(capital.sponsorCashIn / 1000).toFixed(0)}K), maintains control, strong DSCR` 
+    };
+  }
+  
+  return { recommended: false, reason: '' };
+};
+
+const getStatusColor = (status) => {
+  const colors = {
+    sourced: { bg: '#f3f4f6', text: '#6b7280', border: '#d1d5db' },
+    underwritten: { bg: '#dbeafe', text: '#1e40af', border: '#93c5fd' },
+    loi: { bg: '#e9d5ff', text: '#7e22ce', border: '#c084fc' },
+    contract: { bg: '#fed7aa', text: '#c2410c', border: '#fdba74' },
+    financing: { bg: '#ccfbf1', text: '#0f766e', border: '#5eead4' },
+    closed: { bg: '#dcfce7', text: '#166534', border: '#86efac' },
+    dead: { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' }
+  };
+  return colors[status] || colors.sourced;
+};
+
+const getStatusLabel = (status) => {
+  const labels = {
+    sourced: 'Sourced',
+    underwritten: 'Underwritten',
+    loi: 'LOI Sent',
+    contract: 'Under Contract',
+    financing: 'Financing Secured',
+    closed: 'Closed',
+    dead: 'Dead'
+  };
+  return labels[status] || 'Sourced';
+};
+
+const calculateDaysInStage = (stageChangedAt) => {
+  if (!stageChangedAt) return 0;
+  const now = new Date();
+  const changed = new Date(stageChangedAt);
+  const diffTime = Math.abs(now - changed);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
 };
 
 // ============================================================================
@@ -110,6 +285,15 @@ function PipelinePage() {
   const [isLoadingRapid, setIsLoadingRapid] = useState(true);
   const [viewMode, setViewMode] = useState('pipeline'); // 'pipeline' or 'rapidfire'
   const [selectedRapidFireIds, setSelectedRapidFireIds] = useState([]);
+  
+  // CRM Feature State
+  const [sortBy, setSortBy] = useState('none'); // none, status, risk, cash_ratio, equity_multiple, recovery_time, price
+  const [filterStatus, setFilterStatus] = useState([]); // array of statuses
+  const [filterRisk, setFilterRisk] = useState([]); // array of 'green', 'yellow', 'red'
+  const [filterOutsideCapital, setFilterOutsideCapital] = useState('all'); // 'all', 'yes', 'no'
+  const [showStatusModal, setShowStatusModal] = useState(null); // { deal, currentStatus }
+  const [showDeathModal, setShowDeathModal] = useState(null); // deal object
+  const [deathReason, setDeathReason] = useState('');
 
   // Sample deals for demonstration
   const sampleDeals = [
@@ -128,7 +312,11 @@ function PipelinePage() {
       brokerPhone: '(214) 555-0187',
       brokerEmail: 'marcus.j@realtypros.com',
       dealStructure: 'Seller Financing',
-      pushedAt: '2025-12-01T10:30:00Z'
+      pushedAt: '2025-12-01T10:30:00Z',
+      deal_stage: 'underwritten',
+      stage_changed_at: '2025-12-01T10:30:00Z',
+      structure_confidence: 'high',
+      backup_structure: 'Traditional Bank Loan'
     },
     {
       dealId: 'sample-002',
@@ -145,7 +333,11 @@ function PipelinePage() {
       brokerPhone: '(512) 555-0234',
       brokerEmail: 'schen@capitalbrokers.com',
       dealStructure: 'Bank Loan + Equity Partner',
-      pushedAt: '2025-12-05T14:15:00Z'
+      pushedAt: '2025-12-05T14:15:00Z',
+      deal_stage: 'loi',
+      stage_changed_at: '2025-12-05T14:15:00Z',
+      structure_confidence: 'medium',
+      backup_structure: null
     }
   ];
 
@@ -314,6 +506,131 @@ function PipelinePage() {
       console.error('Error deleting Rapid Fire deal(s):', error);
       alert('Failed to delete Rapid Fire deal(s): ' + error.message);
     }
+  };
+
+  // CRM Functions
+  const handleStatusChange = async (deal, newStatus) => {
+    if (newStatus === 'dead') {
+      // Show death reason modal
+      setShowDeathModal(deal);
+      setShowStatusModal(null);
+    } else {
+      try {
+        const updatedDeal = {
+          ...deal,
+          deal_stage: newStatus,
+          stage_changed_at: new Date().toISOString(),
+          death_reason: null
+        };
+        
+        await updateDeal(deal.dealId, {
+          deal_stage: newStatus,
+          stage_changed_at: new Date().toISOString(),
+          death_reason: null
+        });
+        
+        setPipelineDeals(prev => prev.map(d => d.dealId === deal.dealId ? updatedDeal : d));
+        setShowStatusModal(null);
+      } catch (error) {
+        console.error('Error updating deal status:', error);
+        alert('Failed to update status: ' + error.message);
+      }
+    }
+  };
+
+  const handleDeathReasonSubmit = async () => {
+    if (!deathReason || !showDeathModal) return;
+    
+    try {
+      const updatedDeal = {
+        ...showDeathModal,
+        deal_stage: 'dead',
+        stage_changed_at: new Date().toISOString(),
+        death_reason: deathReason
+      };
+      
+      await updateDeal(showDeathModal.dealId, {
+        deal_stage: 'dead',
+        stage_changed_at: new Date().toISOString(),
+        death_reason: deathReason
+      });
+      
+      setPipelineDeals(prev => prev.map(d => d.dealId === showDeathModal.dealId ? updatedDeal : d));
+      setShowDeathModal(null);
+      setDeathReason('');
+    } catch (error) {
+      console.error('Error marking deal as dead:', error);
+      alert('Failed to mark deal as dead: ' + error.message);
+    }
+  };
+
+  // Apply sorting and filtering
+  const getSortedAndFilteredDeals = () => {
+    let deals = [...filteredDeals];
+    
+    // Apply status filter
+    if (filterStatus.length > 0) {
+      deals = deals.filter(d => filterStatus.includes(d.deal_stage || 'underwritten'));
+    }
+    
+    // Apply risk filter
+    if (filterRisk.length > 0) {
+      deals = deals.filter(d => {
+        const risk = assessStructureRisk(d);
+        return filterRisk.includes(risk.level);
+      });
+    }
+    
+    // Apply outside capital filter
+    if (filterOutsideCapital !== 'all') {
+      deals = deals.filter(d => {
+        const capital = calculateCapitalMetrics(d);
+        if (filterOutsideCapital === 'yes') return capital.outsideCapital > 0;
+        if (filterOutsideCapital === 'no') return capital.outsideCapital === 0;
+        return true;
+      });
+    }
+    
+    // Apply sorting
+    if (sortBy !== 'none') {
+      deals.sort((a, b) => {
+        switch (sortBy) {
+          case 'status': {
+            const order = ['sourced', 'underwritten', 'loi', 'contract', 'financing', 'closed', 'dead'];
+            return order.indexOf(a.deal_stage || 'underwritten') - order.indexOf(b.deal_stage || 'underwritten');
+          }
+          case 'risk': {
+            const riskOrder = { green: 0, yellow: 1, red: 2 };
+            const riskA = assessStructureRisk(a);
+            const riskB = assessStructureRisk(b);
+            return riskOrder[riskA.level] - riskOrder[riskB.level];
+          }
+          case 'cash_ratio': {
+            const effA = calculateEfficiencyMetrics(a);
+            const effB = calculateEfficiencyMetrics(b);
+            return effB.cashRatio - effA.cashRatio; // Descending (higher is better)
+          }
+          case 'equity_multiple': {
+            const effA = calculateEfficiencyMetrics(a);
+            const effB = calculateEfficiencyMetrics(b);
+            return effB.equityMultiple - effA.equityMultiple; // Descending
+          }
+          case 'recovery_time': {
+            const effA = calculateEfficiencyMetrics(a);
+            const effB = calculateEfficiencyMetrics(b);
+            const timeA = effA.monthsToRecovery || 999;
+            const timeB = effB.monthsToRecovery || 999;
+            return timeA - timeB; // Ascending (shorter is better)
+          }
+          case 'price':
+            return (b.purchasePrice || 0) - (a.purchasePrice || 0); // Descending
+          default:
+            return 0;
+        }
+      });
+    }
+    
+    return deals;
   };
 
   return (
@@ -518,322 +835,661 @@ function PipelinePage() {
               </p>
             </div>
           ) : (
-            /* Pipeline Table - Premium Design */
-            <div style={{ 
-            backgroundColor: 'white', 
-            borderRadius: '14px', 
-            border: '1px solid rgba(45, 212, 191, 0.15)',
-            overflow: 'hidden',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08), 0 0 40px rgba(20, 184, 166, 0.04)'
-          }}>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1600px' }}>
-                <thead>
-                  <tr style={{ 
-                    background: 'linear-gradient(135deg, #1e3a5f 0%, #0f2744 40%, #0a1929 100%)',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-                  }}>
-                    <th style={thStyle}>Address</th>
-                    <th style={thStyle}>Units/Pads</th>
-                    <th style={thStyle}>Purchase Price</th>
-                    <th style={thStyle}>Day 1 CF</th>
-                    <th style={thStyle}>Stabilized CF</th>
-                    <th style={thStyle}>Refi Value</th>
-                    <th style={thStyle}>Cash-Out Refi</th>
-                    <th style={thStyle}>In Pocket</th>
-                    <th style={thStyle}>Post-Refi CF</th>
-                    <th style={thStyle}>Agent Name</th>
-                    <th style={thStyle}>Phone</th>
-                    <th style={thStyle}>Email</th>
-                    <th style={thStyle}>Deal Structure</th>
-                    <th style={{ ...thStyle, textAlign: 'center' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredDeals.map((deal, index) => (
-                    <tr 
-                      key={deal.dealId || index}
-                      style={{ 
-                        backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb',
-                        borderBottom: '1px solid #e5e7eb',
-                        transition: 'background-color 0.15s'
-                      }}
-                    >
-                      {/* Address */}
-                      <td style={tdStyle}>
-                        <div style={{ fontWeight: '600', color: '#111827', maxWidth: '200px' }}>
-                          {deal.address || '-'}
-                        </div>
-                      </td>
-                      
-                      {/* Units/Pads */}
-                      <td style={{ ...tdStyle, textAlign: 'center' }}>
-                        <span style={{ 
-                          backgroundColor: '#e0f2fe', 
-                          color: '#0369a1', 
-                          padding: '4px 10px', 
-                          borderRadius: '6px',
-                          fontWeight: '600',
-                          fontSize: '13px'
-                        }}>
-                          {deal.units || '-'}
-                        </span>
-                      </td>
-                      
-                      {/* Purchase Price */}
-                      <td style={tdStyle}>
-                        <span style={{ fontWeight: '700', color: '#111827' }}>
-                          {fmtCompact(deal.purchasePrice)}
-                        </span>
-                      </td>
-                      
-                      {/* Day 1 Cash Flow */}
-                      <td style={tdStyle}>
-                        <span style={{ 
-                          fontWeight: '600', 
-                          color: deal.dayOneCashFlow >= 0 ? '#059669' : '#dc2626'
-                        }}>
-                          {fmtCompact(deal.dayOneCashFlow)}
-                        </span>
-                      </td>
-                      
-                      {/* Stabilized Cash Flow */}
-                      <td style={tdStyle}>
-                        <span style={{ 
-                          fontWeight: '600', 
-                          color: deal.stabilizedCashFlow >= 0 ? '#059669' : '#dc2626'
-                        }}>
-                          {fmtCompact(deal.stabilizedCashFlow)}
-                        </span>
-                      </td>
-                      
-                      {/* Refi Value */}
-                      <td style={tdStyle}>
-                        <span style={{ fontWeight: '600', color: '#6366f1' }}>
-                          {fmtCompact(deal.refiValue)}
-                        </span>
-                      </td>
-                      
-                      {/* Cash-Out Refi Amount */}
-                      <td style={tdStyle}>
-                        <span style={{ fontWeight: '700', color: '#059669' }}>
-                          {fmtCompact(deal.cashOutRefiAmount)}
-                        </span>
-                      </td>
-                      
-                      {/* User's Total In Pocket */}
-                      <td style={tdStyle}>
-                        <span style={{ 
-                          fontWeight: '700', 
-                          color: deal.userTotalInPocket >= 0 ? '#059669' : '#dc2626'
-                        }}>
-                          {fmtCompact(deal.userTotalInPocket)}
-                        </span>
-                      </td>
-                      
-                      {/* Post-Refi Cash Flow */}
-                      <td style={tdStyle}>
-                        <span style={{ 
-                          fontWeight: '600', 
-                          color: deal.postRefiCashFlow >= 0 ? '#059669' : '#dc2626'
-                        }}>
-                          {fmtCompact(deal.postRefiCashFlow)}
-                        </span>
-                      </td>
-                      
-                      {/* Agent Name */}
-                      <td style={tdStyle}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <User size={14} color="#6b7280" />
-                          <span style={{ color: '#374151', fontSize: '13px' }}>
-                            {deal.brokerName || '-'}
-                          </span>
-                        </div>
-                      </td>
-                      
-                      {/* Phone */}
-                      <td style={tdStyle}>
-                        {deal.brokerPhone && deal.brokerPhone !== '-' ? (
-                          <a 
-                            href={`tel:${deal.brokerPhone}`}
+            <>
+              {/* CRM Controls - Sort & Filter */}
+              <div style={{
+                backgroundColor: 'white',
+                borderRadius: '12px',
+                border: '1px solid #e5e7eb',
+                padding: '20px',
+                marginBottom: '16px',
+                display: 'flex',
+                gap: '20px',
+                alignItems: 'center',
+                flexWrap: 'wrap'
+              }}>
+                {/* Sort By */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>Sort By:</label>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid #d1d5db',
+                      fontSize: '13px',
+                      backgroundColor: 'white',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="none">Default Order</option>
+                    <option value="status">Deal Stage</option>
+                    <option value="risk">Risk Level</option>
+                    <option value="cash_ratio">Cash-In/Out Ratio</option>
+                    <option value="equity_multiple">Equity Multiple</option>
+                    <option value="recovery_time">Recovery Time</option>
+                    <option value="price">Purchase Price</option>
+                  </select>
+                </div>
+
+                {/* Filter by Status */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>Status:</label>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {['sourced', 'underwritten', 'loi', 'contract', 'financing', 'closed', 'dead'].map(status => {
+                      const statusColors = getStatusColor(status);
+                      const isSelected = filterStatus.includes(status);
+                      return (
+                        <button
+                          key={status}
+                          onClick={() => {
+                            if (isSelected) {
+                              setFilterStatus(prev => prev.filter(s => s !== status));
+                            } else {
+                              setFilterStatus(prev => [...prev, status]);
+                            }
+                          }}
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: '6px',
+                            border: `2px solid ${isSelected ? statusColors.border : '#e5e7eb'}`,
+                            backgroundColor: isSelected ? statusColors.bg : 'white',
+                            color: isSelected ? statusColors.text : '#6b7280',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            textTransform: 'uppercase'
+                          }}
+                        >
+                          {getStatusLabel(status)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Filter by Risk */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>Risk:</label>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    {[
+                      { level: 'green', label: '🟢 Low', color: '#059669' },
+                      { level: 'yellow', label: '🟡 Medium', color: '#d97706' },
+                      { level: 'red', label: '🔴 High', color: '#dc2626' }
+                    ].map(({ level, label, color }) => {
+                      const isSelected = filterRisk.includes(level);
+                      return (
+                        <button
+                          key={level}
+                          onClick={() => {
+                            if (isSelected) {
+                              setFilterRisk(prev => prev.filter(r => r !== level));
+                            } else {
+                              setFilterRisk(prev => [...prev, level]);
+                            }
+                          }}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            border: `2px solid ${isSelected ? color : '#e5e7eb'}`,
+                            backgroundColor: isSelected ? `${color}15` : 'white',
+                            color: isSelected ? color : '#6b7280',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Filter by Outside Capital */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>Outside Capital:</label>
+                  <select
+                    value={filterOutsideCapital}
+                    onChange={(e) => setFilterOutsideCapital(e.target.value)}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid #d1d5db',
+                      fontSize: '13px',
+                      backgroundColor: 'white',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="all">All Deals</option>
+                    <option value="yes">Has Outside Capital</option>
+                    <option value="no">Self-Funded Only</option>
+                  </select>
+                </div>
+
+                {/* Clear Filters */}
+                {(filterStatus.length > 0 || filterRisk.length > 0 || filterOutsideCapital !== 'all' || sortBy !== 'none') && (
+                  <button
+                    onClick={() => {
+                      setFilterStatus([]);
+                      setFilterRisk([]);
+                      setFilterOutsideCapital('all');
+                      setSortBy('none');
+                    }}
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      backgroundColor: '#fee2e2',
+                      color: '#dc2626',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Clear All Filters
+                  </button>
+                )}
+              </div>
+
+              {/* Pipeline Table - Premium Design */}
+              {/* Pipeline Table - Premium Design */}
+              <div style={{ 
+                backgroundColor: 'white', 
+                borderRadius: '14px', 
+                border: '1px solid rgba(45, 212, 191, 0.15)',
+                overflow: 'hidden',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08), 0 0 40px rgba(20, 184, 166, 0.04)'
+              }}>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '2800px' }}>
+                    <thead>
+                      <tr style={{ 
+                        background: 'linear-gradient(135deg, #1e3a5f 0%, #0f2744 40%, #0a1929 100%)',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                      }}>
+                        <th style={thStyle}>Address</th>
+                        <th style={thStyle}>Deal Stage</th>
+                        <th style={thStyle}>Units</th>
+                        <th style={thStyle}>Purchase Price</th>
+                        <th style={thStyle}>Total Equity Req</th>
+                        <th style={thStyle}>Sponsor Cash In</th>
+                        <th style={thStyle}>Outside Capital</th>
+                        <th style={thStyle}>Capital @ Refi</th>
+                        <th style={thStyle}>Cash In/Out Ratio</th>
+                        <th style={thStyle}>Equity Multiple</th>
+                        <th style={thStyle}>Months to Recovery</th>
+                        <th style={thStyle}>Day 1 CF</th>
+                        <th style={thStyle}>Stabilized CF</th>
+                        <th style={thStyle}>Refi Value</th>
+                        <th style={thStyle}>Post-Refi CF</th>
+                        <th style={thStyle}>Agent</th>
+                        <th style={thStyle}>Phone</th>
+                        <th style={thStyle}>Email</th>
+                        <th style={thStyle}>Deal Structure</th>
+                        <th style={thStyle}>Risk & Complexity</th>
+                        <th style={{ ...thStyle, textAlign: 'center' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {getSortedAndFilteredDeals().map((deal, index) => {
+                        const capital = calculateCapitalMetrics(deal);
+                        const efficiency = calculateEfficiencyMetrics(deal);
+                        const risk = assessStructureRisk(deal);
+                        const complexity = detectComplexityFlags(deal);
+                        const sysRec = isSystemRecommended(deal);
+                        const statusColors = getStatusColor(deal.deal_stage || 'underwritten');
+                        const daysInStage = calculateDaysInStage(deal.stage_changed_at);
+                        
+                        return (
+                          <tr 
+                            key={deal.dealId || index}
                             style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: '4px',
-                              color: '#0f766e',
-                              textDecoration: 'none',
-                              fontSize: '13px'
+                              backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb',
+                              borderBottom: '1px solid #e5e7eb',
+                              transition: 'background-color 0.15s'
                             }}
                           >
-                            <Phone size={12} />
-                            {deal.brokerPhone}
-                          </a>
-                        ) : (
-                          <span style={{ color: '#9ca3af', fontSize: '13px' }}>-</span>
-                        )}
-                      </td>
-                      
-                      {/* Email */}
-                      <td style={tdStyle}>
-                        {deal.brokerEmail && deal.brokerEmail !== '-' ? (
-                          <a 
-                            href={`mailto:${deal.brokerEmail}`}
-                            style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: '4px',
-                              color: '#0f766e',
-                              textDecoration: 'none',
-                              fontSize: '13px',
-                              maxWidth: '180px',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis'
-                            }}
-                          >
-                            <Mail size={12} />
-                            {deal.brokerEmail}
-                          </a>
-                        ) : (
-                          <span style={{ color: '#9ca3af', fontSize: '13px' }}>-</span>
-                        )}
-                      </td>
-                      
-                      {/* Deal Structure */}
-                      <td style={tdStyle}>
-                        <span style={{ 
-                          backgroundColor: '#f0fdf4', 
-                          color: '#166534', 
-                          padding: '4px 10px', 
-                          borderRadius: '6px',
-                          fontWeight: '600',
-                          fontSize: '12px',
-                          display: 'inline-block',
-                          maxWidth: '150px',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {deal.dealStructure || 'Traditional'}
-                        </span>
-                      </td>
-                      
-                      {/* Actions */}
-                      <td style={{ ...tdStyle, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                          {/* View Deal Button */}
-                          <button
-                            onClick={() => handleViewDeal(deal)}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              padding: '8px 14px',
-                              backgroundColor: '#0f766e',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '6px',
-                              fontSize: '12px',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              transition: 'all 0.15s'
-                            }}
-                          >
-                            <Eye size={14} />
-                            Underwrite
-                          </button>
-                          
-                          {/* Generate LOI Button */}
-                          <button
-                            onClick={() => handleGenerateLOI(deal)}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              padding: '8px 14px',
-                              backgroundColor: '#8b5cf6',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '6px',
-                              fontSize: '12px',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              transition: 'all 0.15s'
-                            }}
-                          >
-                            <FileText size={14} />
-                            LOI
-                          </button>
-                          
-                          {/* Due Diligence Button */}
-                          <button
-                            onClick={() => handleDueDiligence(deal)}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              padding: '8px 14px',
-                              backgroundColor: '#f59e0b',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '6px',
-                              fontSize: '12px',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              transition: 'all 0.15s'
-                            }}
-                          >
-                            <ClipboardCheck size={14} />
-                            DD
-                          </button>
-                          
-                          {/* Pitch Deck Button */}
-                          <button
-                            onClick={() => navigate(`/pitch-deck?dealId=${deal.dealId}`)}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              padding: '8px 14px',
-                              backgroundColor: '#3b82f6',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '6px',
-                              fontSize: '12px',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              transition: 'all 0.15s'
-                            }}
-                          >
-                            <Presentation size={14} />
-                            Pitch
-                          </button>
-                          
-                          {/* Delete Button */}
-                          <button
-                            onClick={() => handleDeleteDeal(deal.dealId)}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              padding: '8px',
-                              backgroundColor: '#fee2e2',
-                              color: '#dc2626',
-                              border: 'none',
-                              borderRadius: '6px',
-                              cursor: 'pointer',
-                              transition: 'all 0.15s'
-                            }}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                            {/* Address */}
+                            <td style={tdStyle}>
+                              <div style={{ fontWeight: '600', color: '#111827', maxWidth: '200px' }}>
+                                {deal.address || '-'}
+                              </div>
+                            </td>
+                            
+                            {/* Deal Stage with Status Dropdown */}
+                            <td style={tdStyle}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <button
+                                  onClick={() => setShowStatusModal({ deal, currentStatus: deal.deal_stage || 'underwritten' })}
+                                  style={{
+                                    padding: '6px 12px',
+                                    borderRadius: '6px',
+                                    border: `1px solid ${statusColors.border}`,
+                                    backgroundColor: statusColors.bg,
+                                    color: statusColors.text,
+                                    fontSize: '11px',
+                                    fontWeight: '700',
+                                    cursor: 'pointer',
+                                    textTransform: 'uppercase',
+                                    textAlign: 'left',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                  title="Click to change status"
+                                >
+                                  {getStatusLabel(deal.deal_stage || 'underwritten')}
+                                </button>
+                                <div style={{ fontSize: '10px', color: '#6b7280', fontStyle: 'italic' }}>
+                                  {daysInStage > 0 ? `${daysInStage} day${daysInStage !== 1 ? 's' : ''} in stage` : 'New'}
+                                </div>
+                                {deal.death_reason && (
+                                  <div 
+                                    style={{ 
+                                      fontSize: '10px', 
+                                      color: '#dc2626', 
+                                      fontStyle: 'italic',
+                                      maxWidth: '120px'
+                                    }}
+                                    title={deal.death_reason}
+                                  >
+                                    {deal.death_reason}
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                            
+                            {/* Units/Pads */}
+                            <td style={{ ...tdStyle, textAlign: 'center' }}>
+                              <span style={{ 
+                                backgroundColor: '#e0f2fe', 
+                                color: '#0369a1', 
+                                padding: '4px 10px', 
+                                borderRadius: '6px',
+                                fontWeight: '600',
+                                fontSize: '13px'
+                              }}>
+                                {deal.units || '-'}
+                              </span>
+                            </td>
+                            
+                            {/* Purchase Price */}
+                            <td style={tdStyle}>
+                              <span style={{ fontWeight: '700', color: '#111827' }}>
+                                {fmtCompact(deal.purchasePrice)}
+                              </span>
+                            </td>
+                            
+                            {/* CAPITAL SECTION */}
+                            {/* Total Equity Required */}
+                            <td style={tdStyle}>
+                              <span style={{ fontWeight: '600', color: '#374151' }}>
+                                {fmtCompact(capital.totalEquityRequired)}
+                              </span>
+                            </td>
+                            
+                            {/* Sponsor Cash In */}
+                            <td style={tdStyle}>
+                              <span style={{ fontWeight: '700', color: '#0f766e' }}>
+                                {fmtCompact(capital.sponsorCashIn)}
+                              </span>
+                            </td>
+                            
+                            {/* Outside Capital */}
+                            <td style={tdStyle}>
+                              <span style={{ 
+                                fontWeight: '600', 
+                                color: capital.outsideCapital > 0 ? '#8b5cf6' : '#9ca3af'
+                              }}>
+                                {capital.outsideCapital > 0 ? fmtCompact(capital.outsideCapital) : '-'}
+                              </span>
+                            </td>
+                            
+                            {/* Capital @ Refi */}
+                            <td style={tdStyle}>
+                              <span style={{ fontWeight: '700', color: '#059669' }}>
+                                {fmtCompact(capital.capitalAtRefi)}
+                              </span>
+                            </td>
+                            
+                            {/* EFFICIENCY SECTION */}
+                            {/* Cash In/Out Ratio */}
+                            <td style={tdStyle}>
+                              <span style={{ 
+                                fontWeight: '700',
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                backgroundColor: efficiency.cashRatio >= 1.5 ? '#dcfce7' : efficiency.cashRatio >= 1.0 ? '#fef3c7' : '#fee2e2',
+                                color: efficiency.cashRatio >= 1.5 ? '#166534' : efficiency.cashRatio >= 1.0 ? '#92400e' : '#991b1b'
+                              }}>
+                                {efficiency.cashRatio > 0 ? efficiency.cashRatio.toFixed(2) + 'x' : '-'}
+                              </span>
+                            </td>
+                            
+                            {/* Equity Multiple */}
+                            <td style={tdStyle}>
+                              <span style={{ 
+                                fontWeight: '600',
+                                color: efficiency.equityMultiple >= 1.3 ? '#059669' : '#6b7280'
+                              }}>
+                                {efficiency.equityMultiple > 0 ? efficiency.equityMultiple.toFixed(2) + 'x' : '-'}
+                              </span>
+                            </td>
+                            
+                            {/* Months to Recovery */}
+                            <td style={tdStyle}>
+                              <span style={{ 
+                                fontWeight: '600',
+                                color: efficiency.monthsToRecovery && efficiency.monthsToRecovery < 36 ? '#059669' : '#6b7280'
+                              }}>
+                                {efficiency.monthsToRecovery ? Math.round(efficiency.monthsToRecovery) + ' mo' : '-'}
+                              </span>
+                            </td>
+                            
+                            {/* CASH FLOW SECTION */}
+                            {/* Day 1 Cash Flow */}
+                            <td style={tdStyle}>
+                              <span style={{ 
+                                fontWeight: '600', 
+                                color: deal.dayOneCashFlow >= 0 ? '#059669' : '#dc2626'
+                              }}>
+                                {fmtCompact(deal.dayOneCashFlow)}
+                              </span>
+                            </td>
+                            
+                            {/* Stabilized Cash Flow */}
+                            <td style={tdStyle}>
+                              <span style={{ 
+                                fontWeight: '600', 
+                                color: deal.stabilizedCashFlow >= 0 ? '#059669' : '#dc2626'
+                              }}>
+                                {fmtCompact(deal.stabilizedCashFlow)}
+                              </span>
+                            </td>
+                            
+                            {/* Refi Value */}
+                            <td style={tdStyle}>
+                              <span style={{ fontWeight: '600', color: '#6366f1' }}>
+                                {fmtCompact(deal.refiValue)}
+                              </span>
+                            </td>
+                            
+                            {/* Post-Refi Cash Flow */}
+                            <td style={tdStyle}>
+                              <span style={{ 
+                                fontWeight: '600', 
+                                color: deal.postRefiCashFlow >= 0 ? '#059669' : '#dc2626'
+                              }}>
+                                {fmtCompact(deal.postRefiCashFlow)}
+                              </span>
+                            </td>
+                            
+                            {/* BROKER INFO */}
+                            {/* Agent Name */}
+                            <td style={tdStyle}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <User size={14} color="#6b7280" />
+                                <span style={{ color: '#374151', fontSize: '12px' }}>
+                                  {deal.brokerName || '-'}
+                                </span>
+                              </div>
+                            </td>
+                            
+                            {/* Phone */}
+                            <td style={tdStyle}>
+                              {deal.brokerPhone && deal.brokerPhone !== '-' ? (
+                                <a 
+                                  href={`tel:${deal.brokerPhone}`}
+                                  style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '4px',
+                                    color: '#0f766e',
+                                    textDecoration: 'none',
+                                    fontSize: '12px'
+                                  }}
+                                >
+                                  <Phone size={12} />
+                                  {deal.brokerPhone}
+                                </a>
+                              ) : (
+                                <span style={{ color: '#9ca3af', fontSize: '12px' }}>-</span>
+                              )}
+                            </td>
+                            
+                            {/* Email */}
+                            <td style={tdStyle}>
+                              {deal.brokerEmail && deal.brokerEmail !== '-' ? (
+                                <a 
+                                  href={`mailto:${deal.brokerEmail}`}
+                                  style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '4px',
+                                    color: '#0f766e',
+                                    textDecoration: 'none',
+                                    fontSize: '12px',
+                                    maxWidth: '160px',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                  }}
+                                >
+                                  <Mail size={12} />
+                                  {deal.brokerEmail}
+                                </a>
+                              ) : (
+                                <span style={{ color: '#9ca3af', fontSize: '12px' }}>-</span>
+                              )}
+                            </td>
+                            
+                            {/* Deal Structure - Enhanced */}
+                            <td style={tdStyle}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ 
+                                    backgroundColor: '#f0fdf4', 
+                                    color: '#166534', 
+                                    padding: '4px 8px', 
+                                    borderRadius: '6px',
+                                    fontWeight: '600',
+                                    fontSize: '11px',
+                                    maxWidth: '130px',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                  }}>
+                                    {deal.dealStructure || 'Traditional'}
+                                  </span>
+                                  {sysRec.recommended && (
+                                    <span 
+                                      title={sysRec.reason}
+                                      style={{ 
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '2px',
+                                        cursor: 'help'
+                                      }}
+                                    >
+                                      <Sparkles size={14} color="#eab308" fill="#fef3c7" />
+                                    </span>
+                                  )}
+                                </div>
+                                {deal.backup_structure && (
+                                  <div style={{ fontSize: '10px', color: '#6b7280', fontStyle: 'italic' }}>
+                                    Backup: {deal.backup_structure}
+                                  </div>
+                                )}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  {deal.structure_confidence === 'high' && (
+                                    <Shield size={12} color="#059669" title="High confidence structure" />
+                                  )}
+                                  {deal.structure_confidence === 'medium' && (
+                                    <AlertTriangle size={12} color="#d97706" title="Medium confidence structure" />
+                                  )}
+                                  {deal.structure_confidence === 'low' && (
+                                    <AlertCircle size={12} color="#dc2626" title="Low confidence structure" />
+                                  )}
+                                  <span style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase' }}>
+                                    {deal.structure_confidence || 'medium'}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+                            
+                            {/* Risk & Complexity */}
+                            <td style={tdStyle}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {/* Risk Badge */}
+                                <div 
+                                  title={risk.reason}
+                                  style={{
+                                    padding: '6px 10px',
+                                    borderRadius: '6px',
+                                    backgroundColor: risk.level === 'green' ? '#dcfce7' : risk.level === 'yellow' ? '#fef3c7' : '#fee2e2',
+                                    border: `1px solid ${risk.level === 'green' ? '#86efac' : risk.level === 'yellow' ? '#fde047' : '#fca5a5'}`,
+                                    fontSize: '11px',
+                                    fontWeight: '700',
+                                    color: risk.level === 'green' ? '#166534' : risk.level === 'yellow' ? '#92400e' : '#991b1b',
+                                    textAlign: 'center',
+                                    cursor: 'help'
+                                  }}
+                                >
+                                  {risk.level === 'green' && '🟢'} 
+                                  {risk.level === 'yellow' && '🟡'} 
+                                  {risk.level === 'red' && '🔴'} 
+                                  {risk.text}
+                                </div>
+                              </div>
+                            </td>
+                            
+                            {/* Actions - PRESERVE ALL EXISTING BUTTONS */}
+                            <td style={{ ...tdStyle, textAlign: 'center' }}>
+                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                {/* View Deal Button */}
+                                <button
+                                  onClick={() => handleViewDeal(deal)}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '6px 10px',
+                                    backgroundColor: '#0f766e',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontSize: '11px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                  title="View full underwriting"
+                                >
+                                  <Eye size={12} />
+                                  Underwrite
+                                </button>
+                                
+                                {/* Generate LOI Button */}
+                                <button
+                                  onClick={() => handleGenerateLOI(deal)}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '6px 10px',
+                                    backgroundColor: '#8b5cf6',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontSize: '11px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                  title="Generate Letter of Intent"
+                                >
+                                  <FileText size={12} />
+                                  LOI
+                                </button>
+                                
+                                {/* Due Diligence Button */}
+                                <button
+                                  onClick={() => handleDueDiligence(deal)}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '6px 10px',
+                                    backgroundColor: '#f59e0b',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontSize: '11px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                  title="Due diligence checklist"
+                                >
+                                  <ClipboardCheck size={12} />
+                                  DD
+                                </button>
+                                
+                                {/* Pitch Deck Button */}
+                                <button
+                                  onClick={() => navigate(`/pitch-deck?dealId=${deal.dealId}`)}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '6px 10px',
+                                    backgroundColor: '#3b82f6',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontSize: '11px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                  title="Generate pitch deck"
+                                >
+                                  <Presentation size={12} />
+                                  Pitch
+                                </button>
+                                
+                                {/* Delete Button */}
+                                <button
+                                  onClick={() => handleDeleteDeal(deal.dealId)}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: '6px',
+                                    backgroundColor: '#fee2e2',
+                                    color: '#dc2626',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s'
+                                  }}
+                                  title="Remove from pipeline"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
           )
         ) : (
           // Rapid Fire Queue View
@@ -1111,6 +1767,199 @@ function PipelinePage() {
           </div>
         )}
       </div>
+
+      {/* Status Change Modal */}
+      {showStatusModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '400px',
+            width: '90%',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827' }}>
+                Change Deal Stage
+              </h3>
+              <button
+                onClick={() => setShowStatusModal(null)}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  color: '#6b7280'
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px' }}>
+              {showStatusModal.deal.address}
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {['sourced', 'underwritten', 'loi', 'contract', 'financing', 'closed', 'dead'].map(status => {
+                const statusColors = getStatusColor(status);
+                const isCurrentStatus = status === showStatusModal.currentStatus;
+                
+                return (
+                  <button
+                    key={status}
+                    onClick={() => handleStatusChange(showStatusModal.deal, status)}
+                    style={{
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: `2px solid ${isCurrentStatus ? statusColors.border : '#e5e7eb'}`,
+                      backgroundColor: isCurrentStatus ? statusColors.bg : 'white',
+                      color: isCurrentStatus ? statusColors.text : '#374151',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      textTransform: 'uppercase',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    {getStatusLabel(status)}
+                    {isCurrentStatus && ' (Current)'}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Death Reason Modal */}
+      {showDeathModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '400px',
+            width: '90%',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#dc2626' }}>
+                Mark Deal as Dead
+              </h3>
+              <button
+                onClick={() => {
+                  setShowDeathModal(null);
+                  setDeathReason('');
+                }}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  color: '#6b7280'
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px' }}>
+              {showDeathModal.address}
+            </div>
+            
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+              Why did this deal die?
+            </label>
+            
+            <select
+              value={deathReason}
+              onChange={(e) => setDeathReason(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '6px',
+                border: '1px solid #d1d5db',
+                fontSize: '14px',
+                marginBottom: '16px'
+              }}
+            >
+              <option value="">Select reason...</option>
+              <option value="Seller Rejected">Seller Rejected</option>
+              <option value="Financing Fell Through">Financing Fell Through</option>
+              <option value="Inspection Issues">Inspection Issues</option>
+              <option value="Title Problems">Title Problems</option>
+              <option value="Better Deal Found">Better Deal Found</option>
+              <option value="Numbers Don't Work">Numbers Don't Work</option>
+              <option value="Market Conditions">Market Conditions</option>
+              <option value="Other">Other</option>
+            </select>
+            
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={handleDeathReasonSubmit}
+                disabled={!deathReason}
+                style={{
+                  flex: 1,
+                  padding: '10px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: deathReason ? '#dc2626' : '#e5e7eb',
+                  color: deathReason ? 'white' : '#9ca3af',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: deathReason ? 'pointer' : 'not-allowed'
+                }}
+              >
+                Mark as Dead
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeathModal(null);
+                  setDeathReason('');
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px 16px',
+                  borderRadius: '6px',
+                  border: '1px solid #d1d5db',
+                  backgroundColor: 'white',
+                  color: '#374151',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CSS for spin animation */}
       <style>{`
