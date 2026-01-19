@@ -42,6 +42,25 @@ const ResultsPageV2 = ({
   scenarioData, 
   underwritingResult,
   setUnderwritingResult,
+            <button
+              onClick={() => setActiveTab('map')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: 'white',
+                color: '#374151',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <MapPin size={14} />
+              Map
+            </button>
   calculations,
   messages,
   inputValue,
