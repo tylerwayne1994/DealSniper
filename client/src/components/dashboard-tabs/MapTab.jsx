@@ -197,26 +197,19 @@ function DashboardMapTab() {
   const tileUrl = tileConfigs[mapStyle].url;
   const attribution = tileConfigs[mapStyle].attribution;
 
-  // Marker styles by category
+  // Marker styles by category - ALL RED PINS NOW
   const categoryIcon = (cat, source) => {
+    // Everything uses red teardrop pins now
     switch (cat) {
-      case 'healthcare':
-        return createDivIcon({ bgClass: 'bg-rose-600/90', icon: Heart });
-      case 'manufacturing':
-        return createDivIcon({ bgClass: 'bg-amber-600/90', icon: Cog });
-      case 'buy':
-        return createDivIcon({ bgClass: 'bg-green-600/90', icon: CheckCircle });
-      case 'avoid':
-        return createDivIcon({ bgClass: 'bg-red-600/90', icon: XCircle });
       case 'rapidfire':
         return createPinIcon('#ef4444', '🔥');
       case 'prospect':
-        return createPinIcon('#3b82f6', '🏠');
+        return createPinIcon('#ef4444', '🏠');
       case 'pipeline':
-        return createPinIcon('#10b981', '📋');
+        return createPinIcon('#ef4444', '📋');
       case 'custom':
       default:
-        return createDivIcon({ bgClass: 'bg-purple-600/90', icon: Star });
+        return createPinIcon('#ef4444', '📍');
     }
   };
 
@@ -602,11 +595,11 @@ function DashboardMapTab() {
       if (!error && Array.isArray(data)) {
         const pins = data
           .filter(r => Number.isFinite(r.lat) && Number.isFinite(r.lng))
-          .map(r => ({ id: r.id || `db-${Math.random().toString(36).slice(2,8)}`, name: r.name || r.address || 'Prospect', category: 'prospect', position: [r.lat, r.lng], insight: r.units != null ? `${r.units} units` : (r.source || 'Prospect'), dbId: r.id }));
+          .map(r => ({ id: r.id || `db-${Math.random().toString(36).slice(2,8)}`, name: r.name || r.address || 'Prospect', category: 'rapidfire', position: [r.lat, r.lng], insight: r.units != null ? `${r.units} units` : (r.source || 'Saved Property'), dbId: r.id }));
         setCustomPins(prev => {
-          // Keep pipeline and rapid fire pins, replace prospects
-          const nonProspects = prev.filter(p => p.category !== 'prospect');
-          return [...nonProspects, ...pins];
+          // Keep pipeline and rapid fire pins from other sources, replace saved prospects
+          const nonSavedProspects = prev.filter(p => !(p.category === 'rapidfire' && p.source !== 'rapid_fire'));
+          return [...nonSavedProspects, ...pins];
         });
       }
     } catch (e) {
@@ -739,7 +732,10 @@ function DashboardMapTab() {
                 }}
                 placeholder="Street Address, City, ST ZIP" 
                 value={form.address} 
-                onChange={(e) => setForm({ ...form, address: e.target.value })} 
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                autoComplete="street-address"
+                type="text"
+                name="address"
               />
               <div style={{ display: 'flex', gap: '12px' }}>
                 <input 
