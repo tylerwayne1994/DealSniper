@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { API_ENDPOINTS } from '../../config/api';
 import {
   MessageSquare,
   MapPin,
@@ -51,7 +52,8 @@ function DashboardMapTab() {
   const [customPins, setCustomPins] = useState([]);
   const [form, setForm] = useState({ name: '', lat: '', lng: '', notes: '' });
   const [activeTab, setActiveTab] = useState('assistant'); // 'assistant' | 'add'
-  const [chat, setChat] = useState({ input: '', messages: [] });
+  const [chat, setChat] = useState({ input: '', messages: [], loading: false });
+  const [pendingCommands, setPendingCommands] = useState([]);
 
   const baseMarkers = useMemo(() => ([
     // Healthcare (rose)
@@ -125,6 +127,58 @@ function DashboardMapTab() {
     }
   };
 
+  // Command executor inside the map
+  function CommandExecutor({ commands, onDone, addPin }) {
+    const map = useMap();
+    useEffect(() => {
+      if (!commands || commands.length === 0) return;
+      commands.forEach(cmd => {
+        const { type, payload = {} } = cmd || {};
+        try {
+          if (type === 'panTo' && Array.isArray(payload.center)) {
+            const [lat, lng] = payload.center;
+            const zoom = payload.zoom || map.getZoom();
+            map.setView([lat, lng], zoom);
+          } else if (type === 'setZoom' && typeof payload.zoom === 'number') {
+            map.setZoom(payload.zoom);
+          } else if (type === 'addPin') {
+            const { name, lat, lng, notes } = payload;
+            if (Number.isFinite(lat) && Number.isFinite(lng) && name) {
+              addPin({ id: `cmd-${Date.now()}`, name, category: 'custom', position: [lat, lng], insight: notes || 'From MAX' });
+            }
+          } else if (type === 'removePin' && payload.id) {
+            // Removal handled by parent via a callback if needed
+          }
+        } catch (e) {
+          // Ignore malformed command
+        }
+      });
+      onDone && onDone();
+    }, [commands, map, onDone, addPin]);
+    return null;
+  }
+
+  // Extract commands JSON from assistant text
+  const extractCommands = (text) => {
+    if (!text) return [];
+    // Look for a JSON block containing "commands": [...]
+    const jsonMatch = text.match(/\{[\s\S]*\"commands\"[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        const obj = JSON.parse(jsonMatch[0]);
+        const arr = Array.isArray(obj.commands) ? obj.commands : [];
+        return arr;
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  };
+
+  const addPinFromCommand = (pin) => {
+    setCustomPins(prev => [...prev, pin]);
+  };
+
   // Intelligence cards per city (placeholder content)
   const intelligenceForCity = (key) => {
     const city = CITIES[key];
@@ -185,7 +239,14 @@ function DashboardMapTab() {
                 {chat.messages.length === 0 ? (
                   <div className="text-slate-400">No messages yet. Ask about crime, taxes, or evictions.</div>
                 ) : chat.messages.map((m, i) => (
-                  <div key={i} className="mb-1"><span className="font-semibold">You:</span> {m}</div>
+                  <div key={i} className="mb-1">
+                    {m.role === 'user' ? (
+                      <span className="font-semibold">You:</span>
+                    ) : (
+                      <span className="font-semibold text-indigo-700">MAX:</span>
+                    )}
+                    {' '}{m.content}
+                  </div>
                 ))}
               </div>
               <div className="flex gap-2">
@@ -197,12 +258,28 @@ function DashboardMapTab() {
                 />
                 <button
                   className="px-3 py-2 text-xs rounded-xl bg-indigo-600 text-white shadow"
-                  onClick={() => {
-                    if (chat.input.trim()) {
-                      setChat((prev) => ({ input: '', messages: [...prev.messages, prev.input.trim()] }));
+                  disabled={chat.loading}
+                  onClick={async () => {
+                    const trimmed = chat.input.trim();
+                    if (!trimmed || chat.loading) return;
+                    setChat(prev => ({ ...prev, loading: true, messages: [...prev.messages, { role: 'user', content: trimmed }], input: '' }));
+                    try {
+                      const system = `You are MAX. When asked about the map, output a JSON object at the end with a commands array to control the map. Example:\n{\n  \"commands\": [\n    { \"type\": \"panTo\", \"payload\": { \"center\": [39.0997, -94.5786], \"zoom\": 12 } },\n    { \"type\": \"addPin\", \"payload\": { \"name\": \"Prospect Deal\", \"lat\": 39.101, \"lng\": -94.57, \"notes\": \"Near hospital hub\" } }\n  ]\n}\nOnly include valid numeric lat/lng. Do not include code fences in the JSON.`;
+                      const res = await fetch(API_ENDPOINTS.marketResearchChat, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: trimmed, system })
+                      });
+                      const data = await res.json().catch(() => null);
+                      const text = data?.message || data?.content || data?.assistant || 'No response';
+                      const commands = extractCommands(text);
+                      if (commands.length > 0) setPendingCommands(commands);
+                      setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: text }] }));
+                    } catch (err) {
+                      setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: 'Error contacting MAX.' }] }));
                     }
                   }}
-                >Send</button>
+                >{chat.loading ? 'Sending...' : 'Send'}</button>
               </div>
             </div>
           </div>
@@ -242,6 +319,7 @@ function DashboardMapTab() {
         <MapContainer center={activeCity.center} zoom={activeCity.zoom} className="w-full h-full">
           <CityNavigator city={activeCity} />
           <TileLayer url={tileUrl} attribution={attribution} />
+          <CommandExecutor commands={pendingCommands} onDone={() => setPendingCommands([])} addPin={addPinFromCommand} />
 
           {/* Base categorized markers */}
           {baseMarkers.map((m) => (
