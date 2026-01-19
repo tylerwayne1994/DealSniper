@@ -324,14 +324,14 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
   }
   
   // Interest rate - should be like 6.00, not 0.06
-  let interestRate = pricingFinancing.interest_rate || financing.interest_rate || 6;
+  let interestRate = pricingFinancing.interest_rate || financing.interest_rate || financing.rate || 6;
   // If it's a tiny decimal like 0.06, multiply by 100
   if (interestRate < 1) {
     interestRate = interestRate * 100;
   }
   
-  const loanTerm = pricingFinancing.loan_term || financing.loan_term || 30;
-  const amortization = pricingFinancing.amortization_period || financing.amortization || 30;
+  const loanTerm = pricingFinancing.term_years || financing.term_years || financing.loan_term || financing.term || 30;
+  const amortization = pricingFinancing.amortization_years || financing.amortization_years || financing.amortization || 30;
 
   // Returns
   // Use the core engine's levered IRR and Year 1 metrics so
