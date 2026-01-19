@@ -326,6 +326,63 @@ const ProformaTab = ({
         </div>
       </div>
 
+      {/* Unit Mix & Rents (editable, live) */}
+      <div style={{
+        backgroundColor: 'white',
+        border: '1px solid #e5e7eb',
+        borderRadius: '12px',
+        padding: '20px',
+        marginBottom: '24px'
+      }}>
+        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#111827' }}>Unit Mix & Rents</h3>
+        <p style={{ margin: '6px 0 16px', fontSize: 12, color: '#6b7280' }}>Editing here updates the shared scenario data and recalculations.</p>
+        {unitMix && unitMix.length > 0 ? (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
+                  <th style={{ padding: '10px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: '#6b7280' }}>Unit Type</th>
+                  <th style={{ padding: '10px', textAlign: 'right', fontSize: 12, fontWeight: 700, color: '#6b7280' }}>Units</th>
+                  <th style={{ padding: '10px', textAlign: 'right', fontSize: 12, fontWeight: 700, color: '#6b7280' }}>SF/Unit</th>
+                  <th style={{ padding: '10px', textAlign: 'right', fontSize: 12, fontWeight: 700, color: '#6b7280' }}>Current Rent</th>
+                  <th style={{ padding: '10px', textAlign: 'right', fontSize: 12, fontWeight: 700, color: '#6b7280' }}>Market Rent</th>
+                </tr>
+              </thead>
+              <tbody>
+                {unitMix.map((u, idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    <td style={{ padding: '10px', fontSize: 13 }}>{u.type || u.unit_type || ''}</td>
+                    <td style={{ padding: '10px', textAlign: 'right' }}>
+                      <input type="number" value={u.units || 0} onChange={(e)=>handleChange(`unit_mix.${idx}.units`, parseInt(e.target.value)||0)} style={{ width: '120px', padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, textAlign: 'right' }} />
+                    </td>
+                    <td style={{ padding: '10px', textAlign: 'right' }}>
+                      <input type="number" value={u.unit_sf || u.sf_per_unit || 0} onChange={(e)=>handleChange(`unit_mix.${idx}.unit_sf`, parseInt(e.target.value)||0)} style={{ width: '120px', padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, textAlign: 'right' }} />
+                    </td>
+                    <td style={{ padding: '10px', textAlign: 'right' }}>
+                      <input type="number" value={u.rent_current || u.rent || 0} onChange={(e)=>handleChange(`unit_mix.${idx}.rent_current`, parseFloat(e.target.value)||0)} style={{ width: '140px', padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, textAlign: 'right' }} />
+                    </td>
+                    <td style={{ padding: '10px', textAlign: 'right' }}>
+                      <input type="number" value={u.rent_market || u.market_rent || u.rent_current || u.rent || 0} onChange={(e)=>handleChange(`unit_mix.${idx}.rent_market`, parseFloat(e.target.value)||0)} style={{ width: '140px', padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, textAlign: 'right' }} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr style={{ backgroundColor: '#f9fafb' }}>
+                  <td style={{ padding: '10px', fontWeight: 700 }}>Totals</td>
+                  <td style={{ padding: '10px', textAlign: 'right', fontWeight: 700 }}>{unitMix.reduce((s,u)=>s+(u.units||0),0)}</td>
+                  <td></td>
+                  <td style={{ padding: '10px', textAlign: 'right', fontWeight: 700 }}>{fmt(unitMix.reduce((s,u)=>s+((u.units||0)*(u.rent_current||u.rent||0)*12),0))}</td>
+                  <td style={{ padding: '10px', textAlign: 'right', fontWeight: 700 }}>{fmt(unitMix.reduce((s,u)=>s+((u.units||0)*(u.rent_market||u.market_rent||u.rent_current||u.rent||0)*12),0))}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        ) : (
+          <div style={{ color: '#6b7280', fontSize: 13 }}>No unit mix available</div>
+        )}
+      </div>
+
       {/* Controls */}
       <div style={{
         display: 'flex',
