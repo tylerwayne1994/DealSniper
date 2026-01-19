@@ -115,40 +115,7 @@ function DashboardMapTab() {
     fetchUser();
   }, []);
 
-  const baseMarkers = useMemo(() => ([
-    // Healthcare (rose)
-    {
-      id: 'health-1',
-      name: 'Healthcare Node',
-      category: 'healthcare',
-      position: [activeCity.center[0] + 0.01, activeCity.center[1] + 0.01],
-      insight: 'Regional medical hub driving stable employment and rent demand.'
-    },
-    // Manufacturing (amber)
-    {
-      id: 'mfg-1',
-      name: 'Manufacturing Plant',
-      category: 'manufacturing',
-      position: [activeCity.center[0] - 0.012, activeCity.center[1] - 0.008],
-      insight: 'Expanding operations; potential for workforce housing demand.'
-    },
-    // BuyZones (green)
-    {
-      id: 'buyzone-1',
-      name: 'Buy Zone A',
-      category: 'buy',
-      position: [activeCity.center[0] + 0.018, activeCity.center[1] - 0.005],
-      insight: 'Favorable rent-to-income and crime trend metrics.'
-    },
-    // AvoidZones (red)
-    {
-      id: 'avoid-1',
-      name: 'Avoid Zone X',
-      category: 'avoid',
-      position: [activeCity.center[0] - 0.02, activeCity.center[1] + 0.01],
-      insight: 'Elevated eviction timelines and declining school ratings.'
-    }
-  ]), [activeCity]);
+  const baseMarkers = useMemo(() => ([]), [activeCity]);
 
   const handleSubmitProperty = async (e) => {
     e.preventDefault();
