@@ -268,13 +268,60 @@ export async function loadPipelineDeals() {
  * Save a batch of Rapid Fire deals into Supabase as a separate queue.
  * These are lightweight leads (from the Rapid Fire tool), not fully underwritten deals.
  * They are stored in the same `deals` table with pipeline_status = 'rapidfire'.
+ * NOW INCLUDES GEOCODING for each deal so they appear on the map.
  */
 export async function saveRapidFireDeals(rapidFireDeals) {
   if (!Array.isArray(rapidFireDeals) || rapidFireDeals.length === 0) return;
 
   const nowIso = new Date().toISOString();
 
-  let rows = rapidFireDeals.map((deal, index) => {
+  // Geocode function using Nominatim
+  const geocodeAddress = async (address) => {
+    if (!address || !address.trim()) return { lat: null, lng: null };
+    
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(address)}&addressdetails=1`;
+      const res = await fetch(url, { 
+        headers: { 'Accept-Language': 'en-US' }
+      });
+      
+      if (!res.ok) return { lat: null, lng: null };
+      
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        const best = data[0];
+        const lat = parseFloat(best.lat);
+        const lng = parseFloat(best.lon);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          return { lat, lng };
+        }
+      }
+    } catch (e) {
+      console.error('Geocoding failed for:', address, e);
+    }
+    return { lat: null, lng: null };
+  };
+
+  // Geocode all deals in parallel with throttling
+  console.log(`🗺️ Starting geocoding for ${rapidFireDeals.length} rapid fire deals...`);
+  const geocodedDeals = [];
+  for (let i = 0; i < rapidFireDeals.length; i++) {
+    const deal = rapidFireDeals[i];
+    const address = deal.name || 'Rapid Fire Deal';
+    
+    console.log(`🗺️ Geocoding [${i + 1}/${rapidFireDeals.length}]: ${address}`);
+    const { lat, lng } = await geocodeAddress(address);
+    
+    geocodedDeals.push({ ...deal, latitude: lat, longitude: lng });
+    
+    // Throttle to ~1 request per second to respect Nominatim usage policy
+    if (i < rapidFireDeals.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 1100));
+    }
+  }
+  console.log(`✅ Geocoding complete for ${geocodedDeals.length} deals`);
+
+  let rows = geocodedDeals.map((deal, index) => {
     const baseName = (deal.name || 'rapidfire-deal').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40) || 'rapidfire-deal';
     const dealId = `${baseName}-${Date.now()}-${index}`;
 
@@ -285,6 +332,8 @@ export async function saveRapidFireDeals(rapidFireDeals) {
       purchase_price: deal.totalPrice || 0,
       deal_structure: 'Rapid Fire Queue',
       listing_url: deal.listingUrl || null,
+      latitude: deal.latitude,
+      longitude: deal.longitude,
       // Store all Rapid Fire metrics in parsed_data.rapidfire for later use.
       parsed_data: {
         rapidfire: {
