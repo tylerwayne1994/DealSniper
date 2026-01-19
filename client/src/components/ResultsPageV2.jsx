@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useNavigate } from 'react-router-dom';
-import { Send, Home, DollarSign, FileText, CreditCard, BarChart3, Users, FileBarChart, TrendingUp, Calculator, PieChart, Calendar, Activity, Layers, LayoutDashboard, RefreshCw, Rocket, MessageSquare, Download, Presentation } from 'lucide-react';
+import { Send, Home, DollarSign, FileText, CreditCard, BarChart3, Users, FileBarChart, TrendingUp, Calculator, PieChart, Calendar, Activity, Layers, LayoutDashboard, RefreshCw, Rocket, MessageSquare, Download, Presentation, MapPin } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Area, AreaChart } from 'recharts';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -1147,7 +1147,8 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
     { id: 'syndication', label: 'Syndication', icon: PieChart },
     
     { id: 'costseg', label: 'Cost Segregation', icon: Calculator },
-    { id: 'market-data', label: 'Market Data', icon: BarChart3 }
+    { id: 'market-data', label: 'Market Data', icon: BarChart3 },
+    { id: 'map', label: 'Map', icon: MapPin }
   ];
 
   // Row component
@@ -1281,6 +1282,18 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
   // Render tab content
   const renderTabContent = () => {
     switch (activeTab) {
+            case 'map':
+              return (
+                <div style={{ padding: '24px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                    <MapPin size={18} color="#0ea5e9" />
+                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#111827' }}>Map</h3>
+                  </div>
+                  <div style={{ fontSize: 13, color: '#6b7280' }}>
+                    Map view placeholder. We can embed a property/location map here.
+                  </div>
+                </div>
+              );
       case 'summary':
         // Use canonical values from fullCalcs so Summary matches engine
         const summaryPurchasePrice = fullCalcs.acquisition?.purchasePrice || pricing_financing?.price || pricing_financing?.purchase_price || 0;
