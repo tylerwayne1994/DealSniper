@@ -106,6 +106,8 @@ function DashboardMapTab() {
         insight: form.notes || 'Manual research note'
       };
       setCustomPins((prev) => [...prev, newPin]);
+      // Save manual pin to Supabase
+      supabase.from('map_prospects').insert({ name: newPin.name, address: null, units: null, lat, lng, source: 'manual' }).catch(() => {});
       setForm({ name: '', lat: '', lng: '', notes: '' });
     }
   };
@@ -147,7 +149,10 @@ function DashboardMapTab() {
           } else if (type === 'addPin') {
             const { name, lat, lng, notes } = payload;
             if (Number.isFinite(lat) && Number.isFinite(lng) && name) {
-              addPin({ id: `cmd-${Date.now()}`, name, category: 'custom', position: [lat, lng], insight: notes || 'From MAX' });
+              const newPin = { id: `cmd-${Date.now()}`, name, category: 'custom', position: [lat, lng], insight: notes || 'From MAX' };
+              addPin(newPin);
+              // Save to Supabase as LLM-generated pin
+              supabase.from('map_prospects').insert({ name, address: null, units: null, lat, lng, source: 'llm' }).catch(() => {});
             }
           } else if (type === 'removePin' && payload.id) {
             // Removal handled by parent via a callback if needed
@@ -292,6 +297,41 @@ function DashboardMapTab() {
     }
   };
 
+  // Load saved prospects from Supabase
+  const loadSavedProspects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('map_prospects')
+        .select('id,name,address,units,lat,lng,source')
+        .order('created_at', { ascending: false })
+        .limit(500);
+      if (!error && Array.isArray(data)) {
+        const pins = data
+          .filter(r => Number.isFinite(r.lat) && Number.isFinite(r.lng))
+          .map(r => ({ id: r.id || `db-${Math.random().toString(36).slice(2,8)}`, name: r.name || r.address || 'Prospect', category: 'custom', position: [r.lat, r.lng], insight: r.units != null ? `${r.units} units` : (r.source || 'Prospect') }));
+        setCustomPins(pins);
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  // Save all current pins to Supabase
+  const saveAllPins = async () => {
+    try {
+      const rows = customPins.map(p => ({ name: p.name, address: p.address || null, units: (p.insight && /units/.test(p.insight)) ? parseInt(p.insight, 10) : null, lat: p.position[0], lng: p.position[1], source: 'manual' }));
+      await supabase.from('map_prospects').insert(rows);
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  // Auto-load toggle
+  const [autoLoadSaved, setAutoLoadSaved] = useState(() => localStorage.getItem('atlas.autoLoadProspects') === 'true');
+  useEffect(() => {
+    if (autoLoadSaved) loadSavedProspects();
+  }, [autoLoadSaved]);
+
   // Intelligence cards per city (placeholder content)
   const intelligenceForCity = (key) => {
     const city = CITIES[key];
@@ -416,6 +456,12 @@ function DashboardMapTab() {
               </div>
             </div>
             <button type="submit" className="px-3 py-2 text-xs rounded-xl bg-purple-600 text-white shadow">Add Pin</button>
+            <div className="flex items-center gap-2 pt-2">
+              <input id="auto-load" type="checkbox" className="rounded" checked={autoLoadSaved} onChange={(e) => {
+                const v = e.target.checked; setAutoLoadSaved(v); localStorage.setItem('atlas.autoLoadProspects', v ? 'true' : 'false');
+              }} />
+              <label htmlFor="auto-load" className="text-xs text-slate-600">Auto-load saved prospects on open</label>
+            </div>
           </form>
         ) : (
           <div className="rounded-2xl bg-white/70 backdrop-blur p-4 shadow-2xl space-y-3">
@@ -454,6 +500,14 @@ function DashboardMapTab() {
                   }
                 }}
               >Load Rapid Fire Passed</button>
+              <button
+                className="px-3 py-2 text-xs rounded-xl border bg-white border-slate-200 text-slate-600"
+                onClick={loadSavedProspects}
+              >Load Saved Prospects</button>
+              <button
+                className="px-3 py-2 text-xs rounded-xl border bg-white border-slate-200 text-slate-600"
+                onClick={saveAllPins}
+              >Save All Pins</button>
             </div>
           </div>
         )}
