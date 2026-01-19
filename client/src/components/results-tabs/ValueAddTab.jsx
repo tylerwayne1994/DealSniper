@@ -7,6 +7,8 @@ import {
 
 const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
   const [selectedStrategy, setSelectedStrategy] = useState('cosmetic');
+  const [increaseMode, setIncreaseMode] = useState('amount'); // 'amount' | 'percent'
+  const [percentIncrease, setPercentIncrease] = useState(5); // default 5%
   
   // Handle null/undefined scenarioData
   if (!scenarioData) {
@@ -267,10 +269,13 @@ const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
   const avgCurrentMarketRent = unitMix.length > 0
     ? Math.round(unitMix.reduce((sum, u) => sum + (u.rent_market ?? u.rent_current ?? 0), 0) / unitMix.length)
     : 0;
+  const perUnitIncrease = increaseMode === 'amount'
+    ? (selectedStrategyData.rentIncrease || 0)
+    : Math.round(((avgCurrentMarketRent || 0) * (percentIncrease || 0)) / 100);
   
   // Calculations
   const totalRenoCoast = selectedStrategyData.costPerUnit * unitCount;
-  const monthlyRentIncrease = selectedStrategyData.rentIncrease * unitCount;
+  const monthlyRentIncrease = perUnitIncrease * unitCount;
   const annualRentIncrease = monthlyRentIncrease * 12;
   const newAnnualIncome = (currentRent * 12) + annualRentIncrease;
   const assumedCapRate = 6.5;
@@ -290,10 +295,20 @@ const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
 
   const applyIncreaseToUnitMix = () => {
     if (!onFieldChange) return;
-    const inc = selectedStrategyData.rentIncrease || 0;
+    const inc = perUnitIncrease || 0;
     const updated = unitMix.map((u) => {
       const base = (u.rent_market ?? u.rent_current ?? 0);
       return { ...u, rent_market: Math.max(0, base + inc) };
+    });
+    onFieldChange('unit_mix', updated);
+  };
+
+  const applyIncreaseToCurrentRents = () => {
+    if (!onFieldChange) return;
+    const inc = perUnitIncrease || 0;
+    const updated = unitMix.map((u) => {
+      const base = (u.rent_current ?? u.rent_market ?? 0);
+      return { ...u, rent_current: Math.max(0, base + inc) };
     });
     onFieldChange('unit_mix', updated);
   };
@@ -344,14 +359,37 @@ const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
             />
           </div>
           <div style={styles.inputGroup}>
-            <label style={styles.label}>Rent Increase per Unit/Month</label>
-            <input
-              type="number"
+            <label style={styles.label}>Increase Mode</label>
+            <select
               style={styles.input}
-              value={selectedStrategyData.rentIncrease}
-              readOnly
-            />
+              value={increaseMode}
+              onChange={(e) => setIncreaseMode(e.target.value)}
+            >
+              <option value="amount">Fixed Amount ($)</option>
+              <option value="percent">Percentage (%)</option>
+            </select>
           </div>
+          {increaseMode === 'amount' ? (
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Rent Increase per Unit/Month ($)</label>
+              <input
+                type="number"
+                style={styles.input}
+                value={selectedStrategyData.rentIncrease}
+                readOnly
+              />
+            </div>
+          ) : (
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Percent Increase per Unit (%)</label>
+              <input
+                type="number"
+                style={styles.input}
+                value={percentIncrease}
+                onChange={(e) => setPercentIncrease(parseFloat(e.target.value) || 0)}
+              />
+            </div>
+          )}
           <div style={styles.inputGroup}>
             <label style={styles.label}>Timeline (Months)</label>
             <input
@@ -398,7 +436,25 @@ const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
             Apply Increase To Market Rents
           </button>
           <div style={{ fontSize: 12, color: '#6b7280', alignSelf: 'center' }}>
-            Updates scenarioData.unit_mix[].rent_market by +{selectedStrategyData.rentIncrease}/unit
+            Updates scenarioData.unit_mix[].rent_market by {increaseMode === 'amount' ? `+$${perUnitIncrease}` : `+${percentIncrease}%`} /unit
+          </div>
+          <button
+            onClick={applyIncreaseToCurrentRents}
+            style={{
+              padding: '10px 14px',
+              backgroundColor: '#10b981',
+              color: 'white',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
+          >
+            Apply Increase To Current Rents
+          </button>
+          <div style={{ fontSize: 12, color: '#6b7280', alignSelf: 'center' }}>
+            Updates scenarioData.unit_mix[].rent_current by {increaseMode === 'amount' ? `+$${perUnitIncrease}` : `+${percentIncrease}%`} /unit
           </div>
         </div>
 
