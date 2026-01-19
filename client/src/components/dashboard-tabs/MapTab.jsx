@@ -44,6 +44,42 @@ function createDivIcon({ bgClass, borderClass = 'border-white/60', icon: Icon, i
   });
 }
 
+// Create traditional pin-shaped marker (teardrop style) for properties
+function createPinIcon(color = '#ef4444', label = '') {
+  return L.divIcon({
+    className: 'custom-pin-icon',
+    html: `
+      <div style="position: relative; width: 32px; height: 42px;">
+        <svg width="32" height="42" viewBox="0 0 32 42" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="pin-shadow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+              <feOffset dx="0" dy="2" result="offsetblur"/>
+              <feComponentTransfer>
+                <feFuncA type="linear" slope="0.3"/>
+              </feComponentTransfer>
+              <feMerge>
+                <feMergeNode/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+          <path d="M16 0C9.4 0 4 5.4 4 12c0 8 12 30 12 30s12-22 12-30c0-6.6-5.4-12-12-12z" 
+                fill="${color}" 
+                stroke="#fff" 
+                stroke-width="2" 
+                filter="url(#pin-shadow)"/>
+          <circle cx="16" cy="12" r="6" fill="#fff" opacity="0.9"/>
+          ${label ? `<text x="16" y="16" text-anchor="middle" font-size="10" fill="${color}" font-weight="bold">${label}</text>` : ''}
+        </svg>
+      </div>
+    `,
+    iconSize: [32, 42],
+    iconAnchor: [16, 42],
+    popupAnchor: [0, -42]
+  });
+}
+
 // Map control component to change view
 function CityNavigator({ city }) {
   const map = useMap();
@@ -144,9 +180,9 @@ function DashboardMapTab() {
       case 'avoid':
         return createDivIcon({ bgClass: 'bg-red-600/90', icon: XCircle });
       case 'rapidfire':
-        return createDivIcon({ bgClass: 'bg-orange-500/90', borderClass: 'border-orange-200/70', icon: Building2, size: 'small' });
+        return createPinIcon('#ef4444', '🔥');
       case 'prospect':
-        return createDivIcon({ bgClass: 'bg-blue-500/90', borderClass: 'border-blue-200/70', icon: Home, size: 'small' });
+        return createPinIcon('#3b82f6', '🏠');
       case 'custom':
       default:
         return createDivIcon({ bgClass: 'bg-purple-600/90', icon: Star });
@@ -816,8 +852,9 @@ function DashboardMapTab() {
               if (mapFilter === 'prospects') return p.category === 'prospect';
               return true;
             })
+            .filter(p => p.category !== 'rapidfire' && p.category !== 'prospect')
             .map((p) => {
-              const color = p.category === 'rapidfire' ? '#f97316' : p.category === 'prospect' ? '#3b82f6' : '#7c3aed';
+              const color = '#7c3aed';
               return (
                 <Circle key={`${p.id}-circle`} center={p.position} radius={3219} pathOptions={{ color, fillColor: color, fillOpacity: 0.08 }} />
               );
