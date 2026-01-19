@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { DollarSign, TrendingUp, Calendar, FileText } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { calculateAmortizationSchedule } from '../../utils/realEstateCalculations';
 
 const ProformaTab = ({ 
   fullCalcs, 
-  scenarioData
+  scenarioData,
+  onFieldChange
 }) => {
   const [yearsToShow, setYearsToShow] = useState(5);
 
@@ -106,7 +107,7 @@ const ProformaTab = ({
   
   // Calculate totals
   const totalCashFlow = proformaYears.reduce((sum, y) => sum + y.cashFlow, 0);
-  const totalNOI = proformaYears.reduce((sum, y) => sum + y.noi, 0);
+  // const totalNOI = proformaYears.reduce((sum, y) => sum + y.noi, 0);
   
   // Format currency
   const fmt = (val) => {
@@ -123,6 +124,28 @@ const ProformaTab = ({
     if (val == null || isNaN(val)) return '0.0%';
     return `${(val * 100).toFixed(1)}%`;
   };
+
+  const handleChange = (path, value) => {
+    if (onFieldChange) onFieldChange(path, value);
+  };
+
+  // Utilities breakdown for editable current snapshot
+  const expenses = scenarioData?.expenses || {};
+  const totalUtilities = expenses.utilities || 0;
+  const utilityBreakdown = expenses.utility_breakdown || {};
+  const hasBreakdown = Object.keys(utilityBreakdown).length > 0;
+  const defaultUtilities = hasBreakdown
+    ? utilityBreakdown
+    : {
+        water: totalUtilities / 8,
+        electricity: totalUtilities / 8,
+        gas: totalUtilities / 8,
+        trash: totalUtilities / 8,
+        sewer: totalUtilities / 8,
+        internet: totalUtilities / 8,
+        landscaping: totalUtilities / 8,
+        pest_control: totalUtilities / 8,
+      };
 
   return (
     <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
@@ -154,6 +177,152 @@ const ProformaTab = ({
           <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>
             Year-over-year financial projections with {fmtPct(rentGrowthRate)} rent growth
           </p>
+        </div>
+      </div>
+
+      {/* Current Snapshot */}
+      <div style={{
+        backgroundColor: 'white',
+        border: '1px solid #e5e7eb',
+        borderRadius: '12px',
+        padding: '20px',
+        marginBottom: '24px'
+      }}>
+        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#111827' }}>Current Snapshot</h3>
+        <p style={{ margin: '6px 0 16px', fontSize: '12px', color: '#6b7280' }}>Editable fields auto-filled from parsed data. Mirrors Property Analysis.</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+          {/* Purchase Price */}
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 8 }}>Purchase Price</label>
+            <input type="number" value={purchasePrice || 0} onChange={(e)=>handleChange('pricing_financing.purchase_price', parseFloat(e.target.value)||0)} style={{ width:'100%', padding:'10px 12px', border:'1px solid #d1d5db', borderRadius:6, fontWeight:600 }} />
+          </div>
+          {/* Year 1 Gross Rent */}
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 8 }}>Current Annual Rent</label>
+            <input type="number" value={year1Rent || 0} onChange={(e)=>handleChange('pnl.total_rental_income', parseFloat(e.target.value)||0)} style={{ width:'100%', padding:'10px 12px', border:'1px solid #d1d5db', borderRadius:6, fontWeight:600 }} />
+          </div>
+          {/* Other Income */}
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 8 }}>Other Income (Annual)</label>
+            <input type="number" value={year1OtherIncome || 0} onChange={(e)=>handleChange('pnl.other_income', parseFloat(e.target.value)||0)} style={{ width:'100%', padding:'10px 12px', border:'1px solid #d1d5db', borderRadius:6, fontWeight:600 }} />
+          </div>
+          {/* Taxes */}
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 8 }}>Property Taxes</label>
+            <input type="number" value={expenses.taxes || 0} onChange={(e)=>handleChange('expenses.taxes', parseFloat(e.target.value)||0)} style={{ width:'100%', padding:'10px 12px', border:'1px solid #d1d5db', borderRadius:6, fontWeight:600 }} />
+          </div>
+          {/* Insurance */}
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 8 }}>Insurance</label>
+            <input type="number" value={expenses.insurance || 0} onChange={(e)=>handleChange('expenses.insurance', parseFloat(e.target.value)||0)} style={{ width:'100%', padding:'10px 12px', border:'1px solid #d1d5db', borderRadius:6, fontWeight:600 }} />
+          </div>
+          {/* Management */}
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 8 }}>Property Management</label>
+            <input type="number" value={expenses.management || 0} onChange={(e)=>handleChange('expenses.management', parseFloat(e.target.value)||0)} style={{ width:'100%', padding:'10px 12px', border:'1px solid #d1d5db', borderRadius:6, fontWeight:600 }} />
+          </div>
+          {/* Vacancy */}
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 8 }}>Vacancy (Annual $)</label>
+            <input type="number" value={expenses.vacancy || 0} onChange={(e)=>handleChange('expenses.vacancy', parseFloat(e.target.value)||0)} style={{ width:'100%', padding:'10px 12px', border:'1px solid #d1d5db', borderRadius:6, fontWeight:600 }} />
+          </div>
+          {/* CapEx */}
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 8 }}>CapEx (Annual $)</label>
+            <input type="number" value={expenses.capex || fullCalcs?.acquisition?.capexBudget || 0} onChange={(e)=>handleChange('expenses.capex', parseFloat(e.target.value)||0)} style={{ width:'100%', padding:'10px 12px', border:'1px solid #d1d5db', borderRadius:6, fontWeight:600 }} />
+          </div>
+          {/* Interest Rate */}
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 8 }}>Interest Rate (%)</label>
+            <input type="number" value={interestRate || 0} onChange={(e)=>handleChange('pricing_financing.interest_rate', parseFloat(e.target.value)||0)} style={{ width:'100%', padding:'10px 12px', border:'1px solid #d1d5db', borderRadius:6, fontWeight:600 }} />
+          </div>
+          {/* Amortization Years */}
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 8 }}>Amortization (Years)</label>
+            <input type="number" value={amortYears || 0} onChange={(e)=>handleChange('pricing_financing.amortization_years', parseFloat(e.target.value)||0)} style={{ width:'100%', padding:'10px 12px', border:'1px solid #d1d5db', borderRadius:6, fontWeight:600 }} />
+          </div>
+        </div>
+
+        {/* Utilities Breakdown */}
+        <div style={{ marginTop: 16 }}>
+          <h4 style={{ margin: '0 0 8px 0', fontSize: 14, fontWeight: 700, color: '#111827' }}>Utilities Breakdown</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+            {Object.entries(defaultUtilities).map(([key, val]) => (
+              <div key={key}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 6 }}>{key.replace('_',' ')}</label>
+                <input type="number" value={val || 0} onChange={(e)=>handleChange(`expenses.utility_breakdown.${key}`, parseFloat(e.target.value)||0)} style={{ width:'100%', padding:'10px 12px', border:'1px solid #d1d5db', borderRadius:6, fontWeight:600 }} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Computed Metrics */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginTop: 16, paddingTop: 12, borderTop: '1px solid #e5e7eb' }}>
+          <div>
+            <div style={{ fontSize: 12, color: '#6b7280' }}>Current NOI</div>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>{fmt(year1NOI)}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: '#6b7280' }}>Current Cap Rate</div>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>{purchasePrice > 0 ? ((year1NOI / purchasePrice) * 100).toFixed(2) + '%' : 'N/A'}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: '#6b7280' }}>Monthly Debt Service</div>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>{fmt(annualDebtService / 12)}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: '#6b7280' }}>Annual Debt Service</div>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>{fmt(annualDebtService)}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Proforma Snapshot */}
+      <div style={{
+        backgroundColor: '#f9fafb',
+        border: '1px solid #e5e7eb',
+        borderRadius: '12px',
+        padding: '20px',
+        marginBottom: '24px'
+      }}>
+        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#111827' }}>Projected Proforma</h3>
+        <p style={{ margin: '6px 0 16px', fontSize: '12px', color: '#6b7280' }}>Editable growth assumptions; values below reflect Year {yearsToShow}.</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 8 }}>Rent Growth (Annual)</label>
+            <input type="number" step="0.01" value={rentGrowthRate} onChange={(e)=>handleChange('growth.annual_rent_growth', parseFloat(e.target.value)||0)} style={{ width:'100%', padding:'10px 12px', border:'1px solid #d1d5db', borderRadius:6, fontWeight:600 }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 8 }}>Expense Growth (Annual)</label>
+            <input type="number" step="0.01" value={expenseGrowthRate} onChange={(e)=>handleChange('growth.annual_expense_growth', parseFloat(e.target.value)||0)} style={{ width:'100%', padding:'10px 12px', border:'1px solid #d1d5db', borderRadius:6, fontWeight:600 }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 8 }}>Vacancy Rate</label>
+            <input type="number" step="0.01" value={vacancyRate} onChange={(e)=>handleChange('growth.vacancy_rate', parseFloat(e.target.value)||0)} style={{ width:'100%', padding:'10px 12px', border:'1px solid #d1d5db', borderRadius:6, fontWeight:600 }} />
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginTop: 16 }}>
+          <div>
+            <div style={{ fontSize: 12, color: '#6b7280' }}>Proforma Annual Rent (Year {yearsToShow})</div>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>{fmt(proformaYears[yearsToShow-1]?.grossRent || 0)}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: '#6b7280' }}>Proforma Other Income</div>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>{fmt(proformaYears[yearsToShow-1]?.otherIncome || 0)}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: '#6b7280' }}>Proforma Operating Expenses</div>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>{fmt(proformaYears[yearsToShow-1]?.operatingExpenses || 0)}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: '#6b7280' }}>Proforma NOI</div>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>{fmt(proformaYears[yearsToShow-1]?.noi || 0)}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: '#6b7280' }}>Proforma Cap Rate</div>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>{purchasePrice > 0 ? (((proformaYears[yearsToShow-1]?.noi || 0) / purchasePrice) * 100).toFixed(2) + '%' : 'N/A'}</div>
+          </div>
         </div>
       </div>
 
