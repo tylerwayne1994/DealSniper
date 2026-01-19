@@ -272,6 +272,20 @@ const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
   const perUnitIncrease = increaseMode === 'amount'
     ? (selectedStrategyData.rentIncrease || 0)
     : Math.round(((avgCurrentMarketRent || 0) * (percentIncrease || 0)) / 100);
+
+  const [groupPercents, setGroupPercents] = useState({});
+  const makeGroupKey = (u) => (u.bedrooms != null ? `${u.bedrooms}BR` : (u.type || 'All Units'));
+  const groupMap = unitMix.reduce((acc, u) => {
+    const key = makeGroupKey(u);
+    if (!acc[key]) acc[key] = { key, rowCount: 0, sumRent: 0 };
+    acc[key].rowCount += 1;
+    acc[key].sumRent += (u.rent_market ?? u.rent_current ?? 0);
+    return acc;
+  }, {});
+  const groupList = Object.values(groupMap).map(g => ({
+    ...g,
+    avgRent: g.rowCount > 0 ? Math.round(g.sumRent / g.rowCount) : 0
+  }));
   
   // Calculations
   const totalRenoCoast = selectedStrategyData.costPerUnit * unitCount;
@@ -309,6 +323,36 @@ const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
     const updated = unitMix.map((u) => {
       const base = (u.rent_current ?? u.rent_market ?? 0);
       return { ...u, rent_current: Math.max(0, base + inc) };
+    });
+    onFieldChange('unit_mix', updated);
+  };
+
+  const applyGroupToMarket = (key) => {
+    if (!onFieldChange) return;
+    const pct = ((groupPercents[key] ?? percentIncrease) || 0) / 100;
+    const updated = unitMix.map((u) => {
+      const uKey = makeGroupKey(u);
+      const base = (u.rent_market ?? u.rent_current ?? 0);
+      if (uKey === key) {
+        const inc = Math.round(base * pct);
+        return { ...u, rent_market: Math.max(0, base + inc) };
+      }
+      return u;
+    });
+    onFieldChange('unit_mix', updated);
+  };
+
+  const applyGroupToCurrent = (key) => {
+    if (!onFieldChange) return;
+    const pct = ((groupPercents[key] ?? percentIncrease) || 0) / 100;
+    const updated = unitMix.map((u) => {
+      const uKey = makeGroupKey(u);
+      const base = (u.rent_current ?? u.rent_market ?? 0);
+      if (uKey === key) {
+        const inc = Math.round(base * pct);
+        return { ...u, rent_current: Math.max(0, base + inc) };
+      }
+      return u;
     });
     onFieldChange('unit_mix', updated);
   };
@@ -456,6 +500,47 @@ const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
           <div style={{ fontSize: 12, color: '#6b7280', alignSelf: 'center' }}>
             Updates scenarioData.unit_mix[].rent_current by {increaseMode === 'amount' ? `+$${perUnitIncrease}` : `+${percentIncrease}%`} /unit
           </div>
+        </div>
+
+        {/* Per-Type Overrides */}
+        <div style={{ marginTop: 16, backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 16 }}>
+          <div style={styles.sectionTitle}>
+            <ArrowRight size={18} />
+            Per-Type Overrides
+          </div>
+          {groupList.length > 0 ? (
+            groupList.map((g) => (
+              <div key={g.key} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 12, alignItems: 'center', marginBottom: 10 }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{g.key}</div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Types: {g.rowCount} • Avg rent {formatCurrency(g.avgRent)}</div>
+                </div>
+                <div>
+                  <label style={styles.label}>Percent Increase (%)</label>
+                  <input
+                    type="number"
+                    style={styles.input}
+                    value={groupPercents[g.key] ?? percentIncrease}
+                    onChange={(e) => setGroupPercents((prev) => ({ ...prev, [g.key]: parseFloat(e.target.value) || 0 }))}
+                  />
+                </div>
+                <button
+                  onClick={() => applyGroupToMarket(g.key)}
+                  style={{ padding: '10px 12px', backgroundColor: '#1e293b', color: 'white', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Apply Market
+                </button>
+                <button
+                  onClick={() => applyGroupToCurrent(g.key)}
+                  style={{ padding: '10px 12px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Apply Current
+                </button>
+              </div>
+            ))
+          ) : (
+            <div style={{ fontSize: 12, color: '#6b7280' }}>No unit type data found.</div>
+          )}
         </div>
 
         {/* Key Metrics */}
