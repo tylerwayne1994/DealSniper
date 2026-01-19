@@ -103,6 +103,16 @@ function DashboardMapTab() {
   const [rapidFireQueue, setRapidFireQueue] = useState([]);
   const [processingStatus, setProcessingStatus] = useState('');
   const [mapFilter, setMapFilter] = useState('all'); // 'all' | 'rapidfire' | 'prospects'
+  const [userId, setUserId] = useState(null);
+
+  // Fetch current user on mount
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setUserId(user.id);
+    };
+    fetchUser();
+  }, []);
 
   const baseMarkers = useMemo(() => ([
     // Healthcare (rose)
@@ -160,7 +170,7 @@ function DashboardMapTab() {
         insight: units != null ? `${units} units` : (form.notes || 'Manual research note')
       };
       setCustomPins((prev) => [...prev, newPin]);
-      supabase.from('map_prospects').insert({ name: newPin.name, address, units: units || null, lat: latlng.lat, lng: latlng.lng, source: 'manual' }).catch(() => {});
+      supabase.from('map_prospects').insert({ name: newPin.name, address, units: units || null, lat: latlng.lat, lng: latlng.lng, source: 'manual', user_id: userId }).catch(() => {});
       setForm({ name: '', address: '', units: '', notes: '' });
     }
   };
@@ -209,7 +219,7 @@ function DashboardMapTab() {
               const newPin = { id: `cmd-${Date.now()}`, name, category: 'custom', position: [lat, lng], insight: notes || 'From MAX' };
               addPin(newPin);
               // Save to Supabase as LLM-generated pin
-              supabase.from('map_prospects').insert({ name, address: null, units: null, lat, lng, source: 'llm' }).catch(() => {});
+              supabase.from('map_prospects').insert({ name, address: null, units: null, lat, lng, source: 'llm', user_id: userId }).catch(() => {});
             }
           } else if (type === 'removePin' && payload.id) {
             // Removal handled by parent via a callback if needed
@@ -416,7 +426,8 @@ function DashboardMapTab() {
               units: item.units || null, 
               lat: latlng.lat, 
               lng: latlng.lng, 
-              source: 'rapid_fire' 
+              source: 'rapid_fire',
+              user_id: userId
             }).then(({ error }) => {
               if (error) console.error('⚠️ Supabase insert failed for:', item.name, error.message);
             });
@@ -462,7 +473,7 @@ function DashboardMapTab() {
       const pin = { id: `pros-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name: name || address, category: 'prospect', position: [latlng.lat, latlng.lng], insight: units != null ? `${units} units` : 'Prospect', source: 'prospect_upload' };
       setCustomPins(prev => [...prev, pin]);
       // Save to Supabase
-      supabase.from('map_prospects').insert({ name: pin.name, address, units: units || null, lat: latlng.lat, lng: latlng.lng, source: 'upload' }).catch(() => {});
+      supabase.from('map_prospects').insert({ name: pin.name, address, units: units || null, lat: latlng.lat, lng: latlng.lng, source: 'upload', user_id: userId }).catch(() => {});
     };
 
     const processRows = (rows) => {
@@ -525,7 +536,7 @@ function DashboardMapTab() {
   // Save all current pins to Supabase
   const saveAllPins = async () => {
     try {
-      const rows = customPins.map(p => ({ name: p.name, address: p.address || null, units: (p.insight && /units/.test(p.insight)) ? parseInt(p.insight, 10) : null, lat: p.position[0], lng: p.position[1], source: 'manual' }));
+      const rows = customPins.map(p => ({ name: p.name, address: p.address || null, units: (p.insight && /units/.test(p.insight)) ? parseInt(p.insight, 10) : null, lat: p.position[0], lng: p.position[1], source: 'manual', user_id: userId }));
       await supabase.from('map_prospects').insert(rows);
     } catch (e) {
       // ignore
@@ -702,7 +713,7 @@ function DashboardMapTab() {
                           setUploadState(s => ({ ...s, geocoded: s.geocoded + 1 }));
                           const pin = { id: `pros-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name, category: 'custom', position: [latlng.lat, latlng.lng], insight: units != null ? `${units} units` : 'Prospect' };
                           setCustomPins(prev => [...prev, pin]);
-                          supabase.from('map_prospects').insert({ name, address, units: units || null, lat: latlng.lat, lng: latlng.lng, source: 'rapid_fire' }).catch(() => {});
+                          supabase.from('map_prospects').insert({ name, address, units: units || null, lat: latlng.lat, lng: latlng.lng, source: 'rapid_fire', user_id: userId }).catch(() => {});
                         } else {
                           setUploadState(s => ({ ...s, errors: s.errors + 1 }));
                         }
