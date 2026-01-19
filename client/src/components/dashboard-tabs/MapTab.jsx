@@ -124,9 +124,10 @@ function DashboardMapTab() {
     }
   };
 
-  // Load pipeline properties on mount and when pipeline deals are updated
+  // Load pipeline properties and rapid fire queue on mount
   useEffect(() => {
     loadPipelineProperties();
+    loadRapidFireQueue();
     
     // Listen for pipeline updates
     const handlePipelineUpdate = () => loadPipelineProperties();
@@ -150,16 +151,26 @@ function DashboardMapTab() {
       latlng = await geocodeAddress(address);
     }
     if (latlng && Number.isFinite(latlng.lat) && Number.isFinite(latlng.lng)) {
-      const newPin = {
-        id: `custom-${Date.now()}`,
-        name: name || address,
-        category: 'custom',
-        position: [latlng.lat, latlng.lng],
-        insight: units != null ? `${units} units` : (form.notes || 'Manual research note')
-      };
-      setCustomPins((prev) => [...prev, newPin]);
-      supabase.from('map_prospects').insert({ name: newPin.name, address, units: units || null, lat: latlng.lat, lng: latlng.lng, source: 'manual', user_id: userId }).catch(() => {});
-      setForm({ name: '', address: '', units: '', notes: '' });
+      try {
+        const { data: insertedPin, error } = await supabase
+          .from('map_prospects')
+          .insert({ name: name || address, address, units: units || null, lat: latlng.lat, lng: latlng.lng, source: 'manual', user_id: userId })
+          .select('id')
+          .single();
+        
+        const newPin = {
+          id: `custom-${Date.now()}`,
+          name: name || address,
+          category: 'custom',
+          position: [latlng.lat, latlng.lng],
+          insight: units != null ? `${units} units` : (form.notes || 'Manual research note'),
+          dbId: insertedPin?.id
+        };
+        setCustomPins((prev) => [...prev, newPin]);
+        setForm({ name: '', address: '', units: '', notes: '' });
+      } catch (error) {
+        console.error('Failed to save manual property:', error);
+      }
     }
   };
 
@@ -226,10 +237,23 @@ function DashboardMapTab() {
           } else if (type === 'addPin') {
             const { name, lat, lng, notes } = payload;
             if (Number.isFinite(lat) && Number.isFinite(lng) && name) {
-              const newPin = { id: `cmd-${Date.now()}`, name, category: 'custom', position: [lat, lng], insight: notes || 'From MAX' };
-              addPin(newPin);
-              // Save to Supabase as LLM-generated pin
-              supabase.from('map_prospects').insert({ name, address: null, units: null, lat, lng, source: 'llm', user_id: userId }).catch(() => {});
+              // Save to Supabase first
+              supabase.from('map_prospects')
+                .insert({ name, address: null, units: null, lat, lng, source: 'llm', user_id: userId })
+                .select('id')
+                .single()
+                .then(({ data }) => {
+                  const newPin = { 
+                    id: `cmd-${Date.now()}`, 
+                    name, 
+                    category: 'custom', 
+                    position: [lat, lng], 
+                    insight: notes || 'From MAX',
+                    dbId: data?.id
+                  };
+                  addPin(newPin);
+                })
+                .catch(() => {});
             }
           } else if (type === 'removePin' && payload.id) {
             // Removal handled by parent via a callback if needed
@@ -262,6 +286,22 @@ function DashboardMapTab() {
 
   const addPinFromCommand = (pin) => {
     setCustomPins(prev => [...prev, pin]);
+  };
+
+  // Delete pin from map and database
+  const deletePin = async (pinId, dbId) => {
+    // Remove from UI
+    setCustomPins(prev => prev.filter(p => p.id !== pinId));
+    
+    // Delete from database if it has a dbId
+    if (dbId) {
+      try {
+        await supabase.from('map_prospects').delete().eq('id', dbId);
+        console.log(`🗑️ Deleted pin from database: ${dbId}`);
+      } catch (error) {
+        console.error('Failed to delete pin from database:', error);
+      }
+    }
   };
 
   // Heuristic parser for spreadsheet rows -> address + units
@@ -414,35 +454,42 @@ function DashboardMapTab() {
       
       const itemIndex = processed + 1;
       // eslint-disable-next-line no-loop-func
-      enqueueGeocode(addr, (latlng) => {
+      enqueueGeocode(addr, async (latlng) => {
         processed++;
         if (latlng) {
           succeeded++;
           console.log(`✅ [${itemIndex}/${rapidFireQueue.length}] Geocoded:`, item.name, `(${latlng.lat}, ${latlng.lng})`);
           
           try {
+            // Save to Supabase first to get ID
+            const { data: insertedPin, error: insertError } = await supabase
+              .from('map_prospects')
+              .insert({ 
+                name: item.name, 
+                address: addr, 
+                units: item.units || null, 
+                lat: latlng.lat, 
+                lng: latlng.lng, 
+                source: 'rapid_fire',
+                user_id: userId
+              })
+              .select('id')
+              .single();
+            
             const pin = { 
               id: `rf-${item.id}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, 
               name: item.name, 
               category: 'rapidfire', 
               position: [latlng.lat, latlng.lng], 
               insight: item.units != null ? `${item.units} units` : 'Rapid Fire',
-              source: 'rapid_fire'
+              source: 'rapid_fire',
+              dbId: insertedPin?.id
             };
             setCustomPins(prev => [...prev, pin]);
             
-            // Save to Supabase (fire and forget)
-            supabase.from('map_prospects').insert({ 
-              name: item.name, 
-              address: addr, 
-              units: item.units || null, 
-              lat: latlng.lat, 
-              lng: latlng.lng, 
-              source: 'rapid_fire',
-              user_id: userId
-            }).then(({ error }) => {
-              if (error) console.error('⚠️ Supabase insert failed for:', item.name, error.message);
-            });
+            if (insertError) {
+              console.error('⚠️ Supabase insert failed for:', item.name, insertError.message);
+            }
           } catch (err) {
             console.error('❌ Error creating pin for:', item.name, err);
             failed++;
@@ -481,11 +528,28 @@ function DashboardMapTab() {
   const handleProspectsFile = async (file) => {
     if (!file) return;
     setUploadState({ parsing: true, rows: 0, geocoded: 0, errors: 0 });
-    const pushProspect = (name, address, units, latlng) => {
-      const pin = { id: `pros-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name: name || address, category: 'prospect', position: [latlng.lat, latlng.lng], insight: units != null ? `${units} units` : 'Prospect', source: 'prospect_upload' };
-      setCustomPins(prev => [...prev, pin]);
-      // Save to Supabase
-      supabase.from('map_prospects').insert({ name: pin.name, address, units: units || null, lat: latlng.lat, lng: latlng.lng, source: 'upload', user_id: userId }).catch(() => {});
+    const pushProspect = async (name, address, units, latlng) => {
+      // Save to Supabase first to get ID
+      try {
+        const { data: insertedPin, error } = await supabase
+          .from('map_prospects')
+          .insert({ name: name || address, address, units: units || null, lat: latlng.lat, lng: latlng.lng, source: 'upload', user_id: userId })
+          .select('id')
+          .single();
+        
+        const pin = { 
+          id: `pros-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, 
+          name: name || address, 
+          category: 'prospect', 
+          position: [latlng.lat, latlng.lng], 
+          insight: units != null ? `${units} units` : 'Prospect', 
+          source: 'prospect_upload',
+          dbId: insertedPin?.id
+        };
+        setCustomPins(prev => [...prev, pin]);
+      } catch (error) {
+        console.error('Failed to save prospect to database:', error);
+      }
     };
 
     const processRows = (rows) => {
@@ -526,19 +590,24 @@ function DashboardMapTab() {
     }
   };
 
-  // Load saved prospects from Supabase
+  // Load saved prospects from Supabase (exclude rapid fire items)
   const loadSavedProspects = async () => {
     try {
       const { data, error } = await supabase
         .from('map_prospects')
         .select('id,name,address,units,lat,lng,source')
+        .neq('source', 'rapid_fire')
         .order('created_at', { ascending: false })
         .limit(500);
       if (!error && Array.isArray(data)) {
         const pins = data
           .filter(r => Number.isFinite(r.lat) && Number.isFinite(r.lng))
-          .map(r => ({ id: r.id || `db-${Math.random().toString(36).slice(2,8)}`, name: r.name || r.address || 'Prospect', category: 'custom', position: [r.lat, r.lng], insight: r.units != null ? `${r.units} units` : (r.source || 'Prospect') }));
-        setCustomPins(pins);
+          .map(r => ({ id: r.id || `db-${Math.random().toString(36).slice(2,8)}`, name: r.name || r.address || 'Prospect', category: 'prospect', position: [r.lat, r.lng], insight: r.units != null ? `${r.units} units` : (r.source || 'Prospect'), dbId: r.id }));
+        setCustomPins(prev => {
+          // Keep pipeline and rapid fire pins, replace prospects
+          const nonProspects = prev.filter(p => p.category !== 'prospect');
+          return [...nonProspects, ...pins];
+        });
       }
     } catch (e) {
       // ignore
@@ -916,7 +985,7 @@ function DashboardMapTab() {
               .map((p) => (
               <Marker key={p.id} position={p.position} icon={categoryIcon(p.category, p.source)}>
                 <Popup>
-                  <div style={{ minWidth: '220px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ minWidth: '220px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>{p.name}</div>
                     <div style={{ fontSize: '12px', color: '#64748b' }}>
                       {p.category === 'pipeline' ? '📋 Pipeline Deal' :
@@ -936,6 +1005,24 @@ function DashboardMapTab() {
                     }}>
                       {p.insight}
                     </div>
+                    {(p.category === 'rapidfire' || p.category === 'prospect' || p.category === 'custom') && (
+                      <button
+                        onClick={() => deletePin(p.id, p.dbId)}
+                        style={{
+                          padding: '6px 12px',
+                          backgroundColor: '#ef4444',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          marginTop: '4px'
+                        }}
+                      >
+                        🗑️ Delete Pin
+                      </button>
+                    )}
                   </div>
                 </Popup>
               </Marker>
