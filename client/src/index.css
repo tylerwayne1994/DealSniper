@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* AtlasAI custom tweaks */
+body { @apply bg-slate-50; }
+
+.atlasai-divicon { /* container for leaflet divIcon */ }
