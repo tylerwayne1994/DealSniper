@@ -23,9 +23,8 @@ const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
   const property = scenarioData?.property || {};
   const unitCount = property.unit_count || 0;
   const currentRent = scenarioData?.income?.current_rent || 0;
-  const proformaRent = scenarioData?.income?.proforma_rent || 0;
   const purchasePrice = property.purchase_price || 0;
-  const valueAdd = scenarioData?.value_add || {};
+  const unitMix = Array.isArray(scenarioData?.unit_mix) ? scenarioData.unit_mix : [];
 
   const styles = {
     container: {
@@ -265,6 +264,9 @@ const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
   ];
 
   const selectedStrategyData = strategies.find(s => s.id === selectedStrategy) || strategies[0];
+  const avgCurrentMarketRent = unitMix.length > 0
+    ? Math.round(unitMix.reduce((sum, u) => sum + (u.rent_market ?? u.rent_current ?? 0), 0) / unitMix.length)
+    : 0;
   
   // Calculations
   const totalRenoCoast = selectedStrategyData.costPerUnit * unitCount;
@@ -284,6 +286,16 @@ const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(val);
+  };
+
+  const applyIncreaseToUnitMix = () => {
+    if (!onFieldChange) return;
+    const inc = selectedStrategyData.rentIncrease || 0;
+    const updated = unitMix.map((u) => {
+      const base = (u.rent_market ?? u.rent_current ?? 0);
+      return { ...u, rent_market: Math.max(0, base + inc) };
+    });
+    onFieldChange('unit_mix', updated);
   };
 
   return (
@@ -357,6 +369,36 @@ const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
               value={unitCount}
               readOnly
             />
+          </div>
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Avg Market Rent (Current)</label>
+            <input
+              type="number"
+              style={styles.input}
+              value={avgCurrentMarketRent}
+              readOnly
+            />
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+          <button
+            onClick={applyIncreaseToUnitMix}
+            style={{
+              padding: '10px 14px',
+              backgroundColor: '#1e293b',
+              color: 'white',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
+          >
+            Apply Increase To Market Rents
+          </button>
+          <div style={{ fontSize: 12, color: '#6b7280', alignSelf: 'center' }}>
+            Updates scenarioData.unit_mix[].rent_market by +{selectedStrategyData.rentIncrease}/unit
           </div>
         </div>
 
