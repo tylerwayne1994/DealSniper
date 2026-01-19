@@ -232,20 +232,50 @@ function DashboardMapTab() {
     geocodeRunning = true;
     const step = async () => {
       const job = geocodeQueue.shift();
-      if (!job) { geocodeRunning = false; return; }
+      if (!job) { 
+        geocodeRunning = false; 
+        return; 
+      }
       const { address, onResult } = job;
+      let resultCalled = false;
+      const safeOnResult = (result) => {
+        if (resultCalled) {
+          console.warn('⚠️ Geocode callback already called for:', address);
+          return;
+        }
+        resultCalled = true;
+        onResult(result);
+      };
+      
       try {
         const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(address)}&addressdetails=1`;
         const res = await fetch(url, { headers: { 'Accept-Language': 'en-US' } });
+        
+        if (!res.ok) {
+          console.error(`❌ Geocode API error ${res.status} for:`, address);
+          safeOnResult(null);
+          setTimeout(step, 1100);
+          return;
+        }
+        
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
           const best = data[0];
-          onResult({ lat: parseFloat(best.lat), lng: parseFloat(best.lon) });
+          const lat = parseFloat(best.lat);
+          const lng = parseFloat(best.lon);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            safeOnResult({ lat, lng });
+          } else {
+            console.error('❌ Invalid coordinates for:', address, best);
+            safeOnResult(null);
+          }
         } else {
-          onResult(null);
+          console.warn('⚠️ No results for:', address);
+          safeOnResult(null);
         }
       } catch (e) {
-        onResult(null);
+        console.error('❌ Geocode exception for:', address, e.message);
+        safeOnResult(null);
       }
       setTimeout(step, 1100); // ~1 req/sec
     };
@@ -253,8 +283,16 @@ function DashboardMapTab() {
   };
 
   const enqueueGeocode = (address, onResult) => {
-    geocodeQueue.push({ address, onResult });
-    runGeocodeQueue();
+    return new Promise((resolve) => {
+      geocodeQueue.push({ 
+        address, 
+        onResult: (result) => {
+          onResult(result);
+          resolve(result);
+        }
+      });
+      runGeocodeQueue();
+    });
   };
 
   // Load Rapid Fire queue deals from Supabase (pipeline_status = 'rapidfire')
@@ -292,49 +330,78 @@ function DashboardMapTab() {
     let processed = 0;
     let succeeded = 0;
     let failed = 0;
+    const failedAddresses = [];
     
     for (const item of rapidFireQueue) {
       const addr = item.address;
-      console.log(`🔍 Processing item ${processed + 1}/${rapidFireQueue.length}:`, item.name, addr);
       
       if (!addr || !addr.trim()) {
-        console.warn('⚠️ Skipping item with no address:', item.name);
+        console.warn(`⚠️ [${processed + 1}/${rapidFireQueue.length}] Skipping - no address:`, item.name);
         processed++;
         failed++;
+        failedAddresses.push({ name: item.name, reason: 'No address' });
         continue;
       }
       
+      const itemIndex = processed + 1;
       enqueueGeocode(addr, (latlng) => {
         processed++;
         if (latlng) {
           succeeded++;
-          console.log('✅ Geocoded:', item.name, latlng);
-          const pin = { 
-            id: `rf-${item.id}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, 
-            name: item.name, 
-            category: 'custom', 
-            position: [latlng.lat, latlng.lng], 
-            insight: item.units != null ? `${item.units} units` : 'Rapid Fire' 
-          };
-          setCustomPins(prev => [...prev, pin]);
-          supabase.from('map_prospects').insert({ 
-            name: item.name, 
-            address: addr, 
-            units: item.units || null, 
-            lat: latlng.lat, 
-            lng: latlng.lng, 
-            source: 'rapid_fire' 
-          }).catch(() => {});
-          setProcessingStatus(`Added ${succeeded} of ${rapidFireQueue.length} (${failed} failed)`);
+          console.log(`✅ [${itemIndex}/${rapidFireQueue.length}] Geocoded:`, item.name, `(${latlng.lat}, ${latlng.lng})`);
+          
+          try {
+            const pin = { 
+              id: `rf-${item.id}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, 
+              name: item.name, 
+              category: 'custom', 
+              position: [latlng.lat, latlng.lng], 
+              insight: item.units != null ? `${item.units} units` : 'Rapid Fire' 
+            };
+            setCustomPins(prev => [...prev, pin]);
+            
+            // Save to Supabase
+            supabase.from('map_prospects').insert({ 
+              name: item.name, 
+              address: addr, 
+              units: item.units || null, 
+              lat: latlng.lat, 
+              lng: latlng.lng, 
+              source: 'rapid_fire' 
+            }).catch(err => {
+              console.error('⚠️ Supabase insert failed for:', item.name, err.message);
+            });
+          } catch (err) {
+            console.error('❌ Error creating pin for:', item.name, err);
+            failed++;
+            succeeded--;
+            failedAddresses.push({ name: item.name, reason: err.message });
+          }
+          
+          setProcessingStatus(`✅ Added ${succeeded} of ${rapidFireQueue.length} (${failed} failed)`);
         } else {
           failed++;
-          console.error('❌ Failed to geocode:', item.name, addr);
-          setProcessingStatus(`Added ${succeeded} of ${rapidFireQueue.length} (${failed} failed)`);
+          failedAddresses.push({ name: item.name, address: addr, reason: 'Geocoding failed' });
+          console.error(`❌ [${itemIndex}/${rapidFireQueue.length}] Failed to geocode:`, item.name, addr);
+          setProcessingStatus(`⚠️ Added ${succeeded} of ${rapidFireQueue.length} (${failed} failed)`);
+        }
+        
+        // Log summary when complete
+        if (processed === rapidFireQueue.length) {
+          console.log(`\n📊 GEOCODING COMPLETE:`);
+          console.log(`   ✅ Succeeded: ${succeeded}`);
+          console.log(`   ❌ Failed: ${failed}`);
+          if (failedAddresses.length > 0) {
+            console.log(`\n❌ Failed properties:`);
+            failedAddresses.forEach((item, idx) => {
+              console.log(`   ${idx + 1}. ${item.name} - ${item.reason}${item.address ? ` (${item.address})` : ''}`);
+            });
+          }
         }
       });
     }
     
-    setProcessingStatus(`Queued ${rapidFireQueue.length} properties for geocoding. Pins will appear as they resolve...`);
+    setProcessingStatus(`⏳ Queued ${rapidFireQueue.length} properties. Geocoding at ~1/sec...`);
   };
 
   // Upload Prospects: parse file and add pins
