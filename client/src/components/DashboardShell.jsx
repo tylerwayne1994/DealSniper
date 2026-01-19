@@ -9,6 +9,7 @@ import {
   FileSpreadsheet,
   Home,
   Bell,
+  MapPin,
 } from 'lucide-react';
 
 const dashboardStyles = {
@@ -169,6 +170,7 @@ const tabs = [
   { id: 'rapid-fire', label: 'Rapid Fire', icon: Zap },
   { id: 'market', label: 'Market', icon: BarChart3 },
   { id: 'pitch-deck', label: 'Pitch Deck', icon: Presentation },
+  { id: 'map', label: 'Map', icon: MapPin },
 ];
 
 function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }) {
@@ -185,6 +187,9 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
       navigate('/market-research');
     } else if (tabId === 'pitch-deck') {
       navigate('/pitch-deck');
+    } else if (tabId === 'map') {
+      // Route to Underwrite; Map is a tab within results
+      navigate('/underwrite');
     } else if (tabId === 'home') {
       navigate('/dashboard');
     } else {

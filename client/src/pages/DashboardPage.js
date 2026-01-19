@@ -1095,7 +1095,7 @@ function DashboardPage() {
       activeTab={activeTab}
       title="Dashboard"
       onTabClick={(tabId, defaultNavigate) => {
-        if (tabId === 'profile' || tabId === 'rapid-fire' || tabId === 'pitch-deck' || tabId === 'home') {
+        if (tabId === 'profile' || tabId === 'rapid-fire' || tabId === 'pitch-deck' || tabId === 'home' || tabId === 'map') {
           setActiveTab(tabId);
         } else {
           defaultNavigate(tabId);
@@ -1129,6 +1129,7 @@ function DashboardPage() {
         <RapidFirePage />
       )}
       {activeTab === 'pitch-deck' && renderPitchDeckTab()}
+      {activeTab === 'map' && <HomeMapView />}
     </DashboardShell>
   );
 }
