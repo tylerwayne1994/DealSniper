@@ -827,6 +827,8 @@ function RapidFirePage() {
       setIsPushingToPipeline(true);
       await saveRapidFireDeals(selected);
       alert(`Sent ${selected.length} Rapid Fire deals to your Pipeline queue.`);
+      // Notify pipeline view to reload
+      window.dispatchEvent(new Event('pipelineDealsUpdated'));
     } catch (err) {
       console.error('Failed to push Rapid Fire deals to pipeline queue:', err);
       alert('Failed to send Rapid Fire deals to Pipeline. Check console for details.');
