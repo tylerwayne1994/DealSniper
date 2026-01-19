@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   TrendingUp, DollarSign, Home, Wrench, Sparkles, 
   Calculator, Target, ArrowRight, CheckCircle, Clock,
-  Plus, Minus, AlertCircle, Info
 } from 'lucide-react';
 
 const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
@@ -10,23 +9,14 @@ const ValueAddTab = ({ scenarioData, fullCalcs, onFieldChange }) => {
   const [increaseMode, setIncreaseMode] = useState('amount'); // 'amount' | 'percent'
   const [percentIncrease, setPercentIncrease] = useState(5); // default 5%
   
-  // Handle null/undefined scenarioData
-  if (!scenarioData) {
-    return (
-      <div style={{ padding: 24, backgroundColor: '#ffffff', minHeight: '100%' }}>
-        <div style={{ padding: '60px', textAlign: 'center', backgroundColor: '#f9fafb', borderRadius: '16px', border: '1px solid #e5e7eb' }}>
-          <p style={{ color: '#6b7280', fontSize: '14px' }}>No scenario data available. Please load or create a deal first.</p>
-        </div>
-      </div>
-    );
-  }
-  
   // Extract relevant data from scenarioData
   const property = scenarioData?.property || {};
   const unitCount = property.unit_count || 0;
   const currentRent = scenarioData?.income?.current_rent || 0;
   const purchasePrice = property.purchase_price || 0;
-  const unitMix = Array.isArray(scenarioData?.unit_mix) ? scenarioData.unit_mix : [];
+  const unitMix = useMemo(() => {
+    return Array.isArray(scenarioData?.unit_mix) ? scenarioData.unit_mix : [];
+  }, [scenarioData?.unit_mix]);
   const originalUnitMixRef = useRef(null);
   const lastAppliedRef = useRef(null);
   useEffect(() => {

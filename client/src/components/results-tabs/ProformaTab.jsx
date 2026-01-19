@@ -33,7 +33,21 @@ const ProformaTab = ({
                            scenarioData?.pnl?.additional_income || 0;
   
   // Operating expenses
+  const expMap = scenarioData?.expenses || {};
+  const utilMap = expMap.utility_breakdown || {};
+  const utilitiesSum = Object.keys(utilMap).length > 0
+    ? Object.values(utilMap).reduce((s, v) => s + (parseFloat(v) || 0), 0)
+    : (parseFloat(expMap.utilities) || 0);
+  const computedOperatingExpensesAnnual = (
+    (parseFloat(expMap.taxes) || 0) +
+    (parseFloat(expMap.insurance) || 0) +
+    (parseFloat(expMap.management) || 0) +
+    (parseFloat(expMap.vacancy) || 0) +
+    (parseFloat(expMap.capex) || 0) +
+    utilitiesSum
+  );
   const year1Expenses = fullCalcs?.year1?.operatingExpenses || 
+                        computedOperatingExpensesAnnual ||
                         scenarioData?.pnl?.total_operating_expenses ||
                         scenarioData?.expenses?.total_operating_expenses || 
                         scenarioData?.pnl?.operating_expenses || 0;
