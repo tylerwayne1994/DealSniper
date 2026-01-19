@@ -1147,8 +1147,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
     { id: 'syndication', label: 'Syndication', icon: PieChart },
     
     { id: 'costseg', label: 'Cost Segregation', icon: Calculator },
-    { id: 'market-data', label: 'Market Data', icon: BarChart3 },
-    { id: 'map', label: 'Map', icon: MapPin }
+    { id: 'market-data', label: 'Market Data', icon: BarChart3 }
   ];
 
   // Row component
@@ -1282,18 +1281,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
   // Render tab content
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'map':
-        return (
-          <div style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-              <MapPin size={18} color="#0ea5e9" />
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#111827' }}>Map</h3>
-            </div>
-            <div style={{ fontSize: 13, color: '#6b7280' }}>
-              Map view placeholder. We can embed a property/location map here.
-            </div>
-          </div>
-        );
+      
       case 'summary':
         // Use canonical values from fullCalcs so Summary matches engine
         const summaryPurchasePrice = fullCalcs.acquisition?.purchasePrice || pricing_financing?.price || pricing_financing?.purchase_price || 0;

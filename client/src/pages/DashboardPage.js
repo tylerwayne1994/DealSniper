@@ -28,6 +28,7 @@ import { API_ENDPOINTS } from '../config/api';
 import RapidFirePage from './RapidFirePage';
 import DashboardShell from '../components/DashboardShell';
 import HomeMapView from '../components/HomeMapView';
+import DashboardMapTab from '../components/dashboard-tabs/MapTab';
 
 // ============================================================================
 // Token Package Card Component
@@ -1129,7 +1130,7 @@ function DashboardPage() {
         <RapidFirePage />
       )}
       {activeTab === 'pitch-deck' && renderPitchDeckTab()}
-      {activeTab === 'map' && <HomeMapView />}
+      {activeTab === 'map' && <DashboardMapTab />}
     </DashboardShell>
   );
 }
