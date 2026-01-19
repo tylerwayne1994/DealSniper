@@ -473,12 +473,17 @@ function DashboardMapTab() {
               <button
                 className="px-3 py-2 text-xs rounded-xl border bg-white border-slate-200 text-slate-600"
                 onClick={async () => {
-                  // Load Rapid Fire "passed" deals (if available)
+                  // Load Rapid Fire "passed" deals from Supabase (screened_deals)
                   try {
-                    const res = await fetch(API_ENDPOINTS.emailDealsList('pass'));
-                    const data = await res.json();
-                    const items = Array.isArray(data?.deals) ? data.deals : (Array.isArray(data) ? data : []);
-                    const rows = items.map(d => ({ Address: [d.address, d.city, d.state, d.zip].filter(Boolean).join(', '), Units: d.units || d.total_units || null, Name: d.name || d.title || d.address }));
+                    const { data, error } = await supabase
+                      .from('screened_deals')
+                      .select('property_address,units,score')
+                      .eq('score', 'pass')
+                      .limit(500);
+                    if (error) return;
+                    const rows = (data || [])
+                      .filter(d => d?.property_address)
+                      .map(d => ({ Address: d.property_address, Units: d.units || null, Name: d.property_address }));
                     setUploadState({ parsing: false, rows: rows.length, geocoded: 0, errors: 0 });
                     rows.forEach(r => {
                       const address = r.Address;
