@@ -53,10 +53,11 @@ function DashboardMapTab() {
   const activeCity = CITIES[activeCityKey];
 
   const [customPins, setCustomPins] = useState([]);
-  const [form, setForm] = useState({ name: '', lat: '', lng: '', notes: '' });
+  const [form, setForm] = useState({ name: '', address: '', units: '', notes: '' });
   const [activeTab, setActiveTab] = useState('assistant'); // 'assistant' | 'add' | 'upload'
   const [chat, setChat] = useState({ input: '', messages: [], loading: false });
   const [pendingCommands, setPendingCommands] = useState([]);
+  const [rapidFireQueue, setRapidFireQueue] = useState([]);
 
   const baseMarkers = useMemo(() => ([
     // Healthcare (rose)
@@ -93,22 +94,29 @@ function DashboardMapTab() {
     }
   ]), [activeCity]);
 
-  const handleSubmitProperty = (e) => {
+  const handleSubmitProperty = async (e) => {
     e.preventDefault();
-    const lat = parseFloat(form.lat);
-    const lng = parseFloat(form.lng);
-    if (Number.isFinite(lat) && Number.isFinite(lng) && form.name) {
+    const name = (form.name || '').trim();
+    const address = (form.address || '').trim();
+    const units = form.units ? parseInt(form.units, 10) : null;
+    if (!name && !address) return;
+    // Geocode address, then add pin
+    const geocodeAddress = (addr) => new Promise((resolve) => enqueueGeocode(addr, resolve));
+    let latlng = null;
+    if (address) {
+      latlng = await geocodeAddress(address);
+    }
+    if (latlng && Number.isFinite(latlng.lat) && Number.isFinite(latlng.lng)) {
       const newPin = {
         id: `custom-${Date.now()}`,
-        name: form.name,
+        name: name || address,
         category: 'custom',
-        position: [lat, lng],
-        insight: form.notes || 'Manual research note'
+        position: [latlng.lat, latlng.lng],
+        insight: units != null ? `${units} units` : (form.notes || 'Manual research note')
       };
       setCustomPins((prev) => [...prev, newPin]);
-      // Save manual pin to Supabase
-      supabase.from('map_prospects').insert({ name: newPin.name, address: null, units: null, lat, lng, source: 'manual' }).catch(() => {});
-      setForm({ name: '', lat: '', lng: '', notes: '' });
+      supabase.from('map_prospects').insert({ name: newPin.name, address, units: units || null, lat: latlng.lat, lng: latlng.lng, source: 'manual' }).catch(() => {});
+      setForm({ name: '', address: '', units: '', notes: '' });
     }
   };
 
@@ -246,6 +254,44 @@ function DashboardMapTab() {
   const enqueueGeocode = (address, onResult) => {
     geocodeQueue.push({ address, onResult });
     runGeocodeQueue();
+  };
+
+  // Load Rapid Fire queue deals from Supabase (pipeline_status = 'rapidfire')
+  const loadRapidFireQueue = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('deals')
+        .select('deal_id,address,units,parsed_data,created_at')
+        .eq('pipeline_status', 'rapidfire')
+        .order('created_at', { ascending: false })
+        .limit(500);
+      if (error) return;
+      const items = (data || []).map(d => ({
+        id: d.deal_id,
+        name: (d.parsed_data?.rapidfire?.name) || d.address || 'Rapid Fire Deal',
+        address: d.address || d.parsed_data?.rapidfire?.name || '',
+        units: d.units || d.parsed_data?.rapidfire?.units || null
+      }));
+      setRapidFireQueue(items);
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  // Add all Rapid Fire queue items to map (geocode each)
+  const addAllRapidFireToMap = async () => {
+    if (!rapidFireQueue.length) return;
+    for (const item of rapidFireQueue) {
+      const addr = item.address;
+      if (!addr) continue;
+      enqueueGeocode(addr, (latlng) => {
+        if (latlng) {
+          const pin = { id: `rf-${item.id}-${Date.now()}`, name: item.name, category: 'custom', position: [latlng.lat, latlng.lng], insight: item.units != null ? `${item.units} units` : 'Rapid Fire' };
+          setCustomPins(prev => [...prev, pin]);
+          supabase.from('map_prospects').insert({ name: item.name, address: addr, units: item.units || null, lat: latlng.lat, lng: latlng.lng, source: 'rapid_fire' }).catch(() => {});
+        }
+      });
+    }
   };
 
   // Upload Prospects: parse file and add pins
@@ -448,10 +494,12 @@ function DashboardMapTab() {
             <div className="text-xs font-semibold text-slate-500">Add Property</div>
             <div className="grid grid-cols-2 gap-2">
               <div className="col-span-2">
-                <input className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white" placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                <input className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white" placeholder="Property Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
-              <input className="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white" placeholder="Latitude" value={form.lat} onChange={(e) => setForm({ ...form, lat: e.target.value })} />
-              <input className="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white" placeholder="Longitude" value={form.lng} onChange={(e) => setForm({ ...form, lng: e.target.value })} />
+              <div className="col-span-2">
+                <input className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white" placeholder="Street Address, City, ST ZIP" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+              </div>
+              <input className="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white" placeholder="Units (optional)" value={form.units} onChange={(e) => setForm({ ...form, units: e.target.value })} />
               <div className="col-span-2">
                 <textarea className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white" rows={3} placeholder="Research Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </div>
@@ -514,6 +562,31 @@ function DashboardMapTab() {
                 className="px-3 py-2 text-xs rounded-xl border bg-white border-slate-200 text-slate-600"
                 onClick={saveAllPins}
               >Save All Pins</button>
+              <button
+                className="px-3 py-2 text-xs rounded-xl border bg-white border-slate-200 text-slate-600"
+                onClick={loadRapidFireQueue}
+              >Load Rapid Fire Queue</button>
+              <button
+                className="px-3 py-2 text-xs rounded-xl border bg-white border-slate-200 text-slate-600"
+                onClick={addAllRapidFireToMap}
+                disabled={!rapidFireQueue.length}
+              >Add All to Map</button>
+            </div>
+
+            {/* Rapid Fire queue list preview */}
+            <div className="mt-2 rounded-xl border border-slate-200 bg-white/60 p-2">
+              <div className="text-xs font-semibold text-slate-500">Rapid Fire Queue ({rapidFireQueue.length})</div>
+              <div className="max-h-40 overflow-auto text-xs text-slate-700">
+                {rapidFireQueue.length === 0 ? (
+                  <div className="text-slate-400">Click "Load Rapid Fire Queue" to load.</div>
+                ) : rapidFireQueue.map((rf) => (
+                  <div key={rf.id} className="py-1 border-b border-slate-100">
+                    <div className="font-semibold text-slate-800">{rf.name}</div>
+                    <div className="text-slate-600">{rf.address}</div>
+                    <div className="text-slate-500">{rf.units != null ? `${rf.units} units` : ''}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
