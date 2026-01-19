@@ -104,6 +104,7 @@ function DashboardMapTab() {
   const [processingStatus, setProcessingStatus] = useState('');
   const [mapFilter, setMapFilter] = useState('all'); // 'all' | 'rapidfire' | 'prospects'
   const [userId, setUserId] = useState(null);
+  const [mapStyle, setMapStyle] = useState('voyager'); // 'voyager' | 'satellite' | 'streets' | 'osm'
 
   // Fetch current user on mount
   useEffect(() => {
@@ -175,8 +176,28 @@ function DashboardMapTab() {
     }
   };
 
-  const tileUrl = 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png';
-  const attribution = '&copy; OpenStreetMap contributors, Humanitarian style';
+  // Map tile layer configurations
+  const tileConfigs = {
+    voyager: {
+      url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+      attribution: '&copy; OpenStreetMap, &copy; CartoDB'
+    },
+    satellite: {
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      attribution: '&copy; Esri, Maxar, Earthstar Geographics'
+    },
+    streets: {
+      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      attribution: '&copy; OpenStreetMap contributors'
+    },
+    dark: {
+      url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      attribution: '&copy; OpenStreetMap, &copy; CartoDB'
+    }
+  };
+
+  const tileUrl = tileConfigs[mapStyle].url;
+  const attribution = tileConfigs[mapStyle].attribution;
 
   // Marker styles by category
   const categoryIcon = (cat, source) => {
@@ -797,6 +818,38 @@ function DashboardMapTab() {
               if (mapFilter === 'prospects') return p.category === 'prospect';
               return true;
             }).length} pins visible)
+          </div>
+        </div>
+
+        {/* Map Style Selector */}
+        <div className="mt-2 flex items-center gap-2">
+          <MapPin className="w-4 h-4 text-slate-500" />
+          <label className="text-xs font-semibold text-slate-600">Map Style:</label>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setMapStyle('voyager')}
+              className={`px-3 py-1.5 text-xs rounded-lg border ${mapStyle === 'voyager' ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold' : 'bg-white border-slate-200 text-slate-600'}`}
+            >
+              Clean
+            </button>
+            <button
+              onClick={() => setMapStyle('satellite')}
+              className={`px-3 py-1.5 text-xs rounded-lg border ${mapStyle === 'satellite' ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold' : 'bg-white border-slate-200 text-slate-600'}`}
+            >
+              Satellite
+            </button>
+            <button
+              onClick={() => setMapStyle('streets')}
+              className={`px-3 py-1.5 text-xs rounded-lg border ${mapStyle === 'streets' ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold' : 'bg-white border-slate-200 text-slate-600'}`}
+            >
+              Streets
+            </button>
+            <button
+              onClick={() => setMapStyle('dark')}
+              className={`px-3 py-1.5 text-xs rounded-lg border ${mapStyle === 'dark' ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold' : 'bg-white border-slate-200 text-slate-600'}`}
+            >
+              Dark
+            </button>
           </div>
         </div>
       </div>
