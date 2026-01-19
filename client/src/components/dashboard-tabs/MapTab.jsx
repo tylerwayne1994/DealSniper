@@ -409,7 +409,7 @@ function DashboardMapTab() {
             };
             setCustomPins(prev => [...prev, pin]);
             
-            // Save to Supabase
+            // Save to Supabase (fire and forget)
             supabase.from('map_prospects').insert({ 
               name: item.name, 
               address: addr, 
@@ -417,8 +417,8 @@ function DashboardMapTab() {
               lat: latlng.lat, 
               lng: latlng.lng, 
               source: 'rapid_fire' 
-            }).catch(err => {
-              console.error('⚠️ Supabase insert failed for:', item.name, err.message);
+            }).then(({ error }) => {
+              if (error) console.error('⚠️ Supabase insert failed for:', item.name, error.message);
             });
           } catch (err) {
             console.error('❌ Error creating pin for:', item.name, err);
