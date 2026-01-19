@@ -5,6 +5,7 @@ import { API_ENDPOINTS } from '../../config/api';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
+import { loadPipelineDeals } from '../../lib/dealsService';
 import {
   MessageSquare,
   MapPin,
@@ -16,13 +17,6 @@ import {
   Building2,
   Filter
 } from 'lucide-react';
-
-// City coordinates
-const CITIES = {
-  kansasCity: { name: 'Kansas City', center: [39.0997, -94.5786], zoom: 12 },
-  indianapolis: { name: 'Indianapolis', center: [39.7684, -86.1581], zoom: 12 },
-  columbus: { name: 'Columbus', center: [39.9612, -82.9988], zoom: 12 }
-};
 
 // Helper to create Tailwind-styled divIcon
 function createDivIcon({ bgClass, borderClass = 'border-white/60', icon: Icon, iconColor = '#fff', size = 'normal' }) {
@@ -79,20 +73,10 @@ function createPinIcon(color = '#ef4444', label = '') {
   });
 }
 
-// Map control component to change view
-function CityNavigator({ city }) {
-  const map = useMap();
-  React.useEffect(() => {
-    if (city) {
-      map.setView(city.center, city.zoom);
-    }
-  }, [city, map]);
-  return null;
-}
-
 function DashboardMapTab() {
-  const [activeCityKey, setActiveCityKey] = useState('kansasCity');
-  const activeCity = CITIES[activeCityKey];
+  // Default map center (centered on US)
+  const defaultCenter = [39.8283, -98.5795]; // Geographic center of US
+  const defaultZoom = 5;
 
   const [customPins, setCustomPins] = useState([]);
   const [form, setForm] = useState({ name: '', address: '', units: '', notes: '' });
@@ -101,7 +85,7 @@ function DashboardMapTab() {
   const [pendingCommands, setPendingCommands] = useState([]);
   const [rapidFireQueue, setRapidFireQueue] = useState([]);
   const [processingStatus, setProcessingStatus] = useState('');
-  const [mapFilter, setMapFilter] = useState('all'); // 'all' | 'rapidfire' | 'prospects'
+  const [mapFilter, setMapFilter] = useState('all'); // 'all' | 'rapidfire' | 'prospects' | 'pipeline'
   const [userId, setUserId] = useState(null);
   const [mapStyle, setMapStyle] = useState('voyager'); // 'voyager' | 'satellite' | 'streets' | 'osm'
 
@@ -112,6 +96,43 @@ function DashboardMapTab() {
       if (user) setUserId(user.id);
     };
     fetchUser();
+  }, []);
+
+  // Load pipeline properties and add to map
+  const loadPipelineProperties = async () => {
+    try {
+      const deals = await loadPipelineDeals();
+      const pipelinePins = deals
+        .filter(d => d.latitude && d.longitude)
+        .map(d => ({
+          id: `pipeline-${d.id}`,
+          name: d.address || 'Pipeline Property',
+          category: 'pipeline',
+          position: [d.latitude, d.longitude],
+          insight: `${d.units || '?'} units • $${(d.purchase_price || 0).toLocaleString()}`,
+          source: 'pipeline',
+          dealId: d.id
+        }));
+      setCustomPins(prev => {
+        // Remove existing pipeline pins and add new ones
+        const nonPipeline = prev.filter(p => p.category !== 'pipeline');
+        return [...nonPipeline, ...pipelinePins];
+      });
+      console.log(`📋 Loaded ${pipelinePins.length} pipeline properties to map`);
+    } catch (error) {
+      console.error('Failed to load pipeline properties:', error);
+    }
+  };
+
+  // Load pipeline properties on mount and when pipeline deals are updated
+  useEffect(() => {
+    loadPipelineProperties();
+    
+    // Listen for pipeline updates
+    const handlePipelineUpdate = () => loadPipelineProperties();
+    window.addEventListener('pipelineDealsUpdated', handlePipelineUpdate);
+    
+    return () => window.removeEventListener('pipelineDealsUpdated', handlePipelineUpdate);
   }, []);
 
   const baseMarkers = useMemo(() => ([]), []);
@@ -180,6 +201,8 @@ function DashboardMapTab() {
         return createPinIcon('#ef4444', '🔥');
       case 'prospect':
         return createPinIcon('#3b82f6', '🏠');
+      case 'pipeline':
+        return createPinIcon('#10b981', '📋');
       case 'custom':
       default:
         return createDivIcon({ bgClass: 'bg-purple-600/90', icon: Star });
@@ -538,65 +561,6 @@ function DashboardMapTab() {
       {/* Main Map Area - Left Side */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         
-        {/* Top Navigation - City Buttons */}
-        <div style={{
-          padding: '12px 16px',
-          backgroundColor: 'white',
-          borderBottom: '1px solid #e5e7eb',
-          display: 'flex',
-          gap: '8px',
-          alignItems: 'center'
-        }}>
-          <button
-            onClick={() => setActiveCityKey('kansasCity')}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: activeCityKey === 'kansasCity' ? '#3b82f6' : 'white',
-              color: activeCityKey === 'kansasCity' ? 'white' : '#6b7280',
-              border: activeCityKey === 'kansasCity' ? 'none' : '1px solid #d1d5db',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-          >
-            Kansas City
-          </button>
-          <button
-            onClick={() => setActiveCityKey('indianapolis')}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: activeCityKey === 'indianapolis' ? '#3b82f6' : 'white',
-              color: activeCityKey === 'indianapolis' ? 'white' : '#6b7280',
-              border: activeCityKey === 'indianapolis' ? 'none' : '1px solid #d1d5db',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-          >
-            Indianapolis
-          </button>
-          <button
-            onClick={() => setActiveCityKey('columbus')}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: activeCityKey === 'columbus' ? '#3b82f6' : 'white',
-              color: activeCityKey === 'columbus' ? 'white' : '#6b7280',
-              border: activeCityKey === 'columbus' ? 'none' : '1px solid #d1d5db',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-          >
-            Columbus
-          </button>
-        </div>
-
         {/* Secondary Row - Tab Buttons */}
         <div style={{ 
           display: 'flex',
@@ -829,12 +793,14 @@ function DashboardMapTab() {
                   }}
                 >
                   <option value="all">All Pins</option>
+                  <option value="pipeline">📋 Pipeline Only</option>
                   <option value="rapidfire">🔥 Rapid Fire Only</option>
                   <option value="prospects">🏘️ Prospect Cities Only</option>
                 </select>
                 <span style={{ fontSize: '12px', color: '#6b7280' }}>
                   ({customPins.filter(p => {
                     if (mapFilter === 'all') return true;
+                    if (mapFilter === 'pipeline') return p.category === 'pipeline';
                     if (mapFilter === 'rapidfire') return p.category === 'rapidfire';
                     if (mapFilter === 'prospects') return p.category === 'prospect';
                     return true;
@@ -914,8 +880,7 @@ function DashboardMapTab() {
 
         {/* Map Container */}
         <div style={{ flex: 1, position: 'relative' }}>
-          <MapContainer center={activeCity.center} zoom={activeCity.zoom} style={{ width: '100%', height: '100%' }}>
-            <CityNavigator city={activeCity} />
+          <MapContainer center={defaultCenter} zoom={defaultZoom} style={{ width: '100%', height: '100%' }}>
             <TileLayer url={tileUrl} attribution={attribution} />
             <CommandExecutor commands={pendingCommands} onDone={() => setPendingCommands([])} addPin={addPinFromCommand} />
 
@@ -943,6 +908,7 @@ function DashboardMapTab() {
             {customPins
               .filter(p => {
                 if (mapFilter === 'all') return true;
+                if (mapFilter === 'pipeline') return p.category === 'pipeline';
                 if (mapFilter === 'rapidfire') return p.category === 'rapidfire';
                 if (mapFilter === 'prospects') return p.category === 'prospect';
                 return true;
@@ -953,7 +919,8 @@ function DashboardMapTab() {
                   <div style={{ minWidth: '220px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>{p.name}</div>
                     <div style={{ fontSize: '12px', color: '#64748b' }}>
-                      {p.category === 'rapidfire' ? '🔥 Rapid Fire Queue' : 
+                      {p.category === 'pipeline' ? '📋 Pipeline Deal' :
+                       p.category === 'rapidfire' ? '🔥 Rapid Fire Queue' : 
                        p.category === 'prospect' ? '🏘️ Prospect City' : 
                        'Manual pin — custom research'}
                     </div>
@@ -962,7 +929,8 @@ function DashboardMapTab() {
                       padding: '8px',
                       fontSize: '12px',
                       color: '#1e293b',
-                      backgroundColor: p.category === 'rapidfire' ? '#fed7aa' : 
+                      backgroundColor: p.category === 'pipeline' ? '#d1fae5' :
+                                     p.category === 'rapidfire' ? '#fed7aa' : 
                                      p.category === 'prospect' ? '#bfdbfe' : 
                                      '#e9d5ff'
                     }}>
@@ -976,11 +944,12 @@ function DashboardMapTab() {
             {customPins
               .filter(p => {
                 if (mapFilter === 'all') return true;
+                if (mapFilter === 'pipeline') return p.category === 'pipeline';
                 if (mapFilter === 'rapidfire') return p.category === 'rapidfire';
                 if (mapFilter === 'prospects') return p.category === 'prospect';
                 return true;
               })
-              .filter(p => p.category !== 'rapidfire' && p.category !== 'prospect')
+              .filter(p => p.category !== 'pipeline' && p.category !== 'rapidfire' && p.category !== 'prospect')
               .map((p) => {
                 const color = '#7c3aed';
                 return (
