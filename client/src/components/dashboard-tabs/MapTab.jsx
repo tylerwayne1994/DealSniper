@@ -583,35 +583,42 @@ function DashboardMapTab() {
     }
   };
 
-  // Load saved prospects from Supabase (exclude rapid fire items)
+  // Load saved prospects from Supabase (includes rapid fire pins)
   const loadSavedProspects = async () => {
     try {
       const { data, error } = await supabase
         .from('map_prospects')
         .select('id,name,address,units,lat,lng,source')
-        .neq('source', 'rapid_fire')
         .order('created_at', { ascending: false })
         .limit(500);
       if (!error && Array.isArray(data)) {
         const pins = data
           .filter(r => Number.isFinite(r.lat) && Number.isFinite(r.lng))
-          .map(r => ({ id: r.id || `db-${Math.random().toString(36).slice(2,8)}`, name: r.name || r.address || 'Prospect', category: 'rapidfire', position: [r.lat, r.lng], insight: r.units != null ? `${r.units} units` : (r.source || 'Saved Property'), dbId: r.id }));
+          .map(r => ({ 
+            id: `saved-${r.id}`, 
+            name: r.name || r.address || 'Saved Property', 
+            category: 'rapidfire', 
+            position: [r.lat, r.lng], 
+            insight: r.units != null ? `${r.units} units` : (r.source || 'Saved Property'), 
+            dbId: r.id,
+            source: 'saved'
+          }));
         setCustomPins(prev => {
-          // Keep pipeline and rapid fire pins from other sources, replace saved prospects
-          const nonSavedProspects = prev.filter(p => !(p.category === 'rapidfire' && p.source !== 'rapid_fire'));
-          return [...nonSavedProspects, ...pins];
+          // Remove old saved pins, keep pipeline pins, add new saved pins
+          const nonSaved = prev.filter(p => p.source !== 'saved');
+          return [...nonSaved, ...pins];
         });
+        console.log(`💾 Loaded ${pins.length} saved properties from database`);
       }
     } catch (e) {
-      // ignore
+      console.error('Failed to load saved prospects:', e);
     }
   };
 
-  // Auto-load toggle
-  const [autoLoadSaved] = useState(() => localStorage.getItem('atlas.autoLoadProspects') === 'true');
+  // Auto-load saved prospects on mount
   useEffect(() => {
-    if (autoLoadSaved) loadSavedProspects();
-  }, [autoLoadSaved]);
+    loadSavedProspects();
+  }, []);
 
   return (
     <div style={{ 
