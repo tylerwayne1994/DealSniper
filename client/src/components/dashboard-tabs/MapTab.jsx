@@ -137,48 +137,6 @@ function DashboardMapTab() {
     setShowSuggestions(false);
     setAddressSuggestions([]);
   };
-      if (user) setUserId(user.id);
-    };
-    fetchUser();
-  }, []);
-
-  // Address autocomplete handler
-  const handleAddressChange = async (value) => {
-    setForm({ ...form, address: value });
-    
-    if (value.length > 3) {
-      try {
-        const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(value)}&addressdetails=1&limit=5`;
-        const res = await fetch(url, { 
-          headers: { 'Accept-Language': 'en-US' }
-        });
-        
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            const suggestions = data.map(item => ({
-              label: item.display_name,
-              lat: parseFloat(item.lat),
-              lng: parseFloat(item.lon)
-            }));
-            setAddressSuggestions(suggestions);
-            setShowSuggestions(true);
-          }
-        }
-      } catch (e) {
-        // ignore autocomplete errors
-      }
-    } else {
-      setAddressSuggestions([]);
-      setShowSuggestions(false);
-    }
-  };
-
-  const selectSuggestion = (suggestion) => {
-    setForm({ ...form, address: suggestion.label, lat: suggestion.lat, lng: suggestion.lng });
-    setShowSuggestions(false);
-    setAddressSuggestions([]);
-  };
 
   // Load pipeline properties and add to map
   const loadPipelineProperties = async () => {
