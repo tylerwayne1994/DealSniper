@@ -521,6 +521,23 @@ export async function updateDealStatus(dealId, status) {
 }
 
 /**
+ * Update deal with arbitrary fields
+ * @param {string} dealId - The deal ID
+ * @param {Object} updates - Object with fields to update
+ */
+export async function updateDeal(dealId, updates) {
+  const { error } = await supabase
+    .from('deals')
+    .update({ 
+      ...updates,
+      updated_at: new Date().toISOString()
+    })
+    .eq('deal_id', dealId);
+
+  if (error) throw error;
+}
+
+/**
  * Update deal notes
  * @param {string} dealId - The deal ID
  * @param {string} notes - New notes
@@ -675,6 +692,7 @@ export default {
   loadRapidFireDeals,
   loadDealForResults,
   deleteDeal,
+  updateDeal,
   updateDealStatus,
   updateDealNotes,
   saveDueDiligenceData,
