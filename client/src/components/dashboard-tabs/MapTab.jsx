@@ -660,9 +660,9 @@ function DashboardMapTab() {
     }
   };
 
-  //console.log('🗺️ MapTab mounting - loading saved prospects...');
-     Auto-load saved prospects on mount
+  // Auto-load saved prospects on mount
   useEffect(() => {
+    console.log('🗺️ MapTab mounting - loading saved prospects...');
     loadSavedProspects();
   }, []);
 
