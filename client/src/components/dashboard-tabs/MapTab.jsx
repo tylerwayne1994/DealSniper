@@ -141,26 +141,37 @@ function DashboardMapTab() {
   // Load pipeline properties and add to map
   const loadPipelineProperties = async () => {
     try {
+      console.log('🔍 Fetching pipeline deals from database...');
       const deals = await loadPipelineDeals();
-      const pipelinePins = deals
-        .filter(d => d.latitude && d.longitude)
-        .map(d => ({
-          id: `pipeline-${d.id}`,
-          name: d.address || 'Pipeline Property',
-          category: 'pipeline',
-          position: [d.latitude, d.longitude],
-          insight: `${d.units || '?'} units • $${(d.purchase_price || 0).toLocaleString()}`,
-          source: 'pipeline',
-          dealId: d.id
-        }));
+      console.log('🔍 Raw pipeline deals:', deals);
+      console.log(`🔍 Found ${deals.length} total pipeline deals`);
+      
+      const dealsWithCoords = deals.filter(d => d.latitude && d.longitude);
+      console.log(`🔍 ${dealsWithCoords.length} deals have coordinates`);
+      
+      const pipelinePins = dealsWithCoords.map(d => ({
+        id: `pipeline-${d.id}`,
+        name: d.address || 'Pipeline Property',
+        category: 'pipeline',
+        position: [d.latitude, d.longitude],
+        insight: `${d.units || '?'} units • $${(d.purchase_price || 0).toLocaleString()}`,
+        source: 'pipeline',
+        dealId: d.id
+      }));
+      
+      console.log('🔍 Pipeline pins created:', pipelinePins);
+      
       setCustomPins(prev => {
+        console.log('🔍 Current pins before adding pipeline:', prev);
         // Remove existing pipeline pins and add new ones
         const nonPipeline = prev.filter(p => p.category !== 'pipeline');
-        return [...nonPipeline, ...pipelinePins];
+        const newPins = [...nonPipeline, ...pipelinePins];
+        console.log('🔍 New pins array after adding pipeline:', newPins);
+        return newPins;
       });
-      console.log(`📋 Loaded ${pipelinePins.length} pipeline properties to map`);
+      console.log(`✅ Loaded ${pipelinePins.length} pipeline properties to map`);
     } catch (error) {
-      console.error('Failed to load pipeline properties:', error);
+      console.error('❌ Failed to load pipeline properties:', error);
     }
   };
 
@@ -631,32 +642,46 @@ function DashboardMapTab() {
   // Load saved prospects from Supabase (includes rapid fire pins)
   const loadSavedProspects = async () => {
     try {
+      console.log('🔍 Fetching saved prospects from map_prospects table...');
       const { data, error } = await supabase
         .from('map_prospects')
         .select('id,name,address,units,lat,lng,source')
         .order('created_at', { ascending: false })
         .limit(500);
+      
+      console.log('🔍 Supabase query result:', { data, error });
+      console.log(`🔍 Found ${data?.length || 0} rows in map_prospects`);
+      
       if (!error && Array.isArray(data)) {
-        const pins = data
-          .filter(r => Number.isFinite(r.lat) && Number.isFinite(r.lng))
-          .map(r => ({ 
-            id: `saved-${r.id}`, 
-            name: r.name || r.address || 'Saved Property', 
-            category: 'rapidfire', 
-            position: [r.lat, r.lng], 
-            insight: r.units != null ? `${r.units} units` : (r.source || 'Saved Property'), 
-            dbId: r.id,
-            source: 'saved'
-          }));
+        const validPins = data.filter(r => Number.isFinite(r.lat) && Number.isFinite(r.lng));
+        console.log(`🔍 ${validPins.length} have valid coordinates`);
+        
+        const pins = validPins.map(r => ({ 
+          id: `saved-${r.id}`, 
+          name: r.name || r.address || 'Saved Property', 
+          category: 'rapidfire', 
+          position: [r.lat, r.lng], 
+          insight: r.units != null ? `${r.units} units` : (r.source || 'Saved Property'), 
+          dbId: r.id,
+          source: 'saved'
+        }));
+        
+        console.log('🔍 Saved prospect pins created:', pins);
+        
         setCustomPins(prev => {
+          console.log('🔍 Current pins before adding saved:', prev);
           // Remove old saved pins, keep pipeline pins, add new saved pins
           const nonSaved = prev.filter(p => p.source !== 'saved');
-          return [...nonSaved, ...pins];
+          const newPins = [...nonSaved, ...pins];
+          console.log('🔍 New pins array after adding saved:', newPins);
+          return newPins;
         });
-        console.log(`💾 Loaded ${pins.length} saved properties from database`);
+        console.log(`✅ Loaded ${pins.length} saved properties from database`);
+      } else if (error) {
+        console.error('❌ Supabase error loading prospects:', error);
       }
     } catch (e) {
-      console.error('Failed to load saved prospects:', e);
+      console.error('❌ Failed to load saved prospects:', e);
     }
   };
 
