@@ -166,11 +166,15 @@ function DashboardMapTab() {
 
   // Load pipeline properties and rapid fire queue on mount
   useEffect(() => {
+    console.log('🗺️ MapTab mounting - loading pipeline and rapid fire...');
     loadPipelineProperties();
     loadRapidFireQueue();
     
     // Listen for pipeline updates
-    const handlePipelineUpdate = () => loadPipelineProperties();
+    const handlePipelineUpdate = () => {
+      console.log('🔄 Pipeline update event received');
+      loadPipelineProperties();
+    };
     window.addEventListener('pipelineDealsUpdated', handlePipelineUpdate);
     
     return () => window.removeEventListener('pipelineDealsUpdated', handlePipelineUpdate);
@@ -205,13 +209,15 @@ function DashboardMapTab() {
         const newPin = {
           id: `custom-${Date.now()}`,
           name: name || address,
-          category: 'custom',
+          category: 'rapidfire',
           position: [latlng.lat, latlng.lng],
           insight: units != null ? `${units} units` : (form.notes || 'Manual research note'),
-          dbId: insertedPin?.id
+          dbId: insertedPin?.id,
+          source: 'manual'
         };
         setCustomPins((prev) => [...prev, newPin]);
         setForm({ name: '', address: '', units: '', notes: '' });
+        console.log('✅ Manual property added to map:', newPin);
       } catch (error) {
         console.error('Failed to save manual property:', error);
       }
@@ -244,17 +250,12 @@ function DashboardMapTab() {
   // Marker styles by category - ALL RED PINS NOW
   const categoryIcon = (cat, source) => {
     // Everything uses red teardrop pins now
-    switch (cat) {
-      case 'rapidfire':
-        return createPinIcon('#ef4444', '🔥');
-      case 'prospect':
-        return createPinIcon('#ef4444', '🏠');
-      case 'pipeline':
-        return createPinIcon('#ef4444', '📋');
-      case 'custom':
-      default:
-        return createPinIcon('#ef4444', '📍');
-    }
+    return createPinIcon('#ef4444', 
+      cat === 'rapidfire' ? '🔥' : 
+      cat === 'prospect' ? '🏠' : 
+      cat === 'pipeline' ? '📋' : 
+      '📍'
+    );
   };
 
   // Command executor inside the map
@@ -659,7 +660,8 @@ function DashboardMapTab() {
     }
   };
 
-  // Auto-load saved prospects on mount
+  //console.log('🗺️ MapTab mounting - loading saved prospects...');
+     Auto-load saved prospects on mount
   useEffect(() => {
     loadSavedProspects();
   }, []);
