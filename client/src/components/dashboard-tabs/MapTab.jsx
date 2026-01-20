@@ -88,6 +88,8 @@ function DashboardMapTab() {
   const [mapFilter, setMapFilter] = useState('all'); // 'all' | 'rapidfire' | 'prospects' | 'pipeline'
   const [userId, setUserId] = useState(null);
   const [mapStyle, setMapStyle] = useState('voyager'); // 'voyager' | 'satellite' | 'streets' | 'osm'
+  const [addressSuggestions, setAddressSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Fetch current user on mount
   useEffect(() => {
@@ -97,6 +99,86 @@ function DashboardMapTab() {
     };
     fetchUser();
   }, []);
+
+  // Address autocomplete handler
+  const handleAddressChange = async (value) => {
+    setForm({ ...form, address: value });
+    
+    if (value.length > 3) {
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(value)}&addressdetails=1&limit=5`;
+        const res = await fetch(url, { 
+          headers: { 'Accept-Language': 'en-US' }
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            const suggestions = data.map(item => ({
+              label: item.display_name,
+              lat: parseFloat(item.lat),
+              lng: parseFloat(item.lon)
+            }));
+            setAddressSuggestions(suggestions);
+            setShowSuggestions(true);
+          }
+        }
+      } catch (e) {
+        // ignore autocomplete errors
+      }
+    } else {
+      setAddressSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const selectSuggestion = (suggestion) => {
+    setForm({ ...form, address: suggestion.label, lat: suggestion.lat, lng: suggestion.lng });
+    setShowSuggestions(false);
+    setAddressSuggestions([]);
+  };
+      if (user) setUserId(user.id);
+    };
+    fetchUser();
+  }, []);
+
+  // Address autocomplete handler
+  const handleAddressChange = async (value) => {
+    setForm({ ...form, address: value });
+    
+    if (value.length > 3) {
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(value)}&addressdetails=1&limit=5`;
+        const res = await fetch(url, { 
+          headers: { 'Accept-Language': 'en-US' }
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            const suggestions = data.map(item => ({
+              label: item.display_name,
+              lat: parseFloat(item.lat),
+              lng: parseFloat(item.lon)
+            }));
+            setAddressSuggestions(suggestions);
+            setShowSuggestions(true);
+          }
+        }
+      } catch (e) {
+        // ignore autocomplete errors
+      }
+    } else {
+      setAddressSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const selectSuggestion = (suggestion) => {
+    setForm({ ...form, address: suggestion.label, lat: suggestion.lat, lng: suggestion.lng });
+    setShowSuggestions(false);
+    setAddressSuggestions([]);
+  };
 
   // Load pipeline properties and add to map
   const loadPipelineProperties = async () => {
@@ -144,12 +226,16 @@ function DashboardMapTab() {
     const address = (form.address || '').trim();
     const units = form.units ? parseInt(form.units, 10) : null;
     if (!name && !address) return;
-    // Geocode address, then add pin
-    const geocodeAddress = (addr) => new Promise((resolve) => enqueueGeocode(addr, resolve));
+    
+    // Use autocomplete coordinates if available, otherwise geocode
     let latlng = null;
-    if (address) {
+    if (form.lat && form.lng) {
+      latlng = { lat: form.lat, lng: form.lng };
+    } else if (address) {
+      const geocodeAddress = (addr) => new Promise((resolve) => enqueueGeocode(addr, resolve));
       latlng = await geocodeAddress(address);
     }
+    
     if (latlng && Number.isFinite(latlng.lat) && Number.isFinite(latlng.lng)) {
       try {
         const { data: insertedPin, error } = await supabase
@@ -728,22 +814,57 @@ function DashboardMapTab() {
                 value={form.name} 
                 onChange={(e) => setForm({ ...form, name: e.target.value })} 
               />
-              <input 
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  fontSize: '13px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  backgroundColor: 'white'
-                }}
-                placeholder="Street Address, City, ST ZIP" 
-                value={form.address} 
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
-                autoComplete="street-address"
-                type="text"
-                name="address"
-              />
+              <div style={{ position: 'relative' }}>
+                <input 
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    fontSize: '13px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    backgroundColor: 'white'
+                  }}
+                  placeholder="Street Address, City, ST ZIP" 
+                  value={form.address} 
+                  onChange={(e) => handleAddressChange(e.target.value)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  type="text"
+                  name="address"
+                />
+                {showSuggestions && addressSuggestions.length > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    backgroundColor: 'white',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    marginTop: '4px',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    zIndex: 1000,
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}>
+                    {addressSuggestions.map((suggestion, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => selectSuggestion(suggestion)}
+                        style={{
+                          padding: '8px 12px',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          borderBottom: idx < addressSuggestions.length - 1 ? '1px solid #f3f4f6' : 'none'
+                        }}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = '#f9fafb'}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
+                      >
+                        {suggestion.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div style={{ display: 'flex', gap: '12px' }}>
                 <input 
                   style={{
@@ -817,21 +938,6 @@ function DashboardMapTab() {
                   disabled={!rapidFireQueue.length}
                 >
                   Add All to Map
-                </button>
-                <button
-                  style={{
-                    padding: '6px 12px',
-                    backgroundColor: 'white',
-                    color: '#374151',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: '500',
-                    cursor: 'pointer'
-                  }}
-                  onClick={loadSavedProspects}
-                >
-                  Load Saved Prospects
                 </button>
               </div>
               {processingStatus && (
