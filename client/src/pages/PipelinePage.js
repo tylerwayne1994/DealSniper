@@ -295,6 +295,8 @@ function PipelinePage() {
   const [showDeathModal, setShowDeathModal] = useState(null); // deal object
   const [deathReason, setDeathReason] = useState('');
   // Compact view permanently enabled to avoid horizontal scrolling
+  // Per feedback: keep single-line rows, with expandable details below
+  const [expandedRows, setExpandedRows] = useState({}); // { [dealId]: true }
 
   // Sample deals for demonstration
   const sampleDeals = [
@@ -315,22 +317,19 @@ function PipelinePage() {
       dealStructure: 'Seller Financing',
       pushedAt: '2025-12-01T10:30:00Z',
       deal_stage: 'underwritten',
-      stage_changed_at: '2025-12-01T10:30:00Z',
-      structure_confidence: 'high',
-      backup_structure: 'Traditional Bank Loan'
+                <div style={{ overflowX: 'hidden' }}>
+                    {/* Compact single-line rows with expandable details */}
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
     },
     {
       dealId: 'sample-002',
       address: '875 Sunrise MHP, Austin, TX 78745',
       units: 72,
-      purchasePrice: 5500000,
+                          <th style={thStyle}>Address</th>
       dayOneCashFlow: 7800,
       stabilizedCashFlow: 14500,
       refiValue: 8200000,
-      cashOutRefiAmount: 2100000,
-      userTotalInPocket: 1450000,
-      postRefiCashFlow: 11200,
-      brokerName: 'Sarah Chen',
+                          <th style={thStyle}>Summary</th>
       brokerPhone: '(512) 555-0234',
       brokerEmail: 'schen@capitalbrokers.com',
       dealStructure: 'Bank Loan + Equity Partner',
@@ -341,92 +340,135 @@ function PipelinePage() {
       backup_structure: null
     }
   ];
+                          const isExpanded = !!expandedRows[deal.dealId];
 
-  const loadPipelineDeals = async () => {
-    setIsLoading(true);
-    try {
-      const deals = await loadDealsFromSupabase();
-      // If no deals from Supabase, show sample deals for demo
-      if (deals.length === 0) {
-        setPipelineDeals(sampleDeals);
-      } else {
-        setPipelineDeals(deals);
-      }
-    } catch (error) {
-      console.error('Error loading pipeline deals:', error);
-      // Fallback to sample deals if Supabase fails
-      setPipelineDeals(sampleDeals);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadRapidFireDeals = async () => {
-    setIsLoadingRapid(true);
-    try {
-      const deals = await loadRapidFireDealsFromSupabase();
-      setRapidFireDeals(deals);
-    } catch (error) {
-      console.error('Error loading Rapid Fire queue deals:', error);
-      setRapidFireDeals([]);
-    } finally {
-      setIsLoadingRapid(false);
-    }
-  };
-
-  // Load deals from Supabase on mount
-  useEffect(() => {
-    loadPipelineDeals();
-    loadRapidFireDeals();
-
-    // Listen for pipeline updates from other components
-    const handlePipelineUpdate = () => {
-      console.log('🔄 Pipeline updated, reloading deals...');
-      loadPipelineDeals();
-      loadRapidFireDeals();
-    };
-    window.addEventListener('pipelineDealsUpdated', handlePipelineUpdate);
-
-    return () => {
-      window.removeEventListener('pipelineDealsUpdated', handlePipelineUpdate);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleViewDeal = (deal) => {
-    // For sample deals, create mock scenario data and pass via state
-    if (deal.dealId.startsWith('sample-')) {
-      // Create mock scenario data for sample deals
-      const mockScenarioData = {
-        property: {
-          address: deal.address,
-          units: deal.units,
-          property_type: 'Multifamily',
-          year_built: 1985,
-          rba_sqft: deal.units * 850
-        },
-        pricing_financing: {
-          price: deal.purchasePrice,
-          purchase_price: deal.purchasePrice
-        },
-        financing: {
-          ltv: 75,
-          interest_rate: 6.5,
-          loan_term_years: 10,
-          amortization_years: 30,
-          io_years: 0,
-          loan_fees_percent: 1.5
-        },
-        pnl: {
-          potential_gross_income: deal.units * 1200 * 12,
-          vacancy_rate: 5,
-          operating_expenses: deal.units * 400 * 12
-        },
-        unit_mix: [
-          { unit_type: '2BR/1BA', units: deal.units, unit_sf: 850, rent_current: 1200 }
-        ],
-        broker: {
-          name: deal.brokerName,
+                            <>
+                              <tr 
+                                key={(deal.dealId || index) + '-main'}
+                                style={{ 
+                                  backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb',
+                                  borderBottom: '1px solid #e5e7eb'
+                                }}
+                              >
+                                {/* Address + expand toggle */}
+                                <td style={tdStyle}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <button
+                                      onClick={() => setExpandedRows(prev => ({ ...prev, [deal.dealId]: !prev[deal.dealId] }))}
+                                      style={{
+                                        width: '24px', height: '24px', borderRadius: '6px', border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer'
+                                      }}
+                                      title={isExpanded ? 'Hide details' : 'Show details'}
+                                    >
+                                      {isExpanded ? '▾' : '▸'}
+                                    </button>
+                                    <div>
+                                      <div style={{ fontWeight: '600', color: '#111827' }}>{deal.address || '-'}</div>
+                                      <div style={{ fontSize: '11px', color: '#6b7280' }}>{deal.dealStructure || 'Traditional'}</div>
+                                    </div>
+                                  </div>
+                                </td>
+                                {/* Stage */}
+                                <td style={tdStyle}>
+                                  <button
+                                    onClick={() => setShowStatusModal({ deal, currentStatus: deal.deal_stage || 'underwritten' })}
+                                    style={{
+                                      padding: '6px 12px',
+                                      borderRadius: '6px',
+                                      border: `1px solid ${statusColors.border}`,
+                                      backgroundColor: statusColors.bg,
+                                      color: statusColors.text,
+                                      fontSize: '11px',
+                                      fontWeight: '700',
+                                      cursor: 'pointer',
+                                      textTransform: 'uppercase',
+                                      whiteSpace: 'nowrap'
+                                    }}
+                                    title="Click to change status"
+                                  >
+                                    {getStatusLabel(deal.deal_stage || 'underwritten')}
+                                  </button>
+                                  <div style={{ fontSize: '10px', color: '#6b7280' }}>
+                                    {daysInStage > 0 ? `${daysInStage} day${daysInStage !== 1 ? 's' : ''} in stage` : 'New'}
+                                  </div>
+                                </td>
+                                {/* Units */}
+                                <td style={{ ...tdStyle, textAlign: 'center' }}>
+                                  <span style={{ backgroundColor: '#e0f2fe', color: '#0369a1', padding: '4px 10px', borderRadius: '6px', fontWeight: '600' }}>
+                                    {deal.units || '-'}
+                                  </span>
+                                </td>
+                                {/* Price */}
+                                <td style={tdStyle}>
+                                  <span style={{ fontWeight: '700', color: '#111827' }}>{fmtCompact(deal.purchasePrice)}</span>
+                                </td>
+                                {/* Summary badges (single line) */}
+                                <td style={tdStyle}>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                    <span style={{ background: '#dcfce7', color: '#166534', padding: '4px 8px', borderRadius: '6px' }}>Ratio {efficiency.cashRatio > 0 ? efficiency.cashRatio.toFixed(2) + 'x' : '-'}</span>
+                                    <span style={{ background: '#fef3c7', color: '#92400e', padding: '4px 8px', borderRadius: '6px' }}>Multiple {efficiency.equityMultiple > 0 ? efficiency.equityMultiple.toFixed(2) + 'x' : '-'}</span>
+                                    <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '4px 8px', borderRadius: '6px' }}>Recovery {efficiency.monthsToRecovery ? Math.round(efficiency.monthsToRecovery) + ' mo' : '-'}</span>
+                                    <span title={risk.reason} style={{ background: risk.level === 'green' ? '#dcfce7' : risk.level === 'yellow' ? '#fef3c7' : '#fee2e2', color: risk.level === 'green' ? '#166534' : risk.level === 'yellow' ? '#92400e' : '#991b1b', padding: '4px 8px', borderRadius: '6px' }}>{risk.text}</span>
+                                  </div>
+                                </td>
+                                {/* Actions */}
+                                <td style={{ ...tdStyle, textAlign: 'center' }}>
+                                  <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                    <button onClick={() => handleViewDeal(deal)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', backgroundColor: '#0f766e', color: 'white', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }} title="View full underwriting"><Eye size={12} />Underwrite</button>
+                                    <button onClick={() => handleGenerateLOI(deal)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', backgroundColor: '#8b5cf6', color: 'white', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }} title="Generate Letter of Intent"><FileText size={12} />LOI</button>
+                                    <button onClick={() => handleDueDiligence(deal)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', backgroundColor: '#f59e0b', color: 'white', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }} title="Due diligence checklist"><ClipboardCheck size={12} />DD</button>
+                                    <button onClick={() => navigate(`/pitch-deck?dealId=${deal.dealId}`)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }} title="Generate pitch deck"><Presentation size={12} />Pitch</button>
+                                    <button onClick={() => handleDeleteDeal(deal.dealId)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px', backgroundColor: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '6px', cursor: 'pointer' }} title="Remove from pipeline"><Trash2 size={12} /></button>
+                                  </div>
+                                </td>
+                              </tr>
+                              {isExpanded && (
+                                <tr key={(deal.dealId || index) + '-details'}>
+                                  <td colSpan={6} style={{ padding: '12px 16px', background: '#fafafa', borderBottom: '1px solid #e5e7eb' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '12px' }}>
+                                      <div>
+                                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#374151', marginBottom: '6px' }}>Capital</div>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                          <span style={{ background: '#eef2ff', color: '#3730a3', padding: '4px 8px', borderRadius: '6px' }}>Equity {fmtCompact(capital.totalEquityRequired)}</span>
+                                          <span style={{ background: '#ecfeff', color: '#0e7490', padding: '4px 8px', borderRadius: '6px' }}>Sponsor {fmtCompact(capital.sponsorCashIn)}</span>
+                                          <span style={{ background: '#f5f3ff', color: '#6d28d9', padding: '4px 8px', borderRadius: '6px' }}>Outside {capital.outsideCapital > 0 ? fmtCompact(capital.outsideCapital) : '-'}</span>
+                                          <span style={{ background: '#e7ffe7', color: '#166534', padding: '4px 8px', borderRadius: '6px' }}>Refi {fmtCompact(capital.capitalAtRefi)}</span>
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#374151', marginBottom: '6px' }}>Efficiency</div>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                          <span style={{ background: '#dcfce7', color: '#166534', padding: '4px 8px', borderRadius: '6px' }}>Ratio {efficiency.cashRatio > 0 ? efficiency.cashRatio.toFixed(2) + 'x' : '-'}</span>
+                                          <span style={{ background: '#fef3c7', color: '#92400e', padding: '4px 8px', borderRadius: '6px' }}>Multiple {efficiency.equityMultiple > 0 ? efficiency.equityMultiple.toFixed(2) + 'x' : '-'}</span>
+                                          <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '4px 8px', borderRadius: '6px' }}>Recovery {efficiency.monthsToRecovery ? Math.round(efficiency.monthsToRecovery) + ' mo' : '-'}</span>
+                                          <span title={risk.reason} style={{ background: risk.level === 'green' ? '#dcfce7' : risk.level === 'yellow' ? '#fef3c7' : '#fee2e2', color: risk.level === 'green' ? '#166534' : risk.level === 'yellow' ? '#92400e' : '#991b1b', padding: '4px 8px', borderRadius: '6px' }}>{risk.text}</span>
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#374151', marginBottom: '6px' }}>Cash Flow</div>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                          <span style={{ background: '#f0fdf4', color: '#166534', padding: '4px 8px', borderRadius: '6px' }}>Day1 {fmtCompact(deal.dayOneCashFlow)}</span>
+                                          <span style={{ background: '#f0fdf4', color: '#166534', padding: '4px 8px', borderRadius: '6px' }}>Stab {fmtCompact(deal.stabilizedCashFlow)}</span>
+                                          <span style={{ background: '#eef2ff', color: '#3730a3', padding: '4px 8px', borderRadius: '6px' }}>Refi {fmtCompact(deal.refiValue)}</span>
+                                          <span style={{ background: '#f0fdf4', color: '#166534', padding: '4px 8px', borderRadius: '6px' }}>Post {fmtCompact(deal.postRefiCashFlow)}</span>
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#374151', marginBottom: '6px' }}>Broker</div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                          <div style={{ color: '#374151', fontSize: '12px' }}>{deal.brokerName || '-'}</div>
+                                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                            {deal.brokerPhone && <a href={`tel:${deal.brokerPhone}`} style={{ color: '#0f766e', textDecoration: 'none', fontSize: '12px' }}>{deal.brokerPhone}</a>}
+                                            {deal.brokerEmail && <a href={`mailto:${deal.brokerEmail}`} style={{ color: '#0f766e', textDecoration: 'none', fontSize: '12px' }}>{deal.brokerEmail}</a>}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </>
+                          );
           phone: deal.brokerPhone,
           email: deal.brokerEmail
         }
