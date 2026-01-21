@@ -98,15 +98,25 @@ function HomeMapView() {
         console.log('📊 [HOME] Number of deals:', deals.length);
         
         // Use sample deals if database is empty (matches PipelinePage behavior)
-        const dealsToUse = deals.length === 0 ? sampleDeals : deals;
+        const dealsToUse = Array.isArray(deals) && deals.length > 0 ? deals : sampleDeals;
         console.log('📋 [HOME] Using deals:', dealsToUse.length, 'sample:', deals.length === 0);
         
         // ALWAYS set pipeline deals even if empty - table needs to know
         setPipelineDeals(dealsToUse);
         
-        if (dealsToUse.length === 0) {
+        if (!dealsToUse || dealsToUse.length === 0) {
           console.warn('⚠️ [HOME] No pipeline deals found in database');
           setProperties([]);
+          setLoading(false);
+          setIsLoadingPipeline(false);
+          return;
+        }
+
+        // If all deals already have coordinates (e.g., sample deals), skip geocoding and render immediately
+        const allHaveCoords = dealsToUse.every(d => Number.isFinite(d.latitude) && Number.isFinite(d.longitude));
+        if (allHaveCoords) {
+          console.log('✅ [HOME] All deals have coordinates; rendering markers without geocoding');
+          setProperties(dealsToUse);
           setLoading(false);
           setIsLoadingPipeline(false);
           return;
@@ -151,14 +161,16 @@ function HomeMapView() {
         
         console.log('🗺️ [HOME] All geocoded deals:', geocodedDeals);
         // Filter out deals without valid coordinates FOR MAP ONLY
-        const validDeals = geocodedDeals.filter(deal => deal.longitude && deal.latitude);
+        const validDeals = geocodedDeals.filter(deal => Number.isFinite(deal.longitude) && Number.isFinite(deal.latitude));
         console.log('✅ [HOME] Valid geocoded deals for map:', validDeals.length, validDeals);
         setProperties(validDeals);
         setLoading(false);
       } catch (error) {
         console.error('❌ [HOME] Error loading deals:', error);
         console.error('❌ [HOME] Error stack:', error.stack);
-        setProperties([]);
+        // Fallback: show sample deals so the map isn't empty
+        console.warn('⚠️ [HOME] Falling back to sample deals due to error');
+        setProperties(sampleDeals);
         // Don't clear pipelineDeals on error - keep what we have
         setLoading(false);
       } finally {
@@ -197,24 +209,32 @@ function HomeMapView() {
         zoom: 3.5
       });
 
+      // Mark map as ready immediately so markers can render
+      // even if the 'load' event is delayed.
+      if (!mapReady) {
+        console.log('🟢 Map instance created, setting mapReady=true');
+        setMapReady(true);
+      }
+
       map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
       map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
       map.current.addControl(new mapboxgl.ScaleControl());
 
       map.current.on('load', () => {
-        console.log('âœ… Map loaded successfully!');
+        console.log('✅ Map loaded successfully!');
         
         // Add Mapbox POI layers (FREE - no geocoding needed!)
         // These use Mapbox's built-in place data
         addPOILayers();        
-        // Signal that map is ready
-        setMapReady(true);      });
+        // Signal that map is ready (redundant safeguard)
+        if (!mapReady) setMapReady(true);
+      });
 
       map.current.on('error', (e) => {
-        console.error('âŒ Map error:', e);
+        console.error('❌ Map error:', e);
       });
     } catch (error) {
-      console.error('âŒ Error initializing map:', error);
+      console.error('❌ Error initializing map:', error);
     }
 
     return () => {
