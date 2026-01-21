@@ -355,6 +355,175 @@ function DashboardMapTab() {
     return [];
   };
 
+  // Remove the commands JSON (and MAP COMMANDS section) from visible text
+  const stripCommandsFromText = (text) => {
+    if (!text) return '';
+    let cleaned = text;
+    const jsonIndex = cleaned.search(/\{[\s\S]*"commands"[\s\S]*\}/);
+    if (jsonIndex >= 0) {
+      cleaned = cleaned.slice(0, jsonIndex).trimEnd();
+    }
+    cleaned = cleaned.replace(/\n+MAP COMMANDS[\s\S]*$/i, '').trim();
+    return cleaned;
+  };
+
+  // Render assistant content with simple markdown-ish formatting and collapse
+  const FormattedMessage = ({ text }) => {
+    const [expanded, setExpanded] = useState(false);
+
+    const linkify = (str) => {
+      const urlRegex = /(https?:\/\/[^\s)]+)|((www)\.[^\s)]+)/gi;
+      const parts = [];
+      let lastIndex = 0;
+      let match;
+      while ((match = urlRegex.exec(str)) !== null) {
+        if (match.index > lastIndex) parts.push(str.slice(lastIndex, match.index));
+        const url = match[0].startsWith('http') ? match[0] : `https://${match[0]}`;
+        parts.push(
+          <a key={`${match.index}-${url}`} href={url} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>{match[0]}</a>
+        );
+        lastIndex = match.index + match[0].length;
+      }
+      if (lastIndex < str.length) parts.push(str.slice(lastIndex));
+      return parts;
+    };
+
+    const cleaned = stripCommandsFromText(text || '');
+    const long = cleaned.length > 1000;
+
+    // Very small markdown-ish parser
+    const lines = cleaned.split(/\r?\n/);
+    const blocks = [];
+    let i = 0;
+    let inCode = false;
+    let codeLines = [];
+    const pushParagraph = (buf) => {
+      if (!buf.length) return;
+      const para = buf.join(' ').trim();
+      if (para) blocks.push({ type: 'p', content: para });
+    };
+    while (i < lines.length) {
+      const line = lines[i];
+      if (line.trim().startsWith('```')) {
+        if (!inCode) {
+          inCode = true; codeLines = []; i++; continue;
+        } else {
+          blocks.push({ type: 'code', content: codeLines.join('\n') });
+          inCode = false; codeLines = []; i++; continue;
+        }
+      }
+      if (inCode) { codeLines.push(line); i++; continue; }
+
+      const h3 = line.match(/^###\s+(.+)/);
+      if (h3) { blocks.push({ type: 'h3', content: h3[1].trim() }); i++; continue; }
+      const h2 = line.match(/^##\s+(.+)/);
+      if (h2) { blocks.push({ type: 'h2', content: h2[1].trim() }); i++; continue; }
+
+      // Unordered list
+      if (/^\s*[-*]\s+/.test(line)) {
+        const items = [];
+        while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) {
+          items.push(lines[i].replace(/^\s*[-*]\s+/, ''));
+          i++;
+        }
+        blocks.push({ type: 'ul', items });
+        continue;
+      }
+      // Ordered list
+      if (/^\s*\d+\.\s+/.test(line)) {
+        const items = [];
+        while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) {
+          items.push(lines[i].replace(/^\s*\d+\.\s+/, ''));
+          i++;
+        }
+        blocks.push({ type: 'ol', items });
+        continue;
+      }
+
+      // Paragraph or blank
+      if (line.trim() === '') {
+        blocks.push({ type: 'br' });
+        i++;
+      } else {
+        // gather consecutive non-special lines into one paragraph
+        const buf = [line.trim()];
+        i++;
+        while (
+          i < lines.length &&
+          lines[i].trim() !== '' &&
+          !/^###\s+/.test(lines[i]) &&
+          !/^##\s+/.test(lines[i]) &&
+          !/^\s*[-*]\s+/.test(lines[i]) &&
+          !/^\s*\d+\.\s+/.test(lines[i]) &&
+          !lines[i].trim().startsWith('```')
+        ) {
+          buf.push(lines[i].trim());
+          i++;
+        }
+        pushParagraph(buf);
+      }
+    }
+
+    const visibleBlocks = !long || expanded ? blocks : blocks.slice(0, 10); // first ~10 blocks when collapsed
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {visibleBlocks.map((b, idx) => {
+          if (b.type === 'h2') {
+            return <div key={idx} style={{ fontSize: 14, fontWeight: 700, marginTop: 6, color: '#111827' }}>{b.content}</div>;
+          }
+          if (b.type === 'h3') {
+            return <div key={idx} style={{ fontSize: 13, fontWeight: 700, marginTop: 6, color: '#111827' }}>{b.content}</div>;
+          }
+          if (b.type === 'ul') {
+            return (
+              <ul key={idx} style={{ margin: '4px 0 4px 18px', padding: 0 }}>
+                {b.items.map((it, i2) => <li key={i2} style={{ marginBottom: 2 }}>{linkify(it)}</li>)}
+              </ul>
+            );
+          }
+          if (b.type === 'ol') {
+            return (
+              <ol key={idx} style={{ margin: '4px 0 4px 18px', padding: 0 }}>
+                {b.items.map((it, i2) => <li key={i2} style={{ marginBottom: 2 }}>{linkify(it)}</li>)}
+              </ol>
+            );
+          }
+          if (b.type === 'code') {
+            return (
+              <pre key={idx} style={{ background: '#111827', color: '#e5e7eb', padding: 8, borderRadius: 6, overflowX: 'auto', fontSize: 12 }}>
+                <code>{b.content}</code>
+              </pre>
+            );
+          }
+          if (b.type === 'br') {
+            return <div key={idx} style={{ height: 6 }} />;
+          }
+          return <div key={idx} style={{ color: '#111827' }}>{linkify(b.content)}</div>;
+        })}
+        {long && (
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
+            style={{
+              marginTop: 6,
+              alignSelf: 'flex-start',
+              background: 'transparent',
+              border: 'none',
+              color: '#2563eb',
+              cursor: 'pointer',
+              padding: 0,
+              fontSize: 12,
+              fontWeight: 600
+            }}
+          >
+            {expanded ? 'Show less' : 'Show more'}
+          </button>
+        )}
+      </div>
+    );
+  };
+
   const addPinFromCommand = (pin) => {
     setCustomPins(prev => [...prev, pin]);
   };
@@ -1244,7 +1413,11 @@ function DashboardMapTab() {
                   lineHeight: 1.5
                 }}
               >
-                {msg.content}
+                {msg.role === 'assistant' ? (
+                  <FormattedMessage text={msg.content} />
+                ) : (
+                  msg.content
+                )}
               </div>
             ))}
             {chat.loading && (
