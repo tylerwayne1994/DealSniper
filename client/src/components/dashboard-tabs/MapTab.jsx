@@ -18,6 +18,8 @@ import {
   Filter
 } from 'lucide-react';
 
+// Mapbox access token (shared with HomeMapView)
+const MAPBOX_TOKEN = 'pk.eyJ1IjoidHlsZXJ3YXluZTEyIiwiYSI6ImNtanl5b3RkNTZwYnMzZ3B3eHN3eGJ4OHAifQ.Jz3DXX3FplxJPTqMQSRbCA';
 // Helper to create Tailwind-styled divIcon
 function createDivIcon({ bgClass, borderClass = 'border-white/60', icon: Icon, iconColor = '#fff', size = 'normal' }) {
   const sizeClasses = size === 'small' ? 'w-7 h-7' : 'w-9 h-9';
@@ -87,7 +89,7 @@ function DashboardMapTab() {
   const [processingStatus, setProcessingStatus] = useState('');
   const [mapFilter, setMapFilter] = useState('all'); // 'all' | 'rapidfire' | 'prospects' | 'pipeline'
   const [userId, setUserId] = useState(null);
-  const [mapStyle, setMapStyle] = useState('voyager'); // 'voyager' | 'satellite' | 'streets' | 'osm'
+  const [mapStyle, setMapStyle] = useState('mapbox'); // 'mapbox' | 'satellite' | 'streets' | 'dark'
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -252,6 +254,10 @@ function DashboardMapTab() {
 
   // Map tile layer configurations
   const tileConfigs = {
+    mapbox: {
+      url: `https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`,
+      attribution: '&copy; Mapbox &copy; OpenStreetMap'
+    },
     voyager: {
       url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
       attribution: '&copy; OpenStreetMap, &copy; CartoDB'
@@ -270,18 +276,19 @@ function DashboardMapTab() {
     }
   };
 
-  const tileUrl = tileConfigs[mapStyle].url;
-  const attribution = tileConfigs[mapStyle].attribution;
+  const tileUrl = (tileConfigs[mapStyle] || tileConfigs['streets']).url;
+  const attribution = (tileConfigs[mapStyle] || tileConfigs['streets']).attribution;
 
-  // Marker styles by category - ALL RED PINS NOW
+  // Marker styles by category
   const categoryIcon = (cat, source) => {
-    // Everything uses red teardrop pins now
-    return createPinIcon('#ef4444', 
-      cat === 'rapidfire' ? '🔥' : 
-      cat === 'prospect' ? '🏠' : 
-      cat === 'pipeline' ? '📋' : 
+    const color = cat === 'pipeline' ? '#22c55e' : '#ef4444';
+    const label = (
+      cat === 'rapidfire' ? '🔥' :
+      cat === 'prospect' ? '🏠' :
+      cat === 'pipeline' ? '📋' :
       '📍'
     );
+    return createPinIcon(color, label);
   };
 
   // Command executor inside the map
@@ -991,6 +998,21 @@ function DashboardMapTab() {
                 <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>Map Style:</label>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   <button
+                    onClick={() => setMapStyle('mapbox')}
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: mapStyle === 'mapbox' ? '#3b82f6' : 'white',
+                      color: mapStyle === 'mapbox' ? 'white' : '#6b7280',
+                      border: mapStyle === 'mapbox' ? 'none' : '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Mapbox
+                  </button>
+                  <button
                     onClick={() => setMapStyle('voyager')}
                     style={{
                       padding: '6px 12px',
@@ -1059,7 +1081,12 @@ function DashboardMapTab() {
         {/* Map Container */}
         <div style={{ flex: 1, position: 'relative' }}>
           <MapContainer center={defaultCenter} zoom={defaultZoom} style={{ width: '100%', height: '100%' }}>
-            <TileLayer url={tileUrl} attribution={attribution} />
+            <TileLayer 
+              url={tileUrl} 
+              attribution={attribution} 
+              tileSize={mapStyle === 'mapbox' ? 512 : undefined}
+              zoomOffset={mapStyle === 'mapbox' ? -1 : undefined}
+            />
             <CommandExecutor commands={pendingCommands} onDone={() => setPendingCommands([])} addPin={addPinFromCommand} />
 
             {/* Base categorized markers */}
