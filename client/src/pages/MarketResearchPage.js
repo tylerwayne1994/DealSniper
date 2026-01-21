@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { MarketReportDisplay } from '../components/reports';
+import { supabase } from '../lib/supabase';
+import { API_ENDPOINTS } from '../config/api';
 
 // Suggestion prompts
 const SUGGESTIONS = [
@@ -369,9 +371,14 @@ function MarketResearchPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8010/api/market-research/chat', {
+      const headers = { 'Content-Type': 'application/json' };
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id;
+      if (userId) headers['X-Profile-ID'] = userId;
+
+      const response = await fetch(API_ENDPOINTS.marketResearchChat, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           message: userMessage,
           conversationHistory: messages.map(m => ({
@@ -380,6 +387,22 @@ function MarketResearchPage() {
           }))
         })
       });
+
+      if (response.status === 401) {
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: 'Please log in to use Market Research. Go to the login page, sign in, then try again.'
+        }]);
+        return;
+      }
+
+      if (response.status === 402) {
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: 'You are out of tokens for this feature. Please purchase more tokens to continue.'
+        }]);
+        return;
+      }
 
       const data = await response.json();
 
@@ -407,7 +430,7 @@ function MarketResearchPage() {
       console.error('Chat error:', error);
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: 'I apologize, but there was a connection error. Please check that the server is running and try again.'
+        content: 'I apologize, but there was a connection error. Please verify you are logged in and try again.'
       }]);
     } finally {
       setIsLoading(false);
