@@ -1328,13 +1328,33 @@ MAP COMMANDS (output JSON at end of response):
     { "type": "addPin", "payload": { "name": "Property Name", "lat": XX.XXX, "lng": -XX.XXX, "notes": "reason" } }
   ]
 }`;
+                      // Include profile header for token/auth checks
+                      const headers = { 'Content-Type': 'application/json' };
+                      if (userId) headers['X-Profile-ID'] = userId;
                       const res = await fetch(API_ENDPOINTS.marketResearchChat, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers,
                         body: JSON.stringify({ message: trimmed, system })
                       });
-                      const data = await res.json().catch(() => null);
-                      const text = data?.message || data?.content || data?.assistant || 'No response';
+                      const isJson = res.headers.get('content-type')?.includes('application/json');
+                      const data = isJson ? await res.json().catch(() => null) : null;
+                      if (res.status === 401) {
+                        const msg = 'Please log in to use Market Research.';
+                        setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: msg }] }));
+                        return;
+                      }
+                      if (res.status === 402) {
+                        const required = data?.tokens_required ?? 1;
+                        const balance = data?.token_balance ?? 0;
+                        const msg = `You are out of tokens for Market Research. Required: ${required}, Available: ${balance}.`;
+                        setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: msg }] }));
+                        return;
+                      }
+                      if (!res.ok) {
+                        setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: 'Error contacting Max.' }] }));
+                        return;
+                      }
+                      const text = (data?.message || data?.content || data?.assistant || 'No response');
                       const commands = extractCommands(text);
                       if (commands.length > 0) setPendingCommands(commands);
                       setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: text }] }));
@@ -1401,13 +1421,33 @@ MAP COMMANDS (output JSON at end of response):
     { "type": "addPin", "payload": { "name": "Property Name", "lat": XX.XXX, "lng": -XX.XXX, "notes": "reason" } }
   ]
 }`;
+                  // Include profile header for token/auth checks
+                  const headers = { 'Content-Type': 'application/json' };
+                  if (userId) headers['X-Profile-ID'] = userId;
                   const res = await fetch(API_ENDPOINTS.marketResearchChat, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers,
                     body: JSON.stringify({ message: trimmed, system })
                   });
-                  const data = await res.json().catch(() => null);
-                  const text = data?.message || data?.content || data?.assistant || 'No response';
+                  const isJson = res.headers.get('content-type')?.includes('application/json');
+                  const data = isJson ? await res.json().catch(() => null) : null;
+                  if (res.status === 401) {
+                    const msg = 'Please log in to use Market Research.';
+                    setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: msg }] }));
+                    return;
+                  }
+                  if (res.status === 402) {
+                    const required = data?.tokens_required ?? 1;
+                    const balance = data?.token_balance ?? 0;
+                    const msg = `You are out of tokens for Market Research. Required: ${required}, Available: ${balance}.`;
+                    setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: msg }] }));
+                    return;
+                  }
+                  if (!res.ok) {
+                    setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: 'Error contacting Max.' }] }));
+                    return;
+                  }
+                  const text = (data?.message || data?.content || data?.assistant || 'No response');
                   const commands = extractCommands(text);
                   if (commands.length > 0) setPendingCommands(commands);
                   setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: text }] }));
