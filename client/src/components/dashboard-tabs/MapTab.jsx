@@ -144,34 +144,49 @@ function DashboardMapTab() {
       console.log('🔍 Fetching pipeline deals from database...');
       const deals = await loadPipelineDeals();
       console.log('🔍 Raw pipeline deals:', deals);
-      console.log(`🔍 Found ${deals.length} total pipeline deals`);
+      console.log(`🔍 Found ${deals?.length || 0} total pipeline deals`);
       
-      const dealsWithCoords = deals.filter(d => d.latitude && d.longitude);
-      console.log(`🔍 ${dealsWithCoords.length} deals have coordinates`);
+      if (!deals || deals.length === 0) {
+        console.warn('⚠️ No pipeline deals found in database');
+        setCustomPins(prev => prev.filter(p => p.category !== 'pipeline'));
+        return;
+      }
+      
+      const dealsWithCoords = deals.filter(d => {
+        const hasCoords = d.latitude && d.longitude && 
+                         Number.isFinite(d.latitude) && 
+                         Number.isFinite(d.longitude);
+        if (!hasCoords) {
+          console.warn(`⚠️ Deal missing valid coords:`, d.address, d);
+        }
+        return hasCoords;
+      });
+      console.log(`🔍 ${dealsWithCoords.length} deals have valid coordinates`);
       
       const pipelinePins = dealsWithCoords.map(d => ({
-        id: `pipeline-${d.id}`,
+        id: `pipeline-${d.dealId}`,
         name: d.address || 'Pipeline Property',
         category: 'pipeline',
         position: [d.latitude, d.longitude],
-        insight: `${d.units || '?'} units • $${(d.purchase_price || 0).toLocaleString()}`,
+        insight: `${d.units || '?'} units • $${(d.purchasePrice || 0).toLocaleString()}`,
         source: 'pipeline',
-        dealId: d.id
+        dealId: d.dealId
       }));
       
       console.log('🔍 Pipeline pins created:', pipelinePins);
       
       setCustomPins(prev => {
-        console.log('🔍 Current pins before adding pipeline:', prev);
+        console.log('🔍 Current pins before adding pipeline:', prev.length, prev);
         // Remove existing pipeline pins and add new ones
         const nonPipeline = prev.filter(p => p.category !== 'pipeline');
         const newPins = [...nonPipeline, ...pipelinePins];
-        console.log('🔍 New pins array after adding pipeline:', newPins);
+        console.log('🔍 New pins array after adding pipeline:', newPins.length, newPins);
         return newPins;
       });
       console.log(`✅ Loaded ${pipelinePins.length} pipeline properties to map`);
     } catch (error) {
       console.error('❌ Failed to load pipeline properties:', error);
+      console.error('❌ Error details:', error.message, error.stack);
     }
   };
 
