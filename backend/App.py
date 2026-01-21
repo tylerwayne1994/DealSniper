@@ -2724,12 +2724,16 @@ async def market_data_summary(request: Request):
         from token_manager import get_current_profile_id, get_profile, reset_tokens_if_needed, TOKEN_COSTS
         from token_manager import get_supabase as get_token_supabase
         
+        # Initialize defaults to avoid UnboundLocalError when auth is missing
+        profile_id = None
+        profile = None
+        tokens_required = TOKEN_COSTS.get("market_research_results", 1)
+        new_balance = None
+
         try:
             profile_id = get_current_profile_id(request)
             profile = get_profile(profile_id)
             profile = reset_tokens_if_needed(profile)
-            
-            tokens_required = TOKEN_COSTS.get("market_research_results", 1)
             
             if profile["token_balance"] < tokens_required:
                 return JSONResponse(
@@ -3015,36 +3019,42 @@ This location research is CRITICAL for evaluating tenant demand - include specif
             result = response.json()
             content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
             
-            # Deduct token after successful generation
-            try:
-                token_supabase = get_token_supabase()
-                new_balance = profile["token_balance"] - tokens_required
-                
-                token_supabase.table("profiles").update({
-                    "token_balance": new_balance
-                }).eq("id", profile_id).execute()
-                
-                # Log usage
-                token_supabase.table("token_usage").insert({
-                    "profile_id": profile_id,
-                    "operation_type": "market_research_results",
-                    "tokens_used": tokens_required,
-                    "deal_id": None,
-                    "deal_name": property_name,
-                    "location": f"{location.get('city', '')}, {location.get('state', '')} {location.get('zip', '')}"
-                }).execute()
-                
-                log.info(f"Deducted {tokens_required} token(s) for market research. New balance: {new_balance}")
-            except Exception as token_error:
-                log.error(f"Failed to deduct token: {token_error}")
-                # Don't fail the request if token deduction fails
+            # Deduct token after successful generation (only if authenticated)
+            if profile_id and profile:
+                try:
+                    token_supabase = get_token_supabase()
+                    new_balance = profile["token_balance"] - tokens_required
+                    
+                    token_supabase.table("profiles").update({
+                        "token_balance": new_balance
+                    }).eq("id", profile_id).execute()
+                    
+                    # Log usage
+                    token_supabase.table("token_usage").insert({
+                        "profile_id": profile_id,
+                        "operation_type": "market_research_results",
+                        "tokens_used": tokens_required,
+                        "deal_id": None,
+                        "deal_name": property_name,
+                        "location": f"{location.get('city', '')}, {location.get('state', '')} {location.get('zip', '')}"
+                    }).execute()
+                    
+                    log.info(f"Deducted {tokens_required} token(s) for market research. New balance: {new_balance}")
+                except Exception as token_error:
+                    log.error(f"Failed to deduct token: {token_error}")
+                    # Don't fail the request if token deduction fails
             
+            # Build response safely even when unauthenticated
             return {
                 "success": True,
                 "summary": content,
-                "tokens_deducted": tokens_required,
+                "tokens_deducted": tokens_required if profile_id else 0,
                 "new_balance": new_balance,
-                "message": f"✓ {tokens_required} token deducted. Remaining balance: {new_balance}"
+                "message": (
+                    f"✓ {tokens_required} token deducted. Remaining balance: {new_balance}"
+                    if (profile_id and new_balance is not None)
+                    else "AI summary generated."
+                )
             }
             
     except Exception as e:
