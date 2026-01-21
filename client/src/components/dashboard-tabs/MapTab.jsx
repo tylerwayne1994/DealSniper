@@ -1354,7 +1354,7 @@ MAP COMMANDS (output JSON at end of response):
                         setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: 'Error contacting Max.' }] }));
                         return;
                       }
-                      const text = (data?.message || data?.content || data?.assistant || 'No response');
+                      const text = (data?.response || data?.message || data?.content || data?.assistant || 'No response');
                       const commands = extractCommands(text);
                       if (commands.length > 0) setPendingCommands(commands);
                       setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: text }] }));
@@ -1447,7 +1447,7 @@ MAP COMMANDS (output JSON at end of response):
                     setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: 'Error contacting Max.' }] }));
                     return;
                   }
-                  const text = (data?.message || data?.content || data?.assistant || 'No response');
+                  const text = (data?.response || data?.message || data?.content || data?.assistant || 'No response');
                   const commands = extractCommands(text);
                   if (commands.length > 0) setPendingCommands(commands);
                   setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: text }] }));
