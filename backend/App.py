@@ -2284,46 +2284,21 @@ async def market_research_chat(request: Request):
     """
     Chat with Perplexity AI for market research and discovery.
     This is a standalone endpoint for the 'Find Perfect Market' feature.
-    REQUIRES 1 TOKEN PER MESSAGE.
+    Tokens are NOT deducted for this chat.
     """
     try:
-        # Check if user has tokens
-        from token_manager import get_current_profile_id, get_profile, reset_tokens_if_needed, TOKEN_COSTS
-        from token_manager import get_supabase as get_token_supabase
-        
+        # Attempt to read profile info (optional). No token gating for chat.
+        from token_manager import get_current_profile_id, get_profile, reset_tokens_if_needed
         profile_id = None
         profile = None
-        
         try:
             profile_id = get_current_profile_id(request)
             profile = get_profile(profile_id)
             profile = reset_tokens_if_needed(profile)
-            
-            tokens_required = TOKEN_COSTS.get("market_research_dashboard", 1)
-            
-            print(f"[MarketResearch] Profile {profile_id} - Current balance: {profile['token_balance']}, Required: {tokens_required}")
-            
-            if profile["token_balance"] < tokens_required:
-                print(f"[MarketResearch] ❌ INSUFFICIENT TOKENS - Blocking request")
-                return JSONResponse(
-                    status_code=402,
-                    content={
-                        "success": False,
-                        "error": f"Insufficient tokens. You need {tokens_required} token(s) but have {profile['token_balance']}.",
-                        "tokens_required": tokens_required,
-                        "token_balance": profile["token_balance"]
-                    }
-                )
-        except HTTPException as he:
-            print(f"[MarketResearch] ⚠️ Token check failed: {he.detail}. Blocking request - NO FREE PASSES!")
-            return JSONResponse(
-                status_code=401,
-                content={
-                    "success": False,
-                    "error": "Authentication required. Please log in to use Market Research.",
-                    "requiresAuth": True
-                }
-            )
+            print(f"[MarketResearch] Profile {profile_id} authenticated. Balance: {profile.get('token_balance')}")
+        except Exception:
+            # Proceed without authentication; chat is free
+            print("[MarketResearch] No profile authenticated. Proceeding without token checks.")
         
         data = await request.json()
         message = data.get("message", "")
@@ -2672,15 +2647,12 @@ Use REAL DATA. If missing, use null. DO NOT SKIP THE JSON."""
                 import traceback
                 traceback.print_exc()
             
-            # Deduct token after successful API call
+            # No token deduction for chat endpoint
             if profile_id:
                 try:
-                    supabase = get_token_supabase()
-                    new_balance = profile["token_balance"] - tokens_required
-                    supabase.table("profiles").update({"token_balance": new_balance}).eq("id", profile_id).execute()
-                    print(f"✅ Deducted {tokens_required} token(s) from profile {profile_id}. New balance: {new_balance}")
-                except Exception as token_err:
-                    print(f"⚠️ Failed to deduct tokens: {token_err}")
+                    print(f"[MarketResearch] Chat completed for profile {profile_id} — no tokens deducted.")
+                except Exception:
+                    pass
             
             return {
                 "success": True,
