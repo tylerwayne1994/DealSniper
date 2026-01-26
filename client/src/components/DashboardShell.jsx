@@ -164,13 +164,13 @@ const SidebarIcon = ({ icon: Icon, label, active = false, onClick }) => {
 };
 
 const tabs = [
+  { id: 'home', label: 'Home', icon: Home },
   { id: 'profile', label: 'Profile', icon: User },
   { id: 'pipeline', label: 'Pipeline', icon: Layers },
   { id: 'underwrite', label: 'Underwrite', icon: FileSpreadsheet },
   { id: 'rapid-fire', label: 'Rapid Fire', icon: Zap },
   { id: 'market', label: 'Market', icon: BarChart3 },
   { id: 'pitch-deck', label: 'Pitch Deck', icon: Presentation },
-  { id: 'map', label: 'Map', icon: MapPin },
 ];
 
 function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }) {
@@ -187,11 +187,8 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
       navigate('/market-research');
     } else if (tabId === 'pitch-deck') {
       navigate('/pitch-deck');
-    } else if (tabId === 'map') {
-      // Map tab stays in dashboard
-      navigate('/dashboard');
     } else if (tabId === 'home') {
-      // Home now shows the map tab
+      // Home tab shows the map view
       navigate('/dashboard');
     } else {
       navigate('/dashboard');
@@ -216,12 +213,6 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
           <div style={dashboardStyles.logoBoxOuter}>
             <div style={dashboardStyles.logoBoxInner} />
           </div>
-          <SidebarIcon
-            icon={Home}
-            label="Home"
-            active={activeTab === 'home'}
-            onClick={() => handleTabClick('home')}
-          />
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
