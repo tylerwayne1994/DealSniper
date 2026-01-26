@@ -100,6 +100,7 @@ function DashboardMapTab() {
   const [geocodingProgress, setGeocodingProgress] = useState({ current: 0, total: 0, failed: [] });
   const [showGeocodeErrors, setShowGeocodeErrors] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
+  const [selectedProperties, setSelectedProperties] = useState([]);  // Track selected property indices
 
   // Fetch current user on mount
   useEffect(() => {
@@ -953,6 +954,7 @@ function DashboardMapTab() {
       };
 
       setSheetPreview(sheetData);
+      setSelectedProperties(rows.map((_, idx) => idx)); // Select all by default
       setShowPreviewModal(true);
     } catch (error) {
       console.error('Error parsing file:', error);
@@ -964,18 +966,30 @@ function DashboardMapTab() {
   const geocodeSheetProperties = async () => {
     if (!sheetPreview) return;
 
+    // Filter to only selected properties
+    const selectedProps = sheetPreview.properties.filter((_, idx) => selectedProperties.includes(idx));
+
     setIsGeocoding(true);
-    setGeocodingProgress({ current: 0, total: sheetPreview.properties.length, failed: [] });
+    setGeocodingProgress({ current: 0, total: selectedProps.length, failed: [] });
 
     const results = [];
     const failed = [];
 
-    for (let i = 0; i < sheetPreview.properties.length; i++) {
-      const prop = sheetPreview.properties[i];
+    for (let i = 0; i < selectedProps.length; i++) {
+      const prop = selectedProps[i];
+      const propIndex = prop.rowIndex;
+      
       setGeocodingProgress(prev => ({ ...prev, current: i + 1 }));
 
       if (!prop.address) {
         failed.push({ ...prop, reason: 'No address found' });
+        // Update status to failed in preview
+        setSheetPreview(prev => ({
+          ...prev,
+          properties: prev.properties.map((p, idx) => 
+            idx === propIndex ? { ...p, geocodeStatus: 'failed' } : p
+          )
+        }));
         continue;
       }
 
@@ -988,14 +1002,30 @@ function DashboardMapTab() {
         const data = await res.json();
 
         if (data && data.length > 0) {
-          results.push({
+          const successProp = {
             ...prop,
             latitude: parseFloat(data[0].lat),
             longitude: parseFloat(data[0].lon),
             geocodeStatus: 'success'
-          });
+          };
+          results.push(successProp);
+          
+          // Update status to success in preview (live update)
+          setSheetPreview(prev => ({
+            ...prev,
+            properties: prev.properties.map((p, idx) => 
+              idx === propIndex ? { ...p, geocodeStatus: 'success' } : p
+            )
+          }));
         } else {
           failed.push({ ...prop, reason: 'Address not found' });
+          // Update status to failed in preview
+          setSheetPreview(prev => ({
+            ...prev,
+            properties: prev.properties.map((p, idx) => 
+              idx === propIndex ? { ...p, geocodeStatus: 'failed' } : p
+            )
+          }));
         }
 
         // Rate limit: ~1 request per second
@@ -1003,6 +1033,13 @@ function DashboardMapTab() {
       } catch (error) {
         console.error(`Geocoding failed for ${prop.address}:`, error);
         failed.push({ ...prop, reason: error.message });
+        // Update status to failed in preview
+        setSheetPreview(prev => ({
+          ...prev,
+          properties: prev.properties.map((p, idx) => 
+            idx === propIndex ? { ...p, geocodeStatus: 'failed' } : p
+          )
+        }));
       }
     }
 
@@ -1331,44 +1368,109 @@ function DashboardMapTab() {
           )}
 
           {activeTab === 'upload' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {/* NEW: Property Sheet Upload */}
               <div style={{ 
-                padding: '12px', 
-                backgroundColor: '#eff6ff', 
-                borderRadius: '8px',
-                border: '1px solid #bfdbfe'
+                padding: '20px', 
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                borderRadius: '12px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
               }}>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e40af', marginBottom: '8px' }}>
-                  📊 Upload Property Spreadsheet (CSV/XLSX)
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                  <div style={{ 
+                    width: '40px', 
+                    height: '40px', 
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)', 
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '20px'
+                  }}>
+                    📊
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#ffffff', marginBottom: '2px' }}>
+                      Upload Property Spreadsheet
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.9)' }}>
+                      CSV or XLSX • Up to 2,000 properties • Blue pins
+                    </div>
+                  </div>
                 </div>
-                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>
-                  Upload up to 2000 properties. Blue pins will appear on the map.
-                </div>
-                <input 
-                  type="file" 
-                  accept=".csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" 
-                  onChange={(e) => handleUploadedSheetFile(e.target.files?.[0])}
-                  style={{ fontSize: '13px', padding: '4px' }}
-                />
+                <label style={{
+                  display: 'block',
+                  padding: '14px 20px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  borderRadius: '8px',
+                  border: '2px dashed rgba(102, 126, 234, 0.3)',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#667eea',
+                  transition: 'all 0.2s'
+                }}>
+                  <input 
+                    type="file" 
+                    accept=".csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" 
+                    onChange={(e) => handleUploadedSheetFile(e.target.files?.[0])}
+                    style={{ display: 'none' }}
+                  />
+                  Choose File or Drag & Drop
+                </label>
               </div>
 
               {/* Original Upload for Rapid Fire */}
               <div style={{ 
-                padding: '12px', 
-                backgroundColor: '#fef3c7', 
-                borderRadius: '8px',
-                border: '1px solid #fbbf24'
+                padding: '20px', 
+                background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                borderRadius: '12px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
               }}>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#92400e', marginBottom: '8px' }}>
-                  🔥 Upload to Rapid Fire Queue
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                  <div style={{ 
+                    width: '40px', 
+                    height: '40px', 
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)', 
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '20px'
+                  }}>
+                    🔥
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#ffffff', marginBottom: '2px' }}>
+                      Rapid Fire Queue Upload
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.9)' }}>
+                      CSV or XLSX • Auto-geocode • Red pins
+                    </div>
+                  </div>
                 </div>
-                <input 
-                  type="file" 
-                  accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" 
-                  onChange={(e) => handleProspectsFile(e.target.files?.[0])}
-                  style={{ fontSize: '13px', marginBottom: '8px' }}
-                />
+                <label style={{
+                  display: 'block',
+                  padding: '14px 20px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  borderRadius: '8px',
+                  border: '2px dashed rgba(245, 87, 108, 0.3)',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#f5576c',
+                  transition: 'all 0.2s'
+                }}>
+                  <input 
+                    type="file" 
+                    accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" 
+                    onChange={(e) => handleProspectsFile(e.target.files?.[0])}
+                    style={{ display: 'none' }}
+                  />
+                  Choose File or Drag & Drop
+                </label>
               </div>
 
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -1578,62 +1680,151 @@ function DashboardMapTab() {
               })
               .map((p) => (
               <Marker key={p.id} position={p.position} icon={categoryIcon(p.category, p.source)}>
-                <Popup>
-                  <div style={{ minWidth: '220px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>{p.name}</div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>
-                      {p.source === 'uploaded' ? '📊 Uploaded Property' :
-                       p.category === 'pipeline' ? '📋 Pipeline Deal' :
-                       p.category === 'rapidfire' ? '🔥 Rapid Fire Queue' : 
-                       p.category === 'prospect' ? '🏘️ Prospect City' : 
-                       'Manual pin — custom research'}
-                    </div>
-                    <div style={{
-                      borderRadius: '8px',
-                      padding: '8px',
-                      fontSize: '12px',
-                      color: '#1e293b',
-                      backgroundColor: p.source === 'uploaded' ? '#dbeafe' :
-                                     p.category === 'pipeline' ? '#d1fae5' :
-                                     p.category === 'rapidfire' ? '#fed7aa' : 
-                                     p.category === 'prospect' ? '#bfdbfe' : 
-                                     '#e9d5ff'
+                <Popup maxWidth={350}>
+                  <div style={{ 
+                    minWidth: '280px', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: '12px',
+                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
+                  }}>
+                    {/* Header */}
+                    <div style={{ 
+                      borderBottom: '2px solid #e5e7eb', 
+                      paddingBottom: '10px' 
                     }}>
-                      {p.insight}
+                      <div style={{ 
+                        fontSize: '16px', 
+                        fontWeight: '700', 
+                        color: '#111827',
+                        marginBottom: '6px',
+                        lineHeight: '1.4'
+                      }}>{p.name}</div>
+                      <div style={{ 
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '4px 10px',
+                        borderRadius: '12px',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        backgroundColor: 
+                          p.source === 'uploaded' ? '#dbeafe' :
+                          p.category === 'pipeline' ? '#d1fae5' :
+                          p.category === 'rapidfire' ? '#fecaca' : 
+                          p.category === 'prospect' ? '#ddd6fe' : 
+                          '#fce7f3',
+                        color:
+                          p.source === 'uploaded' ? '#1e40af' :
+                          p.category === 'pipeline' ? '#065f46' :
+                          p.category === 'rapidfire' ? '#991b1b' : 
+                          p.category === 'prospect' ? '#5b21b6' : 
+                          '#831843'
+                      }}>
+                        {p.source === 'uploaded' ? '📊 Uploaded' :
+                         p.category === 'pipeline' ? '📋 Pipeline' :
+                         p.category === 'rapidfire' ? '🔥 Rapid Fire' : 
+                         p.category === 'prospect' ? '🏘️ Prospect' : 
+                         '📍 Custom'}
+                      </div>
                     </div>
+
+                    {/* Insight Box */}
+                    {p.insight && (
+                      <div style={{
+                        borderRadius: '10px',
+                        padding: '12px',
+                        fontSize: '13px',
+                        lineHeight: '1.5',
+                        fontWeight: '500',
+                        color: '#374151',
+                        background: 
+                          p.source === 'uploaded' ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)' :
+                          p.category === 'pipeline' ? 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)' :
+                          p.category === 'rapidfire' ? 'linear-gradient(135deg, #fef2f2 0%, #fecaca 100%)' : 
+                          'linear-gradient(135deg, #faf5ff 0%, #e9d5ff 100%)',
+                        border: '1px solid',
+                        borderColor:
+                          p.source === 'uploaded' ? '#bfdbfe' :
+                          p.category === 'pipeline' ? '#a7f3d0' :
+                          p.category === 'rapidfire' ? '#fca5a5' : 
+                          '#c4b5fd'
+                      }}>
+                        {p.insight}
+                      </div>
+                    )}
+
+                    {/* Property Data Table */}
                     {p.source === 'uploaded' && p.propertyData && (
                       <div style={{
-                        borderRadius: '8px',
-                        padding: '8px',
+                        borderRadius: '10px',
+                        padding: '12px',
                         backgroundColor: '#f9fafb',
-                        fontSize: '11px',
-                        maxHeight: '200px',
+                        fontSize: '12px',
+                        maxHeight: '240px',
                         overflowY: 'auto',
-                        border: '1px solid #e5e7eb'
+                        border: '2px solid #e5e7eb'
                       }}>
-                        <div style={{ fontWeight: '600', marginBottom: '6px', color: '#374151' }}>Property Data:</div>
-                        {Object.entries(p.propertyData).map(([key, value]) => (
-                          <div key={key} style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
-                            <span style={{ fontWeight: '500', color: '#6b7280' }}>{key}:</span>
-                            <span style={{ color: '#111827' }}>{value || 'N/A'}</span>
-                          </div>
-                        ))}
+                        <div style={{ 
+                          fontWeight: '700', 
+                          marginBottom: '10px', 
+                          color: '#111827',
+                          fontSize: '13px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }}>Property Details</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {Object.entries(p.propertyData).map(([key, value]) => (
+                            <div key={key} style={{ 
+                              display: 'flex', 
+                              justifyContent: 'space-between',
+                              padding: '6px 8px',
+                              backgroundColor: 'white',
+                              borderRadius: '6px',
+                              border: '1px solid #e5e7eb'
+                            }}>
+                              <span style={{ 
+                                fontWeight: '600', 
+                                color: '#6b7280',
+                                fontSize: '11px'
+                              }}>{key}</span>
+                              <span style={{ 
+                                color: '#111827',
+                                fontWeight: '500',
+                                textAlign: 'right',
+                                maxWidth: '60%',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}>{value || 'N/A'}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                     {(p.category === 'rapidfire' || p.category === 'prospect' || p.category === 'custom' || p.source === 'uploaded') && (
                       <button
                         onClick={() => deletePin(p.id, p.dbId)}
                         style={{
-                          padding: '6px 12px',
+                          width: '100%',
+                          padding: '10px 16px',
                           backgroundColor: '#ef4444',
                           color: 'white',
                           border: 'none',
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          fontWeight: '600',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          fontWeight: '700',
                           cursor: 'pointer',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                          boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)',
+                          transition: 'all 0.2s',
                           marginTop: '4px'
                         }}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = '#dc2626'}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = '#ef4444'}
                       >
                         🗑️ Delete Pin
                       </button>
@@ -1953,77 +2144,159 @@ MAP COMMANDS (output JSON at end of response):
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 10000
+          zIndex: 10000,
+          backdropFilter: 'blur(4px)'
         }}>
           <div style={{
             backgroundColor: 'white',
-            borderRadius: '12px',
-            padding: '24px',
-            maxWidth: '800px',
-            maxHeight: '80vh',
+            borderRadius: '16px',
+            padding: '28px',
+            maxWidth: '900px',
+            maxHeight: '85vh',
             width: '90%',
             display: 'flex',
             flexDirection: 'column',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#111827' }}>
-                Preview: {sheetPreview.name}
-              </h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>
+                  📊 {sheetPreview.name}
+                </h2>
+                <div style={{ fontSize: '13px', color: '#6b7280' }}>
+                  {sheetPreview.properties.length} properties found • {selectedProperties.length} selected
+                </div>
+              </div>
               <button
-                onClick={() => { setShowPreviewModal(false); setSheetPreview(null); }}
+                onClick={() => { 
+                  setShowPreviewModal(false); 
+                  setSheetPreview(null); 
+                  setSelectedProperties([]);
+                }}
                 style={{
-                  padding: '6px',
-                  backgroundColor: 'transparent',
+                  padding: '8px 12px',
+                  backgroundColor: '#f3f4f6',
                   border: 'none',
+                  borderRadius: '8px',
                   cursor: 'pointer',
-                  fontSize: '20px',
-                  color: '#6b7280'
+                  fontSize: '18px',
+                  color: '#6b7280',
+                  fontWeight: '600'
                 }}
               >
                 ×
               </button>
             </div>
 
-            <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px' }}>
-              {sheetPreview.properties.length} properties found
+            {/* Select All Button */}
+            <div style={{ marginBottom: '16px' }}>
+              <button
+                onClick={() => {
+                  if (selectedProperties.length === sheetPreview.properties.length) {
+                    setSelectedProperties([]);
+                  } else {
+                    setSelectedProperties(sheetPreview.properties.map((_, idx) => idx));
+                  }
+                }}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: selectedProperties.length === sheetPreview.properties.length ? '#ef4444' : '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                }}
+              >
+                {selectedProperties.length === sheetPreview.properties.length ? '✓ Deselect All' : 'Select All'}
+              </button>
             </div>
 
             {/* Property List */}
             <div style={{
               flex: 1,
               overflowY: 'auto',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              marginBottom: '16px'
+              border: '2px solid #e5e7eb',
+              borderRadius: '10px',
+              marginBottom: '20px',
+              backgroundColor: '#fafafa'
             }}>
-              <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
-                <thead style={{ backgroundColor: '#f9fafb', position: 'sticky', top: 0 }}>
+              <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse' }}>
+                <thead style={{ backgroundColor: '#f9fafb', position: 'sticky', top: 0, zIndex: 1 }}>
                   <tr>
-                    <th style={{ padding: '8px', textAlign: 'left', fontWeight: '600', color: '#374151' }}>#</th>
-                    <th style={{ padding: '8px', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Address</th>
-                    <th style={{ padding: '8px', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Status</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontWeight: '700', color: '#374151', borderBottom: '2px solid #e5e7eb' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={selectedProperties.length === sheetPreview.properties.length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedProperties(sheetPreview.properties.map((_, idx) => idx));
+                          } else {
+                            setSelectedProperties([]);
+                          }
+                        }}
+                        style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+                      />
+                    </th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontWeight: '700', color: '#374151', borderBottom: '2px solid #e5e7eb' }}>#</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontWeight: '700', color: '#374151', borderBottom: '2px solid #e5e7eb' }}>Address</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontWeight: '700', color: '#374151', borderBottom: '2px solid #e5e7eb' }}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {sheetPreview.properties.map((prop, idx) => (
-                    <tr key={idx} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                      <td style={{ padding: '8px', color: '#6b7280' }}>{idx + 1}</td>
-                      <td style={{ padding: '8px', color: '#111827' }}>{prop.address || 'No address found'}</td>
-                      <td style={{ padding: '8px' }}>
+                    <tr 
+                      key={idx} 
+                      style={{ 
+                        borderBottom: '1px solid #f3f4f6',
+                        backgroundColor: selectedProperties.includes(idx) ? '#eff6ff' : 'white',
+                        transition: 'background-color 0.15s'
+                      }}
+                    >
+                      <td style={{ padding: '12px' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={selectedProperties.includes(idx)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedProperties([...selectedProperties, idx]);
+                            } else {
+                              setSelectedProperties(selectedProperties.filter(i => i !== idx));
+                            }
+                          }}
+                          style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+                        />
+                      </td>
+                      <td style={{ padding: '12px', color: '#6b7280', fontWeight: '500' }}>{idx + 1}</td>
+                      <td style={{ padding: '12px', color: '#111827', fontWeight: '500' }}>{prop.address || 'No address found'}</td>
+                      <td style={{ padding: '12px' }}>
                         <span style={{
-                          padding: '2px 8px',
-                          borderRadius: '12px',
+                          padding: '6px 14px',
+                          borderRadius: '20px',
                           fontSize: '11px',
-                          fontWeight: '500',
-                          backgroundColor: prop.geocodeStatus === 'success' ? '#d1fae5' : '#fef3c7',
-                          color: prop.geocodeStatus === 'success' ? '#065f46' : '#92400e'
+                          fontWeight: '700',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                          backgroundColor: 
+                            prop.geocodeStatus === 'success' ? '#10b981' : 
+                            prop.geocodeStatus === 'failed' ? '#ef4444' : 
+                            '#fbbf24',
+                          color: 'white',
+                          boxShadow: 
+                            prop.geocodeStatus === 'success' ? '0 2px 4px rgba(16, 185, 129, 0.3)' : 
+                            prop.geocodeStatus === 'failed' ? '0 2px 4px rgba(239, 68, 68, 0.3)' : 
+                            '0 2px 4px rgba(251, 191, 36, 0.3)',
+                          transition: 'all 0.3s ease'
                         }}>
-                          {prop.geocodeStatus === 'success' ? 'Geocoded' : 'Pending'}
+                          {prop.geocodeStatus === 'success' ? '✓ Success' : 
+                           prop.geocodeStatus === 'failed' ? '✗ Failed' : 
+                           '⏳ Pending'}
                         </span>
                       </td>
                     </tr>
@@ -2035,15 +2308,19 @@ MAP COMMANDS (output JSON at end of response):
             {/* Actions */}
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
               <button
-                onClick={() => { setShowPreviewModal(false); setSheetPreview(null); }}
+                onClick={() => { 
+                  setShowPreviewModal(false); 
+                  setSheetPreview(null); 
+                  setSelectedProperties([]);
+                }}
                 style={{
-                  padding: '8px 16px',
+                  padding: '10px 20px',
                   backgroundColor: 'white',
                   color: '#374151',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  fontWeight: '500',
+                  border: '2px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '600',
                   cursor: 'pointer'
                 }}
               >
@@ -2051,24 +2328,29 @@ MAP COMMANDS (output JSON at end of response):
               </button>
               <button
                 onClick={async () => {
+                  if (selectedProperties.length === 0) {
+                    alert('Please select at least one property');
+                    return;
+                  }
                   const { results, failed } = await geocodeSheetProperties();
                   if (failed.length === 0) {
                     await saveUploadedProperties(results);
                   }
                 }}
-                disabled={isGeocoding}
+                disabled={isGeocoding || selectedProperties.length === 0}
                 style={{
-                  padding: '8px 16px',
-                  backgroundColor: isGeocoding ? '#9ca3af' : '#3b82f6',
+                  padding: '10px 20px',
+                  backgroundColor: isGeocoding || selectedProperties.length === 0 ? '#9ca3af' : '#3b82f6',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  cursor: isGeocoding ? 'not-allowed' : 'pointer'
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: isGeocoding || selectedProperties.length === 0 ? 'not-allowed' : 'pointer',
+                  boxShadow: isGeocoding || selectedProperties.length === 0 ? 'none' : '0 4px 6px -1px rgba(59, 130, 246, 0.3)'
                 }}
               >
-                {isGeocoding ? `Geocoding... (${geocodingProgress.current}/${geocodingProgress.total})` : 'Geocode & Add to Map'}
+                {isGeocoding ? `⏳ Geocoding... (${geocodingProgress.current}/${geocodingProgress.total})` : `🗺️ Geocode & Add ${selectedProperties.length} Properties`}
               </button>
             </div>
           </div>
