@@ -27,7 +27,6 @@ import { supabase } from '../lib/supabase';
 import { API_ENDPOINTS } from '../config/api';
 import RapidFirePage from './RapidFirePage';
 import DashboardShell from '../components/DashboardShell';
-import HomeMapView from '../components/HomeMapView';
 import DashboardMapTab from '../components/dashboard-tabs/MapTab';
 
 // ============================================================================
@@ -301,7 +300,7 @@ function ChangePasswordCard({ cardStyle, inputStyle, labelStyle }) {
 
 function DashboardPage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState('map');
   const [saveMessage, setSaveMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -1124,13 +1123,12 @@ function DashboardPage() {
         </div>
       )}
 
-      {activeTab === 'home' && <HomeMapView />}
+      {activeTab === 'map' && <DashboardMapTab />}
       {activeTab === 'profile' && renderProfileTab()}
       {activeTab === 'rapid-fire' && (
         <RapidFirePage />
       )}
       {activeTab === 'pitch-deck' && renderPitchDeckTab()}
-      {activeTab === 'map' && <DashboardMapTab />}
     </DashboardShell>
   );
 }
