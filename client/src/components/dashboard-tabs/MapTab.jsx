@@ -93,6 +93,14 @@ function DashboardMapTab() {
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
+  // Uploaded property sheets state
+  const [uploadedSheets, setUploadedSheets] = useState([]); // Array of { id, name, properties: [...] }
+  const [sheetPreview, setSheetPreview] = useState(null); // Current sheet being previewed
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [geocodingProgress, setGeocodingProgress] = useState({ current: 0, total: 0, failed: [] });
+  const [showGeocodeErrors, setShowGeocodeErrors] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+
   // Fetch current user on mount
   useEffect(() => {
     const fetchUser = async () => {
@@ -281,13 +289,25 @@ function DashboardMapTab() {
 
   // Marker styles by category
   const categoryIcon = (cat, source) => {
-    const color = cat === 'pipeline' ? '#22c55e' : '#ef4444';
-    const label = (
-      cat === 'rapidfire' ? '🔥' :
-      cat === 'prospect' ? '🏠' :
-      cat === 'pipeline' ? '📋' :
-      '📍'
-    );
+    let color, label;
+    
+    if (source === 'uploaded' || cat === 'uploaded') {
+      color = '#3b82f6'; // Blue for uploaded properties
+      label = '📊';
+    } else if (cat === 'pipeline') {
+      color = '#22c55e'; // Green
+      label = '📋';
+    } else if (cat === 'rapidfire') {
+      color = '#ef4444'; // Red
+      label = '🔥';
+    } else if (cat === 'prospect') {
+      color = '#ef4444'; // Red
+      label = '🏠';
+    } else {
+      color = '#ef4444'; // Red default
+      label = '📍';
+    }
+    
     return createPinIcon(color, label);
   };
 
@@ -882,6 +902,242 @@ function DashboardMapTab() {
     loadSavedProspects();
   }, []);
 
+  // NEW: Handle uploaded property sheet file
+  const handleUploadedSheetFile = async (file) => {
+    if (!file) return;
+    
+    const isCsv = file.name.toLowerCase().endsWith('.csv');
+    let rows = [];
+
+    try {
+      if (isCsv) {
+        await new Promise((resolve, reject) => {
+          Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+              rows = results.data;
+              resolve();
+            },
+            error: reject
+          });
+        });
+      } else {
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        rows = XLSX.utils.sheet_to_json(ws);
+      }
+
+      // Limit to 2000 properties
+      if (rows.length > 2000) {
+        alert(`File contains ${rows.length} properties. Only the first 2000 will be processed.`);
+        rows = rows.slice(0, 2000);
+      }
+
+      if (rows.length === 0) {
+        alert('No data found in file');
+        return;
+      }
+
+      // Prepare sheet preview
+      const sheetData = {
+        id: `sheet-${Date.now()}`,
+        name: file.name,
+        properties: rows.map((row, idx) => ({
+          rowIndex: idx,
+          originalData: row,
+          address: buildAddressFromRow(row),
+          geocodeStatus: 'pending' // 'pending' | 'success' | 'failed'
+        }))
+      };
+
+      setSheetPreview(sheetData);
+      setShowPreviewModal(true);
+    } catch (error) {
+      console.error('Error parsing file:', error);
+      alert('Failed to parse file. Please check the format.');
+    }
+  };
+
+  // NEW: Batch geocode properties from preview
+  const geocodeSheetProperties = async () => {
+    if (!sheetPreview) return;
+
+    setIsGeocoding(true);
+    setGeocodingProgress({ current: 0, total: sheetPreview.properties.length, failed: [] });
+
+    const results = [];
+    const failed = [];
+
+    for (let i = 0; i < sheetPreview.properties.length; i++) {
+      const prop = sheetPreview.properties[i];
+      setGeocodingProgress(prev => ({ ...prev, current: i + 1 }));
+
+      if (!prop.address) {
+        failed.push({ ...prop, reason: 'No address found' });
+        continue;
+      }
+
+      try {
+        // Use Nominatim for geocoding (same as existing code)
+        const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(prop.address)}&addressdetails=1&limit=1`;
+        const res = await fetch(url, {
+          headers: { 'User-Agent': 'DealSniper/1.0' }
+        });
+        const data = await res.json();
+
+        if (data && data.length > 0) {
+          results.push({
+            ...prop,
+            latitude: parseFloat(data[0].lat),
+            longitude: parseFloat(data[0].lon),
+            geocodeStatus: 'success'
+          });
+        } else {
+          failed.push({ ...prop, reason: 'Address not found' });
+        }
+
+        // Rate limit: ~1 request per second
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } catch (error) {
+        console.error(`Geocoding failed for ${prop.address}:`, error);
+        failed.push({ ...prop, reason: error.message });
+      }
+    }
+
+    setIsGeocoding(false);
+    setGeocodingProgress(prev => ({ ...prev, failed }));
+
+    if (failed.length > 0) {
+      setShowGeocodeErrors(true);
+      return { results, failed };
+    }
+
+    // All geocoded successfully
+    return { results, failed: [] };
+  };
+
+  // NEW: Save geocoded properties to Supabase and show on map
+  const saveUploadedProperties = async (properties) => {
+    if (!userId) {
+      alert('You must be logged in to save properties');
+      return;
+    }
+
+    try {
+      // Insert into uploaded_properties table
+      const records = properties.map(prop => ({
+        user_id: userId,
+        upload_name: sheetPreview.name,
+        property_name: prop.originalData.Name || prop.originalData.name || null,
+        address: prop.address,
+        latitude: prop.latitude,
+        longitude: prop.longitude,
+        property_data: prop.originalData,
+        geocode_status: 'success'
+      }));
+
+      const { data, error } = await supabase
+        .from('uploaded_properties')
+        .insert(records)
+        .select();
+
+      if (error) throw error;
+
+      // Add blue pins to map
+      const newPins = data.map(record => ({
+        id: `upload-${record.id}`,
+        name: record.property_name || record.address,
+        category: 'uploaded',
+        position: [record.latitude, record.longitude],
+        insight: 'Uploaded Property',
+        source: 'uploaded',
+        dbId: record.id,
+        propertyData: record.property_data
+      }));
+
+      setCustomPins(prev => [...prev, ...newPins]);
+      setUploadedSheets(prev => [...prev, { ...sheetPreview, properties: data }]);
+      
+      setShowPreviewModal(false);
+      setSheetPreview(null);
+      
+      alert(`Successfully added ${newPins.length} properties to the map!`);
+    } catch (error) {
+      console.error('Error saving properties:', error);
+      alert('Failed to save properties. Please try again.');
+    }
+  };
+
+  // NEW: Handle geocode with errors prompt
+  const handleProceedWithErrors = async (proceed) => {
+    setShowGeocodeErrors(false);
+    
+    if (!proceed) {
+      // User cancelled
+      setIsGeocoding(false);
+      return;
+    }
+
+    // Get successful results from geocoding progress
+    const successful = sheetPreview.properties.filter(p => 
+      p.geocodeStatus === 'success' && 
+      p.latitude && p.longitude
+    );
+
+    if (successful.length === 0) {
+      alert('No properties could be geocoded successfully.');
+      return;
+    }
+
+    await saveUploadedProperties(successful);
+  };
+
+  // NEW: Load uploaded properties from Supabase on mount
+  useEffect(() => {
+    const loadUploadedProperties = async () => {
+      if (!userId) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('uploaded_properties')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('geocode_status', 'success')
+          .limit(2000);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const pins = data.map(record => ({
+            id: `upload-${record.id}`,
+            name: record.property_name || record.address,
+            category: 'uploaded',
+            position: [record.latitude, record.longitude],
+            insight: 'Uploaded Property',
+            source: 'uploaded',
+            dbId: record.id,
+            propertyData: record.property_data
+          }));
+
+          setCustomPins(prev => {
+            const nonUploaded = prev.filter(p => p.source !== 'uploaded');
+            return [...nonUploaded, ...pins];
+          });
+
+          console.log(`✅ Loaded ${pins.length} uploaded properties`);
+        }
+      } catch (error) {
+        console.error('Error loading uploaded properties:', error);
+      }
+    };
+
+    if (userId) {
+      loadUploadedProperties();
+    }
+  }, [userId]);
+
   return (
     <div style={{ 
       display: 'flex',
@@ -1075,13 +1331,46 @@ function DashboardMapTab() {
           )}
 
           {activeTab === 'upload' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <input 
-                type="file" 
-                accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" 
-                onChange={(e) => handleProspectsFile(e.target.files?.[0])}
-                style={{ fontSize: '13px' }}
-              />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* NEW: Property Sheet Upload */}
+              <div style={{ 
+                padding: '12px', 
+                backgroundColor: '#eff6ff', 
+                borderRadius: '8px',
+                border: '1px solid #bfdbfe'
+              }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e40af', marginBottom: '8px' }}>
+                  📊 Upload Property Spreadsheet (CSV/XLSX)
+                </div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>
+                  Upload up to 2000 properties. Blue pins will appear on the map.
+                </div>
+                <input 
+                  type="file" 
+                  accept=".csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" 
+                  onChange={(e) => handleUploadedSheetFile(e.target.files?.[0])}
+                  style={{ fontSize: '13px', padding: '4px' }}
+                />
+              </div>
+
+              {/* Original Upload for Rapid Fire */}
+              <div style={{ 
+                padding: '12px', 
+                backgroundColor: '#fef3c7', 
+                borderRadius: '8px',
+                border: '1px solid #fbbf24'
+              }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#92400e', marginBottom: '8px' }}>
+                  🔥 Upload to Rapid Fire Queue
+                </div>
+                <input 
+                  type="file" 
+                  accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" 
+                  onChange={(e) => handleProspectsFile(e.target.files?.[0])}
+                  style={{ fontSize: '13px', marginBottom: '8px' }}
+                />
+              </div>
+
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <button
                   style={{
@@ -1293,7 +1582,8 @@ function DashboardMapTab() {
                   <div style={{ minWidth: '220px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>{p.name}</div>
                     <div style={{ fontSize: '12px', color: '#64748b' }}>
-                      {p.category === 'pipeline' ? '📋 Pipeline Deal' :
+                      {p.source === 'uploaded' ? '📊 Uploaded Property' :
+                       p.category === 'pipeline' ? '📋 Pipeline Deal' :
                        p.category === 'rapidfire' ? '🔥 Rapid Fire Queue' : 
                        p.category === 'prospect' ? '🏘️ Prospect City' : 
                        'Manual pin — custom research'}
@@ -1303,14 +1593,34 @@ function DashboardMapTab() {
                       padding: '8px',
                       fontSize: '12px',
                       color: '#1e293b',
-                      backgroundColor: p.category === 'pipeline' ? '#d1fae5' :
+                      backgroundColor: p.source === 'uploaded' ? '#dbeafe' :
+                                     p.category === 'pipeline' ? '#d1fae5' :
                                      p.category === 'rapidfire' ? '#fed7aa' : 
                                      p.category === 'prospect' ? '#bfdbfe' : 
                                      '#e9d5ff'
                     }}>
                       {p.insight}
                     </div>
-                    {(p.category === 'rapidfire' || p.category === 'prospect' || p.category === 'custom') && (
+                    {p.source === 'uploaded' && p.propertyData && (
+                      <div style={{
+                        borderRadius: '8px',
+                        padding: '8px',
+                        backgroundColor: '#f9fafb',
+                        fontSize: '11px',
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        border: '1px solid #e5e7eb'
+                      }}>
+                        <div style={{ fontWeight: '600', marginBottom: '6px', color: '#374151' }}>Property Data:</div>
+                        {Object.entries(p.propertyData).map(([key, value]) => (
+                          <div key={key} style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+                            <span style={{ fontWeight: '500', color: '#6b7280' }}>{key}:</span>
+                            <span style={{ color: '#111827' }}>{value || 'N/A'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {(p.category === 'rapidfire' || p.category === 'prospect' || p.category === 'custom' || p.source === 'uploaded') && (
                       <button
                         onClick={() => deletePin(p.id, p.dbId)}
                         style={{
@@ -1634,6 +1944,223 @@ MAP COMMANDS (output JSON at end of response):
           </div>
         </div>
       </div>
+
+      {/* Property Sheet Preview Modal */}
+      {showPreviewModal && sheetPreview && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '800px',
+            maxHeight: '80vh',
+            width: '90%',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#111827' }}>
+                Preview: {sheetPreview.name}
+              </h2>
+              <button
+                onClick={() => { setShowPreviewModal(false); setSheetPreview(null); }}
+                style={{
+                  padding: '6px',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '20px',
+                  color: '#6b7280'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px' }}>
+              {sheetPreview.properties.length} properties found
+            </div>
+
+            {/* Property List */}
+            <div style={{
+              flex: 1,
+              overflowY: 'auto',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              marginBottom: '16px'
+            }}>
+              <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
+                <thead style={{ backgroundColor: '#f9fafb', position: 'sticky', top: 0 }}>
+                  <tr>
+                    <th style={{ padding: '8px', textAlign: 'left', fontWeight: '600', color: '#374151' }}>#</th>
+                    <th style={{ padding: '8px', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Address</th>
+                    <th style={{ padding: '8px', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sheetPreview.properties.map((prop, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                      <td style={{ padding: '8px', color: '#6b7280' }}>{idx + 1}</td>
+                      <td style={{ padding: '8px', color: '#111827' }}>{prop.address || 'No address found'}</td>
+                      <td style={{ padding: '8px' }}>
+                        <span style={{
+                          padding: '2px 8px',
+                          borderRadius: '12px',
+                          fontSize: '11px',
+                          fontWeight: '500',
+                          backgroundColor: prop.geocodeStatus === 'success' ? '#d1fae5' : '#fef3c7',
+                          color: prop.geocodeStatus === 'success' ? '#065f46' : '#92400e'
+                        }}>
+                          {prop.geocodeStatus === 'success' ? 'Geocoded' : 'Pending'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => { setShowPreviewModal(false); setSheetPreview(null); }}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: 'white',
+                  color: '#374151',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  const { results, failed } = await geocodeSheetProperties();
+                  if (failed.length === 0) {
+                    await saveUploadedProperties(results);
+                  }
+                }}
+                disabled={isGeocoding}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: isGeocoding ? '#9ca3af' : '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  cursor: isGeocoding ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isGeocoding ? `Geocoding... (${geocodingProgress.current}/${geocodingProgress.total})` : 'Geocode & Add to Map'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Geocoding Errors Modal */}
+      {showGeocodeErrors && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10001
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '600px',
+            width: '90%',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+          }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '12px' }}>
+              ⚠️ Unable to Geocode Some Properties
+            </h3>
+            
+            <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
+              {geocodingProgress.failed.length} properties could not be located. 
+              Successfully geocoded: {geocodingProgress.total - geocodingProgress.failed.length}
+            </div>
+
+            <div style={{
+              maxHeight: '200px',
+              overflowY: 'auto',
+              border: '1px solid #e5e7eb',
+              borderRadius: '6px',
+              padding: '12px',
+              marginBottom: '16px',
+              backgroundColor: '#fef3c7'
+            }}>
+              {geocodingProgress.failed.map((prop, idx) => (
+                <div key={idx} style={{ fontSize: '12px', color: '#92400e', marginBottom: '4px' }}>
+                  • {prop.address} - {prop.reason}
+                </div>
+              ))}
+            </div>
+
+            <div style={{ fontSize: '13px', fontWeight: '500', color: '#111827', marginBottom: '16px' }}>
+              Shall I proceed with the successfully geocoded properties?
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => handleProceedWithErrors(false)}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: 'white',
+                  color: '#374151',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  cursor: 'pointer'
+                }}
+              >
+                No, Cancel
+              </button>
+              <button
+                onClick={() => handleProceedWithErrors(true)}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  cursor: 'pointer'
+                }}
+              >
+                Yes, Proceed
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
