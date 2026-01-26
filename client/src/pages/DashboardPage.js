@@ -300,7 +300,7 @@ function ChangePasswordCard({ cardStyle, inputStyle, labelStyle }) {
 
 function DashboardPage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('map');
+  const [activeTab, setActiveTab] = useState('home');
   const [saveMessage, setSaveMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -1123,7 +1123,7 @@ function DashboardPage() {
         </div>
       )}
 
-      {activeTab === 'map' && <DashboardMapTab />}
+      {activeTab === 'home' && <DashboardMapTab />}
       {activeTab === 'profile' && renderProfileTab()}
       {activeTab === 'rapid-fire' && (
         <RapidFirePage />
