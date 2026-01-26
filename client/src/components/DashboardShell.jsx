@@ -188,9 +188,10 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
     } else if (tabId === 'pitch-deck') {
       navigate('/pitch-deck');
     } else if (tabId === 'map') {
-      // Route to Underwrite; Map is a tab within results
-      navigate('/underwrite');
+      // Map tab stays in dashboard
+      navigate('/dashboard');
     } else if (tabId === 'home') {
+      // Home now shows the map tab
       navigate('/dashboard');
     } else {
       navigate('/dashboard');
