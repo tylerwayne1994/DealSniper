@@ -104,7 +104,8 @@ function DashboardMapTab() {
   const [geocodingProgress, setGeocodingProgress] = useState({ current: 0, total: 0, failed: [] });
   const [showGeocodeErrors, setShowGeocodeErrors] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
-  const [selectedProperties, setSelectedProperties] = useState([]);  // Track selected property indices`n  const [geocodingResults, setGeocodingResults] = useState({ results: [], failed: [] }); // Store geocoding results
+  const [selectedProperties, setSelectedProperties] = useState([]);  // Track selected property indices
+  const [geocodingResults, setGeocodingResults] = useState({ results: [], failed: [] }); // Store geocoding results
 
   // Fetch current user on mount
   useEffect(() => {
@@ -1275,8 +1276,7 @@ function DashboardMapTab() {
           padding: '16px',
           backgroundColor: '#f9fafb',
           borderBottom: '1px solid #e5e7eb',
-          overflowY: 'auto',
-          maxHeight: '200px'
+          overflowY: 'visible'
         }}>
           {activeTab === 'add' && (
             <form onSubmit={handleSubmitProperty} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1796,10 +1796,6 @@ function DashboardMapTab() {
             ))}
 
             {/* Influence zones (2 miles ~ 3219m) */}
-            {baseMarkers.map((m) => (
-              <Circle key={`${m.id}-circle`} center={m.position} radius={3219} pathOptions={{ color: '#64748b', fillColor: '#64748b', fillOpacity: 0.15 }} />
-            ))}
-
             {/* Custom pins from form */}
             {customPins
               .filter(p => {
@@ -1964,22 +1960,6 @@ function DashboardMapTab() {
                 </Popup>
               </Marker>
             ))}
-
-            {customPins
-              .filter(p => {
-                if (mapFilter === 'all') return true;
-                if (mapFilter === 'pipeline') return p.category === 'pipeline';
-                if (mapFilter === 'rapidfire') return p.category === 'rapidfire';
-                if (mapFilter === 'prospects') return p.category === 'prospect';
-                return true;
-              })
-              .filter(p => p.category !== 'pipeline' && p.category !== 'rapidfire' && p.category !== 'prospect')
-              .map((p) => {
-                const color = '#7c3aed';
-                return (
-                  <Circle key={`${p.id}-circle`} center={p.position} radius={3219} pathOptions={{ color, fillColor: color, fillOpacity: 0.08 }} />
-                );
-              })}
           </MapContainer>
         </div>
 
