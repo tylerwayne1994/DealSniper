@@ -15,7 +15,11 @@ import {
   CheckCircle,
   XCircle,
   Building2,
-  Filter
+  Filter,
+  Calendar,
+  Download,
+  UploadCloud,
+  FileSpreadsheet
 } from 'lucide-react';
 
 // Mapbox access token (shared with HomeMapView)
@@ -1014,7 +1018,9 @@ function DashboardMapTab() {
           setSheetPreview(prev => ({
             ...prev,
             properties: prev.properties.map((p, idx) => 
-              idx === propIndex ? { ...p, geocodeStatus: 'success' } : p
+              idx === propIndex 
+                ? { ...p, geocodeStatus: 'success', latitude: successProp.latitude, longitude: successProp.longitude }
+                : p
             )
           }));
         } else {
@@ -1023,7 +1029,9 @@ function DashboardMapTab() {
           setSheetPreview(prev => ({
             ...prev,
             properties: prev.properties.map((p, idx) => 
-              idx === propIndex ? { ...p, geocodeStatus: 'failed' } : p
+              idx === propIndex 
+                ? { ...p, geocodeStatus: 'failed', latitude: undefined, longitude: undefined }
+                : p
             )
           }));
         }
@@ -1037,7 +1045,9 @@ function DashboardMapTab() {
         setSheetPreview(prev => ({
           ...prev,
           properties: prev.properties.map((p, idx) => 
-            idx === propIndex ? { ...p, geocodeStatus: 'failed' } : p
+            idx === propIndex 
+              ? { ...p, geocodeStatus: 'failed', latitude: undefined, longitude: undefined }
+              : p
           )
         }));
       }
@@ -1368,155 +1378,276 @@ function DashboardMapTab() {
           )}
 
           {activeTab === 'upload' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {/* NEW: Property Sheet Upload */}
-              <div style={{ 
-                padding: '20px', 
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                borderRadius: '12px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                  <div style={{ 
-                    width: '40px', 
-                    height: '40px', 
-                    backgroundColor: 'rgba(255, 255, 255, 0.2)', 
-                    borderRadius: '8px',
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '20px'
+                    gap: '10px',
+                    padding: '10px 14px',
+                    backgroundColor: '#ffffff',
+                    borderRadius: '999px',
+                    border: '1px solid #e2e8f0',
+                    boxShadow: '0 8px 20px rgba(15, 23, 42, 0.08)'
                   }}>
-                    📊
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#ffffff', marginBottom: '2px' }}>
-                      Upload Property Spreadsheet
+                    <Building2 size={18} color="#0f172a" />
+                    <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+                      <span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.6px' }}>Destination</span>
+                      <span style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a' }}>Map Pins</span>
                     </div>
-                    <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.9)' }}>
-                      CSV or XLSX • Up to 2,000 properties • Blue pins
-                    </div>
+                    <span style={{ color: '#94a3b8', fontSize: '12px', marginLeft: '4px' }}>▾</span>
                   </div>
-                </div>
-                <label style={{
-                  display: 'block',
-                  padding: '14px 20px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                  borderRadius: '8px',
-                  border: '2px dashed rgba(102, 126, 234, 0.3)',
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#667eea',
-                  transition: 'all 0.2s'
-                }}>
-                  <input 
-                    type="file" 
-                    accept=".csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" 
-                    onChange={(e) => handleUploadedSheetFile(e.target.files?.[0])}
-                    style={{ display: 'none' }}
-                  />
-                  Choose File or Drag & Drop
-                </label>
-              </div>
-
-              {/* Original Upload for Rapid Fire */}
-              <div style={{ 
-                padding: '20px', 
-                background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                borderRadius: '12px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                  <div style={{ 
-                    width: '40px', 
-                    height: '40px', 
-                    backgroundColor: 'rgba(255, 255, 255, 0.2)', 
-                    borderRadius: '8px',
+                  <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '20px'
+                    gap: '10px',
+                    padding: '10px 14px',
+                    backgroundColor: '#ffffff',
+                    borderRadius: '999px',
+                    border: '1px solid #e2e8f0',
+                    boxShadow: '0 8px 20px rgba(15, 23, 42, 0.08)'
                   }}>
-                    🔥
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#ffffff', marginBottom: '2px' }}>
-                      Rapid Fire Queue Upload
+                    <Calendar size={18} color="#0f172a" />
+                    <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+                      <span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.6px' }}>Batch Window</span>
+                      <span style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a' }}>This Week</span>
                     </div>
-                    <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.9)' }}>
-                      CSV or XLSX • Auto-geocode • Red pins
-                    </div>
+                    <span style={{ color: '#94a3b8', fontSize: '12px', marginLeft: '4px' }}>▾</span>
                   </div>
                 </div>
-                <label style={{
-                  display: 'block',
-                  padding: '14px 20px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                  borderRadius: '8px',
-                  border: '2px dashed rgba(245, 87, 108, 0.3)',
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#f5576c',
-                  transition: 'all 0.2s'
-                }}>
-                  <input 
-                    type="file" 
-                    accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" 
-                    onChange={(e) => handleProspectsFile(e.target.files?.[0])}
-                    style={{ display: 'none' }}
-                  />
-                  Choose File or Drag & Drop
-                </label>
-              </div>
-
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <button
+                  type="button"
+                  onClick={loadRapidFireQueue}
                   style={{
-                    padding: '6px 12px',
-                    backgroundColor: 'white',
-                    color: '#374151',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 18px',
+                    borderRadius: '999px',
+                    backgroundColor: '#0f172a',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    boxShadow: '0 18px 35px rgba(15, 23, 42, 0.35)',
                     cursor: 'pointer'
                   }}
-                  onClick={loadRapidFireQueue}
                 >
-                  Load Rapid Fire Queue
-                </button>
-                <button
-                  style={{
-                    padding: '6px 12px',
-                    backgroundColor: 'white',
-                    color: '#374151',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: '500',
-                    cursor: 'pointer',
-                    opacity: !rapidFireQueue.length ? 0.5 : 1
-                  }}
-                  onClick={addAllRapidFireToMap}
-                  disabled={!rapidFireQueue.length}
-                >
-                  Add All to Map
+                  <Download size={16} />
+                  Refresh Queue
                 </button>
               </div>
-              {processingStatus && (
-                <div style={{ fontSize: '12px', color: '#3b82f6', fontWeight: '600' }}>
-                  {processingStatus}
+
+              <div style={{
+                backgroundColor: '#ffffff',
+                borderRadius: '18px',
+                border: '1px solid #e0e7ff',
+                boxShadow: '0 35px 80px -45px rgba(15, 23, 42, 0.65)',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '20px 24px',
+                  borderBottom: '1px solid #e2e8f0'
+                }}>
+                  <div>
+                    <div style={{ fontSize: '18px', fontWeight: '700', color: '#0f172a', marginBottom: '4px' }}>
+                      Upload Directory
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#64748b' }}>
+                      Centralize property spreadsheets and rapid fire batches.
+                    </div>
+                  </div>
+                  <div style={{
+                    padding: '6px 12px',
+                    borderRadius: '999px',
+                    backgroundColor: '#e0f2fe',
+                    color: '#0369a1',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    letterSpacing: '0.5px',
+                    textTransform: 'uppercase'
+                  }}>
+                    Live
+                  </div>
                 </div>
-              )}
-              {rapidFireQueue.length > 0 && (
-                <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                  Queue: {rapidFireQueue.length} properties
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                    <thead>
+                      <tr style={{ textAlign: 'left', color: '#94a3b8', fontSize: '11px', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+                        <th style={{ padding: '14px 24px' }}>Upload Type</th>
+                        <th style={{ padding: '14px 24px' }}>Details</th>
+                        <th style={{ padding: '14px 24px' }}>Pin Style</th>
+                        <th style={{ padding: '14px 24px', textAlign: 'right' }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style={{ borderTop: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '18px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '12px',
+                            backgroundColor: '#eef2ff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            <FileSpreadsheet size={18} color="#4c1d95" />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>Property Spreadsheet</div>
+                            <div style={{ fontSize: '12px', color: '#64748b' }}>CSV or XLSX • up to 2,000 rows</div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '18px 24px', color: '#0f172a', fontWeight: '500' }}>
+                          Upload clean rent rolls or broker lists to add blue pins with rich property data.
+                        </td>
+                        <td style={{ padding: '18px 24px' }}>
+                          <span style={{
+                            padding: '6px 12px',
+                            borderRadius: '999px',
+                            backgroundColor: '#dbeafe',
+                            color: '#1d4ed8',
+                            fontSize: '12px',
+                            fontWeight: '700'
+                          }}>Blue Pins</span>
+                        </td>
+                        <td style={{ padding: '18px 24px', textAlign: 'right' }}>
+                          <label style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 16px',
+                            borderRadius: '999px',
+                            border: '1px solid #dbeafe',
+                            backgroundColor: '#f8fbff',
+                            color: '#1d4ed8',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            boxShadow: '0 12px 25px rgba(59, 130, 246, 0.2)'
+                          }}>
+                            <UploadCloud size={16} />
+                            Upload File
+                            <input
+                              type="file"
+                              accept=".csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                              onChange={(e) => handleUploadedSheetFile(e.target.files?.[0])}
+                              style={{ display: 'none' }}
+                            />
+                          </label>
+                        </td>
+                      </tr>
+                      <tr style={{ borderTop: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '18px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '12px',
+                            backgroundColor: '#fef2f2',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '18px'
+                          }}>
+                            🔥
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>Rapid Fire Queue</div>
+                            <div style={{ fontSize: '12px', color: '#64748b' }}>CSV or XLSX • auto geocode</div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '18px 24px', color: '#0f172a', fontWeight: '500' }}>
+                          Push prospect batches into the rapid fire workflow for fast outreach-ready pins.
+                        </td>
+                        <td style={{ padding: '18px 24px' }}>
+                          <span style={{
+                            padding: '6px 12px',
+                            borderRadius: '999px',
+                            backgroundColor: '#fee2e2',
+                            color: '#b91c1c',
+                            fontSize: '12px',
+                            fontWeight: '700'
+                          }}>Red Pins</span>
+                        </td>
+                        <td style={{ padding: '18px 24px', textAlign: 'right' }}>
+                          <label style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 16px',
+                            borderRadius: '999px',
+                            border: '1px solid #fecaca',
+                            backgroundColor: '#fff7f7',
+                            color: '#b91c1c',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            boxShadow: '0 12px 25px rgba(239, 68, 68, 0.2)'
+                          }}>
+                            <UploadCloud size={16} />
+                            Upload File
+                            <input
+                              type="file"
+                              accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                              onChange={(e) => handleProspectsFile(e.target.files?.[0])}
+                              style={{ display: 'none' }}
+                            />
+                          </label>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
-              )}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                  padding: '18px 24px',
+                  borderTop: '1px solid #e2e8f0',
+                  backgroundColor: '#f8fafc'
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
+                    <span style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Queue Health</span>
+                    <span style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
+                      {processingStatus || 'Idle - awaiting new uploads'}
+                    </span>
+                    <span style={{ fontSize: '13px', color: '#475569' }}>
+                      Queue: {rapidFireQueue.length} {rapidFireQueue.length === 1 ? 'property' : 'properties'} ready
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={addAllRapidFireToMap}
+                      disabled={!rapidFireQueue.length}
+                      style={{
+                        padding: '10px 16px',
+                        borderRadius: '999px',
+                        border: '1px solid #cbd5f5',
+                        backgroundColor: rapidFireQueue.length ? '#eef2ff' : '#f1f5f9',
+                        color: rapidFireQueue.length ? '#4338ca' : '#94a3b8',
+                        fontWeight: '600',
+                        fontSize: '13px',
+                        cursor: rapidFireQueue.length ? 'pointer' : 'not-allowed',
+                        boxShadow: rapidFireQueue.length ? '0 12px 25px rgba(79, 70, 229, 0.2)' : 'none'
+                      }}
+                    >
+                      Add All to Map
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
