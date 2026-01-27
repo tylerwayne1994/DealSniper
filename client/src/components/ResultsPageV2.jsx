@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useNavigate } from 'react-router-dom';
-import { Send, Home, DollarSign, FileText, CreditCard, BarChart3, Users, FileBarChart, TrendingUp, Calculator, PieChart, Calendar, Activity, Layers, LayoutDashboard, RefreshCw, Rocket, MessageSquare, Download, Presentation, MapPin } from 'lucide-react';
+import { Send, Home, DollarSign, FileText, CreditCard, BarChart3, Users, FileBarChart, TrendingUp, Calculator, PieChart, Calendar, Activity, Layers, LayoutDashboard, RefreshCw, Rocket, MessageSquare, Download, Presentation, MapPin, FileSpreadsheet } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Area, AreaChart } from 'recharts';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -1147,7 +1147,8 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
     { id: 'syndication', label: 'Syndication', icon: PieChart },
     
     { id: 'costseg', label: 'Cost Segregation', icon: Calculator },
-    { id: 'market-data', label: 'Market Data', icon: BarChart3 }
+    { id: 'market-data', label: 'Market Data', icon: BarChart3 },
+    { id: 'underwriting-model', label: 'Underwriting Model', icon: FileSpreadsheet }
   ];
 
   // Row component
@@ -4808,6 +4809,21 @@ Keep the answer tight but specific to this property and the numbers above.`;
           </div>
         );
 
+      case 'underwriting-model':
+        return (
+          <div style={{ padding: '24px', height: 'calc(100vh - 200px)' }}>
+            <iframe
+              src="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit?usp=sharing&rm=minimal"
+              style={{
+                width: '100%',
+                height: '100%',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px'
+              }}
+              title="Underwriting Model"
+            />
+          </div>
+        );
       case 'rent-roll':
         // Display EXACTLY what was parsed - no calculations, no transformations
         const unitMixData = scenarioData.unit_mix || [];
