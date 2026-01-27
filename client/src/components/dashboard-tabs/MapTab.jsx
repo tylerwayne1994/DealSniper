@@ -100,7 +100,7 @@ function DashboardMapTab() {
   const [geocodingProgress, setGeocodingProgress] = useState({ current: 0, total: 0, failed: [] });
   const [showGeocodeErrors, setShowGeocodeErrors] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
-  const [selectedProperties, setSelectedProperties] = useState([]);  // Track selected property indices
+  const [selectedProperties, setSelectedProperties] = useState([]);  // Track selected property indices`n  const [geocodingResults, setGeocodingResults] = useState({ results: [], failed: [] }); // Store geocoding results
 
   // Fetch current user on mount
   useEffect(() => {
@@ -2333,8 +2333,17 @@ MAP COMMANDS (output JSON at end of response):
                     return;
                   }
                   const { results, failed } = await geocodeSheetProperties();
-                  if (failed.length === 0) {
+                  // Store results in state for potential retry
+                  setGeocodingResults({ results, failed });
+                  
+                  // If some failed, show error modal; otherwise save immediately
+                  if (failed.length > 0) {
+                    // Error modal will be shown by geocodeSheetProperties setting showGeocodeErrors
+                    // Do nothing here - let user decide via modal
+                  } else if (results.length > 0) {
                     await saveUploadedProperties(results);
+                  } else {
+                    alert('No properties could be geocoded successfully.');
                   }
                 }}
                 disabled={isGeocoding || selectedProperties.length === 0}
@@ -2350,7 +2359,7 @@ MAP COMMANDS (output JSON at end of response):
                   boxShadow: isGeocoding || selectedProperties.length === 0 ? 'none' : '0 4px 6px -1px rgba(59, 130, 246, 0.3)'
                 }}
               >
-                {isGeocoding ? `⏳ Geocoding... (${geocodingProgress.current}/${geocodingProgress.total})` : `🗺️ Geocode & Add ${selectedProperties.length} Properties`}
+                {isGeocoding ? `⏳ Geocoding (${geocodingProgress.current}/${geocodingProgress.total})` : `✓ Geocode & Add to Map (${selectedProperties.length})`}
               </button>
             </div>
           </div>
