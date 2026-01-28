@@ -69,6 +69,24 @@ const ResultsPageV2 = ({
   const [pipelineSuccess, setPipelineSuccess] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const tabContentRef = useRef(null);
+  // Google Sheets populate handler
+  const handlePopulateSheet = async () => {
+    try {
+      const response = await fetch('http://localhost:8010/api/sheets/populate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scenarioData, fullCalcs })
+      });
+      const result = await response.json();
+      if (result.success) {
+        alert(` Populated ${result.updated_cells} cells!`);
+      } else {
+        alert(` Error: ${result.error}`);
+      }
+    } catch (error) {
+      alert(` Failed: ${error.message}`);
+    }
+  };
   
   // Automatically trigger AI underwriting when results page loads (only once)
   useEffect(() => {
@@ -4811,12 +4829,28 @@ Keep the answer tight but specific to this property and the numbers above.`;
 
       case 'underwriting-model':
         return (
-          <div style={{ padding: '24px', height: 'calc(100vh - 200px)' }}>
+          <div style={{ padding: '24px', height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <button
+              onClick={handlePopulateSheet}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '14px',
+                alignSelf: 'flex-start'
+              }}
+            >
+               Populate from Deal Data
+            </button>
             <iframe
-              src="https://docs.google.com/spreadsheets/d/1jZSrAJY_gIu7Rqcmdmg-cdvQc88aC6YyVwhTQ1-dwi0/edit?usp=sharing&rm=minimal"
+              src="https://docs.google.com/spreadsheets/d/e/2PACX-1vTIMXq7cZzOuS2aIe2s840j81XlrG-I65Lcf0kD7h5L1zVmuOxcMjZ6IIsTnMzwJ1aQ7KaHRwJV_WM3/pubhtml?widget=true&headers=false"
               style={{
                 width: '100%',
-                height: '100%',
+                flex: 1,
                 border: '1px solid #e5e7eb',
                 borderRadius: '8px'
               }}
