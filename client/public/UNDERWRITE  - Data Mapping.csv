@@ -1,0 +1,81 @@
+,UNDERWRITING MODEL - INPUT DATA MAPPING,,,,
+,CATEGORY,CELL REFERENCE,INPUT NAME,CURRENT VALUE,NOTES
+,Deal Structure,C5,Purchase Price,$0,$
+,Deal Structure,C6,Down Payment %,0.0%,%
+,Deal Structure,C9,Closing Costs %,0.0%,%
+,Deal Structure,C15,Your Equity,$0,$
+,Deal Structure,C22,Target Equity Multiple,0.0x,x
+,Deal Structure,C24,EP Cash Flow Split,0.0%,%
+,Deal Structure,C25,Your Cash Flow Split,0.0%,%
+,Loan Assumptions,C29,Interest Rate,0.00%,%
+,Loan Assumptions,C30,Amortization (Years),$0,years
+,Loan Assumptions,C31,Term (Years),0,years
+,Loan Assumptions,C34,Year Built,0,year
+,RUBS Recovery,F6,RUBS Recovery % - Year 1,0%,%
+,RUBS Recovery,G6,RUBS Recovery % - Year 2,0%,%
+,RUBS Recovery,H6,RUBS Recovery % - Year 3,0%,%
+,RUBS Recovery,I6,RUBS Recovery % - Year 4,0%,%
+,RUBS Recovery,J6,RUBS Recovery % - Year 5,0%,%
+,Expenses - Year 1,F15,Real Estate Taxes,$0,$
+,Expenses - Year 1,F16,Insurance,$0,$
+,Expenses - Year 1,F19,Repairs & Maintenance,$0,$
+,Expenses - Year 1,F20,Turnover,$0,$
+,Expenses - Year 1,F21,G&A + Marketing,$0,$
+,Expenses - Year 1,F22,Landscaping,$0,$
+,Expenses - Year 1,F23,Reserves,$0,$
+,Expenses - Year 2,G15,Real Estate Taxes,$0,$
+,Expenses - Year 2,G16,Insurance,$0,$
+,Expenses - Year 2,G19,Repairs & Maintenance,$0,$
+,Expenses - Year 2,G20,Turnover,$0,$
+,Expenses - Year 2,G21,G&A + Marketing,$0,$
+,Expenses - Year 2,G22,Landscaping,$0,$
+,Expenses - Year 2,G23,Reserves,$0,$
+,Other Income,F11,Other Income - Year 1,$0,$
+,Other Income,G11,Other Income - Year 2,$0,$
+,Other Income,H11,Other Income - Year 3,$0,$
+,Other Income,I11,Other Income - Year 4,$0,$
+,Other Income,J11,Other Income - Year 5,$0,$
+,Exit Assumptions,F41,Exit Cap Rate,0.00%,%
+,Utilities - Electric,F63,Electric T-12 Annual Cost - Yr 1,$0,$
+,Utilities - Electric,G63,Electric T-12 Annual Cost - Yr 2,$0,$
+,Utilities - Electric,H63,Electric T-12 Annual Cost - Yr 3,$0,$
+,Utilities - Electric,I63,Electric T-12 Annual Cost - Yr 4,$0,$
+,Utilities - Electric,J63,Electric T-12 Annual Cost - Yr 5,$0,$
+,Utilities - Water/Sewer,F68,Water/Sewer T-12 Annual Cost - Yr 1,$0,$
+,Utilities - Water/Sewer,G68,Water/Sewer T-12 Annual Cost - Yr 2,$0,$
+,Utilities - Water/Sewer,H68,Water/Sewer T-12 Annual Cost - Yr 3,$0,$
+,Utilities - Water/Sewer,I68,Water/Sewer T-12 Annual Cost - Yr 4,$0,$
+,Utilities - Water/Sewer,J68,Water/Sewer T-12 Annual Cost - Yr 5,$0,$
+,Utilities - Trash,F73,Trash T-12 Annual Cost - Yr 1,$0,$
+,Utilities - Trash,G73,Trash T-12 Annual Cost - Yr 2,$0,$
+,Utilities - Trash,H73,Trash T-12 Annual Cost - Yr 3,$0,$
+,Utilities - Trash,I73,Trash T-12 Annual Cost - Yr 4,$0,$
+,Utilities - Trash,J73,Trash T-12 Annual Cost - Yr 5,$0,$
+,Unit Mix - Counts,E142,Studio - Total Units,0,units
+,Unit Mix - Counts,E143,1+1 - Total Units,0,units
+,Unit Mix - Counts,E144,2+1 - Total Units,0,units
+,Unit Mix - SF,H142,Studio - Unit SF,0,SF
+,Unit Mix - SF,H143,1+1 - Unit SF,0,SF
+,Unit Mix - SF,H144,2+1 - Unit SF,0,SF
+,Unit Mix - Current Rent,I142,Studio - Current Avg. Rent,$0,$/unit
+,Unit Mix - Current Rent,I143,1+1 - Current Avg. Rent,$0,$/unit
+,Unit Mix - Current Rent,I144,2+1 - Current Avg. Rent,$0,$/unit
+,Unit Mix - Market Rent,K142,Studio - Market Avg. Rent,$0,$/unit
+,Unit Mix - Market Rent,K143,1+1 - Market Avg. Rent,$0,$/unit
+,Unit Mix - Market Rent,K144,2+1 - Market Avg. Rent,$0,$/unit
+,Unit Mix - Max Rent,M142,Studio - Current Max Rent,$0,$/unit
+,Unit Mix - Max Rent,M143,1+1 - Current Max Rent,$0,$/unit
+,Unit Mix - Max Rent,M144,2+1 - Current Max Rent,$0,$/unit
+,Unit Mix - Monthly Total,N142,Studio - Total Current Monthly Rent,$0,$
+,Unit Mix - Monthly Total,N143,1+1 - Total Current Monthly Rent,$0,$
+,Unit Mix - Monthly Total,N144,2+1 - Total Current Monthly Rent,$0,$
+,Unit Mix - Market Monthly,O142,Studio - Market Monthly Rent,$0,$
+,Unit Mix - Market Monthly,O143,1+1 - Market Monthly Rent,$0,$
+,Unit Mix - Market Monthly,O144,2+1 - Market Monthly Rent,$0,$
+,,,,,
+,SUMMARY,,,,
+,Total Input Cells Required:,72,,,
+,,,,,
+,INSTRUCTIONS:,,,,
+,Enter values directly in the 'Underwriting Model' sheet at the cell references listed above.,,,,
+,The 'Current Value' column will automatically update to reflect your inputs.,,,,
