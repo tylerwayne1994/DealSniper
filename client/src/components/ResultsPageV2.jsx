@@ -4810,63 +4810,15 @@ Keep the answer tight but specific to this property and the numbers above.`;
         );
 
       case 'underwriting-model':
-        const [sheetPopulated, setSheetPopulated] = React.useState(false);
-        const [populating, setPopulating] = React.useState(false);
-        
-        const populateSheet = async () => {
-          setPopulating(true);
-          try {
-            const response = await fetch('http://localhost:8010/api/sheets/populate', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ scenarioData })
-            });
-            const result = await response.json();
-            if (result.success) {
-              setSheetPopulated(true);
-              console.log(`Updated ${result.updated_cells} cells in underwriting model`);
-            }
-          } catch (error) {
-            console.error('Failed to populate sheet:', error);
-          } finally {
-            setPopulating(false);
-          }
-        };
-        
-        React.useEffect(() => {
-          if (!sheetPopulated && scenarioData && activeTab === 'underwriting-model') {
-            populateSheet();
-          }
-        }, [activeTab]);
-        
         return (
-          <div style={{ padding: '24px', height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Underwriting Model</h3>
-              <button
-                onClick={populateSheet}
-                disabled={populating}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: populating ? '#94a3b8' : '#3b82f6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: populating ? 'not-allowed' : 'pointer',
-                  fontWeight: 500
-                }}
-              >
-                {populating ? 'Populating...' : sheetPopulated ? 'Refresh Data' : 'Populate from Deal'}
-              </button>
-            </div>
+          <div style={{ padding: '24px', height: 'calc(100vh - 200px)' }}>
             <iframe
               src="https://docs.google.com/spreadsheets/d/1jZSrAJY_gIu7Rqcmdmg-cdvQc88aC6YyVwhTQ1-dwi0/edit?usp=sharing&rm=minimal"
               style={{
                 width: '100%',
                 height: '100%',
                 border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                flex: 1
+                borderRadius: '8px'
               }}
               title="Underwriting Model"
             />
