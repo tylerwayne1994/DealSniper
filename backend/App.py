@@ -3644,7 +3644,8 @@ async def populate_underwriting_sheet(request: Request):
         if not scenario_data:
             raise HTTPException(status_code=400, detail="scenarioData required")
         
-        full_calcs = body.get('fullCalcs')`n        result = update_google_sheet(scenario_data, full_calcs)
+        full_calcs = body.get('fullCalcs')
+        result = update_google_sheet(scenario_data, full_calcs)
         
         if result.get('error'):
             raise HTTPException(status_code=500, detail=result['error'])
