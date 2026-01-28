@@ -3631,4 +3631,29 @@ async def spreadsheet_build_model_direct(request: Request):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8010")))
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8010")))from google_sheets_updater import update_google_sheet
+
+
+@app.post("/api/sheets/populate")
+async def populate_underwriting_sheet(request: Request):
+    """
+    Auto-fill Google Sheet underwriting model with parsed OM data
+    """
+    try:
+        body = await request.json()
+        scenario_data = body.get('scenarioData')
+        
+        if not scenario_data:
+            raise HTTPException(status_code=400, detail="scenarioData required")
+        
+        result = update_google_sheet(scenario_data)
+        
+        if result.get('error'):
+            raise HTTPException(status_code=500, detail=result['error'])
+        
+        return JSONResponse(content=result)
+        
+    except Exception as e:
+        log.error(f"Error populating sheet: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
