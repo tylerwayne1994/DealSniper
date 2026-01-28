@@ -98,6 +98,9 @@ app.include_router(stripe_webhook_router)
 from token_purchase_handler import router as token_purchase_router
 app.include_router(token_purchase_router)
 
+# Google Sheets: Auto-populate underwriting model
+from google_sheets_updater import update_google_sheet
+
 # HUD API proxy router (provides /api/hud/* endpoints)
 try:
     from hud_api import router as hud_router
@@ -3629,11 +3632,6 @@ async def spreadsheet_build_model_direct(request: Request):
         )
 
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8010")))from google_sheets_updater import update_google_sheet
-
-
 @app.post("/api/sheets/populate")
 async def populate_underwriting_sheet(request: Request):
     """
@@ -3656,4 +3654,12 @@ async def populate_underwriting_sheet(request: Request):
     except Exception as e:
         log.error(f"Error populating sheet: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8010")))
+
+
+
 
