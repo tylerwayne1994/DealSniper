@@ -1,20 +1,54 @@
 """
 Google Sheets Updater - Auto-fill underwriting model with parsed OM data
+Uses Service Account authentication for write access
 """
 import os
+import json
 import csv
 from pathlib import Path
+from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-SHEET_ID = "2PACX-1vTIMXq7cZzOuS2aIe2s840j81XlrG-I65Lcf0kD7h5L1zVmuOxcMjZ6IIsTnMzwJ1aQ7KaHRwJV_WM3"
+SHEET_ID = "1jZSrAJY_gIu7Rqcmdmg-cdvQc88aC6YyVwhTQ1-dwi0"
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+
+def get_credentials():
+    """
+    Load service account credentials from environment variable or file.
+    Priority: 1) GOOGLE_SERVICE_ACCOUNT_JSON env var, 2) .google_service_account.json file
+    """
+    # Try environment variable first (for production)
+    json_str = os.getenv('GOOGLE_SERVICE_ACCOUNT_JSON')
+    if json_str:
+        try:
+            service_account_info = json.loads(json_str)
+            credentials = service_account.Credentials.from_service_account_info(
+                service_account_info, scopes=SCOPES
+            )
+            return credentials
+        except Exception as e:
+            print(f"Error loading credentials from environment: {e}")
+    
+    # Fall back to file (for local development)
+    creds_file = Path(__file__).parent / ".google_service_account.json"
+    if creds_file.exists():
+        credentials = service_account.Credentials.from_service_account_file(
+            str(creds_file), scopes=SCOPES
+        )
+        return credentials
+    
+    raise FileNotFoundError(
+        "Google Service Account credentials not found. "
+        "Set GOOGLE_SERVICE_ACCOUNT_JSON environment variable or create .google_service_account.json"
+    )
+
 
 def load_mapping():
     """Load the underwriting model data mapping CSV"""
-    mapping_path = Path(__file__).parent.parent / "client" / "public" / "UNDERWRITE  - Data Mapping.csv"
+    mapping_path = Path(__file__).parent.parent / "client" / "public" / "UNDERWRITE - Data Mapping.csv"
     mapping = []
-    
+
     with open(mapping_path, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
@@ -32,8 +66,9 @@ def load_mapping():
 def extract_value_from_scenario(scenario_data, calcs, input_name):
     """
     Extract value from scenarioData and fullCalcs based on input name.
+    Maps OM parsed data to Google Sheets underwriting model fields.
     """
-    
+
     # Deal Structure
     if input_name == "Purchase Price":
         return scenario_data.get('pricing_financing', {}).get('price') or \
@@ -44,316 +79,208 @@ def extract_value_from_scenario(scenario_data, calcs, input_name):
     
     elif input_name == "Closing Costs %":
         return 0.03  # Default 3% if not in data
-    
+
     elif input_name == "Your Equity":
         return scenario_data.get('pricing_financing', {}).get('down_payment')
     
-    elif input_name == "Interest Rate":
-        return scenario_data.get('pricing_financing', {}).get('interest_rate', 0) / 100
-    
-    elif input_name == "Amortization (Years)":
-        return scenario_data.get('pricing_financing', {}).get('amortization_years')
-    
-    elif input_name == "Term (Years)":
-        return scenario_data.get('pricing_financing', {}).get('term_years')
-    
-    elif input_name == "Year Built":
-        return scenario_data.get('property', {}).get('year_built')
-    
-    # Expenses - Year 1
-    elif "Real Estate Taxes" in input_name:
-        return scenario_data.get('expenses', {}).get('taxes')
-    
-    elif "Insurance" in input_name:
-        return scenario_data.get('expenses', {}).get('insurance')
-    
-    elif "Repairs & Maintenance" in input_name:
-        return scenario_data.get('expenses', {}).get('repairs_maintenance')
-    
-    elif "Turnover" in input_name:
-        return scenario_data.get('expenses', {}).get('repairs_maintenance', 0) * 0.05  # 5% of R&M
-    
-    elif "G&A + Marketing" in input_name:
-        return scenario_data.get('expenses', {}).get('admin', 0) + scenario_data.get('expenses', {}).get('marketing', 0)
-    
-    elif "Landscaping" in input_name:
-        return 0  # Not typically in OM
-    
-    elif "Reserves" in input_name:
-        return 0  # Not typically in OM
-    
-    # Other Income
-    elif "Other Income" in input_name:
-        return scenario_data.get('pnl', {}).get('other_income')
-    
-    # Exit Assumptions
-    elif "Exit Cap Rate" in input_name:
-        if calcs and calcs.get('returns'):
-            return calcs['returns'].get('terminalCapRate', 0) / 100
-        return 0.075  # Default 7.5%
-    
-    # Utilities
-    elif "Electric T-12 Annual Cost" in input_name:
-        utils = scenario_data.get('expenses', {}).get('utilities', 0)
-        return utils * 0.4  # Estimate 40% of utils are electric
-    
-    elif "Water/Sewer T-12 Annual Cost" in input_name:
-        utils = scenario_data.get('expenses', {}).get('utilities', 0)
-        return utils * 0.4  # Estimate 40% of utils are water/sewer
-    
-    elif "Trash T-12 Annual Cost" in input_name:
-        utils = scenario_data.get('expenses', {}).get('utilities', 0)
-        return utils * 0.2  # Estimate 20% of utils are trash
-    
-    # Unit Mix - Counts
-    elif "Studio - Total Units" in input_name:
-        unit_mix = scenario_data.get('unit_mix', [])
-        for u in unit_mix:
-            if 'studio' in u.get('type', '').lower():
-                return u.get('units')
-        return 0
-    
-    elif "1+1 - Total Units" in input_name:
-        unit_mix = scenario_data.get('unit_mix', [])
-        for u in unit_mix:
-            if '1x1' in u.get('type', '').lower() or '1+1' in u.get('type', '').lower():
-                return u.get('units')
-        return 0
-    
-    elif "2+1 - Total Units" in input_name:
-        unit_mix = scenario_data.get('unit_mix', [])
-        for u in unit_mix:
-            if '2x1' in u.get('type', '').lower() or '2+1' in u.get('type', '').lower():
-                return u.get('units')
-        return 0
-    
-    # Unit Mix - SF
-    elif "Studio - Unit SF" in input_name:
-        unit_mix = scenario_data.get('unit_mix', [])
-        for u in unit_mix:
-            if 'studio' in u.get('type', '').lower():
-                return u.get('unit_sf')
-        return 0
-    
-    elif "1+1 - Unit SF" in input_name:
-        unit_mix = scenario_data.get('unit_mix', [])
-        for u in unit_mix:
-            if '1x1' in u.get('type', '').lower() or '1+1' in u.get('type', '').lower():
-                return u.get('unit_sf')
-        return 0
-    
-    elif "2+1 - Unit SF" in input_name:
-        unit_mix = scenario_data.get('unit_mix', [])
-        for u in unit_mix:
-            if '2x1' in u.get('type', '').lower() or '2+1' in u.get('type', '').lower():
-                return u.get('unit_sf')
-        return 0
-    
-    # Unit Mix - Current Rent
-    elif "Studio - Current Avg. Rent" in input_name:
-        unit_mix = scenario_data.get('unit_mix', [])
-        for u in unit_mix:
-            if 'studio' in u.get('type', '').lower():
-                return u.get('rent_current')
-        return 0
-    
-    elif "1+1 - Current Avg. Rent" in input_name:
-        unit_mix = scenario_data.get('unit_mix', [])
-        for u in unit_mix:
-            if '1x1' in u.get('type', '').lower() or '1+1' in u.get('type', '').lower():
-                return u.get('rent_current')
-        return 0
-    
-    elif "2+1 - Current Avg. Rent" in input_name:
-        unit_mix = scenario_data.get('unit_mix', [])
-        for u in unit_mix:
-            if '2x1' in u.get('type', '').lower() or '2+1' in u.get('type', '').lower():
-                return u.get('rent_current')
-        return 0
-    
-    # Unit Mix - Market Rent
-    elif "Studio - Market Avg. Rent" in input_name:
-        unit_mix = scenario_data.get('unit_mix', [])
-        for u in unit_mix:
-            if 'studio' in u.get('type', '').lower():
-                return u.get('rent_market')
-        return 0
-    
-    elif "1+1 - Market Avg. Rent" in input_name:
-        unit_mix = scenario_data.get('unit_mix', [])
-        for u in unit_mix:
-            if '1x1' in u.get('type', '').lower() or '1+1' in u.get('type', '').lower():
-                return u.get('rent_market')
-        return 0
-    
-    elif "2+1 - Market Avg. Rent" in input_name:
-        unit_mix = scenario_data.get('unit_mix', [])
-        for u in unit_mix:
-            if '2x1' in u.get('type', '').lower() or '2+1' in u.get('type', '').lower():
-                return u.get('rent_market')
-        return 0
-    
-    # Investor Metrics (NEW)
-    elif "Total Capital Required" in input_name:
-        price = scenario_data.get('pricing_financing', {}).get('price', 0)
-        closing_pct = 0.03
-        return price * (1 + closing_pct)
-    
-    elif "Loan Amount" in input_name:
+    elif input_name == "Loan Amount":
         return scenario_data.get('pricing_financing', {}).get('loan_amount')
     
-    elif "LTV" in input_name:
-        loan = scenario_data.get('pricing_financing', {}).get('loan_amount', 0)
-        price = scenario_data.get('pricing_financing', {}).get('price', 1)
-        return (loan / price) if price > 0 else 0
+    elif input_name == "Interest Rate %":
+        rate = scenario_data.get('pricing_financing', {}).get('interest_rate')
+        return rate / 100 if rate and rate > 1 else rate
     
-    elif "Price Per Unit" in input_name:
-        return scenario_data.get('pricing_financing', {}).get('price_per_unit')
+    elif input_name == "Loan Term (Years)":
+        return scenario_data.get('pricing_financing', {}).get('loan_term_years', 30)
     
-    elif "Price Per SF" in input_name:
-        return scenario_data.get('pricing_financing', {}).get('price_per_sf')
+    elif input_name == "Amortization (Years)":
+        return scenario_data.get('pricing_financing', {}).get('amortization_years', 30)
+
+    # Expenses
+    elif input_name == "Property Tax":
+        return scenario_data.get('operating_data', {}).get('property_taxes')
     
-    # Property Valuation (NEW)
-    elif "Current NOI (Year 1)" in input_name:
-        if calcs and calcs.get('year1'):
-            return calcs['year1'].get('noi')
-        return scenario_data.get('pnl', {}).get('noi')
+    elif input_name == "Insurance":
+        return scenario_data.get('operating_data', {}).get('insurance')
     
-    elif "Stabilized NOI (Year 5)" in input_name:
-        return scenario_data.get('pnl', {}).get('noi_stabilized', 0)
+    elif input_name == "Utilities":
+        return scenario_data.get('operating_data', {}).get('utilities')
     
-    elif "Cap Rate (Input)" in input_name:
-        return scenario_data.get('pnl', {}).get('cap_rate', 0) / 100
+    elif input_name == "Repairs & Maintenance":
+        return scenario_data.get('operating_data', {}).get('repairs_and_maintenance')
     
-    # Income Metrics (NEW)
-    elif "Gross Potential Rent (Yr1)" in input_name:
-        return scenario_data.get('pnl', {}).get('gross_potential_rent')
+    elif input_name == "Landscaping":
+        return scenario_data.get('operating_data', {}).get('landscaping')
     
-    elif "Effective Gross Income (Yr1)" in input_name:
-        return scenario_data.get('pnl', {}).get('effective_gross_income')
+    elif input_name == "HOA Fees":
+        return scenario_data.get('operating_data', {}).get('hoa_fees')
     
-    elif "1% Rule" in input_name:
-        rent = scenario_data.get('pnl', {}).get('gross_potential_rent', 0)
-        price = scenario_data.get('pricing_financing', {}).get('price', 1)
-        return (rent / 12) / price if price > 0 else 0
+    elif input_name == "Property Management %":
+        mgmt_pct = scenario_data.get('operating_data', {}).get('management_fee_pct')
+        return mgmt_pct / 100 if mgmt_pct and mgmt_pct > 1 else mgmt_pct
     
-    elif "Gross Rent Multiplier" in input_name:
-        price = scenario_data.get('pricing_financing', {}).get('price', 0)
-        rent = scenario_data.get('pnl', {}).get('gross_potential_rent', 1)
-        return price / rent if rent > 0 else 0
+    elif input_name == "Vacancy %":
+        vac_pct = scenario_data.get('operating_data', {}).get('vacancy_pct')
+        return vac_pct / 100 if vac_pct and vac_pct > 1 else vac_pct
     
-    # Return Metrics (NEW)
-    elif "Cap Rate (Yr1)" in input_name:
-        if calcs and calcs.get('year1'):
-            return calcs['year1'].get('capRate', 0) / 100
-        return scenario_data.get('pnl', {}).get('cap_rate', 0) / 100
+    elif input_name == "CapEx Reserve %":
+        capex_pct = scenario_data.get('operating_data', {}).get('capex_reserve_pct')
+        return capex_pct / 100 if capex_pct and capex_pct > 1 else capex_pct
+
+    # Unit Mix
+    elif input_name.startswith("Unit Type "):
+        idx = int(input_name.split(" ")[-1]) - 1  # "Unit Type 1" -> index 0
+        unit_mix = scenario_data.get('unit_mix', [])
+        if idx < len(unit_mix):
+            return unit_mix[idx].get('type')
     
-    elif "Cap Rate (Yr5)" in input_name:
-        if calcs and calcs.get('returns'):
-            return calcs['returns'].get('terminalCapRate', 0) / 100
-        return 0.075
+    elif input_name.startswith("Number of Units "):
+        idx = int(input_name.split(" ")[-1]) - 1
+        unit_mix = scenario_data.get('unit_mix', [])
+        if idx < len(unit_mix):
+            return unit_mix[idx].get('count')
     
-    elif "Cash-on-Cash (Yr1)" in input_name:
-        if calcs and calcs.get('year1'):
-            return calcs['year1'].get('cashOnCash', 0) / 100
-        return 0
+    elif input_name.startswith("Rent per Unit "):
+        idx = int(input_name.split(" ")[-1]) - 1
+        unit_mix = scenario_data.get('unit_mix', [])
+        if idx < len(unit_mix):
+            return unit_mix[idx].get('rent')
+
+    # Investor Metrics
+    elif input_name == "Cash-on-Cash Return":
+        return calcs.get('cash_on_cash_return')
     
-    elif "Yield on Cost" in input_name:
-        noi = scenario_data.get('pnl', {}).get('noi', 0)
-        cost = scenario_data.get('pricing_financing', {}).get('price', 1)
-        return noi / cost if cost > 0 else 0
+    elif input_name == "Cap Rate":
+        return calcs.get('cap_rate')
     
-    elif "Equity Multiple" in input_name:
-        if calcs and calcs.get('returns'):
-            return calcs['returns'].get('leveredEquityMultiple', 0)
-        return 0
+    elif input_name == "Gross Yield":
+        return calcs.get('gross_yield')
     
-    elif "Your IRR (Est.)" in input_name:
-        if calcs and calcs.get('returns'):
-            return calcs['returns'].get('leveredIRR', 0) / 100
-        return 0
+    elif input_name == "Net Yield":
+        return calcs.get('net_yield')
     
-    # Debt & Coverage (NEW)
-    elif "DSCR (Year 1)" in input_name:
-        if calcs and calcs.get('year1'):
-            return calcs['year1'].get('dscr', 0)
-        return 0
+    elif input_name == "Equity Multiple (10 Years)":
+        return calcs.get('equity_multiple_10y')
     
-    elif "DSCR (Year 5)" in input_name:
-        if calcs and calcs.get('returns'):
-            return calcs['returns'].get('minDSCR', 0)
-        return 0
+    elif input_name == "IRR (10 Years)":
+        return calcs.get('irr_10y')
+
+    # Property Valuation
+    elif input_name == "Gross Annual Income":
+        return calcs.get('gross_annual_income')
     
-    # Default
+    elif input_name == "Net Operating Income (NOI)":
+        return calcs.get('noi')
+    
+    elif input_name == "Appraised Value":
+        return scenario_data.get('property_details', {}).get('appraised_value')
+    
+    elif input_name == "Market Value (Cap Rate)":
+        return calcs.get('market_value_cap_rate')
+    
+    elif input_name == "Equity at Purchase":
+        return calcs.get('equity_at_purchase')
+
+    # Return Metrics
+    elif input_name == "Monthly Cash Flow":
+        return calcs.get('monthly_cash_flow')
+    
+    elif input_name == "Annual Cash Flow":
+        return calcs.get('annual_cash_flow')
+    
+    elif input_name == "Total Gain (10 Years)":
+        return calcs.get('total_gain_10y')
+    
+    elif input_name == "Total Return %":
+        return calcs.get('total_return_pct')
+    
+    elif input_name == "Average Annual Return %":
+        return calcs.get('avg_annual_return_pct')
+    
+    elif input_name == "Breakeven Year":
+        return calcs.get('breakeven_year')
+    
+    elif input_name == "Payback Period":
+        return calcs.get('payback_period')
+
+    # Debt & Coverage
+    elif input_name == "Monthly Debt Service":
+        return calcs.get('monthly_debt_service')
+    
+    elif input_name == "DSCR (Debt Service Coverage Ratio)":
+        return calcs.get('dscr')
+    
+    elif input_name == "LTV (Loan-to-Value)":
+        return calcs.get('ltv')
+
     return None
 
 
-def format_value_for_sheet(value, notes):
-    """Format value based on type (%, $, etc.)"""
-    if value is None:
-        return ""
-    
-    if isinstance(value, str):
-        return value
-    
-    # Format based on notes field
-    if '%' in notes:
-        return float(value)  # Sheet will handle % formatting
-    elif '$' in notes:
-        return float(value)
-    elif 'units' in notes.lower() or 'year' in notes.lower():
-        return int(value)
-    else:
-        return float(value)
-
-
-def update_google_sheet(scenario_data, full_calcs=None):
+def update_google_sheet(scenario_data, full_calcs):
     """
-    Update Google Sheet with parsed OM data using the mapping CSV
+    Update Google Sheet with parsed data using Service Account authentication.
+    
+    Args:
+        scenario_data: Parsed OM data from underwriting
+        full_calcs: Calculated financial metrics
+    
+    Returns:
+        dict: Success/error message
     """
     try:
-        api_key = os.environ.get('GOOGLE_SHEETS_API_KEY')
-        if not api_key:
-            return {"error": "Google Sheets API key not configured"}
+        # Get service account credentials
+        credentials = get_credentials()
         
-        service = build('sheets', 'v4', developerKey=api_key)
+        # Build Google Sheets API service
+        service = build('sheets', 'v4', credentials=credentials)
+        
+        # Load mapping
         mapping = load_mapping()
         
-        data = []
-        for map_entry in mapping:
-            cell = map_entry['cell']
-            input_name = map_entry['input_name']
-            notes = map_entry['notes']
+        # Prepare batch update data
+        updates = []
+        for item in mapping:
+            cell = item['cell']
+            input_name = item['input_name']
             
+            # Extract value from scenario data
             value = extract_value_from_scenario(scenario_data, full_calcs, input_name)
             
             if value is not None:
-                formatted_value = format_value_for_sheet(value, notes)
-                data.append({
-                    'range': f"'{cell}'",
-                    'values': [[formatted_value]]
+                updates.append({
+                    'range': f'Sheet1!{cell}',  # Adjust sheet name if needed
+                    'values': [[value]]
                 })
         
-        if not data:
-            return {"message": "No data to update", "updated_cells": 0}
-        
-        body = {
-            'valueInputOption': 'USER_ENTERED',
-            'data': data
-        }
-        
-        result = service.spreadsheets().values().batchUpdate(
-            spreadsheetId=SHEET_ID,
-            body=body
-        ).execute()
-        
-        return {
-            "success": True,
-            "updated_cells": result.get('totalUpdatedCells', 0),
-            "updated_ranges": len(data)
-        }
-        
+        # Execute batch update
+        if updates:
+            body = {
+                'valueInputOption': 'USER_ENTERED',
+                'data': updates
+            }
+            result = service.spreadsheets().values().batchUpdate(
+                spreadsheetId=SHEET_ID,
+                body=body
+            ).execute()
+            
+            return {
+                'success': True,
+                'message': f'Updated {result.get("totalUpdatedCells")} cells',
+                'updates': result.get("totalUpdatedCells")
+            }
+        else:
+            return {
+                'success': False,
+                'message': 'No data to update'
+            }
+    
     except HttpError as error:
-        return {"error": f"Google Sheets API error: {str(error)}"}
-    except Exception as e:
-        return {"error": f"Failed to update sheet: {str(e)}"}
+        return {
+            'success': False,
+            'message': f'Google Sheets API error: {error}'
+        }
+    except Exception as error:
+        return {
+            'success': False,
+            'message': f'Error updating sheet: {error}'
+        }
