@@ -10,7 +10,7 @@ import {
 import ResultsPageV2 from '../components/ResultsPageV2';
 import { loadDealForResults } from '../lib/dealsService';
 
-const API_BASE = process.env.REACT_APP_API_URL || "https://dealsniper-1.onrender.com";
+const API_BASE = process.env.REACT_APP_API_URL || "https://dealsniper-oh9v.onrender.com";
 
 // Styles (keeping consistent with V1)
 const styles = {
@@ -4004,4 +4004,5 @@ function UnderwriteV2Page() {
 }
 
 export default UnderwriteV2Page;
+
 
