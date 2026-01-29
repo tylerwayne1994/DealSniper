@@ -72,7 +72,7 @@ const ResultsPageV2 = ({
   // Google Sheets populate handler
   const handlePopulateSheet = async () => {
     try {
-      const response = await fetch('http://localhost:8010/api/sheets/populate', {
+      const response = await fetch('https://dealsniper-1.onrender.com/api/sheets/populate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scenarioData, fullCalcs })
@@ -95,7 +95,7 @@ const ResultsPageV2 = ({
       
       setIsRunningAI(true);
       try {
-        const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
+        const API_BASE = process.env.REACT_APP_API_URL || 'https://dealsniper-1.onrender.com';
         const response = await fetch(`${API_BASE}/v2/deals/${dealId}/underwrite`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -4872,7 +4872,7 @@ Keep the answer tight but specific to this property and the numbers above.`;
         const handleRentcastFetch = async () => {
           setRentcastLoading(true);
           try {
-            const response = await fetch(`http://localhost:8010/v2/deals/${dealId}/rentcast`, {
+            const response = await fetch(`https://dealsniper-1.onrender.com/v2/deals/${dealId}/rentcast`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' }
             });
@@ -5823,3 +5823,4 @@ Keep the answer tight but specific to this property and the numbers above.`;
 };
 
 export default ResultsPageV2;
+
