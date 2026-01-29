@@ -77,13 +77,21 @@ const ResultsPageV2 = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scenarioData, fullCalcs })
       });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        alert(` Error: ${error.detail || error.message || 'Failed to populate sheet'}`);
+        return;
+      }
+      
       const result = await response.json();
       if (result.success) {
-        alert(` Populated ${result.updated_cells} cells!`);
+        alert(` Populated ${result.updates || 0} cells!`);
       } else {
-        alert(` Error: ${result.error}`);
+        alert(` Error: ${result.message || 'Unknown error'}`);
       }
     } catch (error) {
+      console.error('Populate error:', error);
       alert(` Failed: ${error.message}`);
     }
   };
@@ -5823,5 +5831,6 @@ Keep the answer tight but specific to this property and the numbers above.`;
 };
 
 export default ResultsPageV2;
+
 
 
