@@ -14,6 +14,14 @@ SHEET_ID = "1jZSrAJY_gIu7Rqcmdmg-cdvQc88aC6YyVwhTQ1-dwi0"
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 SHEET_TAB_NAME = "Underwrite Model"
 
+def _debug_enabled():
+    val = os.getenv("UNDERWRITE_DEBUG", "1")
+    return str(val).lower() not in ("0", "false", "")
+
+def _dbg(msg):
+    if _debug_enabled():
+        print(f"[Underwrite Debug] {msg}")
+
 def get_credentials():
     """
     Load service account credentials from environment variable or file.
@@ -89,6 +97,7 @@ def load_mapping():
                     f"Mapping CSV not found. Looked for variants in {base_dir}."
                 )
 
+    _dbg(f"Using mapping CSV: {mapping_path}")
     mapping = []
     with open(mapping_path, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
@@ -333,6 +342,7 @@ def update_google_sheet(scenario_data, full_calcs):
         dict: Success/error message
     """
     try:
+        _dbg("Starting sheet update")
         # Get service account credentials
         credentials = get_credentials()
         
@@ -341,10 +351,12 @@ def update_google_sheet(scenario_data, full_calcs):
         
         # Load mapping
         mapping, mapping_path = load_mapping()
+        _dbg(f"Loaded {len(mapping)} mapping rows; sheet: {SHEET_ID} tab: {SHEET_TAB_NAME}")
         
         # Prepare batch update data
         updates = []
         values_by_input = {}
+        missing_inputs = []
         for item in mapping:
             cell = item['cell']
             input_name = item['input_name']
@@ -358,6 +370,12 @@ def update_google_sheet(scenario_data, full_calcs):
                     'range': f'{SHEET_TAB_NAME}!{cell}',
                     'values': [[value]]
                 })
+            else:
+                missing_inputs.append(input_name)
+
+        _dbg(f"Prepared {len(updates)} updates; missing {len(missing_inputs)} inputs")
+        if missing_inputs:
+            _dbg("Missing INPUT NAMEs (first 25): " + ", ".join(missing_inputs[:25]))
 
         # Write a filled copy of the mapping CSV with a VALUE column for transparency/debug
         try:
@@ -374,9 +392,29 @@ def update_google_sheet(scenario_data, full_calcs):
                     input_name = (row.get('INPUT NAME') or '').strip()
                     row['VALUE'] = values_by_input.get(input_name)
                     writer.writerow(row)
+            _dbg(f"Wrote filled CSV to {out_path}")
         except Exception as e:
             # Do not fail sheet update if writing the filled CSV fails
             print(f"Warning: failed to write filled mapping CSV: {e}")
+
+        # Also write a debug JSON with values and missing inputs
+        try:
+            debug_json_path = mapping_path.parent / f"{mapping_path.stem} - debug.json"
+            with open(debug_json_path, 'w', encoding='utf-8') as dj:
+                json.dump({
+                    'sheetId': SHEET_ID,
+                    'sheetTab': SHEET_TAB_NAME,
+                    'mappingCsv': str(mapping_path),
+                    'totalMappingRows': len(mapping),
+                    'totalUpdates': len(updates),
+                    'missingInputs': missing_inputs,
+                    'valuesByInput': values_by_input,
+                    'scenarioKeys': list(scenario_data.keys()),
+                    'calcsKeys': list(full_calcs.keys()),
+                }, dj, indent=2)
+            _dbg(f"Wrote debug JSON to {debug_json_path}")
+        except Exception as e:
+            print(f"Warning: failed to write debug JSON: {e}")
         
         # Execute batch update
         if updates:
@@ -389,12 +427,14 @@ def update_google_sheet(scenario_data, full_calcs):
                 body=body
             ).execute()
             
+            _dbg(f"Google response totalUpdatedCells={result.get('totalUpdatedCells')}")
             return {
                 'success': True,
                 'message': f'Updated {result.get("totalUpdatedCells")} cells',
                 'updates': result.get("totalUpdatedCells")
             }
         else:
+            _dbg("No data to update: all extracted values were None")
             return {
                 'success': False,
                 'message': 'No data to update'
