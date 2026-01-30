@@ -12,6 +12,7 @@ from googleapiclient.errors import HttpError
 
 SHEET_ID = "1jZSrAJY_gIu7Rqcmdmg-cdvQc88aC6YyVwhTQ1-dwi0"
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+SHEET_TAB_NAME = "Underwrite Model"
 
 def get_credentials():
     """
@@ -45,7 +46,11 @@ def get_credentials():
 
 
 def load_mapping():
-    """Load the underwriting model data mapping CSV"""
+    """Load the underwriting model data mapping CSV.
+
+    Returns:
+        tuple[list[dict], Path]: (mapping rows, selected mapping CSV path)
+    """
     base_dir = Path(__file__).parent.parent / "client" / "public"
 
     # Optional override via env var; supports absolute or base_dir-relative
@@ -96,7 +101,7 @@ def load_mapping():
                     'notes': row.get('NOTES', '').strip()
                 })
 
-    return mapping
+    return mapping, mapping_path
 
 
 def extract_value_from_scenario(scenario_data, calcs, input_name):
@@ -335,10 +340,11 @@ def update_google_sheet(scenario_data, full_calcs):
         service = build('sheets', 'v4', credentials=credentials)
         
         # Load mapping
-        mapping = load_mapping()
+        mapping, mapping_path = load_mapping()
         
         # Prepare batch update data
         updates = []
+        values_by_input = {}
         for item in mapping:
             cell = item['cell']
             input_name = item['input_name']
@@ -347,10 +353,30 @@ def update_google_sheet(scenario_data, full_calcs):
             value = extract_value_from_scenario(scenario_data, full_calcs, input_name)
             
             if value is not None:
+                values_by_input[input_name] = value
                 updates.append({
-                    'range': f'Sheet1!{cell}',  # Adjust sheet name if needed
+                    'range': f'{SHEET_TAB_NAME}!{cell}',
                     'values': [[value]]
                 })
+
+        # Write a filled copy of the mapping CSV with a VALUE column for transparency/debug
+        try:
+            base_dir = mapping_path.parent
+            out_path = base_dir / f"{mapping_path.stem} - filled{mapping_path.suffix}"
+            with open(mapping_path, 'r', encoding='utf-8') as src, open(out_path, 'w', encoding='utf-8', newline='') as dst:
+                reader = csv.DictReader(src)
+                fieldnames = list(reader.fieldnames or [])
+                if 'VALUE' not in fieldnames:
+                    fieldnames.append('VALUE')
+                writer = csv.DictWriter(dst, fieldnames=fieldnames)
+                writer.writeheader()
+                for row in reader:
+                    input_name = (row.get('INPUT NAME') or '').strip()
+                    row['VALUE'] = values_by_input.get(input_name)
+                    writer.writerow(row)
+        except Exception as e:
+            # Do not fail sheet update if writing the filled CSV fails
+            print(f"Warning: failed to write filled mapping CSV: {e}")
         
         # Execute batch update
         if updates:
