@@ -57,6 +57,7 @@ const EquityPartnerTab = ({ scenarioData, fullCalcs, onEditData }) => {
       closingCostsPct: ov.closingCostsPct ?? pf.closing_costs_pct ?? 2.0,
       loanAmount: ov.loanAmount ?? pf.loan_amount ?? fcFin.loanAmount ?? 0,
       lpSharePct: ov.lpSharePct ?? 90.0,
+      gpSharePct: ov.gpSharePct ?? (100 - (ov.lpSharePct ?? 90.0)),
       prefReturnPct: ov.prefReturnPct ?? ((u.pref_return_pct != null) ? u.pref_return_pct : 8.0),
       preSplitLP: ov.preSplitLP ?? ((u.pre_pref_lp_split != null) ? u.pre_pref_lp_split : 70.0),
       preSplitGP: ov.preSplitGP ?? ((u.pre_pref_gp_split != null) ? u.pre_pref_gp_split : 30.0),
@@ -65,6 +66,9 @@ const EquityPartnerTab = ({ scenarioData, fullCalcs, onEditData }) => {
       exitCap: ov.exitCap ?? ((u.exit_cap_rate != null) ? u.exit_cap_rate : (fcRet.marketCapRateY1 ?? 6.0)),
       holdYears: ov.holdYears ?? ((u.holding_period != null) ? u.holding_period : (fcRet.holdingPeriod ?? 5)),
       sellCostsPct: ov.sellCostsPct ?? ((u.sales_costs_pct != null) ? u.sales_costs_pct : 2.0),
+      forwardNoiExit: ov.forwardNoiExit ?? (fcRet.forwardNOIAtExit ?? fcRet.noiAtExit ?? fcYr1.noi ?? scenarioData?.pnl?.noi ?? 0),
+      lpEquityOverride: ov.lpEquityOverride ?? undefined,
+      gpEquityOverride: ov.gpEquityOverride ?? undefined,
       distByYear: ov.distByYear ?? [1,2,3,4,5].map(() => fcYr1.cashFlow ?? 0),
     };
   }, [pf, u, fcFin, fcYr1, fcRet, scenarioData]);
@@ -77,17 +81,18 @@ const EquityPartnerTab = ({ scenarioData, fullCalcs, onEditData }) => {
   }, [scenarioData, fullCalcs]);
 
   const computeState = useMemo(() => {
-    const lpShare = (inputs.lpSharePct || 0) / 100;
-    const gpShare = Math.max(1 - lpShare, 0);
+    const lpShareInput = (inputs.lpSharePct != null) ? inputs.lpSharePct : (100 - (inputs.gpSharePct || 0));
+    const lpShare = Math.max(0, Math.min(1, (lpShareInput || 0) / 100));
+    const gpShare = Math.max(0, Math.min(1, 1 - lpShare));
     const closingCosts = Math.round((inputs.purchasePrice || 0) * ((inputs.closingCostsPct || 0) / 100));
     const totalAcq = (inputs.purchasePrice || 0) + closingCosts;
     const totalDebt = inputs.loanAmount || 0;
     const requiredEquity = Math.max(totalAcq - totalDebt, 0);
 
-    const lpEquity = Math.round(requiredEquity * lpShare);
-    const gpEquity = Math.round(requiredEquity * gpShare);
+    const lpEquity = inputs.lpEquityOverride != null ? Number(inputs.lpEquityOverride) : Math.round(requiredEquity * lpShare);
+    const gpEquity = inputs.gpEquityOverride != null ? Number(inputs.gpEquityOverride) : Math.round(requiredEquity * gpShare);
 
-    const exitNoiBase = fcRet.forwardNOIAtExit ?? fcRet.noiAtExit ?? fcYr1.noi ?? scenarioData?.pnl?.noi ?? 0;
+    const exitNoiBase = (inputs.forwardNoiExit != null ? inputs.forwardNoiExit : (fcRet.forwardNOIAtExit ?? fcRet.noiAtExit ?? fcYr1.noi ?? scenarioData?.pnl?.noi ?? 0));
     const exitCapPct = (inputs.exitCap > 1 ? inputs.exitCap/100 : inputs.exitCap) || 0;
     const grossSale = fcRet.terminalValue ?? (exitCapPct > 0 ? Math.round(exitNoiBase / exitCapPct) : 0);
     const sellingCosts = Math.round((grossSale || 0) * ((inputs.sellCostsPct || 0) / 100));
@@ -116,15 +121,30 @@ const EquityPartnerTab = ({ scenarioData, fullCalcs, onEditData }) => {
       loanAmount: inputs.loanAmount,
       totalDebt,
       requiredEquity,
-      lpEquity, gpEquity, lpSharePct: inputs.lpSharePct, gpSharePct: gpShare*100,
+      lpEquity, gpEquity, lpSharePct: inputs.lpSharePct, gpSharePct: (inputs.gpSharePct != null ? inputs.gpSharePct : gpShare*100),
       prefReturnPct: inputs.prefReturnPct, preSplitLP: inputs.preSplitLP, preSplitGP: inputs.preSplitGP, postSplitLP: inputs.postSplitLP, gpPromote: inputs.gpPromote,
       exitCap: inputs.exitCap, holdYears: inputs.holdYears, grossSale, sellingCosts, loanPayoff, netSaleProceeds,
       distCashY: (inputs.distByYear?.[0]) || 0, lpPrefAnnual, lpDist, gpDist, lpExitProceeds,
       lpTotalDists, gpTotalDists,
       sellCostsPct: inputs.sellCostsPct,
       downPayment, downPaymentPct, epContribution, epContributionPct,
+      forwardNoiExit: exitNoiBase,
     };
   }, [inputs, fcYr1, fcRet, scenarioData]);
+  const onChangeShare = (field, value) => {
+    const num = typeof value === 'string' ? Number(value) : value;
+    const safe = isNaN(num) ? 0 : num;
+    setInputs(prev => {
+      const next = { ...prev };
+      if (field === 'lpSharePct') {
+        next.lpSharePct = safe; next.gpSharePct = Math.max(0, 100 - safe);
+      } else if (field === 'gpSharePct') {
+        next.gpSharePct = safe; next.lpSharePct = Math.max(0, 100 - safe);
+      }
+      if (typeof onEditData === 'function') { try { onEditData('equityPartnerOverrides', next); } catch (_) {} }
+      return next;
+    });
+  };
 
   const state = computeState;
 
@@ -202,10 +222,10 @@ const EquityPartnerTab = ({ scenarioData, fullCalcs, onEditData }) => {
             <Row label="Total Acquisition Cost" value={state.totalAcq} bold />
             <Row label="(-) Total Debt" value={state.totalDebt} />
             <Row label="Required Equity" value={state.requiredEquity} bold />
-            <Row label="LP Equity Investment" value={state.lpEquity} />
-            <Row label="GP Equity Investment" value={state.gpEquity} />
-            <Row label="LP Ownership %" value={state.lpSharePct} fmt='percent' editable onValueChange={(v)=>onChange('lpSharePct', v)} />
-            <Row label="GP Ownership %" value={state.gpSharePct} fmt='percent' />
+            <Row label="LP Equity Investment" value={state.lpEquity} fmt='currency' editable onValueChange={(v)=>onChange('lpEquityOverride', v)} />
+            <Row label="GP Equity Investment" value={state.gpEquity} fmt='currency' editable onValueChange={(v)=>onChange('gpEquityOverride', v)} />
+            <Row label="LP Ownership %" value={state.lpSharePct} fmt='percent' editable onValueChange={(v)=>onChangeShare('lpSharePct', v)} />
+            <Row label="GP Ownership %" value={state.gpSharePct} fmt='percent' editable onValueChange={(v)=>onChangeShare('gpSharePct', v)} />
             <Row label="Equity Partner Contribution" value={state.epContribution} fmt='currency' />
             <Row label="Equity Partner Contribution %" value={state.epContributionPct} fmt='percent' />
           </tbody></table>
@@ -233,7 +253,7 @@ const EquityPartnerTab = ({ scenarioData, fullCalcs, onEditData }) => {
         <div style={sectionHeader}>Exit Strategy</div>
         <table style={table}><tbody>
           <Row label="Exit Cap Rate" value={state.exitCap} fmt='percent' editable onValueChange={(v)=>onChange('exitCap', v)} />
-          <Row label="Forward NOI at Exit" value={state.grossSale && state.exitCap ? Math.round(state.grossSale * (state.exitCap > 1 ? state.exitCap/100 : state.exitCap)) : 0} />
+          <Row label="Forward NOI at Exit" value={state.forwardNoiExit} fmt='currency' editable onValueChange={(v)=>onChange('forwardNoiExit', v)} />
           <Row label="Hold Period" value={state.holdYears} fmt='number' editable onValueChange={(v)=>onChange('holdYears', v)} />
         </tbody></table>
         <table style={table}><tbody>
