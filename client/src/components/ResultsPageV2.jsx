@@ -32,6 +32,7 @@ import DealExecutionTab from './results-tabs/DealExecutionTab';
 import ExpensesTab from './results-tabs/ExpensesTab';
 import ProformaTab from './results-tabs/ProformaTab';
 import RUBSTab from './results-tabs/RUBSTab';
+import EquityPartnerTab from './results-tabs/EquityPartnerTab';
 import UnderwritingTablePage from '../pages/UnderwritingTablePage';
 import PropertySpreadsheet from './PropertySpreadsheet';
 import { mapParsedDataToSpreadsheet } from '../utils/propertySpreadsheetMapper';
@@ -1148,6 +1149,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
     
     { id: 'costseg', label: 'Cost Segregation', icon: Calculator },
     { id: 'market-data', label: 'Market Data', icon: BarChart3 }
+    ,{ id: 'equity-partner', label: 'Equity Partner', icon: PieChart }
   ];
 
   // Row component
@@ -5360,6 +5362,16 @@ Keep the answer tight but specific to this property and the numbers above.`;
         return (
           <div style={{ padding: '24px' }}>
             <RUBSTab 
+              scenarioData={scenarioData}
+              fullCalcs={fullCalcs}
+            />
+          </div>
+        );
+
+      case 'equity-partner':
+        return (
+          <div style={{ padding: '24px' }}>
+            <EquityPartnerTab 
               scenarioData={scenarioData}
               fullCalcs={fullCalcs}
             />
