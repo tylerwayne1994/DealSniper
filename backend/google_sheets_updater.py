@@ -56,6 +56,8 @@ def get_credentials():
 def load_mapping():
     """Load the underwriting model data mapping CSV.
 
+    Handles files that include a title row and a leading blank column.
+
     Returns:
         tuple[list[dict], Path]: (mapping rows, selected mapping CSV path)
     """
@@ -99,17 +101,36 @@ def load_mapping():
 
     _dbg(f"Using mapping CSV: {mapping_path}")
     mapping = []
-    with open(mapping_path, 'r', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if row.get('CELL REFERENCE') and row.get('INPUT NAME'):
-                mapping.append({
-                    'category': row.get('CATEGORY', '').strip(),
-                    'cell': row.get('CELL REFERENCE', '').strip(),
-                    'input_name': row.get('INPUT NAME', '').strip(),
-                    'notes': row.get('NOTES', '').strip()
-                })
+    # Robust read: locate the header row containing CATEGORY/CELL REFERENCE/INPUT NAME
+    with open(mapping_path, 'r', encoding='utf-8', newline='') as f:
+        rdr = csv.reader(f)
+        header_idx = None
+        cols = {}
+        rows = list(rdr)
+        for i, r in enumerate(rows[:20]):  # scan first few rows for header
+            lower = [c.strip().lower() for c in r]
+            if 'cell reference' in lower and 'input name' in lower:
+                header_idx = i
+                # Build column index map allowing for optional leading blank column
+                for idx, name in enumerate(r):
+                    n = name.strip().lower()
+                    if n in ('category', 'cell reference', 'input name', 'notes'):
+                        cols[n] = idx
+                break
+        if header_idx is None:
+            _dbg("Failed to locate header row in mapping CSV")
+            return [], mapping_path
+        for r in rows[header_idx + 1:]:
+            if not r or all(not (c or '').strip() for c in r):
+                continue
+            cat = (r[cols.get('category', 0)] if len(r) > cols.get('category', 0) else '').strip()
+            cell = (r[cols.get('cell reference', 0)] if len(r) > cols.get('cell reference', 0) else '').strip()
+            inp = (r[cols.get('input name', 0)] if len(r) > cols.get('input name', 0) else '').strip()
+            notes = (r[cols.get('notes', 0)] if len(r) > cols.get('notes', 0) else '').strip()
+            if cell and inp:
+                mapping.append({'category': cat, 'cell': cell, 'input_name': inp, 'notes': notes})
 
+    _dbg(f"Parsed mapping rows: {len(mapping)}")
     return mapping, mapping_path
 
 
@@ -381,17 +402,18 @@ def update_google_sheet(scenario_data, full_calcs):
         try:
             base_dir = mapping_path.parent
             out_path = base_dir / f"{mapping_path.stem} - filled{mapping_path.suffix}"
-            with open(mapping_path, 'r', encoding='utf-8') as src, open(out_path, 'w', encoding='utf-8', newline='') as dst:
-                reader = csv.DictReader(src)
-                fieldnames = list(reader.fieldnames or [])
-                if 'VALUE' not in fieldnames:
-                    fieldnames.append('VALUE')
+            with open(out_path, 'w', encoding='utf-8', newline='') as dst:
+                fieldnames = ['CATEGORY', 'CELL REFERENCE', 'INPUT NAME', 'VALUE', 'NOTES']
                 writer = csv.DictWriter(dst, fieldnames=fieldnames)
                 writer.writeheader()
-                for row in reader:
-                    input_name = (row.get('INPUT NAME') or '').strip()
-                    row['VALUE'] = values_by_input.get(input_name)
-                    writer.writerow(row)
+                for item in mapping:
+                    writer.writerow({
+                        'CATEGORY': item.get('category', ''),
+                        'CELL REFERENCE': item.get('cell', ''),
+                        'INPUT NAME': item.get('input_name', ''),
+                        'VALUE': values_by_input.get(item.get('input_name', '')),
+                        'NOTES': item.get('notes', ''),
+                    })
             _dbg(f"Wrote filled CSV to {out_path}")
         except Exception as e:
             # Do not fail sheet update if writing the filled CSV fails
