@@ -69,32 +69,6 @@ const ResultsPageV2 = ({
   const [pipelineSuccess, setPipelineSuccess] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const tabContentRef = useRef(null);
-  // Google Sheets populate handler
-  const handlePopulateSheet = async () => {
-    try {
-      const response = await fetch('https://dealsniper-oh9v.onrender.com/api/sheets/populate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scenarioData, fullCalcs })
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        alert(` Error: ${error.detail || error.message || 'Failed to populate sheet'}`);
-        return;
-      }
-      
-      const result = await response.json();
-      if (result.success) {
-        alert(` Populated ${result.updates || 0} cells!`);
-      } else {
-        alert(` Error: ${result.message || 'Unknown error'}`);
-      }
-    } catch (error) {
-      console.error('Populate error:', error);
-      alert(` Failed: ${error.message}`);
-    }
-  };
   
   // Automatically trigger AI underwriting when results page loads (only once)
   useEffect(() => {
