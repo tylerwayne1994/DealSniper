@@ -50,21 +50,24 @@ const EquityPartnerTab = ({ scenarioData, fullCalcs, onEditData }) => {
   const pf = scenarioData?.pricing_financing || {};
   const u = scenarioData?.underwriting || {};
 
-  const initialInputs = useMemo(() => ({
-    purchasePrice: pf.price ?? pf.purchase_price ?? 0,
-    closingCostsPct: pf.closing_costs_pct ?? 2.0,
-    loanAmount: pf.loan_amount ?? fcFin.loanAmount ?? 0,
-    lpSharePct: (scenarioData?.equityPartnerOverrides?.lpSharePct) ?? 90.0,
-    prefReturnPct: (u.pref_return_pct != null) ? u.pref_return_pct : 8.0,
-    preSplitLP: (u.pre_pref_lp_split != null) ? u.pre_pref_lp_split : 70.0,
-    preSplitGP: (u.pre_pref_gp_split != null) ? u.pre_pref_gp_split : 30.0,
-    postSplitLP: (u.post_pref_lp_split != null) ? u.post_pref_lp_split : 70.0,
-    gpPromote: (u.gp_promote_pct != null) ? u.gp_promote_pct : 30.0,
-    exitCap: (u.exit_cap_rate != null) ? u.exit_cap_rate : (fcRet.marketCapRateY1 ?? 6.0),
-    holdYears: (u.holding_period != null) ? u.holding_period : (fcRet.holdingPeriod ?? 5),
-    sellCostsPct: (u.sales_costs_pct != null) ? u.sales_costs_pct : 2.0,
-    distByYear: scenarioData?.equityPartnerOverrides?.distByYear ?? [1,2,3,4,5].map(() => fcYr1.cashFlow ?? 0),
-  }), [pf, u, fcFin, fcYr1, fcRet, scenarioData]);
+  const initialInputs = useMemo(() => {
+    const ov = scenarioData?.equityPartnerOverrides || {};
+    return {
+      purchasePrice: ov.purchasePrice ?? pf.price ?? pf.purchase_price ?? 0,
+      closingCostsPct: ov.closingCostsPct ?? pf.closing_costs_pct ?? 2.0,
+      loanAmount: ov.loanAmount ?? pf.loan_amount ?? fcFin.loanAmount ?? 0,
+      lpSharePct: ov.lpSharePct ?? 90.0,
+      prefReturnPct: ov.prefReturnPct ?? ((u.pref_return_pct != null) ? u.pref_return_pct : 8.0),
+      preSplitLP: ov.preSplitLP ?? ((u.pre_pref_lp_split != null) ? u.pre_pref_lp_split : 70.0),
+      preSplitGP: ov.preSplitGP ?? ((u.pre_pref_gp_split != null) ? u.pre_pref_gp_split : 30.0),
+      postSplitLP: ov.postSplitLP ?? ((u.post_pref_lp_split != null) ? u.post_pref_lp_split : 70.0),
+      gpPromote: ov.gpPromote ?? ((u.gp_promote_pct != null) ? u.gp_promote_pct : 30.0),
+      exitCap: ov.exitCap ?? ((u.exit_cap_rate != null) ? u.exit_cap_rate : (fcRet.marketCapRateY1 ?? 6.0)),
+      holdYears: ov.holdYears ?? ((u.holding_period != null) ? u.holding_period : (fcRet.holdingPeriod ?? 5)),
+      sellCostsPct: ov.sellCostsPct ?? ((u.sales_costs_pct != null) ? u.sales_costs_pct : 2.0),
+      distByYear: ov.distByYear ?? [1,2,3,4,5].map(() => fcYr1.cashFlow ?? 0),
+    };
+  }, [pf, u, fcFin, fcYr1, fcRet, scenarioData]);
 
   const [inputs, setInputs] = useState(initialInputs);
 
@@ -84,8 +87,9 @@ const EquityPartnerTab = ({ scenarioData, fullCalcs, onEditData }) => {
     const lpEquity = Math.round(requiredEquity * lpShare);
     const gpEquity = Math.round(requiredEquity * gpShare);
 
-    const exitNoi = fcRet.terminalValue && inputs.exitCap ? null : (fcYr1.noi ?? scenarioData?.pnl?.noi ?? 0);
-    const grossSale = fcRet.terminalValue ?? (exitNoi && inputs.exitCap ? Math.round((exitNoi) / (inputs.exitCap > 1 ? inputs.exitCap/100 : inputs.exitCap)) : 0);
+    const exitNoiBase = fcRet.forwardNOIAtExit ?? fcRet.noiAtExit ?? fcYr1.noi ?? scenarioData?.pnl?.noi ?? 0;
+    const exitCapPct = (inputs.exitCap > 1 ? inputs.exitCap/100 : inputs.exitCap) || 0;
+    const grossSale = fcRet.terminalValue ?? (exitCapPct > 0 ? Math.round(exitNoiBase / exitCapPct) : 0);
     const sellingCosts = Math.round((grossSale || 0) * ((inputs.sellCostsPct || 0) / 100));
     const loanPayoff = inputs.loanAmount || 0;
     const netSaleProceeds = Math.max((grossSale || 0) - sellingCosts - loanPayoff, 0);
@@ -203,6 +207,7 @@ const EquityPartnerTab = ({ scenarioData, fullCalcs, onEditData }) => {
             <Row label="LP Ownership %" value={state.lpSharePct} fmt='percent' editable onValueChange={(v)=>onChange('lpSharePct', v)} />
             <Row label="GP Ownership %" value={state.gpSharePct} fmt='percent' />
             <Row label="Equity Partner Contribution" value={state.epContribution} fmt='currency' />
+            <Row label="Equity Partner Contribution %" value={state.epContributionPct} fmt='percent' />
           </tbody></table>
         </div>
         <div>
