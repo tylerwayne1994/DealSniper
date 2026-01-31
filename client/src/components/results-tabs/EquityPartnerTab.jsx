@@ -126,19 +126,29 @@ const EquityPartnerTab = ({ scenarioData, fullCalcs, onEditData }) => {
 
   const onChange = (field, value) => {
     const num = typeof value === 'string' ? Number(value) : value;
-    setInputs(prev => ({ ...prev, [field]: isNaN(num) ? 0 : num }));
+    setInputs(prev => {
+      const next = { ...prev, [field]: isNaN(num) ? 0 : num };
+      if (typeof onEditData === 'function') {
+        try { onEditData('equityPartnerOverrides', next); } catch (_) {}
+      }
+      return next;
+    });
   };
   const onChangeDist = (idx, value) => {
     const num = typeof value === 'string' ? Number(value) : value;
     setInputs(prev => {
-      const next = [...(prev.distByYear || [])];
-      next[idx] = isNaN(num) ? 0 : num;
-      return { ...prev, distByYear: next };
+      const nextDist = [...(prev.distByYear || [])];
+      nextDist[idx] = isNaN(num) ? 0 : num;
+      const next = { ...prev, distByYear: nextDist };
+      if (typeof onEditData === 'function') {
+        try { onEditData('equityPartnerOverrides', next); } catch (_) {}
+      }
+      return next;
     });
   };
   const onSave = () => {
     if (typeof onEditData === 'function') {
-      onEditData({ equityPartnerOverrides: inputs });
+      onEditData('equityPartnerOverrides', inputs);
     }
   };
   const onReset = () => setInputs(initialInputs);
