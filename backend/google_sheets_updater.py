@@ -12,7 +12,7 @@ from googleapiclient.errors import HttpError
 
 SHEET_ID = "1jZSrAJY_gIu7Rqcmdmg-cdvQc88aC6YyVwhTQ1-dwi0"
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-SHEET_TAB_NAME = "Underwrite Model"
+SHEET_TAB_NAME = "Underwriting Model"
 
 def _debug_enabled():
     val = os.getenv("UNDERWRITE_DEBUG", "1")
@@ -388,7 +388,7 @@ def update_google_sheet(scenario_data, full_calcs):
             if value is not None:
                 values_by_input[input_name] = value
                 updates.append({
-                    'range': f'{SHEET_TAB_NAME}!{cell}',
+                    'range': f"'{SHEET_TAB_NAME}'!{cell}",
                     'values': [[value]]
                 })
             else:
