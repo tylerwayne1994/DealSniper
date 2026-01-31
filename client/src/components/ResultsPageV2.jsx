@@ -1173,8 +1173,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
     { id: 'syndication', label: 'Syndication', icon: PieChart },
     
     { id: 'costseg', label: 'Cost Segregation', icon: Calculator },
-    { id: 'market-data', label: 'Market Data', icon: BarChart3 },
-    { id: 'underwriting-model', label: 'Underwriting Model', icon: FileSpreadsheet }
+    { id: 'market-data', label: 'Market Data', icon: BarChart3 }
   ];
 
   // Row component
@@ -4835,37 +4834,7 @@ Keep the answer tight but specific to this property and the numbers above.`;
           </div>
         );
 
-      case 'underwriting-model':
-        return (
-          <div style={{ padding: '24px', height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <button
-              onClick={handlePopulateSheet}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#3b82f6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: '14px',
-                alignSelf: 'flex-start'
-              }}
-            >
-               Populate from Deal Data
-            </button>
-            <iframe
-              src="https://docs.google.com/spreadsheets/d/e/2PACX-1vTIMXq7cZzOuS2aIe2s840j81XlrG-I65Lcf0kD7h5L1zVmuOxcMjZ6IIsTnMzwJ1aQ7KaHRwJV_WM3/pubhtml?widget=true&headers=false"
-              style={{
-                width: '100%',
-                flex: 1,
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px'
-              }}
-              title="Underwriting Model"
-            />
-          </div>
-        );
+      
       case 'rent-roll':
         // Display EXACTLY what was parsed - no calculations, no transformations
         const unitMixData = scenarioData.unit_mix || [];
