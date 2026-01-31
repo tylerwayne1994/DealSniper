@@ -41,83 +41,138 @@ const valueCell = {
   borderBottom: '1px solid #e5e7eb'
 };
 
-const EquityPartnerTab = ({ scenarioData, fullCalcs }) => {
-  const [state, setState] = useState({});
+const EquityPartnerTab = ({ scenarioData, fullCalcs, onEditData }) => {
+  const fc = fullCalcs || {};
+  const fcFin = fc.financing || {};
+  const fcYr1 = fc.year1 || {};
+  const fcRet = fc.returns || {};
+
+  const pf = scenarioData?.pricing_financing || {};
+  const u = scenarioData?.underwriting || {};
+
+  const initialInputs = useMemo(() => ({
+    purchasePrice: pf.price ?? pf.purchase_price ?? 0,
+    closingCostsPct: pf.closing_costs_pct ?? 2.0,
+    loanAmount: pf.loan_amount ?? fcFin.loanAmount ?? 0,
+    lpSharePct: (scenarioData?.equityPartnerOverrides?.lpSharePct) ?? 90.0,
+    prefReturnPct: (u.pref_return_pct != null) ? u.pref_return_pct : 8.0,
+    preSplitLP: (u.pre_pref_lp_split != null) ? u.pre_pref_lp_split : 70.0,
+    preSplitGP: (u.pre_pref_gp_split != null) ? u.pre_pref_gp_split : 30.0,
+    postSplitLP: (u.post_pref_lp_split != null) ? u.post_pref_lp_split : 70.0,
+    gpPromote: (u.gp_promote_pct != null) ? u.gp_promote_pct : 30.0,
+    exitCap: (u.exit_cap_rate != null) ? u.exit_cap_rate : (fcRet.marketCapRateY1 ?? 6.0),
+    holdYears: (u.holding_period != null) ? u.holding_period : (fcRet.holdingPeriod ?? 5),
+    sellCostsPct: (u.sales_costs_pct != null) ? u.sales_costs_pct : 2.0,
+    distByYear: scenarioData?.equityPartnerOverrides?.distByYear ?? [1,2,3,4,5].map(() => fcYr1.cashFlow ?? 0),
+  }), [pf, u, fcFin, fcYr1, fcRet, scenarioData]);
+
+  const [inputs, setInputs] = useState(initialInputs);
 
   useEffect(() => {
-    const pf = scenarioData?.pricing_financing || {};
-    const prop = scenarioData?.property || {};
-    const u = scenarioData?.underwriting || {};
-    const fc = fullCalcs || {};
-    const fcFin = fc.financing || {};
-    const fcYr1 = fc.year1 || {};
-    const fcRet = fc.returns || {};
+    setInputs(initialInputs);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scenarioData, fullCalcs]);
 
-    const purchasePrice = pf.price ?? pf.purchase_price ?? 0;
-    const closingCostsPct = pf.closing_costs_pct ?? 2.0;
-    const closingCosts = Math.round(purchasePrice * (closingCostsPct / 100));
-    const loanAmount = pf.loan_amount ?? fcFin.loanAmount ?? 0;
-    const totalAcq = purchasePrice + closingCosts;
-    const totalDebt = loanAmount;
+  const computeState = useMemo(() => {
+    const lpShare = (inputs.lpSharePct || 0) / 100;
+    const gpShare = Math.max(1 - lpShare, 0);
+    const closingCosts = Math.round((inputs.purchasePrice || 0) * ((inputs.closingCostsPct || 0) / 100));
+    const totalAcq = (inputs.purchasePrice || 0) + closingCosts;
+    const totalDebt = inputs.loanAmount || 0;
     const requiredEquity = Math.max(totalAcq - totalDebt, 0);
-
-    const lpShare = 0.9; // default ownership split
-    const gpShare = 0.1;
-    const prefReturnPct = (u.pref_return_pct != null) ? u.pref_return_pct : 8.0;
-    const preSplitLP = (u.pre_pref_lp_split != null) ? u.pre_pref_lp_split : 70.0;
-    const preSplitGP = (u.pre_pref_gp_split != null) ? u.pre_pref_gp_split : 30.0;
-    const postSplitLP = (u.post_pref_lp_split != null) ? u.post_pref_lp_split : 70.0;
-    const gpPromote = (u.gp_promote_pct != null) ? u.gp_promote_pct : 30.0;
-
-    const exitCap = (u.exit_cap_rate != null) ? u.exit_cap_rate : (fcRet.marketCapRateY1 ?? 6.0);
-    const holdYears = (u.holding_period != null) ? u.holding_period : (fcRet.holdingPeriod ?? 5);
-    const exitNoi = fcRet.terminalValue && exitCap ? null : (fcYr1.noi ?? scenarioData?.pnl?.noi ?? 0);
-    const grossSale = fcRet.terminalValue ?? (exitNoi && exitCap ? Math.round((exitNoi) / (exitCap > 1 ? exitCap/100 : exitCap)) : 0);
-    const sellCostsPct = (u.sales_costs_pct != null) ? u.sales_costs_pct : 2.0;
-    const sellingCosts = Math.round(grossSale * (sellCostsPct / 100));
-    const loanPayoff = loanAmount; // approximation
-    const netSaleProceeds = Math.max(grossSale - sellingCosts - loanPayoff, 0);
 
     const lpEquity = Math.round(requiredEquity * lpShare);
     const gpEquity = Math.round(requiredEquity * gpShare);
 
-    const distCashY = fcYr1.cashFlow ?? 0;
-    const dist = [1,2,3,4,5].map(() => distCashY);
+    const exitNoi = fcRet.terminalValue && inputs.exitCap ? null : (fcYr1.noi ?? scenarioData?.pnl?.noi ?? 0);
+    const grossSale = fcRet.terminalValue ?? (exitNoi && inputs.exitCap ? Math.round((exitNoi) / (inputs.exitCap > 1 ? inputs.exitCap/100 : inputs.exitCap)) : 0);
+    const sellingCosts = Math.round((grossSale || 0) * ((inputs.sellCostsPct || 0) / 100));
+    const loanPayoff = inputs.loanAmount || 0;
+    const netSaleProceeds = Math.max((grossSale || 0) - sellingCosts - loanPayoff, 0);
 
-    const lpPrefAnnual = Math.round(lpEquity * ((prefReturnPct > 1 ? prefReturnPct/100 : prefReturnPct)));
-    const lpDist = dist.map(y => Math.max(Math.min(y, lpPrefAnnual), 0));
-    const gpDist = dist.map((y, i) => Math.max(y - lpDist[i], 0) * (postSplitLP < 100 ? (100-postSplitLP)/100 : 0));
+    const lpPrefAnnual = Math.round(lpEquity * ((inputs.prefReturnPct > 1 ? inputs.prefReturnPct/100 : inputs.prefReturnPct)));
+    const lpDist = (inputs.distByYear || []).map(y => Math.max(Math.min(y || 0, lpPrefAnnual), 0));
+    const gpDist = (inputs.distByYear || []).map((y, i) => Math.max((y || 0) - (lpDist[i] || 0), 0) * (inputs.postSplitLP < 100 ? (100-inputs.postSplitLP)/100 : 0));
 
-    const lpExitProceeds = Math.round(netSaleProceeds * (postSplitLP/100));
+    const lpExitProceeds = Math.round((netSaleProceeds || 0) * ((inputs.postSplitLP || 0)/100));
 
-    const lpTotalDists = lpDist.reduce((s,x)=>s+x,0) + lpExitProceeds;
-    const gpTotalDists = gpDist.reduce((s,x)=>s+x,0) + (netSaleProceeds - lpExitProceeds);
+    const lpTotalDists = (lpDist.reduce((s,x)=>s+(x||0),0)) + (lpExitProceeds || 0);
+    const gpTotalDists = (gpDist.reduce((s,x)=>s+(x||0),0)) + ((netSaleProceeds || 0) - (lpExitProceeds || 0));
 
-    setState({
-      purchasePrice, closingCostsPct, closingCosts, totalAcq,
-      loanAmount, totalDebt, requiredEquity,
-      lpEquity, gpEquity, lpSharePct: lpShare*100, gpSharePct: gpShare*100,
-      prefReturnPct, preSplitLP, preSplitGP, postSplitLP, gpPromote,
-      exitCap, holdYears, grossSale, sellingCosts, loanPayoff, netSaleProceeds,
-      distCashY, lpPrefAnnual, lpDist, gpDist, lpExitProceeds,
+    const downPayment = Math.max((inputs.purchasePrice || 0) - (inputs.loanAmount || 0), 0);
+    const downPaymentPct = (inputs.purchasePrice || 0) > 0 ? (downPayment / (inputs.purchasePrice || 1)) * 100 : 0;
+    const epContribution = lpEquity;
+    const epContributionPct = requiredEquity > 0 ? (lpEquity / requiredEquity) * 100 : 0;
+
+    return {
+      purchasePrice: inputs.purchasePrice,
+      closingCostsPct: inputs.closingCostsPct,
+      closingCosts,
+      totalAcq,
+      loanAmount: inputs.loanAmount,
+      totalDebt,
+      requiredEquity,
+      lpEquity, gpEquity, lpSharePct: inputs.lpSharePct, gpSharePct: gpShare*100,
+      prefReturnPct: inputs.prefReturnPct, preSplitLP: inputs.preSplitLP, preSplitGP: inputs.preSplitGP, postSplitLP: inputs.postSplitLP, gpPromote: inputs.gpPromote,
+      exitCap: inputs.exitCap, holdYears: inputs.holdYears, grossSale, sellingCosts, loanPayoff, netSaleProceeds,
+      distCashY: (inputs.distByYear?.[0]) || 0, lpPrefAnnual, lpDist, gpDist, lpExitProceeds,
       lpTotalDists, gpTotalDists,
-    });
-  }, [scenarioData, fullCalcs]);
+      sellCostsPct: inputs.sellCostsPct,
+      downPayment, downPaymentPct, epContribution, epContributionPct,
+    };
+  }, [inputs, fcYr1, fcRet, scenarioData]);
 
-  const Row = ({ label, value, fmt='currency', bold=false }) => (
+  const state = computeState;
+
+  const onChange = (field, value) => {
+    const num = typeof value === 'string' ? Number(value) : value;
+    setInputs(prev => ({ ...prev, [field]: isNaN(num) ? 0 : num }));
+  };
+  const onChangeDist = (idx, value) => {
+    const num = typeof value === 'string' ? Number(value) : value;
+    setInputs(prev => {
+      const next = [...(prev.distByYear || [])];
+      next[idx] = isNaN(num) ? 0 : num;
+      return { ...prev, distByYear: next };
+    });
+  };
+  const onSave = () => {
+    if (typeof onEditData === 'function') {
+      onEditData({ equityPartnerOverrides: inputs });
+    }
+  };
+  const onReset = () => setInputs(initialInputs);
+
+  const Row = ({ label, value, fmt='currency', bold=false, editable=false, onValueChange }) => (
     <tr>
       <td style={{ ...labelCell, fontWeight: bold ? '700' : '500', backgroundColor: bold ? '#f3f4f6' : 'white' }}>{label}</td>
       <td style={{ ...valueCell, fontWeight: bold ? '700' : '600', backgroundColor: bold ? '#fef3c7' : 'white' }}>
-        {fmt==='currency' ? currency(value) : fmt==='percent' ? percent(value) : number(value)}
+        {editable ? (
+          <input
+            type="number"
+            value={value ?? 0}
+            onChange={(e) => onValueChange?.(e.target.value)}
+            step={fmt==='percent' ? '0.1' : fmt==='currency' ? '100' : '1'}
+            style={{ width: 120, textAlign: 'right', padding: 4 }}
+          />
+        ) : (
+          fmt==='currency' ? currency(value) : fmt==='percent' ? percent(value) : number(value)
+        )}
       </td>
     </tr>
   );
 
   return (
     <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-        <PieChart size={28} color="#3b82f6" />
-        <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0 }}>Equity Partner Summary</h1>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <PieChart size={28} color="#3b82f6" />
+          <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0 }}>Equity Partner Summary</h1>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={onSave} style={{ padding: '8px 12px', background: '#10b981', color: 'white', border: 'none', borderRadius: 6, fontWeight: 700 }}>Save Edits</button>
+          <button onClick={onReset} style={{ padding: '8px 12px', background: '#6b7280', color: 'white', border: 'none', borderRadius: 6, fontWeight: 700 }}>Reset</button>
+        </div>
       </div>
 
       {/* Top two-column sections */}
@@ -125,29 +180,35 @@ const EquityPartnerTab = ({ scenarioData, fullCalcs }) => {
         <div>
           <div style={sectionHeader}>Investment Summary</div>
           <table style={table}><tbody>
+            <Row label="Purchase Price" value={state.purchasePrice} fmt='currency' editable onValueChange={(v)=>onChange('purchasePrice', v)} />
+            <Row label="Closing Costs %" value={state.closingCostsPct} fmt='percent' editable onValueChange={(v)=>onChange('closingCostsPct', v)} />
+            <Row label="Loan Amount" value={state.loanAmount} fmt='currency' editable onValueChange={(v)=>onChange('loanAmount', v)} />
+            <Row label="Down Payment" value={state.downPayment} fmt='currency' />
+            <Row label="Down Payment %" value={state.downPaymentPct} fmt='percent' />
             <Row label="Total Acquisition Cost" value={state.totalAcq} bold />
             <Row label="(-) Total Debt" value={state.totalDebt} />
             <Row label="Required Equity" value={state.requiredEquity} bold />
             <Row label="LP Equity Investment" value={state.lpEquity} />
             <Row label="GP Equity Investment" value={state.gpEquity} />
-            <Row label="LP Ownership %" value={state.lpSharePct} fmt='percent' />
+            <Row label="LP Ownership %" value={state.lpSharePct} fmt='percent' editable onValueChange={(v)=>onChange('lpSharePct', v)} />
             <Row label="GP Ownership %" value={state.gpSharePct} fmt='percent' />
+            <Row label="Equity Partner Contribution" value={state.epContribution} fmt='currency' />
           </tbody></table>
         </div>
         <div>
           <div style={sectionHeader}>Waterfall Structure</div>
           <table style={table}><tbody>
-            <Row label="Preferred Return (Pref)" value={state.prefReturnPct} fmt='percent' />
+            <Row label="Preferred Return (Pref)" value={state.prefReturnPct} fmt='percent' editable onValueChange={(v)=>onChange('prefReturnPct', v)} />
           </tbody></table>
           <div style={subHeader}>Pre-Pref Splits:</div>
           <table style={table}><tbody>
-            <Row label="LP Share" value={state.preSplitLP} fmt='percent' />
-            <Row label="GP Share" value={state.preSplitGP} fmt='percent' />
+            <Row label="LP Share" value={state.preSplitLP} fmt='percent' editable onValueChange={(v)=>onChange('preSplitLP', v)} />
+            <Row label="GP Share" value={state.preSplitGP} fmt='percent' editable onValueChange={(v)=>onChange('preSplitGP', v)} />
           </tbody></table>
           <div style={subHeader}>Post-Pref Splits:</div>
           <table style={table}><tbody>
-            <Row label="LP Share" value={state.postSplitLP} fmt='percent' />
-            <Row label="GP Promote" value={state.gpPromote} fmt='percent' />
+            <Row label="LP Share" value={state.postSplitLP} fmt='percent' editable onValueChange={(v)=>onChange('postSplitLP', v)} />
+            <Row label="GP Promote" value={state.gpPromote} fmt='percent' editable onValueChange={(v)=>onChange('gpPromote', v)} />
           </tbody></table>
         </div>
       </div>
@@ -156,12 +217,13 @@ const EquityPartnerTab = ({ scenarioData, fullCalcs }) => {
       <div style={{ marginTop: 16 }}>
         <div style={sectionHeader}>Exit Strategy</div>
         <table style={table}><tbody>
-          <Row label="Exit Cap Rate" value={state.exitCap} fmt='percent' />
+          <Row label="Exit Cap Rate" value={state.exitCap} fmt='percent' editable onValueChange={(v)=>onChange('exitCap', v)} />
           <Row label="Forward NOI at Exit" value={state.grossSale && state.exitCap ? Math.round(state.grossSale * (state.exitCap > 1 ? state.exitCap/100 : state.exitCap)) : 0} />
-          <Row label="Hold Period" value={state.holdYears} fmt='number' />
+          <Row label="Hold Period" value={state.holdYears} fmt='number' editable onValueChange={(v)=>onChange('holdYears', v)} />
         </tbody></table>
         <table style={table}><tbody>
           <Row label="Gross Sale Price" value={state.grossSale} />
+          <Row label="Selling Costs %" value={state.sellCostsPct} fmt='percent' editable onValueChange={(v)=>onChange('sellCostsPct', v)} />
           <Row label="(-) Selling Costs" value={state.sellingCosts} />
           <Row label="(-) Loan Payoffs" value={state.loanPayoff} />
           <Row label="Net Sale Proceeds" value={state.netSaleProceeds} bold />
@@ -182,7 +244,15 @@ const EquityPartnerTab = ({ scenarioData, fullCalcs }) => {
           <tr>
             <td style={labelCell}>Amount</td>
             {[1,2,3,4,5].map((_,i)=> (
-              <td key={i} style={{ ...valueCell }}>{currency(state.lpDist?.[i] + state.gpDist?.[i] || state.distCashY || 0)}</td>
+              <td key={i} style={{ ...valueCell }}>
+                <input
+                  type="number"
+                  value={inputs.distByYear?.[i] ?? 0}
+                  onChange={(e)=>onChangeDist(i, e.target.value)}
+                  step="100"
+                  style={{ width: 120, textAlign: 'right', padding: 4 }}
+                />
+              </td>
             ))}
             <td style={{ ...valueCell }}>{currency(state.netSaleProceeds || 0)}</td>
           </tr>
