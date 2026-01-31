@@ -59,6 +59,8 @@ const EquityPartnerTab = ({ scenarioData, fullCalcs, onEditData }) => {
       lpSharePct: ov.lpSharePct ?? 90.0,
       gpSharePct: ov.gpSharePct ?? (100 - (ov.lpSharePct ?? 90.0)),
       prefReturnPct: ov.prefReturnPct ?? ((u.pref_return_pct != null) ? u.pref_return_pct : 8.0),
+      paybackMode: ov.paybackMode ?? 'pref_plus_capital', // 'pref_plus_capital' | 'multiple'
+      equityMultiple: ov.equityMultiple ?? 1.5,
       preSplitLP: ov.preSplitLP ?? ((u.pre_pref_lp_split != null) ? u.pre_pref_lp_split : 70.0),
       preSplitGP: ov.preSplitGP ?? ((u.pre_pref_gp_split != null) ? u.pre_pref_gp_split : 30.0),
       postSplitLP: ov.postSplitLP ?? ((u.post_pref_lp_split != null) ? u.post_pref_lp_split : 70.0),
@@ -99,14 +101,27 @@ const EquityPartnerTab = ({ scenarioData, fullCalcs, onEditData }) => {
     const loanPayoff = inputs.loanAmount || 0;
     const netSaleProceeds = Math.max((grossSale || 0) - sellingCosts - loanPayoff, 0);
 
-    const lpPrefAnnual = Math.round(lpEquity * ((inputs.prefReturnPct > 1 ? inputs.prefReturnPct/100 : inputs.prefReturnPct)));
-    const lpDist = (inputs.distByYear || []).map(y => Math.max(Math.min(y || 0, lpPrefAnnual), 0));
-    const gpDist = (inputs.distByYear || []).map((y, i) => Math.max((y || 0) - (lpDist[i] || 0), 0) * (inputs.postSplitLP < 100 ? (100-inputs.postSplitLP)/100 : 0));
+    const prefRateDec = (inputs.prefReturnPct > 1 ? inputs.prefReturnPct/100 : inputs.prefReturnPct) || 0;
+    const targetLPReturn = inputs.paybackMode === 'multiple'
+      ? Math.max(lpEquity * (inputs.equityMultiple || 1), 0)
+      : Math.max(lpEquity + (lpEquity * prefRateDec * (inputs.holdYears || 0)), 0);
 
-    const lpExitProceeds = Math.round((netSaleProceeds || 0) * ((inputs.postSplitLP || 0)/100));
+    let remainingTarget = targetLPReturn;
+    const lpDist = (inputs.distByYear || []).map(y => {
+      const cash = Math.max(y || 0, 0);
+      const alloc = Math.min(cash, Math.max(remainingTarget, 0));
+      remainingTarget -= alloc;
+      return alloc;
+    });
+    const gpDist = (inputs.distByYear || []).map((y, i) => {
+      const cash = Math.max(y || 0, 0);
+      return Math.max(cash - (lpDist[i] || 0), 0);
+    });
+
+    const lpExitProceeds = Math.min(Math.max(remainingTarget, 0), Math.max(netSaleProceeds || 0, 0));
 
     const lpTotalDists = (lpDist.reduce((s,x)=>s+(x||0),0)) + (lpExitProceeds || 0);
-    const gpTotalDists = (gpDist.reduce((s,x)=>s+(x||0),0)) + ((netSaleProceeds || 0) - (lpExitProceeds || 0));
+    const gpTotalDists = (gpDist.reduce((s,x)=>s+(x||0),0)) + Math.max((netSaleProceeds || 0) - (lpExitProceeds || 0), 0);
 
     const downPayment = Math.max((inputs.purchasePrice || 0) - (inputs.loanAmount || 0), 0);
     const downPaymentPct = (inputs.purchasePrice || 0) > 0 ? (downPayment / (inputs.purchasePrice || 1)) * 100 : 0;
@@ -124,11 +139,12 @@ const EquityPartnerTab = ({ scenarioData, fullCalcs, onEditData }) => {
       lpEquity, gpEquity, lpSharePct: inputs.lpSharePct, gpSharePct: (inputs.gpSharePct != null ? inputs.gpSharePct : gpShare*100),
       prefReturnPct: inputs.prefReturnPct, preSplitLP: inputs.preSplitLP, preSplitGP: inputs.preSplitGP, postSplitLP: inputs.postSplitLP, gpPromote: inputs.gpPromote,
       exitCap: inputs.exitCap, holdYears: inputs.holdYears, grossSale, sellingCosts, loanPayoff, netSaleProceeds,
-      distCashY: (inputs.distByYear?.[0]) || 0, lpPrefAnnual, lpDist, gpDist, lpExitProceeds,
+      distCashY: (inputs.distByYear?.[0]) || 0, lpPrefAnnual: Math.round(lpEquity * prefRateDec), lpDist, gpDist, lpExitProceeds,
       lpTotalDists, gpTotalDists,
       sellCostsPct: inputs.sellCostsPct,
       downPayment, downPaymentPct, epContribution, epContributionPct,
       forwardNoiExit: exitNoiBase,
+      targetLPReturn,
     };
   }, [inputs, fcYr1, fcRet, scenarioData]);
   const onChangeShare = (field, value) => {
@@ -233,17 +249,16 @@ const EquityPartnerTab = ({ scenarioData, fullCalcs, onEditData }) => {
         <div>
           <div style={sectionHeader}>Waterfall Structure</div>
           <table style={table}><tbody>
-            <Row label="Preferred Return (Pref)" value={state.prefReturnPct} fmt='percent' editable onValueChange={(v)=>onChange('prefReturnPct', v)} />
+            <Row label="Payback Mode (LP First)" value={inputs.paybackMode} fmt='number' editable onValueChange={(v)=>onChange('paybackMode', v)} />
+            {inputs.paybackMode === 'multiple' ? (
+              <Row label="Equity Multiple (LP)" value={inputs.equityMultiple} fmt='number' editable onValueChange={(v)=>onChange('equityMultiple', v)} />
+            ) : (
+              <Row label="Preferred Return (Pref)" value={state.prefReturnPct} fmt='percent' editable onValueChange={(v)=>onChange('prefReturnPct', v)} />
+            )}
           </tbody></table>
-          <div style={subHeader}>Pre-Pref Splits:</div>
+          <div style={{ ...subHeader, backgroundColor: '#4c1d95' }}>LP Payback Target</div>
           <table style={table}><tbody>
-            <Row label="LP Share" value={state.preSplitLP} fmt='percent' editable onValueChange={(v)=>onChange('preSplitLP', v)} />
-            <Row label="GP Share" value={state.preSplitGP} fmt='percent' editable onValueChange={(v)=>onChange('preSplitGP', v)} />
-          </tbody></table>
-          <div style={subHeader}>Post-Pref Splits:</div>
-          <table style={table}><tbody>
-            <Row label="LP Share" value={state.postSplitLP} fmt='percent' editable onValueChange={(v)=>onChange('postSplitLP', v)} />
-            <Row label="GP Promote" value={state.gpPromote} fmt='percent' editable onValueChange={(v)=>onChange('gpPromote', v)} />
+            <Row label="Target LP Return" value={state.targetLPReturn} fmt='currency' />
           </tbody></table>
         </div>
       </div>
