@@ -249,7 +249,19 @@ const EquityPartnerTab = ({ scenarioData, fullCalcs, onEditData }) => {
         <div>
           <div style={sectionHeader}>Waterfall Structure</div>
           <table style={table}><tbody>
-            <Row label="Payback Mode (LP First)" value={inputs.paybackMode} fmt='number' editable onValueChange={(v)=>onChange('paybackMode', v)} />
+            <tr>
+              <td style={{ ...labelCell, fontWeight: '700' }}>Payback Mode (LP First)</td>
+              <td style={{ ...valueCell }}>
+                <select
+                  value={inputs.paybackMode}
+                  onChange={(e)=>onChange('paybackMode', e.target.value)}
+                  style={{ padding: 6 }}
+                >
+                  <option value="pref_plus_capital">Pref + Capital</option>
+                  <option value="multiple">Equity Multiple</option>
+                </select>
+              </td>
+            </tr>
             {inputs.paybackMode === 'multiple' ? (
               <Row label="Equity Multiple (LP)" value={inputs.equityMultiple} fmt='number' editable onValueChange={(v)=>onChange('equityMultiple', v)} />
             ) : (
