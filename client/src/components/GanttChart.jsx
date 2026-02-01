@@ -122,57 +122,6 @@ const DealExecutionTab = ({ scenarioData }) => {
         }
       },
       {
-        name: 'Hybrid (SubTo + Seller Carry)',
-        ...(() => {
-          const subtoLoan = purchasePrice * 0.55;
-          const sellerCarry = purchasePrice * 0.25;
-          const cashDown = purchasePrice * 0.20;
-          const subtoMonthly = calcMonthlyPayment(subtoLoan, 4.5, 300);
-          const sellerMonthly = sellerCarry * 0.05 / 12;
-          const totalMonthly = subtoMonthly + sellerMonthly;
-          const annualDebtService = totalMonthly * 12;
-          const annualCashflow = noi - annualDebtService;
-          const dscr = annualDebtService > 0 ? noi / annualDebtService : 0;
-          const cashOnCash = cashDown > 0 ? annualCashflow / cashDown : 0;
-          return { 
-            loanAmount: subtoLoan + sellerCarry, 
-            cashRequired: cashDown, 
-            monthlyPayment: totalMonthly, 
-            annualCashflow, 
-            dscr, 
-            cashOnCash, 
-            interestRate: 4.75,
-            equityData: { subtoLoan, sellerCarry }
-          };
-        })(),
-        docs: ['Existing Loan Docs', 'Seller Carryback Note (2nd)', '2nd Deed of Trust', 'Intercreditor Agreement', 'Authorization Forms', 'Insurance Certificates'],
-        debtStructure: ['1st: Existing SubTo Loan 55%', '2nd: Seller Carryback 25%', 'Blended rate 4.75%', 'Layered debt structure'],
-        cashflowSteps: ['Gross Rental Income', '- Operating Expenses', '= NOI', '- 1st Position (SubTo)', '- 2nd Position (Seller)', '= Cash Flow'],
-        orgChart: { 
-          type: 'hybrid',
-          levels: [
-            { 
-              title: 'Buyer/Operator', 
-              amount: purchasePrice * 0.20,
-              items: ['20% Cash Down', 'Active Manager'],
-              color: '#6366f1'
-            },
-            { 
-              title: '1st Position: Existing Lender', 
-              amount: purchasePrice * 0.55,
-              items: ['55% SubTo @ 4.5%', 'Senior Position', '~25 years remaining'],
-              color: '#f59e0b'
-            },
-            { 
-              title: '2nd Position: Seller Note', 
-              amount: purchasePrice * 0.25,
-              items: ['25% Carryback @ 5.0%', 'Junior Position', 'Interest-Only'],
-              color: '#ec4899'
-            }
-          ]
-        }
-      },
-      {
         name: 'Equity Partner',
         ...(() => {
           const seniorDebt = purchasePrice * 0.75;
