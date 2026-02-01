@@ -107,240 +107,113 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
           </div>
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-              gap: '16px 32px',
+              overflowX: 'auto'
             }}
           >
-            <div
-              style={{
-                padding: '4px 0 12px',
-                borderBottom: '1px solid #e5e7eb',
-              }}
-            >
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '12px',
-                  fontWeight: '700',
-                  color: '#6b7280',
-                  marginBottom: '8px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                }}
-              >
-                Property Taxes
-              </label>
-              <input
-                type="number"
-                value={expenses.taxes || 0}
-                onChange={(e) =>
-                  handleChange('expenses.taxes', parseFloat(e.target.value) || 0)
-                }
-                style={{
-                  width: '100%',
-                  padding: '12px 14px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  backgroundColor: 'white',
-                  color: '#111827',
-                }}
-              />
-            </div>
+            {(() => {
+              const annualGPR = (((scenarioData && scenarioData.pnl?.gross_potential_rent) || 0));
+              const rows = [
+                ['taxes', 'Property Taxes'],
+                ['insurance', 'Insurance'],
+                ['utilities', 'Total Utilities'],
+                ['repairs_maintenance', 'Repairs & Maintenance'],
+                ['management', 'Property Management'],
+                ['admin', 'Admin'],
+                ['marketing', 'Marketing'],
+                ['other', 'Other']
+              ];
+              return (
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
+                      <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Item</th>
+                      <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151' }}>Annual Amount</th>
+                      <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#6b7280' }}>Monthly</th>
+                      <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#6b7280' }}>% of GRI</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map(([key, label]) => {
+                      const val = (key === 'utilities') ? totalUtilities : (expenses[key] || 0);
+                      const monthly = val / 12;
+                      const pctOfGri = annualGPR > 0 ? (val / annualGPR) * 100 : 0;
+                      return (
+                        <tr key={key} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                          <td style={{ padding: '12px', fontWeight: '600', color: '#374151' }}>{label}</td>
+                          <td style={{ padding: '12px', textAlign: 'right' }}>
+                            <input
+                              type="number"
+                              value={val || 0}
+                              onChange={(e) => handleChange(`expenses.${key}`, parseFloat(e.target.value) || 0)}
+                              style={{
+                                width: '160px',
+                                padding: '8px 10px',
+                                border: '1px solid #d1d5db',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                backgroundColor: 'white',
+                                color: '#111827',
+                                textAlign: 'right'
+                              }}
+                            />
+                          </td>
+                          <td style={{ padding: '12px', textAlign: 'right', color: '#374151', fontWeight: '600' }}>${Number(monthly || 0).toLocaleString()}</td>
+                          <td style={{ padding: '12px', textAlign: 'right', color: '#6b7280' }}>{pct(pctOfGri || 0)}</td>
+                        </tr>
+                      );
+                    })}
+                    {/* Totals Row */}
+                    <tr style={{ backgroundColor: '#f3f4f6', borderTop: '2px solid #e5e7eb' }}>
+                      <td style={{ padding: '12px', fontWeight: '700', color: '#111827' }}>Total Operating Expenses</td>
+                      {(() => {
+                        const total =
+                          (expenses.taxes || 0) +
+                          (expenses.insurance || 0) +
+                          (expenses.utilities || 0) +
+                          (expenses.repairs_maintenance || 0) +
+                          (expenses.management || 0) +
+                          (expenses.admin || 0) +
+                          (expenses.marketing || 0) +
+                          (expenses.other || 0);
+                        const monthlyTotal = total / 12;
+                        const pctTotal = annualGPR > 0 ? (total / annualGPR) * 100 : 0;
+                        return (
+                          <>
+                            <td style={{ padding: '12px', textAlign: 'right', fontWeight: '800', color: '#111827' }}>${Number(total).toLocaleString()}</td>
+                            <td style={{ padding: '12px', textAlign: 'right', fontWeight: '700', color: '#374151' }}>${Number(monthlyTotal).toLocaleString()}</td>
+                            <td style={{ padding: '12px', textAlign: 'right', fontWeight: '700', color: '#374151' }}>{pct(pctTotal || 0)}</td>
+                          </>
+                        );
+                      })()}
+                    </tr>
+                  </tbody>
+                </table>
+              );
+            })()}
+          </div>
+        </div>
 
-            <div
-              style={{
-                padding: '4px 0 12px',
-                borderBottom: '1px solid #e5e7eb',
-              }}
-            >
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '12px',
-                  fontWeight: '700',
-                  color: '#6b7280',
-                  marginBottom: '8px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                }}
-              >
-                Insurance
-              </label>
-              <input
-                type="number"
-                value={expenses.insurance || 0}
-                onChange={(e) =>
-                  handleChange('expenses.insurance', parseFloat(e.target.value) || 0)
-                }
-                style={{
-                  width: '100%',
-                  padding: '12px 14px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  backgroundColor: 'white',
-                  color: '#111827',
-                }}
-              />
-            </div>
-
-            <div
-              style={{
-                padding: '4px 0 12px',
-                borderBottom: '1px solid #e5e7eb',
-              }}
-            >
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '12px',
-                  fontWeight: '700',
-                  color: '#6b7280',
-                  marginBottom: '8px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                }}
-              >
-                Total Utilities
-              </label>
-              <input
-                type="number"
-                value={totalUtilities}
-                onChange={(e) =>
-                  handleChange('expenses.utilities', parseFloat(e.target.value) || 0)
-                }
-                style={{
-                  width: '100%',
-                  padding: '12px 14px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  backgroundColor: 'white',
-                  color: '#111827',
-                }}
-              />
-            </div>
-
-            <div
-              style={{
-                padding: '4px 0 12px',
-                borderBottom: '1px solid #e5e7eb',
-              }}
-            >
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '12px',
-                  fontWeight: '700',
-                  color: '#6b7280',
-                  marginBottom: '8px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                }}
-              >
-                Repairs &amp; Maintenance
-              </label>
-              <input
-                type="number"
-                value={expenses.repairs_maintenance || 0}
-                onChange={(e) =>
-                  handleChange(
-                    'expenses.repairs_maintenance',
-                    parseFloat(e.target.value) || 0,
-                  )
-                }
-                style={{
-                  width: '100%',
-                  padding: '12px 14px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  backgroundColor: 'white',
-                  color: '#111827',
-                }}
-              />
-            </div>
-
-            <div
-              style={{
-                padding: '4px 0 12px',
-                borderBottom: '1px solid #e5e7eb',
-              }}
-            >
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '12px',
-                  fontWeight: '700',
-                  color: '#6b7280',
-                  marginBottom: '8px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                }}
-              >
-                Property Management
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="100000"
-                step="100"
-                value={expenses.management || 0}
-                onChange={(e) =>
-                  handleChange('expenses.management', parseFloat(e.target.value) || 0)
-                }
-                style={{
-                  width: '100%',
-                  height: '8px',
-                  borderRadius: '4px',
-                  background:
-                    'linear-gradient(to right, #10b981 0%, #3b82f6 100%)',
-                  outline: 'none',
-                  WebkitAppearance: 'none',
-                  appearance: 'none',
-                }}
-              />
-              <div
-                style={{
-                  fontSize: '11px',
-                  color: '#6b7280',
-                  textAlign: 'center',
-                  marginTop: '6px',
-                  fontWeight: '600',
-                }}
-              >
-                ${(expenses.management || 0).toLocaleString()}/month (
-                {(((expenses.management || 0) /
-                  ((((scenarioData && scenarioData.pnl?.gross_potential_rent) || 0) / 12) || 1)) *
-                  100
-                ).toFixed(1)}
-                % of GRI)
-              </div>
-            </div>
-
-            <div
-              style={{
-                padding: '4px 0 12px',
-                borderBottom: '1px solid #e5e7eb',
-              }}
-            >
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '12px',
-                  fontWeight: '700',
-                  color: '#6b7280',
-                  marginBottom: '8px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                }}
-              >
+        {/* Vacancy & CapEx (not included in OpEx total) */}
+        <div
+          style={{
+            marginBottom: '24px',
+            padding: '20px',
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+          }}
+        >
+          <div style={{ marginBottom: '12px' }}>
+            <h4 style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: '#111827', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Vacancy & CapEx
+            </h4>
+            <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#6b7280' }}>Displayed for context; excluded from operating expense total.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px 24px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Vacancy
               </label>
               <input
@@ -349,55 +222,25 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                 max="50000"
                 step="100"
                 value={expenses.vacancy || 0}
-                onChange={(e) =>
-                  handleChange('expenses.vacancy', parseFloat(e.target.value) || 0)
-                }
+                onChange={(e) => handleChange('expenses.vacancy', parseFloat(e.target.value) || 0)}
                 style={{
                   width: '100%',
                   height: '8px',
                   borderRadius: '4px',
-                  background:
-                    'linear-gradient(to right, #ef4444 0%, #f59e0b 100%)',
+                  background: 'linear-gradient(to right, #ef4444 0%, #f59e0b 100%)',
                   outline: 'none',
                   WebkitAppearance: 'none',
                   appearance: 'none',
                 }}
               />
-              <div
-                style={{
-                  fontSize: '11px',
-                  color: '#6b7280',
-                  textAlign: 'center',
-                  marginTop: '6px',
-                  fontWeight: '600',
-                }}
-              >
+              <div style={{ fontSize: '11px', color: '#6b7280', textAlign: 'center', marginTop: '6px', fontWeight: '600' }}>
                 ${(expenses.vacancy || 0).toLocaleString()}/month (
-                {(((expenses.vacancy || 0) /
-                  ((((scenarioData && scenarioData.pnl?.gross_potential_rent) || 0) / 12) || 1)) *
-                  100
-                ).toFixed(1)}
+                {(((expenses.vacancy || 0) / ((((scenarioData && scenarioData.pnl?.gross_potential_rent) || 0) / 12) || 1)) * 100).toFixed(1)}
                 % of GRI)
               </div>
             </div>
-
-            <div
-              style={{
-                padding: '4px 0 12px',
-                borderBottom: '1px solid #e5e7eb',
-              }}
-            >
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '12px',
-                  fontWeight: '700',
-                  color: '#6b7280',
-                  marginBottom: '8px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                }}
-              >
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Cap Ex
               </label>
               <input
@@ -406,150 +249,22 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                 max="100000"
                 step="500"
                 value={expenses.capex || 0}
-                onChange={(e) =>
-                  handleChange('expenses.capex', parseFloat(e.target.value) || 0)
-                }
+                onChange={(e) => handleChange('expenses.capex', parseFloat(e.target.value) || 0)}
                 style={{
                   width: '100%',
                   height: '8px',
                   borderRadius: '4px',
-                  background:
-                    'linear-gradient(to right, #8b5cf6 0%, #ec4899 100%)',
+                  background: 'linear-gradient(to right, #8b5cf6 0%, #ec4899 100%)',
                   outline: 'none',
                   WebkitAppearance: 'none',
                   appearance: 'none',
                 }}
               />
-              <div
-                style={{
-                  fontSize: '11px',
-                  color: '#6b7280',
-                  textAlign: 'center',
-                  marginTop: '6px',
-                  fontWeight: '600',
-                }}
-              >
+              <div style={{ fontSize: '11px', color: '#6b7280', textAlign: 'center', marginTop: '6px', fontWeight: '600' }}>
                 ${(expenses.capex || 0).toLocaleString()}/month (
-                {(((expenses.capex || 0) /
-                  ((((scenarioData && scenarioData.pnl?.gross_potential_rent) || 0) / 12) || 1)) *
-                  100
-                ).toFixed(1)}
+                {(((expenses.capex || 0) / ((((scenarioData && scenarioData.pnl?.gross_potential_rent) || 0) / 12) || 1)) * 100).toFixed(1)}
                 % of GRI)
               </div>
-            </div>
-
-            <div
-              style={{
-                padding: '4px 0 12px',
-                borderBottom: '1px solid #e5e7eb',
-              }}
-            >
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '12px',
-                  fontWeight: '700',
-                  color: '#6b7280',
-                  marginBottom: '8px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                }}
-              >
-                Admin
-              </label>
-              <input
-                type="number"
-                value={expenses.admin || 0}
-                onChange={(e) =>
-                  handleChange('expenses.admin', parseFloat(e.target.value) || 0)
-                }
-                style={{
-                  width: '100%',
-                  padding: '12px 14px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  backgroundColor: 'white',
-                  color: '#111827',
-                }}
-              />
-            </div>
-
-            <div
-              style={{
-                padding: '4px 0 12px',
-                borderBottom: '1px solid #e5e7eb',
-              }}
-            >
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '12px',
-                  fontWeight: '700',
-                  color: '#6b7280',
-                  marginBottom: '8px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                }}
-              >
-                Marketing
-              </label>
-              <input
-                type="number"
-                value={expenses.marketing || 0}
-                onChange={(e) =>
-                  handleChange('expenses.marketing', parseFloat(e.target.value) || 0)
-                }
-                style={{
-                  width: '100%',
-                  padding: '12px 14px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  backgroundColor: 'white',
-                  color: '#111827',
-                }}
-              />
-            </div>
-
-            <div
-              style={{
-                padding: '4px 0 12px',
-                borderBottom: '1px solid #e5e7eb',
-              }}
-            >
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '12px',
-                  fontWeight: '700',
-                  color: '#6b7280',
-                  marginBottom: '8px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                }}
-              >
-                Other
-              </label>
-              <input
-                type="number"
-                value={expenses.other || 0}
-                onChange={(e) =>
-                  handleChange('expenses.other', parseFloat(e.target.value) || 0)
-                }
-                style={{
-                  width: '100%',
-                  padding: '12px 14px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  backgroundColor: 'white',
-                  color: '#111827',
-                }}
-              />
             </div>
           </div>
         </div>
