@@ -1797,78 +1797,7 @@ const PropertySpreadsheet = ({ initialData }) => {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
           {/* Left Column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {/* SUBJECT-TO EXISTING MORTGAGE */}
-            <div>
-              <div style={{ ...styles.sectionHeader, backgroundColor: '#2563EB', fontSize: '10px', padding: '4px 8px' }}>SUBJECT-TO EXISTING MORTGAGE</div>
-              <table style={styles.table}>
-                <tbody>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell, width: '180px' }}>Current Balance</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      <input
-                        type="number"
-                        style={styles.input}
-                        value={data.financing.subjectTo.balance || ''}
-                        onChange={(e) => setData({
-                          ...data,
-                          financing: {
-                            ...data.financing,
-                            subjectTo: { ...data.financing.subjectTo, balance: parseFloat(e.target.value) || 0 }
-                          }
-                        })}
-                      />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>Interest Rate</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      <input
-                        type="number"
-                        style={styles.input}
-                        step="0.001"
-                        value={data.financing.subjectTo.interestRate || ''}
-                        onChange={(e) => setData({
-                          ...data,
-                          financing: {
-                            ...data.financing,
-                            subjectTo: { ...data.financing.subjectTo, interestRate: parseFloat(e.target.value) || 0 }
-                          }
-                        })}
-                      />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>Remaining Term (Months)</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      <input
-                        type="number"
-                        style={styles.input}
-                        value={data.financing.subjectTo.remainingTermMonths || ''}
-                        onChange={(e) => setData({
-                          ...data,
-                          financing: {
-                            ...data.financing,
-                            subjectTo: { ...data.financing.subjectTo, remainingTermMonths: parseFloat(e.target.value) || 0 }
-                          }
-                        })}
-                      />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>Monthly P&I</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      {calc.formatCurrency(financingMetrics.subjectTo.monthlyPI)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>Annual Debt Service</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      {calc.formatCurrency(financingMetrics.subjectTo.annualDS)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            {/* Subject To section removed */}
 
             {/* SELLER FINANCING (1ST POSITION) */}
             <div>
@@ -2257,14 +2186,7 @@ const PropertySpreadsheet = ({ initialData }) => {
                 </td>
               ))}
             </tr>
-            <tr>
-              <td style={{ ...styles.tableCell, ...styles.labelCell }}>(-) Subject-To Debt Service</td>
-              {cashFlowProjections.map((proj, i) => (
-                <td key={i} style={{ ...styles.tableCell, ...styles.inputCell }}>
-                  {calc.formatCurrency(proj.subjectToDS)}
-                </td>
-              ))}
-            </tr>
+            {/* Subject-To Debt Service row removed */}
             <tr>
               <td style={{ ...styles.tableCell, ...styles.labelCell }}>(-) Seller Financing DS</td>
               {cashFlowProjections.map((proj, i) => (

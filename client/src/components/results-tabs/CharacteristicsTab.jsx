@@ -181,10 +181,8 @@ export default function CharacteristicsTab(props) {
               <label style={labelStyle}>Financing Type *</label>
               <select style={selectStyle} value={pricing_financing?.financing_type || financing.financing_type || 'traditional'} onChange={(e) => onEditData && onEditData('pricing_financing.financing_type', e.target.value)}>
                 <option value="traditional">Traditional</option>
-                <option value="subject_to">Subject To</option>
                 <option value="seller_carry">Seller Carry</option>
                 <option value="creative">Creative</option>
-                <option value="hybrid">Hybrid</option>
                 <option value="jv">JV</option>
                 <option value="equity_partner">Equity Partner</option>
               </select>

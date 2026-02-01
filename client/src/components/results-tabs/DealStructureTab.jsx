@@ -477,7 +477,7 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
   const [error, setError] = useState(null);
   const [allStructures, setAllStructures] = useState(null);
 
-  const subjectToAvailable = scenarioData?.deal_setup?.subject_to_available !== false;
+  // Subject To availability removed
   
   // Extract key data - USE FULLCALCS AS PRIMARY SOURCE FOR CONSISTENCY
   const purchasePrice = scenarioData?.pricing_financing?.price || scenarioData?.pricing_financing?.purchase_price || 0;
@@ -638,9 +638,7 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
         cashOnCash: s.cashOutOfPocket > 0 ? (s.cashflow / s.cashOutOfPocket) * 100 : 0
       }));
 
-      const comparisonForAI = subjectToAvailable
-        ? structureComparison
-        : structureComparison.filter(s => s.key !== 'subject-to' && s.key !== 'hybrid');
+      const comparisonForAI = structureComparison;
       
       // Build comprehensive deal data for LLM
       const dealData = {
@@ -677,30 +675,7 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
       
       const data = await response.json();
 
-      // Post-process recommendation: if Subject To / Hybrid are disabled,
-      // never allow them to be the final pick.
-      if (data.recommendation) {
-        let recKey = data.recommendation.recommendedStructure;
-
-        if (!subjectToAvailable && (recKey === 'subject-to' || recKey === 'hybrid')) {
-          const allowed = structureComparison.filter(s => s.key !== 'subject-to' && s.key !== 'hybrid');
-          if (allowed.length > 0) {
-            const ranked = [...allowed].sort((a, b) => {
-              const scoreA = (a.dscr >= 1.2 ? 100 : 0) + a.cashOnCash;
-              const scoreB = (b.dscr >= 1.2 ? 100 : 0) + b.cashOnCash;
-              return scoreB - scoreA;
-            });
-            recKey = ranked[0].key;
-            data.recommendation = {
-              ...data.recommendation,
-              recommendedStructure: recKey,
-              summary:
-                (data.recommendation.summary || '') +
-                '\n\nNote: Subject To / Hybrid were disabled for this deal, so the assistant recommended the strongest alternative structure instead.'
-            };
-          }
-        }
-      }
+      // No Subject To / Hybrid post-processing needed
 
       setAiRecommendation(data.recommendation);
       
@@ -710,8 +685,6 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
         const structureNames = {
           'traditional': 'Traditional Financing',
           'seller-finance': 'Seller Financing',
-          'subject-to': 'Subject To',
-          'hybrid': 'Hybrid (SubTo + Seller Carry)',
           'equity-partner': 'Equity Partner',
           'seller-carry': 'Seller Carry (Bank + Seller 2nd)',
           'lease-option': 'Lease Option'

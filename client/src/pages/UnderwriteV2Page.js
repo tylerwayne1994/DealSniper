@@ -687,8 +687,6 @@ function UnderwriteV2Page() {
       const debtStructureDefaults = {
         'traditional': { ltv: 75, interest_rate: 6.5, loan_term_years: 10, amortization_years: 30, io_years: 0 },
         'seller-finance': { ltv: 80, interest_rate: 6.0, loan_term_years: 5, amortization_years: 20, io_years: 0 },
-        'subject-to': { ltv: 0, interest_rate: 0, loan_term_years: 0, amortization_years: 30, io_years: 0, original_loan_amount: 0, monthly_payment: 0, remaining_payments: 0 },
-        'hybrid': { ltv: 75, interest_rate: 6.5, loan_term_years: 10, amortization_years: 30, io_years: 0, original_loan_amount: 0, monthly_payment: 0, remaining_payments: 0 },
         'equity-partner': { ltv: 75, interest_rate: 6.5, loan_term_years: 10, amortization_years: 30, io_years: 0, partner_down_payment_pct: 100, partner_closing_costs_pct: 100, your_equity_pct: 5 },
         'seller-carry': { ltv: 75, interest_rate: 6.5, loan_term_years: 10, amortization_years: 30, io_years: 0, seller_carry_pct: 15, seller_carry_rate: 5.0, seller_carry_term_months: 60, seller_carry_io: true }
       };
@@ -1037,25 +1035,11 @@ function UnderwriteV2Page() {
       totalMonthlyDebt = monthlyPayment;
       totalAnnualDebt = monthlyPayment * 12;
       
-    } else if (structure === 'subject-to') {
-      // Subject To: Use seller's existing payment
-      totalMonthlyDebt = fin.monthly_payment || 0;
-      totalAnnualDebt = totalMonthlyDebt * 12;
-      primaryLoanAmount = fin.current_loan_balance || 0;
-      downPaymentAmount = fin.cash_to_seller || 0;
-      
-    } else if (structure === 'hybrid') {
-      // Hybrid: Subject To + New Loan
-      const subtoMonthly = fin.subto_monthly_payment || 0;
-      const newLoanAmount = fin.new_loan_amount || 0;
-      const newLoanMonthly = calcMonthlyPayment(newLoanAmount, fin.interest_rate || 6.0, (fin.amortization_years || 30) * 12);
-      totalMonthlyDebt = subtoMonthly + newLoanMonthly;
-      totalAnnualDebt = totalMonthlyDebt * 12;
-      primaryLoanAmount = (fin.subto_loan_balance || 0) + newLoanAmount;
-      downPaymentAmount = purchasePrice - primaryLoanAmount;
-      
     } else if (structure === 'equity-partner') {
       // Equity Partner: Traditional loan + partner pref return
+      
+    } else if (structure === 'seller-carry') {
+      // Seller Carry: Primary Loan + Seller Note
       primaryLoanAmount = purchasePrice * (fin.ltv || 75) / 100;
       downPaymentAmount = purchasePrice - primaryLoanAmount;
       const partnerContribution = downPaymentAmount * (fin.partner_down_payment_pct || 100) / 100;
@@ -1068,32 +1052,6 @@ function UnderwriteV2Page() {
       transformedData.financing.partner_pref_annual = partnerPrefAnnual;
       transformedData.financing.your_cash_in = downPaymentAmount * (fin.your_equity_pct || 5) / 100;
       
-    } else if (structure === 'seller-carry') {
-      // Seller Carry: Primary Loan + Seller Note
-      primaryLoanAmount = purchasePrice * (fin.ltv || 75) / 100;
-      const sellerCarryAmount = purchasePrice * (fin.seller_carry_pct || 15) / 100;
-      const yourCashDown = purchasePrice - primaryLoanAmount - sellerCarryAmount;
-      downPaymentAmount = yourCashDown;
-      
-      const loanMonthly = calcMonthlyPayment(primaryLoanAmount, fin.interest_rate || 6.5, (fin.amortization_years || 30) * 12);
-      
-      // Seller carry payment
-      let sellerCarryMonthly = 0;
-      if (fin.seller_carry_io) {
-        // Interest only
-        sellerCarryMonthly = sellerCarryAmount * (fin.seller_carry_rate || 5) / 100 / 12;
-      } else {
-        sellerCarryMonthly = calcMonthlyPayment(sellerCarryAmount, fin.seller_carry_rate || 5, fin.seller_carry_term_months || 60);
-      }
-      
-      totalMonthlyDebt = loanMonthly + sellerCarryMonthly;
-      totalAnnualDebt = totalMonthlyDebt * 12;
-      
-      // Store seller carry details for results page
-      transformedData.financing.seller_carry_amount = sellerCarryAmount;
-      transformedData.financing.seller_carry_monthly = sellerCarryMonthly;
-      transformedData.financing.primary_loan_monthly = loanMonthly;
-      transformedData.financing.your_cash_down = yourCashDown;
     }
     
     // Update pricing_financing with calculated values for the calculation engine
@@ -2296,32 +2254,22 @@ function UnderwriteV2Page() {
               {/* Structure Type Indicator */}
               <div style={{ 
                 padding: 12, 
-                background: debtStructure === 'subject-to' ? '#fef3c7' : 
-                           debtStructure === 'equity-partner' ? '#dbeafe' : 
-                           debtStructure === 'seller-carry' ? '#f3e8ff' :
-                           debtStructure === 'hybrid' ? '#fce7f3' : '#f0fdf4',
+                background: debtStructure === 'equity-partner' ? '#dbeafe' : 
+                           debtStructure === 'seller-carry' ? '#f3e8ff' : '#f0fdf4',
                 borderRadius: 8, 
                 marginBottom: 20,
-                border: `1px solid ${debtStructure === 'subject-to' ? '#fcd34d' : 
-                                     debtStructure === 'equity-partner' ? '#93c5fd' : 
-                                     debtStructure === 'seller-carry' ? '#c4b5fd' :
-                                     debtStructure === 'hybrid' ? '#f9a8d4' : '#86efac'}`
+                border: `1px solid ${debtStructure === 'equity-partner' ? '#93c5fd' : 
+                                     debtStructure === 'seller-carry' ? '#c4b5fd' : '#86efac'}`
               }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: '#374151' }}>
                   Structure: {debtStructure === 'traditional' ? 'Traditional (Freddie/Fannie, Bank Loan)' :
                              debtStructure === 'seller-finance' ? 'Seller Finance' :
-                             debtStructure === 'subject-to' ? 'Subject To' :
-                             debtStructure === 'hybrid' ? 'Hybrid (Subject To + Traditional/Seller Finance)' :
                              debtStructure === 'equity-partner' ? 'Equity Partner' :
                              debtStructure === 'seller-carry' ? 'Seller Carry' : debtStructure}
                 </div>
                 <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
                   {debtStructure === 'traditional' || debtStructure === 'seller-finance' ? 
                     'Standard financing with purchase price, interest rate, term, amortization, and down payment.' :
-                   debtStructure === 'subject-to' ? 
-                    'Taking over existing loan. Enter the seller\'s current loan details.' :
-                   debtStructure === 'hybrid' ? 
-                    'Combining Subject To with additional financing (new loan or seller finance).' :
                    debtStructure === 'equity-partner' ? 
                     'Partner funding down payment and/or closing costs.' :
                    debtStructure === 'seller-carry' ? 
