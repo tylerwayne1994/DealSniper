@@ -106,6 +106,99 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
           ))}
         </div>
 
+        {/* Live Impact Preview (top, compact) */}
+        <div
+          style={{
+            borderRadius: '10px',
+            backgroundColor: 'white',
+            border: `1px solid ${COLORS.border}`,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+            marginBottom: '16px'
+          }}
+        >
+          <div
+            style={{
+              padding: '12px 16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              borderBottom: `1px solid ${COLORS.border}`,
+            }}
+          >
+            <span
+              style={{
+                fontSize: '12px',
+                fontWeight: '700',
+                color: COLORS.text,
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}
+            >
+              Live Impact Preview
+            </span>
+            <span
+              style={{
+                fontSize: '10px',
+                fontWeight: '500',
+                color: COLORS.gray,
+              }}
+            >
+              Updates as you edit
+            </span>
+          </div>
+          <div style={{ padding: '14px' }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                gap: '12px',
+              }}
+            >
+              {[
+                { label: 'NOI', value: fmt(fullCalcs?.year1?.noi || 0) },
+                { label: 'Cap Rate', value: pct(fullCalcs?.year1?.capRate || 0) },
+                { label: 'Cash Flow', value: fmt(fullCalcs?.year1?.cashFlow || 0), color: (fullCalcs?.year1?.cashFlow || 0) >= 0 ? COLORS.text : '#ef4444' },
+                { label: 'Cash-on-Cash', value: pct(fullCalcs?.year1?.cashOnCash || 0) },
+                { label: 'DSCR', value: (fullCalcs?.year1?.dscr != null && !Number.isNaN(fullCalcs?.year1?.dscr)) ? `${fullCalcs.year1.dscr.toFixed(2)}x` : 'N/A' },
+                { label: 'Expense Ratio', value: pct(fullCalcs?.year1?.expenseRatio || 0) }
+              ].map((m, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    padding: '12px',
+                    backgroundColor: 'white',
+                    borderRadius: '10px',
+                    textAlign: 'center',
+                    border: `1px solid ${COLORS.border}`,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      color: COLORS.gray,
+                      marginBottom: '4px',
+                      fontWeight: '700',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                    }}
+                  >
+                    {m.label}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '18px',
+                      fontWeight: '800',
+                      color: m.color || COLORS.text,
+                    }}
+                  >
+                    {m.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Main Expenses Section */}
         <div
           style={{
@@ -480,255 +573,6 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
           </div>
         </div>
 
-        {/* Live Impact Preview */}
-        <div
-          style={{
-            borderRadius: '12px',
-            backgroundColor: 'white',
-            border: '1px solid #e5e7eb',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
-          }}
-        >
-          <div
-            style={{
-              padding: '16px 20px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              borderBottom: '1px solid #e5e7eb',
-            }}
-          >
-            <span
-              style={{
-                fontSize: '14px',
-                fontWeight: '700',
-                color: '#111827',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}
-            >
-              Live Impact Preview
-            </span>
-            <span
-              style={{
-                fontSize: '11px',
-                fontWeight: '500',
-                color: '#6b7280',
-              }}
-            >
-              Updates as you edit
-            </span>
-          </div>
-          <div style={{ padding: '20px' }}>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                gap: '16px',
-              }}
-            >
-              <div
-                style={{
-                  padding: '20px',
-                  backgroundColor: 'white',
-                  borderRadius: '12px',
-                  textAlign: 'center',
-                  border: '1px solid #e5e7eb',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: '11px',
-                    color: '#6b7280',
-                    marginBottom: '6px',
-                    fontWeight: '700',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  NOI
-                </div>
-                <div
-                  style={{
-                    fontSize: '22px',
-                    fontWeight: '800',
-                    color: '#111827',
-                  }}
-                >
-                  {fmt(year1.noi || 0)}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  padding: '20px',
-                  backgroundColor: 'white',
-                  borderRadius: '12px',
-                  textAlign: 'center',
-                  border: '1px solid #e5e7eb',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: '11px',
-                    color: '#6b7280',
-                    marginBottom: '6px',
-                    fontWeight: '700',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  Cap Rate
-                </div>
-                <div
-                  style={{
-                    fontSize: '22px',
-                    fontWeight: '800',
-                    color: '#111827',
-                  }}
-                >
-                  {pct(year1.capRate || 0)}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  padding: '20px',
-                  backgroundColor: 'white',
-                  borderRadius: '12px',
-                  textAlign: 'center',
-                  border: '1px solid #e5e7eb',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: '11px',
-                    color: '#6b7280',
-                    marginBottom: '6px',
-                    fontWeight: '700',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  Cash Flow
-                </div>
-                <div
-                  style={{
-                    fontSize: '22px',
-                    fontWeight: '800',
-                    color: (year1.cashFlow || 0) >= 0 ? '#111827' : '#ef4444',
-                  }}
-                >
-                  {fmt(year1.cashFlow || 0)}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  padding: '20px',
-                  backgroundColor: 'white',
-                  borderRadius: '12px',
-                  textAlign: 'center',
-                  border: '1px solid #e5e7eb',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: '11px',
-                    color: '#6b7280',
-                    marginBottom: '6px',
-                    fontWeight: '700',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  Cash-on-Cash
-                </div>
-                <div
-                  style={{
-                    fontSize: '22px',
-                    fontWeight: '800',
-                    color: '#111827',
-                  }}
-                >
-                  {pct(year1.cashOnCash || 0)}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  padding: '20px',
-                  backgroundColor: 'white',
-                  borderRadius: '12px',
-                  textAlign: 'center',
-                  border: '1px solid #e5e7eb',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: '11px',
-                    color: '#6b7280',
-                    marginBottom: '6px',
-                    fontWeight: '700',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  DSCR
-                </div>
-                <div
-                  style={{
-                    fontSize: '22px',
-                    fontWeight: '800',
-                    color: '#111827',
-                  }}
-                >
-                  {year1.dscr != null && !Number.isNaN(year1.dscr)
-                    ? `${year1.dscr.toFixed(2)}x`
-                    : 'N/A'}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  padding: '20px',
-                  backgroundColor: 'white',
-                  borderRadius: '12px',
-                  textAlign: 'center',
-                  border: '1px solid #e5e7eb',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: '11px',
-                    color: '#6b7280',
-                    marginBottom: '6px',
-                    fontWeight: '700',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  Expense Ratio
-                </div>
-                <div
-                  style={{
-                    fontSize: '22px',
-                    fontWeight: '800',
-                    color: '#111827',
-                  }}
-                >
-                  {pct(year1.expenseRatio || 0)}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
