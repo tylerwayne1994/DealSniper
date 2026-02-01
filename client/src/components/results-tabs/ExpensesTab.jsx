@@ -3,6 +3,14 @@ import React from 'react';
 export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) {
   const expenses = (scenarioData && scenarioData.expenses) || {};
 
+  const COLORS = {
+    blue: '#2563eb',
+    blueDark: '#1d4ed8',
+    text: '#111827',
+    gray: '#6b7280',
+    border: '#e5e7eb'
+  };
+
   const fmt = (num) => {
     if (num === null || num === undefined || num === '') return 'N/A';
     const n = Number(num);
@@ -53,13 +61,13 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
     <div style={{ padding: '24px', backgroundColor: '#f9fafb', minHeight: '100vh' }}>
       <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <div style={{ 
               width: '32px', 
               height: '32px', 
               borderRadius: '50%', 
-              background: 'linear-gradient(135deg, #1e293b 0%, #0f766e 100%)', 
+              background: `linear-gradient(135deg, ${COLORS.blueDark} 0%, ${COLORS.blue} 100%)`, 
               color: 'white', 
               display: 'flex', 
               alignItems: 'center', 
@@ -69,14 +77,33 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
               marginRight: '12px'
             }}>EXP</div>
             <div>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: COLORS.text, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 OPERATING EXPENSES
               </h2>
-              <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}>
+              <p style={{ fontSize: '12px', color: COLORS.gray, margin: '4px 0 0' }}>
                 Editable line items and live impact preview
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Summary Metrics */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
+          {[
+            { label: 'Total OpEx', value: (() => {
+              const annualGPR = (((scenarioData && scenarioData.pnl?.gross_potential_rent) || 0));
+              const managementAmount = ((expenses.management_pct || 0) / 100) * annualGPR || (expenses.management || 0);
+              const total = (expenses.taxes||0)+(expenses.insurance||0)+(expenses.utilities||0)+(expenses.repairs_maintenance||0)+(managementAmount||0)+(expenses.admin||0)+(expenses.marketing||0)+(expenses.other||0);
+              return `$${Number(total).toLocaleString()}`;
+            })() },
+            { label: 'Expense Ratio', value: `${(fullCalcs?.year1?.expenseRatio ?? 0).toFixed(2)}%` },
+            { label: 'Utilities Total', value: `$${Number(expenses.utilities || 0).toLocaleString()}` }
+          ].map((m, idx) => (
+            <div key={idx} style={{ backgroundColor: 'white', border: `1px solid ${COLORS.border}`, borderRadius: '12px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: COLORS.gray, textTransform: 'uppercase' }}>{m.label}</div>
+              <div style={{ marginTop: '6px', fontSize: '20px', fontWeight: 800, color: COLORS.text }}>{m.value}</div>
+            </div>
+          ))}
         </div>
 
         {/* Main Expenses Section */}
@@ -98,18 +125,15 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
               alignItems: 'center'
             }}
           >
-            <h4
-              style={{
-                margin: '0',
-                fontSize: '14px',
-                fontWeight: '700',
-                color: '#111827',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}
-            >
-              Primary Expenses
-            </h4>
+            <div style={{
+              backgroundColor: COLORS.blue,
+              color: 'white',
+              padding: '10px 14px',
+              borderRadius: '8px',
+              fontWeight: 700,
+              letterSpacing: '0.5px',
+              textTransform: 'uppercase'
+            }}>Primary Expenses</div>
             <span style={{ fontSize: '12px', color: '#6b7280' }}>Annual amounts unless noted</span>
           </div>
           <div
@@ -133,14 +157,14 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
               ];
               const managementAmount = ((expenses.management_pct || 0) / 100) * annualGPR || (expenses.management || 0);
               return (
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: '12px' }}>
                   <thead>
-                    <tr style={{ backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
-                      <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Item</th>
-                      <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151' }}>Percent</th>
-                      <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151' }}>Annual Amount</th>
-                      <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#6b7280' }}>Monthly</th>
-                      <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#6b7280' }}>% of GRI</th>
+                    <tr style={{ backgroundColor: COLORS.blue, color: 'white', position: 'sticky', top: 0 }}>
+                      <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700 }}>Item</th>
+                      <th style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>Percent</th>
+                      <th style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>Annual Amount</th>
+                      <th style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>Monthly</th>
+                      <th style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>% of GRI</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -154,7 +178,7 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                       const monthly = val / 12;
                       const pctOfGri = annualGPR > 0 ? (val / annualGPR) * 100 : 0;
                       return (
-                        <tr key={key} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                        <tr key={key} style={{ borderBottom: `1px solid ${COLORS.border}`, backgroundColor: (['utilities','management','vacancy','capex'].includes(key) ? '#f9fafb' : 'white') }}>
                           <td style={{ padding: '12px', fontWeight: '600', color: '#374151' }}>{label}</td>
                           <td style={{ padding: '12px', textAlign: 'right' }}>
                             {type === 'percent' ? (
@@ -175,6 +199,8 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                                   textAlign: 'right'
                                 }}
                               />
+                              
+                              <span style={{ marginLeft: '6px', color: COLORS.gray, fontWeight: 700 }}>%</span>
                             ) : (
                               <span style={{ color: '#6b7280' }}>—</span>
                             )}
@@ -207,7 +233,7 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                       );
                     })}
                     {/* Totals Row */}
-                    <tr style={{ backgroundColor: '#f3f4f6', borderTop: '2px solid #e5e7eb' }}>
+                    <tr style={{ backgroundColor: '#eef2ff', borderTop: `2px solid ${COLORS.border}` }}>
                       <td style={{ padding: '12px', fontWeight: '700', color: '#111827' }}>Total Operating Expenses</td>
                       {(() => {
                         const total =
@@ -223,9 +249,9 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                         const pctTotal = annualGPR > 0 ? (total / annualGPR) * 100 : 0;
                         return (
                           <>
-                            <td style={{ padding: '12px', textAlign: 'right', fontWeight: '800', color: '#111827' }}>${Number(total).toLocaleString()}</td>
-                            <td style={{ padding: '12px', textAlign: 'right', fontWeight: '700', color: '#374151' }}>${Number(monthlyTotal).toLocaleString()}</td>
-                            <td style={{ padding: '12px', textAlign: 'right', fontWeight: '700', color: '#374151' }}>{pct(pctTotal || 0)}</td>
+                            <td style={{ padding: '12px', textAlign: 'right', fontWeight: 800, color: COLORS.text }}>${Number(total).toLocaleString()}</td>
+                            <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700, color: '#374151' }}>${Number(monthlyTotal).toLocaleString()}</td>
+                            <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700, color: '#374151' }}>{pct(pctTotal || 0)}</td>
                           </>
                         );
                       })()}
@@ -252,21 +278,19 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
             <div
               style={{
                 padding: '16px 20px 8px 20px',
-                borderBottom: '1px solid #e5e7eb',
+                borderBottom: `1px solid ${COLORS.border}`,
               }}
             >
-              <h4
-                style={{
-                  fontSize: '14px',
-                  fontWeight: '700',
-                  margin: 0,
-                  color: '#111827',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                }}
-              >
-                Utility Breakdown
-              </h4>
+              <div style={{
+                backgroundColor: COLORS.blue,
+                color: 'white',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                fontWeight: 700,
+                letterSpacing: '0.5px',
+                textTransform: 'uppercase',
+                display: 'inline-block'
+              }}>Utility Breakdown</div>
               <p
                 style={{
                   fontSize: '11px',
@@ -280,12 +304,12 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
               </p>
             </div>
             <div style={{ padding: '20px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+              <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: '12px' }}>
                 <thead>
-                  <tr style={{ backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
-                    <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#374151' }}>Utility</th>
-                    <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151' }}>Annual Amount</th>
-                    <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#6b7280' }}>Monthly</th>
+                  <tr style={{ backgroundColor: COLORS.blue, color: 'white' }}>
+                    <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700 }}>Utility</th>
+                    <th style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>Annual Amount</th>
+                    <th style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>Monthly</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -302,7 +326,7 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                     const val = defaultUtilities[key] || 0;
                     const monthly = val / 12;
                     return (
-                      <tr key={key} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                      <tr key={key} style={{ borderBottom: `1px solid ${COLORS.border}` }}>
                         <td style={{ padding: '12px', fontWeight: '600', color: '#374151' }}>{label}</td>
                         <td style={{ padding: '12px', textAlign: 'right' }}>
                           <input
@@ -342,7 +366,7 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                     );
                   })}
                   {/* Total Row */}
-                  <tr style={{ backgroundColor: '#f3f4f6', borderTop: '2px solid #e5e7eb' }}>
+                  <tr style={{ backgroundColor: '#eef2ff', borderTop: `2px solid ${COLORS.border}` }}>
                     <td style={{ padding: '12px', fontWeight: '700', color: '#111827' }}>Utility Breakdown Total</td>
                     <td style={{ padding: '12px', textAlign: 'right', fontWeight: '800', color: '#111827' }}>
                       ${(
