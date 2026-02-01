@@ -44,27 +44,57 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
 
   return (
     <div style={{ padding: '24px', backgroundColor: '#f9fafb', minHeight: '100vh' }}>
-      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        
+      <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ 
+              width: '32px', 
+              height: '32px', 
+              borderRadius: '50%', 
+              background: 'linear-gradient(135deg, #1e293b 0%, #0f766e 100%)', 
+              color: 'white', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              fontWeight: '700', 
+              fontSize: '16px',
+              marginRight: '12px'
+            }}>EXP</div>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                OPERATING EXPENSES
+              </h2>
+              <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}>
+                Editable line items and live impact preview
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Main Expenses Section */}
         <div
           style={{
             marginBottom: '24px',
-            padding: '32px',
+            padding: '28px',
             backgroundColor: 'white',
             borderRadius: '12px',
-            border: '2px solid #e5e7eb',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
           }}
         >
           <div
             style={{
-              marginBottom: '24px',
+              marginBottom: '16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
             }}
           >
             <h4
               style={{
                 margin: '0',
-                fontSize: '18px',
+                fontSize: '14px',
                 fontWeight: '700',
                 color: '#111827',
                 textTransform: 'uppercase',
@@ -73,6 +103,7 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
             >
               Primary Expenses
             </h4>
+            <span style={{ fontSize: '12px', color: '#6b7280' }}>Annual amounts unless noted</span>
           </div>
           <div
             style={{
@@ -528,9 +559,10 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
           <div
             style={{
               marginBottom: '24px',
-              borderRadius: '16px',
-              border: '2px solid #e5e7eb',
+              borderRadius: '12px',
+              border: '1px solid #e5e7eb',
               backgroundColor: 'white',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
             }}
           >
             <div
@@ -668,10 +700,11 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
         {/* Total Expenses */}
         <div
           style={{
-            borderRadius: '16px',
+            borderRadius: '12px',
             marginBottom: '24px',
-            border: '2px solid #e5e7eb',
+            border: '1px solid #e5e7eb',
             backgroundColor: 'white',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
           }}
         >
           <div
@@ -744,9 +777,10 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
         {/* Live Impact Preview */}
         <div
           style={{
-            borderRadius: '16px',
+            borderRadius: '12px',
             backgroundColor: 'white',
-            border: '2px solid #e5e7eb',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
           }}
         >
           <div
@@ -783,23 +817,24 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
                 gap: '16px',
               }}
             >
               <div
                 style={{
                   padding: '20px',
-                  backgroundColor: '#f8fafc',
+                  backgroundColor: 'white',
                   borderRadius: '12px',
                   textAlign: 'center',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid #e5e7eb',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
                 }}
               >
                 <div
                   style={{
                     fontSize: '11px',
-                    color: '#64748b',
+                    color: '#6b7280',
                     marginBottom: '6px',
                     fontWeight: '700',
                     textTransform: 'uppercase',
@@ -810,7 +845,7 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                 </div>
                 <div
                   style={{
-                    fontSize: '20px',
+                    fontSize: '22px',
                     fontWeight: '800',
                     color: '#111827',
                   }}
@@ -822,16 +857,17 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
               <div
                 style={{
                   padding: '20px',
-                  backgroundColor: '#f8fafc',
+                  backgroundColor: 'white',
                   borderRadius: '12px',
                   textAlign: 'center',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid #e5e7eb',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
                 }}
               >
                 <div
                   style={{
                     fontSize: '11px',
-                    color: '#64748b',
+                    color: '#6b7280',
                     marginBottom: '6px',
                     fontWeight: '700',
                     textTransform: 'uppercase',
@@ -842,7 +878,7 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                 </div>
                 <div
                   style={{
-                    fontSize: '20px',
+                    fontSize: '22px',
                     fontWeight: '800',
                     color: '#111827',
                   }}
@@ -854,16 +890,17 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
               <div
                 style={{
                   padding: '20px',
-                  backgroundColor: '#f8fafc',
+                  backgroundColor: 'white',
                   borderRadius: '12px',
                   textAlign: 'center',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid #e5e7eb',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
                 }}
               >
                 <div
                   style={{
                     fontSize: '11px',
-                    color: '#64748b',
+                    color: '#6b7280',
                     marginBottom: '6px',
                     fontWeight: '700',
                     textTransform: 'uppercase',
@@ -874,7 +911,7 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                 </div>
                 <div
                   style={{
-                    fontSize: '20px',
+                    fontSize: '22px',
                     fontWeight: '800',
                     color: (year1.cashFlow || 0) >= 0 ? '#111827' : '#ef4444',
                   }}
@@ -886,16 +923,17 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
               <div
                 style={{
                   padding: '20px',
-                  backgroundColor: '#f8fafc',
+                  backgroundColor: 'white',
                   borderRadius: '12px',
                   textAlign: 'center',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid #e5e7eb',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
                 }}
               >
                 <div
                   style={{
                     fontSize: '11px',
-                    color: '#64748b',
+                    color: '#6b7280',
                     marginBottom: '6px',
                     fontWeight: '700',
                     textTransform: 'uppercase',
@@ -906,7 +944,7 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                 </div>
                 <div
                   style={{
-                    fontSize: '20px',
+                    fontSize: '22px',
                     fontWeight: '800',
                     color: '#111827',
                   }}
@@ -918,16 +956,17 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
               <div
                 style={{
                   padding: '20px',
-                  backgroundColor: '#f8fafc',
+                  backgroundColor: 'white',
                   borderRadius: '12px',
                   textAlign: 'center',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid #e5e7eb',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
                 }}
               >
                 <div
                   style={{
                     fontSize: '11px',
-                    color: '#64748b',
+                    color: '#6b7280',
                     marginBottom: '6px',
                     fontWeight: '700',
                     textTransform: 'uppercase',
@@ -938,7 +977,7 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                 </div>
                 <div
                   style={{
-                    fontSize: '20px',
+                    fontSize: '22px',
                     fontWeight: '800',
                     color: '#111827',
                   }}
@@ -952,16 +991,17 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
               <div
                 style={{
                   padding: '20px',
-                  backgroundColor: '#f8fafc',
+                  backgroundColor: 'white',
                   borderRadius: '12px',
                   textAlign: 'center',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid #e5e7eb',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
                 }}
               >
                 <div
                   style={{
                     fontSize: '11px',
-                    color: '#64748b',
+                    color: '#6b7280',
                     marginBottom: '6px',
                     fontWeight: '700',
                     textTransform: 'uppercase',
@@ -972,7 +1012,7 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                 </div>
                 <div
                   style={{
-                    fontSize: '20px',
+                    fontSize: '22px',
                     fontWeight: '800',
                     color: '#111827',
                   }}
