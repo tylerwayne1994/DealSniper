@@ -651,8 +651,6 @@ const MaxAIUnderwritePage = () => {
                 >
                   <option value="traditional">Traditional (Freddie/Fannie, Bank Loan)</option>
                   <option value="seller-finance">Seller Finance</option>
-                  <option value="subject-to">Subject To</option>
-                  <option value="hybrid">Hybrid (Subject To + Traditional/Seller Finance)</option>
                   <option value="equity-partner">Equity Partner</option>
                   <option value="seller-carry">Seller Carry</option>
                   <option value="lease-option">Lease Option</option>

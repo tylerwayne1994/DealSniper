@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   DollarSign, Building, TrendingUp, Calculator, 
   Sparkles, AlertTriangle, CheckCircle, 
@@ -196,168 +196,7 @@ const calculateAllStructures = (purchasePrice, noi, financing, capRate) => {
     }
   };
   
-  // 3. SUBJECT TO (assume existing loan at 60% of value, 4.5% rate from years ago)
-  const subtoLoanBalance = purchasePrice * 0.60;
-  const subtoRate = 4.5;
-  const subtoMonthly = calcMonthlyPayment(subtoLoanBalance, subtoRate, 300); // ~25 yrs remaining
-  const subtoAnnualDebt = subtoMonthly * 12;
-  const subtoCashToSeller = purchasePrice * 0.10; // Equity pickup to seller
-  const subtoCashflow = noi - subtoAnnualDebt;
-  const subtoDSCR = subtoAnnualDebt > 0 ? noi / subtoAnnualDebt : 0;
-  
-  structures['subject-to'] = {
-    name: 'Subject To',
-    loanAmount: subtoLoanBalance,
-    downPayment: subtoCashToSeller,
-    interestRate: subtoRate,
-    monthlyPayment: subtoMonthly,
-    annualDebtService: subtoAnnualDebt,
-    cashflow: subtoCashflow,
-    dscr: subtoDSCR,
-    cashOutOfPocket: subtoCashToSeller,
-    ltv: 60,
-    note: 'Taking over existing financing',
-    capitalStack: {
-      seniorDebt: { 
-        amount: subtoLoanBalance, 
-        rate: subtoRate, 
-        term: 25, 
-        isIO: false, 
-        ltv: 60 
-      },
-      sellerFinancing: null,
-      preferredEquity: null,
-      commonEquity: { 
-        lpPercent: 0, 
-        gpPercent: 100, 
-        lpContribution: 0, 
-        gpContribution: subtoCashToSeller,
-        sponsorCoInvest: subtoCashToSeller 
-      }
-    },
-    waterfall: {
-      annualDistributableCashFlow: subtoCashflow,
-      prefPayment: 0,
-      cashAfterPref: subtoCashflow,
-      lpShare: 0,
-      gpShare: subtoCashflow,
-      effectiveGPPromote: 0
-    },
-    controlRights: {
-      gpControlRetained: true,
-      lpApprovalForSale: false,
-      lpApprovalForRefi: false,
-      lpRemovalRights: false,
-      sellerConsentRequired: true
-    },
-    timelineEvents: [
-      { year: 1, type: 'Take Over Loan', description: 'Assume existing mortgage', amount: subtoLoanBalance },
-      { year: 1, type: 'Equity Payment', description: 'Cash to seller for equity', amount: subtoCashToSeller }
-    ],
-    riskMetrics: calculateRiskMetrics(noi, subtoLoanBalance, subtoAnnualDebt, purchasePrice, false, false, false),
-    intelligence: {
-      why: "Taking over existing low-rate financing preserves below-market debt. Works best when seller has attractive existing loan at rates below current market.",
-      risks: [
-        "Due-on-sale clause could trigger loan acceleration if lender discovers transfer",
-        "Remaining loan balance may be insufficient leverage for deal to work",
-        "Seller retains liability on original note",
-        "Title transfer may trigger lender review"
-      ],
-      assumptions: [
-        "Existing loan has attractive rate (below current market)",
-        "Lender doesn't enforce due-on-sale clause",
-        "Seller willing to leave their name on the loan",
-        "Minimal cash needed for equity pickup makes deal feasible"
-      ]
-    }
-  };
-  
-  // 4. HYBRID (Subject To + Seller Carry gap)
-  const hybridSubtoBalance = purchasePrice * 0.55;
-  const hybridSellerCarry = purchasePrice * 0.25;
-  const hybridCashDown = purchasePrice * 0.20;
-  const hybridSubtoRate = 4.5;
-  const hybridSellerRate = 5.0;
-  const hybridSubtoMonthly = calcMonthlyPayment(hybridSubtoBalance, hybridSubtoRate, 300);
-  const hybridSellerMonthly = hybridSellerCarry * hybridSellerRate / 100 / 12; // IO
-  const hybridTotalMonthly = hybridSubtoMonthly + hybridSellerMonthly;
-  const hybridAnnualDebt = hybridTotalMonthly * 12;
-  const hybridCashflow = noi - hybridAnnualDebt;
-  const hybridDSCR = hybridAnnualDebt > 0 ? noi / hybridAnnualDebt : 0;
-  
-  structures['hybrid'] = {
-    name: 'Hybrid (SubTo + Seller Carry)',
-    loanAmount: hybridSubtoBalance + hybridSellerCarry,
-    downPayment: hybridCashDown,
-    interestRate: (hybridSubtoRate + hybridSellerRate) / 2,
-    monthlyPayment: hybridTotalMonthly,
-    annualDebtService: hybridAnnualDebt,
-    cashflow: hybridCashflow,
-    dscr: hybridDSCR,
-    cashOutOfPocket: hybridCashDown,
-    ltv: 80,
-    subtoAmount: hybridSubtoBalance,
-    sellerCarryAmount: hybridSellerCarry,
-    capitalStack: {
-      seniorDebt: { 
-        amount: hybridSubtoBalance, 
-        rate: hybridSubtoRate, 
-        term: 25, 
-        isIO: false, 
-        ltv: 55 
-      },
-      sellerFinancing: { 
-        amount: hybridSellerCarry, 
-        rate: hybridSellerRate, 
-        position: 'second', 
-        balloonYear: 5 
-      },
-      preferredEquity: null,
-      commonEquity: { 
-        lpPercent: 0, 
-        gpPercent: 100, 
-        lpContribution: 0, 
-        gpContribution: hybridCashDown,
-        sponsorCoInvest: hybridCashDown 
-      }
-    },
-    waterfall: {
-      annualDistributableCashFlow: hybridCashflow,
-      prefPayment: 0,
-      cashAfterPref: hybridCashflow,
-      lpShare: 0,
-      gpShare: hybridCashflow,
-      effectiveGPPromote: 0
-    },
-    controlRights: {
-      gpControlRetained: true,
-      lpApprovalForSale: false,
-      lpApprovalForRefi: false,
-      lpRemovalRights: false,
-      sellerConsentRequired: true
-    },
-    timelineEvents: [
-      { year: 1, type: 'Subject To Loan', description: 'Assume existing 1st mortgage', amount: hybridSubtoBalance },
-      { year: 1, type: 'Seller 2nd', description: 'Seller carry 2nd position note', amount: hybridSellerCarry },
-      { year: 5, type: 'Seller Balloon', description: '2nd position balloon payment due', amount: hybridSellerCarry * 0.7 }
-    ],
-    riskMetrics: calculateRiskMetrics(noi, hybridSubtoBalance + hybridSellerCarry, hybridAnnualDebt, purchasePrice, true, false, false),
-    intelligence: {
-      why: "Combines low-rate existing financing with seller carry to bridge gap. Maximizes leverage while minimizing cash required at closing.",
-      risks: [
-        "Two layers of debt create complexity and multiple approval points",
-        "Due-on-sale risk on assumed first mortgage",
-        "Seller 2nd balloon creates refinance pressure in 5 years",
-        "Interest-only on seller note increases balloon amount"
-      ],
-      assumptions: [
-        "Seller willing to carry 2nd position paper",
-        "Existing loan has below-market rate worth preserving",
-        "Property cash flow supports stacked debt payments",
-        "Can refinance or sell before seller balloon matures"
-      ]
-    }
-  };
+  // Subject To and Hybrid structures removed
   
   // 5. EQUITY PARTNER
   const epLTV = 75;
@@ -644,7 +483,7 @@ export default function DealStructureTab({ scenarioData, calculations, fullCalcs
   const purchasePrice = scenarioData?.pricing_financing?.price || scenarioData?.pricing_financing?.purchase_price || 0;
   // CRITICAL: Use fullCalcs.year1.noi as primary source to match Summary and Proforma tabs
   const noi = fullCalcs?.year1?.noi || scenarioData?.pnl?.noi_t12 || scenarioData?.pnl?.noi || 0;
-  const financing = scenarioData?.financing || {};
+  const financing = useMemo(() => scenarioData?.financing || {}, [scenarioData?.financing]);
   const debtStructure = scenarioData?.deal_setup?.debt_structure || financing?.debt_structure || 'traditional';
   const goingInCapRate = purchasePrice > 0 && noi > 0 ? (noi / purchasePrice) * 100 : 5.5;
   

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, ArrowRight, DollarSign, Building, Calculator } from 'lucide-react';
+import { Home, ArrowRight, Calculator } from 'lucide-react';
 
 const ManualEntryPage = () => {
   const navigate = useNavigate();
@@ -33,7 +33,7 @@ const ManualEntryPage = () => {
   const [repairs, setRepairs] = useState('');
   const [utilities, setUtilities] = useState('');
   const [gas, setGas] = useState('');
-  const [electrical, setElectrical] = useState('');
+  const [electrical] = useState('');
   const [payroll, setPayroll] = useState('');
   const [contractServices, setContractServices] = useState('');
   const [adminMarketing, setAdminMarketing] = useState('');
@@ -55,10 +55,7 @@ const ManualEntryPage = () => {
   const [sellerAmortization, setSellerAmortization] = useState('20');
 
   // Subject To Fields
-  const [existingLoanBalance, setExistingLoanBalance] = useState('');
-  const [existingRate, setExistingRate] = useState('');
-  const [remainingPayments, setRemainingPayments] = useState('');
-  const [subjectToDownPayment, setSubjectToDownPayment] = useState('');
+  // Subject To state removed
 
   // Equity Partner Fields
   const [partnerDownPaymentPct, setPartnerDownPaymentPct] = useState('100');
@@ -151,14 +148,7 @@ const ManualEntryPage = () => {
       };
     }
 
-    if (debtStructure === 'subject-to') {
-      return {
-        ...base,
-        original_loan_amount: parseFloat(existingLoanBalance) || 0,
-        interest_rate: parseFloat(existingRate) / 100,
-        remaining_payments: parseInt(remainingPayments) || 0
-      };
-    }
+    // Subject To removed
 
     if (debtStructure === 'equity-partner') {
       return {
@@ -658,15 +648,12 @@ const ManualEntryPage = () => {
             >
               <option value="traditional">Traditional (Freddie/Fannie, Bank Loan)</option>
               <option value="seller-finance">Seller Finance</option>
-              <option value="subject-to">Subject To</option>
-              <option value="hybrid">Hybrid (Subject To + Traditional/Seller Finance)</option>
               <option value="equity-partner">Equity Partner</option>
               <option value="seller-carry">Seller Carry</option>
             </select>
           </div>
-
-          {/* Traditional / Seller Carry / Equity Partner / Hybrid */}
-          {(debtStructure === 'traditional' || debtStructure === 'seller-carry' || debtStructure === 'equity-partner' || debtStructure === 'hybrid') && (
+          {/* Traditional / Seller Carry / Equity Partner */}
+          {(debtStructure === 'traditional' || debtStructure === 'seller-carry' || debtStructure === 'equity-partner') && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 16 }}>
               <div>
                 <label style={styles.label}>Loan-to-Value (LTV)</label>
@@ -767,52 +754,7 @@ const ManualEntryPage = () => {
             </div>
           )}
 
-          {/* Subject To */}
-          {(debtStructure === 'subject-to' || debtStructure === 'hybrid') && (
-            <div style={{ marginTop: 20, padding: 20, background: '#f9fafb', borderRadius: 12, border: '1px solid #e5e7eb' }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 16 }}>Subject To Existing Loan</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-                <div>
-                  <label style={styles.label}>Existing Loan Balance</label>
-                  <input
-                    type="number"
-                    value={existingLoanBalance}
-                    onChange={(e) => setExistingLoanBalance(e.target.value)}
-                    style={styles.input}
-                  />
-                </div>
-                <div>
-                  <label style={styles.label}>Existing Interest Rate</label>
-                  <input
-                    type="text"
-                    value={existingRate}
-                    onChange={(e) => setExistingRate(e.target.value)}
-                    style={styles.input}
-                    placeholder="4.5%"
-                  />
-                </div>
-                <div>
-                  <label style={styles.label}>Remaining Payments</label>
-                  <input
-                    type="number"
-                    value={remainingPayments}
-                    onChange={(e) => setRemainingPayments(e.target.value)}
-                    style={styles.input}
-                  />
-                </div>
-                <div>
-                  <label style={styles.label}>Down Payment Amount</label>
-                  <input
-                    type="number"
-                    value={subjectToDownPayment}
-                    onChange={(e) => setSubjectToDownPayment(e.target.value)}
-                    style={styles.input}
-                    placeholder="$0"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Subject To removed */}
 
           {/* Equity Partner */}
           {debtStructure === 'equity-partner' && (

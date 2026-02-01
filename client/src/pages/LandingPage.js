@@ -277,7 +277,7 @@ function LandingPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {[
               { icon: <FileText size={24} color="#10b981" />, title: 'Ingest deal inputs', desc: 'Paste a Crexi link, upload an OM PDF, or forward an email. We extract property data, rent rolls, and financials automatically.' },
-              { icon: <Layers size={24} color="#10b981" />, title: 'Compare 7 financing structures', desc: 'Traditional bank, seller finance, subject-to, hybrid (sub-to + seller carry), equity partner, seller carry (bank + 2nd), and lease option. See cash required, DSCR, and cash flow for each.' },
+              { icon: <Layers size={24} color="#10b981" />, title: 'Compare 5 financing structures', desc: 'Traditional bank, seller finance, equity partner, seller carry (bank + 2nd), and lease option. See cash required, DSCR, and cash flow for each.' },
               { icon: <Calculator size={24} color="#10b981" />, title: 'Flag missing inputs-not blank dashes', desc: 'Every incomplete field shows a clear "Missing Input" badge so you know exactly what to chase before making an offer.' },
               { icon: <TrendingUp size={24} color="#10b981" />, title: 'Plan value-add and stabilization', desc: 'Model rent bumps, expense cuts, and capital improvements. See the resulting stabilized value and NOI without building a second spreadsheet.' },
               { icon: <Calculator size={24} color="#10b981" />, title: 'Validate refi and buyout feasibility', desc: 'Value-Add outputs feed directly into Deal Execution. See if your refi covers the original loan, seller payoff, or equity partner buyout.' },
@@ -314,8 +314,8 @@ function LandingPage() {
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
-          {[
-            { title: 'Structure-first underwriting', desc: 'Compare 7 financing structures instantly. See which one requires the least cash and highest returns-before you waste time on one path.' },
+            {[ 
+            { title: 'Structure-first underwriting', desc: 'Compare 5 financing structures instantly. See which one requires the least cash and highest returns-before you waste time on one path.' },
             { title: 'Execution playbooks', desc: 'Each structure has its own step-by-step checklist and required documents. Know exactly what to do from LOI to close.' },
             { title: 'Value-add to refi validation', desc: 'Your stabilized value and refi loan amount flow directly into the execution tab. See if refi covers payoffs and buyouts-no copy-paste.' }
           ].map((card, i) => (
@@ -343,7 +343,7 @@ function LandingPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '48px' }}>
             {[
               { quote: 'Cut my deal screening time from 2 hours to 15 minutes. I can finally keep up with my broker deal flow.', name: 'J. Martinez', role: 'Multifamily Syndicator' },
-              { quote: 'The execution playbook alone saved me from missing a critical doc on my last sub-to deal.', name: 'S. Thompson', role: 'Creative Finance Investor' },
+              { quote: 'The execution playbook saved me from missing a critical doc on my last closing.', name: 'S. Thompson', role: 'Creative Finance Investor' },
               { quote: 'Finally, a tool that shows equity partner buyout feasibility without a custom Excel model.', name: 'K. Patel', role: 'LP/GP Hybrid Investor' }
             ].map((t, i) => (
               <div key={i} style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '24px', border: '1px solid rgba(255,255,255,0.1)' }}>

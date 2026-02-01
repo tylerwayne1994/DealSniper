@@ -157,18 +157,17 @@ function UnderwriteV2Page() {
   // Upload state
   const [file, setFile] = useState(null);
   const [pdfPages, setPdfPages] = useState([]);
-  const [loadingPreview, setLoadingPreview] = useState(false);
   const [sourceSnippets, setSourceSnippets] = useState({});
   const [currentPageNum, setCurrentPageNum] = useState(1);
   const [activeFieldPath, setActiveFieldPath] = useState(null);
-  const [zoom, setZoom] = useState(1.4); // zoom factor for main PDF canvas
-  const [pageHighlights, setPageHighlights] = useState({}); // per-page highlight rects
+  const [zoom] = useState(1.4); // zoom factor for main PDF canvas
+  const [, setPageHighlights] = useState({}); // per-page highlight rects
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   
   // Deal setup form state (Deal Manager style)
   const [dealName, setDealName] = useState('');
-  const [propertyAddress, setPropertyAddress] = useState('');
+  const [propertyAddress] = useState('');
   const [propertyType, setPropertyType] = useState('multifamily');
   const [transactionType, setTransactionType] = useState('acquisition');
   const [debtStructure, setDebtStructure] = useState('traditional');
@@ -444,7 +443,15 @@ function UnderwriteV2Page() {
     };
     
     fetchMarketCapRate();
-  }, [scenarioData?.property?.address]);
+  }, [
+    scenarioData?.property?.address,
+    scenarioData?.deal_setup?.property_type,
+    scenarioData?.property?.units,
+    scenarioData?.property?.year_built,
+    scenarioData?.pricing_financing?.price,
+    scenarioData?.pricing_financing?.purchase_price,
+    marketCapRate
+  ]);
 
   // Compute approximate highlight rectangles for a given snippet text on a page
   const computeHighlightRects = async (page, viewport, searchText) => {
@@ -539,7 +546,6 @@ function UnderwriteV2Page() {
 
   // Generate PDF thumbnails + store doc for big viewer
   const genPdfThumbs = async (pdfFile) => {
-    setLoadingPreview(true);
     try {
       let pdfjsLib = window.pdfjsLib;
       if (!pdfjsLib) {
@@ -587,7 +593,6 @@ function UnderwriteV2Page() {
       console.error('[V2] PDF preview failed', err);
       setPdfPages([]);
     } finally {
-      setLoadingPreview(false);
     }
   };
 
@@ -1150,179 +1155,7 @@ function UnderwriteV2Page() {
     }]);
   };
 
-  // Route to AI Analysis page
-  const handleRunAIAnalysis = () => {
-    if (!validateWizard()) {
-      setUploadError('Please fill in all required fields');
-      return;
-    }
-    
-    // Store buy box params for the AI analysis page to use
-    const dealParams = {
-      underwriting_mode: verifiedData?.deal_setup?.underwriting_mode || 'hardcoded',
-      buy_box: verifiedData?.deal_setup?.buy_box || null,
-      property_type: verifiedData?.deal_setup?.property_type || 'multifamily',
-      transaction_type: verifiedData?.deal_setup?.transaction_type || 'acquisition',
-      debt_structure: verifiedData?.deal_setup?.debt_structure || 'traditional'
-    };
-    localStorage.setItem('dealParams', JSON.stringify(dealParams));
-
-    // Build a full underwriting scenario from the wizard data using the
-    // same transformation logic as the Results page, so the JS
-    // calculation engine and the AI underwriter see the exact same
-    // structure and numbers.
-    const scenarioForAI = JSON.parse(JSON.stringify(verifiedData));
-
-    if (scenarioForAI.pricing_financing) {
-      scenarioForAI.pricing_financing.purchase_price = scenarioForAI.pricing_financing.price || scenarioForAI.pricing_financing.purchase_price;
-      scenarioForAI.pricing_financing.down_payment_pct = scenarioForAI.pricing_financing.down_payment_pct || (scenarioForAI.pricing_financing.down_payment && scenarioForAI.pricing_financing.price ? (scenarioForAI.pricing_financing.down_payment / scenarioForAI.pricing_financing.price) * 100 : 40);
-    }
-
-    if (!scenarioForAI.financing) {
-      scenarioForAI.financing = {};
-    }
-    scenarioForAI.financing.ltv = scenarioForAI.financing.ltv || 75;
-    scenarioForAI.financing.interest_rate = scenarioForAI.financing.interest_rate || 6.0;
-    scenarioForAI.financing.loan_term_years = scenarioForAI.financing.loan_term_years || 10;
-    scenarioForAI.financing.amortization_years = scenarioForAI.financing.amortization_years || 30;
-    scenarioForAI.financing.io_years = scenarioForAI.financing.io_years || 0;
-    scenarioForAI.financing.loan_fees_percent = scenarioForAI.financing.loan_fees_percent || 1.5;
-
-    const purchasePriceAI = scenarioForAI.pricing_financing?.price || 0;
-    const structureAI = scenarioForAI.deal_setup?.debt_structure || dealParams.debt_structure || 'traditional';
-    const finAI = scenarioForAI.financing;
-
-    const calcMonthlyPaymentAI = (principal, annualRate, amortMonths) => {
-      if (principal <= 0 || amortMonths <= 0) return 0;
-      const r = annualRate / 100 / 12;
-      if (r === 0) return principal / amortMonths;
-      return principal * (r * Math.pow(1 + r, amortMonths)) / (Math.pow(1 + r, amortMonths) - 1);
-    };
-
-    let totalMonthlyDebtAI = 0;
-    let totalAnnualDebtAI = 0;
-    let primaryLoanAmountAI = 0;
-    let downPaymentAmountAI = 0;
-
-    if (structureAI === 'traditional' || structureAI === 'seller-finance') {
-      primaryLoanAmountAI = purchasePriceAI * (finAI.ltv || 75) / 100;
-      downPaymentAmountAI = purchasePriceAI - primaryLoanAmountAI;
-      const monthlyPaymentAI = calcMonthlyPaymentAI(primaryLoanAmountAI, finAI.interest_rate || 6.0, (finAI.amortization_years || 30) * 12);
-      totalMonthlyDebtAI = monthlyPaymentAI;
-      totalAnnualDebtAI = monthlyPaymentAI * 12;
-    } else if (structureAI === 'subject-to') {
-      totalMonthlyDebtAI = finAI.monthly_payment || 0;
-      totalAnnualDebtAI = totalMonthlyDebtAI * 12;
-      primaryLoanAmountAI = finAI.current_loan_balance || 0;
-      downPaymentAmountAI = finAI.cash_to_seller || 0;
-    } else if (structureAI === 'hybrid') {
-      const subtoMonthlyAI = finAI.subto_monthly_payment || 0;
-      const newLoanAmountAI = finAI.new_loan_amount || 0;
-      const newLoanMonthlyAI = calcMonthlyPaymentAI(newLoanAmountAI, finAI.interest_rate || 6.0, (finAI.amortization_years || 30) * 12);
-      totalMonthlyDebtAI = subtoMonthlyAI + newLoanMonthlyAI;
-      totalAnnualDebtAI = totalMonthlyDebtAI * 12;
-      primaryLoanAmountAI = (finAI.subto_loan_balance || 0) + newLoanAmountAI;
-      downPaymentAmountAI = purchasePriceAI - primaryLoanAmountAI;
-    } else if (structureAI === 'equity-partner') {
-      primaryLoanAmountAI = purchasePriceAI * (finAI.ltv || 75) / 100;
-      downPaymentAmountAI = purchasePriceAI - primaryLoanAmountAI;
-      const partnerContributionAI = downPaymentAmountAI * (finAI.partner_down_payment_pct || 100) / 100;
-      const partnerPrefAnnualAI = partnerContributionAI * (finAI.partner_pref_return || 8) / 100;
-      const loanMonthlyAI = calcMonthlyPaymentAI(primaryLoanAmountAI, finAI.interest_rate || 6.5, (finAI.amortization_years || 30) * 12);
-      totalMonthlyDebtAI = loanMonthlyAI + (partnerPrefAnnualAI / 12);
-      totalAnnualDebtAI = (loanMonthlyAI * 12) + partnerPrefAnnualAI;
-      scenarioForAI.financing.partner_contribution = partnerContributionAI;
-      scenarioForAI.financing.partner_pref_annual = partnerPrefAnnualAI;
-      scenarioForAI.financing.your_cash_in = downPaymentAmountAI * (finAI.your_equity_pct || 5) / 100;
-    } else if (structureAI === 'seller-carry') {
-      primaryLoanAmountAI = purchasePriceAI * (finAI.ltv || 75) / 100;
-      const sellerCarryAmountAI = purchasePriceAI * (finAI.seller_carry_pct || 15) / 100;
-      const yourCashDownAI = purchasePriceAI - primaryLoanAmountAI - sellerCarryAmountAI;
-      downPaymentAmountAI = yourCashDownAI;
-
-      const loanMonthlyAI = calcMonthlyPaymentAI(primaryLoanAmountAI, finAI.interest_rate || 6.5, (finAI.amortization_years || 30) * 12);
-
-      let sellerCarryMonthlyAI = 0;
-      if (finAI.seller_carry_io) {
-        sellerCarryMonthlyAI = sellerCarryAmountAI * (finAI.seller_carry_rate || 5) / 100 / 12;
-      } else {
-        sellerCarryMonthlyAI = calcMonthlyPaymentAI(sellerCarryAmountAI, finAI.seller_carry_rate || 5, finAI.seller_carry_term_months || 60);
-      }
-
-      totalMonthlyDebtAI = loanMonthlyAI + sellerCarryMonthlyAI;
-      totalAnnualDebtAI = totalMonthlyDebtAI * 12;
-
-      scenarioForAI.financing.seller_carry_amount = sellerCarryAmountAI;
-      scenarioForAI.financing.seller_carry_monthly = sellerCarryMonthlyAI;
-      scenarioForAI.financing.primary_loan_monthly = loanMonthlyAI;
-      scenarioForAI.financing.your_cash_down = yourCashDownAI;
-    }
-
-    if (!scenarioForAI.pricing_financing) {
-      scenarioForAI.pricing_financing = {};
-    }
-    scenarioForAI.pricing_financing.loan_amount = primaryLoanAmountAI;
-    scenarioForAI.pricing_financing.monthly_payment = totalMonthlyDebtAI;
-    scenarioForAI.pricing_financing.annual_debt_service = totalAnnualDebtAI;
-    scenarioForAI.pricing_financing.down_payment = downPaymentAmountAI;
-    scenarioForAI.pricing_financing.interest_rate = (finAI.interest_rate || 6.0) / 100;
-    scenarioForAI.pricing_financing.term_years = finAI.loan_term_years || 10;
-    scenarioForAI.pricing_financing.amortization_years = finAI.amortization_years || 30;
-
-    scenarioForAI.financing.debt_structure = structureAI;
-    scenarioForAI.financing.total_monthly_debt = totalMonthlyDebtAI;
-    scenarioForAI.financing.total_annual_debt = totalAnnualDebtAI;
-
-    if (scenarioForAI.pnl) {
-      scenarioForAI.pnl.potential_gross_income = scenarioForAI.pnl.gross_potential_rent || scenarioForAI.pnl.potential_gross_income || 0;
-      const rawVacancyAI = scenarioForAI.pnl.vacancy_rate;
-      if (typeof rawVacancyAI === 'number') {
-        scenarioForAI.pnl.vacancy_rate = rawVacancyAI > 1 ? rawVacancyAI / 100 : rawVacancyAI;
-      } else {
-        scenarioForAI.pnl.vacancy_rate = 0.05;
-      }
-    }
-
-    // Run the exact same full analysis used by the Results page so the AI
-    // sees the identical calc_json that powers Deal / No Deal.
-    const { calculateFullAnalysis } = require('../utils/realEstateCalculations');
-    const fullAnalysisForAI = calculateFullAnalysis(scenarioForAI);
-
-    // Build wizard structure snapshot for the AI prompt.
-    const wizardStructure = {
-      strategy: scenarioForAI.deal_setup?.debt_structure || dealParams.debt_structure || 'traditional',
-      deal_setup: scenarioForAI.deal_setup || {},
-      financing: scenarioForAI.financing || {}
-    };
-
-    // Best-effort: push the latest wizard-edited data to the backend as the
-    // current scenario JSON so the AI analysis prompt uses THESE numbers,
-    // not just the original parsed OM snapshot.
-    if (dealId && verifiedData) {
-      try {
-        fetch(`${API_BASE}/v2/deals/${dealId}/scenario`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ scenario: scenarioForAI })
-        }).catch(err => {
-          console.warn('[V2] Failed to update scenario before AI analysis', err);
-        });
-      } catch (err) {
-        console.warn('[V2] Error scheduling scenario update', err);
-      }
-    }
-
-    // Navigate to the AI analysis page with deal data
-    navigate('/underwrite/analysis', {
-      state: {
-        dealId,
-        verifiedData: scenarioForAI,
-        scenarioData: scenarioForAI,
-        fullCalcs: fullAnalysisForAI,
-        wizardStructure
-      }
-    });
-  };
+  // (Removed) handleRunAIAnalysis unused function
 
   // Send chat message
   const handleSendMessage = async () => {
@@ -1792,11 +1625,6 @@ function UnderwriteV2Page() {
 
   // STEP 2: Verify/Edit Wizard
   if (step === 'verify') {
-    const sourcedFields = Object.entries(sourceSnippets || {}).map(([path, meta]) => ({
-      path,
-      page: meta?.page,
-      text: meta?.text,
-    }));
 
     return (
       <div style={styles.page}>

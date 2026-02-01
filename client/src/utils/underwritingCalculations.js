@@ -23,25 +23,7 @@ export const DEBT_FIELDS_MENU = {
     'Total balloon amount ($)',
     'Balloon term (years)',
   ],
-  hybrid: [
-    'Down payment (%)',
-    'Current loan amount',
-    'Interest rate',
-    'Monthly payment amount',
-    'Years remaining',
-    'Second loan amount',
-    'Second loan interest rate',
-    'Second loan term (years)',
-    'Second loan amortization (years)',
-  ],
-  'subject-to': [
-    'SubTo Loan Balance',
-    'Interest rate',
-    'Period in years remaining',
-    'Monthly pymt (PI)',
-    'Total debt service monthly',
-    'Total debt service annual',
-  ],
+  // Hybrid and Subject To removed
   'seller-carry': [
     'Seller loan amount',
     'Interest rate',
@@ -177,54 +159,8 @@ const buildLoansFromCells = ({ debtType, cellValues, interestOnlyFlags }) => {
         interestOnly: secondIo,
       });
     }
-  } else if (debtType === 'hybrid') {
-    const currentAmount = getByLabel('Current loan amount');
-    const currentRate = getByLabel('Interest rate');
-    const yearsRemaining = getByLabel('Years remaining');
-    const amortYears = yearsRemaining; // assume same unless specified elsewhere
-    const io = isInterestOnly('Interest rate');
-    const overridePayment = getByLabel('Monthly payment amount');
-    if (currentAmount > 0) {
-      loans.push({
-        amount: currentAmount,
-        annualRatePct: currentRate,
-        termYears: yearsRemaining,
-        amortYears,
-        interestOnly: io,
-        overrideMonthlyPayment: overridePayment,
-      });
-    }
-
-    const secondAmount = getByLabel('Second loan amount');
-    const secondRate = getByLabel('Second loan interest rate');
-    const secondTerm = getByLabel('Second loan term (years)');
-    const secondAmort = getByLabel('Second loan amortization (years)');
-    const secondIo = isInterestOnly('Second loan interest rate');
-    if (secondAmount > 0) {
-      loans.push({
-        amount: secondAmount,
-        annualRatePct: secondRate,
-        termYears: secondTerm,
-        amortYears: secondAmort,
-        interestOnly: secondIo,
-      });
-    }
-  } else if (debtType === 'subject-to') {
-    const balance = getByLabel('SubTo Loan Balance');
-    const rate = getByLabel('Interest rate');
-    const yearsRemaining = getByLabel('Period in years remaining');
-    const overridePayment = getByLabel('Monthly pymt (PI)');
-    const io = isInterestOnly('Interest rate');
-    if (balance > 0) {
-      loans.push({
-        amount: balance,
-        annualRatePct: rate,
-        termYears: yearsRemaining,
-        amortYears: yearsRemaining,
-        interestOnly: io,
-        overrideMonthlyPayment: overridePayment,
-      });
-    }
+  } else if (debtType === 'subject-to' || debtType === 'hybrid') {
+    // Removed: these structures are no longer supported
   } else if (debtType === 'seller-carry') {
     const amount = getByLabel('Seller loan amount');
     const rate = getByLabel('Interest rate');
@@ -392,7 +328,7 @@ export const computeUnderwritingFromCells = ({
   const rehabPerUnit = getCellNumber(cellValues, 50, 'm');
 
   const addNoiPerUnitAnnual = raisedRentPerUnit * 12;
-  const addNoiTotalAnnual = addNoiPerUnitAnnual * valueAddUnitCount;
+  // const addNoiTotalAnnual = addNoiPerUnitAnnual * valueAddUnitCount;
   const valueAddPerUnit = valueAddCapRate ? addNoiPerUnitAnnual / valueAddCapRate : 0;
   const totalValueAdd = valueAddPerUnit * valueAddUnitCount;
   const totalRehab = rehabPerUnit * valueAddUnitCount;
@@ -421,11 +357,7 @@ export const computeUnderwritingFromCells = ({
   const arvValueProforma = arvValueCurrent;
 
   // Cash invested and CoC ROI
-  const downPayment = acquisition.downPayment;
-  const commissions = acquisition.commissions;
-  const closingFees = acquisition.closingFees;
-  const assignmentFee = acquisition.assignmentFee;
-  const improvements = acquisition.improvements;
+  // Removed unused acquisition breakdown variables
 
   const cashInvested = acquisition.totalAcquisition;
 
