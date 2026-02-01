@@ -395,6 +395,11 @@ const PropertySpreadsheet = ({ initialData }) => {
   const expenseRatio = egiAnnual > 0 ? (opExAnnual / egiAnnual) : null;
   const dscrY1 = financingMetrics?.dscrYear1 ?? null;
   const annualDebtService = financingMetrics?.annualDebtService ?? null;
+  const managementAnnual = (data.growth?.managementFeePercent || 0) * egiAnnual;
+  const vacancyPct = data.growth?.vacancyRate ?? null;
+  const managementPct = data.growth?.managementFeePercent ?? null;
+  const totalEquitySources = (data.sources?.lpEquity || 0) + (data.sources?.gpEquity || 0) + (data.sources?.preferredEquity || 0);
+  const cocY1 = (y1CF?.equityCashFlow != null && totalEquitySources > 0) ? (y1CF.equityCashFlow / totalEquitySources) : null;
 
   return (
     <div style={styles.container}>
@@ -748,6 +753,118 @@ const PropertySpreadsheet = ({ initialData }) => {
                     <td style={{ ...styles.tableCell, ...styles.labelCell }}>Debt Service (Annual)</td>
                     <td style={{ ...styles.tableCell, ...styles.inputCell }}>
                       {annualDebtService != null ? calc.formatCurrency(annualDebtService) : '-'}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Expense Highlights & Debt Structure */}
+          <div style={styles.threeColumnGrid}>
+            <div style={styles.section}>
+              <div style={styles.sectionHeader}>EXPENSE HIGHLIGHTS (Y1)</div>
+              <table style={styles.table}>
+                <tbody>
+                  <tr>
+                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>Vacancy</td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                      {calc.formatCurrency(vacancyAnnual)}
+                    </td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                      {vacancyPct != null ? calc.formatPercent(vacancyPct) : '-'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>Property Management</td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                      {calc.formatCurrency(managementAnnual)}
+                    </td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                      {managementPct != null ? calc.formatPercent(managementPct) : '-'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>CapEx Reserve</td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                      {calc.formatCurrency(capexReserveAnnual)}
+                    </td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                      {data.sale?.capexReservePerUnitPerYear ? `${calc.formatCurrency(data.sale.capexReservePerUnitPerYear)} / unit / yr` : '-'}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div style={styles.section}>
+              <div style={styles.sectionHeader}>RETURN METRICS (Y1)</div>
+              <table style={styles.table}>
+                <tbody>
+                  <tr>
+                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>DSCR</td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                      {dscrY1 ? calc.formatPercent(dscrY1) : '-'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>Cash-on-Cash</td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                      {cocY1 != null ? calc.formatPercent(cocY1) : '-'}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div style={styles.section}>
+              <div style={styles.sectionHeader}>DEBT STRUCTURE</div>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={{ ...styles.tableCell, ...styles.labelCell }}>Instrument</th>
+                    <th style={{ ...styles.tableCell, ...styles.labelCell }}>Amount</th>
+                    <th style={{ ...styles.tableCell, ...styles.labelCell }}>Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>Senior Debt</td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>{calc.formatCurrency(data.sources?.seniorDebt || 0)}</td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>{calc.formatPercent(sourcesAndUses.sourcesPercentages?.seniorDebt || 0)} of sources</td>
+                  </tr>
+                  <tr>
+                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>Mez Debt</td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>{calc.formatCurrency(data.sources?.mezDebt || 0)}</td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>{calc.formatPercent(sourcesAndUses.sourcesPercentages?.mezDebt || 0)} of sources</td>
+                  </tr>
+                  {/* Financing terms overview if provided */}
+                  <tr>
+                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>DSCR Loan</td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>{calc.formatCurrency(data.financing?.dscrLoan?.loanAmount || 0)}</td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                      {data.financing?.dscrLoan?.interestRate ? `${calc.formatPercent(data.financing.dscrLoan.interestRate)} • ${data.financing.dscrLoan.termMonths || '-'} mo` : '-'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>Seller Financing</td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>{calc.formatCurrency(data.financing?.sellerFinancing?.loanAmount || 0)}</td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                      {data.financing?.sellerFinancing?.interestRate ? `${calc.formatPercent(data.financing.sellerFinancing.interestRate)} • ${data.financing.sellerFinancing.termMonths || '-'} mo` : '-'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>Carryback (2nd)</td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>{calc.formatCurrency(data.financing?.sellerCarryback?.loanAmount || 0)}</td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                      {data.financing?.sellerCarryback?.interestRate ? `${calc.formatPercent(data.financing.sellerCarryback.interestRate)} • ${data.financing.sellerCarryback.termMonths || '-'} mo` : '-'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>Subject-To Existing</td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>{calc.formatCurrency(data.financing?.subjectTo?.balance || 0)}</td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                      {data.financing?.subjectTo?.interestRate ? `${calc.formatPercent(data.financing.subjectTo.interestRate)} • ${data.financing.subjectTo.remainingTermMonths || '-'} mo` : '-'}
                     </td>
                   </tr>
                 </tbody>
