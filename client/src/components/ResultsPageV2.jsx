@@ -289,7 +289,7 @@ Deal context (for quick reference):
 - Modeled hold IRR (levered): ${(promptLeveredIRR * 100).toFixed(2)}%
 - Modeled equity multiple: ${promptEquityMultiple.toFixed(2)}x
 
-Using ALL of the underlying scenario data and structures (Traditional, Seller Finance, Subject To, Hybrid, Equity Partner, Seller Carry, Lease Option, and any others the model exposes), do the following in order:
+Using ALL of the underlying scenario data and structures (Traditional, Seller Finance, Equity Partner, Seller Carry, Lease Option, and any others the model exposes), do the following in order:
 
 1. DEAL VERDICT
    - Decide if this is a good deal, marginal deal, or bad deal based purely on the underwritten numbers (cash flow, cap rates, DSCR, IRR, equity multiple, value creation, etc.).
@@ -309,7 +309,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
    - If the deal is weak or negative on day-one cash flow at the current price, figure out how to make it work.
    - Either:
      a) Propose a lower max purchase price that would get to healthy day-one cash flow under at least one structure (give that price and resulting key metrics), OR
-     b) Propose a creative structure (or blend of structures) — e.g., deeper seller carry, subject-to, lease option, or hybrid — that gets to positive day-one cash flow.
+    b) Propose a creative structure (or blend of structures) — e.g., deeper seller carry or lease option — that gets to positive day-one cash flow.
    - Only call the deal truly \"dead\" if, even after changing price and using creative financing, the numbers are still clearly terrible. If that happens, explain exactly why.
 
 5. SUMMARY FOR ME

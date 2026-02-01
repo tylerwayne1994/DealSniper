@@ -92,36 +92,6 @@ const DealExecutionTab = ({ scenarioData }) => {
         }
       },
       {
-        name: 'Subject To',
-        ...calculateStructure(purchasePrice * 0.60, 5.5, 25, purchasePrice * 0.10),
-        docs: ['Authorization to Release Loan Info', 'Existing Loan Documents', 'Loan Assumption Package', 'Due-on-Sale Review', 'Insurance Assignment', 'Servicing Transfer'],
-        debtStructure: ['Existing Loan: 60% LTV @ 5.5%', 'Take over existing payments', 'Loan stays in seller name', 'No formal assumption'],
-        cashflowSteps: ['Gross Rental Income', '- Operating Expenses', '= NOI', '- Existing Loan Payment', '= Cash Flow (Higher ROI)'],
-        orgChart: { 
-          type: 'subto',
-          levels: [
-            { 
-              title: 'Buyer (Beneficial Owner)', 
-              amount: purchasePrice * 0.10,
-              items: ['10% Cash to Seller', 'Controls Property'],
-              color: '#6366f1'
-            },
-            { 
-              title: 'Existing Loan Balance', 
-              amount: purchasePrice * 0.60,
-              items: ['60% @ 5.5%', 'Remains in Seller Name', 'Buyer Makes Payments'],
-              color: '#f59e0b'
-            },
-            { 
-              title: 'Original Seller', 
-              amount: purchasePrice * 0.30,
-              items: ['30% Equity Pickup', 'Off Title', 'Still on Loan'],
-              color: '#94a3b8'
-            }
-          ]
-        }
-      },
-      {
         name: 'Equity Partner',
         ...(() => {
           const seniorDebt = purchasePrice * 0.75;

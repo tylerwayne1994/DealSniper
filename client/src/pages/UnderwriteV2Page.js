@@ -172,7 +172,7 @@ function UnderwriteV2Page() {
   const [propertyType, setPropertyType] = useState('multifamily');
   const [transactionType, setTransactionType] = useState('acquisition');
   const [debtStructure, setDebtStructure] = useState('traditional');
-  const [subjectToAvailable, setSubjectToAvailable] = useState(true);
+  
   const [underwritingMode, setUnderwritingMode] = useState('hardcoded'); // 'hardcoded' | 'buybox'
   const [autoRunAIAfterUpload, setAutoRunAIAfterUpload] = useState(false);
   
@@ -668,7 +668,7 @@ function UnderwriteV2Page() {
         property_type: propertyType,
         transaction_type: transactionType,
         debt_structure: debtStructure,
-        subject_to_available: subjectToAvailable,
+        
         underwriting_mode: underwritingMode,
         buy_box: underwritingMode === 'buybox' ? buyBoxParams : null
       };
@@ -1494,62 +1494,14 @@ function UnderwriteV2Page() {
               >
                 <option value="traditional">Traditional (Freddie/Fannie, Bank Loan)</option>
                 <option value="seller-finance">Seller Finance</option>
-                <option value="subject-to">Subject To</option>
-                <option value="hybrid">Hybrid (Subject To + Traditional/Seller Finance)</option>
+                
                 <option value="equity-partner">Equity Partner</option>
                 <option value="seller-carry">Seller Carry</option>
                 <option value="lease-option">Lease Option</option>
               </select>
             </div>
 
-            {/* Subject-To availability toggle */}
-            <div style={{
-              marginBottom: 24,
-              padding: 12,
-              borderRadius: 10,
-              border: '1px solid #e5e7eb',
-              backgroundColor: '#f9fafb',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 12
-            }}>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 2 }}>
-                  Is "Subject To" actually available on this deal?
-                </div>
-                <div style={{ fontSize: 12, color: '#6b7280' }}>
-                  If not, AI will ignore Subject To / Hybrid structures and choose the next best option.
-                </div>
-              </div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                <span style={{ fontSize: 12, color: '#4b5563' }}>{subjectToAvailable ? 'Yes' : 'No'}</span>
-                <div
-                  onClick={() => setSubjectToAvailable(!subjectToAvailable)}
-                  style={{
-                    width: 40,
-                    height: 22,
-                    borderRadius: 999,
-                    backgroundColor: subjectToAvailable ? '#22c55e' : '#d1d5db',
-                    padding: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: subjectToAvailable ? 'flex-end' : 'flex-start',
-                    transition: 'all 0.15s ease-in-out'
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 18,
-                      height: 18,
-                      borderRadius: '999px',
-                      backgroundColor: '#ffffff',
-                      boxShadow: '0 1px 2px rgba(15,23,42,0.3)'
-                    }}
-                  />
-                </div>
-              </label>
-            </div>
+            
 
             {/* Underwriting Mode Toggle */}
             <div style={{ 
@@ -2679,242 +2631,7 @@ function UnderwriteV2Page() {
                 </>
               )}
 
-              {/* SUBJECT TO FIELDS */}
-              {debtStructure === 'subject-to' && (
-                <>
-                  <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 20 }}>
-                    Enter the existing loan details you're taking over "subject to" the existing financing.
-                  </p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20 }}>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                        Original Loan Amount
-                      </label>
-                      <input
-                        type="number"
-                        style={styles.input}
-                        value={verifiedData?.financing?.original_loan_amount || ''}
-                        onChange={(e) => updateVerifiedField('financing', 'original_loan_amount', parseFloat(e.target.value))}
-                        placeholder="$0"
-                      />
-                      <span style={{ fontSize: 12, color: '#9ca3af' }}>If known - helps calculate remaining balance</span>
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                        Current Loan Balance *
-                      </label>
-                      <input
-                        type="number"
-                        style={styles.input}
-                        value={verifiedData?.financing?.current_loan_balance || ''}
-                        onChange={(e) => updateVerifiedField('financing', 'current_loan_balance', parseFloat(e.target.value))}
-                        placeholder="$0"
-                      />
-                      <span style={{ fontSize: 12, color: '#f59e0b' }}>Required for accurate underwriting</span>
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                        Interest Rate % *
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        style={styles.input}
-                        value={verifiedData?.financing?.interest_rate || ''}
-                        onChange={(e) => updateVerifiedField('financing', 'interest_rate', parseFloat(e.target.value))}
-                        placeholder="0.0"
-                      />
-                      <span style={{ fontSize: 12, color: '#f59e0b' }}>Required - existing loan rate</span>
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                        Monthly Payment (P&I) *
-                      </label>
-                      <input
-                        type="number"
-                        style={styles.input}
-                        value={verifiedData?.financing?.monthly_payment || ''}
-                        onChange={(e) => updateVerifiedField('financing', 'monthly_payment', parseFloat(e.target.value))}
-                        placeholder="$0"
-                      />
-                      <span style={{ fontSize: 12, color: '#f59e0b' }}>Required - seller's current payment</span>
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                        Remaining Payments (Months)
-                      </label>
-                      <input
-                        type="number"
-                        style={styles.input}
-                        value={verifiedData?.financing?.remaining_payments || ''}
-                        onChange={(e) => updateVerifiedField('financing', 'remaining_payments', parseFloat(e.target.value))}
-                        placeholder="0"
-                      />
-                      <span style={{ fontSize: 12, color: '#9ca3af' }}>Months left on the loan</span>
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                        Down Payment Amount
-                      </label>
-                      <input
-                        type="number"
-                        style={styles.input}
-                        value={verifiedData?.financing?.down_payment || ''}
-                        onChange={(e) => updateVerifiedField('financing', 'down_payment', parseFloat(e.target.value))}
-                        placeholder="$0"
-                      />
-                      <span style={{ fontSize: 12, color: '#9ca3af' }}>Cash down payment at closing</span>
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                        Amortization (Years)
-                      </label>
-                      <input
-                        type="number"
-                        style={styles.input}
-                        value={verifiedData?.financing?.amortization_years || 30}
-                        onChange={(e) => updateVerifiedField('financing', 'amortization_years', parseFloat(e.target.value))}
-                        placeholder="30"
-                      />
-                      <span style={{ fontSize: 12, color: '#9ca3af' }}>Original loan amortization</span>
-                    </div>
-                    <div style={{ gridColumn: 'span 2' }}>
-                      <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                        Cash to Seller (Equity Pickup)
-                      </label>
-                      <input
-                        type="number"
-                        style={styles.input}
-                        value={verifiedData?.financing?.cash_to_seller || ''}
-                        onChange={(e) => updateVerifiedField('financing', 'cash_to_seller', parseFloat(e.target.value))}
-                        placeholder="$0"
-                      />
-                      <span style={{ fontSize: 12, color: '#9ca3af' }}>Amount paid to seller above existing loan</span>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* HYBRID FIELDS (Subject To + Traditional/Seller Finance) */}
-              {debtStructure === 'hybrid' && (
-                <>
-                  <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 20 }}>
-                    Hybrid structure combines Subject To with additional financing. Fill in both sections.
-                  </p>
-                  
-                  {/* Subject To Section */}
-                  <div style={{ padding: 16, background: '#fef3c7', borderRadius: 8, marginBottom: 20, border: '1px solid #fcd34d' }}>
-                    <h4 style={{ fontSize: 14, fontWeight: 700, color: '#92400e', marginBottom: 12 }}>📋 Existing Loan (Subject To)</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-                      <div>
-                        <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                          Current Loan Balance
-                        </label>
-                        <input
-                          type="number"
-                          style={styles.input}
-                          value={verifiedData?.financing?.subto_loan_balance || ''}
-                          onChange={(e) => updateVerifiedField('financing', 'subto_loan_balance', parseFloat(e.target.value))}
-                          placeholder="$0"
-                        />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                          Interest Rate %
-                        </label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          style={styles.input}
-                          value={verifiedData?.financing?.subto_interest_rate || ''}
-                          onChange={(e) => updateVerifiedField('financing', 'subto_interest_rate', parseFloat(e.target.value))}
-                          placeholder="0.0"
-                        />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                          Monthly Payment
-                        </label>
-                        <input
-                          type="number"
-                          style={styles.input}
-                          value={verifiedData?.financing?.subto_monthly_payment || ''}
-                          onChange={(e) => updateVerifiedField('financing', 'subto_monthly_payment', parseFloat(e.target.value))}
-                          placeholder="$0"
-                        />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                          Remaining Payments (Months)
-                        </label>
-                        <input
-                          type="number"
-                          style={styles.input}
-                          value={verifiedData?.financing?.subto_remaining_payments || ''}
-                          onChange={(e) => updateVerifiedField('financing', 'subto_remaining_payments', parseFloat(e.target.value))}
-                          placeholder="0"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* New Loan Section */}
-                  <div style={{ padding: 16, background: '#f0fdf4', borderRadius: 8, border: '1px solid #86efac' }}>
-                    <h4 style={{ fontSize: 14, fontWeight: 700, color: '#166534', marginBottom: 12 }}>💰 Additional Financing (New Loan/Seller Finance)</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-                      <div>
-                        <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                          New Loan Amount
-                        </label>
-                        <input
-                          type="number"
-                          style={styles.input}
-                          value={verifiedData?.financing?.new_loan_amount || ''}
-                          onChange={(e) => updateVerifiedField('financing', 'new_loan_amount', parseFloat(e.target.value))}
-                          placeholder="$0"
-                        />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                          Interest Rate %
-                        </label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          style={styles.input}
-                          value={verifiedData?.financing?.interest_rate || 6.0}
-                          onChange={(e) => updateVerifiedField('financing', 'interest_rate', parseFloat(e.target.value))}
-                          placeholder="6.0"
-                        />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                          Loan Term (Years)
-                        </label>
-                        <input
-                          type="number"
-                          style={styles.input}
-                          value={verifiedData?.financing?.loan_term_years || 10}
-                          onChange={(e) => updateVerifiedField('financing', 'loan_term_years', parseFloat(e.target.value))}
-                          placeholder="10"
-                        />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                          Amortization (Years)
-                        </label>
-                        <input
-                          type="number"
-                          style={styles.input}
-                          value={verifiedData?.financing?.amortization_years || 30}
-                          onChange={(e) => updateVerifiedField('financing', 'amortization_years', parseFloat(e.target.value))}
-                          placeholder="30"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
+              
 
               {/* EQUITY PARTNER FIELDS */}
               {debtStructure === 'equity-partner' && (
@@ -3346,32 +3063,7 @@ function UnderwriteV2Page() {
                 </div>
               )}
               
-              {/* Subject To Summary */}
-              {debtStructure === 'subject-to' && verifiedData?.financing?.current_loan_balance && (
-                <div style={{ marginTop: 24, padding: 16, background: '#fef3c7', borderRadius: 8, border: '1px solid #fcd34d' }}>
-                  <h4 style={{ fontSize: 14, fontWeight: 700, color: '#92400e', marginBottom: 12 }}>Subject To Summary</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-                    <div>
-                      <div style={{ fontSize: 12, color: '#6b7280' }}>Taking Over Loan</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>
-                        ${(verifiedData.financing.current_loan_balance || 0).toLocaleString(undefined, {maximumFractionDigits: 0})}
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 12, color: '#6b7280' }}>Monthly Payment</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>
-                        ${(verifiedData.financing.monthly_payment || 0).toLocaleString(undefined, {maximumFractionDigits: 0})}
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 12, color: '#6b7280' }}>Annual Debt Service</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: '#ef4444' }}>
-                        ${((verifiedData.financing.monthly_payment || 0) * 12).toLocaleString(undefined, {maximumFractionDigits: 0})}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              
             </div>
           )}
 
