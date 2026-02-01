@@ -296,7 +296,7 @@ const PropertySpreadsheet = ({ initialData }) => {
       marginBottom: '20px',
     },
     sectionHeader: {
-      backgroundColor: '#34568B',
+      backgroundColor: '#0ea5e9',
       color: '#ffffff',
       padding: '6px 12px',
       fontSize: '11px',
@@ -357,6 +357,29 @@ const PropertySpreadsheet = ({ initialData }) => {
       gridTemplateColumns: '1fr 1fr 1fr 1fr',
       gap: '16px',
       marginBottom: '20px',
+    },
+    metricStrip: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(5, 1fr)',
+      gap: '12px',
+      marginBottom: '16px',
+    },
+    metricCard: {
+      backgroundColor: '#eff6ff',
+      border: '1px solid #d1d5db',
+      borderRadius: '6px',
+      padding: '8px 10px',
+    },
+    metricTitle: {
+      fontSize: '10px',
+      color: '#6b7280',
+      marginBottom: '2px',
+      textTransform: 'uppercase',
+    },
+    metricValue: {
+      fontSize: '14px',
+      fontWeight: 600,
+      color: '#0f172a',
     },
   };
 
@@ -446,6 +469,29 @@ const PropertySpreadsheet = ({ initialData }) => {
       {/* Simple Overview */}
       {simpleMode && (
         <div>
+          {/* Top Metric Strip */}
+          <div style={styles.metricStrip}>
+            <div style={styles.metricCard}>
+              <div style={styles.metricTitle}>DSCR (Y1)</div>
+              <div style={styles.metricValue}>{dscrY1 != null ? `${dscrY1.toFixed(2)}x` : '-'}</div>
+            </div>
+            <div style={styles.metricCard}>
+              <div style={styles.metricTitle}>LTV</div>
+              <div style={styles.metricValue}>{ltv != null ? calc.formatPercent(ltv) : '-'}</div>
+            </div>
+            <div style={styles.metricCard}>
+              <div style={styles.metricTitle}>EGI (Y1)</div>
+              <div style={styles.metricValue}>{calc.formatCurrency(egiAnnual)}</div>
+            </div>
+            <div style={styles.metricCard}>
+              <div style={styles.metricTitle}>NOI (Y1)</div>
+              <div style={styles.metricValue}>{calc.formatCurrency(noiAnnual)}</div>
+            </div>
+            <div style={styles.metricCard}>
+              <div style={styles.metricTitle}>CoC (Y1)</div>
+              <div style={styles.metricValue}>{cocY1 != null ? calc.formatPercent(cocY1) : '-'}</div>
+            </div>
+          </div>
           <div style={styles.threeColumnGrid}>
           {/* Core Inputs */}
           <div style={styles.section}>
