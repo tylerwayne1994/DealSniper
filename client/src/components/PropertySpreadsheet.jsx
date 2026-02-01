@@ -38,6 +38,7 @@ const PropertySpreadsheet = ({ initialData }) => {
       holdPeriod: 5,
       yearBuilt: '',
       closingCosts: 0,
+      downPaymentPercent: 0,
       dueDiligence: 0,
       capexBudgetYear1: 0,
       financingCosts: 0,
@@ -119,6 +120,7 @@ const PropertySpreadsheet = ({ initialData }) => {
     
     // CREATIVE FINANCING STRUCTURE
     financing: {
+      financingType: 'Traditional',
       // Subject-To Existing Mortgage
       subjectTo: {
         balance: 0,
@@ -204,6 +206,8 @@ const PropertySpreadsheet = ({ initialData }) => {
             sellerFinancing: { ...prev.financing.sellerFinancing, ...(initialData.financing.sellerFinancing || {}) },
             sellerCarryback: { ...prev.financing.sellerCarryback, ...(initialData.financing.sellerCarryback || {}) },
             dscrLoan: { ...prev.financing.dscrLoan, ...(initialData.financing.dscrLoan || {}) },
+            hybrid: { ...prev.financing.hybrid, ...(initialData.financing.hybrid || {}) },
+            financingType: initialData.financing.financingType ?? prev.financing.financingType,
           };
         }
         if (initialData.waterfall) merged.waterfall = { ...prev.waterfall, ...initialData.waterfall };
@@ -458,8 +462,7 @@ const PropertySpreadsheet = ({ initialData }) => {
   const opExAnnual = (y1Exp && y1Exp.totalOperatingExpenses != null)
     ? y1Exp.totalOperatingExpenses
     : Object.values(data.expenses || {}).reduce((a, b) => a + (b || 0), 0);
-  const capexReserveAnnual = (data.sale?.capexReservePerUnitPerYear || 0) * (data.units || 0);
-  const noiAnnual = (y1Noi && y1Noi.noi != null) ? y1Noi.noi : egiAnnual - opExAnnual - capexReserveAnnual;
+  const noiAnnual = (y1Noi && y1Noi.noi != null) ? y1Noi.noi : egiAnnual - opExAnnual;
   const expenseRatio = egiAnnual > 0 ? (opExAnnual / egiAnnual) : null;
   const dscrY1 = financingMetrics?.dscrYear1 ?? null;
   const annualDebtService = financingMetrics?.annualDebtService ?? null;
@@ -609,6 +612,39 @@ const PropertySpreadsheet = ({ initialData }) => {
                     />
                   </td>
                 </tr>
+                <tr>
+                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>Down Payment %</td>
+                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <input
+                        type="number"
+                        step="0.001"
+                        style={styles.input}
+                        value={(data.acquisition?.downPaymentPercent || 0) * 100}
+                        onChange={(e) => setData({ ...data, acquisition: { ...data.acquisition, downPaymentPercent: (parseFloat(e.target.value) || 0) / 100 } })}
+                      />
+                      <span style={{ marginLeft: '4px', color: '#6b7280' }}>%</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>Closing Costs</td>
+                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                    <CurrencyInput
+                      value={data.uses?.closingCosts || 0}
+                      onChange={(e) => setData({ ...data, uses: { ...data.uses, closingCosts: parseFloat(e.target.value) || 0 } })}
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>CapEx Reserves</td>
+                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                    <CurrencyInput
+                      value={data.uses?.operatingReserves || 0}
+                      onChange={(e) => setData({ ...data, uses: { ...data.uses, operatingReserves: parseFloat(e.target.value) || 0 } })}
+                    />
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -702,7 +738,6 @@ const PropertySpreadsheet = ({ initialData }) => {
               <div style={styles.simpleCard}>
                 <div style={styles.simpleCardHeader}>EXPENSE SUMMARY (Y1)</div>
                 <div style={styles.row}><div style={styles.rowLabel}>Operating Expenses</div><div style={styles.rowValue}>{calc.formatCurrency(opExAnnual)}</div></div>
-                <div style={styles.row}><div style={styles.rowLabel}>CapEx Reserve</div><div style={styles.rowValue}>{calc.formatCurrency(capexReserveAnnual)}</div></div>
                 <div style={styles.row}><div style={{...styles.rowLabel, fontWeight: 700}}>Expense Ratio</div><div style={{...styles.rowValue, fontWeight: 700}}>{expenseRatio != null ? calc.formatPercent(expenseRatio) : '-'}</div></div>
               </div>
             </div>
@@ -802,17 +837,6 @@ const PropertySpreadsheet = ({ initialData }) => {
                     </div>
                   </div>
                 </div>
-                <div style={styles.row}><div style={styles.rowLabel}>CapEx Reserve</div><div style={styles.rowValue}>{calc.formatCurrency(capexReserveAnnual)}</div></div>
-                <div style={styles.row}>
-                  <div style={styles.rowLabel}>CapEx Reserve $/Unit/Yr</div>
-                  <div style={styles.rowValue}>
-                    <div style={styles.currencyInputWrapper}>
-                      <span style={styles.currencyPrefix}>$</span>
-                      <input type="number" style={styles.input} value={data.sale?.capexReservePerUnitPerYear || ''}
-                        onChange={(e) => setData({ ...data, sale: { ...data.sale, capexReservePerUnitPerYear: parseFloat(e.target.value) || 0 }})} />
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -839,6 +863,18 @@ const PropertySpreadsheet = ({ initialData }) => {
             <div style={styles.section}>
               <div style={styles.simpleCard}>
                 <div style={styles.simpleCardHeader}>DEBT STRUCTURE</div>
+                <div style={styles.row}>
+                  <div style={styles.rowLabel}>Financing Type</div>
+                  <div style={styles.rowValue}>
+                    <select style={{ ...styles.input, textAlign: 'left' }} value={data.financing?.financingType || 'Traditional'}
+                      onChange={(e) => setData({ ...data, financing: { ...data.financing, financingType: e.target.value } })}>
+                      <option value="Traditional">Traditional</option>
+                      <option value="Seller">Seller</option>
+                      <option value="Hybrid">Hybrid</option>
+                      <option value="Equity">Equity</option>
+                    </select>
+                  </div>
+                </div>
                 {/* Traditional Loan */}
                 <div style={styles.row}><div style={{...styles.rowLabel, fontWeight: 700}}>TRADITIONAL LOAN</div><div style={styles.rowValue}></div></div>
                 <div style={styles.row}>

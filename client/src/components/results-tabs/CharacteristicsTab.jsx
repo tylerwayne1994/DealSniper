@@ -14,7 +14,6 @@ export default function CharacteristicsTab(props) {
     showCountyDropdown,
     setShowCountyDropdown,
     onEditData = () => {},
-    onEditLocal,
     fmt = (v) => (v == null ? '' : v),
     pct = (v) => (v == null ? '' : v)
   } = props || {};
