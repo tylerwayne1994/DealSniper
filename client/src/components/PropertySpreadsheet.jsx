@@ -381,6 +381,38 @@ const PropertySpreadsheet = ({ initialData }) => {
       fontWeight: 600,
       color: '#0f172a',
     },
+    simpleCard: {
+      backgroundColor: '#ffffff',
+      border: '1px solid #e5e7eb',
+      borderRadius: '8px',
+      overflow: 'hidden',
+    },
+    simpleCardHeader: {
+      backgroundColor: '#f1f5f9',
+      color: '#0f172a',
+      padding: '8px 12px',
+      fontSize: '11px',
+      fontWeight: 600,
+      textTransform: 'uppercase',
+    },
+    row: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '8px 12px',
+      borderTop: '1px solid #f1f5f9',
+      gap: '12px',
+    },
+    rowLabel: {
+      color: '#475569',
+      fontSize: '12px',
+      flex: 1,
+    },
+    rowValue: {
+      fontSize: '12px',
+      minWidth: '120px',
+      textAlign: 'right',
+    },
   };
 
   // Currency Input Component with $ prefix
@@ -583,164 +615,69 @@ const PropertySpreadsheet = ({ initialData }) => {
             </table>
           </div>
 
-          {/* Financing & Returns */}
+          {/* Financing & Returns (card) */}
           <div style={styles.section}>
-            <div style={styles.sectionHeader}>FINANCING & RETURNS</div>
-            <table style={styles.table}>
-              <tbody>
-                <tr>
-                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>Year 1 DSCR</td>
-                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                    {dscrY1 != null
-                      ? `${dscrY1.toFixed(2)}x`
-                      : '-'}
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>Annual Debt Service</td>
-                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                    {annualDebtService != null ? calc.formatCurrency(annualDebtService) : '-'}
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>Total Sources</td>
-                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                    {calc.formatCurrency(sourcesAndUses.totalSources)}
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>Total Uses</td>
-                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                    {calc.formatCurrency(sourcesAndUses.totalUses)}
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>5-Year Project IRR</td>
-                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                    {returnSummary.fiveYear.projectIRR > 0
-                      ? calc.formatPercent(returnSummary.fiveYear.projectIRR)
-                      : <span style={{ color: '#ef4444' }}>#DIV/0!</span>}
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>5-Year Equity Multiple</td>
-                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                    {returnSummary.fiveYear.equityMultiple.toFixed(2)}x
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>5-Year Avg CoC</td>
-                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                    {calc.formatPercent(returnSummary.fiveYear.avgCoCReturn)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div style={styles.simpleCard}>
+              <div style={styles.simpleCardHeader}>FINANCING & RETURNS</div>
+              <div style={styles.row}>
+                <div style={styles.rowLabel}>DSCR (Y1)</div>
+                <div style={styles.rowValue}>{dscrY1 != null ? `${dscrY1.toFixed(2)}x` : '-'}</div>
+              </div>
+              <div style={styles.row}>
+                <div style={styles.rowLabel}>Debt Service (Annual)</div>
+                <div style={styles.rowValue}>{annualDebtService != null ? calc.formatCurrency(annualDebtService) : '-'}</div>
+              </div>
+              <div style={styles.row}>
+                <div style={styles.rowLabel}>LTV</div>
+                <div style={styles.rowValue}>{ltv != null ? calc.formatPercent(ltv) : '-'}</div>
+              </div>
+              <div style={styles.row}>
+                <div style={styles.rowLabel}>CoC (Y1)</div>
+                <div style={styles.rowValue}>{cocY1 != null ? calc.formatPercent(cocY1) : '-'}</div>
+              </div>
+              <div style={styles.row}>
+                <div style={styles.rowLabel}>Total Sources</div>
+                <div style={styles.rowValue}>{calc.formatCurrency(sourcesAndUses.totalSources)}</div>
+              </div>
+              <div style={styles.row}>
+                <div style={styles.rowLabel}>Total Uses</div>
+                <div style={styles.rowValue}>{calc.formatCurrency(sourcesAndUses.totalUses)}</div>
+              </div>
+            </div>
           </div>
           </div>
 
           {/* Revenue / Expenses / NOI & Ratios */}
           <div style={styles.threeColumnGrid}>
             <div style={styles.section}>
-              <div style={styles.sectionHeader}>REVENUE SUMMARY (Y1)</div>
-              <table style={styles.table}>
-                <tbody>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>$ / Unit / Mo</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      {calc.formatCurrency(grossPotentialPerUnitMo)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>Gross Potential Rent</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      {calc.formatCurrency(grossPotentialAnnual)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>(Less) Vacancy</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      {calc.formatCurrency(vacancyAnnual)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>(Less) Loss to Lease</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      {calc.formatCurrency(lossToLeaseAnnual)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>(Less) Concessions</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      {calc.formatCurrency(concessionsAnnual)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>Other Income</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      {calc.formatCurrency(otherIncomeAnnual)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell, fontWeight: '700' }}>Effective Gross Income</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell, fontWeight: '700' }}>
-                      {calc.formatCurrency(egiAnnual)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <div style={styles.simpleCard}>
+                <div style={styles.simpleCardHeader}>REVENUE SUMMARY (Y1)</div>
+                <div style={styles.row}><div style={styles.rowLabel}>$/Unit/Month</div><div style={styles.rowValue}>{calc.formatCurrency(grossPotentialPerUnitMo)}</div></div>
+                <div style={styles.row}><div style={styles.rowLabel}>Gross Potential Rent</div><div style={styles.rowValue}>{calc.formatCurrency(grossPotentialAnnual)}</div></div>
+                <div style={styles.row}><div style={styles.rowLabel}>(Less) Vacancy</div><div style={styles.rowValue}>{calc.formatCurrency(vacancyAnnual)}</div></div>
+                <div style={styles.row}><div style={styles.rowLabel}>(Less) Loss to Lease</div><div style={styles.rowValue}>{calc.formatCurrency(lossToLeaseAnnual)}</div></div>
+                <div style={styles.row}><div style={styles.rowLabel}>(Less) Concessions</div><div style={styles.rowValue}>{calc.formatCurrency(concessionsAnnual)}</div></div>
+                <div style={styles.row}><div style={styles.rowLabel}>Other Income</div><div style={styles.rowValue}>{calc.formatCurrency(otherIncomeAnnual)}</div></div>
+                <div style={styles.row}><div style={{...styles.rowLabel, fontWeight: 700}}>Effective Gross Income</div><div style={{...styles.rowValue, fontWeight: 700}}>{calc.formatCurrency(egiAnnual)}</div></div>
+              </div>
             </div>
 
             <div style={styles.section}>
-              <div style={styles.sectionHeader}>EXPENSE SUMMARY (Y1)</div>
-              <table style={styles.table}>
-                <tbody>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>Operating Expenses</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      {calc.formatCurrency(opExAnnual)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>CapEx Reserve</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      {calc.formatCurrency(capexReserveAnnual)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell, fontWeight: '700' }}>Expense Ratio</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell, fontWeight: '700' }}>
-                      {expenseRatio != null ? calc.formatPercent(expenseRatio) : '-'}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <div style={styles.simpleCard}>
+                <div style={styles.simpleCardHeader}>EXPENSE SUMMARY (Y1)</div>
+                <div style={styles.row}><div style={styles.rowLabel}>Operating Expenses</div><div style={styles.rowValue}>{calc.formatCurrency(opExAnnual)}</div></div>
+                <div style={styles.row}><div style={styles.rowLabel}>CapEx Reserve</div><div style={styles.rowValue}>{calc.formatCurrency(capexReserveAnnual)}</div></div>
+                <div style={styles.row}><div style={{...styles.rowLabel, fontWeight: 700}}>Expense Ratio</div><div style={{...styles.rowValue, fontWeight: 700}}>{expenseRatio != null ? calc.formatPercent(expenseRatio) : '-'}</div></div>
+              </div>
             </div>
 
             <div style={styles.section}>
-              <div style={styles.sectionHeader}>NOI & RATIOS (Y1)</div>
-              <table style={styles.table}>
-                <tbody>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>NOI</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      {calc.formatCurrency(noiAnnual)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>NOI Margin</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      {egiAnnual > 0 ? calc.formatPercent(noiAnnual / egiAnnual) : '-'}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>Cap Rate (Purchase)</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      {calc.formatPercent(keyMetrics.purchaseCapRate)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <div style={styles.simpleCard}>
+                <div style={styles.simpleCardHeader}>NOI & RATIOS (Y1)</div>
+                <div style={styles.row}><div style={styles.rowLabel}>NOI</div><div style={styles.rowValue}>{calc.formatCurrency(noiAnnual)}</div></div>
+                <div style={styles.row}><div style={styles.rowLabel}>NOI Margin</div><div style={styles.rowValue}>{egiAnnual > 0 ? calc.formatPercent(noiAnnual / egiAnnual) : '-'}</div></div>
+                <div style={styles.row}><div style={styles.rowLabel}>Cap Rate (Purchase)</div><div style={styles.rowValue}>{calc.formatPercent(keyMetrics.purchaseCapRate)}</div></div>
+              </div>
             </div>
           </div>
 
