@@ -159,7 +159,7 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                 { label: 'Cap Rate', value: pct(fullCalcs?.year1?.capRate || 0) },
                 { label: 'Cash Flow', value: fmt(fullCalcs?.year1?.cashFlow || 0), color: (fullCalcs?.year1?.cashFlow || 0) >= 0 ? COLORS.text : '#ef4444' },
                 { label: 'Cash-on-Cash', value: pct(fullCalcs?.year1?.cashOnCash || 0) },
-                { label: 'DSCR', value: (fullCalcs?.year1?.dscr != null && !Number.isNaN(fullCalcs?.year1?.dscr)) ? `${fullCalcs.year1.dscr.toFixed(2)}x` : 'N/A' },
+                { label: 'DSCR', value: (fullCalcs?.year1?.dscr != null && !Number.isNaN(fullCalcs?.year1?.dscr)) ? `${(fullCalcs?.year1?.dscr || 0).toFixed(2)}x` : 'N/A' },
                 { label: 'Expense Ratio', value: pct(fullCalcs?.year1?.expenseRatio || 0) }
               ].map((m, idx) => (
                 <div
@@ -275,25 +275,26 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                           <td style={{ padding: '12px', fontWeight: '600', color: '#374151' }}>{label}</td>
                           <td style={{ padding: '12px', textAlign: 'right' }}>
                             {type === 'percent' ? (
-                              <input
-                                type="number"
-                                step="0.1"
-                                value={percentVal}
-                                onChange={(e) => handlePercentChange(`expenses.${pctKey}`, `expenses.${key}`, parseFloat(e.target.value) || 0, annualGPR)}
-                                style={{
-                                  width: '120px',
-                                  padding: '8px 10px',
-                                  border: '1px solid #d1d5db',
-                                  borderRadius: '6px',
-                                  fontSize: '12px',
-                                  fontWeight: '600',
-                                  backgroundColor: 'white',
-                                  color: '#111827',
-                                  textAlign: 'right'
-                                }}
-                              />
-                              
-                              <span style={{ marginLeft: '6px', color: COLORS.gray, fontWeight: 700 }}>%</span>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  value={percentVal}
+                                  onChange={(e) => handlePercentChange(`expenses.${pctKey}`, `expenses.${key}`, parseFloat(e.target.value) || 0, annualGPR)}
+                                  style={{
+                                    width: '120px',
+                                    padding: '8px 10px',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '6px',
+                                    fontSize: '12px',
+                                    fontWeight: '600',
+                                    backgroundColor: 'white',
+                                    color: '#111827',
+                                    textAlign: 'right'
+                                  }}
+                                />
+                                <span style={{ color: COLORS.gray, fontWeight: 700 }}>%</span>
+                              </div>
                             ) : (
                               <span style={{ color: '#6b7280' }}>—</span>
                             )}
