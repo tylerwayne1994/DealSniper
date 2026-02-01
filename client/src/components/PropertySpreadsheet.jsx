@@ -390,16 +390,23 @@ const PropertySpreadsheet = ({ initialData }) => {
   const opExAnnual = (y1Exp && y1Exp.totalOperatingExpenses != null)
     ? y1Exp.totalOperatingExpenses
     : Object.values(data.expenses || {}).reduce((a, b) => a + (b || 0), 0);
-  const capexReserveAnnual = (data.sale?.capexReservePerUnitPerYear || 0) * (data.units || 0) * 12;
+  const capexReserveAnnual = (data.sale?.capexReservePerUnitPerYear || 0) * (data.units || 0);
   const noiAnnual = (y1Noi && y1Noi.noi != null) ? y1Noi.noi : egiAnnual - opExAnnual - capexReserveAnnual;
   const expenseRatio = egiAnnual > 0 ? (opExAnnual / egiAnnual) : null;
   const dscrY1 = financingMetrics?.dscrYear1 ?? null;
   const annualDebtService = financingMetrics?.annualDebtService ?? null;
-  const managementAnnual = (data.growth?.managementFeePercent || 0) * egiAnnual;
+  const managementAnnual = (data.growth?.managementFeePercent || 0) * grossPotentialAnnual;
   const vacancyPct = data.growth?.vacancyRate ?? null;
   const managementPct = data.growth?.managementFeePercent ?? null;
   const totalEquitySources = (data.sources?.lpEquity || 0) + (data.sources?.gpEquity || 0) + (data.sources?.preferredEquity || 0);
   const cocY1 = (y1CF?.equityCashFlow != null && totalEquitySources > 0) ? (y1CF.equityCashFlow / totalEquitySources) : null;
+  const totalDebtSources = (data.sources?.seniorDebt || 0) + (data.sources?.mezDebt || 0);
+  const totalDebtFinancing = (data.financing?.dscrLoan?.loanAmount || 0)
+    + (data.financing?.sellerFinancing?.loanAmount || 0)
+    + (data.financing?.sellerCarryback?.loanAmount || 0)
+    + (data.financing?.subjectTo?.balance || 0);
+  const totalDebt = totalDebtSources + totalDebtFinancing;
+  const ltv = (data.purchasePrice > 0) ? (totalDebt / data.purchasePrice) : null;
 
   return (
     <div style={styles.container}>
@@ -538,8 +545,8 @@ const PropertySpreadsheet = ({ initialData }) => {
                 <tr>
                   <td style={{ ...styles.tableCell, ...styles.labelCell }}>Year 1 DSCR</td>
                   <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                    {dscrY1
-                      ? calc.formatPercent(dscrY1)
+                    {dscrY1 != null
+                      ? `${dscrY1.toFixed(2)}x`
                       : '-'}
                   </td>
                 </tr>
@@ -746,13 +753,19 @@ const PropertySpreadsheet = ({ initialData }) => {
                   <tr>
                     <td style={{ ...styles.tableCell, ...styles.labelCell }}>DSCR (Y1)</td>
                     <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      {dscrY1 ? calc.formatPercent(dscrY1) : '-'}
+                      {dscrY1 != null ? `${dscrY1.toFixed(2)}x` : '-'}
                     </td>
                   </tr>
                   <tr>
                     <td style={{ ...styles.tableCell, ...styles.labelCell }}>Debt Service (Annual)</td>
                     <td style={{ ...styles.tableCell, ...styles.inputCell }}>
                       {annualDebtService != null ? calc.formatCurrency(annualDebtService) : '-'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>LTV</td>
+                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                      {ltv != null ? calc.formatPercent(ltv) : '-'}
                     </td>
                   </tr>
                 </tbody>
@@ -833,7 +846,7 @@ const PropertySpreadsheet = ({ initialData }) => {
                   <tr>
                     <td style={{ ...styles.tableCell, ...styles.labelCell }}>DSCR</td>
                     <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      {dscrY1 ? calc.formatPercent(dscrY1) : '-'}
+                      {dscrY1 != null ? `${dscrY1.toFixed(2)}x` : '-'}
                     </td>
                   </tr>
                   <tr>
