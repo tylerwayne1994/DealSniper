@@ -201,20 +201,23 @@ const PropertySpreadsheet = ({ initialData }) => {
     }
   }, [initialData]);
 
+  // Simple vs Advanced view toggle
+  const [simpleMode, setSimpleMode] = useState(true);
+
   // Calculate Key Deal Metrics using useMemo for efficiency
   const keyMetrics = useMemo(() => {
     return calc.calculateKeyDealMetrics(data);
-  }, [data.purchasePrice, data.units, data.squareFeet, data.stabilizedNOI, data.proFormaNOI]);
+  }, [data]);
 
   // Calculate Sources & Uses
   const sourcesAndUses = useMemo(() => {
     return calc.calculateSourcesAndUses(data);
-  }, [data.sources, data.uses]);
+  }, [data]);
 
   // Calculate Return Summary
   const returnSummary = useMemo(() => {
     return calc.calculateReturnSummary(data);
-  }, [data.sources, data.uses]); // Will add more dependencies once cash flows are implemented
+  }, [data]); // Will add more dependencies once cash flows are implemented
 
   // Calculate Unit Mix Summary
   const unitMixSummary = useMemo(() => {
@@ -234,37 +237,37 @@ const PropertySpreadsheet = ({ initialData }) => {
   // Calculate Revenue Projections (10 years)
   const revenueProjections = useMemo(() => {
     return calc.calculateRevenueProjections(data);
-  }, [data.units, data.rentRoll, data.growth]);
+  }, [data]);
 
   // Calculate Expense Projections (10 years)
   const expenseProjections = useMemo(() => {
     return calc.calculateExpenseProjections(data, revenueProjections);
-  }, [data.units, data.expenses, data.growth, data.sale, data.otherIncome, revenueProjections]);
+  }, [data, revenueProjections]);
 
   // Calculate NOI Projections (10 years)
   const noiProjections = useMemo(() => {
     return calc.calculateNOIProjections(revenueProjections, expenseProjections, data.units);
-  }, [revenueProjections, expenseProjections, data.units]);
+  }, [revenueProjections, expenseProjections, data]);
 
   // Calculate Financing Metrics
   const financingMetrics = useMemo(() => {
     return calc.calculateFinancingMetrics(data, noiProjections);
-  }, [data.financing, data.purchasePrice, noiProjections]);
+  }, [data, noiProjections]);
 
   // Calculate Cash Flow Projections
   const cashFlowProjections = useMemo(() => {
     return calc.calculateCashFlowProjections(noiProjections, financingMetrics, data);
-  }, [noiProjections, financingMetrics, data.sources]);
+  }, [noiProjections, financingMetrics, data]);
 
   // Calculate Sale Analysis
   const saleAnalysis = useMemo(() => {
     return calc.calculateSaleAnalysis(noiProjections, data, financingMetrics);
-  }, [noiProjections, data.growth, data.sale, financingMetrics]);
+  }, [noiProjections, financingMetrics, data]);
 
   // Calculate Equity Investment
   const equityInvestment = useMemo(() => {
     return calc.calculateEquityInvestment(data, financingMetrics);
-  }, [data.uses, financingMetrics]);
+  }, [data, financingMetrics]);
 
   // Calculate IRR Cash Flows
   const irrCashFlows = useMemo(() => {
@@ -274,12 +277,12 @@ const PropertySpreadsheet = ({ initialData }) => {
   // Calculate Waterfall Distribution
   const waterfallDistribution = useMemo(() => {
     return calc.calculateWaterfallDistribution(irrCashFlows, equityInvestment, data);
-  }, [irrCashFlows, equityInvestment, data.waterfall]);
+  }, [irrCashFlows, equityInvestment, data]);
 
   // Calculate Sensitivity Analysis
   const sensitivityAnalysis = useMemo(() => {
     return calc.calculateSensitivityAnalysis(data, cashFlowProjections, equityInvestment, noiProjections, financingMetrics);
-  }, [data.growth, data.sale, cashFlowProjections, equityInvestment, noiProjections, financingMetrics]);
+  }, [data, cashFlowProjections, equityInvestment, noiProjections, financingMetrics]);
 
   const styles = {
     container: {
@@ -372,6 +375,185 @@ const PropertySpreadsheet = ({ initialData }) => {
 
   return (
     <div style={styles.container}>
+      {/* View Toggle */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+        <div style={{ fontSize: '12px', color: '#6b7280' }}>Property Analysis</div>
+        <div style={{ display: 'inline-flex', gap: '8px' }}>
+          <button
+            onClick={() => setSimpleMode(true)}
+            style={{
+              padding: '6px 10px',
+              fontSize: '11px',
+              border: '1px solid #d1d5db',
+              backgroundColor: simpleMode ? '#e0f2fe' : '#ffffff',
+              color: '#0ea5e9',
+              cursor: 'pointer'
+            }}
+          >
+            Simple
+          </button>
+          <button
+            onClick={() => setSimpleMode(false)}
+            style={{
+              padding: '6px 10px',
+              fontSize: '11px',
+              border: '1px solid #d1d5db',
+              backgroundColor: !simpleMode ? '#e0f2fe' : '#ffffff',
+              color: '#0ea5e9',
+              cursor: 'pointer'
+            }}
+          >
+            Advanced
+          </button>
+        </div>
+      </div>
+
+      {/* Simple Overview */}
+      {simpleMode && (
+        <div style={styles.threeColumnGrid}>
+          {/* Core Inputs */}
+          <div style={styles.section}>
+            <div style={styles.sectionHeader}>CORE INPUTS</div>
+            <table style={styles.table}>
+              <tbody>
+                <tr>
+                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>Property Name</td>
+                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                    <input
+                      type="text"
+                      style={styles.input}
+                      value={data.propertyName}
+                      onChange={(e) => setData({ ...data, propertyName: e.target.value })}
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>Total Units</td>
+                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                    <input
+                      type="number"
+                      style={styles.input}
+                      value={data.units || ''}
+                      onChange={(e) => setData({ ...data, units: parseFloat(e.target.value) || 0 })}
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>Total SF</td>
+                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                    <input
+                      type="number"
+                      style={styles.input}
+                      value={data.squareFeet || ''}
+                      onChange={(e) => setData({ ...data, squareFeet: parseFloat(e.target.value) || 0 })}
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>Purchase Price</td>
+                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                    <CurrencyInput
+                      value={data.purchasePrice}
+                      onChange={(e) => setData({ ...data, purchasePrice: parseFloat(e.target.value) || 0 })}
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Key Metrics */}
+          <div style={styles.section}>
+            <div style={styles.sectionHeader}>KEY METRICS</div>
+            <table style={styles.table}>
+              <tbody>
+                <tr>
+                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>Price Per Unit</td>
+                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                    {calc.formatCurrency(keyMetrics.pricePerUnit)}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>Price Per SF</td>
+                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                    {calc.formatCurrency(keyMetrics.pricePerSF)}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>Year 1 NOI</td>
+                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                    {calc.formatCurrency(data.stabilizedNOI)}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>Going-In Cap Rate</td>
+                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                    {calc.formatPercent(keyMetrics.purchaseCapRate)}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>Stabilized Cap Rate</td>
+                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                    {calc.formatPercent(keyMetrics.proFormaCapRate)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Financing & Returns */}
+          <div style={styles.section}>
+            <div style={styles.sectionHeader}>FINANCING & RETURNS</div>
+            <table style={styles.table}>
+              <tbody>
+                <tr>
+                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>Year 1 DSCR</td>
+                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                    {financingMetrics && financingMetrics.dscrYear1
+                      ? calc.formatPercent(financingMetrics.dscrYear1)
+                      : '-'}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>Total Sources</td>
+                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                    {calc.formatCurrency(sourcesAndUses.totalSources)}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>Total Uses</td>
+                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                    {calc.formatCurrency(sourcesAndUses.totalUses)}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>5-Year Project IRR</td>
+                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                    {returnSummary.fiveYear.projectIRR > 0
+                      ? calc.formatPercent(returnSummary.fiveYear.projectIRR)
+                      : <span style={{ color: '#ef4444' }}>#DIV/0!</span>}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>5-Year Equity Multiple</td>
+                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                    {returnSummary.fiveYear.equityMultiple.toFixed(2)}x
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ ...styles.tableCell, ...styles.labelCell }}>5-Year Avg CoC</td>
+                  <td style={{ ...styles.tableCell, ...styles.inputCell }}>
+                    {calc.formatPercent(returnSummary.fiveYear.avgCoCReturn)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Advanced Content Wrapper */}
+      <div style={{ display: simpleMode ? 'none' : 'block' }}>
       {/* Top Row: Key Metrics, Sources, Uses, Returns */}
       <div style={styles.fourColumnGrid}>
         {/* KEY DEAL METRICS */}
@@ -3233,6 +3415,7 @@ const PropertySpreadsheet = ({ initialData }) => {
           </div>
         </div>
       </div>
+      </div>{/* end Advanced Content Wrapper */}
     </div>
   );
 };
