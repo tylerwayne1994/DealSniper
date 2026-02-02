@@ -454,7 +454,6 @@ const PropertySpreadsheet = ({ initialData }) => {
     ? y1Rev.otherIncome
     : Object.values(data.otherIncome || {}).reduce((a, b) => a + (b || 0), 0);
   const grossPotentialAnnual = y1Rev?.grossPotentialRent || 0;
-  const grossPotentialPerUnitMo = y1Rev?.grossPotentialRentPerUnitPerMonth || 0;
   const vacancyAnnual = y1Rev?.vacancy || 0;
   const lossToLeaseAnnual = y1Rev?.lossToLease || 0;
   const concessionsAnnual = y1Rev?.concessions || 0;
@@ -752,63 +751,7 @@ const PropertySpreadsheet = ({ initialData }) => {
             </div>
           </div>
 
-          {/* Per-Unit & Cash Flow */}
-          <div style={styles.threeColumnGrid}>
-            <div style={styles.section}>
-              <div style={styles.sectionHeader}>PER-UNIT QUICK STATS</div>
-              <table style={styles.table}>
-                <tbody>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>Avg Market Rent / Mo</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      {calc.formatCurrency(grossPotentialPerUnitMo)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>Annual NOI / Unit</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      {data.units > 0 ? calc.formatCurrency(noiAnnual / data.units) : '-'}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>Monthly NOI / Unit</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      {data.units > 0 ? calc.formatCurrency((noiAnnual / 12) / data.units) : '-'}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
 
-            <div style={styles.section}>
-              <div style={styles.sectionHeader}>CASH FLOW (Y1)</div>
-              <table style={styles.table}>
-                <tbody>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>Cash Flow to Equity</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      {y1CF && y1CF.equityCashFlow != null ? calc.formatCurrency(y1CF.equityCashFlow) : '-'}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ ...styles.tableCell, ...styles.labelCell }}>CoC (Y1)</td>
-                    <td style={{ ...styles.tableCell, ...styles.inputCell }}>
-                      {returnSummary.fiveYear.avgCoCReturn != null ? calc.formatPercent(returnSummary.fiveYear.avgCoCReturn) : '-'}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div style={styles.section}>
-              <div style={styles.simpleCard}>
-                <div style={styles.simpleCardHeader}>FINANCING QUICK LOOK</div>
-                <div style={styles.row}><div style={styles.rowLabel}>DSCR (Y1)</div><div style={styles.rowValue}>{dscrY1 != null ? `${dscrY1.toFixed(2)}x` : '-'}</div></div>
-                <div style={styles.row}><div style={styles.rowLabel}>Debt Service (Annual)</div><div style={styles.rowValue}>{annualDebtService != null ? calc.formatCurrency(annualDebtService) : '-'}</div></div>
-                <div style={styles.row}><div style={styles.rowLabel}>LTV</div><div style={styles.rowValue}>{ltv != null ? calc.formatPercent(ltv) : '-'}</div></div>
-              </div>
-            </div>
-          </div>
 
           {/* Expense Highlights & Debt Structure */}
           <div style={styles.threeColumnGrid}>

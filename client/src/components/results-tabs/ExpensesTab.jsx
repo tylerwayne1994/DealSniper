@@ -159,7 +159,7 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                 { label: 'Cap Rate', value: pct(fullCalcs?.year1?.capRate || 0) },
                 { label: 'Cash Flow', value: fmt(fullCalcs?.year1?.cashFlow || 0), color: (fullCalcs?.year1?.cashFlow || 0) >= 0 ? COLORS.text : '#ef4444' },
                 { label: 'Cash-on-Cash', value: pct(fullCalcs?.year1?.cashOnCash || 0) },
-                { label: 'DSCR', value: (fullCalcs?.year1?.dscr != null && !Number.isNaN(fullCalcs?.year1?.dscr)) ? `${(fullCalcs?.year1?.dscr || 0).toFixed(2)}x` : 'N/A' },
+                { label: 'DSCR', value: (fullCalcs?.year1?.dscr != null && !Number.isNaN(fullCalcs?.year1?.dscr)) ? `${fullCalcs.year1.dscr.toFixed(2)}x` : 'N/A' },
                 { label: 'Expense Ratio', value: pct(fullCalcs?.year1?.expenseRatio || 0) }
               ].map((m, idx) => (
                 <div
@@ -275,7 +275,7 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                           <td style={{ padding: '12px', fontWeight: '600', color: '#374151' }}>{label}</td>
                           <td style={{ padding: '12px', textAlign: 'right' }}>
                             {type === 'percent' ? (
-                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                              <>
                                 <input
                                   type="number"
                                   step="0.1"
@@ -293,8 +293,8 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                                     textAlign: 'right'
                                   }}
                                 />
-                                <span style={{ color: COLORS.gray, fontWeight: 700 }}>%</span>
-                              </div>
+                                <span style={{ marginLeft: '6px', color: COLORS.gray, fontWeight: 700 }}>%</span>
+                              </>
                             ) : (
                               <span style={{ color: '#6b7280' }}>—</span>
                             )}
@@ -343,6 +343,7 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                         const pctTotal = annualGPR > 0 ? (total / annualGPR) * 100 : 0;
                         return (
                           <>
+                            <td style={{ padding: '12px', textAlign: 'right' }}></td>
                             <td style={{ padding: '12px', textAlign: 'right', fontWeight: 800, color: COLORS.text }}>${Number(total).toLocaleString()}</td>
                             <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700, color: '#374151' }}>${Number(monthlyTotal).toLocaleString()}</td>
                             <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700, color: '#374151' }}>{pct(pctTotal || 0)}</td>
