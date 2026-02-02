@@ -258,133 +258,86 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
         </div>
 
         {/* Unit mix table */}
-        <div
-          style={{
-            background: 'linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)',
-            border: '1px solid #e5e7eb',
-            borderRadius: '16px',
-            overflow: 'hidden',
-            boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
-          }}
-        >
-          <div
-            style={{
-              padding: '20px 24px',
-              borderBottom: '2px solid #e5e7eb',
-              backgroundColor: '#1d4ed8',
-              borderRadius: '16px 16px 0 0',
-            }}
-          >
-            <h4
-              style={{
-                margin: 0,
-                fontSize: '14px',
-                fontWeight: '700',
-                color: 'white',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}
-            >
-              Unit Mix (Parsed Data)
-            </h4>
-          </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div style={{ marginBottom: '32px', overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', border: '2px solid #0ea5e9' }}>
             <thead>
-              <tr style={{ backgroundColor: '#f3f4f6' }}>
+              <tr style={{ backgroundColor: '#1e3a8a', color: 'white' }}>
                 <th
                   style={{
-                    padding: '16px 24px',
+                    padding: '12px 8px',
                     textAlign: 'left',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    color: '#374151',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    borderBottom: '2px solid #d1d5db',
+                    fontWeight: 700,
+                    borderRight: '1px solid #3b82f6',
+                    minWidth: '140px',
+                    position: 'sticky',
+                    left: 0,
+                    backgroundColor: '#1e3a8a',
+                    zIndex: 10,
                   }}
                 >
                   Unit Type
                 </th>
                 <th
                   style={{
-                    padding: '16px 24px',
-                    textAlign: 'center',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    color: '#374151',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    borderBottom: '2px solid #d1d5db',
+                    padding: '12px 8px',
+                    textAlign: 'right',
+                    fontWeight: 700,
+                    borderRight: '1px solid #3b82f6',
+                    minWidth: '80px',
                   }}
                 >
                   # Units
                 </th>
                 <th
                   style={{
-                    padding: '16px 24px',
-                    textAlign: 'center',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    color: '#374151',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    borderBottom: '2px solid #d1d5db',
+                    padding: '12px 8px',
+                    textAlign: 'right',
+                    fontWeight: 700,
+                    borderRight: '1px solid #3b82f6',
+                    minWidth: '90px',
                   }}
                 >
-                  SF per Unit
+                  SF/Unit
                 </th>
                 <th
                   style={{
-                    padding: '16px 24px',
+                    padding: '12px 8px',
                     textAlign: 'right',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    color: '#374151',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    borderBottom: '2px solid #d1d5db',
+                    fontWeight: 700,
+                    borderRight: '1px solid #3b82f6',
+                    minWidth: '110px',
                   }}
                 >
-                  Current Rent/Mo
+                  Current Rent
                 </th>
                 <th
                   style={{
-                    padding: '16px 24px',
+                    padding: '12px 8px',
                     textAlign: 'right',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    color: '#374151',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    borderBottom: '2px solid #d1d5db',
+                    fontWeight: 700,
+                    borderRight: '1px solid #3b82f6',
+                    minWidth: '110px',
                   }}
                 >
-                  Market Rent/Mo
+                  Market Rent
                 </th>
                 <th
                   style={{
-                    padding: '16px 24px',
+                    padding: '12px 8px',
                     textAlign: 'right',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    color: '#374151',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    borderBottom: '2px solid #d1d5db',
+                    fontWeight: 700,
+                    borderRight: '1px solid #3b82f6',
+                    minWidth: '110px',
                   }}
                 >
                   Annual Rent
                 </th>
                 <th
                   style={{
-                    padding: '16px 24px',
+                    padding: '12px 8px',
                     textAlign: 'right',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    color: '#374151',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    borderBottom: '2px solid #d1d5db',
+                    fontWeight: 700,
+                    minWidth: '100px',
                   }}
                 >
                   $/SF (Annual)
@@ -400,57 +353,52 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
                   <tr
                     key={idx}
                     style={{
-                      borderBottom: '1px solid #e5e7eb',
-                      transition: 'background 0.15s',
-                      backgroundColor: 'white',
+                      backgroundColor: idx % 2 === 0 ? 'white' : '#f9fafb',
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f9fafb')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'white')}
                   >
                     <td
                       style={{
-                        padding: '16px 24px',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        color: '#111827',
+                        padding: '8px',
+                        fontWeight: 600,
+                        borderRight: '1px solid #e5e7eb',
+                        position: 'sticky',
+                        left: 0,
+                        backgroundColor: idx % 2 === 0 ? 'white' : '#f9fafb',
+                        zIndex: 5,
                       }}
                     >
                       {unit.type || 'N/A'}
                     </td>
                     <td
                       style={{
-                        padding: '16px 24px',
-                        textAlign: 'center',
-                        fontSize: '14px',
-                        color: '#6b7280',
-                        fontWeight: '500',
+                        padding: '8px',
+                        textAlign: 'right',
+                        borderRight: '1px solid #e5e7eb',
                       }}
                     >
                       {unit.units || 0}
                     </td>
                     <td
                       style={{
-                        padding: '16px 24px',
-                        textAlign: 'center',
-                        fontSize: '14px',
-                        color: '#6b7280',
-                        fontWeight: '500',
+                        padding: '8px',
+                        textAlign: 'right',
+                        borderRight: '1px solid #e5e7eb',
                       }}
                     >
                       {(unit.unit_sf || 0).toLocaleString()}
                     </td>
                     <td
                       style={{
-                        padding: '16px 24px',
+                        padding: '8px',
                         textAlign: 'right',
-                        fontSize: '14px',
-                        fontWeight: '700',
+                        fontWeight: 600,
                         color: '#10b981',
+                        borderRight: '1px solid #e5e7eb',
                       }}
                     >
                       ${(unit.rent_current || 0).toLocaleString()}
                     </td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                    <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb' }}>
                       <input
                         type="number"
                         value={marketRentValue}
@@ -460,14 +408,14 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
                           handleMarketRentChange(idx, newMarketRent);
                         }}
                         style={{
-                          width: '100px',
-                          fontSize: '14px',
-                          fontWeight: '700',
+                          width: '90px',
+                          fontSize: '11px',
+                          fontWeight: 600,
                           color: '#1e40af',
                           backgroundColor: '#eff6ff',
-                          border: '2px solid #93c5fd',
-                          borderRadius: '6px',
-                          padding: '6px 10px',
+                          border: '1px solid #93c5fd',
+                          borderRadius: '4px',
+                          padding: '4px 8px',
                           textAlign: 'right',
                           outline: 'none',
                         }}
@@ -475,22 +423,19 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
                     </td>
                     <td
                       style={{
-                        padding: '16px 24px',
+                        padding: '8px',
                         textAlign: 'right',
-                        fontSize: '14px',
-                        color: '#374151',
-                        fontWeight: '600',
+                        fontWeight: 600,
+                        borderRight: '1px solid #e5e7eb',
                       }}
                     >
                       ${annualRent.toLocaleString()}
                     </td>
                     <td
                       style={{
-                        padding: '16px 24px',
+                        padding: '8px',
                         textAlign: 'right',
-                        fontSize: '14px',
-                        color: '#374151',
-                        fontWeight: '600',
+                        fontWeight: 600,
                       }}
                     >
                       ${psfAnnual.toFixed(2)}
@@ -502,82 +447,79 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
             <tfoot>
               <tr
                 style={{
-                  background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
-                  borderTop: '2px solid #d1d5db',
+                  backgroundColor: '#e0f2fe',
+                  borderTop: '2px solid #0ea5e9',
                 }}
               >
                 <td
                   style={{
-                    padding: '16px 24px',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    color: '#111827',
+                    padding: '10px 8px',
+                    fontWeight: 800,
+                    borderRight: '1px solid #0ea5e9',
+                    position: 'sticky',
+                    left: 0,
+                    backgroundColor: '#e0f2fe',
+                    zIndex: 5,
                   }}
                 >
                   Total
                 </td>
                 <td
                   style={{
-                    padding: '16px 24px',
-                    textAlign: 'center',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    color: '#111827',
+                    padding: '10px 8px',
+                    textAlign: 'right',
+                    fontWeight: 800,
+                    borderRight: '1px solid #0ea5e9',
                   }}
                 >
                   {totalUnitsCount}
                 </td>
                 <td
                   style={{
-                    padding: '16px 24px',
-                    textAlign: 'center',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    color: '#111827',
+                    padding: '10px 8px',
+                    textAlign: 'right',
+                    fontWeight: 800,
+                    borderRight: '1px solid #0ea5e9',
                   }}
                 >
                   {totalSFCount.toLocaleString()}
                 </td>
                 <td
                   style={{
-                    padding: '16px 24px',
+                    padding: '10px 8px',
                     textAlign: 'right',
-                    fontSize: '14px',
-                    fontWeight: '700',
+                    fontWeight: 800,
                     color: '#10b981',
+                    borderRight: '1px solid #0ea5e9',
                   }}
                 >
                   ${totalMonthlyRent.toLocaleString()}
                 </td>
                 <td
                   style={{
-                    padding: '16px 24px',
+                    padding: '10px 8px',
                     textAlign: 'right',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    color: '#1e40af',
+                    fontWeight: 800,
+                    borderRight: '1px solid #0ea5e9',
                   }}
                 >
                   ${unitMixTotalMarketMonthlyRent.toLocaleString()}
                 </td>
                 <td
                   style={{
-                    padding: '16px 24px',
+                    padding: '10px 8px',
                     textAlign: 'right',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    color: '#111827',
+                    fontWeight: 800,
+                    borderRight: '1px solid #0ea5e9',
                   }}
                 >
                   ${totalAnnualRent.toLocaleString()}
                 </td>
                 <td
                   style={{
-                    padding: '16px 24px',
+                    padding: '10px 8px',
                     textAlign: 'right',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    color: '#111827',
+                    fontWeight: 800,
                   }}
                 >
                   ${totalSFCount > 0 ? (totalAnnualRent / totalSFCount).toFixed(2) : '0.00'}
