@@ -875,178 +875,184 @@ const PropertySpreadsheet = ({ initialData }) => {
                     </select>
                   </div>
                 </div>
-                {/* Traditional Loan */}
-                <div style={styles.row}><div style={{...styles.rowLabel, fontWeight: 700}}>TRADITIONAL LOAN</div><div style={styles.rowValue}></div></div>
-                <div style={styles.row}>
-                  <div style={styles.rowLabel}>Interest Rate</div>
-                  <div style={styles.rowValue}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <input type="number" step="0.001" style={styles.input} value={(data.financing?.dscrLoan?.interestRate ?? 0) * 100}
-                        onChange={(e) => setData({ ...data, financing: { ...data.financing, dscrLoan: { ...data.financing.dscrLoan, interestRate: (parseFloat(e.target.value) || 0) / 100 }}})} placeholder="%" />
-                      <span style={{ marginLeft: '4px', color: '#6b7280' }}>%</span>
-                    </div>
-                  </div>
-                </div>
-                <div style={styles.row}>
-                  <div style={styles.rowLabel}>Loan Term (Years)</div>
-                  <div style={styles.rowValue}>
-                    <input type="number" style={styles.input} value={(data.financing?.dscrLoan?.termMonths || 0) / 12}
-                      onChange={(e) => setData({ ...data, financing: { ...data.financing, dscrLoan: { ...data.financing.dscrLoan, termMonths: Math.round((parseFloat(e.target.value) || 0) * 12) }}})} />
-                  </div>
-                </div>
-                <div style={styles.row}>
-                  <div style={styles.rowLabel}>Amortization (Years)</div>
-                  <div style={styles.rowValue}>
-                    <input type="number" style={styles.input} value={(data.financing?.dscrLoan?.amortizationMonths || 0) / 12}
-                      onChange={(e) => setData({ ...data, financing: { ...data.financing, dscrLoan: { ...data.financing.dscrLoan, amortizationMonths: Math.round((parseFloat(e.target.value) || 0) * 12) }}})} />
-                  </div>
-                </div>
-                <div style={styles.row}>
-                  <div style={styles.rowLabel}>Loan Amount</div>
-                  <div style={styles.rowValue}>
-                    <CurrencyInput value={data.financing?.dscrLoan?.loanAmount || 0}
-                      onChange={(e) => setData({ ...data, financing: { ...data.financing, dscrLoan: { ...data.financing.dscrLoan, loanAmount: parseFloat(e.target.value) || 0 }}})} />
-                  </div>
-                </div>
-                <div style={styles.row}><div style={styles.rowLabel}>Monthly Payment</div><div style={styles.rowValue}>{calc.formatCurrency(traditionalMonthlyPayment)}</div></div>
 
-                {/* Seller Finance */}
-                <div style={styles.row}><div style={{...styles.rowLabel, fontWeight: 700}}>SELLER FINANCE</div><div style={styles.rowValue}></div></div>
-                <div style={styles.row}>
-                  <div style={styles.rowLabel}>Seller Rate</div>
-                  <div style={styles.rowValue}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <input type="number" step="0.001" style={styles.input} value={(data.financing?.sellerFinancing?.interestRate ?? 0) * 100}
-                        onChange={(e) => setData({ ...data, financing: { ...data.financing, sellerFinancing: { ...data.financing.sellerFinancing, interestRate: (parseFloat(e.target.value) || 0) / 100 }}})} placeholder="%" />
-                      <span style={{ marginLeft: '4px', color: '#6b7280' }}>%</span>
+                {/* 2x2 Grid of Financing Options */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
+                  
+                  {/* Traditional Loan Card */}
+                  <div style={{ background: 'linear-gradient(to right, #f0f9ff, #e0f2fe)', border: '1px solid #0ea5e9', borderRadius: '8px', padding: '12px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#0ea5e9', marginBottom: '10px', borderBottom: '2px solid #0ea5e9', paddingBottom: '4px' }}>
+                      TRADITIONAL LOAN
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px' }}>
+                      <div>
+                        <div style={{ color: '#6b7280', fontSize: '11px', marginBottom: '2px' }}>Rate</div>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <input type="number" step="0.001" style={{ ...styles.input, fontSize: '13px', padding: '4px' }} value={(data.financing?.dscrLoan?.interestRate ?? 0) * 100}
+                            onChange={(e) => setData({ ...data, financing: { ...data.financing, dscrLoan: { ...data.financing.dscrLoan, interestRate: (parseFloat(e.target.value) || 0) / 100 }}})} />
+                          <span style={{ marginLeft: '2px', fontSize: '11px' }}>%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ color: '#6b7280', fontSize: '11px', marginBottom: '2px' }}>Term</div>
+                        <input type="number" style={{ ...styles.input, fontSize: '13px', padding: '4px' }} value={(data.financing?.dscrLoan?.termMonths || 0) / 12}
+                          onChange={(e) => setData({ ...data, financing: { ...data.financing, dscrLoan: { ...data.financing.dscrLoan, termMonths: Math.round((parseFloat(e.target.value) || 0) * 12) }}})} />
+                      </div>
+                      <div>
+                        <div style={{ color: '#6b7280', fontSize: '11px', marginBottom: '2px' }}>Amort</div>
+                        <input type="number" style={{ ...styles.input, fontSize: '13px', padding: '4px' }} value={(data.financing?.dscrLoan?.amortizationMonths || 0) / 12}
+                          onChange={(e) => setData({ ...data, financing: { ...data.financing, dscrLoan: { ...data.financing.dscrLoan, amortizationMonths: Math.round((parseFloat(e.target.value) || 0) * 12) }}})} />
+                      </div>
+                      <div>
+                        <div style={{ color: '#6b7280', fontSize: '11px', marginBottom: '2px' }}>Amount</div>
+                        <CurrencyInput value={data.financing?.dscrLoan?.loanAmount || 0} style={{ fontSize: '13px', padding: '4px' }}
+                          onChange={(e) => setData({ ...data, financing: { ...data.financing, dscrLoan: { ...data.financing.dscrLoan, loanAmount: parseFloat(e.target.value) || 0 }}})} />
+                      </div>
+                    </div>
+                    <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #bae6fd', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#0369a1' }}>Monthly Pmt:</span>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#0c4a6e' }}>{calc.formatCurrency(traditionalMonthlyPayment)}</span>
                     </div>
                   </div>
-                </div>
-                <div style={styles.row}>
-                  <div style={styles.rowLabel}>Seller Term (Years)</div>
-                  <div style={styles.rowValue}>
-                    <input type="number" style={styles.input} value={(data.financing?.sellerFinancing?.termMonths || 0) / 12}
-                      onChange={(e) => setData({ ...data, financing: { ...data.financing, sellerFinancing: { ...data.financing.sellerFinancing, termMonths: Math.round((parseFloat(e.target.value) || 0) * 12) }}})} />
-                  </div>
-                </div>
-                <div style={styles.row}>
-                  <div style={styles.rowLabel}>Amortization (Years)</div>
-                  <div style={styles.rowValue}>
-                    <input type="number" style={styles.input} value={(data.financing?.sellerFinancing?.amortizationMonths || 0) / 12}
-                      onChange={(e) => setData({ ...data, financing: { ...data.financing, sellerFinancing: { ...data.financing.sellerFinancing, amortizationMonths: Math.round((parseFloat(e.target.value) || 0) * 12) }}})} />
-                  </div>
-                </div>
-                <div style={styles.row}>
-                  <div style={styles.rowLabel}>Balloon (Years)</div>
-                  <div style={styles.rowValue}>
-                    <input type="number" style={styles.input} value={data.financing?.sellerFinancing?.balloonYears || 0}
-                      onChange={(e) => setData({ ...data, financing: { ...data.financing, sellerFinancing: { ...data.financing.sellerFinancing, balloonYears: parseFloat(e.target.value) || 0 }}})} />
-                  </div>
-                </div>
-                <div style={styles.row}>
-                  <div style={styles.rowLabel}>Loan Amount</div>
-                  <div style={styles.rowValue}>
-                    <CurrencyInput value={data.financing?.sellerFinancing?.loanAmount || 0}
-                      onChange={(e) => setData({ ...data, financing: { ...data.financing, sellerFinancing: { ...data.financing.sellerFinancing, loanAmount: parseFloat(e.target.value) || 0 }}})} />
-                  </div>
-                </div>
-                <div style={styles.row}><div style={styles.rowLabel}>Seller Monthly Pmt</div><div style={styles.rowValue}>{calc.formatCurrency(sellerMonthlyPayment)}</div></div>
 
-                {/* Hybrid (Bank + Seller) */}
-                <div style={styles.row}><div style={{...styles.rowLabel, fontWeight: 700}}>HYBRID (Bank + Seller)</div><div style={styles.rowValue}></div></div>
-                <div style={styles.row}>
-                  <div style={styles.rowLabel}>Bank % of Loan</div>
-                  <div style={styles.rowValue}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <input type="number" step="0.001" style={styles.input} value={(data.financing?.hybrid?.bankPct ?? 0) * 100}
-                        onChange={(e) => setData({ ...data, financing: { ...data.financing, hybrid: { ...data.financing.hybrid, bankPct: (parseFloat(e.target.value) || 0) / 100 }}})} placeholder="%" />
-                      <span style={{ marginLeft: '4px', color: '#6b7280' }}>%</span>
+                  {/* Seller Finance Card */}
+                  <div style={{ background: 'linear-gradient(to right, #fef3c7, #fde68a)', border: '1px solid #f59e0b', borderRadius: '8px', padding: '12px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#d97706', marginBottom: '10px', borderBottom: '2px solid #f59e0b', paddingBottom: '4px' }}>
+                      SELLER FINANCE
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px' }}>
+                      <div>
+                        <div style={{ color: '#6b7280', fontSize: '11px', marginBottom: '2px' }}>Rate</div>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <input type="number" step="0.001" style={{ ...styles.input, fontSize: '13px', padding: '4px' }} value={(data.financing?.sellerFinancing?.interestRate ?? 0) * 100}
+                            onChange={(e) => setData({ ...data, financing: { ...data.financing, sellerFinancing: { ...data.financing.sellerFinancing, interestRate: (parseFloat(e.target.value) || 0) / 100 }}})} />
+                          <span style={{ marginLeft: '2px', fontSize: '11px' }}>%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ color: '#6b7280', fontSize: '11px', marginBottom: '2px' }}>Term</div>
+                        <input type="number" style={{ ...styles.input, fontSize: '13px', padding: '4px' }} value={(data.financing?.sellerFinancing?.termMonths || 0) / 12}
+                          onChange={(e) => setData({ ...data, financing: { ...data.financing, sellerFinancing: { ...data.financing.sellerFinancing, termMonths: Math.round((parseFloat(e.target.value) || 0) * 12) }}})} />
+                      </div>
+                      <div>
+                        <div style={{ color: '#6b7280', fontSize: '11px', marginBottom: '2px' }}>Amort</div>
+                        <input type="number" style={{ ...styles.input, fontSize: '13px', padding: '4px' }} value={(data.financing?.sellerFinancing?.amortizationMonths || 0) / 12}
+                          onChange={(e) => setData({ ...data, financing: { ...data.financing, sellerFinancing: { ...data.financing.sellerFinancing, amortizationMonths: Math.round((parseFloat(e.target.value) || 0) * 12) }}})} />
+                      </div>
+                      <div>
+                        <div style={{ color: '#6b7280', fontSize: '11px', marginBottom: '2px' }}>Balloon</div>
+                        <input type="number" style={{ ...styles.input, fontSize: '13px', padding: '4px' }} value={data.financing?.sellerFinancing?.balloonYears || 0}
+                          onChange={(e) => setData({ ...data, financing: { ...data.financing, sellerFinancing: { ...data.financing.sellerFinancing, balloonYears: parseFloat(e.target.value) || 0 }}})} />
+                      </div>
+                      <div style={{ gridColumn: 'span 2' }}>
+                        <div style={{ color: '#6b7280', fontSize: '11px', marginBottom: '2px' }}>Amount</div>
+                        <CurrencyInput value={data.financing?.sellerFinancing?.loanAmount || 0} style={{ fontSize: '13px', padding: '4px' }}
+                          onChange={(e) => setData({ ...data, financing: { ...data.financing, sellerFinancing: { ...data.financing.sellerFinancing, loanAmount: parseFloat(e.target.value) || 0 }}})} />
+                      </div>
+                    </div>
+                    <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #fcd34d', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#b45309' }}>Monthly Pmt:</span>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#92400e' }}>{calc.formatCurrency(sellerMonthlyPayment)}</span>
                     </div>
                   </div>
-                </div>
-                <div style={styles.row}>
-                  <div style={styles.rowLabel}>Bank Rate</div>
-                  <div style={styles.rowValue}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <input type="number" step="0.001" style={styles.input} value={(data.financing?.hybrid?.bankRate ?? 0) * 100}
-                        onChange={(e) => setData({ ...data, financing: { ...data.financing, hybrid: { ...data.financing.hybrid, bankRate: (parseFloat(e.target.value) || 0) / 100 }}})} placeholder="%" />
-                      <span style={{ marginLeft: '4px', color: '#6b7280' }}>%</span>
-                    </div>
-                  </div>
-                </div>
-                <div style={styles.row}>
-                  <div style={styles.rowLabel}>Seller % of Loan</div>
-                  <div style={styles.rowValue}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <input type="number" step="0.001" style={styles.input} value={(data.financing?.hybrid?.sellerPct ?? 0) * 100}
-                        onChange={(e) => setData({ ...data, financing: { ...data.financing, hybrid: { ...data.financing.hybrid, sellerPct: (parseFloat(e.target.value) || 0) / 100 }}})} placeholder="%" />
-                      <span style={{ marginLeft: '4px', color: '#6b7280' }}>%</span>
-                    </div>
-                  </div>
-                </div>
-                <div style={styles.row}>
-                  <div style={styles.rowLabel}>Seller Rate</div>
-                  <div style={styles.rowValue}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <input type="number" step="0.001" style={styles.input} value={(data.financing?.hybrid?.sellerRate ?? 0) * 100}
-                        onChange={(e) => setData({ ...data, financing: { ...data.financing, hybrid: { ...data.financing.hybrid, sellerRate: (parseFloat(e.target.value) || 0) / 100 }}})} placeholder="%" />
-                      <span style={{ marginLeft: '4px', color: '#6b7280' }}>%</span>
-                    </div>
-                  </div>
-                </div>
-                <div style={styles.row}><div style={styles.rowLabel}>Blended Rate</div><div style={styles.rowValue}>{calc.formatPercent(blendedRate)}</div></div>
 
-                {/* Equity Partner */}
-                <div style={styles.row}><div style={{...styles.rowLabel, fontWeight: 700}}>EQUITY PARTNER</div><div style={styles.rowValue}></div></div>
-                <div style={styles.row}>
-                  <div style={styles.rowLabel}>Partner Contribution %</div>
-                  <div style={styles.rowValue}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <input type="number" step="0.001" style={styles.input} value={(data.equityPartner?.contributionPercent ?? 0) * 100}
-                        onChange={(e) => setData({ ...data, equityPartner: { ...data.equityPartner, contributionPercent: (parseFloat(e.target.value) || 0) / 100 }})} placeholder="%" />
-                      <span style={{ marginLeft: '4px', color: '#6b7280' }}>%</span>
+                  {/* Hybrid Card */}
+                  <div style={{ background: 'linear-gradient(to right, #f3e8ff, #e9d5ff)', border: '1px solid #a855f7', borderRadius: '8px', padding: '12px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#7e22ce', marginBottom: '10px', borderBottom: '2px solid #a855f7', paddingBottom: '4px' }}>
+                      HYBRID (Bank + Seller)
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px' }}>
+                      <div>
+                        <div style={{ color: '#6b7280', fontSize: '11px', marginBottom: '2px' }}>Bank %</div>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <input type="number" step="0.001" style={{ ...styles.input, fontSize: '13px', padding: '4px' }} value={(data.financing?.hybrid?.bankPct ?? 0) * 100}
+                            onChange={(e) => setData({ ...data, financing: { ...data.financing, hybrid: { ...data.financing.hybrid, bankPct: (parseFloat(e.target.value) || 0) / 100 }}})} />
+                          <span style={{ marginLeft: '2px', fontSize: '11px' }}>%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ color: '#6b7280', fontSize: '11px', marginBottom: '2px' }}>Bank Rate</div>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <input type="number" step="0.001" style={{ ...styles.input, fontSize: '13px', padding: '4px' }} value={(data.financing?.hybrid?.bankRate ?? 0) * 100}
+                            onChange={(e) => setData({ ...data, financing: { ...data.financing, hybrid: { ...data.financing.hybrid, bankRate: (parseFloat(e.target.value) || 0) / 100 }}})} />
+                          <span style={{ marginLeft: '2px', fontSize: '11px' }}>%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ color: '#6b7280', fontSize: '11px', marginBottom: '2px' }}>Seller %</div>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <input type="number" step="0.001" style={{ ...styles.input, fontSize: '13px', padding: '4px' }} value={(data.financing?.hybrid?.sellerPct ?? 0) * 100}
+                            onChange={(e) => setData({ ...data, financing: { ...data.financing, hybrid: { ...data.financing.hybrid, sellerPct: (parseFloat(e.target.value) || 0) / 100 }}})} />
+                          <span style={{ marginLeft: '2px', fontSize: '11px' }}>%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ color: '#6b7280', fontSize: '11px', marginBottom: '2px' }}>Seller Rate</div>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <input type="number" step="0.001" style={{ ...styles.input, fontSize: '13px', padding: '4px' }} value={(data.financing?.hybrid?.sellerRate ?? 0) * 100}
+                            onChange={(e) => setData({ ...data, financing: { ...data.financing, hybrid: { ...data.financing.hybrid, sellerRate: (parseFloat(e.target.value) || 0) / 100 }}})} />
+                          <span style={{ marginLeft: '2px', fontSize: '11px' }}>%</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #d8b4fe', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#6b21a8' }}>Blended Rate:</span>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#581c87' }}>{calc.formatPercent(blendedRate)}</span>
                     </div>
                   </div>
-                </div>
-                <div style={styles.row}>
-                  <div style={styles.rowLabel}>Return Type</div>
-                  <div style={styles.rowValue}>
-                    <select style={{ ...styles.input, textAlign: 'left' }} value={data.equityPartner?.returnType || 'Preferred Return'}
-                      onChange={(e) => setData({ ...data, equityPartner: { ...data.equityPartner, returnType: e.target.value }})}>
-                      <option value="Preferred Return">Preferred Return</option>
-                    </select>
-                  </div>
-                </div>
-                <div style={styles.row}>
-                  <div style={styles.rowLabel}>Preferred Return %</div>
-                  <div style={styles.rowValue}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <input type="number" step="0.001" style={styles.input} value={(data.waterfall?.preferredReturn ?? 0) * 100}
-                        onChange={(e) => setData({ ...data, waterfall: { ...data.waterfall, preferredReturn: (parseFloat(e.target.value) || 0) / 100 }})} placeholder="%" />
-                      <span style={{ marginLeft: '4px', color: '#6b7280' }}>%</span>
+
+                  {/* Equity Partner Card */}
+                  <div style={{ background: 'linear-gradient(to right, #dcfce7, #bbf7d0)', border: '1px solid #22c55e', borderRadius: '8px', padding: '12px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#16a34a', marginBottom: '10px', borderBottom: '2px solid #22c55e', paddingBottom: '4px' }}>
+                      EQUITY PARTNER
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px' }}>
+                      <div>
+                        <div style={{ color: '#6b7280', fontSize: '11px', marginBottom: '2px' }}>Contribution %</div>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <input type="number" step="0.001" style={{ ...styles.input, fontSize: '13px', padding: '4px' }} value={(data.equityPartner?.contributionPercent ?? 0) * 100}
+                            onChange={(e) => setData({ ...data, equityPartner: { ...data.equityPartner, contributionPercent: (parseFloat(e.target.value) || 0) / 100 }})} />
+                          <span style={{ marginLeft: '2px', fontSize: '11px' }}>%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ color: '#6b7280', fontSize: '11px', marginBottom: '2px' }}>Pref Return %</div>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <input type="number" step="0.001" style={{ ...styles.input, fontSize: '13px', padding: '4px' }} value={(data.waterfall?.preferredReturn ?? 0) * 100}
+                            onChange={(e) => setData({ ...data, waterfall: { ...data.waterfall, preferredReturn: (parseFloat(e.target.value) || 0) / 100 }})} />
+                          <span style={{ marginLeft: '2px', fontSize: '11px' }}>%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ color: '#6b7280', fontSize: '11px', marginBottom: '2px' }}>Your Equity %</div>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <input type="number" step="0.001" style={{ ...styles.input, fontSize: '13px', padding: '4px' }} value={(data.waterfall?.gpEquitySplitPrePref ?? 0) * 100}
+                            onChange={(e) => setData({ ...data, waterfall: { ...data.waterfall, gpEquitySplitPrePref: (parseFloat(e.target.value) || 0) / 100 }})} />
+                          <span style={{ marginLeft: '2px', fontSize: '11px' }}>%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ color: '#6b7280', fontSize: '11px', marginBottom: '2px' }}>Partner %</div>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <input type="number" step="0.001" style={{ ...styles.input, fontSize: '13px', padding: '4px' }} value={(data.waterfall?.lpEquitySplitPrePref ?? 0) * 100}
+                            onChange={(e) => setData({ ...data, waterfall: { ...data.waterfall, lpEquitySplitPrePref: (parseFloat(e.target.value) || 0) / 100 }})} />
+                          <span style={{ marginLeft: '2px', fontSize: '11px' }}>%</span>
+                        </div>
+                      </div>
+                      <div style={{ gridColumn: 'span 2' }}>
+                        <div style={{ color: '#6b7280', fontSize: '11px', marginBottom: '2px' }}>Return Type</div>
+                        <select style={{ ...styles.input, textAlign: 'left', fontSize: '13px', padding: '4px' }} value={data.equityPartner?.returnType || 'Preferred Return'}
+                          onChange={(e) => setData({ ...data, equityPartner: { ...data.equityPartner, returnType: e.target.value }})}>
+                          <option value="Preferred Return">Preferred Return</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #86efac', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#15803d' }}>Equity Multiple:</span>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#14532d' }}>{returnSummary.fiveYear.equityMultiple.toFixed(2)}x</span>
                     </div>
                   </div>
-                </div>
-                <div style={styles.row}><div style={styles.rowLabel}>Equity Multiple</div><div style={styles.rowValue}>{returnSummary.fiveYear.equityMultiple.toFixed(2)}x</div></div>
-                <div style={styles.row}>
-                  <div style={styles.rowLabel}>Your Equity %</div>
-                  <div style={styles.rowValue}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <input type="number" step="0.001" style={styles.input} value={(data.waterfall?.gpEquitySplitPrePref ?? 0) * 100}
-                        onChange={(e) => setData({ ...data, waterfall: { ...data.waterfall, gpEquitySplitPrePref: (parseFloat(e.target.value) || 0) / 100 }})} placeholder="%" />
-                      <span style={{ marginLeft: '4px', color: '#6b7280' }}>%</span>
-                    </div>
-                  </div>
-                </div>
-                <div style={styles.row}>
-                  <div style={styles.rowLabel}>Partner Equity %</div>
-                  <div style={styles.rowValue}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <input type="number" step="0.001" style={styles.input} value={(data.waterfall?.lpEquitySplitPrePref ?? 0) * 100}
-                        onChange={(e) => setData({ ...data, waterfall: { ...data.waterfall, lpEquitySplitPrePref: (parseFloat(e.target.value) || 0) / 100 }})} placeholder="%" />
-                      <span style={{ marginLeft: '4px', color: '#6b7280' }}>%</span>
-                    </div>
-                  </div>
+
                 </div>
               </div>
             </div>
