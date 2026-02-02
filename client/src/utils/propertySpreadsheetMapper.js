@@ -272,6 +272,7 @@ export function mapParsedDataToSpreadsheet(parsedData) {
       ltv: ltv / 100,
       interestRate: interestRate / 100,
       termMonths: termYears * 12,
+      amortizationMonths: amortYears * 12,
       dscrRequirement: financing.dscr_requirement || 1.25,
     },
   };
