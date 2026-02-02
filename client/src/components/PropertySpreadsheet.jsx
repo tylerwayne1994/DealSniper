@@ -540,29 +540,6 @@ const PropertySpreadsheet = ({ initialData }) => {
       {/* Simple Overview */}
       {simpleMode && (
         <div>
-          {/* Top Metric Strip */}
-          <div style={styles.metricStrip}>
-            <div style={styles.metricCard}>
-              <div style={styles.metricTitle}>DSCR (Y1)</div>
-              <div style={styles.metricValue}>{dscrY1 != null ? `${dscrY1.toFixed(2)}x` : '-'}</div>
-            </div>
-            <div style={styles.metricCard}>
-              <div style={styles.metricTitle}>LTV</div>
-              <div style={styles.metricValue}>{ltv != null ? calc.formatPercent(ltv) : '-'}</div>
-            </div>
-            <div style={styles.metricCard}>
-              <div style={styles.metricTitle}>EGI (Y1)</div>
-              <div style={styles.metricValue}>{calc.formatCurrency(egiAnnual)}</div>
-            </div>
-            <div style={styles.metricCard}>
-              <div style={styles.metricTitle}>NOI (Y1)</div>
-              <div style={styles.metricValue}>{calc.formatCurrency(noiAnnual)}</div>
-            </div>
-            <div style={styles.metricCard}>
-              <div style={styles.metricTitle}>CoC (Y1)</div>
-              <div style={styles.metricValue}>{cocY1 != null ? calc.formatPercent(cocY1) : '-'}</div>
-            </div>
-          </div>
           <div style={styles.threeColumnGrid}>
           {/* Core Inputs */}
           <div style={styles.section}>
