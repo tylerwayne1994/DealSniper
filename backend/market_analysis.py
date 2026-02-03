@@ -5,10 +5,16 @@ Generates 15-minute drive-time polygons and aggregates census/migration data
 import csv
 import json
 import os
+import sys
+import logging
 from typing import Dict, List, Optional, Tuple
 import requests
 from fastapi import HTTPException
 from pydantic import BaseModel
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, stream=sys.stdout, force=True)
+logger = logging.getLogger(__name__)
 
 # Mapbox API configuration
 MAPBOX_ACCESS_TOKEN = "MAPBOX_TOKEN_REMOVED"
@@ -218,6 +224,7 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
     Request body: { "property": { "address": "...", "city": "...", "state": "...", "zip": "..." } }
     """
     try:
+        logger.info(f"[MARKET ANALYSIS] Received request: {request_data.dict()}")
         property_data = request_data.property
         
         address = property_data.address
@@ -225,7 +232,10 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
         state = property_data.state
         zip_code = property_data.zip
         
+        logger.info(f"[MARKET ANALYSIS] Processing: {address}, {city}, {state} {zip_code}")
+        
         if not all([address, city, state, zip_code]):
+            logger.error("[MARKET ANALYSIS] Missing required fields")
             raise HTTPException(status_code=400, detail='Missing required property fields')
         
         # Step 1: Geocode property location
@@ -314,7 +324,8 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        print(f"Market analysis error: {e}")
-        print(f"Traceback: {error_details}")
-        raise HTTPException(status_code=500, detail=f'Internal server error: {str(e)} | Check logs for details')
+        logger.error(f"[MARKET ANALYSIS] ERROR: {str(e)}")
+        logger.error(f"[MARKET ANALYSIS] TRACEBACK:\n{error_details}")
+        sys.stdout.flush()  # Force flush to Render logs
+        raise HTTPException(status_code=500, detail=f'Market analysis failed: {str(e)}')
 
