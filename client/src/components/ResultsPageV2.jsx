@@ -102,14 +102,23 @@ const ResultsPageV2 = ({
     };
     
     const fetchMarketData = async () => {
-      if (!scenarioData?.property || marketData || marketDataLoading) return;
+      if (!scenarioData || marketData || marketDataLoading) return;
       
-      const { address, city, state, zip } = scenarioData.property;
-      if (!address || !city || !state || !zip) return;
+      // Property info can be at root level or under property key
+      const address = scenarioData.address || scenarioData.property?.address;
+      const city = scenarioData.city || scenarioData.property?.city;
+      const state = scenarioData.state || scenarioData.property?.state;
+      const zip = scenarioData.zip || scenarioData.property?.zip;
+      
+      if (!address || !city || !state || !zip) {
+        console.log('[MARKET ANALYSIS] Missing property data:', { address, city, state, zip });
+        return;
+      }
       
       setMarketDataLoading(true);
       try {
         const API_BASE = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
+        console.log('[MARKET ANALYSIS] Fetching data for:', { address, city, state, zip });
         const response = await fetch(`${API_BASE}/api/market-analysis`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -123,6 +132,7 @@ const ResultsPageV2 = ({
         }
         
         const result = await response.json();
+        console.log('[MARKET ANALYSIS] Success:', result);
         setMarketData(result);
       } catch (error) {
         console.error('Market analysis pre-fetch error:', error);

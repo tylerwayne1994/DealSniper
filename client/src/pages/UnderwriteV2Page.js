@@ -1462,29 +1462,7 @@ function UnderwriteV2Page() {
             </div>
 
             {/* Run AI Underwriting - navigate to MAX AI page */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-              <button
-                onClick={() => navigate('/underwrite/max')}
-                disabled={isUploading}
-                style={{
-                  padding: '12px 24px',
-                  borderRadius: 8,
-                  border: 'none',
-                  background: isUploading ? '#9ca3af' : 'linear-gradient(135deg, #10b981, #059669)',
-                  color: 'white',
-                  fontSize: 14,
-                  fontWeight: 700,
-                  cursor: isUploading ? 'not-allowed' : 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  boxShadow: isUploading ? 'none' : '0 4px 14px rgba(16, 185, 129, 0.25)'
-                }}
-              >
-                <CheckCircle size={18} />
-                🤖 Run AI Underwriting
-              </button>
-            </div>
+            {/* Removed per user request */}
 
             {/* File Upload Zone */}
             <div
