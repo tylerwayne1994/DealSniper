@@ -31,6 +31,8 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
   const totalAnnualRent = totalMonthlyRent * 12;
   const unitMixTotalMarketMonthlyRent = unitMixData.reduce((sum, u) => sum + ((u.units || 0) * (u.rent_market != null ? u.rent_market : (u.rent_current || 0))), 0);
 
+  const fmtCurrency = (n) => `$${(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
   const handleMarketRentChange = (index, newMarketRent) => {
     if (!onUnitMixChange) return;
     const updatedUnitMix = [...unitMixData];
@@ -92,13 +94,13 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
   return (
     <div style={{ padding: '24px', backgroundColor: '#f9fafb', minHeight: '100vh', boxSizing: 'border-box' }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <div>
             <div style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Unit Mix</div>
             <div style={{ fontSize: '12px', color: '#6b7280' }}>Unit composition and rental data</div>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={handleRentcastFetch} disabled={rentcastLoading} style={{ padding: '8px 12px', backgroundColor: '#0ea5e9', color: 'white', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: rentcastLoading ? 'not-allowed' : 'pointer', opacity: rentcastLoading ? 0.6 : 1 }}>
+            <button onClick={handleRentcastFetch} disabled={rentcastLoading} style={{ padding: '6px 10px', backgroundColor: '#0ea5e9', color: 'white', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: rentcastLoading ? 'not-allowed' : 'pointer', opacity: rentcastLoading ? 0.6 : 1 }}>
               {rentcastLoading ? 'Loading...' : '🔍 RentCast'}
             </button>
           </div>
@@ -115,44 +117,54 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
           <button type="button" style={{ marginLeft: 'auto', fontSize: '12px', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View Source</button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>
-          <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>TOTAL UNITS</div>
-            <div style={{ fontSize: '36px', fontWeight: '800', color: '#0f172a' }}>{totalUnitsCount}</div>
+        {/* Summary cards hidden to match Cactus screenshot */}
+        {false && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+            <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+              <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>TOTAL UNITS</div>
+              <div style={{ fontSize: '36px', fontWeight: '800', color: '#0f172a' }}>{totalUnitsCount}</div>
+            </div>
+            <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+              <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>TOTAL SF</div>
+              <div style={{ fontSize: '36px', fontWeight: '800', color: '#0f172a' }}>{totalSFCount.toLocaleString()}</div>
+            </div>
+            <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+              <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>MONTHLY RENT</div>
+              <div style={{ fontSize: '36px', fontWeight: '800', color: '#10b981' }}>{fmtCurrency(totalMonthlyRent)}</div>
+            </div>
+            <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+              <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>ANNUAL RENT</div>
+              <div style={{ fontSize: '36px', fontWeight: '800', color: '#10b981' }}>{fmtCurrency(totalAnnualRent)}</div>
+            </div>
           </div>
-          <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>TOTAL SF</div>
-            <div style={{ fontSize: '36px', fontWeight: '800', color: '#0f172a' }}>{totalSFCount.toLocaleString()}</div>
-          </div>
-          <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>MONTHLY RENT</div>
-            <div style={{ fontSize: '36px', fontWeight: '800', color: '#10b981' }}>${totalMonthlyRent.toLocaleString()}</div>
-          </div>
-          <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>ANNUAL RENT</div>
-            <div style={{ fontSize: '36px', fontWeight: '800', color: '#10b981' }}>${totalAnnualRent.toLocaleString()}</div>
-          </div>
-        </div>
+        )}
 
-        <div style={{ marginBottom: '32px', overflowX: 'auto' }}>
-          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px' }}>↔ Resize columns by dragging between headers.</div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', border: '1px solid #d1d5db', tableLayout: 'fixed', whiteSpace: 'nowrap' }}>
+        <div style={{ marginBottom: '24px' }}>
+          <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+            <div style={{ padding: '10px 12px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ fontSize: '12px', color: '#6b7280' }}>Unit Mix Data</div>
+              <div style={{ fontSize: '12px', color: '#9ca3af' }}>{unitMixData.length} unit types</div>
+              <div style={{ marginLeft: 'auto', fontSize: '12px', color: '#9ca3af' }}>↔ Resize columns by dragging between headers.</div>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', tableLayout: 'fixed', whiteSpace: 'nowrap' }}>
             <colgroup>
               {colWidths.map((w, i) => (
                 <col key={i} style={{ width: w }} />
               ))}
             </colgroup>
             <thead>
-              <tr style={{ backgroundColor: '#f3f4f6' }}>
+              <tr style={{ backgroundColor: '#f8fafc' }}>
                 {initialColumns.map((col, i) => (
                   <th
                     key={col.key}
                     style={{
-                      padding: '8px',
+                      padding: '9px 10px',
                       textAlign: col.align,
                       fontWeight: 600,
-                      borderRight: i === initialColumns.length - 1 ? 'none' : '1px solid #d1d5db',
-                      borderBottom: '1px solid #d1d5db',
+                      color: '#374151',
+                      borderRight: i === initialColumns.length - 1 ? 'none' : '1px solid #e5e7eb',
+                      borderBottom: '1px solid #e5e7eb',
                       position: 'relative',
                       userSelect: 'none',
                     }}
@@ -165,7 +177,7 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
                           position: 'absolute',
                           top: 0,
                           right: 0,
-                          width: '6px',
+                          width: '8px',
                           height: '100%',
                           cursor: 'col-resize',
                           zIndex: 5,
@@ -189,61 +201,66 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
                 const totalRent = avgRent * occupiedUnits;
                 
                 return (
-                  <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? 'white' : '#f9fafb' }}>
-                    <td style={{ padding: '8px', borderRight: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>{unit.type || 'N/A'}</td>
-                    <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>{unit.unit_sf || 0}</td>
-                    <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>{occupiedUnits}</td>
-                    <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>{vacantUnits}</td>
-                    <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>{totalUnits}</td>
-                    <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>{occupancyPct}%</td>
-                    <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>${avgRent.toLocaleString()}</td>
-                    <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>
+                  <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? 'white' : '#fafafa' }}>
+                    <td style={{ padding: '9px 10px', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>{unit.type || 'N/A'}</td>
+                    <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>{(unit.unit_sf || 0).toLocaleString()}</td>
+                    <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>{occupiedUnits}</td>
+                    <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>{vacantUnits}</td>
+                    <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>{totalUnits}</td>
+                    <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>{occupancyPct}%</td>
+                    <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>{fmtCurrency(avgRent)}</td>
+                    <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
                       <input
                         type="number"
-                        style={{ width: '80px', border: '1px solid #d1d5db', padding: '4px', fontSize: '11px', textAlign: 'right' }}
+                        style={{ width: '90px', border: '1px solid #d1d5db', padding: '4px 6px', fontSize: '12px', textAlign: 'right', borderRadius: 6 }}
                         value={avgMarket}
                         onChange={(e) => handleMarketRentChange(idx, parseFloat(e.target.value) || 0)}
                       />
                     </td>
-                    <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>${avgMarket.toLocaleString()}</td>
-                    <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>${totalMarketRent.toLocaleString()}</td>
-                    <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>${totalRent.toLocaleString()}</td>
-                    <td style={{ padding: '8px', textAlign: 'center', borderBottom: '1px solid #e5e7eb' }}>$</td>
+                    <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>{fmtCurrency(avgMarket)}</td>
+                    <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>{fmtCurrency(totalMarketRent)}</td>
+                    <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>{fmtCurrency(totalRent)}</td>
+                    <td style={{ padding: '9px 10px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>$</td>
                   </tr>
                 );
               })}
-              <tr style={{ backgroundColor: '#e0f2fe', fontWeight: 700 }}>
-                <td style={{ padding: '8px', borderRight: '1px solid #0ea5e9' }}>TOTAL</td>
-                <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #0ea5e9' }}>-</td>
-                <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #0ea5e9' }}>
+              <tr style={{ backgroundColor: '#eef2ff', fontWeight: 700 }}>
+                <td style={{ padding: '9px 10px', borderRight: '1px solid #c7d2fe' }}>TOTAL</td>
+                <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>-</td>
+                <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>
                   {unitMixData.reduce((sum, u) => sum + Math.round((u.units || 0) * 0.95), 0)}
                 </td>
-                <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #0ea5e9' }}>
+                <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>
                   {unitMixData.reduce((sum, u) => sum + ((u.units || 0) - Math.round((u.units || 0) * 0.95)), 0)}
                 </td>
-                <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #0ea5e9' }}>{totalUnitsCount}</td>
-                <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #0ea5e9' }}>
+                <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>{totalUnitsCount}</td>
+                <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>
                   {totalUnitsCount > 0 ? ((unitMixData.reduce((sum, u) => sum + Math.round((u.units || 0) * 0.95), 0) / totalUnitsCount) * 100).toFixed(1) : 0}%
                 </td>
-                <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #0ea5e9' }}>
-                  ${(totalMonthlyRent / (unitMixData.reduce((sum, u) => sum + Math.round((u.units || 0) * 0.95), 0) || 1)).toFixed(0)}
+                <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>
+                  {fmtCurrency(totalMonthlyRent / (unitMixData.reduce((sum, u) => sum + Math.round((u.units || 0) * 0.95), 0) || 1))}
                 </td>
-                <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #0ea5e9' }}>
-                  ${(unitMixTotalMarketMonthlyRent / totalUnitsCount || 0).toFixed(0)}
+                <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>
+                  {fmtCurrency(unitMixTotalMarketMonthlyRent / totalUnitsCount || 0)}
                 </td>
-                <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #0ea5e9' }}>
-                  ${(unitMixTotalMarketMonthlyRent / totalUnitsCount || 0).toFixed(0)}
+                <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>
+                  {fmtCurrency(unitMixTotalMarketMonthlyRent / totalUnitsCount || 0)}
                 </td>
-                <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #0ea5e9' }}>
-                  ${unitMixTotalMarketMonthlyRent.toLocaleString()}
+                <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>
+                  {fmtCurrency(unitMixTotalMarketMonthlyRent)}
                 </td>
-                <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #0ea5e9' }}>
-                  ${totalMonthlyRent.toLocaleString()}
+                <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>
+                  {fmtCurrency(totalMonthlyRent)}
                 </td>
-                <td style={{ padding: '8px', textAlign: 'center' }}>$</td>
+                <td style={{ padding: '9px 10px', textAlign: 'center' }}>$</td>
               </tr>
             </tbody>
           </table>
+            </div>
+            <div style={{ padding: '8px 12px', fontSize: '11px', color: '#9ca3af', borderTop: '1px solid #e5e7eb' }}>
+              This unit mix data will be used in your quick analysis. You can change the selection using the dropdown above.
+            </div>
+          </div>
         </div>
 
         {rentcastData && (
