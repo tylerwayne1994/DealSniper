@@ -540,6 +540,282 @@ const PropertySpreadsheet = ({ initialData }) => {
       {/* Simple Overview */}
       {simpleMode && (
         <div>
+          {/* INVESTMENT CASH FLOW DETAILS - Cactus Style */}
+          <div style={{ marginBottom: '32px', overflowX: 'auto' }}>
+            <div style={{ ...styles.sectionHeader, marginBottom: '16px', fontSize: '18px', fontWeight: 800 }}>
+              INVESTMENT CASH FLOW DETAILS
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', border: '2px solid #0ea5e9' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#1e3a8a', color: 'white' }}>
+                  <th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '180px', position: 'sticky', left: 0, backgroundColor: '#1e3a8a', zIndex: 10 }}>Annual Cash Flow</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '90px' }}>Year 0</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '90px' }}>Year 1</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '90px' }}>Year 2</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '90px' }}>Year 3</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '90px' }}>Year 4</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '90px' }}>Year 5</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '90px' }}>Year 6</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '90px' }}>Year 7</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '90px' }}>Year 8</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '90px' }}>Year 9</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, minWidth: '90px' }}>Year 10</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* GROSS POTENTIAL RENTAL INCOME */}
+                <tr style={{ backgroundColor: '#f9fafb' }}>
+                  <td style={{ padding: '8px', fontWeight: 600, borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: '#f9fafb', zIndex: 5 }}>Gross Potential Rental Income</td>
+                  <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb' }}>$0</td>
+                  {revenueProjections.map((rev, i) => (
+                    <td key={i} style={{ padding: '8px', textAlign: 'right', borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
+                      {calc.formatCurrency(rev.grossPotentialRent)}
+                    </td>
+                  ))}
+                </tr>
+                
+                {/* VACANCY */}
+                <tr style={{ backgroundColor: 'white' }}>
+                  <td style={{ padding: '8px', paddingLeft: '24px', fontWeight: 400, borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: 'white', zIndex: 5 }}>Vacancy</td>
+                  <td style={{ padding: '8px', textAlign: 'right', color: '#dc2626', borderRight: '1px solid #e5e7eb' }}>$0</td>
+                  {revenueProjections.map((rev, i) => (
+                    <td key={i} style={{ padding: '8px', textAlign: 'right', color: '#dc2626', borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
+                      -{calc.formatCurrency(rev.vacancy).replace('$', '$')}
+                    </td>
+                  ))}
+                </tr>
+                
+                {/* VACANCY RATE % */}
+                <tr style={{ backgroundColor: '#fef3c7' }}>
+                  <td style={{ padding: '8px', paddingLeft: '24px', fontSize: '10px', fontStyle: 'italic', borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: '#fef3c7', zIndex: 5 }}>Vacancy Rate %</td>
+                  <td style={{ padding: '8px', textAlign: 'right', fontSize: '10px', borderRight: '1px solid #e5e7eb' }}>0%</td>
+                  {revenueProjections.map((rev, i) => (
+                    <td key={i} style={{ padding: '8px', textAlign: 'right', fontSize: '10px', borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
+                      {calc.formatPercent((data.growth?.vacancyRate || 0))}
+                    </td>
+                  ))}
+                </tr>
+                
+                {/* LOSS TO LEASE */}
+                <tr style={{ backgroundColor: 'white' }}>
+                  <td style={{ padding: '8px', paddingLeft: '24px', fontWeight: 400, borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: 'white', zIndex: 5 }}>Loss to Lease</td>
+                  <td style={{ padding: '8px', textAlign: 'right', color: '#dc2626', borderRight: '1px solid #e5e7eb' }}>$0</td>
+                  {revenueProjections.map((rev, i) => (
+                    <td key={i} style={{ padding: '8px', textAlign: 'right', color: '#dc2626', borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
+                      -{calc.formatCurrency(rev.lossToLease).replace('$', '$')}
+                    </td>
+                  ))}
+                </tr>
+                
+                {/* LOSS TO LEASE % */}
+                <tr style={{ backgroundColor: '#fef3c7' }}>
+                  <td style={{ padding: '8px', paddingLeft: '24px', fontSize: '10px', fontStyle: 'italic', borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: '#fef3c7', zIndex: 5 }}>Loss to Lease %</td>
+                  <td style={{ padding: '8px', textAlign: 'right', fontSize: '10px', borderRight: '1px solid #e5e7eb' }}>0%</td>
+                  {revenueProjections.map((rev, i) => (
+                    <td key={i} style={{ padding: '8px', textAlign: 'right', fontSize: '10px', borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
+                      {rev.grossPotentialRent > 0 ? calc.formatPercent(rev.lossToLease / rev.grossPotentialRent) : '0.00%'}
+                    </td>
+                  ))}
+                </tr>
+                
+                {/* EFFECTIVE GROSS RENTAL INCOME */}
+                <tr style={{ backgroundColor: '#e0f2fe', borderTop: '2px solid #0ea5e9', borderBottom: '2px solid #0ea5e9' }}>
+                  <td style={{ padding: '8px', fontWeight: 700, borderRight: '1px solid #0ea5e9', position: 'sticky', left: 0, backgroundColor: '#e0f2fe', zIndex: 5 }}>Effective Gross Rental Income</td>
+                  <td style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #0ea5e9' }}>$0</td>
+                  {revenueProjections.map((rev, i) => (
+                    <td key={i} style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderRight: i < 9 ? '1px solid #0ea5e9' : 'none' }}>
+                      {calc.formatCurrency(rev.netRentalIncome)}
+                    </td>
+                  ))}
+                </tr>
+                
+                {/* % OF TOTAL POTENTIAL INCOME */}
+                <tr style={{ backgroundColor: '#fef3c7' }}>
+                  <td style={{ padding: '8px', paddingLeft: '24px', fontSize: '10px', fontStyle: 'italic', borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: '#fef3c7', zIndex: 5 }}>% of Total Potential Income</td>
+                  <td style={{ padding: '8px', textAlign: 'right', fontSize: '10px', borderRight: '1px solid #e5e7eb' }}>0%</td>
+                  {revenueProjections.map((rev, i) => (
+                    <td key={i} style={{ padding: '8px', textAlign: 'right', fontSize: '10px', borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
+                      {rev.grossPotentialRent > 0 ? calc.formatPercent(rev.netRentalIncome / rev.grossPotentialRent) : '0%'}
+                    </td>
+                  ))}
+                </tr>
+                
+                {/* OTHER INCOME SECTION */}
+                <tr style={{ backgroundColor: '#f0f9ff', height: '8px' }}>
+                  <td colSpan={12} style={{ padding: 0 }}></td>
+                </tr>
+                
+                {/* OTHER INCOME ITEMS */}
+                {Object.keys(data.otherIncome || {}).filter(key => data.otherIncome[key] > 0).map((incomeKey, idx) => (
+                  <tr key={incomeKey} style={{ backgroundColor: idx % 2 === 0 ? 'white' : '#f9fafb' }}>
+                    <td style={{ padding: '8px', paddingLeft: '24px', textTransform: 'capitalize', borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: idx % 2 === 0 ? 'white' : '#f9fafb', zIndex: 5 }}>
+                      {incomeKey.replace(/([A-Z])/g, ' $1').trim()}
+                    </td>
+                    <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb' }}>$0</td>
+                    {revenueProjections.map((rev, i) => {
+                      const otherIncomeValue = (data.otherIncome[incomeKey] || 0) * Math.pow(1 + (data.growth?.annualRentGrowth || 0.03), i);
+                      return (
+                        <td key={i} style={{ padding: '8px', textAlign: 'right', borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
+                          {calc.formatCurrency(otherIncomeValue)}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+                
+                {/* SPACER */}
+                <tr style={{ backgroundColor: '#f0f9ff', height: '8px' }}>
+                  <td colSpan={12} style={{ padding: 0 }}></td>
+                </tr>
+                
+                {/* OPERATING EXPENSES HEADER */}
+                <tr style={{ backgroundColor: '#fecaca', borderTop: '2px solid #dc2626' }}>
+                  <td colSpan={12} style={{ padding: '8px', fontWeight: 700, fontSize: '12px' }}>OPERATING EXPENSES</td>
+                </tr>
+                
+                {/* PROPERTY TAXES */}
+                <tr style={{ backgroundColor: 'white' }}>
+                  <td style={{ padding: '8px', paddingLeft: '24px', borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: 'white', zIndex: 5 }}>Property Taxes</td>
+                  <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb' }}>$0</td>
+                  {expenseProjections.map((exp, i) => (
+                    <td key={i} style={{ padding: '8px', textAlign: 'right', borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
+                      {calc.formatCurrency(exp.realEstateTaxes || 0)}
+                    </td>
+                  ))}
+                </tr>
+                
+                {/* INSURANCE */}
+                <tr style={{ backgroundColor: '#f9fafb' }}>
+                  <td style={{ padding: '8px', paddingLeft: '24px', borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: '#f9fafb', zIndex: 5 }}>Insurance</td>
+                  <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb' }}>$0</td>
+                  {expenseProjections.map((exp, i) => (
+                    <td key={i} style={{ padding: '8px', textAlign: 'right', borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
+                      {calc.formatCurrency(exp.propertyInsurance || 0)}
+                    </td>
+                  ))}
+                </tr>
+                
+                {/* UTILITIES */}
+                <tr style={{ backgroundColor: 'white' }}>
+                  <td style={{ padding: '8px', paddingLeft: '24px', borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: 'white', zIndex: 5 }}>Utilities</td>
+                  <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb' }}>$0</td>
+                  {expenseProjections.map((exp, i) => (
+                    <td key={i} style={{ padding: '8px', textAlign: 'right', borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
+                      {calc.formatCurrency(exp.utilities || 0)}
+                    </td>
+                  ))}
+                </tr>
+                
+                {/* REPAIRS & MAINTENANCE */}
+                <tr style={{ backgroundColor: '#f9fafb' }}>
+                  <td style={{ padding: '8px', paddingLeft: '24px', borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: '#f9fafb', zIndex: 5 }}>Repairs & Maintenance</td>
+                  <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb' }}>$0</td>
+                  {expenseProjections.map((exp, i) => (
+                    <td key={i} style={{ padding: '8px', textAlign: 'right', borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
+                      {calc.formatCurrency(exp.repairsMaintenance || 0)}
+                    </td>
+                  ))}
+                </tr>
+                
+                {/* MANAGEMENT FEE */}
+                <tr style={{ backgroundColor: 'white' }}>
+                  <td style={{ padding: '8px', paddingLeft: '24px', borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: 'white', zIndex: 5 }}>Management Fee</td>
+                  <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb' }}>$0</td>
+                  {expenseProjections.map((exp, i) => (
+                    <td key={i} style={{ padding: '8px', textAlign: 'right', borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
+                      {calc.formatCurrency(exp.propertyManagement || 0)}
+                    </td>
+                  ))}
+                </tr>
+                
+                {/* OTHER OPERATING EXPENSES */}
+                <tr style={{ backgroundColor: '#f9fafb' }}>
+                  <td style={{ padding: '8px', paddingLeft: '24px', borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: '#f9fafb', zIndex: 5 }}>Other Operating Expenses</td>
+                  <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb' }}>$0</td>
+                  {expenseProjections.map((exp, i) => {
+                    const otherExpenses = (exp.totalExpenses || 0) - (exp.realEstateTaxes || 0) - (exp.propertyInsurance || 0) - (exp.utilities || 0) - (exp.repairsMaintenance || 0) - (exp.propertyManagement || 0);
+                    return (
+                      <td key={i} style={{ padding: '8px', textAlign: 'right', borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
+                        {calc.formatCurrency(Math.max(0, otherExpenses))}
+                      </td>
+                    );
+                  })}
+                </tr>
+                
+                {/* TOTAL OPERATING EXPENSES */}
+                <tr style={{ backgroundColor: '#fee2e2', borderTop: '2px solid #dc2626', borderBottom: '2px solid #dc2626' }}>
+                  <td style={{ padding: '8px', fontWeight: 700, borderRight: '1px solid #dc2626', position: 'sticky', left: 0, backgroundColor: '#fee2e2', zIndex: 5 }}>Total Operating Expenses</td>
+                  <td style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #dc2626' }}>$0</td>
+                  {expenseProjections.map((exp, i) => (
+                    <td key={i} style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderRight: i < 9 ? '1px solid #dc2626' : 'none' }}>
+                      {calc.formatCurrency(exp.totalOperatingExpenses)}
+                    </td>
+                  ))}
+                </tr>
+                
+                {/* NET OPERATING INCOME */}
+                <tr style={{ backgroundColor: '#d1fae5', borderTop: '3px solid #10b981', borderBottom: '3px solid #10b981' }}>
+                  <td style={{ padding: '10px 8px', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #10b981', position: 'sticky', left: 0, backgroundColor: '#d1fae5', zIndex: 5 }}>NET OPERATING INCOME (NOI)</td>
+                  <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #10b981' }}>$0</td>
+                  {noiProjections.map((noi, i) => (
+                    <td key={i} style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: i < 9 ? '2px solid #10b981' : 'none' }}>
+                      {calc.formatCurrency(noi.noi)}
+                    </td>
+                  ))}
+                </tr>
+                
+                {/* SPACER */}
+                <tr style={{ backgroundColor: '#f0f9ff', height: '12px' }}>
+                  <td colSpan={12} style={{ padding: 0 }}></td>
+                </tr>
+                
+                {/* DEBT SERVICE */}
+                <tr style={{ backgroundColor: 'white' }}>
+                  <td style={{ padding: '8px', fontWeight: 600, borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: 'white', zIndex: 5 }}>Debt Service (Annual)</td>
+                  <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb' }}>$0</td>
+                  {cashFlowProjections.map((cf, i) => (
+                    <td key={i} style={{ padding: '8px', textAlign: 'right', borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
+                      -{calc.formatCurrency(cf.totalDebtService).replace('$', '$')}
+                    </td>
+                  ))}
+                </tr>
+                
+                {/* CASH FLOW AFTER FINANCING */}
+                <tr style={{ backgroundColor: '#dbeafe', borderTop: '2px solid #3b82f6', borderBottom: '2px solid #3b82f6' }}>
+                  <td style={{ padding: '10px 8px', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #3b82f6', position: 'sticky', left: 0, backgroundColor: '#dbeafe', zIndex: 5 }}>CASH FLOW AFTER FINANCING</td>
+                  <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #3b82f6' }}>$0</td>
+                  {cashFlowProjections.map((cf, i) => (
+                    <td key={i} style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: i < 9 ? '2px solid #3b82f6' : 'none' }}>
+                      {calc.formatCurrency(cf.beforeTaxCashFlow)}
+                    </td>
+                  ))}
+                </tr>
+                
+                {/* CASH-ON-CASH RETURN */}
+                <tr style={{ backgroundColor: '#fef3c7' }}>
+                  <td style={{ padding: '8px', paddingLeft: '24px', fontSize: '10px', fontStyle: 'italic', fontWeight: 600, borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: '#fef3c7', zIndex: 5 }}>Cash-on-Cash Return %</td>
+                  <td style={{ padding: '8px', textAlign: 'right', fontSize: '10px', borderRight: '1px solid #e5e7eb' }}>-</td>
+                  {cashFlowProjections.map((cf, i) => (
+                    <td key={i} style={{ padding: '8px', textAlign: 'right', fontSize: '10px', fontWeight: 600, borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
+                      {calc.formatPercent(cf.cashOnCash)}
+                    </td>
+                  ))}
+                </tr>
+                
+                {/* DSCR */}
+                <tr style={{ backgroundColor: '#fef3c7' }}>
+                  <td style={{ padding: '8px', paddingLeft: '24px', fontSize: '10px', fontStyle: 'italic', fontWeight: 600, borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: '#fef3c7', zIndex: 5 }}>DSCR</td>
+                  <td style={{ padding: '8px', textAlign: 'right', fontSize: '10px', borderRight: '1px solid #e5e7eb' }}>-</td>
+                  {cashFlowProjections.map((cf, i) => (
+                    <td key={i} style={{ padding: '8px', textAlign: 'right', fontSize: '10px', fontWeight: 600, borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
+                      {cf.dscr != null ? `${cf.dscr.toFixed(2)}x` : '-'}
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
           <div style={styles.threeColumnGrid}>
           {/* Core Inputs */}
           <div style={styles.section}>
