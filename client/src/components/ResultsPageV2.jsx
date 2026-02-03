@@ -31,6 +31,7 @@ import MarketResearchTab from './results-tabs/MarketResearchTab';
 import DealStructureTab from './results-tabs/DealStructureTab';
 import DealExecutionTab from './results-tabs/DealExecutionTab';
 import ExpensesTab from './results-tabs/ExpensesTab';
+import CashFlowTab from './results-tabs/CashFlowTab';
 import ExpenseV2Tab from './results-tabs/ExpenseV2Tab';
 import ProformaTab from './results-tabs/ProformaTab';
 import RUBSTab from './results-tabs/RUBSTab';
@@ -1155,6 +1156,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
     { id: 'summary', label: 'Summary', icon: Home },
     { id: 'scenario-sheet', label: 'Scenario Sheet', icon: FileSpreadsheet },
     { id: 'property-spreadsheet', label: 'Property Analysis', icon: FileBarChart },
+    { id: 'cashflow', label: 'Cash Flow', icon: FileBarChart },
     { id: 'rubs', label: 'RUBS', icon: Activity },
     { id: 'proforma', label: 'Proforma', icon: FileText },
     { id: 'deal-structure', label: 'Deal Structure', icon: Layers },
@@ -2503,6 +2505,13 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
             scenarioData={scenarioData}
             fullCalcs={fullCalcs}
             onFieldChange={handleFieldChange}
+          />
+        );
+
+      case 'cashflow':
+        return (
+          <CashFlowTab
+            scenarioData={scenarioData}
           />
         );
 
