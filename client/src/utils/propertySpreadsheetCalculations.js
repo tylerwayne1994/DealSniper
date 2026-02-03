@@ -695,9 +695,7 @@ export const calculateAverageCashOnCash = (annualDistributions, initialEquity, y
 export const calculateReturnSummary = (data) => {
   // This is a simplified version - full implementation requires cash flow projections
   // These calculations will be complete once cash flow section is implemented
-  const totalEquity = toNumber(data.sources?.lpEquity) + toNumber(data.sources?.gpEquity);
-  const lpEquity = toNumber(data.sources?.lpEquity);
-  const gpEquity = toNumber(data.sources?.gpEquity);
+  // placeholders removed to satisfy lint rules
   
   // Placeholder structure - will calculate actual values once cash flow data is available
   return {
@@ -819,7 +817,6 @@ export function calculateFinancingMetrics(data, noiProjections) {
   const subjectToAnnualDS = subjectToMonthlyPI * 12;
   
   // Seller Financing (1st Position)
-  const sfIOMonths = financing.sellerFinancing?.interestOnlyMonths || 0;
   const sfIOPayment = calculateInterestOnlyPayment(
     financing.sellerFinancing?.loanAmount || 0,
     financing.sellerFinancing?.interestRate || 0
@@ -910,6 +907,136 @@ export function calculateFinancingMetrics(data, noiProjections) {
 // ============================================================================
 
 /**
+ * Build a 10-year blended amortization schedule across all loans.
+ * Returns annual totals for interest, principal, total payments, end balance,
+ * exit payoff (at Year 10), and initial debt draw (Year 0).
+ */
+export function calculateDebtAmortizationSchedule(financing) {
+  const YEARS = 10;
+  const MONTHS = YEARS * 12;
+
+  const byYear = Array.from({ length: YEARS }, () => ({
+    interest: 0,
+    principalScheduled: 0,
+    principalExtra: 0,
+    totalPayment: 0,
+    endBalance: 0,
+  }));
+
+  const loans = [];
+
+  const addLoan = (amount, rate, termMonths, options = {}) => {
+    const loanAmount = toNumber(amount);
+    const annualRate = toNumber(rate) || 0;
+    const term = Math.max(0, toNumber(termMonths) || 0);
+    const ioMonths = Math.max(0, toNumber(options.ioMonths) || 0);
+    const interestOnly = options.interestOnly === true || (term === 0 && ioMonths > 0);
+
+    if (loanAmount <= 0 || annualRate < 0) return;
+
+    // If term is 0 but not explicitly IO, treat as interest-only over horizon
+    const amortMonths = Math.max(0, term - ioMonths);
+    const monthlyRate = annualRate / 12;
+    const monthlyPI = amortMonths > 0
+      ? calculateMortgagePayment(loanAmount, annualRate, amortMonths)
+      : calculateInterestOnlyPayment(loanAmount, annualRate);
+
+    loans.push({ loanAmount, monthlyRate, ioMonths, amortMonths, monthlyPI, interestOnly });
+  };
+
+  // Subject-To Existing Mortgage
+  if (financing?.subjectTo?.balance) {
+    addLoan(
+      financing.subjectTo.balance,
+      financing.subjectTo.interestRate,
+      financing.subjectTo.remainingTermMonths,
+      { ioMonths: 0 }
+    );
+  }
+
+  // Seller Financing (1st)
+  if (financing?.sellerFinancing?.loanAmount) {
+    addLoan(
+      financing.sellerFinancing.loanAmount,
+      financing.sellerFinancing.interestRate,
+      financing.sellerFinancing.amortizationMonths,
+      { ioMonths: financing.sellerFinancing.interestOnlyMonths }
+    );
+  }
+
+  // Seller Carryback (2nd)
+  if (financing?.sellerCarryback?.loanAmount) {
+    addLoan(
+      financing.sellerCarryback.loanAmount,
+      financing.sellerCarryback.interestRate,
+      financing.sellerCarryback.termMonths,
+      { ioMonths: financing.sellerCarryback.interestOnly ? MONTHS : 0, interestOnly: financing.sellerCarryback.interestOnly }
+    );
+  }
+
+  // DSCR Loan
+  if (financing?.dscrLoan?.loanAmount) {
+    addLoan(
+      financing.dscrLoan.loanAmount,
+      financing.dscrLoan.interestRate,
+      financing.dscrLoan.termMonths,
+      { ioMonths: 0 }
+    );
+  }
+
+  const totalDebtDraw = loans.reduce((s, l) => s + l.loanAmount, 0);
+
+  // Aggregate monthly schedule across loans
+  const perLoanBalances = loans.map(l => l.loanAmount);
+
+  for (let m = 1; m <= MONTHS; m++) {
+    const yearIndex = Math.min(Math.floor((m - 1) / 12), YEARS - 1);
+
+    loans.forEach((loan, idx) => {
+      let balance = perLoanBalances[idx];
+      if (balance <= 0) return;
+
+      const interest = balance * loan.monthlyRate;
+      let principal = 0;
+      let payment = 0;
+
+      if (m <= loan.ioMonths) {
+        // Interest-only period
+        payment = interest;
+        principal = 0;
+      } else if (loan.amortMonths > 0) {
+        // Amortizing period
+        payment = Math.min(loan.monthlyPI, balance + interest);
+        principal = Math.max(0, payment - interest);
+      } else {
+        // Treat as pure interest-only if no amort months
+        payment = interest;
+        principal = 0;
+      }
+
+      perLoanBalances[idx] = Math.max(0, balance - principal);
+
+      byYear[yearIndex].interest += interest;
+      byYear[yearIndex].principalScheduled += principal;
+      byYear[yearIndex].totalPayment += payment;
+    });
+
+    // Update end balances snapshot for the year
+    byYear[yearIndex].endBalance = perLoanBalances.reduce((s, b) => s + b, 0);
+  }
+
+  // Exit payoff (Year 10): repay remaining balance
+  const repayWithExit = Array.from({ length: YEARS }, () => 0);
+  repayWithExit[YEARS - 1] = byYear[YEARS - 1].endBalance;
+
+  return {
+    totalDebtDraw,
+    years: byYear,
+    repayWithExit,
+  };
+}
+
+/**
  * Calculate cash flow projections for 10 years
  * @param {Array} noiProjections - NOI projections
  * @param {Object} financingMetrics - Financing calculations
@@ -980,7 +1107,7 @@ export function calculateSaleAnalysis(noiProjections, data, financingMetrics) {
   
   // Calculate for years 5-10
   for (let year = 5; year <= 10; year++) {
-    const yearIndex = year - 1;
+    // const yearIndex = year - 1; // not needed; keep for readability
     
     // Exit cap rate - use Year 5 rate for year 5, Year 10 rate for years 6-10
     const exitCapRate = year === 5 
@@ -1211,7 +1338,7 @@ function calculateWaterfallForScenario(
   exitYear
 ) {
   const years = [];
-  let cumulativeLPPrefAccrual = 0;
+  // let cumulativeLPPrefAccrual = 0; // not used in simplified model
   let unpaidLPPref = 0;
   
   // Process each year
@@ -1234,7 +1361,7 @@ function calculateWaterfallForScenario(
     
     // Calculate LP preferred return accrual
     const lpPrefAccrual = lpEquity * preferredReturn;
-    cumulativeLPPrefAccrual += lpPrefAccrual;
+    // cumulative preferred accrual not used in simplified model
     unpaidLPPref += lpPrefAccrual;
     
     let lpDistribution = 0;
