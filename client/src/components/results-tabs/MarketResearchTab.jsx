@@ -38,11 +38,22 @@ function MarketResearchTab({ marketData }) {
   const {
     property_location,
     isochrone,
-    county_data,
-    zip_data,
-    msa_data,
-    aggregations
+    county_data = {},
+    zip_data = {},
+    msa_data = {},
+    aggregations = {},
+    city = {},
+    county = {},
+    state = {}
   } = marketData;
+
+  // Safe defaults for aggregations
+  const safeAggregations = {
+    population: aggregations.population || county_data.population || 0,
+    median_income: aggregations.median_income || county_data.median_income || 0,
+    median_rent: aggregations.median_rent || 0,
+    affordability: aggregations.affordability || 'N/A'
+  };
 
   // Prepare isochrone GeoJSON layer
   const isochroneLayer = {
@@ -72,7 +83,7 @@ function MarketResearchTab({ marketData }) {
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Market Analysis</h2>
         <p className="text-sm text-gray-600">
-          {property_location.address}, {property_location.city}, {property_location.state} {property_location.zip}
+          {city.name || 'Property'}, {state.name || 'N/A'}
         </p>
         <p className="text-xs text-gray-500 mt-1">
           15-Minute Drive Time Market Area
@@ -123,25 +134,25 @@ function MarketResearchTab({ marketData }) {
         {/* Population Card */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="text-sm text-gray-500 mb-1">Population</div>
-          <div className="text-3xl font-bold text-gray-900">{fmt(county_data.population)}</div>
-          <div className="text-xs text-gray-600 mt-2">{county_data.county_name}</div>
+          <div className="text-3xl font-bold text-gray-900">{fmt(safeAggregations.population)}</div>
+          <div className="text-xs text-gray-600 mt-2">{county.name || 'County'}</div>
         </div>
 
         {/* Income Card */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="text-sm text-gray-500 mb-1">Median Household Income</div>
-          <div className="text-3xl font-bold text-gray-900">{fmtCurrency(county_data.median_household_income)}</div>
-          <div className="text-xs text-gray-600 mt-2">Mean: {fmtCurrency(county_data.mean_household_income)}</div>
+          <div className="text-3xl font-bold text-gray-900">{fmtCurrency(safeAggregations.median_income)}</div>
+          <div className="text-xs text-gray-600 mt-2">County median income</div>
         </div>
 
         {/* Affordability Card */}
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="text-sm text-gray-500 mb-1">Rent-to-Income Ratio</div>
-          <div className={`text-3xl font-bold ${affordabilityColor}`}>
-            {fmtPercent(rentToIncomeRatio)}
+          <div className="text-sm text-gray-500 mb-1">Market Affordability</div>
+          <div className="text-3xl font-bold text-blue-600">
+            {safeAggregations.affordability}
           </div>
           <div className="text-xs text-gray-600 mt-2">
-            {rentToIncomeRatio < 25 ? 'Highly Affordable' : rentToIncomeRatio < 30 ? 'Affordable' : rentToIncomeRatio < 35 ? 'Moderate' : 'Low Affordability'}
+            Rent: {fmtCurrency(safeAggregations.median_rent)}/mo
           </div>
         </div>
       </div>
@@ -152,15 +163,15 @@ function MarketResearchTab({ marketData }) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <div className="text-sm text-gray-500 mb-1">Median Home Value</div>
-            <div className="text-2xl font-bold text-gray-900">{fmtCurrency(county_data.median_home_value)}</div>
+            <div className="text-2xl font-bold text-gray-900">{fmtCurrency(county_data.median_home_value || 0)}</div>
           </div>
           <div>
             <div className="text-sm text-gray-500 mb-1">Median Gross Rent</div>
-            <div className="text-2xl font-bold text-gray-900">{fmtCurrency(county_data.median_rent)}</div>
+            <div className="text-2xl font-bold text-gray-900">{fmtCurrency(safeAggregations.median_rent)}</div>
           </div>
           <div>
             <div className="text-sm text-gray-500 mb-1">Owner-Occupied Rate</div>
-            <div className="text-2xl font-bold text-gray-900">{fmtPercent(county_data.owner_occupied_rate)}</div>
+            <div className="text-2xl font-bold text-gray-900">{fmtPercent(county_data.owner_occupied_rate || 0)}</div>
           </div>
         </div>
       </div>
@@ -239,19 +250,19 @@ function MarketResearchTab({ marketData }) {
         <div className="space-y-3">
           <div className="flex justify-between items-center py-2 border-b">
             <span className="text-sm font-medium text-gray-700">Local (15-min drive)</span>
-            <span className="text-sm text-gray-900">{aggregations.local.description}</span>
+            <span className="text-sm text-gray-900">Population: {fmt(safeAggregations.population)}</span>
           </div>
           <div className="flex justify-between items-center py-2 border-b">
             <span className="text-sm font-medium text-gray-700">City</span>
-            <span className="text-sm text-gray-900">{aggregations.city.name}, {aggregations.city.state}</span>
+            <span className="text-sm text-gray-900">{city.name || 'N/A'}, {city.state || state.name || 'N/A'}</span>
           </div>
           <div className="flex justify-between items-center py-2 border-b">
             <span className="text-sm font-medium text-gray-700">County</span>
-            <span className="text-sm text-gray-900">{aggregations.county.name} (Pop: {fmt(aggregations.county.population)})</span>
+            <span className="text-sm text-gray-900">{county.name || 'N/A'} (Pop: {fmt(county.population || safeAggregations.population)})</span>
           </div>
           <div className="flex justify-between items-center py-2">
             <span className="text-sm font-medium text-gray-700">State</span>
-            <span className="text-sm text-gray-900">{aggregations.state.name}</span>
+            <span className="text-sm text-gray-900">{state.name || 'N/A'}</span>
           </div>
         </div>
       </div>
