@@ -12,6 +12,18 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
     border: '#e5e7eb'
   };
 
+  const PALETTE = {
+    red: '#dc2626',
+    redLight: '#fee2e2',
+    pinkLight: '#ffe4e6',
+    green: '#16a34a',
+    greenLight: '#dcfce7',
+    blue: '#2563eb',
+    blueLight: '#dbeafe',
+    yellow: '#f59e0b',
+    yellowLight: '#fef9c3',
+  };
+
   const fmt = (num) => {
     if (num === null || num === undefined || num === '') return 'N/A';
     const n = Number(num);
@@ -235,11 +247,11 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
-                <tr style={{ background: '#f8fafc' }}>
-                  <th style={{ padding: '10px', textAlign: 'left', borderBottom: `1px solid ${COLORS.border}` }}>Item</th>
-                  <th style={{ padding: '10px', textAlign: 'right', borderBottom: `1px solid ${COLORS.border}` }}>Underwriting Start</th>
-                  <th style={{ padding: '10px', textAlign: 'right', borderBottom: `1px solid ${COLORS.border}` }}>Value Add 1</th>
-                  <th style={{ padding: '10px', textAlign: 'center', borderBottom: `1px solid ${COLORS.border}`, width: 120 }}>Actions</th>
+                <tr style={{ background: PALETTE.pinkLight, borderTop: `2px solid ${PALETTE.red}`, borderBottom: `2px solid ${PALETTE.red}` }}>
+                  <th style={{ padding: '10px', textAlign: 'left' }}>Item</th>
+                  <th style={{ padding: '10px', textAlign: 'right' }}>Underwriting Start</th>
+                  <th style={{ padding: '10px', textAlign: 'right' }}>Value Add 1</th>
+                  <th style={{ padding: '10px', textAlign: 'center', width: 120 }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -263,8 +275,8 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                   });
                   return rows;
                 })().map((row,i)=> {
-                  const rowBg = '#f0fdf4'; // soft green like screenshot
-                  const borderColor = '#dcfce7';
+                  const rowBg = i % 2 === 0 ? '#ffffff' : '#f9fafb';
+                  const borderColor = '#d1d5db';
                   return (
                   <tr key={row.key} style={{ background: rowBg }}>
                     <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, fontWeight: 600, color: '#374151' }}>{row.label}</td>
@@ -296,11 +308,11 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                   const baseTotal = sum(expenses) - (typeof expenses.utility_breakdown==='object'?0:0);
                   const optTotal = sum(optimized) - (typeof optimized.utility_breakdown==='object'?0:0);
                   return (
-                    <tr style={{ background: '#d1fae5', fontWeight: 700 }}>
-                      <td style={{ padding: '10px', borderTop: `1px solid ${COLORS.border}` }}>Total Operating Expenses</td>
-                      <td style={{ padding: '10px', textAlign: 'right', borderTop: `1px solid ${COLORS.border}` }}>${Number(baseTotal||0).toLocaleString()}</td>
-                      <td style={{ padding: '10px', textAlign: 'right', borderTop: `1px solid ${COLORS.border}` }}>${Number(optTotal||baseTotal||0).toLocaleString()}</td>
-                      <td style={{ padding: '10px', borderTop: `1px solid ${COLORS.border}` }}></td>
+                    <tr style={{ background: PALETTE.redLight }}>
+                      <td style={{ padding: '10px', fontWeight: 800, borderTop: `2px solid ${PALETTE.red}`, borderBottom: `2px solid ${PALETTE.red}` }}>Total Operating Expenses</td>
+                      <td style={{ padding: '10px', textAlign: 'right', fontWeight: 800, borderTop: `2px solid ${PALETTE.red}`, borderBottom: `2px solid ${PALETTE.red}` }}>${Number(baseTotal||0).toLocaleString()}</td>
+                      <td style={{ padding: '10px', textAlign: 'right', fontWeight: 800, borderTop: `2px solid ${PALETTE.red}`, borderBottom: `2px solid ${PALETTE.red}` }}>${Number(optTotal||baseTotal||0).toLocaleString()}</td>
+                      <td style={{ padding: '10px', borderTop: `2px solid ${PALETTE.red}`, borderBottom: `2px solid ${PALETTE.red}` }}></td>
                     </tr>
                   );
                 })()}
@@ -328,7 +340,7 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
               }}
             >
               <div style={{
-                backgroundColor: COLORS.blue,
+                backgroundColor: PALETTE.blue,
                 color: 'white',
                 padding: '10px 14px',
                 borderRadius: '8px',
@@ -352,7 +364,7 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
             <div style={{ padding: '20px' }}>
               <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: '12px' }}>
                 <thead>
-                  <tr style={{ backgroundColor: COLORS.blue, color: 'white' }}>
+                  <tr style={{ backgroundColor: PALETTE.blue, color: 'white' }}>
                     <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700 }}>Utility</th>
                     <th style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>Annual Amount</th>
                     <th style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>Monthly</th>
@@ -368,11 +380,11 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                     ['internet', 'Internet/Cable'],
                     ['landscaping', 'Landscaping/Irrigation'],
                     ['pest_control', 'Pest Control'],
-                  ].map(([key, label]) => {
+                  ].map(([key, label], idx) => {
                     const val = defaultUtilities[key] || 0;
                     const monthly = val / 12;
                     return (
-                      <tr key={key} style={{ borderBottom: `1px solid ${COLORS.border}` }}>
+                      <tr key={key} style={{ borderBottom: `1px solid ${COLORS.border}`, backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
                         <td style={{ padding: '12px', fontWeight: '600', color: '#374151' }}>{label}</td>
                         <td style={{ padding: '12px', textAlign: 'right' }}>
                           <input
@@ -412,8 +424,8 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                     );
                   })}
                   {/* Total Row */}
-                  <tr style={{ backgroundColor: '#eef2ff', borderTop: `2px solid ${COLORS.border}` }}>
-                    <td style={{ padding: '12px', fontWeight: '700', color: '#111827' }}>Utility Breakdown Total</td>
+                  <tr style={{ backgroundColor: PALETTE.blueLight, borderTop: `2px solid ${PALETTE.blue}`, borderBottom: `2px solid ${PALETTE.blue}` }}>
+                    <td style={{ padding: '12px', fontWeight: '800', color: '#111827' }}>Utility Breakdown Total</td>
                     <td style={{ padding: '12px', textAlign: 'right', fontWeight: '800', color: '#111827' }}>
                       ${(
                         (defaultUtilities.water || 0) +
@@ -426,7 +438,7 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                         (defaultUtilities.pest_control || 0)
                       ).toLocaleString()}
                     </td>
-                    <td style={{ padding: '12px', textAlign: 'right', fontWeight: '700', color: '#374151' }}>
+                    <td style={{ padding: '12px', textAlign: 'right', fontWeight: '800', color: '#374151' }}>
                       ${(
                         ((defaultUtilities.water || 0) +
                           (defaultUtilities.electricity || 0) +

@@ -149,8 +149,8 @@ const PropertySpreadsheet = ({ initialData }) => {
                 })}
               </tr>
             ))}
-            <tr style={{ backgroundColor: '#f1f5f9', borderTop: '2px solid #e5e7eb' }}>
-              <td colSpan={12} style={{ padding: '8px', fontWeight: 700, fontSize: '12px' }}>OPERATING EXPENSES</td>
+            <tr style={{ backgroundColor: '#ffe4e6', borderTop: '2px solid #dc2626', borderBottom: '2px solid #dc2626' }}>
+              <td colSpan={12} style={{ padding: '8px', fontWeight: 800, fontSize: '12px' }}>OPERATING EXPENSES</td>
             </tr>
             <tr style={{ backgroundColor: 'white' }}>
               <td style={{ padding: '8px', paddingLeft: '24px', borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: 'white', zIndex: 5 }}>Property Taxes</td>
@@ -218,22 +218,13 @@ const PropertySpreadsheet = ({ initialData }) => {
                 </td>
               ))}
             </tr>
-            {/* Totals and summary rows with indigo accent */}
-            <tr style={{ backgroundColor: '#f1f5f9', borderTop: '2px solid #e5e7eb', borderBottom: '2px solid #e5e7eb' }}>
-              <td style={{ padding: '8px', fontWeight: 700, borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: '#f1f5f9', zIndex: 5 }}>Total Operating Expenses</td>
-              <td style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #e5e7eb' }}>$0</td>
-              {expenseProjections.map((exp, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
-                  {calc.formatCurrency(exp.totalOperatingExpenses)}
-                </td>
-              ))}
-            </tr>
+            {/* Totals and summary rows */}
 
-            <tr style={{ backgroundColor: '#eef2ff', borderTop: '3px solid #273a8a', borderBottom: '3px solid #273a8a' }}>
-              <td style={{ padding: '10px 8px', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #273a8a', position: 'sticky', left: 0, backgroundColor: '#eef2ff', zIndex: 5 }}>NET OPERATING INCOME (NOI)</td>
-              <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #273a8a' }}>$0</td>
+            <tr style={{ backgroundColor: '#dcfce7', borderTop: '3px solid #16a34a', borderBottom: '3px solid #16a34a' }}>
+              <td style={{ padding: '10px 8px', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #16a34a', position: 'sticky', left: 0, backgroundColor: '#dcfce7', zIndex: 5 }}>NET OPERATING INCOME (NOI)</td>
+              <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #16a34a' }}>$0</td>
               {noiProjections.map((noi, i) => (
-                <td key={i} style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: i < 9 ? '2px solid #273a8a' : 'none' }}>
+                <td key={i} style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: i < 9 ? '2px solid #16a34a' : 'none' }}>
                   {calc.formatCurrency(noi.noi)}
                 </td>
               ))}
@@ -249,31 +240,31 @@ const PropertySpreadsheet = ({ initialData }) => {
               ))}
             </tr>
 
-            <tr style={{ backgroundColor: '#eef2ff', borderTop: '2px solid #273a8a', borderBottom: '2px solid #273a8a' }}>
-              <td style={{ padding: '10px 8px', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #273a8a', position: 'sticky', left: 0, backgroundColor: '#eef2ff', zIndex: 5 }}>CASH FLOW AFTER FINANCING</td>
-              <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #273a8a' }}>$0</td>
+            <tr style={{ backgroundColor: '#dbeafe', borderTop: '2px solid #2563eb', borderBottom: '2px solid #2563eb' }}>
+              <td style={{ padding: '10px 8px', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #2563eb', position: 'sticky', left: 0, backgroundColor: '#dbeafe', zIndex: 5 }}>CASH FLOW AFTER FINANCING</td>
+              <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #2563eb' }}>$0</td>
               {cashFlowProjections.map((cf, i) => (
-                <td key={i} style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: i < 9 ? '2px solid #273a8a' : 'none' }}>
+                <td key={i} style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: i < 9 ? '2px solid #2563eb' : 'none' }}>
                   {cf.dscr != null ? `${cf.dscr.toFixed(2)}x` : '-'}
                 </td>
               ))}
             </tr>
 
-            <tr style={{ backgroundColor: '#f8fafc' }}>
-              <td style={{ padding: '8px', paddingLeft: '24px', fontSize: '10px', fontStyle: 'italic', fontWeight: 600, borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: '#f8fafc', zIndex: 5 }}>Cash-on-Cash Return %</td>
-              <td style={{ padding: '8px', textAlign: 'right', fontSize: '10px', borderRight: '1px solid #e5e7eb' }}>-</td>
+            <tr style={{ backgroundColor: '#fef9c3' }}>
+              <td style={{ padding: '8px', paddingLeft: '24px', fontSize: '10px', fontStyle: 'italic', fontWeight: 600, borderRight: '1px solid #f59e0b', position: 'sticky', left: 0, backgroundColor: '#fef9c3', zIndex: 5 }}>Cash-on-Cash Return %</td>
+              <td style={{ padding: '8px', textAlign: 'right', fontSize: '10px', borderRight: '1px solid #f59e0b' }}>-</td>
               {cashFlowProjections.map((cf, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', fontSize: '10px', fontWeight: 600, borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
+                <td key={i} style={{ padding: '8px', textAlign: 'right', fontSize: '10px', fontWeight: 600, borderRight: i < 9 ? '1px solid #f59e0b' : 'none' }}>
                   {calc.formatPercent(cf.cashOnCash)}
                 </td>
               ))}
             </tr>
 
-            <tr style={{ backgroundColor: '#f8fafc' }}>
-              <td style={{ padding: '8px', paddingLeft: '24px', fontSize: '10px', fontStyle: 'italic', fontWeight: 600, borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: '#f8fafc', zIndex: 5 }}>DSCR</td>
-              <td style={{ padding: '8px', textAlign: 'right', fontSize: '10px', borderRight: '1px solid #e5e7eb' }}>-</td>
+            <tr style={{ backgroundColor: '#fef9c3' }}>
+              <td style={{ padding: '8px', paddingLeft: '24px', fontSize: '10px', fontStyle: 'italic', fontWeight: 600, borderRight: '1px solid #f59e0b', position: 'sticky', left: 0, backgroundColor: '#fef9c3', zIndex: 5 }}>DSCR</td>
+              <td style={{ padding: '8px', textAlign: 'right', fontSize: '10px', borderRight: '1px solid #f59e0b' }}>-</td>
               {cashFlowProjections.map((cf, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', fontSize: '10px', fontWeight: 600, borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
+                <td key={i} style={{ padding: '8px', textAlign: 'right', fontSize: '10px', fontWeight: 600, borderRight: i < 9 ? '1px solid #f59e0b' : 'none' }}>
                   {cf.dscr != null ? `${cf.dscr.toFixed(2)}x` : '-'}
                 </td>
               ))}
