@@ -31,6 +31,7 @@ import MarketResearchTab from './results-tabs/MarketResearchTab';
 import DealStructureTab from './results-tabs/DealStructureTab';
 import DealExecutionTab from './results-tabs/DealExecutionTab';
 import ExpensesTab from './results-tabs/ExpensesTab';
+import ExpenseV2Tab from './results-tabs/ExpenseV2Tab';
 import ProformaTab from './results-tabs/ProformaTab';
 import RUBSTab from './results-tabs/RUBSTab';
 import UnderwritingTablePage from '../pages/UnderwritingTablePage';
@@ -1159,6 +1160,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
     { id: 'deal-structure', label: 'Deal Structure', icon: Layers },
     { id: 'deal-execution', label: 'Deal Execution', icon: Rocket },
     { id: 'expenses', label: 'Expenses', icon: FileText },
+    { id: 'expenses-v2', label: 'Expenses V2', icon: FileText },
     { id: 'value-add', label: 'Value-Add Strategy', icon: TrendingUp },
     { id: 'exit-strategy', label: 'Exit Strategy', icon: TrendingUp },
     
@@ -2498,6 +2500,15 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
       case 'expenses':
         return (
           <ExpensesTab
+            scenarioData={scenarioData}
+            fullCalcs={fullCalcs}
+            onFieldChange={handleFieldChange}
+          />
+        );
+
+      case 'expenses-v2':
+        return (
+          <ExpenseV2Tab
             scenarioData={scenarioData}
             fullCalcs={fullCalcs}
             onFieldChange={handleFieldChange}
