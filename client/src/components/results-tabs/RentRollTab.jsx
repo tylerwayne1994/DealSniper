@@ -145,6 +145,9 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
           </button>
         </div>
 
+        {/* FORCE REFRESH - CACTUS REBUILD */}
+        <div style={{ display: 'none' }}>RENT-ROLL-CACTUS-v2-{Date.now()}</div>
+
         {/* Summary cards */}
         <div
           style={{

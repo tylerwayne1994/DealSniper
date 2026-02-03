@@ -540,10 +540,13 @@ const PropertySpreadsheet = ({ initialData }) => {
       {/* Simple Overview */}
       {simpleMode && (
         <div>
+          {/* FORCE REFRESH CHECK */}
+          <div style={{ display: 'none' }}>v2.0-CACTUS-STYLE-REBUILD-{Date.now()}</div>
+          
           {/* INVESTMENT CASH FLOW DETAILS - Cactus Style */}
           <div style={{ marginBottom: '32px', overflowX: 'auto' }}>
-            <div style={{ ...styles.sectionHeader, marginBottom: '16px', fontSize: '18px', fontWeight: 800 }}>
-              INVESTMENT CASH FLOW DETAILS
+            <div style={{ fontSize: '20px', fontWeight: 900, marginBottom: '16px', color: '#1e3a8a', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              💰 INVESTMENT CASH FLOW DETAILS
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', border: '2px solid #0ea5e9' }}>
               <thead>
