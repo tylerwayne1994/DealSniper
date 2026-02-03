@@ -29,14 +29,10 @@ import { calculateSensitivity } from '../utils/realEstateCalculations';
 import { CostSegAnalysisView } from './CostSegAnalysis';
 import MarketResearchTab from './results-tabs/MarketResearchTab';
 import DealStructureTab from './results-tabs/DealStructureTab';
-import DealExecutionTab from './results-tabs/DealExecutionTab';
-import ExpensesTab from './results-tabs/ExpensesTab';
 import CashFlowTab from './results-tabs/CashFlowTab';
 import ExpenseV2Tab from './results-tabs/ExpenseV2Tab';
 import ProformaTab from './results-tabs/ProformaTab';
 import UnderwritingTablePage from '../pages/UnderwritingTablePage';
-import PropertySpreadsheet from './PropertySpreadsheet';
-import { mapParsedDataToSpreadsheet } from '../utils/propertySpreadsheetMapper';
 import { saveDeal } from '../lib/dealsService';
 import ScenarioSheet from './ScenarioSheet';
 
@@ -517,9 +513,6 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
         { id: 'summary', name: 'Summary' },
         { id: 'market-research', name: 'Market Research' },
         { id: 'deal-structure', name: 'Deal Structure' },
-        { id: 'property-analysis', name: 'Property Analysis' },
-        { id: 'deal-execution', name: 'Deal Execution' },
-        { id: 'expenses', name: 'Expenses' },
         { id: 'proforma', name: 'Pro Forma' },
         { id: 'rent-roll', name: 'Rent Roll' },
         { id: 'returns', name: 'Returns' },
@@ -1153,12 +1146,9 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
   const tabs = [
     { id: 'summary', label: 'Summary', icon: Home },
     { id: 'scenario-sheet', label: 'Scenario Sheet', icon: FileSpreadsheet },
-    { id: 'property-spreadsheet', label: 'Property Analysis', icon: FileBarChart },
     { id: 'cashflow', label: 'Cash Flow', icon: FileBarChart },
     { id: 'proforma', label: 'Proforma', icon: FileText },
     { id: 'deal-structure', label: 'Deal Structure', icon: Layers },
-    { id: 'deal-execution', label: 'Deal Execution', icon: Rocket },
-    { id: 'expenses', label: 'Expenses', icon: FileText },
     { id: 'expenses-v2', label: 'Expenses V2', icon: FileText },
     { id: 'value-add', label: 'Value-Add Strategy', icon: TrendingUp },
     { id: 'exit-strategy', label: 'Exit Strategy', icon: TrendingUp },
@@ -2494,15 +2484,6 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
               </div>
             </div>
           </div>
-        );
-
-      case 'expenses':
-        return (
-          <ExpensesTab
-            scenarioData={scenarioData}
-            fullCalcs={fullCalcs}
-            onFieldChange={handleFieldChange}
-          />
         );
 
       case 'cashflow':
@@ -5393,27 +5374,6 @@ Keep the answer tight but specific to this property and the numbers above.`;
               marketCapRate={marketCapRate}
               onRecommendationChange={setRecommendedStructure}
               onSelectedStructureMetricsChange={setSelectedStructureMetrics}
-            />
-          </div>
-        );
-
-      case 'deal-execution':
-        return (
-          <div style={{ padding: '24px' }}>
-            <DealExecutionTab 
-              scenarioData={scenarioData}
-              fullCalcs={fullCalcs}
-              recommendedStructure={recommendedStructure}
-              selectedStructureMetrics={selectedStructureMetrics}
-            />
-          </div>
-        );
-      
-      case 'property-spreadsheet':
-        return (
-          <div style={{ padding: '24px' }}>
-            <PropertySpreadsheet 
-              initialData={scenarioData ? mapParsedDataToSpreadsheet(scenarioData) : null}
             />
           </div>
         );
