@@ -39,9 +39,9 @@ export default function CharacteristicsTab(props) {
   const labelStyle = { fontSize: '12px', color: '#64748b', marginBottom: '4px', display: 'block', fontWeight: '500' };
   const selectStyle = { ...inputStyle, textAlign: 'left', cursor: 'pointer' };
 
-  const SectionCard = ({ title, icon, color = '#0f766e', children }) => (
-    <div style={{ backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', marginBottom: '16px' }}>
-      <div style={{ background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`, color: 'white', padding: '12px 16px', fontWeight: '600', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+  const SectionCard = ({ title, icon, children }) => (
+    <div style={{ backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', marginBottom: '16px', border: '1px solid #e5e7eb' }}>
+      <div style={{ background: '#f8fafc', color: '#111827', padding: '12px 16px', fontWeight: '600', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #e5e7eb' }}>
         {icon && <span>{icon}</span>}
         {title}
       </div>
@@ -96,14 +96,14 @@ export default function CharacteristicsTab(props) {
 
   return (
     <div style={{ padding: '24px', backgroundColor: '#f8fafc' }}>
-      <div style={{ background: 'linear-gradient(135deg, #0f766e 0%, #115e59 100%)', borderRadius: '16px', padding: '20px 24px', marginBottom: '24px', color: 'white' }}>
+      <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '20px 24px', marginBottom: '24px', color: '#111827' }}>
         <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '700' }}>Property Details</h2>
-        <p style={{ margin: '4px 0 0', fontSize: '14px', opacity: 0.9 }}>Edit property information, financing, and expenses</p>
+        <p style={{ margin: '4px 0 0', fontSize: '14px', color: '#6b7280' }}>Edit property information, financing, and expenses</p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px', maxWidth: '1800px' }}>
         <div>
-          <SectionCard title="Property Information" icon="🏢" color="#3b82f6">
+          <SectionCard title="Property Information" icon="🏢">
             <div style={{ marginBottom: '12px' }}>
               <label style={labelStyle}>Address</label>
               <input type="text" style={inputStyleLeft} value={property?.address || ''} onChange={(e) => onEditData && onEditData('property.address', e.target.value)} />
@@ -140,7 +140,7 @@ export default function CharacteristicsTab(props) {
             </div>
           </SectionCard>
 
-          <SectionCard title="Property County" icon="📍" color="#8b5cf6">
+          <SectionCard title="Property County" icon="📍">
             <div style={{ marginBottom: '12px', position: 'relative' }}>
               <label style={labelStyle}>County</label>
               <input type="text" style={inputStyleLeft} value={scenarioData.property_county?.name || countySearch} onChange={(e) => { setCountySearch && setCountySearch(e.target.value); setShowCountyDropdown && setShowCountyDropdown(true); }} onFocus={() => setShowCountyDropdown && setShowCountyDropdown(true)} placeholder="Search county..." />
@@ -175,7 +175,7 @@ export default function CharacteristicsTab(props) {
         </div>
 
         <div>
-          <SectionCard title="Pricing & Financing" icon="💰" color="#0d9488">
+          <SectionCard title="Pricing & Financing" icon="💰">
             <div style={{ marginBottom: '12px' }}>
               <label style={labelStyle}>Financing Type *</label>
               <select style={selectStyle} value={pricing_financing?.financing_type || financing.financing_type || 'traditional'} onChange={(e) => onEditData && onEditData('pricing_financing.financing_type', e.target.value)}>
@@ -228,7 +228,7 @@ export default function CharacteristicsTab(props) {
             </div>
           </SectionCard>
 
-          <SectionCard title="Acquisition Costs" icon="📋" color="#f97316">
+          <SectionCard title="Acquisition Costs" icon="📋">
             <div style={{ marginBottom: '12px' }}>
               <label style={labelStyle}>Realtor Fees (%)</label>
               <input type="number" step="0.1" style={inputStyle} value={scenarioData.acquisition_costs?.realtor_fee_pct || ''} onChange={(e) => onEditData && onEditData('acquisition_costs.realtor_fee_pct', parseFloat(e.target.value) || 0)} />
@@ -245,15 +245,15 @@ export default function CharacteristicsTab(props) {
               <label style={labelStyle}>Rehab Cost</label>
               <input type="number" style={inputStyle} value={scenarioData.acquisition_costs?.rehab_cost || ''} onChange={(e) => onEditData && onEditData('acquisition_costs.rehab_cost', parseFloat(e.target.value) || 0)} />
             </div>
-            <div style={{ padding: '12px', backgroundColor: '#fef3c7', borderRadius: '8px' }}>
-              <label style={{ ...labelStyle, color: '#92400e', fontWeight: '600' }}>Total Initial Cash</label>
-              <div style={{ fontSize: '18px', fontWeight: '700', color: '#92400e', textAlign: 'right' }}>${totalInitialCash.toLocaleString()}</div>
+            <div style={{ padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+              <label style={{ ...labelStyle, color: '#374151', fontWeight: '600' }}>Total Initial Cash</label>
+              <div style={{ fontSize: '18px', fontWeight: '700', color: '#111827', textAlign: 'right' }}>${totalInitialCash.toLocaleString()}</div>
             </div>
           </SectionCard>
         </div>
 
         <div>
-          <SectionCard title="Income" icon="💵" color="#10b981">
+          <SectionCard title="Income" icon="💵">
             <div style={{ marginBottom: '12px' }}>
               <label style={labelStyle}>Gross Potential Rent (Annual) *</label>
               <input type="number" style={inputStyle} value={grossPotentialRent || ''} onChange={(e) => onEditData && onEditData('income.gross_potential_rent', parseFloat(e.target.value) || 0)} />
@@ -268,7 +268,7 @@ export default function CharacteristicsTab(props) {
             </div>
           </SectionCard>
 
-          <SectionCard title="Percentage Expenses" icon="📊" color="#6366f1">
+          <SectionCard title="Percentage Expenses" icon="📊">
             <div style={{ marginBottom: '12px' }}>
               <label style={labelStyle}>Vacancy Rate (%)</label>
               <input type="number" step="0.1" style={inputStyle} value={vacancyRatePct || ''} onChange={(e) => onEditData && onEditData('expenses.vacancy_rate', parseFloat(e.target.value) || 0)} />
@@ -283,7 +283,7 @@ export default function CharacteristicsTab(props) {
             </div>
           </SectionCard>
 
-          <SectionCard title="Fixed Annual Expenses" icon="📝" color="#ef4444">
+          <SectionCard title="Fixed Annual Expenses" icon="📝">
             <FixedAnnualExpensesSection scenarioData={scenarioData} onEditData={onEditData} labelStyle={labelStyle} inputStyle={inputStyle} />
           </SectionCard>
         </div>
@@ -336,7 +336,7 @@ export default function CharacteristicsTab(props) {
             </div>
           </div>
 
-          <SectionCard title="Unit Mix" icon="🏠" color="#0ea5e9">
+          <SectionCard title="Unit Mix" icon="🏠">
             <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
               <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
                 <thead>
@@ -367,36 +367,36 @@ export default function CharacteristicsTab(props) {
         </div>
 
         <div>
-          <SectionCard title="Closing Costs" icon="💼" color="#64748b">
+          <SectionCard title="Closing Costs" icon="💼">
             <ClosingCostsSection scenarioData={scenarioData} onEditData={onEditData} labelStyle={labelStyle} inputStyle={inputStyle} />
           </SectionCard>
         </div>
       </div>
 
-      <div style={{ marginTop: '24px', padding: '24px', background: 'linear-gradient(135deg, #0f766e 0%, #115e59 100%)', borderRadius: '16px', color: 'white' }}>
+      <div style={{ marginTop: '24px', padding: '24px', background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '16px', color: '#111827' }}>
         <h4 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>📊 Live Calculations</h4>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '16px' }}>
-          <div style={{ textAlign: 'center', padding: '16px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+          <div style={{ textAlign: 'center', padding: '16px', backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px' }}>
             <div style={{ fontSize: '12px', opacity: 0.9, marginBottom: '4px' }}>NOI</div>
             <div style={{ fontSize: '20px', fontWeight: '700' }}>{fmt(fullCalcs.year1?.noi)}</div>
           </div>
-          <div style={{ textAlign: 'center', padding: '16px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+          <div style={{ textAlign: 'center', padding: '16px', backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px' }}>
             <div style={{ fontSize: '12px', opacity: 0.9, marginBottom: '4px' }}>Cap Rate</div>
             <div style={{ fontSize: '20px', fontWeight: '700' }}>{pct(fullCalcs.year1?.capRate)}</div>
           </div>
-          <div style={{ textAlign: 'center', padding: '16px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+          <div style={{ textAlign: 'center', padding: '16px', backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px' }}>
             <div style={{ fontSize: '12px', opacity: 0.9, marginBottom: '4px' }}>Cash Flow</div>
-            <div style={{ fontSize: '20px', fontWeight: '700', color: fullCalcs.year1?.cashFlow >= 0 ? '#86efac' : '#fca5a5' }}>{fmt(fullCalcs.year1?.cashFlow)}</div>
+            <div style={{ fontSize: '20px', fontWeight: '700', color: '#111827' }}>{fmt(fullCalcs.year1?.cashFlow)}</div>
           </div>
-          <div style={{ textAlign: 'center', padding: '16px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+          <div style={{ textAlign: 'center', padding: '16px', backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px' }}>
             <div style={{ fontSize: '12px', opacity: 0.9, marginBottom: '4px' }}>CoC Return</div>
             <div style={{ fontSize: '20px', fontWeight: '700' }}>{pct(fullCalcs.year1?.cashOnCash)}</div>
           </div>
-          <div style={{ textAlign: 'center', padding: '16px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+          <div style={{ textAlign: 'center', padding: '16px', backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px' }}>
             <div style={{ fontSize: '12px', opacity: 0.9, marginBottom: '4px' }}>DSCR</div>
             <div style={{ fontSize: '20px', fontWeight: '700' }}>{fullCalcs.year1?.dscr?.toFixed(2) || 'N/A'}x</div>
           </div>
-          <div style={{ textAlign: 'center', padding: '16px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+          <div style={{ textAlign: 'center', padding: '16px', backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px' }}>
             <div style={{ fontSize: '12px', opacity: 0.9, marginBottom: '4px' }}>Total Expenses</div>
             <div style={{ fontSize: '20px', fontWeight: '700' }}>{fmt(fullCalcs.year1?.totalOperatingExpenses)}</div>
           </div>
