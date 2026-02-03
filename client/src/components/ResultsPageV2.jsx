@@ -734,6 +734,11 @@ const ResultsPageV2 = ({
 
   const display = (val) => val || 'N/A';
 
+  // Safe aliases for frequently used nested objects
+  const pricing_financing = scenarioData?.pricing_financing || {};
+  const fullCalcs = calculations || scenarioData?.calculations || {};
+  const property = scenarioData?.property || {};
+
   // Key metrics for IM-style summary header
   const purchasePrice = pricing_financing?.price || pricing_financing?.purchase_price || 0;
   const totalCapitalization = fullCalcs?.acquisition?.totalAcquisitionCosts || 0;
