@@ -246,6 +246,23 @@ export default function ScenarioSheet({ scenarioData, calculations }) {
     { key: 'perUnit', label: 'Per Unit', align: 'right' },
   ];
 
+  // Generic parsed tables for other sections (PNL, Pricing/Financing, Underwriting)
+  const makeParsedRows = (obj) => Object.entries(obj || {})
+    .filter(([_, v]) => typeof v === 'number')
+    .map(([k, v]) => {
+      const isPercent = /rate|percent|pct/i.test(k);
+      return {
+        name: toTitle(k),
+        value: isPercent ? pct(v * (String(v) < 1 ? 100 : 1)) : currency0(v)
+      };
+    })
+    .sort((a,b) => a.name.localeCompare(b.name));
+
+  const parsedSimpleColumns = [
+    { key: 'name', label: 'Parsed Field' },
+    { key: 'value', label: 'Value', align: 'right' }
+  ];
+
   return (
     <div style={{ padding: '16px' }}>
       <SectionTitle>Unit Mix & Scheduled Income</SectionTitle>
@@ -261,6 +278,28 @@ export default function ScenarioSheet({ scenarioData, calculations }) {
         <>
           <SectionTitle>All Parsed Expenses</SectionTitle>
           <Table columns={allExpColumns} rows={allExpenseRows} />
+        </>
+      )}
+
+      {/* Additional parsed data tables for completeness */}
+      {Object.keys(pnl || {}).length > 0 && (
+        <>
+          <SectionTitle>Parsed PNL (All Numeric Fields)</SectionTitle>
+          <Table columns={parsedSimpleColumns} rows={makeParsedRows(pnl)} />
+        </>
+      )}
+
+      {Object.keys(sd.pricing_financing || {}).length > 0 && (
+        <>
+          <SectionTitle>Pricing & Financing (Parsed)</SectionTitle>
+          <Table columns={parsedSimpleColumns} rows={makeParsedRows(sd.pricing_financing)} />
+        </>
+      )}
+
+      {Object.keys(sd.underwriting || {}).length > 0 && (
+        <>
+          <SectionTitle>Underwriting Assumptions (Parsed)</SectionTitle>
+          <Table columns={parsedSimpleColumns} rows={makeParsedRows(sd.underwriting)} />
         </>
       )}
     </div>
