@@ -23,6 +23,15 @@ ABSTRACT_API_KEY = "da7556aa39cc4a3c85673d39e0bfda42"
 # Path to CSV data files (in backend/data directory)
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
+# Startup check
+logger.info(f"[MARKET ANALYSIS INIT] Module loaded")
+logger.info(f"[MARKET ANALYSIS INIT] __file__ = {__file__}")
+logger.info(f"[MARKET ANALYSIS INIT] DATA_DIR = {DATA_DIR}")
+logger.info(f"[MARKET ANALYSIS INIT] DATA_DIR exists: {os.path.exists(DATA_DIR)}")
+if os.path.exists(DATA_DIR):
+    logger.info(f"[MARKET ANALYSIS INIT] Files in DATA_DIR: {os.listdir(DATA_DIR)[:10]}")
+sys.stdout.flush()
+
 
 def geocode_address(address: str, city: str, state: str, zip_code: str) -> Optional[Tuple[float, float]]:
     """Geocode property address using Abstract API"""

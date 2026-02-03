@@ -100,10 +100,18 @@ from token_purchase_handler import router as token_purchase_router
 app.include_router(token_purchase_router)
 
 # Market Analysis: Drive-time isochrones & census aggregation
-from market_analysis import market_analysis_endpoint, MarketAnalysisRequest
-@app.post("/api/market-analysis")
-async def market_analysis(request_data: MarketAnalysisRequest):
-    return await market_analysis_endpoint(request_data)
+try:
+    from market_analysis import market_analysis_endpoint, MarketAnalysisRequest
+    log.info("[MARKET ANALYSIS] Module imported successfully")
+    
+    @app.post("/api/market-analysis")
+    async def market_analysis(request_data: MarketAnalysisRequest):
+        log.info(f"[MARKET ANALYSIS ROUTE] Received request")
+        return await market_analysis_endpoint(request_data)
+except Exception as e:
+    log.error(f"[MARKET ANALYSIS] Failed to import: {e}")
+    import traceback
+    traceback.print_exc()
 
 # Google Sheets: Auto-populate underwriting model
 from google_sheets_updater import update_google_sheet
