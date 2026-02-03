@@ -312,5 +312,9 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
         print(f"Market analysis error: {e}")
-        raise HTTPException(status_code=500, detail=f'Internal server error: {str(e)}')
+        print(f"Traceback: {error_details}")
+        raise HTTPException(status_code=500, detail=f'Internal server error: {str(e)} | Check logs for details')
+
