@@ -34,10 +34,8 @@ import ExpensesTab from './results-tabs/ExpensesTab';
 import CashFlowTab from './results-tabs/CashFlowTab';
 import ExpenseV2Tab from './results-tabs/ExpenseV2Tab';
 import ProformaTab from './results-tabs/ProformaTab';
-import RUBSTab from './results-tabs/RUBSTab';
 import UnderwritingTablePage from '../pages/UnderwritingTablePage';
-import PropertySpreadsheet from './PropertySpreadsheet';
-import { mapParsedDataToSpreadsheet } from '../utils/propertySpreadsheetMapper';
+// Removed PropertySpreadsheet tab
 import { saveDeal } from '../lib/dealsService';
 import ScenarioSheet from './ScenarioSheet';
 
@@ -105,394 +103,7 @@ const ResultsPageV2 = ({
     };
     
     runAIAnalysis();
-  }, [dealId, scenarioData]); // Only run when dealId or scenarioData changes
-  
-  // AI-recommended deal structure (from DealStructureTab)
-  const [recommendedStructure, setRecommendedStructure] = useState(null);
-  const [selectedStructureMetrics, setSelectedStructureMetrics] = useState(null);
-
-  // Helper: format assistant plain text into Markdown-like paragraphs when needed
-  const formatAssistantMessage = (text) => {
-    if (!text) return '';
-    // If message already contains markdown-like headings or line breaks, return as-is
-    if (/\n\n|## |### |\*\*|^- /m.test(text)) return text;
-    // Split into sentences and group into short paragraphs (~2 sentences per paragraph)
-    const sentences = text.split(/(?<=[\.\!\?])\s+/).map(s => s.trim()).filter(Boolean);
-    if (sentences.length <= 3) return sentences.join('\n\n');
-    const paragraphs = [];
-    for (let i = 0; i < sentences.length; i += 2) {
-      paragraphs.push(sentences.slice(i, i + 2).join(' '));
-    }
-    return paragraphs.join('\n\n');
-  };
-  
-  // Track if user has made changes that need recalculation
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [isRecalculating, setIsRecalculating] = useState(false);
-  const changeTimeoutRef = useRef(null);
-  
-  // Wrapper for onEditData that tracks changes with debounce to prevent flickering
-  const handleFieldChange = (path, value) => {
-    if (onEditData) {
-      onEditData(path, value);
-      
-      // Clear previous timeout
-      if (changeTimeoutRef.current) {
-        clearTimeout(changeTimeoutRef.current);
-      }
-      
-      // Debounce to prevent rapid state changes
-      changeTimeoutRef.current = setTimeout(() => {
-        setHasUnsavedChanges(true);
-      }, 300);
-    }
-  };
-  
-  // Handle recalculation
-  const handleRecalculate = () => {
-    setIsRecalculating(true);
-    // The recalculation happens automatically via useMemo in parent
-    // This just provides visual feedback
-    setTimeout(() => {
-      setIsRecalculating(false);
-      setHasUnsavedChanges(false);
-    }, 500);
-  };
-  
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (changeTimeoutRef.current) {
-        clearTimeout(changeTimeoutRef.current);
-      }
-    };
-  }, []);
-  
-  // Chat position state for dragging
-  const [chatPosition, setChatPosition] = useState({ x: window.innerWidth - 420, y: 100 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  
-  // RentCast API state
-  const [rentcastLoading, setRentcastLoading] = useState(false);
-  const [rentcastData, setRentcastData] = useState(null);
-  
-  // Exit Strategy state
-  const [selectedHoldPeriod, setSelectedHoldPeriod] = useState(5);
-
-  // Persist chat minimized state
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('resultsChatMinimized');
-      if (saved !== null) {
-        setIsChatMinimized(saved === '1');
-      }
-    } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('resultsChatMinimized', isChatMinimized ? '1' : '0');
-    } catch {}
-  }, [isChatMinimized]);
-  
-  // Handle mouse down on chat header to start dragging
-  const handleMouseDown = (e) => {
-    if (e.target.closest('button')) return; // Don't drag when clicking buttons
-    setIsDragging(true);
-    setDragOffset({
-      x: e.clientX - chatPosition.x,
-      y: e.clientY - chatPosition.y
-    });
-  };
-  
-  // Handle mouse move for dragging
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      if (!isDragging) return;
-      const newX = Math.max(0, Math.min(window.innerWidth - 400, e.clientX - dragOffset.x));
-      const newY = Math.max(0, Math.min(window.innerHeight - 100, e.clientY - dragOffset.y));
-      setChatPosition({ x: newX, y: newY });
-    };
-    
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-    
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    }
-    
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, dragOffset]);
-  
-  // Load county tax data from CSV
-  useEffect(() => {
-    fetch('/Property Taxes by State and County, 2025  Tax Foundation Maps.csv')
-      .then(response => response.text())
-      .then(csvText => {
-        const lines = csvText.split('\n');
-        const data = [];
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i];
-          if (!line.trim()) continue;
-          // Parse CSV with quoted fields
-          const matches = line.match(/("([^"]*)"|[^,]+)/g);
-          if (matches && matches.length >= 5) {
-            const state = matches[0].replace(/"/g, '').trim();
-            const county = matches[1].replace(/"/g, '').trim();
-            const taxRate = matches[4].replace(/"/g, '').replace('%', '').trim();
-            data.push({
-              state,
-              county,
-              taxRate: parseFloat(taxRate) || 0,
-              fullName: `${county}, ${state}`
-            });
-          }
-        }
-        setCountyTaxData(data);
-      })
-      .catch(err => console.error('Error loading county tax data:', err));
-  }, []);
-  
-  // Auto-trigger Max deal analysis on mount
-  useEffect(() => {
-    if (!scenarioData || !calculations) return;
-    const hasOnlyWelcomeAssistant =
-      messages.length === 1 && messages[0] && messages[0].role === 'assistant';
-    if ((messages.length > 0 && !hasOnlyWelcomeAssistant) || isSending) return;
-    if (!setInputValue || !handleSendMessage) return;
-
-    const fullCalcsForPrompt = calculations.fullAnalysis || calculations;
-
-    const pricingFinancing = scenarioData.pricing_financing || {};
-    const propertyInfo = scenarioData.property || {};
-
-    const dealAddress = [
-      propertyInfo.address,
-      propertyInfo.city,
-      propertyInfo.state,
-      propertyInfo.zip
-    ].filter(Boolean).join(', ');
-
-    const promptPurchasePrice = pricingFinancing.price
-      || pricingFinancing.purchase_price
-      || 0;
-    const promptYear1NOI = fullCalcsForPrompt.year1?.noi ?? 0;
-    const promptCapRate = fullCalcsForPrompt.year1?.capRate != null
-      ? fullCalcsForPrompt.year1.capRate
-      : (promptPurchasePrice > 0 && promptYear1NOI > 0
-          ? (promptYear1NOI / promptPurchasePrice) * 100
-          : 0);
-    const promptDSCR = fullCalcsForPrompt.year1?.dscr ?? 0;
-    const promptCashOnCash = fullCalcsForPrompt.year1?.cashOnCash ?? 0;
-    const promptDayOneCashFlow = fullCalcsForPrompt.year1?.cashFlowAfterFinancing
-      ?? fullCalcsForPrompt.year1?.cashFlow
-      ?? 0;
-    const promptLeveredIRR = fullCalcsForPrompt.returns?.leveredIRR ?? 0;
-    const promptEquityMultiple = fullCalcsForPrompt.returns?.equityMultiple ?? 0;
-
-    const autoAnalysisPrompt = `You are Max, my AI real estate partner. You have access to the full underwriting model, all deal structures, value-add assumptions, exit scenarios, and market data for this specific property.
-
-Deal context (for quick reference):
-- Address: ${dealAddress || 'Not specified'}
-- Purchase price: $${promptPurchasePrice.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-- Year 1 NOI: $${promptYear1NOI.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-- Going-in cap rate: ${promptCapRate.toFixed(2)}%
-- Year 1 DSCR: ${promptDSCR.toFixed(2)}x
-- Year 1 cash-on-cash: ${promptCashOnCash.toFixed(2)}%
-- Day-one cash flow after financing: $${promptDayOneCashFlow.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-- Modeled hold IRR (levered): ${(promptLeveredIRR * 100).toFixed(2)}%
-- Modeled equity multiple: ${promptEquityMultiple.toFixed(2)}x
-
-Using ALL of the underlying scenario data and structures (Traditional, Seller Finance, Equity Partner, Seller Carry, Lease Option, and any others the model exposes), do the following in order:
-
-1. DEAL VERDICT
-   - Decide if this is a good deal, marginal deal, or bad deal based purely on the underwritten numbers (cash flow, cap rates, DSCR, IRR, equity multiple, value creation, etc.).
-   - Be very direct: label it clearly as a \"Strong Buy\", \"Maybe / Needs Work\", or \"Probably a Pass\" and explain why in 3–5 bullet points.
-
-2. BEST DEBT STRUCTURE FOR DAY-ONE CASH FLOW
-   - Evaluate ALL available debt/financing structures in this model.
-   - Prioritize day-one cash flow and risk (DSCR and actual dollars of monthly/annual cash flow).
-   - Pick ONE structure you would personally use for this deal.
-   - For that chosen structure, list: loan amount, equity required, DSCR, cash-on-cash, and day-one annual cash flow, plus 2–3 pros and 2–3 cons.
-
-3. ACQUISITION PLAN
-   - Lay out a step-by-step plan for how to acquire this property using your chosen structure.
-   - Include negotiation strategy, target offer terms (price, down payment / option fee / seller carry, etc.), key contingencies, and an approximate timeline from LOI to close.
-
-4. FIX-THE-DEAL SCENARIOS (NO DEAL IS DEAD BY DEFAULT)
-   - If the deal is weak or negative on day-one cash flow at the current price, figure out how to make it work.
-   - Either:
-     a) Propose a lower max purchase price that would get to healthy day-one cash flow under at least one structure (give that price and resulting key metrics), OR
-    b) Propose a creative structure (or blend of structures) — e.g., deeper seller carry or lease option — that gets to positive day-one cash flow.
-   - Only call the deal truly \"dead\" if, even after changing price and using creative financing, the numbers are still clearly terrible. If that happens, explain exactly why.
-
-5. SUMMARY FOR ME
-   - End with a short, plain-English summary: what you would personally do if this were your own money, and what one question I should ask next to explore the deal further.`;
-
-    setInputValue(autoAnalysisPrompt);
-    setTimeout(() => handleSendMessage(), 500);
-  }, [scenarioData, calculations, messages, isSending, setInputValue, handleSendMessage]);
-  
-  // Calculate sensitivity analysis separately (only when needed)
-  const sensitivity = useMemo(() => {
-    if (!scenarioData || !scenarioData.pricing_financing?.purchase_price) return null;
-    
-    const purchasePrice = scenarioData.pricing_financing.purchase_price;
-    const exitCapRate = scenarioData.underwriting?.exit_cap_rate || 0.06;
-    
-    return calculateSensitivity(scenarioData, {
-      purchasePrice: [purchasePrice * 0.90, purchasePrice * 1.10, purchasePrice * 0.05],
-      exitCapRate: [exitCapRate * 0.8, exitCapRate * 1.2, exitCapRate * 0.1],
-      incomeGrowth: [0.01, 0.05, 0.01],
-      vacancy: [0.03, 0.10, 0.02]
-    });
-  }, [scenarioData]);
-  
-  if (!scenarioData || !calculations) return null;
-
-  // Use fullAnalysis if available, otherwise fall back to calculations object
-  const fullCalcs = calculations.fullAnalysis || calculations;
-  
-  // Destructure scenario data
-  const { property, pricing_financing, unit_mix, underwriting } = scenarioData;
-
-  // Header-level Push to Pipeline handler (mirrors DealOrNoDealTab behavior)
-  const handlePushToPipeline = async () => {
-    if (!scenarioData || !dealId) return;
-
-    setIsPushingToPipeline(true);
-
-    try {
-      const propertyData = property || {};
-      const pricingFinancing = scenarioData.pricing_financing || {};
-      const financing = scenarioData.financing || {};
-      const unitMix = scenarioData.unit_mix || [];
-      const broker = scenarioData.broker || {};
-
-      const totalUnits = propertyData.units || unitMix.reduce((sum, u) => sum + (u.units || 0), 0) || 0;
-
-      const purchasePrice = pricingFinancing.purchase_price || pricingFinancing.price || 0;
-      const capitalImprovements = pricingFinancing.capex_budget || pricingFinancing.renovation_budget || 0;
-      const closingCosts = fullCalcs?.acquisition?.closingCosts || (purchasePrice * 0.02) || 0;
-      const totalProjectCost = fullCalcs?.total_project_cost
-        || fullCalcs?.acquisition?.totalAcquisitionCosts
-        || (purchasePrice + capitalImprovements + closingCosts);
-
-      const loanAmount = fullCalcs?.financing?.loanAmount || 0;
-      const totalEquity = fullCalcs?.financing?.totalEquityRequired || (totalProjectCost - loanAmount);
-
-      let ltv = fullCalcs?.financing?.ltv || 0;
-      if (ltv === 0 && purchasePrice > 0 && loanAmount > 0) {
-        ltv = (loanAmount / purchasePrice) * 100;
-      }
-      if (ltv > 100) {
-        ltv = purchasePrice > 0 ? (loanAmount / purchasePrice) * 100 : 0;
-      }
-
-      const projectIRR = fullCalcs?.returns?.leveredIRR || 0;
-      const avgCashOnCash = fullCalcs?.year1?.cashOnCash || 0;
-      const inPlaceCapRate = fullCalcs?.current?.capRate ?? fullCalcs?.year1?.capRate ?? 0;
-
-      const dscr = fullCalcs?.current?.dscr ?? fullCalcs?.year1?.dscr ?? 0;
-      const noiYear1 = fullCalcs?.year1?.noi || 0;
-
-      const dayOneCashFlow = fullCalcs?.year1?.cashFlowAfterFinancing || fullCalcs?.year1?.cashFlow || 0;
-      const stabilizedCashFlow = fullCalcs?.stabilized?.cashflow ?? 0;
-
-      const refiValue = fullCalcs?.stabilized?.value
-        ?? fullCalcs?.returns?.terminalValue
-        ?? 0;
-      const cashOutRefi = fullCalcs?.exit?.reversionCashFlow ?? 0;
-      
-      // Calculate userTotalInPocket: cash-out refi minus initial equity invested
-      const initialEquity = fullCalcs?.financing?.totalEquityRequired || totalEquity;
-      const userTotalInPocket = cashOutRefi - initialEquity;
-      
-      // Calculate postRefiCashFlow: stabilized cash flow after refinance
-      // After refinance, there's new debt service based on refi loan
-      const refiLoanAmount = refiValue * 0.75; // Assuming 75% LTV on refi
-      const refiInterestRate = pricingFinancing.interest_rate || financing.interest_rate || financing.rate || fullCalcs?.financing?.interestRate || 6.5;
-      const refiAmortYears = pricingFinancing.amortization_years || financing.amortization_years || financing.amortization || fullCalcs?.financing?.amortizationYears || 30;
-      
-      // Monthly payment formula: P * [r(1+r)^n] / [(1+r)^n - 1]
-      const monthlyRate = (refiInterestRate / 100) / 12;
-      const numPayments = refiAmortYears * 12;
-      const refiMonthlyPayment = monthlyRate > 0 
-        ? refiLoanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / (Math.pow(1 + monthlyRate, numPayments) - 1)
-        : 0;
-      const refiAnnualDebtService = refiMonthlyPayment * 12;
-      
-      const stabilizedNOI = fullCalcs?.stabilized?.noi || fullCalcs?.year5?.noi || noiYear1;
-      const postRefiCashFlow = stabilizedNOI - refiAnnualDebtService;
-      
-      const pricePerUnit = totalUnits > 0 ? purchasePrice / totalUnits : 0;
-      const valueCreation = fullCalcs?.valueCreation ?? 0;
-
-      const address = [
-        propertyData.address,
-        propertyData.city,
-        propertyData.state,
-        propertyData.zip
-      ].filter(Boolean).join(', ') || 'Address Not Specified';
-
-      const brokerName = broker.name || propertyData.listing_broker || 'Not Specified';
-      const brokerPhone = broker.phone || propertyData.broker_phone || '-';
-      const brokerEmail = broker.email || propertyData.broker_email || '-';
-
-      const dealStructure = recommendedStructure || scenarioData?.recommended_structure || scenarioData?.deal_structure?.recommended || 'Traditional Financing';
-
-      await saveDeal({
-        dealId,
-        address,
-        units: totalUnits,
-        purchasePrice,
-        dealStructure,
-        parsedData: scenarioData,
-        scenarioData: {
-          ...scenarioData,
-          calculations: {
-            dayOneCashFlow,
-            stabilizedCashFlow,
-            refiValue,
-            cashOutRefiAmount: cashOutRefi,
-            userTotalInPocket,
-            postRefiCashFlow,
-            inPlaceCapRate,
-            avgCashOnCash,
-            dscr,
-            ltv,
-            noiYear1,
-            pricePerUnit,
-            valueCreation
-          }
-        },
-        marketCapRate: marketCapRate,
-        images: scenarioData?.images || [],
-        brokerName,
-        brokerPhone,
-        brokerEmail,
-        notes: ''
-      });
-
-      // Notify other components that pipeline has changed
-      window.dispatchEvent(new Event('pipelineDealsUpdated'));
-
-      setPipelineSuccess(true);
-      setTimeout(() => setPipelineSuccess(false), 3000);
-    } catch (error) {
-      console.error('Error pushing to pipeline from Results header:', error);
-      alert('Failed to push deal to pipeline: ' + error.message);
-    } finally {
-      setIsPushingToPipeline(false);
-    }
-  };
+  }, [dealId, scenarioData]);
 
   // PDF Export Handler - captures all tabs and creates PDF
   const handleExportPDF = async () => {
@@ -522,7 +133,6 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
         { id: 'deal-execution', name: 'Deal Execution' },
         { id: 'expenses', name: 'Expenses' },
         { id: 'proforma', name: 'Pro Forma' },
-        { id: 'rubs', name: 'RUBS Analysis' },
         { id: 'rent-roll', name: 'Rent Roll' },
         { id: 'returns', name: 'Returns' },
         { id: 'cost-seg', name: 'Cost Segregation' }
@@ -1155,9 +765,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
   const tabs = [
     { id: 'summary', label: 'Summary', icon: Home },
     { id: 'scenario-sheet', label: 'Scenario Sheet', icon: FileSpreadsheet },
-    { id: 'property-spreadsheet', label: 'Property Analysis', icon: FileBarChart },
     { id: 'cashflow', label: 'Cash Flow', icon: FileBarChart },
-    { id: 'rubs', label: 'RUBS', icon: Activity },
     { id: 'proforma', label: 'Proforma', icon: FileText },
     { id: 'deal-structure', label: 'Deal Structure', icon: Layers },
     { id: 'deal-execution', label: 'Deal Execution', icon: Rocket },
@@ -1168,7 +776,6 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
     
     { id: 'amortization', label: 'Amortization', icon: Calculator },
     { id: 'rent-roll', label: 'Rent Roll', icon: Users },
-    { id: 'syndication', label: 'Syndication', icon: PieChart },
     
     { id: 'costseg', label: 'Cost Segregation', icon: Calculator },
     { id: 'market-data', label: 'Market Data', icon: BarChart3 }
@@ -5412,24 +5019,9 @@ Keep the answer tight but specific to this property and the numbers above.`;
           </div>
         );
       
-      case 'property-spreadsheet':
-        return (
-          <div style={{ padding: '24px' }}>
-            <PropertySpreadsheet 
-              initialData={scenarioData ? mapParsedDataToSpreadsheet(scenarioData) : null}
-            />
-          </div>
-        );
+      // removed 'property-spreadsheet' tab
       
-      case 'rubs':
-        return (
-          <div style={{ padding: '24px' }}>
-            <RUBSTab 
-              scenarioData={scenarioData}
-              fullCalcs={fullCalcs}
-            />
-          </div>
-        );
+      // removed 'rubs' tab
 
       
       
