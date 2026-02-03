@@ -98,6 +98,12 @@ app.include_router(stripe_webhook_router)
 from token_purchase_handler import router as token_purchase_router
 app.include_router(token_purchase_router)
 
+# Market Analysis: Drive-time isochrones & census aggregation
+from market_analysis import market_analysis_endpoint, MarketAnalysisRequest
+@app.post("/api/market-analysis")
+async def market_analysis(request_data: MarketAnalysisRequest):
+    return await market_analysis_endpoint(request_data)
+
 # Google Sheets: Auto-populate underwriting model
 from google_sheets_updater import update_google_sheet
 
