@@ -1,6 +1,7 @@
 /* eslint-disable */
 // V2 Results Page - Complete with All Advanced Features
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import RentRollTab from './results-tabs/RentRollTab';
 import ReactMarkdown from 'react-markdown';
 import { useNavigate } from 'react-router-dom';
 import { Send, Home, DollarSign, FileText, CreditCard, BarChart3, Users, FileBarChart, TrendingUp, Calculator, PieChart, Calendar, Activity, Layers, LayoutDashboard, RefreshCw, Rocket, MessageSquare, Download, Presentation, MapPin, FileSpreadsheet } from 'lucide-react';
@@ -4907,7 +4908,17 @@ Keep the answer tight but specific to this property and the numbers above.`;
                 </button>
               </div>
 
-              {/* Summary Cards - Neutral light style */}
+              {/* Cactus-style Rent Roll (unified component) */}
+              <div style={{ marginTop: '8px', marginBottom: '24px' }}>
+                <RentRollTab
+                  scenarioData={scenarioData}
+                  dealId={dealId}
+                  onUnitMixChange={(updated) => handleFieldChange('unit_mix', updated)}
+                />
+              </div>
+
+              {/* Legacy content hidden (kept for reference) */}
+              {false && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
                 <div style={{ 
                   backgroundColor: 'white', 
@@ -4989,8 +5000,10 @@ Keep the answer tight but specific to this property and the numbers above.`;
                   </div>
                 </div>
               </div>
+              )}
 
               {/* Editable Unit Mix & Rents */}
+              {false && (
               <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px' }}>
                 <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827', marginBottom: '12px' }}>Unit Mix & Rents (Live‑linked)</div>
                 {unitMixData && unitMixData.length > 0 ? (
@@ -5039,8 +5052,10 @@ Keep the answer tight but specific to this property and the numbers above.`;
                   <div style={{ color: '#6b7280', fontSize: 13 }}>No unit mix available</div>
                 )}
               </div>
+              )}
               
               {/* Unit Mix Table */}
+              {false && (
               <div style={{ 
                 backgroundColor: 'white',
                 border: '1px solid #e5e7eb', 
@@ -5140,9 +5155,10 @@ Keep the answer tight but specific to this property and the numbers above.`;
                   </tfoot>
                 </table>
               </div>
+              )}
 
               {/* RentCast Results */}
-              {rentcastData && (
+              {false && rentcastData && (
                 <div style={{ marginTop: '24px' }}>
                   {/* Summary Cards */}
                   <div style={{ 
@@ -5392,7 +5408,7 @@ Keep the answer tight but specific to this property and the numbers above.`;
       backgroundColor: '#f9fafb',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
       position: 'relative'
-    }}>
+                    }}>
       
       {/* Main Content - Full Width */}
       <div style={{ 
@@ -5539,8 +5555,8 @@ Keep the answer tight but specific to this property and the numbers above.`;
                 New Deal
               </button>
             )}
-          </div>
-        </div>
+                    </div>
+                  </div>
 
         {/* Tabs */}
         <div style={{ 
