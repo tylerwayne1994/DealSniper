@@ -1429,17 +1429,6 @@ function UnderwriteV2Page() {
               <ArrowLeft size={18} />
               Skip to Results
             </button>
-            <button
-              onClick={handleRunAIAnalysis}
-              style={{
-                ...styles.button,
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                boxShadow: '0 4px 6px rgba(16, 185, 129, 0.3)'
-              }}
-            >
-              <CheckCircle size={18} />
-              🤖 Run AI Underwriting
-            </button>
           </div>
         </div>
       </div>

@@ -67,9 +67,11 @@ const ResultsPageV2 = ({
   const [isPushingToPipeline, setIsPushingToPipeline] = useState(false);
   const [pipelineSuccess, setPipelineSuccess] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [marketData, setMarketData] = useState(null);
+  const [marketDataLoading, setMarketDataLoading] = useState(false);
   const tabContentRef = useRef(null);
   
-  // Automatically trigger AI underwriting when results page loads (only once)
+  // Automatically trigger AI underwriting AND market analysis when results page loads
   useEffect(() => {
     const runAIAnalysis = async () => {
       if (!dealId || !scenarioData || underwritingResult || isRunningAI) return;
@@ -99,7 +101,40 @@ const ResultsPageV2 = ({
       }
     };
     
+    const fetchMarketData = async () => {
+      if (!scenarioData?.property || marketData || marketDataLoading) return;
+      
+      const { address, city, state, zip } = scenarioData.property;
+      if (!address || !city || !state || !zip) return;
+      
+      setMarketDataLoading(true);
+      try {
+        const API_BASE = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
+        const response = await fetch(`${API_BASE}/api/market-analysis`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            property: { address, city, state, zip }
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Market analysis failed: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        setMarketData(result);
+      } catch (error) {
+        console.error('Market analysis pre-fetch error:', error);
+        // Silently fail - tab will show error message
+      } finally {
+        setMarketDataLoading(false);
+      }
+    };
+    
+    // Run both in parallel
     runAIAnalysis();
+    fetchMarketData();
   }, [dealId, scenarioData]); // Only run when dealId or scenarioData changes
   
   // AI-recommended deal structure (from DealStructureTab)
@@ -4823,15 +4858,8 @@ Keep the answer tight but specific to this property and the numbers above.`;
         const propertyName = scenarioData?.property?.property_name || '';
         return (
           <div style={{ padding: '24px' }}>
-            {console.debug && console.debug('Rendering MarketResearchTab (MarketAnalysisPage) with', { marketZip, marketCity, marketState, marketCounty, dealAddress, propertyName })}
             <MarketResearchTab
-              dealId={dealId}
-              initialZip={marketZip}
-              initialCity={marketCity}
-              initialState={marketState}
-              initialCounty={marketCounty}
-              dealAddress={dealAddress}
-              propertyName={propertyName}
+              marketData={marketData}
             />
           </div>
         );
@@ -4890,48 +4918,24 @@ Keep the answer tight but specific to this property and the numbers above.`;
           <div style={{ padding: '24px', backgroundColor: '#f9fafb', minHeight: '100vh' }}>
             <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
               
-              {/* Section Header with RentCast Button */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <div style={{ 
-                    width: '32px', 
-                    height: '32px', 
-                    borderRadius: '50%', 
-                    backgroundColor: '#10b981', 
-                    color: 'white', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    fontWeight: '700', 
-                    fontSize: '16px',
-                    marginRight: '12px'
-                  }}>8</div>
-                  <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    RENT ROLL ANALYSIS
-                  </h2>
-                </div>
-                <button
-                  onClick={handleRentcastFetch}
-                  disabled={rentcastLoading}
-                  style={{
-                    padding: '12px 24px',
-                    backgroundColor: rentcastLoading ? '#9ca3af' : '#3b82f6',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    cursor: rentcastLoading ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.2s',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
-                  }}
-                  onMouseEnter={(e) => !rentcastLoading && (e.target.style.backgroundColor = '#2563eb')}
-                  onMouseLeave={(e) => !rentcastLoading && (e.target.style.backgroundColor = '#3b82f6')}
-                >
-                  {rentcastLoading ? 'Loading...' : 'Fetch RentCast Comps'}
-                </button>
+              {/* Section Header */}
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px' }}>
+                <div style={{ 
+                  width: '32px', 
+                  height: '32px', 
+                  borderRadius: '50%', 
+                  backgroundColor: '#10b981', 
+                  color: 'white', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  fontWeight: '700', 
+                  fontSize: '16px',
+                  marginRight: '12px'
+                }}>8</div>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  RENT ROLL ANALYSIS
+                </h2>
               </div>
 
               {/* Cactus-style Rent Roll (unified component) */}
@@ -5491,27 +5495,6 @@ Keep the answer tight but specific to this property and the numbers above.`;
               <Rocket size={14} />
               {pipelineSuccess ? 'Added to Pipeline' : (isPushingToPipeline ? 'Pushing...' : 'Push to Pipeline')}
             </button>
-            {onRunAIAnalysis && (
-              <button
-                onClick={onRunAIAnalysis}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#10b981',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
-              >
-                <Calculator size={14} />
-                Run AI Underwriting
-              </button>
-            )}
             <button
               onClick={() => navigate('/dashboard')}
               style={{
