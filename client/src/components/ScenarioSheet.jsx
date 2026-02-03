@@ -183,17 +183,26 @@ export default function ScenarioSheet({ scenarioData, calculations }) {
   ];
 
   // Expense detail (Pro Forma Annual Operating Summary style)
+  const utilTotal = expenses.utilities || 0;
+  const utilBD = expenses.utility_breakdown || {};
+  const splitOr = (k, fallbackCount) => {
+    if (typeof utilBD[k] === 'number') return utilBD[k];
+    // evenly split by fallback count if no breakdown
+    return fallbackCount > 0 ? utilTotal / fallbackCount : 0;
+  };
+  const fallbackCount = 8; // water, electricity, gas, trash, sewer, internet, landscaping, pest_control
+
   const expRows = [
     { name: 'Real Estate Taxes', val: currency0(expenses.taxes || 0), pctSGI: pct(((expenses.taxes||0) / (pnl.gross_potential_rent||1)) * 100), perUnit: currency0(totalUnits ? (expenses.taxes||0)/totalUnits : 0) },
     { name: 'Property Management Fee', val: currency0(expenses.management || 0), pctSGI: pct(((expenses.management||0) / (pnl.gross_potential_rent||1)) * 100), perUnit: currency0(totalUnits ? (expenses.management||0)/totalUnits : 0) },
     { name: 'Insurance', val: currency0(expenses.insurance || 0), pctSGI: pct(((expenses.insurance||0) / (pnl.gross_potential_rent||1)) * 100), perUnit: currency0(totalUnits ? (expenses.insurance||0)/totalUnits : 0) },
     { name: 'General & Administrative', val: currency0(expenses.admin || 0), pctSGI: pct(((expenses.admin||0) / (pnl.gross_potential_rent||1)) * 100), perUnit: currency0(totalUnits ? (expenses.admin||0)/totalUnits : 0) },
-    { name: 'Landscaping/Grounds', val: currency0(0), pctSGI: pct(0), perUnit: currency0(0) },
+    { name: 'Landscaping/Grounds', val: currency0(splitOr('landscaping', fallbackCount)), pctSGI: pct(((splitOr('landscaping', fallbackCount)||0) / (pnl.gross_potential_rent||1)) * 100), perUnit: currency0(totalUnits ? (splitOr('landscaping', fallbackCount)||0)/totalUnits : 0) },
     { name: 'Turnover', val: currency0(0), pctSGI: pct(0), perUnit: currency0(0) },
     { name: 'Repairs & Maintenance', val: currency0(expenses.repairs_maintenance || 0), pctSGI: pct(((expenses.repairs_maintenance||0) / (pnl.gross_potential_rent||1)) * 100), perUnit: currency0(totalUnits ? (expenses.repairs_maintenance||0)/totalUnits : 0) },
-    { name: 'Electricity', val: currency0(0), pctSGI: pct(0), perUnit: currency0(0) },
-    { name: 'Water/Sewer', val: currency0(0), pctSGI: pct(0), perUnit: currency0(0) },
-    { name: 'Trash Removal', val: currency0(0), pctSGI: pct(0), perUnit: currency0(0) },
+    { name: 'Electricity', val: currency0(splitOr('electricity', fallbackCount)), pctSGI: pct(((splitOr('electricity', fallbackCount)||0) / (pnl.gross_potential_rent||1)) * 100), perUnit: currency0(totalUnits ? (splitOr('electricity', fallbackCount)||0)/totalUnits : 0) },
+    { name: 'Water/Sewer', val: currency0((splitOr('water', fallbackCount) || 0) + (splitOr('sewer', fallbackCount) || 0)), pctSGI: pct((((splitOr('water', fallbackCount)||0)+(splitOr('sewer', fallbackCount)||0)) / (pnl.gross_potential_rent||1)) * 100), perUnit: currency0(totalUnits ? (((splitOr('water', fallbackCount)||0)+(splitOr('sewer', fallbackCount)||0))/totalUnits) : 0) },
+    { name: 'Trash Removal', val: currency0(splitOr('trash', fallbackCount)), pctSGI: pct(((splitOr('trash', fallbackCount)||0) / (pnl.gross_potential_rent||1)) * 100), perUnit: currency0(totalUnits ? (splitOr('trash', fallbackCount)||0)/totalUnits : 0) },
     { name: 'Marketing/Advertising', val: currency0(expenses.marketing || 0), pctSGI: pct(((expenses.marketing||0) / (pnl.gross_potential_rent||1)) * 100), perUnit: currency0(totalUnits ? (expenses.marketing||0)/totalUnits : 0) },
     { name: 'Reserves', val: currency0(expenses.other || 0), pctSGI: pct(((expenses.other||0) / (pnl.gross_potential_rent||1)) * 100), perUnit: currency0(totalUnits ? (expenses.other||0)/totalUnits : 0) }
   ];
