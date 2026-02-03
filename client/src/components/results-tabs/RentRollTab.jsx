@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
 
@@ -6,6 +6,24 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
   const unitMixData = scenarioData?.unit_mix || [];
   const [rentcastLoading, setRentcastLoading] = useState(false);
   const [rentcastData, setRentcastData] = useState(null);
+
+  // Column sizing state
+  const initialColumns = [
+    { key: 'type', label: 'Unit Name', align: 'left', width: 180 },
+    { key: 'unit_sf', label: 'Average Unit (SF)', align: 'right', width: 140 },
+    { key: 'occupied', label: 'Occupied Units', align: 'right', width: 130 },
+    { key: 'vacant', label: 'Vacant Units', align: 'right', width: 120 },
+    { key: 'units', label: 'Total Units', align: 'right', width: 120 },
+    { key: 'occupancy', label: 'Occupancy %', align: 'right', width: 130 },
+    { key: 'avgRent', label: 'Average Rent', align: 'right', width: 130 },
+    { key: 'avgMarket', label: 'Average Market Rent', align: 'right', width: 150 },
+    { key: 'avgRenu', label: 'Average Renu', align: 'right', width: 140 },
+    { key: 'totalMarket', label: 'Total Market Rent', align: 'right', width: 160 },
+    { key: 'totalRent', label: 'Total Rent', align: 'right', width: 130 },
+    { key: 'actions', label: '$', align: 'center', width: 60 },
+  ];
+  const [colWidths, setColWidths] = useState(initialColumns.map((c) => c.width));
+  const resizingRef = useRef({ index: null, startX: 0, startWidth: 0 });
 
   const totalUnitsCount = unitMixData.reduce((sum, u) => sum + (u.units || 0), 0);
   const totalSFCount = unitMixData.reduce((sum, u) => sum + ((u.units || 0) * (u.unit_sf || 0)), 0);
@@ -45,17 +63,56 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
     }
   };
 
+  // Column resize handlers
+  const onResizerMouseDown = (index, e) => {
+    const startX = e.clientX;
+    const startWidth = colWidths[index];
+    resizingRef.current = { index, startX, startWidth };
+
+    const onMouseMove = (ev) => {
+      const dx = ev.clientX - startX;
+      setColWidths((prev) => {
+        const next = [...prev];
+        const newWidth = Math.max(80, startWidth + dx);
+        next[index] = newWidth;
+        return next;
+      });
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      resizingRef.current = { index: null, startX: 0, startWidth: 0 };
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
   return (
     <div style={{ padding: '24px', backgroundColor: '#f9fafb', minHeight: '100vh', boxSizing: 'border-box' }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '999px', backgroundColor: '#10b981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px', marginRight: '12px' }}>R</div>
-            <div style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Rent Roll</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div>
+            <div style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Unit Mix</div>
+            <div style={{ fontSize: '12px', color: '#6b7280' }}>Unit composition and rental data</div>
           </div>
-          <button onClick={handleRentcastFetch} disabled={rentcastLoading} style={{ padding: '8px 16px', backgroundColor: '#0ea5e9', color: 'white', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: rentcastLoading ? 'not-allowed' : 'pointer', opacity: rentcastLoading ? 0.6 : 1 }}>
-            {rentcastLoading ? 'Loading...' : '🔍 RentCast'}
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={handleRentcastFetch} disabled={rentcastLoading} style={{ padding: '8px 12px', backgroundColor: '#0ea5e9', color: 'white', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: rentcastLoading ? 'not-allowed' : 'pointer', opacity: rentcastLoading ? 0.6 : 1 }}>
+              {rentcastLoading ? 'Loading...' : '🔍 RentCast'}
+            </button>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: 'white', border: '1px solid #e5e7eb', padding: '12px', borderRadius: '8px', marginBottom: '20px' }}>
+          <div style={{ fontSize: '12px', color: '#6b7280', minWidth: 110 }}>Source Document</div>
+          <select
+            style={{ border: '1px solid #d1d5db', padding: '6px 8px', borderRadius: '6px', fontSize: '12px', minWidth: 260 }}
+            defaultValue={scenarioData?.source_filename || ''}
+          >
+            <option value="">{scenarioData?.source_filename || 'Select a source...'}</option>
+          </select>
+          <button type="button" style={{ marginLeft: 'auto', fontSize: '12px', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View Source</button>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>
@@ -78,23 +135,46 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
         </div>
 
         <div style={{ marginBottom: '32px', overflowX: 'auto' }}>
-          <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '8px', color: '#1e3a8a' }}>Unit Mix</div>
-          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '16px' }}>Unit composition and rental data</div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', border: '1px solid #d1d5db' }}>
+          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px' }}>↔ Resize columns by dragging between headers.</div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', border: '1px solid #d1d5db', tableLayout: 'fixed', whiteSpace: 'nowrap' }}>
+            <colgroup>
+              {colWidths.map((w, i) => (
+                <col key={i} style={{ width: w }} />
+              ))}
+            </colgroup>
             <thead>
               <tr style={{ backgroundColor: '#f3f4f6' }}>
-                <th style={{ padding: '8px', textAlign: 'left', fontWeight: 600, borderRight: '1px solid #d1d5db', borderBottom: '1px solid #d1d5db' }}>Unit Name</th>
-                <th style={{ padding: '8px', textAlign: 'right', fontWeight: 600, borderRight: '1px solid #d1d5db', borderBottom: '1px solid #d1d5db' }}>Average Unit...</th>
-                <th style={{ padding: '8px', textAlign: 'right', fontWeight: 600, borderRight: '1px solid #d1d5db', borderBottom: '1px solid #d1d5db' }}>Occupied Units</th>
-                <th style={{ padding: '8px', textAlign: 'right', fontWeight: 600, borderRight: '1px solid #d1d5db', borderBottom: '1px solid #d1d5db' }}>Vacant Units</th>
-                <th style={{ padding: '8px', textAlign: 'right', fontWeight: 600, borderRight: '1px solid #d1d5db', borderBottom: '1px solid #d1d5db' }}>Total Units</th>
-                <th style={{ padding: '8px', textAlign: 'right', fontWeight: 600, borderRight: '1px solid #d1d5db', borderBottom: '1px solid #d1d5db' }}>Occupancy Pe...</th>
-                <th style={{ padding: '8px', textAlign: 'right', fontWeight: 600, borderRight: '1px solid #d1d5db', borderBottom: '1px solid #d1d5db' }}>Average Rent</th>
-                <th style={{ padding: '8px', textAlign: 'right', fontWeight: 600, borderRight: '1px solid #d1d5db', borderBottom: '1px solid #d1d5db' }}>Average Mark...</th>
-                <th style={{ padding: '8px', textAlign: 'right', fontWeight: 600, borderRight: '1px solid #d1d5db', borderBottom: '1px solid #d1d5db' }}>Average Renu...</th>
-                <th style={{ padding: '8px', textAlign: 'right', fontWeight: 600, borderRight: '1px solid #d1d5db', borderBottom: '1px solid #d1d5db' }}>Total Market R...</th>
-                <th style={{ padding: '8px', textAlign: 'right', fontWeight: 600, borderRight: '1px solid #d1d5db', borderBottom: '1px solid #d1d5db' }}>Total Rent</th>
-                <th style={{ padding: '8px', textAlign: 'center', fontWeight: 600, borderBottom: '1px solid #d1d5db' }}>$</th>
+                {initialColumns.map((col, i) => (
+                  <th
+                    key={col.key}
+                    style={{
+                      padding: '8px',
+                      textAlign: col.align,
+                      fontWeight: 600,
+                      borderRight: i === initialColumns.length - 1 ? 'none' : '1px solid #d1d5db',
+                      borderBottom: '1px solid #d1d5db',
+                      position: 'relative',
+                      userSelect: 'none',
+                    }}
+                  >
+                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{col.label}</div>
+                    {i < initialColumns.length - 1 && (
+                      <div
+                        onMouseDown={(e) => onResizerMouseDown(i, e)}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          right: 0,
+                          width: '6px',
+                          height: '100%',
+                          cursor: 'col-resize',
+                          zIndex: 5,
+                        }}
+                        title="Drag to resize"
+                      />
+                    )}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
