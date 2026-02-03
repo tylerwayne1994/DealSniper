@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Home, Database, Layers, MessageSquare, Bell, Users, Activity, TrendingUp, BarChart2, Share2, X, Info } from 'lucide-react';
+import { Home, Database, Layers, MessageSquare, Bell, Users, Activity, TrendingUp, BarChart2, Share2 } from 'lucide-react';
 import { DEBT_FIELDS_MENU, computeUnderwritingFromCells } from '../utils/underwritingCalculations';
 import { SHEET_API_BASE } from './UnderwritingAIChatAPI';
+import ScenarioSheet from '../components/ScenarioSheet';
 
 // Pure CSS-in-JS styles (no Tailwind required)
 const styles = {
@@ -608,6 +609,7 @@ function UnderwritingTablePage({ initialScenarioData, initialCalculations }) {
   const [interestOnlyFlags, setInterestOnlyFlags] = useState({});
   const [computedValues, setComputedValues] = useState({});
   const [isInitializedFromScenario, setIsInitializedFromScenario] = useState(false);
+  const [showScenarioSheet, setShowScenarioSheet] = useState(true);
 
   // Chat state for the AI sidebar
   const [chatMessages, setChatMessages] = useState([
@@ -941,6 +943,22 @@ function UnderwritingTablePage({ initialScenarioData, initialCalculations }) {
           <div style={styles.body}>
             {/* Table */}
             <div style={styles.tableWrapper}>
+              {initialScenarioData && (
+                <div style={{ padding: '12px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#111827' }}>Parsed Scenario Sheet</div>
+                    <button
+                      onClick={() => setShowScenarioSheet(v => !v)}
+                      style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#f9fafb', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+                    >{showScenarioSheet ? 'Hide' : 'Show'}</button>
+                  </div>
+                  {showScenarioSheet && (
+                    <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, background: '#ffffff' }}>
+                      <ScenarioSheet scenarioData={initialScenarioData} calculations={initialCalculations} />
+                    </div>
+                  )}
+                </div>
+              )}
               <table style={styles.table}>
                 <thead>
                   <tr style={styles.tableHeadRow}>

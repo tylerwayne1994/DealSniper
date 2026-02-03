@@ -37,6 +37,7 @@ import UnderwritingTablePage from '../pages/UnderwritingTablePage';
 import PropertySpreadsheet from './PropertySpreadsheet';
 import { mapParsedDataToSpreadsheet } from '../utils/propertySpreadsheetMapper';
 import { saveDeal } from '../lib/dealsService';
+import ScenarioSheet from './ScenarioSheet';
 
 const ResultsPageV2 = ({ 
   dealId,
@@ -1151,6 +1152,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
   // Tabs with icons - EXPANDED
   const tabs = [
     { id: 'summary', label: 'Summary', icon: Home },
+    { id: 'scenario-sheet', label: 'Scenario Sheet', icon: FileSpreadsheet },
     { id: 'property-spreadsheet', label: 'Property Analysis', icon: FileBarChart },
     { id: 'rubs', label: 'RUBS', icon: Activity },
     { id: 'proforma', label: 'Proforma', icon: FileText },
@@ -1721,6 +1723,15 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
                 </div>
               </div>
 
+            </div>
+          </div>
+        );
+
+      case 'scenario-sheet':
+        return (
+          <div style={{ padding: '16px', backgroundColor: '#f9fafb' }}>
+            <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+              <ScenarioSheet scenarioData={scenarioData} calculations={fullCalcs} />
             </div>
           </div>
         );
