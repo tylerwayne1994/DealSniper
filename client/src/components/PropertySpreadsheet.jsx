@@ -67,23 +67,23 @@ const PropertySpreadsheet = ({ initialData }) => {
       <div style={{ display: 'none' }}>v4.0-CLEAN-REBUILD-{Date.now()}</div>
       
       <div style={{ marginBottom: '32px', overflowX: 'auto' }}>
-        <div style={{ fontSize: '20px', fontWeight: 900, marginBottom: '16px', color: '#1e3a8a', textTransform: 'uppercase', letterSpacing: '1px' }}>
+        <div style={{ fontSize: '20px', fontWeight: 900, marginBottom: '16px', color: '#0b1e5e', textTransform: 'uppercase', letterSpacing: '1px' }}>
           💰 INVESTMENT CASH FLOW DETAILS
         </div>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', border: '2px solid #0ea5e9' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', border: '2px solid #273a8a' }}>
           <thead>
-            <tr style={{ backgroundColor: '#1e3a8a', color: 'white' }}>
-              <th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '180px', position: 'sticky', left: 0, backgroundColor: '#1e3a8a', zIndex: 10 }}>Annual Cash Flow</th>
-              <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '90px' }}>Year 0</th>
-              <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '90px' }}>Year 1</th>
-              <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '90px' }}>Year 2</th>
-              <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '90px' }}>Year 3</th>
-              <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '90px' }}>Year 4</th>
-              <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '90px' }}>Year 5</th>
-              <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '90px' }}>Year 6</th>
-              <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '90px' }}>Year 7</th>
-              <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '90px' }}>Year 8</th>
-              <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #3b82f6', minWidth: '90px' }}>Year 9</th>
+            <tr style={{ backgroundColor: '#0b1e5e', color: 'white' }}>
+              <th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 700, borderRight: '1px solid #273a8a', minWidth: '180px', position: 'sticky', left: 0, backgroundColor: '#0b1e5e', zIndex: 10 }}>Annual Cash Flow</th>
+              <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #273a8a', minWidth: '90px' }}>Year 0</th>
+              <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #273a8a', minWidth: '90px' }}>Year 1</th>
+              <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #273a8a', minWidth: '90px' }}>Year 2</th>
+              <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #273a8a', minWidth: '90px' }}>Year 3</th>
+              <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #273a8a', minWidth: '90px' }}>Year 4</th>
+              <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #273a8a', minWidth: '90px' }}>Year 5</th>
+              <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #273a8a', minWidth: '90px' }}>Year 6</th>
+              <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #273a8a', minWidth: '90px' }}>Year 7</th>
+              <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #273a8a', minWidth: '90px' }}>Year 8</th>
+              <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #273a8a', minWidth: '90px' }}>Year 9</th>
               <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, minWidth: '90px' }}>Year 10</th>
             </tr>
           </thead>
@@ -106,8 +106,8 @@ const PropertySpreadsheet = ({ initialData }) => {
                 </td>
               ))}
             </tr>
-            <tr style={{ backgroundColor: '#fef3c7' }}>
-              <td style={{ padding: '8px', paddingLeft: '24px', fontSize: '10px', fontStyle: 'italic', borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: '#fef3c7', zIndex: 5 }}>Vacancy Rate %</td>
+            <tr style={{ backgroundColor: '#eef2ff' }}>
+              <td style={{ padding: '8px', paddingLeft: '24px', fontSize: '10px', fontStyle: 'italic', borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: '#eef2ff', zIndex: 5 }}>Vacancy Rate %</td>
               <td style={{ padding: '8px', textAlign: 'right', fontSize: '10px', borderRight: '1px solid #e5e7eb' }}>0%</td>
               {revenueProjections.map((rev, i) => (
                 <td key={i} style={{ padding: '8px', textAlign: 'right', fontSize: '10px', borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
@@ -124,11 +124,11 @@ const PropertySpreadsheet = ({ initialData }) => {
                 </td>
               ))}
             </tr>
-            <tr style={{ backgroundColor: '#e0f2fe', borderTop: '2px solid #0ea5e9', borderBottom: '2px solid #0ea5e9' }}>
-              <td style={{ padding: '8px', fontWeight: 700, borderRight: '1px solid #0ea5e9', position: 'sticky', left: 0, backgroundColor: '#e0f2fe', zIndex: 5 }}>Effective Gross Rental Income</td>
-              <td style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #0ea5e9' }}>$0</td>
+            <tr style={{ backgroundColor: '#eef2ff', borderTop: '2px solid #273a8a', borderBottom: '2px solid #273a8a' }}>
+              <td style={{ padding: '8px', fontWeight: 700, borderRight: '1px solid #273a8a', position: 'sticky', left: 0, backgroundColor: '#eef2ff', zIndex: 5 }}>Effective Gross Rental Income</td>
+              <td style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #273a8a' }}>$0</td>
               {revenueProjections.map((rev, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderRight: i < 9 ? '1px solid #0ea5e9' : 'none' }}>
+                <td key={i} style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderRight: i < 9 ? '1px solid #273a8a' : 'none' }}>
                   {calc.formatCurrency(rev.netRentalIncome)}
                 </td>
               ))}
@@ -149,7 +149,7 @@ const PropertySpreadsheet = ({ initialData }) => {
                 })}
               </tr>
             ))}
-            <tr style={{ backgroundColor: '#fecaca', borderTop: '2px solid #dc2626' }}>
+            <tr style={{ backgroundColor: '#f1f5f9', borderTop: '2px solid #e5e7eb' }}>
               <td colSpan={12} style={{ padding: '8px', fontWeight: 700, fontSize: '12px' }}>OPERATING EXPENSES</td>
             </tr>
             <tr style={{ backgroundColor: 'white' }}>
@@ -218,35 +218,49 @@ const PropertySpreadsheet = ({ initialData }) => {
                 </td>
               ))}
             </tr>
-            <tr style={{ backgroundColor: '#d1fae5', borderTop: '3px solid #10b981', borderBottom: '3px solid #10b981' }}>
-              <td style={{ padding: '10px 8px', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #10b981', position: 'sticky', left: 0, backgroundColor: '#d1fae5', zIndex: 5 }}>NET OPERATING INCOME (NOI)</td>
-              <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #10b981' }}>$0</td>
+            {/* Totals and summary rows with indigo accent */}
+            <tr style={{ backgroundColor: '#f1f5f9', borderTop: '2px solid #e5e7eb', borderBottom: '2px solid #e5e7eb' }}>
+              <td style={{ padding: '8px', fontWeight: 700, borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: '#f1f5f9', zIndex: 5 }}>Total Operating Expenses</td>
+              <td style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #e5e7eb' }}>$0</td>
+              {expenseProjections.map((exp, i) => (
+                <td key={i} style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
+                  {calc.formatCurrency(exp.totalOperatingExpenses)}
+                </td>
+              ))}
+            </tr>
+
+            <tr style={{ backgroundColor: '#eef2ff', borderTop: '3px solid #273a8a', borderBottom: '3px solid #273a8a' }}>
+              <td style={{ padding: '10px 8px', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #273a8a', position: 'sticky', left: 0, backgroundColor: '#eef2ff', zIndex: 5 }}>NET OPERATING INCOME (NOI)</td>
+              <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #273a8a' }}>$0</td>
               {noiProjections.map((noi, i) => (
-                <td key={i} style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: i < 9 ? '2px solid #10b981' : 'none' }}>
+                <td key={i} style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: i < 9 ? '2px solid #273a8a' : 'none' }}>
                   {calc.formatCurrency(noi.noi)}
                 </td>
               ))}
             </tr>
+
             <tr style={{ backgroundColor: 'white' }}>
               <td style={{ padding: '8px', fontWeight: 600, borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: 'white', zIndex: 5 }}>Debt Service (Annual)</td>
               <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb' }}>$0</td>
               {cashFlowProjections.map((cf, i) => (
                 <td key={i} style={{ padding: '8px', textAlign: 'right', borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
-                  -{calc.formatCurrency(cf.totalDebtService).replace('$', '')}
+                  {calc.formatCurrency(cf.totalDebtService).replace('$', '')}
                 </td>
               ))}
             </tr>
-            <tr style={{ backgroundColor: '#dbeafe', borderTop: '2px solid #3b82f6', borderBottom: '2px solid #3b82f6' }}>
-              <td style={{ padding: '10px 8px', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #3b82f6', position: 'sticky', left: 0, backgroundColor: '#dbeafe', zIndex: 5 }}>CASH FLOW AFTER FINANCING</td>
-              <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #3b82f6' }}>$0</td>
+
+            <tr style={{ backgroundColor: '#eef2ff', borderTop: '2px solid #273a8a', borderBottom: '2px solid #273a8a' }}>
+              <td style={{ padding: '10px 8px', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #273a8a', position: 'sticky', left: 0, backgroundColor: '#eef2ff', zIndex: 5 }}>CASH FLOW AFTER FINANCING</td>
+              <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #273a8a' }}>$0</td>
               {cashFlowProjections.map((cf, i) => (
-                <td key={i} style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: i < 9 ? '2px solid #3b82f6' : 'none' }}>
-                  {calc.formatCurrency(cf.beforeTaxCashFlow)}
+                <td key={i} style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: i < 9 ? '2px solid #273a8a' : 'none' }}>
+                  {cf.dscr != null ? `${cf.dscr.toFixed(2)}x` : '-'}
                 </td>
               ))}
             </tr>
-            <tr style={{ backgroundColor: '#fef3c7' }}>
-              <td style={{ padding: '8px', paddingLeft: '24px', fontSize: '10px', fontStyle: 'italic', fontWeight: 600, borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: '#fef3c7', zIndex: 5 }}>Cash-on-Cash Return %</td>
+
+            <tr style={{ backgroundColor: '#f8fafc' }}>
+              <td style={{ padding: '8px', paddingLeft: '24px', fontSize: '10px', fontStyle: 'italic', fontWeight: 600, borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: '#f8fafc', zIndex: 5 }}>Cash-on-Cash Return %</td>
               <td style={{ padding: '8px', textAlign: 'right', fontSize: '10px', borderRight: '1px solid #e5e7eb' }}>-</td>
               {cashFlowProjections.map((cf, i) => (
                 <td key={i} style={{ padding: '8px', textAlign: 'right', fontSize: '10px', fontWeight: 600, borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
@@ -254,8 +268,9 @@ const PropertySpreadsheet = ({ initialData }) => {
                 </td>
               ))}
             </tr>
-            <tr style={{ backgroundColor: '#fef3c7' }}>
-              <td style={{ padding: '8px', paddingLeft: '24px', fontSize: '10px', fontStyle: 'italic', fontWeight: 600, borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: '#fef3c7', zIndex: 5 }}>DSCR</td>
+
+            <tr style={{ backgroundColor: '#f8fafc' }}>
+              <td style={{ padding: '8px', paddingLeft: '24px', fontSize: '10px', fontStyle: 'italic', fontWeight: 600, borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: '#f8fafc', zIndex: 5 }}>DSCR</td>
               <td style={{ padding: '8px', textAlign: 'right', fontSize: '10px', borderRight: '1px solid #e5e7eb' }}>-</td>
               {cashFlowProjections.map((cf, i) => (
                 <td key={i} style={{ padding: '8px', textAlign: 'right', fontSize: '10px', fontWeight: 600, borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
