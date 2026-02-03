@@ -34,7 +34,6 @@ import ExpensesTab from './results-tabs/ExpensesTab';
 import CashFlowTab from './results-tabs/CashFlowTab';
 import ExpenseV2Tab from './results-tabs/ExpenseV2Tab';
 import ProformaTab from './results-tabs/ProformaTab';
-import RUBSTab from './results-tabs/RUBSTab';
 import UnderwritingTablePage from '../pages/UnderwritingTablePage';
 import PropertySpreadsheet from './PropertySpreadsheet';
 import { mapParsedDataToSpreadsheet } from '../utils/propertySpreadsheetMapper';
@@ -522,7 +521,6 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
         { id: 'deal-execution', name: 'Deal Execution' },
         { id: 'expenses', name: 'Expenses' },
         { id: 'proforma', name: 'Pro Forma' },
-        { id: 'rubs', name: 'RUBS Analysis' },
         { id: 'rent-roll', name: 'Rent Roll' },
         { id: 'returns', name: 'Returns' },
         { id: 'cost-seg', name: 'Cost Segregation' }
@@ -1157,7 +1155,6 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
     { id: 'scenario-sheet', label: 'Scenario Sheet', icon: FileSpreadsheet },
     { id: 'property-spreadsheet', label: 'Property Analysis', icon: FileBarChart },
     { id: 'cashflow', label: 'Cash Flow', icon: FileBarChart },
-    { id: 'rubs', label: 'RUBS', icon: Activity },
     { id: 'proforma', label: 'Proforma', icon: FileText },
     { id: 'deal-structure', label: 'Deal Structure', icon: Layers },
     { id: 'deal-execution', label: 'Deal Execution', icon: Rocket },
@@ -5420,18 +5417,6 @@ Keep the answer tight but specific to this property and the numbers above.`;
             />
           </div>
         );
-      
-      case 'rubs':
-        return (
-          <div style={{ padding: '24px' }}>
-            <RUBSTab 
-              scenarioData={scenarioData}
-              fullCalcs={fullCalcs}
-            />
-          </div>
-        );
-
-      
       
       case 'proforma':
         return (
