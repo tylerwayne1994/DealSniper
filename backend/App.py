@@ -101,11 +101,17 @@ app.include_router(token_purchase_router)
 
 # Market Analysis: Drive-time isochrones & census aggregation
 try:
+    import market_analysis
     from market_analysis import market_analysis_endpoint, MarketAnalysisRequest
     log.info("[MARKET ANALYSIS] Module imported successfully")
     
+    # Inject LLM clients for fallback
+    market_analysis.ANTHROPIC_CLIENT = ANTHROPIC
+    market_analysis.MISTRAL_CLIENT = MISTRAL
+    log.info("[MARKET ANALYSIS] LLM clients injected for fallback")
+    
     @app.post("/api/market-analysis")
-    async def market_analysis(request_data: MarketAnalysisRequest):
+    async def market_analysis_route(request_data: MarketAnalysisRequest):
         log.info(f"[MARKET ANALYSIS ROUTE] Received request")
         return await market_analysis_endpoint(request_data)
 except Exception as e:
