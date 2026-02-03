@@ -32,6 +32,11 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
     }
   };
 
+  const copyValue = (sourcePath, targetPath, val) => {
+    if (!onFieldChange) return;
+    onFieldChange(targetPath, Number(val) || 0);
+  };
+
   // Percent-based inputs are handled directly via amount edits in this UI.
 
   const totalUtilities = expenses.utilities || 0;
@@ -62,8 +67,15 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
       management: 'Property Management',
       payroll: 'On-site Payroll',
       admin: 'Administrative',
+      administration_fees: 'Administration Fees',
       marketing: 'Marketing',
       other: 'Other',
+      bad_debt_recovery: 'Bad Debt Recovery',
+      electric_reimbursable: 'Electric Reimbursable',
+      gas_submeter: 'Gas Submeter',
+      pest_control_fees: 'Pest Control Fees',
+      trash_service_fee: 'Trash Service Fee',
+      water_sewer_revenue: 'Water Sewer Revenue',
       water: 'Water',
       electricity: 'Electricity',
       gas: 'Gas',
@@ -131,6 +143,89 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
           ))}
         </div>
 
+        {/* Income & Expenses (top section) */}
+        <div style={{ background: 'white', border: `1px solid ${COLORS.border}`, borderRadius: 12, marginBottom: 24 }}>
+          <div style={{ padding: '10px 12px', borderBottom: `1px solid ${COLORS.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>Income & Expenses</div>
+            <div style={{ marginLeft: 'auto', fontSize: 12, color: COLORS.gray }}>Underwriting vs Value Add</div>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: '#f8fafc' }}>
+                  <th style={{ padding: '10px', textAlign: 'left', borderBottom: `1px solid ${COLORS.border}` }}>Line</th>
+                  <th style={{ padding: '10px', textAlign: 'right', borderBottom: `1px solid ${COLORS.border}` }}>Underwriting Start</th>
+                  <th style={{ padding: '10px', textAlign: 'right', borderBottom: `1px solid ${COLORS.border}` }}>Value Add 1</th>
+                  <th style={{ padding: '10px', textAlign: 'center', borderBottom: `1px solid ${COLORS.border}`, width: 160 }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  const gprUW = (scenarioData?.pnl?.gross_potential_rent) || (fullCalcs?.year1?.potentialGrossIncome) || 0;
+                  const gprVA = (fullCalcs?.year1?.potentialGrossIncome) || (scenarioData?.pnl?.gross_potential_rent) || 0;
+                  const vacUWpct = Number(expenses.vacancy_pct || scenarioData?.pnl?.vacancy_rate_current || 0) * (expenses.vacancy_pct ? 1 : 100);
+                  const vacVApct = Number(optimized.vacancy_pct || scenarioData?.pnl?.vacancy_rate_stabilized || 0) * (optimized.vacancy_pct ? 1 : 100);
+                  const ltlUWpct = Number(expenses.loss_to_lease_pct || 0);
+                  const ltlVApct = Number(optimized.loss_to_lease_pct || 0);
+                  const vacUWamt = gprUW * (vacUWpct/100);
+                  const vacVAamt = gprVA * (vacVApct/100);
+                  const ltlUWamt = gprUW * (ltlUWpct/100);
+                  const ltlVAamt = gprVA * (ltlVApct/100);
+                  const egiUW = gprUW - vacUWamt - ltlUWamt;
+                  const egiVA = gprVA - vacVAamt - ltlVAamt;
+                  return [
+                    { key: 'gpr', label: 'Gross Potential Rental Income', uw: gprUW, va: gprVA, type: 'display', rowBg: '#ecfdf5' },
+                    { key: 'vacancy', label: 'General Vacancy', uw: vacUWpct, va: vacVApct, type: 'percent', uwAmt: vacUWamt, vaAmt: vacVAamt, rowBg: '#fee2e2' },
+                    { key: 'ltl', label: 'Loss to Lease', uw: ltlUWpct, va: ltlVApct, type: 'percent', uwAmt: ltlUWamt, vaAmt: ltlVAamt, rowBg: '#fee2e2' },
+                    { key: 'egi', label: 'Effective Gross Rental Income', uw: egiUW, va: egiVA, type: 'display', rowBg: '#ecfdf5' },
+                  ];
+                })().map((row) => (
+                  <tr key={row.key} style={{ background: row.rowBg }}>
+                    <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, fontWeight: 600, color: '#374151' }}>{row.label}</td>
+                    <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}>
+                      {row.type === 'display' ? (
+                        <span style={{ fontWeight: 700 }}>${Number(row.uw||0).toLocaleString()}</span>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
+                          <input type="number" value={row.uw}
+                            onChange={(e)=> handleChange(row.key==='vacancy' ? 'expenses.vacancy_pct' : 'expenses.loss_to_lease_pct', parseFloat(e.target.value)||0)}
+                            style={{ width: 80, padding: '6px 8px', border: '1px solid #fecaca', background: '#fff', borderRadius: 6, fontSize: 12, textAlign: 'right' }} />
+                          <span style={{ fontSize: 12, color: '#6b7280' }}>{pct(row.uw)} </span>
+                          <span style={{ fontSize: 12, background: '#f1f5f9', border: '1px solid #e5e7eb', borderRadius: 6, padding: '4px 6px' }}>${Number(row.uwAmt||0).toLocaleString()}</span>
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}>
+                      {row.type === 'display' ? (
+                        <span style={{ fontWeight: 700 }}>${Number(row.va||0).toLocaleString()}</span>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
+                          <input type="number" value={row.va}
+                            onChange={(e)=> handleChange(row.key==='vacancy' ? 'value_add.optimized_expenses.vacancy_pct' : 'value_add.optimized_expenses.loss_to_lease_pct', parseFloat(e.target.value)||0)}
+                            style={{ width: 80, padding: '6px 8px', border: '1px solid #fecaca', background: '#f9fafb', borderRadius: 6, fontSize: 12, textAlign: 'right' }} />
+                          <span style={{ fontSize: 12, color: '#6b7280' }}>{pct(row.va)} </span>
+                          <span style={{ fontSize: 12, background: '#f1f5f9', border: `1px solid ${COLORS.border}`, borderRadius: 6, padding: '4px 6px' }}>${Number(row.vaAmt||0).toLocaleString()}</span>
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'center' }}>
+                      {row.type === 'percent' ? (
+                        <button
+                          title="Copy UW → VA"
+                          onClick={() => copyValue(row.key==='vacancy' ? 'expenses.vacancy_pct' : 'expenses.loss_to_lease_pct', row.key==='vacancy' ? 'value_add.optimized_expenses.vacancy_pct' : 'value_add.optimized_expenses.loss_to_lease_pct', row.uw)}
+                          style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 8px', height: 22, border: `1px solid ${COLORS.border}`, borderRadius: 6, fontSize: 12, color: '#111827', background: '#eef2ff' }}
+                        >copy</button>
+                      ) : (
+                        <span style={{ fontSize: 12, color: COLORS.gray }}>auto</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         {/* Expenses matrix: Underwriting vs Value Add */}
         <div style={{ background: 'white', border: `1px solid ${COLORS.border}`, borderRadius: 12, marginBottom: 24 }}>
           <div style={{ padding: '10px 12px', borderBottom: `1px solid ${COLORS.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -144,11 +239,12 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                   <th style={{ padding: '10px', textAlign: 'left', borderBottom: `1px solid ${COLORS.border}` }}>Item</th>
                   <th style={{ padding: '10px', textAlign: 'right', borderBottom: `1px solid ${COLORS.border}` }}>Underwriting Start</th>
                   <th style={{ padding: '10px', textAlign: 'right', borderBottom: `1px solid ${COLORS.border}` }}>Value Add 1</th>
+                  <th style={{ padding: '10px', textAlign: 'center', borderBottom: `1px solid ${COLORS.border}`, width: 120 }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {(() => {
-                  const keysToSkip = new Set(['utility_breakdown','management_pct','vacancy_pct','capex_pct','management_rate','vacancy_rate','capex_rate']);
+                  const keysToSkip = new Set(['utility_breakdown','management_pct','vacancy_pct','loss_to_lease_pct','capex_pct','management_rate','vacancy_rate','capex_rate']);
                   const rows = [];
                   const hasUtilSplit = Object.keys(utilityBreakdown).length > 0;
                   Object.entries(expenses).forEach(([key, val]) => {
@@ -162,35 +258,49 @@ export default function ExpensesTab({ scenarioData, fullCalcs, onFieldChange }) 
                     }
                   });
                   // Ensure common items appear even if missing
-                  ['taxes','insurance','repairs_maintenance','management','admin','marketing','other'].forEach((k)=>{
+                  ['taxes','insurance','repairs_maintenance','management','admin','administration_fees','marketing','other','bad_debt_recovery','electric_reimbursable','gas_submeter','pest_control_fees','trash_service_fee','water_sewer_revenue'].forEach((k)=>{
                     if(!rows.find(r=>r.key===k)) rows.push({ key:k, label: labelFromKey(k), base:Number(expenses[k])||0, opt:Number(optimized[k])||Number(expenses[k])||0, path:`expenses.${k}`, optPath:`value_add.optimized_expenses.${k}` });
                   });
                   return rows;
-                })().map((row,i)=> (
-                  <tr key={row.key} style={{ background: i%2? 'white':'#fbfbfb' }}>
+                })().map((row,i)=> {
+                  const rowBg = '#f0fdf4'; // soft green like screenshot
+                  const borderColor = '#dcfce7';
+                  return (
+                  <tr key={row.key} style={{ background: rowBg }}>
                     <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, fontWeight: 600, color: '#374151' }}>{row.label}</td>
                     <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}>
                       <input type="number" value={row.base}
                         onChange={(e)=> handleChange(row.path, parseFloat(e.target.value)||0)}
-                        style={{ width: 140, padding: '6px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, textAlign: 'right' }} />
+                        style={{ width: 140, padding: '6px 8px', border: `1px solid ${borderColor}`, background: '#ffffff', borderRadius: 6, fontSize: 12, textAlign: 'right' }} />
                     </td>
                     <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}>
                       <input type="number" value={row.opt}
                         onChange={(e)=> handleChange(row.optPath, parseFloat(e.target.value)||0)}
-                        style={{ width: 140, padding: '6px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, textAlign: 'right', background: '#f9fafb' }} />
+                        style={{ width: 140, padding: '6px 8px', border: `1px solid ${borderColor}`, borderRadius: 6, fontSize: 12, textAlign: 'right', background: '#f9fafb' }} />
+                    </td>
+                    <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'center' }}>
+                      <div style={{ display: 'inline-flex', gap: 6 }}>
+                        <span title="Currency" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 22, border: `1px solid ${COLORS.border}`, borderRadius: 6, fontSize: 12, color: '#111827', background: '#ffffff' }}>$</span>
+                        <button
+                          title="Copy UW → VA"
+                          onClick={() => copyValue(row.path, row.optPath, row.base)}
+                          style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 8px', height: 22, border: `1px solid ${COLORS.border}`, borderRadius: 6, fontSize: 12, color: '#111827', background: '#eef2ff' }}
+                        >copy</button>
+                      </div>
                     </td>
                   </tr>
-                ))}
+                )})}
                 {/* Totals */}
                 {(() => {
                   const sum = (obj)=> Object.values(obj).reduce((a,b)=> a + (typeof b==='number'? b:0),0);
                   const baseTotal = sum(expenses) - (typeof expenses.utility_breakdown==='object'?0:0);
                   const optTotal = sum(optimized) - (typeof optimized.utility_breakdown==='object'?0:0);
                   return (
-                    <tr style={{ background: '#eef2ff', fontWeight: 700 }}>
+                    <tr style={{ background: '#d1fae5', fontWeight: 700 }}>
                       <td style={{ padding: '10px', borderTop: `1px solid ${COLORS.border}` }}>Total Operating Expenses</td>
                       <td style={{ padding: '10px', textAlign: 'right', borderTop: `1px solid ${COLORS.border}` }}>${Number(baseTotal||0).toLocaleString()}</td>
                       <td style={{ padding: '10px', textAlign: 'right', borderTop: `1px solid ${COLORS.border}` }}>${Number(optTotal||baseTotal||0).toLocaleString()}</td>
+                      <td style={{ padding: '10px', borderTop: `1px solid ${COLORS.border}` }}></td>
                     </tr>
                   );
                 })()}
