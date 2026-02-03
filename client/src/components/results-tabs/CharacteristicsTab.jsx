@@ -290,7 +290,7 @@ export default function CharacteristicsTab(props) {
 
         <div>
           <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', marginBottom: '12px' }}>
-            <div style={{ backgroundColor: '#374151', color: 'white', padding: '6px 10px', fontWeight: '700', fontSize: '12px', borderRadius: '8px 8px 0 0' }}>Utilities (Monthly)</div>
+            <div style={{ backgroundColor: '#f8fafc', color: '#111827', padding: '6px 10px', fontWeight: '700', fontSize: '12px', borderRadius: '8px 8px 0 0', borderBottom: '1px solid #e5e7eb' }}>Utilities (Monthly)</div>
             <div style={{ padding: '10px' }}>
               <div style={{ marginBottom: '6px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', alignItems: 'center' }}>
                 <div>
@@ -327,10 +327,10 @@ export default function CharacteristicsTab(props) {
                 </div>
                 <div style={{ fontSize: '12px', color: '#64748b', textAlign: 'right', alignSelf: 'center' }}>Annual: ${(expensesData.trash || 0).toLocaleString()}</div>
               </div>
-              <div style={{ padding: '12px', backgroundColor: '#dbeafe', borderRadius: '8px', marginTop: '12px' }}>
+              <div style={{ padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px', marginTop: '12px', border: '1px solid #e5e7eb' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12px', fontWeight: '600', color: '#1e40af' }}>Total Utilities</span>
-                  <span style={{ fontSize: '16px', fontWeight: '700', color: '#1e40af' }}>${Math.round(totalUtilitiesMonthly).toLocaleString()}/mo</span>
+                  <span style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>Total Utilities</span>
+                  <span style={{ fontSize: '16px', fontWeight: '700', color: '#111827' }}>${Math.round(totalUtilitiesMonthly).toLocaleString()}/mo</span>
                 </div>
               </div>
             </div>
@@ -355,7 +355,7 @@ export default function CharacteristicsTab(props) {
                       <td style={{ textAlign: 'center', padding: '8px 6px' }}>{unit.units || unit.count || 1}</td>
                       <td style={{ textAlign: 'right', padding: '8px 6px' }}>{unit.sqft || unit.unit_sf || '-'}</td>
                       <td style={{ textAlign: 'right', padding: '8px 6px' }}>${unit.rent || unit.current_rent || 0}</td>
-                      <td style={{ textAlign: 'right', padding: '8px 6px', color: '#0d9488', fontWeight: '500' }}>${unit.market_rent || unit.rent || 0}</td>
+                      <td style={{ textAlign: 'right', padding: '8px 6px', color: '#111827', fontWeight: '500' }}>${unit.market_rent || unit.rent || 0}</td>
                     </tr>
                   )) : (
                     <tr><td colSpan="5" style={{ textAlign: 'center', padding: '16px', color: '#94a3b8' }}>No unit mix data</td></tr>
