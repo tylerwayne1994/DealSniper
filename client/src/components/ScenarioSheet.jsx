@@ -219,6 +219,33 @@ export default function ScenarioSheet({ scenarioData, calculations }) {
     return s + parsed;
   }, 0);
 
+  // Full parsed expenses table (lists every numeric key from parsed scenarioData.expenses)
+  const toTitle = (k) => k
+    .replace(/_/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/\s+/g, ' ')
+    .replace(/^\s|\s$/g, '')
+    .split(' ')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+
+  const allExpenseRows = Object.entries(expenses || {})
+    .filter(([k,v]) => typeof v === 'number' && k !== 'total')
+    .map(([k,v]) => ({
+      name: toTitle(k),
+      pctSGI: pct(((v || 0) / (pnl.gross_potential_rent || 1)) * 100),
+      val: currency0(v || 0),
+      perUnit: currency0(totalUnits ? (v || 0) / totalUnits : 0)
+    }))
+    .sort((a,b) => a.name.localeCompare(b.name));
+
+  const allExpColumns = [
+    { key: 'name', label: 'Parsed Expenses (All Keys)' },
+    { key: 'pctSGI', label: '% of Current SGI', align: 'right' },
+    { key: 'val', label: 'Amount', align: 'right' },
+    { key: 'perUnit', label: 'Per Unit', align: 'right' },
+  ];
+
   return (
     <div style={{ padding: '16px' }}>
       <SectionTitle>Unit Mix & Scheduled Income</SectionTitle>
@@ -229,6 +256,13 @@ export default function ScenarioSheet({ scenarioData, calculations }) {
 
       <SectionTitle>Pro Forma Annual Operating Summary</SectionTitle>
       <Table columns={expColumns} rows={expRows} footer={[{ name: 'Total Expenses', pctSGI: pct(((totalExpenses||0) / (pnl.gross_potential_rent||1)) * 100), val: currency0(totalExpenses), perUnit: currency0(totalUnits ? totalExpenses/totalUnits : 0) }]} />
+
+      {allExpenseRows.length > 0 && (
+        <>
+          <SectionTitle>All Parsed Expenses</SectionTitle>
+          <Table columns={allExpColumns} rows={allExpenseRows} />
+        </>
+      )}
     </div>
   );
 }

@@ -5395,10 +5395,6 @@ Keep the answer tight but specific to this property and the numbers above.`;
       case 'property-spreadsheet':
         return (
           <div style={{ padding: '24px' }}>
-            {/* Show parsed Scenario Sheet above the analysis table for clarity */}
-            <div style={{ marginBottom: '16px', border: '1px solid #e5e7eb', borderRadius: 12, background: 'white' }}>
-              <ScenarioSheet scenarioData={scenarioData} calculations={fullCalcs} />
-            </div>
             <PropertySpreadsheet 
               initialData={scenarioData ? mapParsedDataToSpreadsheet(scenarioData) : null}
             />
