@@ -3,6 +3,7 @@
 """
 app.py  — Underwriting backend w/ financing modes + comprehensive metrics
 Python 3.10+  |  uvicorn app:app --host 127.0.0.1 --port 8010 --reload
+Updated: 2026-02-03 - Market Analysis API with Mapbox isochrones
 """
 
 import os, io, json, base64, re, uuid, tempfile, shutil
