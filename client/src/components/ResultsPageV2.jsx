@@ -176,6 +176,23 @@ const ResultsPageV2 = ({
   
   // Exit Strategy state
   const [selectedHoldPeriod, setSelectedHoldPeriod] = useState(5);
+
+  // Persist chat minimized state
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('resultsChatMinimized');
+      if (saved !== null) {
+        setIsChatMinimized(saved === '1');
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('resultsChatMinimized', isChatMinimized ? '1' : '0');
+    } catch {}
+  }, [isChatMinimized]);
   
   // Handle mouse down on chat header to start dragging
   const handleMouseDown = (e) => {
@@ -5614,9 +5631,9 @@ Keep the answer tight but specific to this property and the numbers above.`;
 
       {/* Max AI Sidebar - Right Side */}
       <div style={{
-        width: 420,
-        minWidth: 420,
-        maxWidth: 420,
+        width: isChatMinimized ? 40 : 420,
+        minWidth: isChatMinimized ? 40 : 420,
+        maxWidth: isChatMinimized ? 40 : 420,
         flexShrink: 0,
         borderLeft: '1px solid #e5e7eb',
         display: 'flex',
@@ -5626,25 +5643,28 @@ Keep the answer tight but specific to this property and the numbers above.`;
       }}>
         {/* AI Header */}
         <div style={{
-          padding: '10px 14px',
+          padding: isChatMinimized ? '8px' : '10px 14px',
           borderBottom: '1px solid #e5e7eb',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          justifyContent: isChatMinimized ? 'center' : 'space-between',
           fontSize: 15,
           fontWeight: 600,
           color: '#111827'
         }}>
-          <span>Max</span>
+          {!isChatMinimized && <span>Max</span>}
           <button
             type="button"
-            style={{ border: 'none', background: 'transparent', cursor: 'default', color: '#9ca3af' }}
+            onClick={() => setIsChatMinimized(!isChatMinimized)}
+            title={isChatMinimized ? 'Expand chat' : 'Minimize chat'}
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#374151' }}
           >
             <MessageSquare size={15} />
           </button>
         </div>
 
         {/* AI Body - Messages */}
+        {!isChatMinimized && (
         <div style={{
           flex: 1,
           padding: '12px 14px',
@@ -5714,8 +5734,10 @@ Keep the answer tight but specific to this property and the numbers above.`;
             )}
           </div>
         </div>
+        )}
 
         {/* AI Footer - Input */}
+        {!isChatMinimized && (
         <div style={{
           borderTop: '1px solid #e5e7eb',
           padding: '10px 14px 12px',
@@ -5765,6 +5787,7 @@ Keep the answer tight but specific to this property and the numbers above.`;
             </button>
           </div>
         </div>
+        )}
       </div>
 
       {/* Debug Panel */}
