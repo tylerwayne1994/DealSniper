@@ -14,8 +14,8 @@ from pydantic import BaseModel
 MAPBOX_ACCESS_TOKEN = "MAPBOX_TOKEN_REMOVED"
 ABSTRACT_API_KEY = "da7556aa39cc4a3c85673d39e0bfda42"
 
-# Path to CSV data files
-DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'client', 'public')
+# Path to CSV data files (in backend/data directory)
+DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
 
 def geocode_address(address: str, city: str, state: str, zip_code: str) -> Optional[Tuple[float, float]]:
