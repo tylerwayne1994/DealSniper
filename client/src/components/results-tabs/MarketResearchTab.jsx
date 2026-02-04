@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
-import { Map, Source, Layer } from 'react-map-gl/mapbox';
+import { Map, Source, Layer, Marker } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 const MAPBOX_TOKEN = 'MAPBOX_TOKEN_REMOVED';
@@ -61,28 +61,16 @@ function MarketResearchTab({ marketData }) {
     type: 'fill',
     paint: {
       'fill-color': '#3b82f6',
-      'fill-opacity': 0.3,
-      'fill-outline-color': '#1d4ed8'
+      'fill-opacity': 0.35
     }
   };
 
-  // Property point as GeoJSON and circle layer
-  const propertyGeoJson = useMemo(() => ({
-    type: 'FeatureCollection',
-    features: property_location ? [{
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: [property_location.lng, property_location.lat] }
-    }] : []
-  }), [property_location]);
-
-  const propertyPointLayer = {
-    id: 'property-point',
-    type: 'circle',
+  const isochroneOutline = {
+    id: 'isochrone-outline',
+    type: 'line',
     paint: {
-      'circle-radius': 6,
-      'circle-color': '#ef4444',
-      'circle-stroke-width': 2,
-      'circle-stroke-color': '#ffffff'
+      'line-color': '#1d4ed8',
+      'line-width': 2
     }
   };
 
@@ -103,7 +91,15 @@ function MarketResearchTab({ marketData }) {
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Market Analysis</h2>
         <p className="text-sm text-gray-600">
-          {property_location?.address}, {property_location?.city}, {property_location?.state} {property_location?.zip}
+          {property_location?.address ? (
+            <>
+              {property_location.address}, {property_location.city}, {property_location.state} {property_location.zip}
+            </>
+          ) : (
+            <>
+              {city.name || 'Property'}, {state.name || 'N/A'}
+            </>
+          )}
         </p>
         <p className="text-xs text-gray-500 mt-1">
           15-Minute Drive Time Market Area
@@ -117,20 +113,31 @@ function MarketResearchTab({ marketData }) {
             {...viewState}
             onMove={evt => setViewState(evt.viewState)}
             mapboxAccessToken={MAPBOX_TOKEN}
-            mapStyle="mapbox://styles/mapbox/light-v11"
+            mapStyle="mapbox://styles/mapbox/streets-v12"
             style={{ width: '100%', height: '100%' }}
           >
+            {/* Property marker pinned to coordinates */}
+            {property_location && (
+              <Marker longitude={property_location.lng} latitude={property_location.lat} anchor="center">
+                <div
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: 9999,
+                    backgroundColor: '#ef4444',
+                    border: '2px solid #ffffff',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.25)'
+                  }}
+                  title="Subject property"
+                />
+              </Marker>
+            )}
+
             {/* Isochrone polygon */}
             {isochrone && (
               <Source id="isochrone" type="geojson" data={isochrone}>
                 <Layer {...isochroneLayer} />
-              </Source>
-            )}
-
-            {/* Property point */}
-            {property_location && (
-              <Source id="property-point" type="geojson" data={propertyGeoJson}>
-                <Layer {...propertyPointLayer} />
+                <Layer {...isochroneOutline} />
               </Source>
             )}
           </Map>
