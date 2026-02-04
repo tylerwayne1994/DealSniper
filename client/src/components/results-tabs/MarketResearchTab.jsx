@@ -66,6 +66,26 @@ function MarketResearchTab({ marketData }) {
     }
   };
 
+  // Property point as GeoJSON and circle layer
+  const propertyGeoJson = useMemo(() => ({
+    type: 'FeatureCollection',
+    features: property_location ? [{
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [property_location.lng, property_location.lat] }
+    }] : []
+  }), [property_location]);
+
+  const propertyPointLayer = {
+    id: 'property-point',
+    type: 'circle',
+    paint: {
+      'circle-radius': 6,
+      'circle-color': '#ef4444',
+      'circle-stroke-width': 2,
+      'circle-stroke-color': '#ffffff'
+    }
+  };
+
   // Calculate affordability color
   const getAffordabilityColor = (ratio) => {
     if (ratio < 25) return 'text-green-600';
@@ -83,7 +103,7 @@ function MarketResearchTab({ marketData }) {
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Market Analysis</h2>
         <p className="text-sm text-gray-600">
-          {city.name || 'Property'}, {state.name || 'N/A'}
+          {property_location?.address}, {property_location?.city}, {property_location?.state} {property_location?.zip}
         </p>
         <p className="text-xs text-gray-500 mt-1">
           15-Minute Drive Time Market Area
@@ -100,25 +120,17 @@ function MarketResearchTab({ marketData }) {
             mapStyle="mapbox://styles/mapbox/light-v11"
             style={{ width: '100%', height: '100%' }}
           >
-            {/* Property marker */}
-            {property_location && (
-              <div
-                style={{
-                  position: 'absolute',
-                  left: '50%',
-                  top: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  zIndex: 10
-                }}
-              >
-                <div className="w-4 h-4 bg-red-600 rounded-full border-2 border-white shadow-lg" />
-              </div>
-            )}
-
             {/* Isochrone polygon */}
             {isochrone && (
               <Source id="isochrone" type="geojson" data={isochrone}>
                 <Layer {...isochroneLayer} />
+              </Source>
+            )}
+
+            {/* Property point */}
+            {property_location && (
+              <Source id="property-point" type="geojson" data={propertyGeoJson}>
+                <Layer {...propertyPointLayer} />
               </Source>
             )}
           </Map>

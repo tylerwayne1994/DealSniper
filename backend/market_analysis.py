@@ -176,7 +176,16 @@ def generate_isochrone(lng: float, lat: float, minutes: int = 15) -> Optional[Di
 def load_migration_data_by_zip(zip_code: str) -> Dict:
     """Load migration data for a specific ZIP from migration_with_clean_zipcodes.csv"""
     try:
-        csv_path = os.path.join(DATA_DIR, 'migration_with_clean_zipcodes.csv')
+        def _csv_path(name: str) -> Optional[str]:
+            p1 = os.path.join(DATA_DIR, name)
+            if os.path.exists(p1):
+                return p1
+            p2 = os.path.join(PUBLIC_DATA_DIR, name)
+            return p2 if os.path.exists(p2) else None
+
+        csv_path = _csv_path('migration_with_clean_zipcodes.csv')
+        if not csv_path:
+            raise FileNotFoundError('migration_with_clean_zipcodes.csv not found')
         with open(csv_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -202,7 +211,16 @@ def load_census_data_by_county_fips(county_fips: str) -> Dict:
         geo_id = f"0500000US{county_fips}"
         
         # Load DP03 (income/employment)
-        dp03_path = os.path.join(DATA_DIR, 'ACSDP5Y2023.DP03-Data.csv')
+        def _csv_path(name: str) -> Optional[str]:
+            p1 = os.path.join(DATA_DIR, name)
+            if os.path.exists(p1):
+                return p1
+            p2 = os.path.join(PUBLIC_DATA_DIR, name)
+            return p2 if os.path.exists(p2) else None
+
+        dp03_path = _csv_path('ACSDP5Y2023.DP03-Data.csv')
+        if not dp03_path:
+            raise FileNotFoundError('ACSDP5Y2023.DP03-Data.csv not found')
         with open(dp03_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -215,7 +233,9 @@ def load_census_data_by_county_fips(county_fips: str) -> Dict:
                 median_income = mean_income = unemployment_rate = '0'
         
         # Load DP04 (housing)
-        dp04_path = os.path.join(DATA_DIR, 'ACSDP5Y2023.DP04-Data.csv')
+        dp04_path = _csv_path('ACSDP5Y2023.DP04-Data.csv')
+        if not dp04_path:
+            raise FileNotFoundError('ACSDP5Y2023.DP04-Data.csv not found')
         with open(dp04_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -228,7 +248,9 @@ def load_census_data_by_county_fips(county_fips: str) -> Dict:
                 median_home_value = median_rent = owner_occupied_rate = '0'
         
         # Load B01003 (population)
-        b01003_path = os.path.join(DATA_DIR, 'ACSDT5Y2023.B01003-Data.csv')
+        b01003_path = _csv_path('ACSDT5Y2023.B01003-Data.csv')
+        if not b01003_path:
+            raise FileNotFoundError('ACSDT5Y2023.B01003-Data.csv not found')
         with open(b01003_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -255,7 +277,16 @@ def load_census_data_by_county_fips(county_fips: str) -> Dict:
 def get_county_fips_from_zip(zip_code: str) -> Optional[str]:
     """Get county FIPS code from ZIP using fmr_by_zip_clean.csv"""
     try:
-        csv_path = os.path.join(DATA_DIR, 'fmr_by_zip_clean.csv')
+        def _csv_path(name: str) -> Optional[str]:
+            p1 = os.path.join(DATA_DIR, name)
+            if os.path.exists(p1):
+                return p1
+            p2 = os.path.join(PUBLIC_DATA_DIR, name)
+            return p2 if os.path.exists(p2) else None
+
+        csv_path = _csv_path('fmr_by_zip_clean.csv')
+        if not csv_path:
+            raise FileNotFoundError('fmr_by_zip_clean.csv not found')
         with open(csv_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -270,7 +301,16 @@ def get_county_fips_from_zip(zip_code: str) -> Optional[str]:
 def get_msa_data(county_name: str, state_abbr: str) -> Dict:
     """Load MSA multifamily construction data from cbsamonthly_202505"""
     try:
-        csv_path = os.path.join(DATA_DIR, 'cbsamonthly_202505 - MSA Units.csv')
+        def _csv_path(name: str) -> Optional[str]:
+            p1 = os.path.join(DATA_DIR, name)
+            if os.path.exists(p1):
+                return p1
+            p2 = os.path.join(PUBLIC_DATA_DIR, name)
+            return p2 if os.path.exists(p2) else None
+
+        csv_path = _csv_path('cbsamonthly_202505 - MSA Units.csv')
+        if not csv_path:
+            raise FileNotFoundError('cbsamonthly_202505 - MSA Units.csv not found')
         with open(csv_path, 'r', encoding='utf-8') as f:
             # Skip header rows (first 8 lines)
             for _ in range(8):
@@ -363,16 +403,20 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
         if use_llm_fallback:
             llm_data = generate_market_data_with_llm(address, city, state, zip_code, lng, lat)
             
+            # Ensure we still use a real Mapbox isochrone when possible
+            if not isochrone_geojson:
+                isochrone_geojson = generate_isochrone(lng, lat, minutes=15)
+            
             # Build response from LLM data
             response = {
-                'property_location': {'lng': lng, 'lat': lat},
-                'isochrone': {
+                'property_location': {'lng': lng, 'lat': lat, 'address': address, 'city': city, 'state': state, 'zip': zip_code},
+                'isochrone': isochrone_geojson or {
                     'type': 'FeatureCollection',
                     'features': [{
                         'type': 'Feature',
                         'geometry': {
                             'type': 'Polygon',
-                            'coordinates': [[[lng-0.1, lat-0.1], [lng+0.1, lat-0.1], [lng+0.1, lat+0.1], [lng-0.1, lat+0.1], [lng-0.1, lat-0.1]]]
+                            'coordinates': [[[lng-0.03, lat-0.03], [lng+0.03, lat-0.03], [lng+0.03, lat+0.03], [lng-0.03, lat+0.03], [lng-0.03, lat-0.03]]]
                         },
                         'properties': {'contour': 15}
                     }]
