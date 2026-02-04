@@ -1428,9 +1428,12 @@ async def underwrite_deal(deal_id: str, request: Request):
         calc_json = {}
         wizard_structure = {}
     
-    deal = storage.get_deal(deal_id)
-    if not deal:
-        raise HTTPException(status_code=404, detail="Deal not found")
+    # Ensure deal exists; auto-create stub if missing
+    try:
+        deal = storage.upsert_deal_stub(deal_id)
+    except Exception as e:
+        log.exception("[V2] Failed to upsert stub deal: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to initialize deal")
     
     try:
 
@@ -1725,9 +1728,12 @@ async def save_scenario(deal_id: str, request: Request):
 async def chat_with_deal(deal_id: str, request: ChatRequest):
     log.info(f"[V2] Chat with deal: {deal_id}")
     
-    deal = storage.get_deal(deal_id)
-    if not deal:
-        raise HTTPException(status_code=404, detail="Deal not found")
+    # Ensure deal exists; auto-create stub if missing
+    try:
+        deal = storage.upsert_deal_stub(deal_id)
+    except Exception as e:
+        log.exception("[V2] Failed to upsert stub deal (chat): %s", e)
+        raise HTTPException(status_code=500, detail="Failed to initialize deal")
     
     try:
         # Use the latest user-edited scenario data if available

@@ -5,6 +5,7 @@ import os
 from typing import Optional
 from pathlib import Path
 from .models import DealV2
+from datetime import datetime
 
 # Storage directory
 STORAGE_DIR = Path(__file__).parent.parent / "data" / "deals_v2"
@@ -40,7 +41,6 @@ def get_deal(deal_id: str) -> Optional[DealV2]:
 
 def save_deal(deal: DealV2) -> None:
     """Save a deal to disk"""
-    from datetime import datetime
     deal.updated_at = datetime.utcnow().isoformat()
     
     path = _get_deal_path(deal.id)
@@ -59,3 +59,29 @@ def list_deals() -> list[DealV2]:
         except Exception as e:
             print(f"Error loading {path}: {e}")
     return sorted(deals, key=lambda d: d.created_at, reverse=True)
+
+
+def upsert_deal_stub(deal_id: str, parsed_json: Optional[dict] = None, original_filename: str = "frontend-init") -> DealV2:
+    """Create a minimal stub deal if missing, or return existing.
+
+    This ensures downstream endpoints like underwrite/chat don't 404
+    when the frontend hasn't explicitly created the deal yet.
+    """
+    existing = get_deal(deal_id)
+    if existing:
+        return existing
+
+    now = datetime.utcnow().isoformat()
+    parsed_json = parsed_json or {"property": {"address": "Unknown"}}
+
+    deal = DealV2(
+        id=deal_id,
+        created_at=now,
+        updated_at=now,
+        original_filename=original_filename,
+        parsed_json=parsed_json,
+        scenario_json=None,
+        chat_history=[]
+    )
+    save_deal(deal)
+    return deal
