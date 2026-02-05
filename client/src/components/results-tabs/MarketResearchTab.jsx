@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Map, Source, Layer, Marker } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -8,6 +8,7 @@ const MAPBOX_TOKEN = 'MAPBOX_TOKEN_REMOVED';
 const fmt = (val) => val?.toLocaleString() || 'N/A';
 const fmtCurrency = (val) => val ? `$${val.toLocaleString()}` : 'N/A';
 const fmtPercent = (val) => val !== null && val !== undefined ? `${val.toFixed(1)}%` : 'N/A';
+const fmtPercentFromFraction = (val) => val !== null && val !== undefined ? `${(val * 100).toFixed(1)}%` : 'N/A';
 
 function MarketResearchTab({ marketData }) {
   const [viewState, setViewState] = useState({
@@ -44,7 +45,14 @@ function MarketResearchTab({ marketData }) {
     aggregations = {},
     city = {},
     county = {},
-    state = {}
+    state = {},
+    drive_time_minutes = 15,
+    area_classification,
+    zip_rir_points,
+    fmr = {},
+    market_cap_rate = {},
+    zip_renter_owner = {},
+    msa_units = {}
   } = marketData;
 
   // Safe defaults for aggregations
@@ -74,16 +82,32 @@ function MarketResearchTab({ marketData }) {
     }
   };
 
-  // Calculate affordability color
-  const getAffordabilityColor = (ratio) => {
-    if (ratio < 25) return 'text-green-600';
-    if (ratio < 30) return 'text-yellow-600';
-    if (ratio < 35) return 'text-orange-600';
-    return 'text-red-600';
-  };
+  // Affordability helpers (reserved for future UI)
+  // const getAffordabilityColor = (ratio) => {
+  //   if (ratio < 25) return 'text-green-600';
+  //   if (ratio < 30) return 'text-yellow-600';
+  //   if (ratio < 35) return 'text-orange-600';
+  //   return 'text-red-600';
+  // };
+  // const rentToIncomeRatio = county_data?.rent_to_income_ratio || 0;
 
-  const rentToIncomeRatio = county_data?.rent_to_income_ratio || 0;
-  const affordabilityColor = getAffordabilityColor(rentToIncomeRatio);
+  // Zip RIR points layer
+  const zipRirLayer = {
+    id: 'zip-rir-points',
+    type: 'circle',
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 2, 11, 3, 13, 4, 15, 6],
+      'circle-opacity': 0.8,
+      'circle-color': [
+        'step', ['get', 'rir'],
+        '#10b981', 15, // Most Affordable
+        '#34d399', 18, // Very Affordable
+        '#fde047', 22, // Average
+        '#f97316', 28, // Less Affordable
+        '#ef4444'      // Least Affordable
+      ]
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -101,9 +125,17 @@ function MarketResearchTab({ marketData }) {
             </>
           )}
         </p>
-        <p className="text-xs text-gray-500 mt-1">
-          15-Minute Drive Time Market Area
-        </p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <span className="px-2 py-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded">{drive_time_minutes}-Minute Drive</span>
+          {area_classification && (
+            <span className="px-2 py-1 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded">{area_classification}</span>
+          )}
+          {market_cap_rate?.value_percent !== undefined && (
+            <span className="px-2 py-1 text-xs bg-purple-50 text-purple-700 border border-purple-200 rounded">
+              Cap Rate: {fmtPercent(market_cap_rate.value_percent)}{market_cap_rate?.source ? ` (${market_cap_rate.source})` : ''}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Mapbox Map with Isochrone */}
@@ -140,11 +172,43 @@ function MarketResearchTab({ marketData }) {
                 <Layer {...isochroneOutline} />
               </Source>
             )}
+
+            {/* ZIP RIR points */}
+            {zip_rir_points && (
+              <Source id="zip-rir" type="geojson" data={zip_rir_points}>
+                <Layer {...zipRirLayer} />
+              </Source>
+            )}
           </Map>
         </div>
         <div className="p-4 bg-gray-50 border-t text-sm text-gray-600">
-          <p><span className="font-medium">Blue shaded area:</span> 15-minute drive-time market boundary</p>
-          <p><span className="font-medium">Red dot:</span> Subject property location</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <p><span className="font-medium">Blue shaded area:</span> {drive_time_minutes}-minute drive-time boundary</p>
+            <p><span className="font-medium">Red dot:</span> Subject property location</p>
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="font-medium">RIR Legend:</span>
+              <span className="inline-flex items-center gap-1 text-xs">
+                <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: '#10b981' }}></span>
+                ≤15%
+              </span>
+              <span className="inline-flex items-center gap-1 text-xs">
+                <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: '#34d399' }}></span>
+                15–18%
+              </span>
+              <span className="inline-flex items-center gap-1 text-xs">
+                <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: '#fde047' }}></span>
+                18–22%
+              </span>
+              <span className="inline-flex items-center gap-1 text-xs">
+                <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: '#f97316' }}></span>
+                22–28%
+              </span>
+              <span className="inline-flex items-center gap-1 text-xs">
+                <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }}></span>
+                ≥28%
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -192,6 +256,11 @@ function MarketResearchTab({ marketData }) {
             <div className="text-sm text-gray-500 mb-1">Owner-Occupied Rate</div>
             <div className="text-2xl font-bold text-gray-900">{fmtPercent(county_data.owner_occupied_rate || 0)}</div>
           </div>
+          <div>
+            <div className="text-sm text-gray-500 mb-1">FMR (2BR)</div>
+            <div className="text-2xl font-bold text-gray-900">{fmtCurrency(fmr?.fmr_2br || 0)}</div>
+            <div className="text-xs text-gray-600">ZIP {fmr?.zip || property_location?.zip || ''}</div>
+          </div>
         </div>
       </div>
 
@@ -223,26 +292,38 @@ function MarketResearchTab({ marketData }) {
       )}
 
       {/* MSA Construction Data */}
-      {msa_data && msa_data.msa_name && (
+      {(msa_data && msa_data.msa_name) || (msa_units && (msa_units.ytd_5plus_units || msa_units.ytd_total_units)) ? (
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Multifamily Construction Activity</h3>
-          <p className="text-sm text-gray-600 mb-4">{msa_data.msa_name}</p>
+          {msa_data?.msa_name && <p className="text-sm text-gray-600 mb-4">{msa_data.msa_name}</p>}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <div className="text-sm text-gray-500 mb-1">YTD Total Permits</div>
-              <div className="text-2xl font-bold text-gray-900">{fmt(msa_data.ytd_total_units)}</div>
+              <div className="text-2xl font-bold text-gray-900">{fmt(msa_data.ytd_total_units || msa_units.ytd_total_units)}</div>
             </div>
             <div>
               <div className="text-sm text-gray-500 mb-1">YTD 5+ Unit Buildings</div>
-              <div className="text-2xl font-bold text-blue-600">{fmt(msa_data.ytd_5plus_units)}</div>
+              <div className="text-2xl font-bold text-blue-600">{fmt(msa_data.ytd_5plus_units || msa_units.ytd_5plus_units)}</div>
             </div>
             <div>
               <div className="text-sm text-gray-500 mb-1">Current Month Permits</div>
-              <div className="text-2xl font-bold text-green-600">{fmt(msa_data.current_month_units)}</div>
+              <div className="text-2xl font-bold text-green-600">{fmt(msa_data.current_month_units || msa_units.current_month_units)}</div>
             </div>
           </div>
+          {(msa_units.absorption_units !== undefined || msa_units.absorption_rate !== undefined) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <div>
+                <div className="text-sm text-gray-500 mb-1">Absorption Units (proxy)</div>
+                <div className="text-2xl font-bold text-gray-900">{fmt(Math.round(msa_units.absorption_units || 0))}</div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-500 mb-1">Absorption Rate</div>
+                <div className="text-2xl font-bold text-gray-900">{msa_units.absorption_rate !== undefined ? fmtPercent(msa_units.absorption_rate * 100) : 'N/A'}</div>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      ) : null}
 
       {/* Employment */}
       <div className="bg-white rounded-lg shadow-sm p-6">
@@ -262,6 +343,30 @@ function MarketResearchTab({ marketData }) {
           </div>
         </div>
       </div>
+
+      {/* Landlord & Zip Renter/Owner */}
+      {(zip_renter_owner && (zip_renter_owner.renter_share !== undefined || zip_renter_owner.owner_share !== undefined)) || (aggregations.businesses || aggregations.walk_score) ? (
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Local Housing Profile</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <div className="text-sm text-gray-500 mb-1">Renter Share</div>
+              <div className="text-2xl font-bold text-gray-900">{fmtPercentFromFraction(zip_renter_owner?.renter_share ?? 0)}</div>
+              <div className="text-xs text-gray-600">{fmt(Math.round(zip_renter_owner?.renter_count ?? 0))} renters</div>
+            </div>
+            <div>
+              <div className="text-sm text-gray-500 mb-1">Owner Share</div>
+              <div className="text-2xl font-bold text-gray-900">{fmtPercentFromFraction(zip_renter_owner?.owner_share ?? 0)}</div>
+              <div className="text-xs text-gray-600">{fmt(Math.round(zip_renter_owner?.owner_count ?? 0))} owners</div>
+            </div>
+            <div>
+              <div className="text-sm text-gray-500 mb-1">Businesses</div>
+              <div className="text-2xl font-bold text-gray-900">{fmt(aggregations?.businesses ?? 0)}</div>
+              <div className="text-xs text-gray-600">Walk Score: {aggregations?.walk_score ?? 'N/A'}</div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Comparison Summary */}
       <div className="bg-white rounded-lg shadow-sm p-6">
@@ -283,15 +388,30 @@ function MarketResearchTab({ marketData }) {
             <span className="text-sm font-medium text-gray-700">State</span>
             <span className="text-sm text-gray-900">{state.name || 'N/A'}</span>
           </div>
+          {aggregations?.comparisons && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+              <div className="bg-gray-50 rounded p-4">
+                <div className="text-sm text-gray-500 mb-1">Median Household Income</div>
+                <div className="text-sm text-gray-900">Local: {fmtCurrency(safeAggregations.median_income)}</div>
+                <div className="text-sm text-gray-900">City: {fmtCurrency(aggregations.comparisons.income_city)}</div>
+                <div className="text-sm text-gray-900">State: {fmtCurrency(aggregations.comparisons.income_state)}</div>
+                <div className="text-sm text-gray-900">USA: {fmtCurrency(aggregations.comparisons.income_usa)}</div>
+              </div>
+              <div className="bg-gray-50 rounded p-4">
+                <div className="text-sm text-gray-500 mb-1">Population Growth</div>
+                <div className="text-sm text-gray-900">City: {fmtPercent(aggregations.comparisons.pop_growth_city)}</div>
+                <div className="text-sm text-gray-900">State: {fmtPercent(aggregations.comparisons.pop_growth_state)}</div>
+                <div className="text-sm text-gray-900">USA: {fmtPercent(aggregations.comparisons.pop_growth_usa)}</div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Data Sources Footer */}
       <div className="bg-gray-50 rounded-lg shadow-sm p-4">
         <p className="text-xs text-gray-500">
-          <span className="font-semibold">Data Sources:</span> U.S. Census Bureau American Community Survey (ACS) 2023 5-Year Estimates, 
-          IRS Migration Data 2021, U.S. Census Bureau Building Permits Survey (May 2025), Mapbox Isochrone API. 
-          Market boundary represents 15-minute drive-time from subject property.
+          <span className="font-semibold">Data Sources:</span> ACS 2023 5-Year, IRS Migration 2021, Building Permits Survey (May 2025), Mapbox Isochrone, HUD FMR by ZIP, CBSA Monthly MSA Units, landlord.csv, ZIP renter/owner stats. Some values estimated with a low-cost LLM when not available.
         </p>
       </div>
     </div>

@@ -10,6 +10,7 @@ import sys
 import logging
 from typing import Dict, List, Optional, Tuple
 import requests
+import math
 from fastapi import HTTPException
 from pydantic import BaseModel
 
@@ -43,79 +44,86 @@ sys.stdout.flush()
 
 def generate_market_data_with_llm(address: str, city: str, state: str, zip_code: str, lng: float, lat: float) -> Dict:
     """
-    LLM FALLBACK: Generate market analysis data using Anthropic/Mistral when CSV data unavailable
+    LLM FALLBACK (cheap): Generate Cactus-style market data using small models.
+    - Minimal prompt, numeric values only, compact JSON.
+    - Prefers Mistral small; falls back to Claude Haiku.
     """
-    logger.info(f"[MARKET ANALYSIS LLM] Using LLM fallback for {city}, {state} {zip_code}")
-    
-    prompt = f"""Generate realistic market analysis data for a multifamily investment property at:
-Address: {address}, {city}, {state} {zip_code}
-Coordinates: {lng}, {lat}
+    logger.info(f"[MARKET ANALYSIS LLM] Using CHEAP LLM fallback for {city}, {state} {zip_code}")
 
-Provide realistic estimates based on {state} market data for:
-1. County population and demographics
-2. Median household income
-3. Unemployment rate
-4. Median rent (fair market rent for 2-bedroom)
-5. Housing starts/construction activity
-6. Migration trends (net migration percentage)
-
-Return as JSON with this structure:
-{{
-  "county_name": "County Name",
-  "population": 150000,
-  "median_income": 65000,
-  "unemployment_rate": 4.5,
-  "median_rent": 1200,
-  "housing_starts": 500,
-  "net_migration": 1.5,
-  "affordability": "Good"
-}}
-
-Use realistic values for {state}. Return ONLY the JSON, no explanation."""
+    prompt = (
+        f"City: {city}, State: {state}, ZIP: {zip_code}. "
+        f"Return ONLY compact JSON for multifamily market page with numbers only: "
+        "{"
+        "\"county_name\":\"...\","
+        "\"population\":123456,\"median_income\":65000,\"unemployment_rate\":4.8,"
+        "\"median_rent\":1200,\"fmr_2br\":1200,"
+        "\"housing_starts\":500,\"net_migration\":1.2,"
+        "\"affordability\":\"Good\",\"businesses\":2500,\"walk_score\":55,"
+        "\"landlord_friendly_score\":70,"
+        "\"renter_share\":0.55,\"owner_share\":0.45,\"renter_count\":5000,\"owner_count\":4100,"
+        "\"cap_rate_percent\":6.2,"
+        "\"comparisons\":{\"income_city\":60000,\"income_state\":65000,\"income_usa\":75000,"
+        "\"pop_growth_city\":1.1,\"pop_growth_state\":0.8,\"pop_growth_usa\":0.5}"
+        "}"
+    )
 
     try:
-        if ANTHROPIC_CLIENT:
-            logger.info("[MARKET ANALYSIS LLM] Using Anthropic")
+        llm_response = None
+        if MISTRAL_CLIENT:
+            logger.info("[MARKET ANALYSIS LLM] Using Mistral small")
+            response = MISTRAL_CLIENT.chat.complete(
+                model="mistral-small-latest",
+                messages=[{"role": "user", "content": prompt}],
+            )
+            llm_response = response.choices[0].message.content
+        elif ANTHROPIC_CLIENT:
+            logger.info("[MARKET ANALYSIS LLM] Using Claude Haiku")
             response = ANTHROPIC_CLIENT.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=1000,
+                model="claude-3-5-haiku-20241022",
+                max_tokens=500,
                 messages=[{"role": "user", "content": prompt}]
             )
             llm_response = response.content[0].text
-        elif MISTRAL_CLIENT:
-            logger.info("[MARKET ANALYSIS LLM] Using Mistral")
-            response = MISTRAL_CLIENT.chat.complete(
-                model="mistral-large-latest",
-                messages=[{"role": "user", "content": prompt}]
-            )
-            llm_response = response.choices[0].message.content
         else:
             logger.error("[MARKET ANALYSIS LLM] No LLM client available")
             raise Exception("No LLM client configured")
-        
+
         # Parse JSON from response
-        llm_response = llm_response.strip()
+        llm_response = (llm_response or '').strip()
         if '```json' in llm_response:
             llm_response = llm_response.split('```json')[1].split('```')[0].strip()
         elif '```' in llm_response:
             llm_response = llm_response.split('```')[1].split('```')[0].strip()
-        
+
         data = json.loads(llm_response)
-        logger.info(f"[MARKET ANALYSIS LLM] Generated data: {data}")
+        logger.info(f"[MARKET ANALYSIS LLM] Generated data (cheap): {data}")
         return data
-        
+
     except Exception as e:
         logger.error(f"[MARKET ANALYSIS LLM] Error: {e}")
-        # Return default fallback data
+        # Return default minimal data
         return {
             "county_name": f"{city} County",
             "population": 100000,
             "median_income": 60000,
             "unemployment_rate": 5.0,
             "median_rent": 1100,
+            "fmr_2br": 1100,
             "housing_starts": 300,
             "net_migration": 0.5,
-            "affordability": "Fair"
+            "affordability": "Fair",
+            "businesses": 1500,
+            "walk_score": 45,
+            "landlord_friendly_score": 60,
+            "renter_share": 0.5,
+            "owner_share": 0.5,
+            "renter_count": 4000,
+            "owner_count": 4000,
+            "cap_rate_percent": 6.0,
+            "comparisons": {
+                "income_city": 58000, "income_state": 65000, "income_usa": 75000,
+                "pop_growth_city": 1.0, "pop_growth_state": 0.8, "pop_growth_usa": 0.5
+            }
         }
 
 
@@ -176,16 +184,7 @@ def generate_isochrone(lng: float, lat: float, minutes: int = 15) -> Optional[Di
 def load_migration_data_by_zip(zip_code: str) -> Dict:
     """Load migration data for a specific ZIP from migration_with_clean_zipcodes.csv"""
     try:
-        def _csv_path(name: str) -> Optional[str]:
-            p1 = os.path.join(DATA_DIR, name)
-            if os.path.exists(p1):
-                return p1
-            p2 = os.path.join(PUBLIC_DATA_DIR, name)
-            return p2 if os.path.exists(p2) else None
-
-        csv_path = _csv_path('migration_with_clean_zipcodes.csv')
-        if not csv_path:
-            raise FileNotFoundError('migration_with_clean_zipcodes.csv not found')
+        csv_path = os.path.join(DATA_DIR, 'migration_with_clean_zipcodes.csv')
         with open(csv_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -211,16 +210,7 @@ def load_census_data_by_county_fips(county_fips: str) -> Dict:
         geo_id = f"0500000US{county_fips}"
         
         # Load DP03 (income/employment)
-        def _csv_path(name: str) -> Optional[str]:
-            p1 = os.path.join(DATA_DIR, name)
-            if os.path.exists(p1):
-                return p1
-            p2 = os.path.join(PUBLIC_DATA_DIR, name)
-            return p2 if os.path.exists(p2) else None
-
-        dp03_path = _csv_path('ACSDP5Y2023.DP03-Data.csv')
-        if not dp03_path:
-            raise FileNotFoundError('ACSDP5Y2023.DP03-Data.csv not found')
+        dp03_path = os.path.join(DATA_DIR, 'ACSDP5Y2023.DP03-Data.csv')
         with open(dp03_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -233,9 +223,7 @@ def load_census_data_by_county_fips(county_fips: str) -> Dict:
                 median_income = mean_income = unemployment_rate = '0'
         
         # Load DP04 (housing)
-        dp04_path = _csv_path('ACSDP5Y2023.DP04-Data.csv')
-        if not dp04_path:
-            raise FileNotFoundError('ACSDP5Y2023.DP04-Data.csv not found')
+        dp04_path = os.path.join(DATA_DIR, 'ACSDP5Y2023.DP04-Data.csv')
         with open(dp04_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -248,9 +236,7 @@ def load_census_data_by_county_fips(county_fips: str) -> Dict:
                 median_home_value = median_rent = owner_occupied_rate = '0'
         
         # Load B01003 (population)
-        b01003_path = _csv_path('ACSDT5Y2023.B01003-Data.csv')
-        if not b01003_path:
-            raise FileNotFoundError('ACSDT5Y2023.B01003-Data.csv not found')
+        b01003_path = os.path.join(DATA_DIR, 'ACSDT5Y2023.B01003-Data.csv')
         with open(b01003_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -277,16 +263,7 @@ def load_census_data_by_county_fips(county_fips: str) -> Dict:
 def get_county_fips_from_zip(zip_code: str) -> Optional[str]:
     """Get county FIPS code from ZIP using fmr_by_zip_clean.csv"""
     try:
-        def _csv_path(name: str) -> Optional[str]:
-            p1 = os.path.join(DATA_DIR, name)
-            if os.path.exists(p1):
-                return p1
-            p2 = os.path.join(PUBLIC_DATA_DIR, name)
-            return p2 if os.path.exists(p2) else None
-
-        csv_path = _csv_path('fmr_by_zip_clean.csv')
-        if not csv_path:
-            raise FileNotFoundError('fmr_by_zip_clean.csv not found')
+        csv_path = os.path.join(DATA_DIR, 'fmr_by_zip_clean.csv')
         with open(csv_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -301,16 +278,9 @@ def get_county_fips_from_zip(zip_code: str) -> Optional[str]:
 def get_msa_data(county_name: str, state_abbr: str) -> Dict:
     """Load MSA multifamily construction data from cbsamonthly_202505"""
     try:
-        def _csv_path(name: str) -> Optional[str]:
-            p1 = os.path.join(DATA_DIR, name)
-            if os.path.exists(p1):
-                return p1
-            p2 = os.path.join(PUBLIC_DATA_DIR, name)
-            return p2 if os.path.exists(p2) else None
-
-        csv_path = _csv_path('cbsamonthly_202505 - MSA Units.csv')
-        if not csv_path:
-            raise FileNotFoundError('cbsamonthly_202505 - MSA Units.csv not found')
+        # Prefer public CSV if available, fallback to backend/data
+        public_path = os.path.join(PUBLIC_DATA_DIR, 'cbsamonthly_202505 - MSA Units.csv')
+        csv_path = public_path if os.path.exists(public_path) else os.path.join(DATA_DIR, 'cbsamonthly_202505 - MSA Units.csv')
         with open(csv_path, 'r', encoding='utf-8') as f:
             # Skip header rows (first 8 lines)
             for _ in range(8):
@@ -339,6 +309,254 @@ def calculate_rent_to_income_ratio(median_rent: int, median_income: int) -> floa
         return 0.0
     monthly_income = median_income / 12
     return (median_rent / monthly_income) * 100 if monthly_income > 0 else 0.0
+
+
+def classify_area_by_rir(rir: float) -> str:
+    """Qualitative area classification based on Rent-to-Income Ratio."""
+    if rir <= 15:
+        return "Most Affordable"
+    if rir <= 18:
+        return "Very Affordable"
+    if rir <= 22:
+        return "Average"
+    if rir <= 28:
+        return "Less Affordable"
+    return "Least Affordable"
+
+
+def _haversine_miles(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
+    """Distance in miles between two lon/lat points."""
+    R = 3958.8  # Earth radius in miles
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dlambda/2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
+
+def build_zip_rir_points(center_lng: float, center_lat: float, county_median_income: int, radius_miles: float = 60.0) -> Dict:
+    """Create a GeoJSON FeatureCollection of ZIP points colored by RIR within radius.
+
+    RIR computed using each ZIP's FMR (2BR) and the provided county median income.
+    """
+    points: List[Dict] = []
+    try:
+        centroids_path = os.path.join(DATA_DIR, 'zcta_centroids.csv')
+        fmr_path = os.path.join(DATA_DIR, 'fmr_by_zip_clean.csv')
+        # Build quick lookup for FMR by ZIP
+        fmr_map: Dict[str, float] = {}
+        try:
+            with open(fmr_path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    z = (row.get('zip') or '').strip()
+                    if not z:
+                        continue
+                    try:
+                        fmr_map[z] = float(row.get('fmr_2br') or 0) or 0.0
+                    except Exception:
+                        fmr_map[z] = 0.0
+        except Exception as e:
+            logger.warning(f"[RIR] Failed to load FMR file: {e}")
+
+        with open(centroids_path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                z = (row.get('geoid') or '').strip()
+                if not z:
+                    continue
+                try:
+                    zx = float(row.get('x') or 0)
+                    zy = float(row.get('y') or 0)
+                except Exception:
+                    continue
+                dist = _haversine_miles(center_lng, center_lat, zx, zy)
+                if dist > radius_miles:
+                    continue
+                rent = fmr_map.get(z, 0.0)
+                rir = calculate_rent_to_income_ratio(int(rent), int(county_median_income)) if county_median_income else 0.0
+                points.append({
+                    'type': 'Feature',
+                    'geometry': { 'type': 'Point', 'coordinates': [zx, zy] },
+                    'properties': { 'zip': z, 'rir': rir, 'rent': rent, 'distance_miles': dist }
+                })
+    except Exception as e:
+        logger.warning(f"[RIR] Failed building ZIP RIR points: {e}")
+    return { 'type': 'FeatureCollection', 'features': points }
+
+
+def get_fmr_for_zip(zip_code: str) -> Optional[float]:
+    """Get FMR (2BR) for a ZIP from local datasets (backend/data or client/public)."""
+    # Try backend/data FMR first
+    try:
+        fmr_path = os.path.join(DATA_DIR, 'fmr_by_zip_clean.csv')
+        if os.path.exists(fmr_path):
+            with open(fmr_path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if (row.get('zip') or '').strip() == zip_code:
+                        try:
+                            return float(row.get('fmr_2br') or 0) or 0.0
+                        except Exception:
+                            return 0.0
+    except Exception:
+        pass
+    # Fallback: attempt public FY26 FMRs if present
+    try:
+        public_fmr = os.path.join(PUBLIC_DATA_DIR, 'FY26_FMRs - FY26_FMRs.csv')
+        if os.path.exists(public_fmr):
+            with open(public_fmr, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if (row.get('ZIP') or '').strip() == zip_code or (row.get('zip') or '').strip() == zip_code:
+                        # Support multiple possible column names
+                        for key in ('FMR_2BR', 'fmr_2br', 'fmr2br', '2br'):
+                            if key in row:
+                                try:
+                                    return float(row.get(key) or 0) or 0.0
+                                except Exception:
+                                    return 0.0
+    except Exception:
+        pass
+    return None
+
+
+def load_landlord_data(zip_code: str, county_name: str) -> Dict:
+    """Load landlord-related metrics from client/public/landlord.csv (best-effort)."""
+    result: Dict = {}
+    try:
+        path = os.path.join(PUBLIC_DATA_DIR, 'landlord.csv')
+        if not os.path.exists(path):
+            return result
+        with open(path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                # Try matching by ZIP first, else by county
+                if (row.get('zip') or '').strip() == zip_code or (row.get('county') or '').strip().lower() == (county_name or '').strip().lower():
+                    # Collect numeric fields if present
+                    for key in row.keys():
+                        val = row.get(key)
+                        if val is None:
+                            continue
+                        v = None
+                        try:
+                            v = float(val.replace(',', ''))
+                        except Exception:
+                            v = val
+                        result[key] = v
+                    break
+    except Exception as e:
+        logger.warning(f"[LANDLORD] Failed to load landlord.csv: {e}")
+    return result
+
+
+def load_zip_renter_owner_stats(zip_code: str) -> Dict:
+    """Load renter/owner shares and counts from client/public/zip_renter_owner_stats_with_counts.csv."""
+    result: Dict = {}
+    try:
+        path = os.path.join(PUBLIC_DATA_DIR, 'zip_renter_owner_stats_with_counts.csv')
+        if not os.path.exists(path):
+            return result
+        with open(path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if (row.get('zip') or '').strip() == zip_code or (row.get('ZIP') or '').strip() == zip_code:
+                    # Map common fields
+                    def get_float(keys: List[str]) -> Optional[float]:
+                        for k in keys:
+                            if k in row:
+                                try:
+                                    return float(row.get(k) or 0)
+                                except Exception:
+                                    return None
+                        return None
+                    result = {
+                        'renter_share': get_float(['renter_share', 'rentershare', 'renter_pct']),
+                        'owner_share': get_float(['owner_share', 'ownershare', 'owner_pct']),
+                        'renter_count': get_float(['renter_count', 'rentercount']),
+                        'owner_count': get_float(['owner_count', 'ownercount'])
+                    }
+                    break
+    except Exception as e:
+        logger.warning(f"[RENTER/OWNER] Failed to load zip renter/owner stats: {e}")
+    return result
+
+
+def estimate_market_cap_rate(city: str, state: str, msa_name: Optional[str]) -> Tuple[Optional[float], str]:
+    """Estimate market cap rate: try CSVs in build/public; fallback to cheap LLM if missing.
+
+    Returns (cap_rate_percent, source_label).
+    """
+    # Try Cushman market file in client/build if available
+    try:
+        build_path = os.path.join(os.path.dirname(__file__), '..', 'client', 'build', 'cushman_q32025_full_markets.csv')
+        if os.path.exists(build_path):
+            with open(build_path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                city_l = (city or '').strip().lower()
+                state_l = (state or '').strip().lower()
+                msa_l = (msa_name or '').strip().lower() if msa_name else ''
+                for row in reader:
+                    name = (row.get('Market') or row.get('City') or '').strip().lower()
+                    if not name:
+                        continue
+                    if name == city_l or name == msa_l or state_l in name:
+                        for key in ('Cap Rate', 'cap_rate', 'CapRate'):
+                            if key in row:
+                                try:
+                                    return (float(row.get(key)), 'cushman_q32025_full_markets.csv')
+                                except Exception:
+                                    pass
+                        break
+    except Exception:
+        pass
+    # Try landlord.csv if any cap-like field
+    try:
+        path = os.path.join(PUBLIC_DATA_DIR, 'landlord.csv')
+        if os.path.exists(path):
+            with open(path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if (row.get('city') or '').strip().lower() == (city or '').strip().lower():
+                        for key in ('cap_rate', 'market_cap_rate', 'caprate'):
+                            if key in row:
+                                try:
+                                    return (float(row.get(key)), 'landlord.csv')
+                                except Exception:
+                                    pass
+                        break
+    except Exception:
+        pass
+
+    # LLM fallback: keep prompt extremely short to minimize cost
+    try:
+        question = f"Typical multifamily cap rate in {city}, {state} (%) only."
+        # Prefer Mistral client for lower cost if available
+        if MISTRAL_CLIENT:
+            response = MISTRAL_CLIENT.chat.complete(
+                model="mistral-small-latest",
+                messages=[{"role": "user", "content": question}]
+            )
+            txt = (response.choices[0].message.content or '').strip()
+        elif ANTHROPIC_CLIENT:
+            response = ANTHROPIC_CLIENT.messages.create(
+                model="claude-3-5-haiku-20241022",
+                max_tokens=64,
+                messages=[{"role": "user", "content": question}]
+            )
+            txt = (response.content[0].text or '').strip()
+        else:
+            txt = "6.0"
+        # Extract first number
+        import re
+        m = re.search(r"\d+(?:\.\d+)?", txt)
+        if m:
+            return (float(m.group(0)), 'LLM_estimate')
+    except Exception as e:
+        logger.warning(f"[CAP RATE] LLM fallback failed: {e}")
+    return (None, 'unknown')
 
 
 class PropertyData(BaseModel):
@@ -403,29 +621,56 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
         if use_llm_fallback:
             llm_data = generate_market_data_with_llm(address, city, state, zip_code, lng, lat)
             
-            # Ensure we still use a real Mapbox isochrone when possible
-            if not isochrone_geojson:
-                isochrone_geojson = generate_isochrone(lng, lat, minutes=15)
-            
             # Build response from LLM data
+            # Compute rent-to-income ratio and area classification from LLM values
+            llm_median_rent = int(llm_data.get('median_rent', 1100) or 0)
+            llm_median_income = int(llm_data.get('median_income', 60000) or 0)
+            llm_rir = calculate_rent_to_income_ratio(llm_median_rent, llm_median_income)
+            llm_area_classification = classify_area_by_rir(llm_rir)
+            # Build ZIP-level RIR points around the property for choropleth-like rendering
+            llm_zip_rir_points = build_zip_rir_points(lng, lat, llm_median_income)
+            # FMR, landlord, renter/owner, cap rate
+            fmr_2br = llm_data.get('fmr_2br') if llm_data.get('fmr_2br') is not None else get_fmr_for_zip(zip_code)
+            landlord_data = load_landlord_data(zip_code, llm_data.get('county_name', f'{city} County'))
+            if llm_data.get('landlord_friendly_score') is not None:
+                landlord_data['landlord_friendly_score'] = llm_data.get('landlord_friendly_score')
+            renter_owner = load_zip_renter_owner_stats(zip_code)
+            for k in ('renter_share','owner_share','renter_count','owner_count'):
+                if llm_data.get(k) is not None and not renter_owner.get(k):
+                    renter_owner[k] = llm_data.get(k)
+            cap_rate = llm_data.get('cap_rate_percent') if llm_data.get('cap_rate_percent') is not None else None
+            cap_source = 'LLM_direct' if cap_rate is not None else None
+            if cap_rate is None:
+                cap_rate, cap_source = estimate_market_cap_rate(city, state, None)
+            # Absorption proxy using YTD 5+ units vs net migration as households
+            msa_data_llm = {'ytd_total_units': llm_data.get('housing_starts', 300), 'ytd_5plus_units': llm_data.get('housing_starts', 300), 'current_month_units': None}
+            net_mig = float(llm_data.get('net_migration', 0.0) or 0.0)
+            households_from_mig = net_mig / 2.5 if net_mig else 0.0
+            ytd5 = float(msa_data_llm.get('ytd_5plus_units') or 0.0)
+            absorption_units = min(households_from_mig, ytd5) if ytd5 else 0.0
+            absorption_rate = (absorption_units / ytd5) if ytd5 > 0 else None
             response = {
-                'property_location': {'lng': lng, 'lat': lat, 'address': address, 'city': city, 'state': state, 'zip': zip_code},
-                'isochrone': isochrone_geojson or {
+                'property_location': {'lng': lng, 'lat': lat},
+                'isochrone': {
                     'type': 'FeatureCollection',
                     'features': [{
                         'type': 'Feature',
                         'geometry': {
                             'type': 'Polygon',
-                            'coordinates': [[[lng-0.03, lat-0.03], [lng+0.03, lat-0.03], [lng+0.03, lat+0.03], [lng-0.03, lat+0.03], [lng-0.03, lat-0.03]]]
+                            'coordinates': [[[lng-0.1, lat-0.1], [lng+0.1, lat-0.1], [lng+0.1, lat+0.1], [lng-0.1, lat+0.1], [lng-0.1, lat-0.1]]]
                         },
                         'properties': {'contour': 15}
                     }]
                 },
+                'drive_time_minutes': 15,
                 'aggregations': {
                     'population': llm_data.get('population', 100000),
                     'median_income': llm_data.get('median_income', 60000),
                     'median_rent': llm_data.get('median_rent', 1100),
-                    'affordability': llm_data.get('affordability', 'Fair')
+                    'affordability': llm_data.get('affordability', 'Fair'),
+                    'businesses': llm_data.get('businesses'),
+                    'walk_score': llm_data.get('walk_score'),
+                    'comparisons': llm_data.get('comparisons')
                 },
                 'county_data': {
                     'name': llm_data.get('county_name', f'{city} County'),
@@ -442,7 +687,15 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
                     'median_income': llm_data.get('median_income', 60000),
                     'unemployment_rate': llm_data.get('unemployment_rate', 5.0)
                 },
-                'state': {'name': state}
+                'state': {'name': state},
+                'rent_to_income_ratio': round(llm_rir, 2),
+                'area_classification': llm_area_classification,
+                'zip_rir_points': llm_zip_rir_points,
+                'fmr': {'zip': zip_code, 'fmr_2br': fmr_2br},
+                'landlord': landlord_data,
+                'zip_renter_owner': renter_owner,
+                'market_cap_rate': {'value_percent': cap_rate, 'source': cap_source},
+                'msa_units': {**msa_data_llm, 'absorption_units': absorption_units, 'absorption_rate': absorption_rate}
             }
             logger.info("[MARKET ANALYSIS] Returning LLM-generated data")
             return response
@@ -456,6 +709,19 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
         median_rent = census_data.get('median_rent', 0)
         median_income = census_data.get('median_household_income', 0)
         rent_to_income_ratio = calculate_rent_to_income_ratio(median_rent, median_income)
+        area_classification = classify_area_by_rir(rent_to_income_ratio)
+        zip_rir_points = build_zip_rir_points(lng, lat, median_income)
+        # FMR, landlord, renter/owner, cap rate
+        fmr_2br = get_fmr_for_zip(zip_code)
+        landlord_data = load_landlord_data(zip_code, county_name)
+        renter_owner = load_zip_renter_owner_stats(zip_code)
+        cap_rate, cap_source = estimate_market_cap_rate(city, state, msa_data.get('msa_name') if msa_data else None)
+        # Absorption proxy using YTD 5+ units vs net migration households
+        net_mig = float(migration_data.get('net_migration', 0.0) or 0.0)
+        households_from_mig = net_mig / 2.5 if net_mig else 0.0
+        ytd5 = float((msa_data or {}).get('ytd_5plus_units') or 0.0)
+        absorption_units = min(households_from_mig, ytd5) if ytd5 else 0.0
+        absorption_rate = (absorption_units / ytd5) if ytd5 > 0 else None
         
         # Step 8: Compile response
         response = {
@@ -480,6 +746,14 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
                 'zip_code': zip_code
             },
             'msa_data': msa_data,
+            'rent_to_income_ratio': round(rent_to_income_ratio, 2),
+            'area_classification': area_classification,
+            'zip_rir_points': zip_rir_points,
+            'fmr': {'zip': zip_code, 'fmr_2br': fmr_2br},
+            'landlord': landlord_data,
+            'zip_renter_owner': renter_owner,
+            'market_cap_rate': {'value_percent': cap_rate, 'source': cap_source},
+            'msa_units': {**(msa_data or {}), 'absorption_units': absorption_units, 'absorption_rate': absorption_rate},
             'aggregations': {
                 'local': {
                     'description': '15-minute drive time',
