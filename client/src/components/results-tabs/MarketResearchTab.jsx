@@ -1,7 +1,8 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { Map, Source, Layer, Marker } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Legend, Cell } from 'recharts';
+import { Clock, Percent, Layers, Users, TrendingUp, Home as HomeIcon, DollarSign, Briefcase, Activity } from 'lucide-react';
 
 const MAPBOX_TOKEN = 'MAPBOX_TOKEN_REMOVED';
 
@@ -68,6 +69,20 @@ function MarketResearchTab({ marketData }) {
   const localPopGrowthPct = zip_data?.net_migration_per_capita !== undefined ? (zip_data.net_migration_per_capita * 100) : undefined;
   const households = (zip_renter_owner?.owner_count || 0) + (zip_renter_owner?.renter_count || 0);
 
+  // Delta helpers
+  const formatDeltaLine = (label, localVal, compVal, currency=false) => {
+    if (localVal == null || compVal == null) return null;
+    const diff = ((localVal - compVal) / (Math.abs(compVal) || 1)) * 100;
+    const dir = diff >= 0 ? 'above' : 'below';
+    const absPct = Math.abs(diff).toFixed(1);
+    const fmtComp = currency ? fmtCurrency(compVal) : (typeof compVal === 'number' ? compVal.toLocaleString() : compVal);
+    return (
+      <div className="text-xs text-gray-600 mt-1">
+        This is {absPct}% {dir} the {label} average ({fmtComp}).
+      </div>
+    );
+  };
+
   // Prepare isochrone GeoJSON layer
   const isochroneLayer = {
     id: 'isochrone-fill',
@@ -131,13 +146,17 @@ function MarketResearchTab({ marketData }) {
           )}
         </p>
         <div className="mt-2 flex flex-wrap gap-2">
-          <span className="px-2 py-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded">{drive_time_minutes}-Minute Drive</span>
+          <span className="px-2 py-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded inline-flex items-center gap-1">
+            <Clock size={14} /> {drive_time_minutes}-Minute Drive
+          </span>
           {area_classification && (
-            <span className="px-2 py-1 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded">{area_classification}</span>
+            <span className="px-2 py-1 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded inline-flex items-center gap-1">
+              <Layers size={14} /> {area_classification}
+            </span>
           )}
           {market_cap_rate?.value_percent !== undefined && (
-            <span className="px-2 py-1 text-xs bg-purple-50 text-purple-700 border border-purple-200 rounded">
-              Cap Rate: {fmtPercent(market_cap_rate.value_percent)}{market_cap_rate?.source ? ` (${market_cap_rate.source})` : ''}
+            <span className="px-2 py-1 text-xs bg-purple-50 text-purple-700 border border-purple-200 rounded inline-flex items-center gap-1">
+              <Percent size={14} /> {fmtPercent(market_cap_rate.value_percent)}{market_cap_rate?.source ? ` (${market_cap_rate.source})` : ''}
             </span>
           )}
         </div>
@@ -150,7 +169,7 @@ function MarketResearchTab({ marketData }) {
             {...viewState}
             onMove={evt => setViewState(evt.viewState)}
             mapboxAccessToken={MAPBOX_TOKEN}
-            mapStyle="mapbox://styles/mapbox/streets-v12"
+            mapStyle="mapbox://styles/mapbox/light-v11"
             style={{ width: '100%', height: '100%' }}
           >
             {/* Property marker pinned to coordinates */}
@@ -190,7 +209,7 @@ function MarketResearchTab({ marketData }) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             <p><span className="font-medium">Blue shaded area:</span> {drive_time_minutes}-minute drive-time boundary</p>
             <p><span className="font-medium">Red dot:</span> Subject property location</p>
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-medium">RIR Legend:</span>
               <span className="inline-flex items-center gap-1 text-xs">
                 <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: '#10b981' }}></span>
@@ -390,14 +409,21 @@ function MarketResearchTab({ marketData }) {
                   { name: 'State', value: aggregations?.comparisons?.income_state },
                   { name: 'USA', value: aggregations?.comparisons?.income_usa }
                 ]} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" />
                   <XAxis dataKey="name" />
                   <YAxis tickFormatter={(v) => `$${v/1000}k`} />
                   <Tooltip formatter={(v) => fmtCurrency(v)} />
-                  <Bar dataKey="value" fill="#60a5fa" />
+                  <Legend />
+                  <Bar dataKey="value">
+                    {['#3b82f6','#60a5fa','#93c5fd','#60a5fa'].map((c, i) => <Cell key={`inc-${i}`} fill={c} />)}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            {/* Delta lines matching Cactus-style copy */}
+            {formatDeltaLine(city?.name || 'City', safeAggregations.median_income, aggregations?.comparisons?.income_city, true)}
+            {formatDeltaLine('State', safeAggregations.median_income, aggregations?.comparisons?.income_state, true)}
+            {formatDeltaLine('USA', safeAggregations.median_income, aggregations?.comparisons?.income_usa, true)}
           </div>
 
           {/* Population Growth Chart */}
@@ -412,15 +438,22 @@ function MarketResearchTab({ marketData }) {
                   { name: 'State', value: aggregations?.comparisons?.pop_growth_state },
                   { name: 'USA', value: aggregations?.comparisons?.pop_growth_usa }
                 ]} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" />
                   <XAxis dataKey="name" />
                   <YAxis tickFormatter={(v) => `${v?.toFixed ? v.toFixed(1) : v}%`} />
                   <Tooltip formatter={(v) => fmtPercent(v)} />
                   <ReferenceLine y={0} stroke="#9ca3af" />
-                  <Bar dataKey="value" fill="#34d399" />
+                  <Legend />
+                  <Bar dataKey="value">
+                    {['#34d399','#86efac','#a7f3d0','#86efac'].map((c, i) => <Cell key={`pop-${i}`} fill={c} />)}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            {/* Delta lines */}
+            {formatDeltaLine(city?.name || 'City', localPopGrowthPct, aggregations?.comparisons?.pop_growth_city)}
+            {formatDeltaLine('State', localPopGrowthPct, aggregations?.comparisons?.pop_growth_state)}
+            {formatDeltaLine('USA', localPopGrowthPct, aggregations?.comparisons?.pop_growth_usa)}
           </div>
         </div>
       </div>
@@ -430,21 +463,21 @@ function MarketResearchTab({ marketData }) {
         <div className="flex items-center justify-between mb-4">
           <div>
             <div className="text-xs text-gray-500">Analysis Area</div>
-            <div className="text-sm font-semibold text-gray-900">{drive_time_minutes}-min Drive</div>
+            <div className="text-sm font-semibold text-gray-900 inline-flex items-center gap-1"><Clock size={14} /> {drive_time_minutes}-min Drive</div>
           </div>
           <div className="text-xs px-2 py-1 rounded border bg-gray-50">Market Metrics</div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="rounded border p-3">
-            <div className="text-xs text-gray-500">Population</div>
+            <div className="text-xs text-gray-500 inline-flex items-center gap-1"><Users size={14} /> Population</div>
             <div className="text-lg font-semibold text-gray-900">{fmt(safeAggregations.population)}</div>
           </div>
           <div className="rounded border p-3">
-            <div className="text-xs text-gray-500">Growth</div>
+            <div className="text-xs text-gray-500 inline-flex items-center gap-1"><TrendingUp size={14} /> Growth</div>
             <div className="text-lg font-semibold text-gray-900">{localPopGrowthPct !== undefined ? fmtPercent(localPopGrowthPct) : 'N/A'}</div>
           </div>
           <div className="rounded border p-3">
-            <div className="text-xs text-gray-500">Households</div>
+            <div className="text-xs text-gray-500 inline-flex items-center gap-1"><HomeIcon size={14} /> Households</div>
             <div className="text-lg font-semibold text-gray-900">{fmt(Math.round(households))}</div>
           </div>
           <div className="rounded border p-3">
@@ -452,19 +485,19 @@ function MarketResearchTab({ marketData }) {
             <div className="text-lg font-semibold text-gray-900">N/A</div>
           </div>
           <div className="rounded border p-3">
-            <div className="text-xs text-gray-500">Income</div>
+            <div className="text-xs text-gray-500 inline-flex items-center gap-1"><DollarSign size={14} /> Income</div>
             <div className="text-lg font-semibold text-gray-900">{fmtCurrency(safeAggregations.median_income)}</div>
           </div>
           <div className="rounded border p-3">
-            <div className="text-xs text-gray-500">Businesses</div>
+            <div className="text-xs text-gray-500 inline-flex items-center gap-1"><Briefcase size={14} /> Businesses</div>
             <div className="text-lg font-semibold text-gray-900">{fmt(aggregations?.businesses ?? 0)}</div>
           </div>
           <div className="rounded border p-3">
-            <div className="text-xs text-gray-500">Walk Score</div>
+            <div className="text-xs text-gray-500 inline-flex items-center gap-1"><Activity size={14} /> Walk Score</div>
             <div className="text-lg font-semibold text-gray-900">{aggregations?.walk_score ?? 'N/A'}</div>
           </div>
           <div className="rounded border p-3">
-            <div className="text-xs text-gray-500">Affordability</div>
+            <div className="text-xs text-gray-500 inline-flex items-center gap-1"><Percent size={14} /> Affordability</div>
             <div className="text-lg font-semibold text-blue-600">{safeAggregations.affordability}</div>
           </div>
         </div>
