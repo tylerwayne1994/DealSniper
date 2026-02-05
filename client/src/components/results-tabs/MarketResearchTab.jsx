@@ -1,10 +1,8 @@
-﻿import React, { useState, useEffect } from 'react';
-import { Map, Source, Layer, Marker } from 'react-map-gl/mapbox';
-import 'mapbox-gl/dist/mapbox-gl.css';
+﻿import React, { useMemo } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Legend, Cell } from 'recharts';
 import { Clock, Percent, Layers, Users, TrendingUp, Home as HomeIcon, DollarSign, Briefcase, Activity, Map as MapIcon, Info, Shield } from 'lucide-react';
-
-const MAPBOX_TOKEN = 'MAPBOX_TOKEN_REMOVED';
+import { MapContainer, TileLayer, CircleMarker, Tooltip as LeafletTooltip } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
 
 // Formatting helpers
 const fmt = (val) => val?.toLocaleString() || 'N/A';
@@ -20,35 +18,22 @@ const rirLabel = (rir) => {
   return { label: 'Poor', score: '8/10' };
 };
 
+const rirColor = (rir) => {
+  if (rir === undefined || rir === null) return '#d1d5db';
+  if (rir < 0.15) return '#10b981';
+  if (rir < 0.18) return '#34d399';
+  if (rir < 0.22) return '#fde047';
+  if (rir < 0.28) return '#f97316';
+  return '#ef4444';
+};
+
 function MarketResearchTab({ marketData }) {
-  const [viewState, setViewState] = useState({
-    longitude: -98,
-    latitude: 39,
-    zoom: 3
-  });
 
-  // Update map viewport when data loads
-  useEffect(() => {
-    if (marketData?.property_location) {
-      setViewState({
-        longitude: marketData.property_location.lng,
-        latitude: marketData.property_location.lat,
-        zoom: 11
-      });
-    }
-  }, [marketData]);
-
-  if (!marketData) {
-    return (
-      <div className="p-6 text-center text-gray-500">
-        No market data available. Please ensure property address is complete.
-      </div>
-    );
-  }
+  const hasMarketData = !!marketData;
+  const marketDataSafe = marketData || {};
 
   const {
     property_location,
-    isochrone,
     county_data = {},
     zip_data = {},
     msa_data = {},
@@ -63,7 +48,7 @@ function MarketResearchTab({ marketData }) {
     market_cap_rate = {},
     zip_renter_owner = {},
     msa_units = {}
-  } = marketData;
+  } = marketDataSafe;
 
   // Safe defaults for aggregations
   const safeAggregations = {
@@ -77,10 +62,26 @@ function MarketResearchTab({ marketData }) {
   const localPopGrowthPct = zip_data?.net_migration_per_capita !== undefined ? (zip_data.net_migration_per_capita * 100) : undefined;
   const households = (zip_renter_owner?.owner_count || 0) + (zip_renter_owner?.renter_count || 0);
 
-  // Isochrone validity check to avoid showing a boxy placeholder
-  const isoFeature = isochrone?.features?.[0] || (isochrone?.geometry ? isochrone : null);
-  const isoCoords = isoFeature?.geometry?.coordinates?.[0] || [];
-  const isValidIsochrone = Array.isArray(isoCoords) && isoCoords.length > 5;
+  // RIR point list for Leaflet heatmap
+  const rirPoints = useMemo(() => {
+    const feats = zip_rir_points?.features || [];
+    return feats
+      .map((f) => {
+        const coords = f?.geometry?.coordinates;
+        const rir = f?.properties?.rir;
+        if (!Array.isArray(coords) || coords.length < 2) return null;
+        return { lng: coords[0], lat: coords[1], rir };
+      })
+      .filter(Boolean);
+  }, [zip_rir_points]);
+
+  if (!hasMarketData) {
+    return (
+      <div className="p-6 text-center text-gray-500">
+        No market data available. Please ensure property address is complete.
+      </div>
+    );
+  }
 
   // Delta helpers
   const formatDeltaLine = (label, localVal, compVal, currency=false) => {
@@ -97,25 +98,6 @@ function MarketResearchTab({ marketData }) {
     );
   };
 
-  // Prepare isochrone GeoJSON layer
-  const isochroneLayer = {
-    id: 'isochrone-fill',
-    type: 'fill',
-    paint: {
-      'fill-color': '#3b82f6',
-      'fill-opacity': 0.35
-    }
-  };
-
-  const isochroneOutline = {
-    id: 'isochrone-outline',
-    type: 'line',
-    paint: {
-      'line-color': '#1d4ed8',
-      'line-width': 2
-    }
-  };
-
   // Affordability helpers (reserved for future UI)
   // const getAffordabilityColor = (ratio) => {
   //   if (ratio < 25) return 'text-green-600';
@@ -124,45 +106,6 @@ function MarketResearchTab({ marketData }) {
   //   return 'text-red-600';
   // };
   // const rentToIncomeRatio = county_data?.rent_to_income_ratio || 0;
-
-  // Zip RIR points layer
-  const zipRirLayer = {
-    id: 'zip-rir-points',
-    type: 'circle',
-    paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 2, 11, 3, 13, 4, 15, 6],
-      'circle-opacity': 0.8,
-      'circle-color': [
-        'step', ['get', 'rir'],
-        '#10b981', 15, // Most Affordable
-        '#34d399', 18, // Very Affordable
-        '#fde047', 22, // Average
-        '#f97316', 28, // Less Affordable
-        '#ef4444'      // Least Affordable
-      ]
-    }
-  };
-
-  const rirHeatmapLayer = {
-    id: 'zip-rir-heatmap',
-    type: 'heatmap',
-    maxzoom: 14,
-    paint: {
-      'heatmap-weight': ['interpolate', ['linear'], ['get', 'rir'], 12, 0.2, 30, 1],
-      'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 8, 1.1, 13, 2.1],
-      'heatmap-color': [
-        'interpolate', ['linear'], ['heatmap-density'],
-        0, 'rgba(16,185,129,0)',
-        0.2, 'rgba(16,185,129,0.35)',
-        0.4, 'rgba(52,211,153,0.45)',
-        0.6, 'rgba(253,224,71,0.6)',
-        0.8, 'rgba(249,115,22,0.7)',
-        1, 'rgba(239,68,68,0.75)'
-      ],
-      'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 8, 24, 12, 36, 15, 48],
-      'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 8, 0.9, 14, 0.3]
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -266,55 +209,41 @@ function MarketResearchTab({ marketData }) {
           </div>
         </div>
 
-        {/* Mapbox Map with Isochrone */}
+        {/* Leaflet Heat Map (RIR) */}
         <div className="md:col-span-2 bg-white rounded-lg shadow-sm overflow-hidden">
           <div className="h-[540px] relative">
-            <Map
-              {...viewState}
-              onMove={evt => setViewState(evt.viewState)}
-              mapboxAccessToken={MAPBOX_TOKEN}
-              mapStyle="mapbox://styles/mapbox/light-v11"
+            <MapContainer
+              center={[property_location?.lat || 39, property_location?.lng || -98]}
+              zoom={10}
+              scrollWheelZoom
               style={{ width: '100%', height: '100%' }}
+              className="leaflet-container"
             >
-              {/* Isochrone polygon */}
-              {isValidIsochrone && (
-                <Source id="isochrone" type="geojson" data={isochrone}>
-                  <Layer {...isochroneLayer} />
-                  <Layer {...isochroneOutline} />
-                </Source>
-              )}
-
-              {/* Heatmap for RIR */}
-              {zip_rir_points && (
-                <Source id="zip-rir-heat" type="geojson" data={zip_rir_points}>
-                  <Layer {...rirHeatmapLayer} />
-                </Source>
-              )}
-
-              {/* ZIP RIR points */}
-              {zip_rir_points && (
-                <Source id="zip-rir" type="geojson" data={zip_rir_points}>
-                  <Layer {...zipRirLayer} />
-                </Source>
-              )}
-
-              {/* Property marker pinned to coordinates */}
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
+              {rirPoints.map((p, idx) => (
+                <CircleMarker
+                  key={`rir-${idx}`}
+                  center={[p.lat, p.lng]}
+                  radius={14}
+                  pathOptions={{ color: rirColor(p.rir), fillColor: rirColor(p.rir), fillOpacity: 0.55, opacity: 0.35 }}
+                >
+                  <LeafletTooltip direction="top" offset={[0, -6]} opacity={0.9} className="text-xs">
+                    RIR: {fmtPercentFromFraction(p.rir || 0)}
+                  </LeafletTooltip>
+                </CircleMarker>
+              ))}
               {property_location && (
-                <Marker longitude={property_location.lng} latitude={property_location.lat} anchor="center">
-                  <div
-                    style={{
-                      width: 18,
-                      height: 18,
-                      borderRadius: 9999,
-                      backgroundColor: '#1d4ed8',
-                      border: '2px solid #ffffff',
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.35)'
-                    }}
-                    title="Subject property"
-                  />
-                </Marker>
+                <CircleMarker
+                  center={[property_location.lat, property_location.lng]}
+                  radius={10}
+                  pathOptions={{ color: '#2563eb', fillColor: '#2563eb', fillOpacity: 0.9, weight: 2 }}
+                >
+                  <LeafletTooltip direction="right" offset={[8, 0]} opacity={0.95} className="text-xs font-semibold text-blue-700">
+                    Subject Property
+                  </LeafletTooltip>
+                </CircleMarker>
               )}
-            </Map>
+            </MapContainer>
 
             {/* Map overlays */}
             <div className="absolute top-4 left-4 flex flex-wrap gap-2 pointer-events-auto">
