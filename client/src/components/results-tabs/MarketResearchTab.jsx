@@ -1,9 +1,13 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Legend, Cell } from 'recharts';
 import { Clock, Percent, Layers, Users, TrendingUp, Home as HomeIcon, DollarSign, Briefcase, Activity, Map as MapIcon, Info, Shield } from 'lucide-react';
-import { MapContainer, TileLayer, CircleMarker, Tooltip as LeafletTooltip, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Tooltip as LeafletTooltip, GeoJSON, Marker } from 'react-leaflet';
+import L from 'leaflet';
 import Papa from 'papaparse';
 import 'leaflet/dist/leaflet.css';
+
+// Shared Mapbox token (matches dashboard Map tab)
+const MAPBOX_TOKEN = 'MAPBOX_TOKEN_REMOVED';
 
 // Formatting helpers
 const fmt = (val) => val?.toLocaleString() || 'N/A';
@@ -71,6 +75,8 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
   const [countyGeoJson, setCountyGeoJson] = useState(null);
   const [fmrByCounty, setFmrByCounty] = useState({});
   const [zipCentroids, setZipCentroids] = useState({});
+  const [mapMode, setMapMode] = useState('counties'); // 'counties' | 'cities'
+  const [isochrone, setIsochrone] = useState(null);
   const mapRef = useRef(null);
 
   const zipCode = property_location?.zip || propertyLocation?.zip;
@@ -99,6 +105,27 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
     if (propertyLocation?.lat && propertyLocation?.lng) return propertyLocation;
     return null;
   }, [property_location, propertyLocation]);
+
+  const rirIconFor = useMemo(() => {
+    return (rir) => L.divIcon({
+      className: 'rir-square',
+      html: `<div style="width:18px;height:18px;border-radius:6px;background:${rirColor(rir)};opacity:0.7;border:1px solid rgba(0,0,0,0.18);box-shadow:0 2px 6px rgba(0,0,0,0.2);"></div>`,
+      iconSize: [18, 18],
+      iconAnchor: [9, 9]
+    });
+  }, []);
+
+  const rirComparisonData = useMemo(() => {
+    const rows = [
+      { name: `${drive_time_minutes}-min Area`, value: marketData?.rent_to_income_ratio },
+      { name: county?.name || 'County', value: county_data?.rent_to_income_ratio },
+      { name: state?.name || 'State', value: state?.rent_to_income_ratio }
+    ];
+
+    return rows
+      .filter((r) => r.value !== undefined && r.value !== null)
+      .map((r) => ({ ...r, valuePct: (r.value || 0) * 100 }));
+  }, [county?.name, county_data?.rent_to_income_ratio, drive_time_minutes, marketData?.rent_to_income_ratio, state?.name, state?.rent_to_income_ratio]);
 
   // Safe defaults for aggregations
   const safeAggregations = {
@@ -200,6 +227,24 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
     mapRef.current.setView(mapCenter, mapZoom, { animate: true });
   }, [mapCenter, mapZoom]);
 
+  useEffect(() => {
+    const fetchIsochrone = async () => {
+      try {
+        const origin = subjectLocation || { lat: mapCenter[0], lng: mapCenter[1] };
+        if (!origin?.lat || !origin?.lng) return;
+        const url = `https://api.mapbox.com/isochrone/v1/mapbox/driving/${origin.lng},${origin.lat}?contours_minutes=5,10,15&polygons=true&access_token=${MAPBOX_TOKEN}`;
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const gj = await res.json();
+        setIsochrone(gj);
+      } catch (e) {
+        console.warn('Isochrone fetch failed', e);
+      }
+    };
+
+    fetchIsochrone();
+  }, [subjectLocation, mapCenter]);
+
   if (!hasMarketData) {
     return (
       <div className="p-6 text-center text-gray-500">
@@ -267,7 +312,7 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
 
       {/* Layout: RIR cards + Map */}
       <div className="grid md:grid-cols-3 gap-4">
-        {/* RIR score stack */}
+        {/* RIR score stack (compact cards) */}
         <div className="space-y-3">
           {[{
             title: 'Local Market',
@@ -293,44 +338,51 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
           }].map((card, idx) => {
             const meta = rirLabel(card.rir);
             return (
-              <div key={card.title} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="text-sm font-semibold text-gray-900 inline-flex items-center gap-2">
-                    <Shield size={16} className="text-blue-500" /> {card.title}
+              <div key={card.title} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-sky-50 flex items-center justify-center border border-sky-100"><Shield size={16} className="text-sky-500" /></div>
+                    <div>
+                      <div className="text-sm font-semibold text-gray-900">{card.title}</div>
+                      <div className="text-[11px] text-gray-500">{card.subtitle}</div>
+                    </div>
                   </div>
                   <div className="text-sm font-semibold text-red-600">{fmtPercentFromFraction(card.rir ?? 0)}</div>
                 </div>
-                <div className="text-xs text-gray-500 mb-2">{card.subtitle}</div>
-                <div className="text-xs text-gray-700 flex items-center gap-2">
-                  <span className="font-semibold text-gray-900">Rent-to-Income Ratio (RIR)</span>
-                  <span className="text-[11px] text-gray-500">{meta.score}</span>
+                <div className="mt-2 text-[11px] text-gray-600">Rent-to-Income Ratio (RIR) <span className="text-gray-400">{meta.score}</span></div>
+                <div className="mt-2 w-full h-1 bg-gray-200 rounded-full">
+                  <div className="h-1 rounded-full bg-red-500" style={{ width: `${Math.min(Math.max(((card.rir ?? 0) * 100), 6), 70)}%` }} />
                 </div>
-                <div className="w-full h-1.5 bg-gray-200 rounded-full mt-2">
-                  <div
-                    className="h-1.5 rounded-full bg-red-500"
-                    style={{ width: `${Math.min(Math.max(((card.rir ?? 0) * 100), 5), 50)}%` }}
-                  />
-                </div>
-                <div className="text-[11px] text-gray-500 mt-1">{card.badge}</div>
-                <div className="flex justify-between text-xs text-gray-600 mt-3">
-                  <div>
-                    <div className="text-gray-500">Median Rent</div>
-                    <div className="font-semibold text-gray-900">{fmtCurrency(card.rent)}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-gray-500">Income</div>
-                    <div className="font-semibold text-gray-900">{fmtCurrency(card.income)}</div>
-                  </div>
+                <div className="mt-2 text-[11px] text-gray-500">{card.badge}</div>
+                <div className="mt-3 flex items-center gap-3 text-[11px] text-gray-700">
+                  <div className="flex items-center gap-1"><span className="text-gray-500">Median Rent</span> <span className="font-semibold text-gray-900">{fmtCurrency(card.rent)}</span></div>
+                  <div className="flex items-center gap-1"><span className="text-gray-500">Income</span> <span className="font-semibold text-gray-900">{fmtCurrency(card.income)}</span></div>
                 </div>
                 {idx === 0 && (
-                  <div className="mt-3 text-[11px] text-red-600">{meta.label}</div>
+                  <div className="mt-2 text-[11px] text-red-600 font-semibold">{meta.label}</div>
                 )}
               </div>
             );
           })}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
             <div className="flex items-center gap-2 text-sm font-semibold text-gray-900"><MapIcon size={16} className="text-blue-500" /> Cities Comparison</div>
-            <div className="text-xs text-gray-500 mt-2">Rent-to-Income Ratio ranking</div>
+            <div className="text-[11px] text-gray-500 mt-1">Rent-to-Income Ratio ranking (lower is more affordable)</div>
+            <div className="h-48 mt-3">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={rirComparisonData} margin={{ top: 6, right: 12, left: 0, bottom: 0 }} barSize={18}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                  <YAxis tickFormatter={(v) => `${v.toFixed(1)}%`} tick={{ fontSize: 11 }} domain={[0, 'auto']} />
+                  <Tooltip formatter={(v) => `${v.toFixed(1)}%`} labelFormatter={(l) => l} />
+                  <ReferenceLine y={30} stroke="#9ca3af" strokeDasharray="4 4" />
+                  <Bar dataKey="valuePct" radius={[8, 8, 0, 0]}>
+                    {rirComparisonData.map((_, i) => (
+                      <Cell key={`rir-bar-${i}`} fill={['#2563eb', '#60a5fa', '#a5b4fc'][i % 3]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
@@ -347,11 +399,13 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
               className="leaflet-container"
             >
               <TileLayer
-                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                attribution="&copy; OpenStreetMap, &copy; CartoDB"
+                url={`https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`}
+                attribution="&copy; Mapbox &copy; OpenStreetMap"
+                tileSize={512}
+                zoomOffset={-1}
               />
 
-              {countyGeoJson && (
+              {countyGeoJson && mapMode === 'counties' && (
                 <GeoJSON
                   data={countyGeoJson}
                   style={(feature) => {
@@ -373,17 +427,19 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
                 />
               )}
 
+              {isochrone && (
+                <GeoJSON
+                  data={isochrone}
+                  style={() => ({ fillColor: '#3b82f6', color: '#1d4ed8', weight: 2, fillOpacity: 0.22, opacity: 0.6 })}
+                />
+              )}
+
               {rirPoints.map((p, idx) => (
-                <CircleMarker
-                  key={`rir-${idx}`}
-                  center={[p.lat, p.lng]}
-                  radius={10}
-                  pathOptions={{ color: rirColor(p.rir), fillColor: rirColor(p.rir), fillOpacity: 0.55, opacity: 0.35 }}
-                >
-                  <LeafletTooltip direction="top" offset={[0, -6]} opacity={0.9} className="text-xs">
+                <Marker key={`rir-${idx}`} position={[p.lat, p.lng]} icon={rirIconFor(p.rir)}>
+                  <LeafletTooltip direction="top" offset={[0, -6]} opacity={0.95} className="text-xs">
                     RIR: {fmtPercentFromFraction(p.rir || 0)}
                   </LeafletTooltip>
-                </CircleMarker>
+                </Marker>
               ))}
 
               {subjectLocation && (
@@ -409,6 +465,21 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
                   <Layers size={16} className="text-emerald-600" /> {area_classification}
                 </div>
               )}
+            </div>
+
+            <div className="absolute top-4 right-1/2 translate-x-1/2 md:translate-x-0 md:left-4 mt-12 md:mt-0 flex gap-2 pointer-events-auto">
+              <button
+                onClick={() => setMapMode('counties')}
+                className={`px-3 py-2 rounded-lg text-xs font-semibold border shadow-sm ${mapMode === 'counties' ? 'bg-white text-gray-900 border-gray-200' : 'bg-white/80 text-gray-600 border-gray-100'}`}
+              >
+                Counties
+              </button>
+              <button
+                onClick={() => setMapMode('cities')}
+                className={`px-3 py-2 rounded-lg text-xs font-semibold border shadow-sm ${mapMode === 'cities' ? 'bg-white text-gray-900 border-gray-200' : 'bg-white/80 text-gray-600 border-gray-100'}`}
+              >
+                Cities
+              </button>
             </div>
 
             <div className="absolute top-4 right-4 w-72 bg-white rounded-xl shadow-md border border-gray-100 p-4 pointer-events-auto space-y-3">
@@ -489,9 +560,15 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
                 ))}
                 <div className="flex items-center gap-2 text-gray-500"><span className="inline-block w-3 h-3 rounded bg-gray-200" /> No data</div>
               </div>
-              <div className="flex items-start gap-2 text-[11px] text-gray-500 mt-3">
-                <Info size={14} className="mt-0.5" />
-                <span>County choropleth uses HUD FY26 FMR (2BR); circles show ZIP rent-to-income ratio.</span>
+              <div className="mt-3 space-y-2 text-[11px] text-gray-600">
+                <div className="flex items-start gap-2">
+                  <Info size={14} className="mt-0.5" />
+                  <span>County colors = HUD FY26 2BR FMR.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Info size={14} className="mt-0.5 text-rose-500" />
+                  <span>Red squares = ZIP rent-to-income ratio (RIR). Darker red means higher RIR.</span>
+                </div>
               </div>
             </div>
           </div>
@@ -660,7 +737,7 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
         <p className="text-xs text-gray-500 mb-4">Local Area vs. City, State & USA averages</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Median Household Income Chart */}
-            <div className="bg-[#f5f7ff] rounded-2xl p-4 shadow-sm">
+            <div className="bg-[#f6f8ff] border border-[#e6ebfb] rounded-2xl p-5 md:p-6 shadow-sm">
             <div className="flex items-start gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-blue-500 mt-1" />
               <div>
@@ -696,7 +773,7 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
           </div>
 
           {/* Population Growth Chart */}
-          <div className="bg-[#f5f7ff] rounded-2xl p-4 shadow-sm">
+          <div className="bg-[#f6f8ff] border border-[#e6ebfb] rounded-2xl p-5 md:p-6 shadow-sm">
             <div className="flex items-start gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-blue-500 mt-1" />
               <div>
@@ -744,35 +821,43 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
           <div className="text-xs px-2 py-1 rounded border bg-gray-50">Market Metrics</div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="rounded border p-3 h-full">
+          <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-b from-white to-gray-50 shadow-sm p-4 h-full">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-fuchsia-500" />
             <div className="text-xs text-gray-500 inline-flex items-center gap-1"><Users size={14} /> Population</div>
             <div className="text-lg font-semibold text-gray-900">{fmt(safeAggregations.population)}</div>
           </div>
-          <div className="rounded border p-3 h-full">
+          <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-b from-white to-gray-50 shadow-sm p-4 h-full">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-fuchsia-500" />
             <div className="text-xs text-gray-500 inline-flex items-center gap-1"><TrendingUp size={14} /> Growth</div>
             <div className="text-lg font-semibold text-gray-900">{localPopGrowthPct !== undefined ? fmtPercent(localPopGrowthPct) : 'N/A'}</div>
           </div>
-          <div className="rounded border p-3 h-full">
+          <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-b from-white to-gray-50 shadow-sm p-4 h-full">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-fuchsia-500" />
             <div className="text-xs text-gray-500 inline-flex items-center gap-1"><HomeIcon size={14} /> Households</div>
             <div className="text-lg font-semibold text-gray-900">{fmt(Math.round(households))}</div>
           </div>
-          <div className="rounded border p-3 h-full">
+          <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-b from-white to-gray-50 shadow-sm p-4 h-full">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-fuchsia-500" />
             <div className="text-xs text-gray-500">Single Family</div>
             <div className="text-lg font-semibold text-gray-900">N/A</div>
           </div>
-          <div className="rounded border p-3 h-full">
+          <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-b from-white to-gray-50 shadow-sm p-4 h-full">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-fuchsia-500" />
             <div className="text-xs text-gray-500 inline-flex items-center gap-1"><DollarSign size={14} /> Income</div>
             <div className="text-lg font-semibold text-gray-900">{fmtCurrency(safeAggregations.median_income)}</div>
           </div>
-          <div className="rounded border p-3 h-full">
+          <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-b from-white to-gray-50 shadow-sm p-4 h-full">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-fuchsia-500" />
             <div className="text-xs text-gray-500 inline-flex items-center gap-1"><Briefcase size={14} /> Businesses</div>
             <div className="text-lg font-semibold text-gray-900">{fmt(aggregations?.businesses ?? 0)}</div>
           </div>
-          <div className="rounded border p-3 h-full">
+          <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-b from-white to-gray-50 shadow-sm p-4 h-full">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-fuchsia-500" />
             <div className="text-xs text-gray-500 inline-flex items-center gap-1"><Activity size={14} /> Walk Score</div>
             <div className="text-lg font-semibold text-gray-900">{aggregations?.walk_score ?? 'N/A'}</div>
           </div>
-          <div className="rounded border p-3 h-full">
+          <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-b from-white to-gray-50 shadow-sm p-4 h-full">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-fuchsia-500" />
             <div className="text-xs text-gray-500 inline-flex items-center gap-1"><Percent size={14} /> Affordability</div>
             <div className="text-lg font-semibold text-blue-600">{safeAggregations.affordability}</div>
           </div>
