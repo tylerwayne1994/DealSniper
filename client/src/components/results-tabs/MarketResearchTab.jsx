@@ -77,6 +77,11 @@ function MarketResearchTab({ marketData }) {
   const localPopGrowthPct = zip_data?.net_migration_per_capita !== undefined ? (zip_data.net_migration_per_capita * 100) : undefined;
   const households = (zip_renter_owner?.owner_count || 0) + (zip_renter_owner?.renter_count || 0);
 
+  // Isochrone validity check to avoid showing a boxy placeholder
+  const isoFeature = isochrone?.features?.[0] || (isochrone?.geometry ? isochrone : null);
+  const isoCoords = isoFeature?.geometry?.coordinates?.[0] || [];
+  const isValidIsochrone = Array.isArray(isoCoords) && isoCoords.length > 5;
+
   // Delta helpers
   const formatDeltaLine = (label, localVal, compVal, currency=false) => {
     if (localVal == null || compVal == null) return null;
@@ -272,7 +277,7 @@ function MarketResearchTab({ marketData }) {
               style={{ width: '100%', height: '100%' }}
             >
               {/* Isochrone polygon */}
-              {isochrone && (
+              {isValidIsochrone && (
                 <Source id="isochrone" type="geojson" data={isochrone}>
                   <Layer {...isochroneLayer} />
                   <Layer {...isochroneOutline} />
@@ -584,14 +589,14 @@ function MarketResearchTab({ marketData }) {
               {formatDeltaLine('State', safeAggregations.median_income, aggregations?.comparisons?.income_state, true)}
               {formatDeltaLine('USA', safeAggregations.median_income, aggregations?.comparisons?.income_usa, true)}
             </div>
-            <div className="h-44">
+            <div className="h-42">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={[
                   { name: 'Local Area', value: safeAggregations.median_income },
                   { name: city?.name || 'City', value: aggregations?.comparisons?.income_city },
                   { name: 'State', value: aggregations?.comparisons?.income_state },
                   { name: 'USA', value: aggregations?.comparisons?.income_usa }
-                ]} margin={{ top: 6, right: 12, left: 0, bottom: 0 }} barSize={26} barGap={6} barCategoryGap="42%">
+                ]} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barSize={22} barGap={4} barCategoryGap="28%">
                   <CartesianGrid strokeDasharray="3 3" stroke="#d9e1ff" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis tickFormatter={(v) => `$${Math.round(v/1000)}k`} tick={{ fontSize: 11 }} />
@@ -620,14 +625,14 @@ function MarketResearchTab({ marketData }) {
               {formatDeltaLine('State', localPopGrowthPct, aggregations?.comparisons?.pop_growth_state)}
               {formatDeltaLine('USA', localPopGrowthPct, aggregations?.comparisons?.pop_growth_usa)}
             </div>
-            <div className="h-44">
+            <div className="h-42">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={[
                   { name: 'Local Area', value: localPopGrowthPct },
                   { name: city?.name || 'City', value: aggregations?.comparisons?.pop_growth_city },
                   { name: 'State', value: aggregations?.comparisons?.pop_growth_state },
                   { name: 'USA', value: aggregations?.comparisons?.pop_growth_usa }
-                ]} margin={{ top: 6, right: 12, left: 0, bottom: 0 }} barSize={26} barGap={6} barCategoryGap="42%">
+                ]} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barSize={22} barGap={4} barCategoryGap="28%">
                   <CartesianGrid strokeDasharray="3 3" stroke="#d9e1ff" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis tickFormatter={(v) => `${v?.toFixed ? v.toFixed(1) : v}%`} tick={{ fontSize: 11 }} />
