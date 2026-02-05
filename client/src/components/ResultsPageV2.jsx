@@ -69,6 +69,19 @@ const ResultsPageV2 = ({
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [marketData, setMarketData] = useState(null);
   const [marketDataLoading, setMarketDataLoading] = useState(false);
+
+  const propertyLocation = useMemo(() => {
+    const lat = scenarioData?.property?.lat ?? scenarioData?.property?.latitude ?? scenarioData?.lat ?? scenarioData?.latitude;
+    const lng = scenarioData?.property?.lng ?? scenarioData?.property?.longitude ?? scenarioData?.lng ?? scenarioData?.longitude;
+    return {
+      address: scenarioData?.property?.address || scenarioData?.address || '',
+      city: scenarioData?.property?.city || scenarioData?.city || '',
+      state: scenarioData?.property?.state || scenarioData?.state || '',
+      zip: scenarioData?.property?.zip || scenarioData?.zip || '',
+      lat: lat != null ? Number(lat) : undefined,
+      lng: lng != null ? Number(lng) : undefined
+    };
+  }, [scenarioData]);
   const tabContentRef = useRef(null);
   
   // Automatically trigger AI underwriting AND market analysis when results page loads
@@ -4859,17 +4872,11 @@ Keep the answer tight but specific to this property and the numbers above.`;
         );
 
       case 'market-data':
-        // Extract location info from scenarioData
-        const marketZip = scenarioData?.property?.zip || scenarioData?.property?.zip_code || '';
-        const marketCity = scenarioData?.property?.city || '';
-        const marketState = scenarioData?.property?.state || '';
-        const marketCounty = scenarioData?.property?.county || '';
-        const dealAddress = scenarioData?.property?.address || '';
-        const propertyName = scenarioData?.property?.property_name || '';
         return (
           <div style={{ padding: '24px' }}>
             <MarketResearchTab
               marketData={marketData}
+              propertyLocation={propertyLocation}
             />
           </div>
         );

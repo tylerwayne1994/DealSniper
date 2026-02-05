@@ -15,7 +15,6 @@ import DealExecutionTab from '../components/results-tabs/DealExecutionTab';
 import { CostSegAnalysisView } from '../components/CostSegAnalysis';
 import SummaryTab from '../components/results-tabs/SummaryTab';
 import PropertySpreadsheet from '../components/PropertySpreadsheet';
-import { SHEET_API_BASE } from './UnderwritingAIChatAPI';
 import { saveDeal, loadDeal } from '../lib/dealsService';
 import { mapParsedDataToSpreadsheet } from '../utils/propertySpreadsheetMapper';
 // Removed unused GoogleSheetsSpreadsheet import
@@ -2020,22 +2019,20 @@ function UnderwritingTablePage({ initialScenarioData, initialCalculations }) {
             ) : activeSegment === 'Market Data' ? (
               (() => {
                 const property = activeScenario?.property || {};
-                const marketZip = property.zip || property.zip_code || '';
-                const marketCity = property.city || '';
-                const marketState = property.state || '';
-                const marketCounty = property.county || '';
-                const dealAddress = property.address || '';
-                const propertyName = property.property_name || '';
+                const propertyLocation = {
+                  address: property.address || '',
+                  city: property.city || '',
+                  state: property.state || '',
+                  zip: property.zip || property.zip_code || '',
+                  lat: property.lat ?? property.latitude,
+                  lng: property.lng ?? property.longitude
+                };
 
                 return (
                   <div style={{ flex: 1, overflow: 'auto', padding: '0 0 0 0' }}>
                     <MarketResearchTab
-                      initialZip={marketZip}
-                      initialCity={marketCity}
-                      initialState={marketState}
-                      initialCounty={marketCounty}
-                      dealAddress={dealAddress}
-                      propertyName={propertyName}
+                      marketData={null}
+                      propertyLocation={propertyLocation}
                     />
                   </div>
                 );

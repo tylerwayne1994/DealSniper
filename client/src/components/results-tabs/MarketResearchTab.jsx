@@ -1,7 +1,8 @@
-﻿import React, { useMemo } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Legend, Cell } from 'recharts';
 import { Clock, Percent, Layers, Users, TrendingUp, Home as HomeIcon, DollarSign, Briefcase, Activity, Map as MapIcon, Info, Shield } from 'lucide-react';
-import { MapContainer, TileLayer, CircleMarker, Tooltip as LeafletTooltip } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Tooltip as LeafletTooltip, GeoJSON } from 'react-leaflet';
+import Papa from 'papaparse';
 import 'leaflet/dist/leaflet.css';
 
 // Formatting helpers
@@ -27,7 +28,24 @@ const rirColor = (rir) => {
   return '#ef4444';
 };
 
-function MarketResearchTab({ marketData }) {
+const DOLLAR_SCALE = [
+  [-Infinity, 900, '#16a34a', '<$900'],
+  [900, 1200, '#84cc16', '$900–$1.2k'],
+  [1200, 1600, '#eab308', '$1.2k–$1.6k'],
+  [1600, 2000, '#f59e0b', '$1.6k–$2.0k'],
+  [2000, 2500, '#ea580c', '$2.0k–$2.5k'],
+  [2500, Infinity, '#dc2626', '>$2.5k'],
+].map(([min, max, color, label]) => ({ min, max, color, label }));
+
+const hudRowToCountyFIPS = (r) => {
+  const s = Number(r.state);
+  const f = Number(r.fips);
+  if (!Number.isFinite(s) || !Number.isFinite(f)) return null;
+  const county = Math.floor(f / 100000) % 1000;
+  return String(s).padStart(2, '0') + String(county).padStart(3, '0');
+};
+
+function MarketResearchTab({ marketData, propertyLocation = {} }) {
 
   const hasMarketData = !!marketData;
   const marketDataSafe = marketData || {};
@@ -49,6 +67,38 @@ function MarketResearchTab({ marketData }) {
     zip_renter_owner = {},
     msa_units = {}
   } = marketDataSafe;
+
+  const [countyGeoJson, setCountyGeoJson] = useState(null);
+  const [fmrByCounty, setFmrByCounty] = useState({});
+  const [zipCentroids, setZipCentroids] = useState({});
+  const mapRef = useRef(null);
+
+  const zipCode = property_location?.zip || propertyLocation?.zip;
+
+  const zipPoint = useMemo(() => {
+    if (!zipCode) return null;
+    const zip = String(zipCode).padStart(5, '0');
+    return zipCentroids[zip] || null;
+  }, [zipCode, zipCentroids]);
+
+  const mapCenter = useMemo(() => {
+    if (property_location?.lat && property_location?.lng) return [property_location.lat, property_location.lng];
+    if (propertyLocation?.lat && propertyLocation?.lng) return [propertyLocation.lat, propertyLocation.lng];
+    if (zipPoint?.lat && zipPoint?.lng) return [zipPoint.lat, zipPoint.lng];
+    return [39.8283, -98.5795];
+  }, [property_location, propertyLocation, zipPoint]);
+
+  const mapZoom = useMemo(() => {
+    if (property_location?.lat || propertyLocation?.lat) return 10;
+    if (zipPoint) return 8;
+    return 5;
+  }, [property_location, propertyLocation, zipPoint]);
+
+  const subjectLocation = useMemo(() => {
+    if (property_location?.lat && property_location?.lng) return property_location;
+    if (propertyLocation?.lat && propertyLocation?.lng) return propertyLocation;
+    return null;
+  }, [property_location, propertyLocation]);
 
   // Safe defaults for aggregations
   const safeAggregations = {
@@ -74,6 +124,81 @@ function MarketResearchTab({ marketData }) {
       })
       .filter(Boolean);
   }, [zip_rir_points]);
+
+  const fmrColor = (v) => {
+    if (v === null || v === undefined || Number.isNaN(v)) return '#e5e7eb';
+    return DOLLAR_SCALE.find((r) => v >= r.min && v < r.max)?.color || DOLLAR_SCALE.at(-1).color;
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const [geoRes, fmrRes] = await Promise.all([
+          fetch('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json'),
+          fetch('/FY26_FMRs - FY26_FMRs.csv')
+        ]);
+
+        if (!geoRes.ok || !fmrRes.ok) return;
+        const [geoJson, fmrText] = await Promise.all([geoRes.json(), fmrRes.text()]);
+
+        if (!cancelled) setCountyGeoJson(geoJson);
+
+        const parsed = Papa.parse(fmrText, { header: true, dynamicTyping: true, skipEmptyLines: true });
+        const lookup = {};
+        parsed.data.forEach((row) => {
+          const fips = hudRowToCountyFIPS(row);
+          if (!fips) return;
+          lookup[fips] = {
+            county: row.countyname,
+            state: row.stusps,
+            fmr2: row.fmr_2,
+            safmr2: row.safmr2
+          };
+        });
+        if (!cancelled) setFmrByCounty(lookup);
+      } catch (e) {
+        console.warn('Map data load failed', e);
+      }
+    };
+
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadZipCentroids = async () => {
+      try {
+        const res = await fetch('/zcta_centroids.csv');
+        if (!res.ok) return;
+        const text = await res.text();
+        if (cancelled) return;
+        const parsed = Papa.parse(text, { header: true, dynamicTyping: true, skipEmptyLines: true });
+        const lookup = {};
+        parsed.data.forEach((row) => {
+          const zip = row.geoid || row.ZCTA || row.zip;
+          const lat = row.y ?? row.lat;
+          const lng = row.x ?? row.lon;
+          if (!zip || lat == null || lng == null) return;
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+          const zipStr = String(zip).padStart(5, '0');
+          lookup[zipStr] = { lat, lng };
+        });
+        if (!cancelled) setZipCentroids(lookup);
+      } catch (e) {
+        console.warn('ZIP centroid load failed', e);
+      }
+    };
+
+    loadZipCentroids();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    mapRef.current.setView(mapCenter, mapZoom, { animate: true });
+  }, [mapCenter, mapZoom]);
 
   if (!hasMarketData) {
     return (
@@ -113,9 +238,9 @@ function MarketResearchTab({ marketData }) {
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Market Analysis</h2>
         <p className="text-sm text-gray-600">
-          {property_location?.address ? (
+          {(property_location?.address || propertyLocation?.address) ? (
             <>
-              {property_location.address}, {property_location.city}, {property_location.state} {property_location.zip}
+              {property_location?.address || propertyLocation?.address}, {property_location?.city || propertyLocation?.city}, {property_location?.state || propertyLocation?.state} {property_location?.zip || propertyLocation?.zip}
             </>
           ) : (
             <>
@@ -209,22 +334,50 @@ function MarketResearchTab({ marketData }) {
           </div>
         </div>
 
-        {/* Leaflet Heat Map (RIR) */}
+        {/* Leaflet Heat Map (county FMR choropleth + ZIP RIR overlay) */}
         <div className="md:col-span-2 bg-white rounded-lg shadow-sm overflow-hidden">
           <div className="h-[540px] relative">
             <MapContainer
-              center={[property_location?.lat || 39, property_location?.lng || -98]}
-              zoom={10}
+              center={mapCenter}
+              zoom={mapZoom}
               scrollWheelZoom
+              preferCanvas
+              whenCreated={(map) => { mapRef.current = map; map.invalidateSize(); }}
               style={{ width: '100%', height: '100%' }}
               className="leaflet-container"
             >
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
+              <TileLayer
+                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                attribution="&copy; OpenStreetMap, &copy; CartoDB"
+              />
+
+              {countyGeoJson && (
+                <GeoJSON
+                  data={countyGeoJson}
+                  style={(feature) => {
+                    const fips = feature?.id;
+                    const fmrRow = fmrByCounty[fips];
+                    const val = fmrRow?.fmr2;
+                    return { fillColor: fmrColor(val), weight: 0.6, color: '#ffffff', fillOpacity: 0.82, opacity: 0.35 };
+                  }}
+                  onEachFeature={(feature, layer) => {
+                    const fips = feature?.id;
+                    const fmrRow = fmrByCounty[fips];
+                    if (!fmrRow) return;
+                    const rent = fmrRow.fmr2;
+                    layer.bindTooltip(
+                      `<div style="font-size:12px;color:#111"><div style="font-weight:700">${fmrRow.county || 'County'}, ${fmrRow.state || ''}</div><div>HUD FMR (2BR): ${rent ? `$${Math.round(rent).toLocaleString()}` : 'N/A'}</div>${fmrRow.safmr2 ? `<div>SAFMR (2BR): $${Math.round(fmrRow.safmr2).toLocaleString()}</div>` : ''}<div style="color:#6b7280">FIPS: ${fips}</div></div>`,
+                      { sticky: true }
+                    );
+                  }}
+                />
+              )}
+
               {rirPoints.map((p, idx) => (
                 <CircleMarker
                   key={`rir-${idx}`}
                   center={[p.lat, p.lng]}
-                  radius={14}
+                  radius={10}
                   pathOptions={{ color: rirColor(p.rir), fillColor: rirColor(p.rir), fillOpacity: 0.55, opacity: 0.35 }}
                 >
                   <LeafletTooltip direction="top" offset={[0, -6]} opacity={0.9} className="text-xs">
@@ -232,10 +385,11 @@ function MarketResearchTab({ marketData }) {
                   </LeafletTooltip>
                 </CircleMarker>
               ))}
-              {property_location && (
+
+              {subjectLocation && (
                 <CircleMarker
-                  center={[property_location.lat, property_location.lng]}
-                  radius={10}
+                  center={[subjectLocation.lat, subjectLocation.lng]}
+                  radius={12}
                   pathOptions={{ color: '#2563eb', fillColor: '#2563eb', fillOpacity: 0.9, weight: 2 }}
                 >
                   <LeafletTooltip direction="right" offset={[8, 0]} opacity={0.95} className="text-xs font-semibold text-blue-700">
@@ -320,22 +474,24 @@ function MarketResearchTab({ marketData }) {
 
             <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur rounded-xl shadow-md border border-gray-100 p-4 w-72 pointer-events-auto">
               <div className="flex items-center justify-between mb-3 text-sm font-semibold text-gray-900">
-                <span>Rent-to-Income Ratio</span>
+                <span>HUD FMR (2BR) Heat</span>
                 <div className="flex gap-2 text-xs text-gray-500">
                   <span className="px-2 py-1 rounded-full border bg-gray-50">Counties</span>
-                  <span className="px-2 py-1 rounded-full border bg-white">Cities</span>
+                  <span className="px-2 py-1 rounded-full border bg-white">ZIP RIR</span>
                 </div>
               </div>
               <div className="space-y-2 text-xs text-gray-700">
-                <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: '#10b981' }}></span> 12% Most Affordable</div>
-                <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: '#34d399' }}></span> 15% Very Affordable</div>
-                <div className="flex items-center gap-2 opacity-70"><span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: '#fde047' }}></span> 16.9% Average</div>
-                <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: '#f97316' }}></span> 20% Less Affordable</div>
-                <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }}></span> 30% Least Affordable</div>
+                {DOLLAR_SCALE.map((r, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: r.color }}></span>
+                    <span>{r.label}</span>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2 text-gray-500"><span className="inline-block w-3 h-3 rounded bg-gray-200" /> No data</div>
               </div>
               <div className="flex items-start gap-2 text-[11px] text-gray-500 mt-3">
                 <Info size={14} className="mt-0.5" />
-                <span>Lower percentages indicate more room for rent increases. Data shown within 60 miles of property.</span>
+                <span>County choropleth uses HUD FY26 FMR (2BR); circles show ZIP rent-to-income ratio.</span>
               </div>
             </div>
           </div>
@@ -345,21 +501,21 @@ function MarketResearchTab({ marketData }) {
       {/* Key Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Population Card */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col justify-between">
           <div className="text-sm text-gray-500 mb-1">Population</div>
           <div className="text-3xl font-bold text-gray-900">{fmt(safeAggregations.population)}</div>
           <div className="text-xs text-gray-600 mt-2">{county.name || 'County'}</div>
         </div>
 
         {/* Income Card */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col justify-between">
           <div className="text-sm text-gray-500 mb-1">Median Household Income</div>
           <div className="text-3xl font-bold text-gray-900">{fmtCurrency(safeAggregations.median_income)}</div>
           <div className="text-xs text-gray-600 mt-2">County median income</div>
         </div>
 
         {/* Affordability Card */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col justify-between">
           <div className="text-sm text-gray-500 mb-1">Market Affordability</div>
           <div className="text-3xl font-bold text-blue-600">
             {safeAggregations.affordability}
@@ -389,7 +545,7 @@ function MarketResearchTab({ marketData }) {
           <div>
             <div className="text-sm text-gray-500 mb-1">FMR (2BR)</div>
             <div className="text-2xl font-bold text-gray-900">{fmtCurrency(fmr?.fmr_2br || 0)}</div>
-            <div className="text-xs text-gray-600">ZIP {fmr?.zip || property_location?.zip || ''}</div>
+            <div className="text-xs text-gray-600">ZIP {fmr?.zip || zipCode || ''}</div>
           </div>
         </div>
       </div>
@@ -525,7 +681,7 @@ function MarketResearchTab({ marketData }) {
                   { name: city?.name || 'City', value: aggregations?.comparisons?.income_city },
                   { name: 'State', value: aggregations?.comparisons?.income_state },
                   { name: 'USA', value: aggregations?.comparisons?.income_usa }
-                ]} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barSize={22} barGap={4} barCategoryGap="28%">
+                ]} margin={{ top: 4, right: 6, left: 0, bottom: 0 }} barSize={18} barGap={6} barCategoryGap="32%">
                   <CartesianGrid strokeDasharray="3 3" stroke="#d9e1ff" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis tickFormatter={(v) => `$${Math.round(v/1000)}k`} tick={{ fontSize: 11 }} />
@@ -561,7 +717,7 @@ function MarketResearchTab({ marketData }) {
                   { name: city?.name || 'City', value: aggregations?.comparisons?.pop_growth_city },
                   { name: 'State', value: aggregations?.comparisons?.pop_growth_state },
                   { name: 'USA', value: aggregations?.comparisons?.pop_growth_usa }
-                ]} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barSize={22} barGap={4} barCategoryGap="28%">
+                ]} margin={{ top: 4, right: 6, left: 0, bottom: 0 }} barSize={18} barGap={6} barCategoryGap="32%">
                   <CartesianGrid strokeDasharray="3 3" stroke="#d9e1ff" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis tickFormatter={(v) => `${v?.toFixed ? v.toFixed(1) : v}%`} tick={{ fontSize: 11 }} />
@@ -587,36 +743,36 @@ function MarketResearchTab({ marketData }) {
           </div>
           <div className="text-xs px-2 py-1 rounded border bg-gray-50">Market Metrics</div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="rounded border p-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="rounded border p-3 h-full">
             <div className="text-xs text-gray-500 inline-flex items-center gap-1"><Users size={14} /> Population</div>
             <div className="text-lg font-semibold text-gray-900">{fmt(safeAggregations.population)}</div>
           </div>
-          <div className="rounded border p-3">
+          <div className="rounded border p-3 h-full">
             <div className="text-xs text-gray-500 inline-flex items-center gap-1"><TrendingUp size={14} /> Growth</div>
             <div className="text-lg font-semibold text-gray-900">{localPopGrowthPct !== undefined ? fmtPercent(localPopGrowthPct) : 'N/A'}</div>
           </div>
-          <div className="rounded border p-3">
+          <div className="rounded border p-3 h-full">
             <div className="text-xs text-gray-500 inline-flex items-center gap-1"><HomeIcon size={14} /> Households</div>
             <div className="text-lg font-semibold text-gray-900">{fmt(Math.round(households))}</div>
           </div>
-          <div className="rounded border p-3">
+          <div className="rounded border p-3 h-full">
             <div className="text-xs text-gray-500">Single Family</div>
             <div className="text-lg font-semibold text-gray-900">N/A</div>
           </div>
-          <div className="rounded border p-3">
+          <div className="rounded border p-3 h-full">
             <div className="text-xs text-gray-500 inline-flex items-center gap-1"><DollarSign size={14} /> Income</div>
             <div className="text-lg font-semibold text-gray-900">{fmtCurrency(safeAggregations.median_income)}</div>
           </div>
-          <div className="rounded border p-3">
+          <div className="rounded border p-3 h-full">
             <div className="text-xs text-gray-500 inline-flex items-center gap-1"><Briefcase size={14} /> Businesses</div>
             <div className="text-lg font-semibold text-gray-900">{fmt(aggregations?.businesses ?? 0)}</div>
           </div>
-          <div className="rounded border p-3">
+          <div className="rounded border p-3 h-full">
             <div className="text-xs text-gray-500 inline-flex items-center gap-1"><Activity size={14} /> Walk Score</div>
             <div className="text-lg font-semibold text-gray-900">{aggregations?.walk_score ?? 'N/A'}</div>
           </div>
-          <div className="rounded border p-3">
+          <div className="rounded border p-3 h-full">
             <div className="text-xs text-gray-500 inline-flex items-center gap-1"><Percent size={14} /> Affordability</div>
             <div className="text-lg font-semibold text-blue-600">{safeAggregations.affordability}</div>
           </div>
