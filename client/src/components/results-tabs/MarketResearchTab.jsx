@@ -1,8 +1,9 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Legend, Cell } from 'recharts';
 import { Clock, Percent, Layers, Users, TrendingUp, Home as HomeIcon, DollarSign, Briefcase, Activity, Map as MapIcon, Info, Shield } from 'lucide-react';
-import { MapContainer, TileLayer, CircleMarker, Tooltip as LeafletTooltip, GeoJSON, Marker } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Tooltip as LeafletTooltip, GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import 'leaflet.heat';
 import Papa from 'papaparse';
 import 'leaflet/dist/leaflet.css';
 
@@ -77,6 +78,7 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
   const [zipCentroids, setZipCentroids] = useState({});
   const [mapMode, setMapMode] = useState('counties'); // 'counties' | 'cities'
   const [isochrone, setIsochrone] = useState(null);
+  const [heatMetric, setHeatMetric] = useState('rir'); // 'rir' | 'affordability'
   const mapRef = useRef(null);
 
   const zipCode = property_location?.zip || propertyLocation?.zip;
@@ -105,15 +107,6 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
     if (propertyLocation?.lat && propertyLocation?.lng) return propertyLocation;
     return null;
   }, [property_location, propertyLocation]);
-
-  const rirIconFor = useMemo(() => {
-    return (rir) => L.divIcon({
-      className: 'rir-square',
-      html: `<div style="width:18px;height:18px;border-radius:6px;background:${rirColor(rir)};opacity:0.7;border:1px solid rgba(0,0,0,0.18);box-shadow:0 2px 6px rgba(0,0,0,0.2);"></div>`,
-      iconSize: [18, 18],
-      iconAnchor: [9, 9]
-    });
-  }, []);
 
   const rirComparisonData = useMemo(() => {
     const rows = [
@@ -156,6 +149,16 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
     if (v === null || v === undefined || Number.isNaN(v)) return '#e5e7eb';
     return DOLLAR_SCALE.find((r) => v >= r.min && v < r.max)?.color || DOLLAR_SCALE.at(-1).color;
   };
+
+  const heatPoints = useMemo(() => {
+    return rirPoints.map((p) => {
+      const rir = p.rir ?? 0;
+      const affordabilityWeight = 1 - Math.min(Math.max(rir, 0), 0.35) / 0.35; // lower RIR -> hotter if affordability mode
+      const rirWeight = Math.min(Math.max(rir, 0), 0.35) / 0.35; // normalize 0-1 roughly up to 35%
+      const weight = heatMetric === 'affordability' ? affordabilityWeight : rirWeight;
+      return [p.lat, p.lng, weight];
+    });
+  }, [rirPoints, heatMetric]);
 
   useEffect(() => {
     let cancelled = false;
@@ -266,6 +269,26 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
         <span className={color}>{absPct}% {dir}</span> the {label} average ({fmtComp}).
       </div>
     );
+  };
+
+  // Heatmap layer for RIR
+  const HeatLayer = ({ points }) => {
+    const map = useMap();
+    useEffect(() => {
+      if (!map || !points.length) return;
+      const layer = L.heatLayer(points, {
+        radius: 22,
+        blur: 28,
+        maxZoom: 12,
+        gradient: heatMetric === 'affordability'
+          ? { 0.0: '#e0f2fe', 0.4: '#93c5fd', 0.7: '#2563eb', 1.0: '#1e3a8a' }
+          : { 0.0: '#fef2f2', 0.4: '#fca5a5', 0.7: '#ef4444', 1.0: '#991b1b' }
+      }).addTo(map);
+      return () => {
+        layer.remove();
+      };
+    }, [map, points, heatMetric]);
+    return null;
   };
 
   // Affordability helpers (reserved for future UI)
@@ -434,13 +457,9 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
                 />
               )}
 
-              {rirPoints.map((p, idx) => (
-                <Marker key={`rir-${idx}`} position={[p.lat, p.lng]} icon={rirIconFor(p.rir)}>
-                  <LeafletTooltip direction="top" offset={[0, -6]} opacity={0.95} className="text-xs">
-                    RIR: {fmtPercentFromFraction(p.rir || 0)}
-                  </LeafletTooltip>
-                </Marker>
-              ))}
+              {heatPoints.length > 0 && (
+                <HeatLayer points={heatPoints} />
+              )}
 
               {subjectLocation && (
                 <CircleMarker
@@ -467,19 +486,32 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
               )}
             </div>
 
-            <div className="absolute top-4 right-1/2 translate-x-1/2 md:translate-x-0 md:left-4 mt-12 md:mt-0 flex gap-2 pointer-events-auto">
-              <button
-                onClick={() => setMapMode('counties')}
-                className={`px-3 py-2 rounded-lg text-xs font-semibold border shadow-sm ${mapMode === 'counties' ? 'bg-white text-gray-900 border-gray-200' : 'bg-white/80 text-gray-600 border-gray-100'}`}
-              >
-                Counties
-              </button>
-              <button
-                onClick={() => setMapMode('cities')}
-                className={`px-3 py-2 rounded-lg text-xs font-semibold border shadow-sm ${mapMode === 'cities' ? 'bg-white text-gray-900 border-gray-200' : 'bg-white/80 text-gray-600 border-gray-100'}`}
-              >
-                Cities
-              </button>
+            <div className="absolute top-4 right-1/2 translate-x-1/2 md:translate-x-0 md:left-4 mt-12 md:mt-0 flex flex-wrap gap-2 pointer-events-auto">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setMapMode('counties')}
+                  className={`px-3 py-2 rounded-lg text-xs font-semibold border shadow-sm ${mapMode === 'counties' ? 'bg-white text-gray-900 border-gray-200' : 'bg-white/80 text-gray-600 border-gray-100'}`}
+                >
+                  Counties
+                </button>
+                <button
+                  onClick={() => setMapMode('cities')}
+                  className={`px-3 py-2 rounded-lg text-xs font-semibold border shadow-sm ${mapMode === 'cities' ? 'bg-white text-gray-900 border-gray-200' : 'bg-white/80 text-gray-600 border-gray-100'}`}
+                >
+                  Cities
+                </button>
+              </div>
+              <div className="flex items-center gap-2 bg-white/95 backdrop-blur border border-gray-200 rounded-lg px-3 py-2 text-xs shadow-sm">
+                <span className="text-gray-600">Heat:</span>
+                <select
+                  value={heatMetric}
+                  onChange={(e) => setHeatMetric(e.target.value)}
+                  className="text-gray-900 text-xs border rounded px-2 py-1 bg-white"
+                >
+                  <option value="rir">Rent-to-Income Ratio</option>
+                  <option value="affordability">Affordability (lower RIR hotter)</option>
+                </select>
+              </div>
             </div>
 
             <div className="absolute top-4 right-4 w-72 bg-white rounded-xl shadow-md border border-gray-100 p-4 pointer-events-auto space-y-3">
@@ -548,7 +580,7 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
                 <span>HUD FMR (2BR) Heat</span>
                 <div className="flex gap-2 text-xs text-gray-500">
                   <span className="px-2 py-1 rounded-full border bg-gray-50">Counties</span>
-                  <span className="px-2 py-1 rounded-full border bg-white">ZIP RIR</span>
+                  <span className="px-2 py-1 rounded-full border bg-white">ZIP Heat</span>
                 </div>
               </div>
               <div className="space-y-2 text-xs text-gray-700">
@@ -565,10 +597,17 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
                   <Info size={14} className="mt-0.5" />
                   <span>County colors = HUD FY26 2BR FMR.</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <Info size={14} className="mt-0.5 text-rose-500" />
-                  <span>Red squares = ZIP rent-to-income ratio (RIR). Darker red means higher RIR.</span>
-                </div>
+                {heatMetric === 'rir' ? (
+                  <div className="flex items-start gap-2">
+                    <Info size={14} className="mt-0.5 text-rose-500" />
+                    <span>ZIP heat shows higher rent-to-income ratio as hotter.</span>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-2">
+                    <Info size={14} className="mt-0.5 text-blue-500" />
+                    <span>Affordability heat shows lower RIR as hotter (more room for rent growth).</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
