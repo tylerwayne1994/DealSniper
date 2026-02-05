@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { Map, Source, Layer, Marker } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts';
 
 const MAPBOX_TOKEN = 'MAPBOX_TOKEN_REMOVED';
 
@@ -62,6 +63,10 @@ function MarketResearchTab({ marketData }) {
     median_rent: aggregations.median_rent || 0,
     affordability: aggregations.affordability || 'N/A'
   };
+
+  // Derived metrics
+  const localPopGrowthPct = zip_data?.net_migration_per_capita !== undefined ? (zip_data.net_migration_per_capita * 100) : undefined;
+  const households = (zip_renter_owner?.owner_count || 0) + (zip_renter_owner?.renter_count || 0);
 
   // Prepare isochrone GeoJSON layer
   const isochroneLayer = {
@@ -368,45 +373,128 @@ function MarketResearchTab({ marketData }) {
         </div>
       ) : null}
 
-      {/* Comparison Summary */}
+      {/* Market Comparison with charts */}
       <div className="bg-white rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Market Comparison</h3>
-        <div className="space-y-3">
-          <div className="flex justify-between items-center py-2 border-b">
-            <span className="text-sm font-medium text-gray-700">Local (15-min drive)</span>
-            <span className="text-sm text-gray-900">Population: {fmt(safeAggregations.population)}</span>
-          </div>
-          <div className="flex justify-between items-center py-2 border-b">
-            <span className="text-sm font-medium text-gray-700">City</span>
-            <span className="text-sm text-gray-900">{city.name || 'N/A'}, {city.state || state.name || 'N/A'}</span>
-          </div>
-          <div className="flex justify-between items-center py-2 border-b">
-            <span className="text-sm font-medium text-gray-700">County</span>
-            <span className="text-sm text-gray-900">{county.name || 'N/A'} (Pop: {fmt(county.population || safeAggregations.population)})</span>
-          </div>
-          <div className="flex justify-between items-center py-2">
-            <span className="text-sm font-medium text-gray-700">State</span>
-            <span className="text-sm text-gray-900">{state.name || 'N/A'}</span>
-          </div>
-          {aggregations?.comparisons && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-              <div className="bg-gray-50 rounded p-4">
-                <div className="text-sm text-gray-500 mb-1">Median Household Income</div>
-                <div className="text-sm text-gray-900">Local: {fmtCurrency(safeAggregations.median_income)}</div>
-                <div className="text-sm text-gray-900">City: {fmtCurrency(aggregations.comparisons.income_city)}</div>
-                <div className="text-sm text-gray-900">State: {fmtCurrency(aggregations.comparisons.income_state)}</div>
-                <div className="text-sm text-gray-900">USA: {fmtCurrency(aggregations.comparisons.income_usa)}</div>
-              </div>
-              <div className="bg-gray-50 rounded p-4">
-                <div className="text-sm text-gray-500 mb-1">Population Growth</div>
-                <div className="text-sm text-gray-900">City: {fmtPercent(aggregations.comparisons.pop_growth_city)}</div>
-                <div className="text-sm text-gray-900">State: {fmtPercent(aggregations.comparisons.pop_growth_state)}</div>
-                <div className="text-sm text-gray-900">USA: {fmtPercent(aggregations.comparisons.pop_growth_usa)}</div>
-              </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Market Comparison</h3>
+        <p className="text-xs text-gray-500 mb-4">Local Area vs. City, State & USA averages</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Median Household Income Chart */}
+          <div className="bg-gray-50 rounded p-4">
+            <div className="font-medium text-gray-900 mb-1">Median Household Income</div>
+            <div className="text-xs text-gray-500 mb-3">Annual household earnings comparison</div>
+            <div className="h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={[
+                  { name: 'Local', value: safeAggregations.median_income },
+                  { name: city?.name || 'City', value: aggregations?.comparisons?.income_city },
+                  { name: 'State', value: aggregations?.comparisons?.income_state },
+                  { name: 'USA', value: aggregations?.comparisons?.income_usa }
+                ]} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis tickFormatter={(v) => `$${v/1000}k`} />
+                  <Tooltip formatter={(v) => fmtCurrency(v)} />
+                  <Bar dataKey="value" fill="#60a5fa" />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-          )}
+          </div>
+
+          {/* Population Growth Chart */}
+          <div className="bg-gray-50 rounded p-4">
+            <div className="font-medium text-gray-900 mb-1">Population Growth</div>
+            <div className="text-xs text-gray-500 mb-3">Annual population change trends</div>
+            <div className="h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={[
+                  { name: 'Local', value: localPopGrowthPct },
+                  { name: city?.name || 'City', value: aggregations?.comparisons?.pop_growth_city },
+                  { name: 'State', value: aggregations?.comparisons?.pop_growth_state },
+                  { name: 'USA', value: aggregations?.comparisons?.pop_growth_usa }
+                ]} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis tickFormatter={(v) => `${v?.toFixed ? v.toFixed(1) : v}%`} />
+                  <Tooltip formatter={(v) => fmtPercent(v)} />
+                  <ReferenceLine y={0} stroke="#9ca3af" />
+                  <Bar dataKey="value" fill="#34d399" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Side Market Metrics (Cactus-style) */}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <div className="text-xs text-gray-500">Analysis Area</div>
+            <div className="text-sm font-semibold text-gray-900">{drive_time_minutes}-min Drive</div>
+          </div>
+          <div className="text-xs px-2 py-1 rounded border bg-gray-50">Market Metrics</div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="rounded border p-3">
+            <div className="text-xs text-gray-500">Population</div>
+            <div className="text-lg font-semibold text-gray-900">{fmt(safeAggregations.population)}</div>
+          </div>
+          <div className="rounded border p-3">
+            <div className="text-xs text-gray-500">Growth</div>
+            <div className="text-lg font-semibold text-gray-900">{localPopGrowthPct !== undefined ? fmtPercent(localPopGrowthPct) : 'N/A'}</div>
+          </div>
+          <div className="rounded border p-3">
+            <div className="text-xs text-gray-500">Households</div>
+            <div className="text-lg font-semibold text-gray-900">{fmt(Math.round(households))}</div>
+          </div>
+          <div className="rounded border p-3">
+            <div className="text-xs text-gray-500">Single Family</div>
+            <div className="text-lg font-semibold text-gray-900">N/A</div>
+          </div>
+          <div className="rounded border p-3">
+            <div className="text-xs text-gray-500">Income</div>
+            <div className="text-lg font-semibold text-gray-900">{fmtCurrency(safeAggregations.median_income)}</div>
+          </div>
+          <div className="rounded border p-3">
+            <div className="text-xs text-gray-500">Businesses</div>
+            <div className="text-lg font-semibold text-gray-900">{fmt(aggregations?.businesses ?? 0)}</div>
+          </div>
+          <div className="rounded border p-3">
+            <div className="text-xs text-gray-500">Walk Score</div>
+            <div className="text-lg font-semibold text-gray-900">{aggregations?.walk_score ?? 'N/A'}</div>
+          </div>
+          <div className="rounded border p-3">
+            <div className="text-xs text-gray-500">Affordability</div>
+            <div className="text-lg font-semibold text-blue-600">{safeAggregations.affordability}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* RIR Cards (Local vs County) */}
+      {(marketData?.rent_to_income_ratio !== undefined || county_data?.rent_to_income_ratio !== undefined) && (
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded border p-4">
+              <div className="text-xs text-gray-500">Local Market</div>
+              <div className="text-2xl font-bold text-red-600">{fmtPercent(marketData?.rent_to_income_ratio ?? 0)}</div>
+              <div className="text-xs text-gray-500 mt-1">Rent-to-Income Ratio</div>
+              <div className="text-xs text-gray-600 mt-2">Median Rent: {fmtCurrency(safeAggregations.median_rent)} · Income: {fmtCurrency(safeAggregations.median_income)}</div>
+            </div>
+            <div className="rounded border p-4">
+              <div className="text-xs text-gray-500">County</div>
+              <div className="text-2xl font-bold text-red-600">{fmtPercent(county_data?.rent_to_income_ratio ?? 0)}</div>
+              <div className="text-xs text-gray-500 mt-1">Rent-to-Income Ratio</div>
+              <div className="text-xs text-gray-600 mt-2">Median Rent: {fmtCurrency(safeAggregations.median_rent)} · Income: {fmtCurrency(safeAggregations.median_income)}</div>
+            </div>
+            <div className="rounded border p-4">
+              <div className="text-xs text-gray-500">State</div>
+              <div className="text-2xl font-bold text-gray-900">N/A</div>
+              <div className="text-xs text-gray-500 mt-1">Rent-to-Income Ratio</div>
+              <div className="text-xs text-gray-600 mt-2">Median Rent: N/A · Income: N/A</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Data Sources Footer */}
       <div className="bg-gray-50 rounded-lg shadow-sm p-4">
