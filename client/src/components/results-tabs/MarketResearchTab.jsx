@@ -144,7 +144,7 @@ function MarketResearchTab({ marketData }) {
     maxzoom: 14,
     paint: {
       'heatmap-weight': ['interpolate', ['linear'], ['get', 'rir'], 12, 0.2, 30, 1],
-      'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 8, 0.7, 13, 1.6],
+      'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 8, 1.1, 13, 2.1],
       'heatmap-color': [
         'interpolate', ['linear'], ['heatmap-density'],
         0, 'rgba(16,185,129,0)',
@@ -154,8 +154,8 @@ function MarketResearchTab({ marketData }) {
         0.8, 'rgba(249,115,22,0.7)',
         1, 'rgba(239,68,68,0.75)'
       ],
-      'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 8, 18, 12, 28, 15, 40],
-      'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 8, 0.8, 14, 0.25]
+      'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 8, 24, 12, 36, 15, 48],
+      'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 8, 0.9, 14, 0.3]
     }
   };
 
@@ -313,11 +313,11 @@ function MarketResearchTab({ marketData }) {
 
             {/* Map overlays */}
             <div className="absolute top-4 left-4 flex flex-wrap gap-2 pointer-events-auto">
-              <div className="bg-white rounded-lg shadow-sm border px-3 py-2 text-sm font-semibold flex items-center gap-2">
+              <div className="bg-white/95 backdrop-blur rounded-full shadow-sm border px-3 py-2 text-sm font-semibold flex items-center gap-2">
                 <Clock size={16} className="text-blue-500" /> {drive_time_minutes}-min Drive
               </div>
               {area_classification && (
-                <div className="bg-white rounded-lg shadow-sm border px-3 py-2 text-sm flex items-center gap-2">
+                <div className="bg-white/95 backdrop-blur rounded-full shadow-sm border px-3 py-2 text-sm flex items-center gap-2">
                   <Layers size={16} className="text-emerald-600" /> {area_classification}
                 </div>
               )}
@@ -384,7 +384,7 @@ function MarketResearchTab({ marketData }) {
               </div>
             </div>
 
-            <div className="absolute bottom-4 left-4 bg-white rounded-xl shadow-md border border-gray-100 p-4 w-72 pointer-events-auto">
+            <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur rounded-xl shadow-md border border-gray-100 p-4 w-72 pointer-events-auto">
               <div className="flex items-center justify-between mb-3 text-sm font-semibold text-gray-900">
                 <span>Rent-to-Income Ratio</span>
                 <div className="flex gap-2 text-xs text-gray-500">
@@ -570,7 +570,7 @@ function MarketResearchTab({ marketData }) {
         <p className="text-xs text-gray-500 mb-4">Local Area vs. City, State & USA averages</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Median Household Income Chart */}
-          <div className="bg-[#f5f7ff] rounded-2xl p-5 shadow-sm">
+            <div className="bg-[#f5f7ff] rounded-2xl p-4 shadow-sm">
             <div className="flex items-start gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-blue-500 mt-1" />
               <div>
@@ -584,19 +584,19 @@ function MarketResearchTab({ marketData }) {
               {formatDeltaLine('State', safeAggregations.median_income, aggregations?.comparisons?.income_state, true)}
               {formatDeltaLine('USA', safeAggregations.median_income, aggregations?.comparisons?.income_usa, true)}
             </div>
-            <div className="h-48">
+            <div className="h-44">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={[
                   { name: 'Local Area', value: safeAggregations.median_income },
                   { name: city?.name || 'City', value: aggregations?.comparisons?.income_city },
                   { name: 'State', value: aggregations?.comparisons?.income_state },
                   { name: 'USA', value: aggregations?.comparisons?.income_usa }
-                ]} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                ]} margin={{ top: 6, right: 12, left: 0, bottom: 0 }} barSize={26} barGap={6} barCategoryGap="42%">
                   <CartesianGrid strokeDasharray="3 3" stroke="#d9e1ff" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis tickFormatter={(v) => `$${Math.round(v/1000)}k`} tick={{ fontSize: 11 }} />
                   <Tooltip formatter={(v) => fmtCurrency(v)} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} verticalAlign="bottom" height={24} iconType="circle" iconSize={8} />
                   <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                     {['#3c4bff','#6378ff','#8aa3ff','#b5c8ff'].map((c, i) => <Cell key={`inc-${i}`} fill={c} />)}
                   </Bar>
@@ -606,7 +606,7 @@ function MarketResearchTab({ marketData }) {
           </div>
 
           {/* Population Growth Chart */}
-          <div className="bg-[#f5f7ff] rounded-2xl p-5 shadow-sm">
+          <div className="bg-[#f5f7ff] rounded-2xl p-4 shadow-sm">
             <div className="flex items-start gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-blue-500 mt-1" />
               <div>
@@ -620,20 +620,20 @@ function MarketResearchTab({ marketData }) {
               {formatDeltaLine('State', localPopGrowthPct, aggregations?.comparisons?.pop_growth_state)}
               {formatDeltaLine('USA', localPopGrowthPct, aggregations?.comparisons?.pop_growth_usa)}
             </div>
-            <div className="h-48">
+            <div className="h-44">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={[
                   { name: 'Local Area', value: localPopGrowthPct },
                   { name: city?.name || 'City', value: aggregations?.comparisons?.pop_growth_city },
                   { name: 'State', value: aggregations?.comparisons?.pop_growth_state },
                   { name: 'USA', value: aggregations?.comparisons?.pop_growth_usa }
-                ]} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                ]} margin={{ top: 6, right: 12, left: 0, bottom: 0 }} barSize={26} barGap={6} barCategoryGap="42%">
                   <CartesianGrid strokeDasharray="3 3" stroke="#d9e1ff" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis tickFormatter={(v) => `${v?.toFixed ? v.toFixed(1) : v}%`} tick={{ fontSize: 11 }} />
                   <Tooltip formatter={(v) => fmtPercent(v)} />
                   <ReferenceLine y={0} stroke="#9ca3af" />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} verticalAlign="bottom" height={24} iconType="circle" iconSize={8} />
                   <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                     {['#3c4bff','#6378ff','#8aa3ff','#b5c8ff'].map((c, i) => <Cell key={`pop-${i}`} fill={c} />)}
                   </Bar>
