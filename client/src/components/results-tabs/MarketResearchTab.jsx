@@ -514,11 +514,6 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false 
               <div className="bg-white/95 backdrop-blur rounded-full shadow-sm border px-3 py-2 text-sm font-semibold flex items-center gap-2">
                 <Clock size={16} className="text-blue-500" /> {drive_time_minutes}-min Drive
               </div>
-              {area_classification && (
-                <div className="bg-white/95 backdrop-blur rounded-full shadow-sm border px-3 py-2 text-sm flex items-center gap-2">
-                  <Layers size={16} className="text-emerald-600" /> {area_classification}
-                </div>
-              )}
             </div>
 
             <div className="absolute top-3 left-1/2 -translate-x-1/2 flex justify-center z-[1000] pointer-events-auto">
