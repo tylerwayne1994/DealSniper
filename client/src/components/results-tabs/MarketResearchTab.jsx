@@ -114,6 +114,11 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
   const [selectedDriveTime, setSelectedDriveTime] = useState(drive_time_minutes);
   const mapRef = useRef(null);
 
+  // Sync selectedDriveTime with marketData when it updates
+  useEffect(() => {
+    setSelectedDriveTime(drive_time_minutes);
+  }, [drive_time_minutes]);
+
   const handleDriveTimeChange = (newDriveTime) => {
     setSelectedDriveTime(newDriveTime);
     if (onRefetchMarketData) {
@@ -285,7 +290,7 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
       try {
         const origin = subjectLocation || { lat: mapCenter[0], lng: mapCenter[1] };
         if (!origin?.lat || !origin?.lng) return;
-        const url = `https://api.mapbox.com/isochrone/v1/mapbox/driving/${origin.lng},${origin.lat}?contours_minutes=5,10,15&polygons=true&access_token=${MAPBOX_TOKEN}`;
+        const url = `https://api.mapbox.com/isochrone/v1/mapbox/driving/${origin.lng},${origin.lat}?contours_minutes=${selectedDriveTime}&polygons=true&access_token=${MAPBOX_TOKEN}`;
         const res = await fetch(url);
         if (!res.ok) return;
         const gj = await res.json();
@@ -296,7 +301,7 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
     };
 
     fetchIsochrone();
-  }, [subjectLocation, mapCenter]);
+  }, [subjectLocation, mapCenter, selectedDriveTime]);
 
   if (!hasMarketData) {
     if (isLoading) {
@@ -974,51 +979,57 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
       </div>
 
       {/* Housing Metrics */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Housing Market</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <div className="text-sm text-gray-500 mb-1">Median Home Value</div>
-            <div className="text-2xl font-bold text-gray-900">{fmtCurrency(county_data.median_home_value || 0)}</div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-1 h-6 bg-blue-600 rounded-full" />
+          <h3 className="text-xl font-bold text-gray-900">Housing Market</h3>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="space-y-2">
+            <div className="text-sm font-medium text-gray-500">Median Home Value</div>
+            <div className="text-3xl font-bold text-gray-900">{county_data.median_home_value ? fmtCurrency(county_data.median_home_value) : 'N/A'}</div>
           </div>
-          <div>
-            <div className="text-sm text-gray-500 mb-1">Median Gross Rent</div>
-            <div className="text-2xl font-bold text-gray-900">{fmtCurrency(safeAggregations.median_rent)}</div>
+          <div className="space-y-2">
+            <div className="text-sm font-medium text-gray-500">Median Gross Rent</div>
+            <div className="text-3xl font-bold text-gray-900">{fmtCurrency(safeAggregations.median_rent)}</div>
           </div>
-          <div>
-            <div className="text-sm text-gray-500 mb-1">Owner-Occupied Rate</div>
-            <div className="text-2xl font-bold text-gray-900">{fmtPercent(county_data.owner_occupied_rate || 0)}</div>
+          <div className="space-y-2">
+            <div className="text-sm font-medium text-gray-500">Owner-Occupied Rate</div>
+            <div className="text-3xl font-bold text-gray-900">{fmtPercent(county_data.owner_occupied_rate || 0)}</div>
           </div>
-          <div>
-            <div className="text-sm text-gray-500 mb-1">FMR (2BR)</div>
-            <div className="text-2xl font-bold text-gray-900">{fmtCurrency(fmr?.fmr_2br || 0)}</div>
-            <div className="text-xs text-gray-600">ZIP {fmr?.zip || zipCode || ''}</div>
+          <div className="space-y-2">
+            <div className="text-sm font-medium text-gray-500">FMR (2BR)</div>
+            <div className="text-3xl font-bold text-gray-900">{fmtCurrency(fmr?.fmr_2br || 0)}</div>
+            <div className="text-xs text-gray-500">ZIP {fmr?.zip || zipCode || ''}</div>
           </div>
         </div>
       </div>
 
       {/* Migration Data */}
       {zip_data && zip_data.net_migration !== undefined && (
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Migration Trends</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div>
-              <div className="text-sm text-gray-500 mb-1">Net Migration</div>
-              <div className={`text-2xl font-bold ${zip_data.net_migration >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-1 h-6 bg-blue-600 rounded-full" />
+            <h3 className="text-xl font-bold text-gray-900">Migration Trends</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-gray-500">Net Migration</div>
+              <div className={`text-3xl font-bold ${zip_data.net_migration >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {zip_data.net_migration >= 0 ? '+' : ''}{fmt(Math.round(zip_data.net_migration))}
               </div>
             </div>
-            <div>
-              <div className="text-sm text-gray-500 mb-1">Net Per Capita</div>
-              <div className="text-2xl font-bold text-gray-900">{zip_data.net_migration_per_capita?.toFixed(2) || '0.00'}</div>
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-gray-500">Net Per Capita</div>
+              <div className="text-3xl font-bold text-gray-900">{zip_data.net_migration_per_capita?.toFixed(2) || '0.00'}</div>
             </div>
-            <div>
-              <div className="text-sm text-gray-500 mb-1">In-Migration</div>
-              <div className="text-2xl font-bold text-blue-600">{fmt(Math.round(zip_data.in_migration || 0))}</div>
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-gray-500">In-Migration</div>
+              <div className="text-3xl font-bold text-blue-600">{fmt(Math.round(zip_data.in_migration || 0))}</div>
             </div>
-            <div>
-              <div className="text-sm text-gray-500 mb-1">Out-Migration</div>
-              <div className="text-2xl font-bold text-orange-600">{fmt(Math.round(zip_data.out_migration || 0))}</div>
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-gray-500">Out-Migration</div>
+              <div className="text-3xl font-bold text-orange-600">{fmt(Math.round(zip_data.out_migration || 0))}</div>
             </div>
           </div>
         </div>
@@ -1026,32 +1037,35 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
 
       {/* MSA Construction Data */}
       {(msa_data && msa_data.msa_name) || (msa_units && (msa_units.ytd_5plus_units || msa_units.ytd_total_units)) ? (
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Multifamily Construction Activity</h3>
-          {msa_data?.msa_name && <p className="text-sm text-gray-600 mb-4">{msa_data.msa_name}</p>}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <div className="text-sm text-gray-500 mb-1">YTD Total Permits</div>
-              <div className="text-2xl font-bold text-gray-900">{fmt(msa_data.ytd_total_units || msa_units.ytd_total_units)}</div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-1 h-6 bg-blue-600 rounded-full" />
+            <h3 className="text-xl font-bold text-gray-900">Multifamily Construction Activity</h3>
+          </div>
+          {msa_data?.msa_name && <p className="text-sm text-gray-600 mb-6">{msa_data.msa_name}</p>}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-6">
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-gray-500">YTD Total Permits</div>
+              <div className="text-3xl font-bold text-gray-900">{fmt(msa_data?.ytd_total_units || msa_units?.ytd_total_units || 0)}</div>
             </div>
-            <div>
-              <div className="text-sm text-gray-500 mb-1">YTD 5+ Unit Buildings</div>
-              <div className="text-2xl font-bold text-blue-600">{fmt(msa_data.ytd_5plus_units || msa_units.ytd_5plus_units)}</div>
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-gray-500">YTD 5+ Unit Buildings</div>
+              <div className="text-3xl font-bold text-blue-600">{fmt(msa_data?.ytd_5plus_units || msa_units?.ytd_5plus_units || 0)}</div>
             </div>
-            <div>
-              <div className="text-sm text-gray-500 mb-1">Current Month Permits</div>
-              <div className="text-2xl font-bold text-green-600">{fmt(msa_data.current_month_units || msa_units.current_month_units)}</div>
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-gray-500">Current Month Permits</div>
+              <div className="text-3xl font-bold text-green-600">{msa_data?.current_month_units || msa_units?.current_month_units ? fmt(msa_data.current_month_units || msa_units.current_month_units) : 'N/A'}</div>
             </div>
           </div>
-          {(msa_units.absorption_units !== undefined || msa_units.absorption_rate !== undefined) && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-              <div>
-                <div className="text-sm text-gray-500 mb-1">Absorption Units (proxy)</div>
-                <div className="text-2xl font-bold text-gray-900">{fmt(Math.round(msa_units.absorption_units || 0))}</div>
+          {(msa_units?.absorption_units !== undefined || msa_units?.absorption_rate !== undefined) && (
+            <div className="grid grid-cols-2 gap-6 pt-6 border-t border-gray-100">
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-gray-500">Absorption Units (proxy)</div>
+                <div className="text-3xl font-bold text-gray-900">{fmt(Math.round(msa_units.absorption_units || 0))}</div>
               </div>
-              <div>
-                <div className="text-sm text-gray-500 mb-1">Absorption Rate</div>
-                <div className="text-2xl font-bold text-gray-900">{msa_units.absorption_rate !== undefined ? fmtPercent(msa_units.absorption_rate * 100) : 'N/A'}</div>
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-gray-500">Absorption Rate</div>
+                <div className="text-3xl font-bold text-gray-900">{msa_units.absorption_rate !== undefined ? fmtPercent(msa_units.absorption_rate * 100) : 'N/A'}</div>
               </div>
             </div>
           )}
@@ -1059,18 +1073,21 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
       ) : null}
 
       {/* Employment */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Employment</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <div className="text-sm text-gray-500 mb-1">Unemployment Rate</div>
-            <div className={`text-2xl font-bold ${county_data.unemployment_rate < 5 ? 'text-green-600' : county_data.unemployment_rate < 7 ? 'text-yellow-600' : 'text-red-600'}`}>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-1 h-6 bg-blue-600 rounded-full" />
+          <h3 className="text-xl font-bold text-gray-900">Employment</h3>
+        </div>
+        <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <div className="text-sm font-medium text-gray-500">Unemployment Rate</div>
+            <div className={`text-3xl font-bold ${county_data.unemployment_rate < 5 ? 'text-green-600' : county_data.unemployment_rate < 7 ? 'text-yellow-600' : 'text-red-600'}`}>
               {fmtPercent(county_data.unemployment_rate)}
             </div>
           </div>
-          <div>
-            <div className="text-sm text-gray-500 mb-1">Labor Force Health</div>
-            <div className="text-sm text-gray-700 mt-2">
+          <div className="space-y-2">
+            <div className="text-sm font-medium text-gray-500">Labor Force Health</div>
+            <div className="text-base text-gray-700 mt-1">
               {county_data.unemployment_rate < 5 ? 'Strong labor market with low unemployment' : county_data.unemployment_rate < 7 ? 'Moderate labor market conditions' : 'Elevated unemployment levels'}
             </div>
           </div>
@@ -1079,23 +1096,26 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
 
       {/* Landlord & Zip Renter/Owner */}
       {(zip_renter_owner && (zip_renter_owner.renter_share !== undefined || zip_renter_owner.owner_share !== undefined)) || (aggregations.businesses || aggregations.walk_score) ? (
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Local Housing Profile</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <div className="text-sm text-gray-500 mb-1">Renter Share</div>
-              <div className="text-2xl font-bold text-gray-900">{fmtPercentFromFraction(zip_renter_owner?.renter_share ?? 0)}</div>
-              <div className="text-xs text-gray-600">{fmt(Math.round(zip_renter_owner?.renter_count ?? 0))} renters</div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-1 h-6 bg-blue-600 rounded-full" />
+            <h3 className="text-xl font-bold text-gray-900">Local Housing Profile</h3>
+          </div>
+          <div className="grid grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-gray-500">Renter Share</div>
+              <div className="text-3xl font-bold text-gray-900">{fmtPercentFromFraction(zip_renter_owner?.renter_share ?? 0)}</div>
+              <div className="text-xs text-gray-500">{fmt(Math.round(zip_renter_owner?.renter_count ?? 0))} renters</div>
             </div>
-            <div>
-              <div className="text-sm text-gray-500 mb-1">Owner Share</div>
-              <div className="text-2xl font-bold text-gray-900">{fmtPercentFromFraction(zip_renter_owner?.owner_share ?? 0)}</div>
-              <div className="text-xs text-gray-600">{fmt(Math.round(zip_renter_owner?.owner_count ?? 0))} owners</div>
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-gray-500">Owner Share</div>
+              <div className="text-3xl font-bold text-gray-900">{fmtPercentFromFraction(zip_renter_owner?.owner_share ?? 0)}</div>
+              <div className="text-xs text-gray-500">{fmt(Math.round(zip_renter_owner?.owner_count ?? 0))} owners</div>
             </div>
-            <div>
-              <div className="text-sm text-gray-500 mb-1">Businesses</div>
-              <div className="text-2xl font-bold text-gray-900">{fmt(aggregations?.businesses ?? 0)}</div>
-              <div className="text-xs text-gray-600">Walk Score: {aggregations?.walk_score ?? 'N/A'}</div>
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-gray-500">Businesses</div>
+              <div className="text-3xl font-bold text-gray-900">{fmt(aggregations?.businesses ?? 0)}</div>
+              <div className="text-xs text-gray-500">Walk Score: {aggregations?.walk_score ?? 'N/A'}</div>
             </div>
           </div>
         </div>
