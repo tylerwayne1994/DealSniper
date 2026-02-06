@@ -568,6 +568,7 @@ class PropertyData(BaseModel):
 
 class MarketAnalysisRequest(BaseModel):
     property: PropertyData
+    drive_time_minutes: int = 15  # Default to 15 minutes
 
 
 async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
@@ -579,13 +580,14 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
     try:
         logger.info(f"[MARKET ANALYSIS] Received request: {request_data.dict()}")
         property_data = request_data.property
+        drive_time_minutes = request_data.drive_time_minutes
         
         address = property_data.address
         city = property_data.city
         state = property_data.state
         zip_code = property_data.zip
         
-        logger.info(f"[MARKET ANALYSIS] Processing: {address}, {city}, {state} {zip_code}")
+        logger.info(f"[MARKET ANALYSIS] Processing: {address}, {city}, {state} {zip_code} (Drive time: {drive_time_minutes} min)")
         
         if not all([address, city, state, zip_code]):
             logger.error("[MARKET ANALYSIS] Missing required fields")
@@ -600,8 +602,8 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
         else:
             lng, lat = coords
         
-        # Step 2: Generate 15-minute drive-time isochrone
-        isochrone_geojson = generate_isochrone(lng, lat, minutes=15)
+        # Step 2: Generate drive-time isochrone with configurable minutes
+        isochrone_geojson = generate_isochrone(lng, lat, minutes=drive_time_minutes)
         use_llm_fallback = False
         
         if not isochrone_geojson:
@@ -659,10 +661,10 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
                             'type': 'Polygon',
                             'coordinates': [[[lng-0.1, lat-0.1], [lng+0.1, lat-0.1], [lng+0.1, lat+0.1], [lng-0.1, lat+0.1], [lng-0.1, lat-0.1]]]
                         },
-                        'properties': {'contour': 15}
+                        'properties': {'contour': drive_time_minutes}
                     }]
                 },
-                'drive_time_minutes': 15,
+                'drive_time_minutes': drive_time_minutes,
                 'aggregations': {
                     'population': llm_data.get('population', 100000),
                     'median_income': llm_data.get('median_income', 60000),
@@ -734,7 +736,7 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
                 'zip': zip_code
             },
             'isochrone': isochrone_geojson,
-            'drive_time_minutes': 15,
+            'drive_time_minutes': drive_time_minutes,
             'county_data': {
                 **census_data,
                 'county_fips': county_fips,

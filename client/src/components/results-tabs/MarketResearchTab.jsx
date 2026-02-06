@@ -81,7 +81,7 @@ const LoadingState = ({ propertyLocation }) => {
   );
 };
 
-function MarketResearchTab({ marketData, propertyLocation = {}, loading = false }) {
+function MarketResearchTab({ marketData, propertyLocation = {}, loading = false, onRefetchMarketData }) {
 
   const hasMarketData = !!marketData;
   const isLoading = !!loading;
@@ -111,7 +111,15 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false 
   const [mapMode, setMapMode] = useState('counties'); // 'counties' | 'cities'
   const [isochrone, setIsochrone] = useState(null);
   const [heatMetric, setHeatMetric] = useState('rir'); // 'rir' | 'affordability'
+  const [selectedDriveTime, setSelectedDriveTime] = useState(drive_time_minutes);
   const mapRef = useRef(null);
+
+  const handleDriveTimeChange = (newDriveTime) => {
+    setSelectedDriveTime(newDriveTime);
+    if (onRefetchMarketData) {
+      onRefetchMarketData(newDriveTime);
+    }
+  };
 
   const zipCode = property_location?.zip || propertyLocation?.zip;
 
@@ -512,7 +520,19 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false 
             {/* Map overlays */}
             <div className="absolute top-3 left-3 flex flex-wrap gap-2 z-[1000] pointer-events-auto">
               <div className="bg-white/95 backdrop-blur rounded-full shadow-sm border px-3 py-2 text-sm font-semibold flex items-center gap-2">
-                <Clock size={16} className="text-blue-500" /> {drive_time_minutes}-min Drive
+                <Clock size={16} className="text-blue-500" />
+                <select
+                  value={selectedDriveTime}
+                  onChange={(e) => handleDriveTimeChange(Number(e.target.value))}
+                  className="bg-transparent border-none outline-none font-semibold cursor-pointer"
+                >
+                  <option value={5}>5-min</option>
+                  <option value={10}>10-min</option>
+                  <option value={15}>15-min</option>
+                  <option value={20}>20-min</option>
+                  <option value={30}>30-min</option>
+                </select>
+                <span>Drive</span>
               </div>
             </div>
 

@@ -114,14 +114,12 @@ const ResultsPageV2 = ({
       }
     };
     
-    const fetchMarketData = async () => {
-      if (!scenarioData || marketData || marketDataLoading) return;
-      
+    const fetchMarketData = async (driveTimeMinutes = 15) => {
       // Property info can be at root level or under property key
-      const address = scenarioData.address || scenarioData.property?.address;
-      const city = scenarioData.city || scenarioData.property?.city;
-      const state = scenarioData.state || scenarioData.property?.state;
-      const zip = scenarioData.zip || scenarioData.property?.zip;
+      const address = scenarioData?.address || scenarioData?.property?.address;
+      const city = scenarioData?.city || scenarioData?.property?.city;
+      const state = scenarioData?.state || scenarioData?.property?.state;
+      const zip = scenarioData?.zip || scenarioData?.property?.zip;
       
       if (!address || !city || !state || !zip) {
         console.log('[MARKET ANALYSIS] Missing property data:', { address, city, state, zip });
@@ -131,12 +129,13 @@ const ResultsPageV2 = ({
       setMarketDataLoading(true);
       try {
         const API_BASE = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
-        console.log('[MARKET ANALYSIS] Fetching data for:', { address, city, state, zip });
+        console.log('[MARKET ANALYSIS] Fetching data for:', { address, city, state, zip, driveTimeMinutes });
         const response = await fetch(`${API_BASE}/api/market-analysis`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            property: { address, city, state, zip }
+            property: { address, city, state, zip },
+            drive_time_minutes: driveTimeMinutes
           })
         });
         
@@ -157,7 +156,9 @@ const ResultsPageV2 = ({
     
     // Run both in parallel
     runAIAnalysis();
-    fetchMarketData();
+    if (!marketData) {
+      fetchMarketData();
+    }
   }, [dealId, scenarioData]); // Only run when dealId or scenarioData changes
   
   // AI-recommended deal structure (from DealStructureTab)
@@ -4876,7 +4877,9 @@ Keep the answer tight but specific to this property and the numbers above.`;
           <div style={{ padding: '24px' }}>
             <MarketResearchTab
               marketData={marketData}
+              loading={marketDataLoading}
               propertyLocation={propertyLocation}
+              onRefetchMarketData={fetchMarketData}
             />
           </div>
         );
