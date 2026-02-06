@@ -50,9 +50,41 @@ const hudRowToCountyFIPS = (r) => {
   return String(s).padStart(2, '0') + String(county).padStart(3, '0');
 };
 
-function MarketResearchTab({ marketData, propertyLocation = {} }) {
+// Lightweight loading UI so the tab never flashes a "no data" message while fetches run
+const LoadingState = ({ propertyLocation }) => {
+  const locationLabel = [propertyLocation?.city, propertyLocation?.state].filter(Boolean).join(', ');
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div>
+          <div className="text-sm font-semibold text-gray-900">Loading market data</div>
+          <div className="text-xs text-gray-600">{locationLabel || 'Fetching property context...'}</div>
+        </div>
+        <div className="h-2 w-32 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-full w-1/2 bg-gradient-to-r from-blue-400 via-indigo-500 to-blue-400 animate-pulse" />
+        </div>
+      </div>
+      <div className="space-y-3">
+        <div className="h-3 bg-gray-100 rounded animate-pulse" />
+        <div className="h-3 bg-gray-100 rounded animate-pulse w-5/6" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+          <div className="h-40 bg-gray-100 rounded-xl animate-pulse" />
+          <div className="space-y-2">
+            <div className="h-3 bg-gray-100 rounded animate-pulse" />
+            <div className="h-3 bg-gray-100 rounded animate-pulse w-4/5" />
+            <div className="h-3 bg-gray-100 rounded animate-pulse w-3/5" />
+            <div className="h-24 bg-gray-100 rounded-xl animate-pulse" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+function MarketResearchTab({ marketData, propertyLocation = {}, loading = false }) {
 
   const hasMarketData = !!marketData;
+  const isLoading = !!loading;
   const marketDataSafe = marketData || {};
 
   const {
@@ -227,8 +259,18 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
 
   useEffect(() => {
     if (!mapRef.current) return;
-    mapRef.current.setView(mapCenter, mapZoom, { animate: true });
-  }, [mapCenter, mapZoom]);
+    if (subjectLocation?.lat && subjectLocation?.lng) {
+      mapRef.current.setView(mapCenter, mapZoom, { animate: true });
+      return;
+    }
+
+    if (rirPoints.length) {
+      const bounds = L.latLngBounds(rirPoints.map((p) => [p.lat, p.lng]));
+      mapRef.current.fitBounds(bounds, { padding: [48, 48], maxZoom: 9 });
+    } else {
+      mapRef.current.setView(mapCenter, mapZoom, { animate: true });
+    }
+  }, [mapCenter, mapZoom, subjectLocation, rirPoints]);
 
   useEffect(() => {
     const fetchIsochrone = async () => {
@@ -249,6 +291,9 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
   }, [subjectLocation, mapCenter]);
 
   if (!hasMarketData) {
+    if (isLoading) {
+      return <LoadingState propertyLocation={propertyLocation} />;
+    }
     return (
       <div className="p-6 text-center text-gray-500">
         No market data available. Please ensure property address is complete.
@@ -277,12 +322,13 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
     useEffect(() => {
       if (!map || !points.length) return;
       const layer = L.heatLayer(points, {
-        radius: 22,
-        blur: 28,
+        radius: 28,
+        blur: 26,
         maxZoom: 12,
+        minOpacity: 0.28,
         gradient: heatMetric === 'affordability'
-          ? { 0.0: '#e0f2fe', 0.4: '#93c5fd', 0.7: '#2563eb', 1.0: '#1e3a8a' }
-          : { 0.0: '#fef2f2', 0.4: '#fca5a5', 0.7: '#ef4444', 1.0: '#991b1b' }
+          ? { 0.0: '#e0f2fe', 0.35: '#bfdbfe', 0.65: '#2563eb', 1.0: '#1e3a8a' }
+          : { 0.0: '#fff1f2', 0.35: '#fecdd3', 0.65: '#ef4444', 1.0: '#991b1b' }
       }).addTo(map);
       return () => {
         layer.remove();
@@ -361,10 +407,11 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
           }].map((card, idx) => {
             const meta = rirLabel(card.rir);
             return (
-              <div key={card.title} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <div key={card.title} className="relative bg-gradient-to-b from-white to-gray-50 rounded-2xl shadow-sm border border-gray-200 p-4 overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-400 via-indigo-500 to-fuchsia-500" />
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-sky-50 flex items-center justify-center border border-sky-100"><Shield size={16} className="text-sky-500" /></div>
+                    <div className="w-9 h-9 rounded-full bg-sky-50 flex items-center justify-center border border-sky-100 shadow-inner"><Shield size={16} className="text-sky-500" /></div>
                     <div>
                       <div className="text-sm font-semibold text-gray-900">{card.title}</div>
                       <div className="text-[11px] text-gray-500">{card.subtitle}</div>
@@ -373,8 +420,8 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
                   <div className="text-sm font-semibold text-red-600">{fmtPercentFromFraction(card.rir ?? 0)}</div>
                 </div>
                 <div className="mt-2 text-[11px] text-gray-600">Rent-to-Income Ratio (RIR) <span className="text-gray-400">{meta.score}</span></div>
-                <div className="mt-2 w-full h-1 bg-gray-200 rounded-full">
-                  <div className="h-1 rounded-full bg-red-500" style={{ width: `${Math.min(Math.max(((card.rir ?? 0) * 100), 6), 70)}%` }} />
+                <div className="mt-2 w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full bg-gradient-to-r from-rose-400 to-orange-400" style={{ width: `${Math.min(Math.max(((card.rir ?? 0) * 100), 6), 70)}%` }} />
                 </div>
                 <div className="mt-2 text-[11px] text-gray-500">{card.badge}</div>
                 <div className="mt-3 flex items-center gap-3 text-[11px] text-gray-700">
@@ -387,26 +434,6 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
               </div>
             );
           })}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center gap-2 text-sm font-semibold text-gray-900"><MapIcon size={16} className="text-blue-500" /> Cities Comparison</div>
-            <div className="text-[11px] text-gray-500 mt-1">Rent-to-Income Ratio ranking (lower is more affordable)</div>
-            <div className="h-48 mt-3">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={rirComparisonData} margin={{ top: 6, right: 12, left: 0, bottom: 0 }} barSize={18}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis tickFormatter={(v) => `${v.toFixed(1)}%`} tick={{ fontSize: 11 }} domain={[0, 'auto']} />
-                  <Tooltip formatter={(v) => `${v.toFixed(1)}%`} labelFormatter={(l) => l} />
-                  <ReferenceLine y={30} stroke="#9ca3af" strokeDasharray="4 4" />
-                  <Bar dataKey="valuePct" radius={[8, 8, 0, 0]}>
-                    {rirComparisonData.map((_, i) => (
-                      <Cell key={`rir-bar-${i}`} fill={['#2563eb', '#60a5fa', '#a5b4fc'][i % 3]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
         </div>
 
         {/* Leaflet Heat Map (county FMR choropleth + ZIP RIR overlay) */}
@@ -475,139 +502,143 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
             </MapContainer>
 
             {/* Map overlays */}
-            <div className="absolute top-4 left-4 flex flex-wrap gap-2 pointer-events-auto">
-              <div className="bg-white/95 backdrop-blur rounded-full shadow-sm border px-3 py-2 text-sm font-semibold flex items-center gap-2">
-                <Clock size={16} className="text-blue-500" /> {drive_time_minutes}-min Drive
-              </div>
-              {area_classification && (
-                <div className="bg-white/95 backdrop-blur rounded-full shadow-sm border px-3 py-2 text-sm flex items-center gap-2">
-                  <Layers size={16} className="text-emerald-600" /> {area_classification}
+            <div className="absolute inset-0 pointer-events-none z-20">
+              <div className="absolute top-3 left-3 flex flex-wrap gap-2 pointer-events-auto">
+                <div className="bg-white/95 backdrop-blur rounded-full shadow-sm border px-3 py-2 text-sm font-semibold flex items-center gap-2">
+                  <Clock size={16} className="text-blue-500" /> {drive_time_minutes}-min Drive
                 </div>
-              )}
-            </div>
-
-            <div className="absolute top-4 right-1/2 translate-x-1/2 md:translate-x-0 md:left-4 mt-12 md:mt-0 flex flex-wrap gap-2 pointer-events-auto">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setMapMode('counties')}
-                  className={`px-3 py-2 rounded-lg text-xs font-semibold border shadow-sm ${mapMode === 'counties' ? 'bg-white text-gray-900 border-gray-200' : 'bg-white/80 text-gray-600 border-gray-100'}`}
-                >
-                  Counties
-                </button>
-                <button
-                  onClick={() => setMapMode('cities')}
-                  className={`px-3 py-2 rounded-lg text-xs font-semibold border shadow-sm ${mapMode === 'cities' ? 'bg-white text-gray-900 border-gray-200' : 'bg-white/80 text-gray-600 border-gray-100'}`}
-                >
-                  Cities
-                </button>
-              </div>
-              <div className="flex items-center gap-2 bg-white/95 backdrop-blur border border-gray-200 rounded-lg px-3 py-2 text-xs shadow-sm">
-                <span className="text-gray-600">Heat:</span>
-                <select
-                  value={heatMetric}
-                  onChange={(e) => setHeatMetric(e.target.value)}
-                  className="text-gray-900 text-xs border rounded px-2 py-1 bg-white"
-                >
-                  <option value="rir">Rent-to-Income Ratio</option>
-                  <option value="affordability">Affordability (lower RIR hotter)</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="absolute top-4 right-4 w-72 bg-white rounded-xl shadow-md border border-gray-100 p-4 pointer-events-auto space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-[11px] text-gray-500">Analysis Area</div>
-                  <div className="text-sm font-semibold text-gray-900 inline-flex items-center gap-1"><Clock size={14} /> {drive_time_minutes}-min Drive</div>
-                </div>
-                <div className="text-[11px] px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">Market Metrics</div>
-              </div>
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="flex items-start gap-2">
-                  <Users size={16} className="text-blue-500 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-gray-900">{fmt(safeAggregations.population)}</div>
-                    <div className="text-gray-500">Population</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <TrendingUp size={16} className="text-blue-500 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-gray-900">{localPopGrowthPct !== undefined ? fmtPercent(localPopGrowthPct) : 'N/A'}</div>
-                    <div className="text-gray-500">Growth</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <HomeIcon size={16} className="text-blue-500 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-gray-900">{fmt(Math.round(households))}</div>
-                    <div className="text-gray-500">Households</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <DollarSign size={16} className="text-blue-500 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-gray-900">{fmtCurrency(safeAggregations.median_income)}</div>
-                    <div className="text-gray-500">Income</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Briefcase size={16} className="text-blue-500 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-gray-900">{fmt(aggregations?.businesses ?? 0)}</div>
-                    <div className="text-gray-500">Businesses</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Activity size={16} className="text-blue-500 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-gray-900">{aggregations?.walk_score ?? 'N/A'}</div>
-                    <div className="text-gray-500">Walk Score</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Percent size={16} className="text-blue-500 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-gray-900">{safeAggregations.affordability}</div>
-                    <div className="text-gray-500">Affordability</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur rounded-xl shadow-md border border-gray-100 p-4 w-72 pointer-events-auto">
-              <div className="flex items-center justify-between mb-3 text-sm font-semibold text-gray-900">
-                <span>HUD FMR (2BR) Heat</span>
-                <div className="flex gap-2 text-xs text-gray-500">
-                  <span className="px-2 py-1 rounded-full border bg-gray-50">Counties</span>
-                  <span className="px-2 py-1 rounded-full border bg-white">ZIP Heat</span>
-                </div>
-              </div>
-              <div className="space-y-2 text-xs text-gray-700">
-                {DOLLAR_SCALE.map((r, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: r.color }}></span>
-                    <span>{r.label}</span>
-                  </div>
-                ))}
-                <div className="flex items-center gap-2 text-gray-500"><span className="inline-block w-3 h-3 rounded bg-gray-200" /> No data</div>
-              </div>
-              <div className="mt-3 space-y-2 text-[11px] text-gray-600">
-                <div className="flex items-start gap-2">
-                  <Info size={14} className="mt-0.5" />
-                  <span>County colors = HUD FY26 2BR FMR.</span>
-                </div>
-                {heatMetric === 'rir' ? (
-                  <div className="flex items-start gap-2">
-                    <Info size={14} className="mt-0.5 text-rose-500" />
-                    <span>ZIP heat shows higher rent-to-income ratio as hotter.</span>
-                  </div>
-                ) : (
-                  <div className="flex items-start gap-2">
-                    <Info size={14} className="mt-0.5 text-blue-500" />
-                    <span>Affordability heat shows lower RIR as hotter (more room for rent growth).</span>
+                {area_classification && (
+                  <div className="bg-white/95 backdrop-blur rounded-full shadow-sm border px-3 py-2 text-sm flex items-center gap-2">
+                    <Layers size={16} className="text-emerald-600" /> {area_classification}
                   </div>
                 )}
+              </div>
+
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 flex justify-center w-full pointer-events-none">
+                <div className="flex flex-wrap gap-2 items-center bg-white/95 backdrop-blur border border-gray-200 rounded-full px-3 py-2 shadow-md pointer-events-auto">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setMapMode('counties')}
+                      className={`px-3 py-2 rounded-lg text-xs font-semibold border shadow-sm ${mapMode === 'counties' ? 'bg-white text-gray-900 border-gray-200' : 'bg-white/80 text-gray-600 border-gray-100'}`}
+                    >
+                      Counties
+                    </button>
+                    <button
+                      onClick={() => setMapMode('cities')}
+                      className={`px-3 py-2 rounded-lg text-xs font-semibold border shadow-sm ${mapMode === 'cities' ? 'bg-white text-gray-900 border-gray-200' : 'bg-white/80 text-gray-600 border-gray-100'}`}
+                    >
+                      Cities
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 pl-2 ml-1 border-l border-gray-200">
+                    <span className="text-gray-600 text-xs">Heat</span>
+                    <select
+                      value={heatMetric}
+                      onChange={(e) => setHeatMetric(e.target.value)}
+                      className="text-gray-900 text-xs border rounded px-2 py-1 bg-white shadow-inner"
+                    >
+                      <option value="rir">Rent-to-Income Ratio</option>
+                      <option value="affordability">Affordability (lower RIR hotter)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="absolute top-3 right-3 w-72 bg-white rounded-xl shadow-md border border-gray-100 p-4 pointer-events-auto space-y-3 z-30">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-[11px] text-gray-500">Analysis Area</div>
+                    <div className="text-sm font-semibold text-gray-900 inline-flex items-center gap-1"><Clock size={14} /> {drive_time_minutes}-min Drive</div>
+                  </div>
+                  <div className="text-[11px] px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">Market Metrics</div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="flex items-start gap-2">
+                    <Users size={16} className="text-blue-500 mt-0.5" />
+                    <div>
+                      <div className="font-semibold text-gray-900">{fmt(safeAggregations.population)}</div>
+                      <div className="text-gray-500">Population</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <TrendingUp size={16} className="text-blue-500 mt-0.5" />
+                    <div>
+                      <div className="font-semibold text-gray-900">{localPopGrowthPct !== undefined ? fmtPercent(localPopGrowthPct) : 'N/A'}</div>
+                      <div className="text-gray-500">Growth</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <HomeIcon size={16} className="text-blue-500 mt-0.5" />
+                    <div>
+                      <div className="font-semibold text-gray-900">{fmt(Math.round(households))}</div>
+                      <div className="text-gray-500">Households</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <DollarSign size={16} className="text-blue-500 mt-0.5" />
+                    <div>
+                      <div className="font-semibold text-gray-900">{fmtCurrency(safeAggregations.median_income)}</div>
+                      <div className="text-gray-500">Income</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Briefcase size={16} className="text-blue-500 mt-0.5" />
+                    <div>
+                      <div className="font-semibold text-gray-900">{fmt(aggregations?.businesses ?? 0)}</div>
+                      <div className="text-gray-500">Businesses</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Activity size={16} className="text-blue-500 mt-0.5" />
+                    <div>
+                      <div className="font-semibold text-gray-900">{aggregations?.walk_score ?? 'N/A'}</div>
+                      <div className="text-gray-500">Walk Score</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Percent size={16} className="text-blue-500 mt-0.5" />
+                    <div>
+                      <div className="font-semibold text-gray-900">{safeAggregations.affordability}</div>
+                      <div className="text-gray-500">Affordability</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="absolute bottom-4 left-3 bg-white/95 backdrop-blur rounded-xl shadow-md border border-gray-100 p-4 w-72 pointer-events-auto z-30">
+                <div className="flex items-center justify-between mb-3 text-sm font-semibold text-gray-900">
+                  <span>HUD FMR (2BR) Heat</span>
+                  <div className="flex gap-2 text-xs text-gray-500">
+                    <span className="px-2 py-1 rounded-full border bg-gray-50">Counties</span>
+                    <span className="px-2 py-1 rounded-full border bg-white">ZIP Heat</span>
+                  </div>
+                </div>
+                <div className="space-y-2 text-xs text-gray-700">
+                  {DOLLAR_SCALE.map((r, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: r.color }}></span>
+                      <span>{r.label}</span>
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-2 text-gray-500"><span className="inline-block w-3 h-3 rounded bg-gray-200" /> No data</div>
+                </div>
+                <div className="mt-3 space-y-2 text-[11px] text-gray-600">
+                  <div className="flex items-start gap-2">
+                    <Info size={14} className="mt-0.5" />
+                    <span>County colors = HUD FY26 2BR FMR.</span>
+                  </div>
+                  {heatMetric === 'rir' ? (
+                    <div className="flex items-start gap-2">
+                      <Info size={14} className="mt-0.5 text-rose-500" />
+                      <span>ZIP heat shows higher rent-to-income ratio as hotter.</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2">
+                      <Info size={14} className="mt-0.5 text-blue-500" />
+                      <span>Affordability heat shows lower RIR as hotter (more room for rent growth).</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -771,78 +802,174 @@ function MarketResearchTab({ marketData, propertyLocation = {} }) {
       ) : null}
 
       {/* Market Comparison with charts */}
-      <div className="bg-white rounded-2xl shadow-sm p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">Market Comparison</h3>
-        <p className="text-xs text-gray-500 mb-4">Local Area vs. City, State & USA averages</p>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="w-1 h-6 bg-blue-600 rounded-full" />
+          <h3 className="text-xl font-bold text-gray-900">Market Comparison</h3>
+        </div>
+        <p className="text-sm text-gray-500 mb-6 ml-7">Local Area vs. State & National Averages</p>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Median Household Income Chart */}
-            <div className="bg-[#f6f8ff] border border-[#e6ebfb] rounded-2xl p-5 md:p-6 shadow-sm">
-            <div className="flex items-start gap-2 mb-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500 mt-1" />
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Info size={16} className="text-blue-600" />
+              </div>
               <div>
-                <div className="font-semibold text-gray-900">Median Household Income</div>
-                <div className="text-xs text-gray-500">Annual household earnings comparison</div>
+                <div className="text-base font-bold text-gray-900">Median Household Income</div>
+                <div className="text-xs text-gray-600">Annual household earnings comparison</div>
               </div>
             </div>
-            <div className="text-sm text-gray-900 font-semibold mb-2">The 15 minute drive time area has a median household income of {fmtCurrency(safeAggregations.median_income)}</div>
-            <div className="text-xs text-gray-700 space-y-1 mb-3">
-              {formatDeltaLine(city?.name || 'City', safeAggregations.median_income, aggregations?.comparisons?.income_city, true)}
-              {formatDeltaLine('State', safeAggregations.median_income, aggregations?.comparisons?.income_state, true)}
-              {formatDeltaLine('USA', safeAggregations.median_income, aggregations?.comparisons?.income_usa, true)}
+            
+            <div className="text-sm text-gray-900 mb-3 ml-11">
+              The 15 minute drive time area has a median household income of <span className="font-bold">{fmtCurrency(safeAggregations.median_income)}</span>
             </div>
-            <div className="h-42">
+            
+            <div className="text-xs text-gray-700 space-y-1 mb-4 ml-11">
+              {(() => {
+                const cityDiff = aggregations?.comparisons?.income_city ? ((safeAggregations.median_income - aggregations.comparisons.income_city) / aggregations.comparisons.income_city * 100) : null;
+                const stateDiff = aggregations?.comparisons?.income_state ? ((safeAggregations.median_income - aggregations.comparisons.income_state) / aggregations.comparisons.income_state * 100) : null;
+                const usaDiff = aggregations?.comparisons?.income_usa ? ((safeAggregations.median_income - aggregations.comparisons.income_usa) / aggregations.comparisons.income_usa * 100) : null;
+                return (
+                  <>
+                    {cityDiff !== null && (
+                      <div>This is <span className={cityDiff >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{Math.abs(cityDiff).toFixed(1)}% {cityDiff >= 0 ? 'above' : 'below'}</span> the <span className="font-semibold">{city?.name || 'City'}</span> (closest city) average ({fmtCurrency(aggregations.comparisons.income_city)}).</div>
+                    )}
+                    {stateDiff !== null && (
+                      <div>This is <span className={stateDiff >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{Math.abs(stateDiff).toFixed(1)}% {stateDiff >= 0 ? 'above' : 'below'}</span> the <span className="font-semibold">State</span> average ({fmtCurrency(aggregations.comparisons.income_state)}) and <span className={usaDiff >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{Math.abs(usaDiff || 0).toFixed(1)}% {(usaDiff || 0) >= 0 ? 'above' : 'below'}</span> the <span className="font-semibold">USA</span> average ({fmtCurrency(aggregations.comparisons.income_usa || 0)}).</div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+
+            <div className="flex flex-wrap gap-3 mb-3 ml-11 text-xs">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded bg-[#4f46e5]" />
+                <span className="text-gray-700">Local Area: {fmtCurrency(safeAggregations.median_income)}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded bg-[#818cf8]" />
+                <span className="text-gray-700">{city?.name || 'City'}: {fmtCurrency(aggregations?.comparisons?.income_city || 0)}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded bg-[#a5b4fc]" />
+                <span className="text-gray-700">State: {fmtCurrency(aggregations?.comparisons?.income_state || 0)}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded bg-[#c7d2fe]" />
+                <span className="text-gray-700">USA: {fmtCurrency(aggregations?.comparisons?.income_usa || 0)}</span>
+              </div>
+            </div>
+            
+            <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={[
-                  { name: 'Local Area', value: safeAggregations.median_income },
-                  { name: city?.name || 'City', value: aggregations?.comparisons?.income_city },
-                  { name: 'State', value: aggregations?.comparisons?.income_state },
-                  { name: 'USA', value: aggregations?.comparisons?.income_usa }
-                ]} margin={{ top: 4, right: 6, left: 0, bottom: 0 }} barSize={18} barGap={6} barCategoryGap="32%">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#d9e1ff" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis tickFormatter={(v) => `$${Math.round(v/1000)}k`} tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v) => fmtCurrency(v)} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} verticalAlign="bottom" height={24} iconType="circle" iconSize={8} />
-                  <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                    {['#3c4bff','#6378ff','#8aa3ff','#b5c8ff'].map((c, i) => <Cell key={`inc-${i}`} fill={c} />)}
-                  </Bar>
+                <BarChart 
+                  data={[
+                    { name: 'Median Household Income', 
+                      local: safeAggregations.median_income, 
+                      city: aggregations?.comparisons?.income_city || 0,
+                      state: aggregations?.comparisons?.income_state || 0,
+                      usa: aggregations?.comparisons?.income_usa || 0
+                    }
+                  ]} 
+                  margin={{ top: 10, right: 20, left: 20, bottom: 30 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} tickFormatter={(v) => `$${Math.round(v/1000)}k`} axisLine={false} tickLine={false} />
+                  <Tooltip 
+                    formatter={(v) => fmtCurrency(v)} 
+                    contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '12px' }}
+                  />
+                  <Bar dataKey="local" fill="#4f46e5" radius={[8, 8, 0, 0]} barSize={60} />
+                  <Bar dataKey="city" fill="#818cf8" radius={[8, 8, 0, 0]} barSize={60} />
+                  <Bar dataKey="state" fill="#a5b4fc" radius={[8, 8, 0, 0]} barSize={60} />
+                  <Bar dataKey="usa" fill="#c7d2fe" radius={[8, 8, 0, 0]} barSize={60} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
           {/* Population Growth Chart */}
-          <div className="bg-[#f6f8ff] border border-[#e6ebfb] rounded-2xl p-5 md:p-6 shadow-sm">
-            <div className="flex items-start gap-2 mb-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500 mt-1" />
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Info size={16} className="text-blue-600" />
+              </div>
               <div>
-                <div className="font-semibold text-gray-900">Population Growth</div>
-                <div className="text-xs text-gray-500">Annual population change trends</div>
+                <div className="text-base font-bold text-gray-900">Population Growth</div>
+                <div className="text-xs text-gray-600">Annual population change trends</div>
               </div>
             </div>
-            <div className="text-sm text-gray-900 font-semibold mb-2">The 15 minute drive time area has an annual population growth rate of {localPopGrowthPct !== undefined ? fmtPercent(localPopGrowthPct) : 'N/A'}</div>
-            <div className="text-xs text-gray-700 space-y-1 mb-3">
-              {formatDeltaLine(city?.name || 'City', localPopGrowthPct, aggregations?.comparisons?.pop_growth_city)}
-              {formatDeltaLine('State', localPopGrowthPct, aggregations?.comparisons?.pop_growth_state)}
-              {formatDeltaLine('USA', localPopGrowthPct, aggregations?.comparisons?.pop_growth_usa)}
+            
+            <div className="text-sm text-gray-900 mb-3 ml-11">
+              The 15 minute drive time area has an annual population growth rate of <span className="font-bold">{localPopGrowthPct !== undefined ? fmtPercent(localPopGrowthPct) : 'N/A'}</span>
             </div>
-            <div className="h-42">
+            
+            <div className="text-xs text-gray-700 space-y-1 mb-4 ml-11">
+              {(() => {
+                const cityDiff = aggregations?.comparisons?.pop_growth_city !== undefined ? (localPopGrowthPct - aggregations.comparisons.pop_growth_city) : null;
+                const stateDiff = aggregations?.comparisons?.pop_growth_state !== undefined ? (localPopGrowthPct - aggregations.comparisons.pop_growth_state) : null;
+                const usaDiff = aggregations?.comparisons?.pop_growth_usa !== undefined ? (localPopGrowthPct - aggregations.comparisons.pop_growth_usa) : null;
+                return (
+                  <>
+                    {cityDiff !== null && (
+                      <div>This is <span className={cityDiff >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{Math.abs(cityDiff).toFixed(1)}% {cityDiff >= 0 ? 'above' : 'below'}</span> the <span className="font-semibold">{city?.name || 'City'}</span> (closest city) average</div>
+                    )}
+                    {stateDiff !== null && (
+                      <div>This is <span className={stateDiff >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{Math.abs(stateDiff).toFixed(1)}% {stateDiff >= 0 ? 'above' : 'below'}</span> the <span className="font-semibold">State</span> average and <span className={usaDiff >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{Math.abs(usaDiff || 0).toFixed(1)}% {(usaDiff || 0) >= 0 ? 'above' : 'below'}</span> the <span className="font-semibold">USA</span> average</div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+
+            <div className="flex flex-wrap gap-3 mb-3 ml-11 text-xs">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded bg-[#4f46e5]" />
+                <span className="text-gray-700">Local Area: {localPopGrowthPct !== undefined ? fmtPercent(localPopGrowthPct) : 'N/A'}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded bg-[#818cf8]" />
+                <span className="text-gray-700">{city?.name || 'City'}: {aggregations?.comparisons?.pop_growth_city !== undefined ? fmtPercent(aggregations.comparisons.pop_growth_city) : 'N/A'}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded bg-[#a5b4fc]" />
+                <span className="text-gray-700">State: {aggregations?.comparisons?.pop_growth_state !== undefined ? fmtPercent(aggregations.comparisons.pop_growth_state) : 'N/A'}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded bg-[#c7d2fe]" />
+                <span className="text-gray-700">USA: {aggregations?.comparisons?.pop_growth_usa !== undefined ? fmtPercent(aggregations.comparisons.pop_growth_usa) : 'N/A'}</span>
+              </div>
+            </div>
+            
+            <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={[
-                  { name: 'Local Area', value: localPopGrowthPct },
-                  { name: city?.name || 'City', value: aggregations?.comparisons?.pop_growth_city },
-                  { name: 'State', value: aggregations?.comparisons?.pop_growth_state },
-                  { name: 'USA', value: aggregations?.comparisons?.pop_growth_usa }
-                ]} margin={{ top: 4, right: 6, left: 0, bottom: 0 }} barSize={18} barGap={6} barCategoryGap="32%">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#d9e1ff" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis tickFormatter={(v) => `${v?.toFixed ? v.toFixed(1) : v}%`} tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v) => fmtPercent(v)} />
-                  <ReferenceLine y={0} stroke="#9ca3af" />
-                  <Legend wrapperStyle={{ fontSize: 11 }} verticalAlign="bottom" height={24} iconType="circle" iconSize={8} />
-                  <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                    {['#3c4bff','#6378ff','#8aa3ff','#b5c8ff'].map((c, i) => <Cell key={`pop-${i}`} fill={c} />)}
-                  </Bar>
+                <BarChart 
+                  data={[
+                    { name: 'Population Growth', 
+                      local: localPopGrowthPct || 0, 
+                      city: aggregations?.comparisons?.pop_growth_city || 0,
+                      state: aggregations?.comparisons?.pop_growth_state || 0,
+                      usa: aggregations?.comparisons?.pop_growth_usa || 0
+                    }
+                  ]} 
+                  margin={{ top: 10, right: 20, left: 20, bottom: 30 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} tickFormatter={(v) => `${v.toFixed(1)}%`} axisLine={false} tickLine={false} />
+                  <Tooltip 
+                    formatter={(v) => fmtPercent(v)} 
+                    contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '12px' }}
+                  />
+                  <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="3 3" />
+                  <Bar dataKey="local" fill="#4f46e5" radius={[8, 8, 0, 0]} barSize={60} />
+                  <Bar dataKey="city" fill="#818cf8" radius={[8, 8, 0, 0]} barSize={60} />
+                  <Bar dataKey="state" fill="#a5b4fc" radius={[8, 8, 0, 0]} barSize={60} />
+                  <Bar dataKey="usa" fill="#c7d2fe" radius={[8, 8, 0, 0]} barSize={60} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
