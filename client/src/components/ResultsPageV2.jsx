@@ -1,6 +1,6 @@
 /* eslint-disable */
 // V2 Results Page - Complete with All Advanced Features
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import RentRollTab from './results-tabs/RentRollTab';
 import ReactMarkdown from 'react-markdown';
 import { useNavigate } from 'react-router-dom';
@@ -84,6 +84,47 @@ const ResultsPageV2 = ({
   }, [scenarioData]);
   const tabContentRef = useRef(null);
   
+  // Market data fetch function - defined at component level so it can be passed as prop
+  const fetchMarketData = useCallback(async (driveTimeMinutes = 15) => {
+    // Property info can be at root level or under property key
+    const address = scenarioData?.address || scenarioData?.property?.address;
+    const city = scenarioData?.city || scenarioData?.property?.city;
+    const state = scenarioData?.state || scenarioData?.property?.state;
+    const zip = scenarioData?.zip || scenarioData?.property?.zip;
+    
+    if (!address || !city || !state || !zip) {
+      console.log('[MARKET ANALYSIS] Missing property data:', { address, city, state, zip });
+      return;
+    }
+    
+    setMarketDataLoading(true);
+    try {
+      const API_BASE = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
+      console.log('[MARKET ANALYSIS] Fetching data for:', { address, city, state, zip, driveTimeMinutes });
+      const response = await fetch(`${API_BASE}/api/market-analysis`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          property: { address, city, state, zip },
+          drive_time_minutes: driveTimeMinutes
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Market analysis failed: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('[MARKET ANALYSIS] Success:', result);
+      setMarketData(result);
+    } catch (error) {
+      console.error('Market analysis pre-fetch error:', error);
+      // Silently fail - tab will show error message
+    } finally {
+      setMarketDataLoading(false);
+    }
+  }, [scenarioData]);
+  
   // Automatically trigger AI underwriting AND market analysis when results page loads
   useEffect(() => {
     const runAIAnalysis = async () => {
@@ -114,52 +155,12 @@ const ResultsPageV2 = ({
       }
     };
     
-    const fetchMarketData = async (driveTimeMinutes = 15) => {
-      // Property info can be at root level or under property key
-      const address = scenarioData?.address || scenarioData?.property?.address;
-      const city = scenarioData?.city || scenarioData?.property?.city;
-      const state = scenarioData?.state || scenarioData?.property?.state;
-      const zip = scenarioData?.zip || scenarioData?.property?.zip;
-      
-      if (!address || !city || !state || !zip) {
-        console.log('[MARKET ANALYSIS] Missing property data:', { address, city, state, zip });
-        return;
-      }
-      
-      setMarketDataLoading(true);
-      try {
-        const API_BASE = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
-        console.log('[MARKET ANALYSIS] Fetching data for:', { address, city, state, zip, driveTimeMinutes });
-        const response = await fetch(`${API_BASE}/api/market-analysis`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            property: { address, city, state, zip },
-            drive_time_minutes: driveTimeMinutes
-          })
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Market analysis failed: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        console.log('[MARKET ANALYSIS] Success:', result);
-        setMarketData(result);
-      } catch (error) {
-        console.error('Market analysis pre-fetch error:', error);
-        // Silently fail - tab will show error message
-      } finally {
-        setMarketDataLoading(false);
-      }
-    };
-    
     // Run both in parallel
     runAIAnalysis();
     if (!marketData) {
       fetchMarketData();
     }
-  }, [dealId, scenarioData]); // Only run when dealId or scenarioData changes
+  }, [dealId, scenarioData, marketData, underwritingResult, isRunningAI, fetchMarketData]); // Only run when dependencies change
   
   // AI-recommended deal structure (from DealStructureTab)
   const [recommendedStructure, setRecommendedStructure] = useState(null);
