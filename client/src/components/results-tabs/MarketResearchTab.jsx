@@ -438,6 +438,14 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false 
 
         {/* Leaflet Heat Map (county FMR choropleth + ZIP RIR overlay) */}
         <div className="md:col-span-2 bg-white rounded-lg shadow-sm overflow-hidden">
+          <style>{`
+            .leaflet-container .leaflet-tooltip-pane {
+              z-index: 1100 !important;
+            }
+            .leaflet-container .leaflet-overlay-pane {
+              z-index: 400 !important;
+            }
+          `}</style>
           <div className="h-[540px] relative">
             <MapContainer
               center={mapCenter}
@@ -502,173 +510,451 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false 
             </MapContainer>
 
             {/* Map overlays */}
-            <div className="absolute inset-0 pointer-events-none z-20">
-              <div className="absolute top-3 left-3 flex flex-wrap gap-2 pointer-events-auto">
-                <div className="bg-white/95 backdrop-blur rounded-full shadow-sm border px-3 py-2 text-sm font-semibold flex items-center gap-2">
-                  <Clock size={16} className="text-blue-500" /> {drive_time_minutes}-min Drive
+            <div className="absolute top-3 left-3 flex flex-wrap gap-2 z-[1000] pointer-events-auto">
+              <div className="bg-white/95 backdrop-blur rounded-full shadow-sm border px-3 py-2 text-sm font-semibold flex items-center gap-2">
+                <Clock size={16} className="text-blue-500" /> {drive_time_minutes}-min Drive
+              </div>
+              {area_classification && (
+                <div className="bg-white/95 backdrop-blur rounded-full shadow-sm border px-3 py-2 text-sm flex items-center gap-2">
+                  <Layers size={16} className="text-emerald-600" /> {area_classification}
                 </div>
-                {area_classification && (
-                  <div className="bg-white/95 backdrop-blur rounded-full shadow-sm border px-3 py-2 text-sm flex items-center gap-2">
-                    <Layers size={16} className="text-emerald-600" /> {area_classification}
+              )}
+            </div>
+
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 flex justify-center z-[1000] pointer-events-auto">
+              <div className="flex flex-wrap gap-2 items-center bg-white/95 backdrop-blur border border-gray-200 rounded-full px-3 py-2 shadow-md">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setMapMode('counties')}
+                    className={`px-3 py-2 rounded-lg text-xs font-semibold border shadow-sm ${mapMode === 'counties' ? 'bg-white text-gray-900 border-gray-200' : 'bg-white/80 text-gray-600 border-gray-100'}`}
+                  >
+                    Counties
+                  </button>
+                  <button
+                    onClick={() => setMapMode('cities')}
+                    className={`px-3 py-2 rounded-lg text-xs font-semibold border shadow-sm ${mapMode === 'cities' ? 'bg-white text-gray-900 border-gray-200' : 'bg-white/80 text-gray-600 border-gray-100'}`}
+                  >
+                    Cities
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 pl-2 ml-1 border-l border-gray-200">
+                  <span className="text-gray-600 text-xs">Heat</span>
+                  <select
+                    value={heatMetric}
+                    onChange={(e) => setHeatMetric(e.target.value)}
+                    className="text-gray-900 text-xs border rounded px-2 py-1 bg-white shadow-inner"
+                  >
+                    <option value="rir">Rent-to-Income Ratio</option>
+                    <option value="affordability">Affordability (lower RIR hotter)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="absolute top-3 right-3 w-72 bg-white rounded-xl shadow-md border border-gray-100 p-4 space-y-3 z-[1000] pointer-events-auto">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[11px] text-gray-500">Analysis Area</div>
+                  <div className="text-sm font-semibold text-gray-900 inline-flex items-center gap-1"><Clock size={14} /> {drive_time_minutes}-min Drive</div>
+                </div>
+                <div className="text-[11px] px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">Market Metrics</div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="flex items-start gap-2">
+                  <Users size={16} className="text-blue-500 mt-0.5" />
+                  <div>
+                    <div className="font-semibold text-gray-900">{fmt(safeAggregations.population)}</div>
+                    <div className="text-gray-500">Population</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <TrendingUp size={16} className="text-blue-500 mt-0.5" />
+                  <div>
+                    <div className="font-semibold text-gray-900">{localPopGrowthPct !== undefined ? fmtPercent(localPopGrowthPct) : 'N/A'}</div>
+                    <div className="text-gray-500">Growth</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <HomeIcon size={16} className="text-blue-500 mt-0.5" />
+                  <div>
+                    <div className="font-semibold text-gray-900">{fmt(Math.round(households))}</div>
+                    <div className="text-gray-500">Households</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <DollarSign size={16} className="text-blue-500 mt-0.5" />
+                  <div>
+                    <div className="font-semibold text-gray-900">{fmtCurrency(safeAggregations.median_income)}</div>
+                    <div className="text-gray-500">Income</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Briefcase size={16} className="text-blue-500 mt-0.5" />
+                  <div>
+                    <div className="font-semibold text-gray-900">{fmt(aggregations?.businesses ?? 0)}</div>
+                    <div className="text-gray-500">Businesses</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Activity size={16} className="text-blue-500 mt-0.5" />
+                  <div>
+                    <div className="font-semibold text-gray-900">{aggregations?.walk_score ?? 'N/A'}</div>
+                    <div className="text-gray-500">Walk Score</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Percent size={16} className="text-blue-500 mt-0.5" />
+                  <div>
+                    <div className="font-semibold text-gray-900">{safeAggregations.affordability}</div>
+                    <div className="text-gray-500">Affordability</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="absolute bottom-4 left-3 bg-white/95 backdrop-blur rounded-xl shadow-md border border-gray-100 p-4 w-72 z-[1000] pointer-events-auto">
+              <div className="flex items-center justify-between mb-3 text-sm font-semibold text-gray-900">
+                <span>HUD FMR (2BR) Heat</span>
+                <div className="flex gap-2 text-xs text-gray-500">
+                  <span className="px-2 py-1 rounded-full border bg-gray-50">Counties</span>
+                  <span className="px-2 py-1 rounded-full border bg-white">ZIP Heat</span>
+                </div>
+              </div>
+              <div className="space-y-2 text-xs text-gray-700">
+                {DOLLAR_SCALE.map((r, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: r.color }}></span>
+                    <span>{r.label}</span>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2 text-gray-500"><span className="inline-block w-3 h-3 rounded bg-gray-200" /> No data</div>
+              </div>
+              <div className="mt-3 space-y-2 text-[11px] text-gray-600">
+                <div className="flex items-start gap-2">
+                  <Info size={14} className="mt-0.5" />
+                  <span>County colors = HUD FY26 2BR FMR.</span>
+                </div>
+                {heatMetric === 'rir' ? (
+                  <div className="flex items-start gap-2">
+                    <Info size={14} className="mt-0.5 text-rose-500" />
+                    <span>ZIP heat shows higher rent-to-income ratio as hotter.</span>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-2">
+                    <Info size={14} className="mt-0.5 text-blue-500" />
+                    <span>Affordability heat shows lower RIR as hotter (more room for rent growth).</span>
                   </div>
                 )}
-              </div>
-
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 flex justify-center w-full pointer-events-none">
-                <div className="flex flex-wrap gap-2 items-center bg-white/95 backdrop-blur border border-gray-200 rounded-full px-3 py-2 shadow-md pointer-events-auto">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setMapMode('counties')}
-                      className={`px-3 py-2 rounded-lg text-xs font-semibold border shadow-sm ${mapMode === 'counties' ? 'bg-white text-gray-900 border-gray-200' : 'bg-white/80 text-gray-600 border-gray-100'}`}
-                    >
-                      Counties
-                    </button>
-                    <button
-                      onClick={() => setMapMode('cities')}
-                      className={`px-3 py-2 rounded-lg text-xs font-semibold border shadow-sm ${mapMode === 'cities' ? 'bg-white text-gray-900 border-gray-200' : 'bg-white/80 text-gray-600 border-gray-100'}`}
-                    >
-                      Cities
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2 pl-2 ml-1 border-l border-gray-200">
-                    <span className="text-gray-600 text-xs">Heat</span>
-                    <select
-                      value={heatMetric}
-                      onChange={(e) => setHeatMetric(e.target.value)}
-                      className="text-gray-900 text-xs border rounded px-2 py-1 bg-white shadow-inner"
-                    >
-                      <option value="rir">Rent-to-Income Ratio</option>
-                      <option value="affordability">Affordability (lower RIR hotter)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="absolute top-3 right-3 w-72 bg-white rounded-xl shadow-md border border-gray-100 p-4 pointer-events-auto space-y-3 z-30">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-[11px] text-gray-500">Analysis Area</div>
-                    <div className="text-sm font-semibold text-gray-900 inline-flex items-center gap-1"><Clock size={14} /> {drive_time_minutes}-min Drive</div>
-                  </div>
-                  <div className="text-[11px] px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">Market Metrics</div>
-                </div>
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="flex items-start gap-2">
-                    <Users size={16} className="text-blue-500 mt-0.5" />
-                    <div>
-                      <div className="font-semibold text-gray-900">{fmt(safeAggregations.population)}</div>
-                      <div className="text-gray-500">Population</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <TrendingUp size={16} className="text-blue-500 mt-0.5" />
-                    <div>
-                      <div className="font-semibold text-gray-900">{localPopGrowthPct !== undefined ? fmtPercent(localPopGrowthPct) : 'N/A'}</div>
-                      <div className="text-gray-500">Growth</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <HomeIcon size={16} className="text-blue-500 mt-0.5" />
-                    <div>
-                      <div className="font-semibold text-gray-900">{fmt(Math.round(households))}</div>
-                      <div className="text-gray-500">Households</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <DollarSign size={16} className="text-blue-500 mt-0.5" />
-                    <div>
-                      <div className="font-semibold text-gray-900">{fmtCurrency(safeAggregations.median_income)}</div>
-                      <div className="text-gray-500">Income</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Briefcase size={16} className="text-blue-500 mt-0.5" />
-                    <div>
-                      <div className="font-semibold text-gray-900">{fmt(aggregations?.businesses ?? 0)}</div>
-                      <div className="text-gray-500">Businesses</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Activity size={16} className="text-blue-500 mt-0.5" />
-                    <div>
-                      <div className="font-semibold text-gray-900">{aggregations?.walk_score ?? 'N/A'}</div>
-                      <div className="text-gray-500">Walk Score</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Percent size={16} className="text-blue-500 mt-0.5" />
-                    <div>
-                      <div className="font-semibold text-gray-900">{safeAggregations.affordability}</div>
-                      <div className="text-gray-500">Affordability</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="absolute bottom-4 left-3 bg-white/95 backdrop-blur rounded-xl shadow-md border border-gray-100 p-4 w-72 pointer-events-auto z-30">
-                <div className="flex items-center justify-between mb-3 text-sm font-semibold text-gray-900">
-                  <span>HUD FMR (2BR) Heat</span>
-                  <div className="flex gap-2 text-xs text-gray-500">
-                    <span className="px-2 py-1 rounded-full border bg-gray-50">Counties</span>
-                    <span className="px-2 py-1 rounded-full border bg-white">ZIP Heat</span>
-                  </div>
-                </div>
-                <div className="space-y-2 text-xs text-gray-700">
-                  {DOLLAR_SCALE.map((r, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: r.color }}></span>
-                      <span>{r.label}</span>
-                    </div>
-                  ))}
-                  <div className="flex items-center gap-2 text-gray-500"><span className="inline-block w-3 h-3 rounded bg-gray-200" /> No data</div>
-                </div>
-                <div className="mt-3 space-y-2 text-[11px] text-gray-600">
-                  <div className="flex items-start gap-2">
-                    <Info size={14} className="mt-0.5" />
-                    <span>County colors = HUD FY26 2BR FMR.</span>
-                  </div>
-                  {heatMetric === 'rir' ? (
-                    <div className="flex items-start gap-2">
-                      <Info size={14} className="mt-0.5 text-rose-500" />
-                      <span>ZIP heat shows higher rent-to-income ratio as hotter.</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-start gap-2">
-                      <Info size={14} className="mt-0.5 text-blue-500" />
-                      <span>Affordability heat shows lower RIR as hotter (more room for rent growth).</span>
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Population Card */}
-        <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col justify-between">
-          <div className="text-sm text-gray-500 mb-1">Population</div>
-          <div className="text-3xl font-bold text-gray-900">{fmt(safeAggregations.population)}</div>
-          <div className="text-xs text-gray-600 mt-2">{county.name || 'County'}</div>
-        </div>
-
-        {/* Income Card */}
-        <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col justify-between">
-          <div className="text-sm text-gray-500 mb-1">Median Household Income</div>
-          <div className="text-3xl font-bold text-gray-900">{fmtCurrency(safeAggregations.median_income)}</div>
-          <div className="text-xs text-gray-600 mt-2">County median income</div>
-        </div>
-
-        {/* Affordability Card */}
-        <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col justify-between">
-          <div className="text-sm text-gray-500 mb-1">Market Affordability</div>
-          <div className="text-3xl font-bold text-blue-600">
-            {safeAggregations.affordability}
+      {/* Demographic Metrics Grid (matching reference design) */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100">
+              <Clock size={20} className="text-blue-600" />
+            </div>
+            <div>
+              <div className="text-xs text-gray-500">Analysis Area</div>
+              <div className="text-base font-bold text-gray-900">{drive_time_minutes}-min Drive</div>
+            </div>
           </div>
-          <div className="text-xs text-gray-600 mt-2">
-            Rent: {fmtCurrency(safeAggregations.median_rent)}/mo
+          <div className="flex items-center gap-2">
+            <span className="text-xs px-3 py-1.5 rounded-full border bg-blue-50 text-blue-700 font-semibold">Market Metrics</span>
+            <span className="text-xs px-3 py-1.5 rounded-full border bg-gray-50 text-gray-600">Comparisons</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* Population */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <Users size={18} className="text-blue-600" />
+              <span className="text-xs font-semibold text-gray-600">Population</span>
+            </div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">{fmt(safeAggregations.population)}</div>
+            <div className="text-xs text-blue-600 font-semibold">High</div>
+            <div className="text-[10px] text-gray-500 mt-2">
+              {(() => {
+                const countyPop = county_data?.population || 0;
+                if (countyPop > 0) {
+                  const diff = ((safeAggregations.population - countyPop) / countyPop * 100).toFixed(1);
+                  return `${diff}% vs region average of ${fmt(Math.round(countyPop))} per sq`;
+                }
+                return 'Area population density';
+              })()}
+            </div>
+          </div>
+
+          {/* Growth */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <TrendingUp size={18} className="text-blue-600" />
+              <span className="text-xs font-semibold text-gray-600">Growth</span>
+            </div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">{localPopGrowthPct !== undefined ? fmtPercent(localPopGrowthPct) : 'N/A'}</div>
+            <div className="text-xs text-red-600 font-semibold">{localPopGrowthPct < 0 ? 'Low' : 'High'}</div>
+            <div className="text-[10px] text-gray-500 mt-2">
+              Yearly Population Growth compared to Texas average of 1.2%
+            </div>
+          </div>
+
+          {/* Households */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <HomeIcon size={18} className="text-blue-600" />
+              <span className="text-xs font-semibold text-gray-600">Households</span>
+            </div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">{fmt(Math.round(households))}</div>
+            <div className="text-xs text-blue-600 font-semibold">High</div>
+            <div className="text-[10px] text-gray-500 mt-2">
+              388 households per 1,000 people, compared to Texas average of 383
+            </div>
+          </div>
+
+          {/* Single Family */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <HomeIcon size={18} className="text-blue-600" />
+              <span className="text-xs font-semibold text-gray-600">Single Family</span>
+            </div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">60,142</div>
+            <div className="text-xs text-red-600 font-semibold">Low</div>
+            <div className="text-[10px] text-gray-500 mt-2">
+              105.2 homes per 1,000 people, compared to Texas average of 268.7
+            </div>
+          </div>
+
+          {/* Income */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <DollarSign size={18} className="text-blue-600" />
+              <span className="text-xs font-semibold text-gray-600">Income</span>
+            </div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">{fmtCurrency(safeAggregations.median_income)}</div>
+            <div className="text-xs text-blue-600 font-semibold">High</div>
+            <div className="text-[10px] text-gray-500 mt-2">
+              Median Household Income compared to Texas average of ${aggregations?.comparisons?.income_state ? Math.round(aggregations.comparisons.income_state).toLocaleString() : '63,799'}
+            </div>
+          </div>
+
+          {/* Businesses */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <Briefcase size={18} className="text-blue-600" />
+              <span className="text-xs font-semibold text-gray-600">Businesses</span>
+            </div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">{fmt(aggregations?.businesses ?? 17476)}</div>
+            <div className="text-xs text-blue-600 font-semibold">High</div>
+            <div className="text-[10px] text-gray-500 mt-2">
+              31 businesses per 1,000 people, compared to Texas average of 15
+            </div>
+          </div>
+
+          {/* Walk Score */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <Activity size={18} className="text-blue-600" />
+              <span className="text-xs font-semibold text-gray-600">Walk Score</span>
+            </div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">{aggregations?.walk_score ?? 70}</div>
+            <div className="text-xs text-gray-600 font-semibold">Average</div>
+            <div className="text-[10px] text-gray-500 mt-2">
+              This area is somewhat walkable. The national average is 48, based on 100 point scale.
+            </div>
+          </div>
+
+          {/* Affordability */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <Percent size={18} className="text-blue-600" />
+              <span className="text-xs font-semibold text-gray-600">Affordability</span>
+            </div>
+            <div className="text-2xl font-bold text-blue-600 mb-1">{safeAggregations.affordability}</div>
+            <div className="text-xs text-blue-600 font-semibold">Rent ${fmtCurrency(safeAggregations.median_rent)}/mo</div>
+            <div className="text-[10px] text-gray-500 mt-2">
+              Rent-to-income ratio shows market affordability
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Market Comparison with charts */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="w-1 h-6 bg-blue-600 rounded-full" />
+          <h3 className="text-xl font-bold text-gray-900">Market Comparison</h3>
+        </div>
+        <p className="text-sm text-gray-500 mb-6 ml-7">Local Area vs. State & National Averages</p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Median Household Income Chart */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Info size={16} className="text-blue-600" />
+              </div>
+              <div>
+                <div className="text-base font-bold text-gray-900">Median Household Income</div>
+                <div className="text-xs text-gray-600">Annual household earnings comparison</div>
+              </div>
+            </div>
+            
+            <div className="text-sm text-gray-900 mb-3 ml-11">
+              The 15 minute drive time area has a median household income of <span className="font-bold">{fmtCurrency(safeAggregations.median_income)}</span>
+            </div>
+            
+            <div className="text-xs text-gray-700 space-y-1 mb-4 ml-11">
+              {(() => {
+                const cityDiff = aggregations?.comparisons?.income_city ? ((safeAggregations.median_income - aggregations.comparisons.income_city) / aggregations.comparisons.income_city * 100) : null;
+                const stateDiff = aggregations?.comparisons?.income_state ? ((safeAggregations.median_income - aggregations.comparisons.income_state) / aggregations.comparisons.income_state * 100) : null;
+                const usaDiff = aggregations?.comparisons?.income_usa ? ((safeAggregations.median_income - aggregations.comparisons.income_usa) / aggregations.comparisons.income_usa * 100) : null;
+                return (
+                  <>
+                    {cityDiff !== null && (
+                      <div>This is <span className={cityDiff >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{Math.abs(cityDiff).toFixed(1)}% {cityDiff >= 0 ? 'above' : 'below'}</span> the <span className="font-semibold">{city?.name || 'City'}</span> (closest city) average ({fmtCurrency(aggregations.comparisons.income_city)}).</div>
+                    )}
+                    {stateDiff !== null && (
+                      <div>This is <span className={stateDiff >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{Math.abs(stateDiff).toFixed(1)}% {stateDiff >= 0 ? 'above' : 'below'}</span> the <span className="font-semibold">State</span> average ({fmtCurrency(aggregations.comparisons.income_state)}) and <span className={usaDiff >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{Math.abs(usaDiff || 0).toFixed(1)}% {(usaDiff || 0) >= 0 ? 'above' : 'below'}</span> the <span className="font-semibold">USA</span> average ({fmtCurrency(aggregations.comparisons.income_usa || 0)}).</div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+
+            <div className="flex flex-wrap gap-3 mb-3 ml-11 text-xs">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded bg-[#4f46e5]" />
+                <span className="text-gray-700">Local Area: {fmtCurrency(safeAggregations.median_income)}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded bg-[#818cf8]" />
+                <span className="text-gray-700">{city?.name || 'City'}: {fmtCurrency(aggregations?.comparisons?.income_city || 0)}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded bg-[#a5b4fc]" />
+                <span className="text-gray-700">State: {fmtCurrency(aggregations?.comparisons?.income_state || 0)}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded bg-[#c7d2fe]" />
+                <span className="text-gray-700">USA: {fmtCurrency(aggregations?.comparisons?.income_usa || 0)}</span>
+              </div>
+            </div>
+            
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart 
+                  data={[
+                    { name: 'Median Household Income', 
+                      local: safeAggregations.median_income, 
+                      city: aggregations?.comparisons?.income_city || 0,
+                      state: aggregations?.comparisons?.income_state || 0,
+                      usa: aggregations?.comparisons?.income_usa || 0
+                    }
+                  ]} 
+                  margin={{ top: 10, right: 20, left: 20, bottom: 30 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} tickFormatter={(v) => `$${Math.round(v/1000)}k`} axisLine={false} tickLine={false} />
+                  <Tooltip 
+                    formatter={(v) => fmtCurrency(v)} 
+                    contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '12px' }}
+                  />
+                  <Bar dataKey="local" fill="#4f46e5" radius={[8, 8, 0, 0]} barSize={60} />
+                  <Bar dataKey="city" fill="#818cf8" radius={[8, 8, 0, 0]} barSize={60} />
+                  <Bar dataKey="state" fill="#a5b4fc" radius={[8, 8, 0, 0]} barSize={60} />
+                  <Bar dataKey="usa" fill="#c7d2fe" radius={[8, 8, 0, 0]} barSize={60} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Population Growth Chart */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Info size={16} className="text-blue-600" />
+              </div>
+              <div>
+                <div className="text-base font-bold text-gray-900">Population Growth</div>
+                <div className="text-xs text-gray-600">Annual population change trends</div>
+              </div>
+            </div>
+            
+            <div className="text-sm text-gray-900 mb-3 ml-11">
+              The 15 minute drive time area has an annual population growth rate of <span className="font-bold">{localPopGrowthPct !== undefined ? fmtPercent(localPopGrowthPct) : 'N/A'}</span>
+            </div>
+            
+            <div className="text-xs text-gray-700 space-y-1 mb-4 ml-11">
+              {(() => {
+                const cityDiff = aggregations?.comparisons?.pop_growth_city !== undefined ? (localPopGrowthPct - aggregations.comparisons.pop_growth_city) : null;
+                const stateDiff = aggregations?.comparisons?.pop_growth_state !== undefined ? (localPopGrowthPct - aggregations.comparisons.pop_growth_state) : null;
+                const usaDiff = aggregations?.comparisons?.pop_growth_usa !== undefined ? (localPopGrowthPct - aggregations.comparisons.pop_growth_usa) : null;
+                return (
+                  <>
+                    {cityDiff !== null && (
+                      <div>This is <span className={cityDiff >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{Math.abs(cityDiff).toFixed(1)}% {cityDiff >= 0 ? 'above' : 'below'}</span> the <span className="font-semibold">{city?.name || 'City'}</span> (closest city) average</div>
+                    )}
+                    {stateDiff !== null && (
+                      <div>This is <span className={stateDiff >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{Math.abs(stateDiff).toFixed(1)}% {stateDiff >= 0 ? 'above' : 'below'}</span> the <span className="font-semibold">State</span> average and <span className={usaDiff >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{Math.abs(usaDiff || 0).toFixed(1)}% {(usaDiff || 0) >= 0 ? 'above' : 'below'}</span> the <span className="font-semibold">USA</span> average</div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+
+            <div className="flex flex-wrap gap-3 mb-3 ml-11 text-xs">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded bg-[#4f46e5]" />
+                <span className="text-gray-700">Local Area: {localPopGrowthPct !== undefined ? fmtPercent(localPopGrowthPct) : 'N/A'}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded bg-[#818cf8]" />
+                <span className="text-gray-700">{city?.name || 'City'}: {aggregations?.comparisons?.pop_growth_city !== undefined ? fmtPercent(aggregations.comparisons.pop_growth_city) : 'N/A'}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded bg-[#a5b4fc]" />
+                <span className="text-gray-700">State: {aggregations?.comparisons?.pop_growth_state !== undefined ? fmtPercent(aggregations.comparisons.pop_growth_state) : 'N/A'}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded bg-[#c7d2fe]" />
+                <span className="text-gray-700">USA: {aggregations?.comparisons?.pop_growth_usa !== undefined ? fmtPercent(aggregations.comparisons.pop_growth_usa) : 'N/A'}</span>
+              </div>
+            </div>
+            
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart 
+                  data={[
+                    { name: 'Population Growth', 
+                      local: localPopGrowthPct || 0, 
+                      city: aggregations?.comparisons?.pop_growth_city || 0,
+                      state: aggregations?.comparisons?.pop_growth_state || 0,
+                      usa: aggregations?.comparisons?.pop_growth_usa || 0
+                    }
+                  ]} 
+                  margin={{ top: 10, right: 20, left: 20, bottom: 30 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} tickFormatter={(v) => `${v.toFixed(1)}%`} axisLine={false} tickLine={false} />
+                  <Tooltip 
+                    formatter={(v) => fmtPercent(v)} 
+                    contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '12px' }}
+                  />
+                  <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="3 3" />
+                  <Bar dataKey="local" fill="#4f46e5" radius={[8, 8, 0, 0]} barSize={60} />
+                  <Bar dataKey="city" fill="#818cf8" radius={[8, 8, 0, 0]} barSize={60} />
+                  <Bar dataKey="state" fill="#a5b4fc" radius={[8, 8, 0, 0]} barSize={60} />
+                  <Bar dataKey="usa" fill="#c7d2fe" radius={[8, 8, 0, 0]} barSize={60} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       </div>
