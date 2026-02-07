@@ -8,9 +8,8 @@ import ExtractedFieldsTable from '../components/ExtractedFieldsTable';
 export default function PropertyDetailsWizardTab({
   verifiedData,
   confidence = {},
-  onFieldChange,
   onViewSource,
-  onResolveConflict
+  onSelectValue
 }) {
   
   // Define fields to display with formatters
@@ -127,8 +126,7 @@ export default function PropertyDetailsWizardTab({
         fields={propertyFields}
         confidence={confidence}
         onViewSource={onViewSource}
-        onFieldChange={onFieldChange}
-        onResolveConflict={onResolveConflict}
+        onSelectValue={onSelectValue}
       />
 
       <div style={{

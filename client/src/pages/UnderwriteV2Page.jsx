@@ -12,7 +12,6 @@ import WizardStepNavigation from '../components/WizardStepNavigation';
 import PropertyDetailsWizardTab from '../components/wizard/PropertyDetailsWizardTab';
 import FinancialDataWizardTab from '../components/wizard/FinancialDataWizardTab';
 import PDFViewerModal from '../components/PDFViewerModal';
-import ConflictResolutionModal from '../components/ConflictResolutionModal';
 
 const API_BASE = "http://localhost:8010";
 
@@ -159,6 +158,7 @@ function UnderwriteV2Page() {
   const [file, setFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
+  const [uploadedFileUrl, setUploadedFileUrl] = useState(null);
   
   // Parse result
   const [dealId, setDealId] = useState(null);
@@ -166,19 +166,13 @@ function UnderwriteV2Page() {
   // Wizard state (editable copy of parsed data)
   const [verifiedData, setVerifiedData] = useState(null);
   const [activeTab, setActiveTab] = useState('property');
-  const [validationErrors, setValidationErrors] = useState({});
-  const [completedSteps, setCompletedSteps] = useState([]);
+  const [completedSteps] = useState([]);
   
   // PDF Viewer Modal state
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [selectedField, setSelectedField] = useState(null);
   const [highlightInfo, setHighlightInfo] = useState({});
-  
-  // Conflict Resolution Modal state
-  const [conflictModalOpen, setConflictModalOpen] = useState(false);
-  const [conflictField, setConflictField] = useState(null);
-  const [conflictAlternatives, setConflictAlternatives] = useState([]);
   
   // Results page state (live scenario modeling)
   const [scenarioData, setScenarioData] = useState(null);
@@ -285,6 +279,9 @@ function UnderwriteV2Page() {
     if (selectedFile) {
       setFile(selectedFile);
       setUploadError(null);
+      // Create URL for PDF viewing
+      const fileUrl = URL.createObjectURL(selectedFile);
+      setUploadedFileUrl(fileUrl);
     }
   };
 
@@ -359,70 +356,62 @@ function UnderwriteV2Page() {
         [field]: value
       }
     }));
-    
-    // Clear validation error
-    setValidationErrors(prev => {
-      const newErrors = {...prev};
-      delete newErrors[`${section}.${field}`];
-      return newErrors;
-    });
   };
   
   // Handle viewing source in PDF
   const handleViewSource = (field, confidence) => {
     console.log('[PDF Viewer] Opening for field:', field.label, confidence);
     setSelectedField(field);
+    
+    // Extract page number from source string (e.g., "Page 3" -> 3)
+    let pageNum = 1;
+    if (confidence.source) {
+      const match = confidence.source.match(/[Pp]age\s+(\d+)/);
+      if (match) pageNum = parseInt(match[1], 10);
+    }
+    
     setHighlightInfo({
-      page: confidence.page || 1,
+      page: pageNum,
       source: confidence.source,
       note: confidence.note,
       searchTerm: field.value?.toString()
     });
     
-    // TODO: Set actual PDF URL from uploaded file
-    // For now, just open the modal
+    setPdfUrl(uploadedFileUrl);
     setPdfViewerOpen(true);
   };
   
-  // Handle conflict resolution
-  const handleResolveConflict = (field, alternatives) => {
-    console.log('[Conflict] Opening modal for field:', field.label, alternatives);
-    setConflictField(field);
-    setConflictAlternatives(alternatives);
-    setConflictModalOpen(true);
-  };
-  
-  // Handle selecting resolved value
-  const handleSelectConflictValue = (field, selectedValue) => {
+  // Handle selecting value from inline conflicts
+  const handleSelectValue = (field, selectedValue) => {
     console.log('[Conflict] User selected value:', selectedValue, 'for field:', field.label);
     // Update verifiedData with the selected value
     const pathParts = field.path.split('.');
     if (pathParts.length === 2) {
       updateVerifiedField(pathParts[0], pathParts[1], selectedValue);
     }
-    setConflictModalOpen(false);
   };
 
   // Validate required fields
   const validateWizard = () => {
-    const errors = {};
     const required = {
       property: ['address', 'units'],
       pricing_financing: ['price'],
-      // Require T12 income & expense inputs, not pro forma
       pnl: ['gross_potential_rent', 'operating_expenses_t12', 'noi_t12']
     };
 
+    const errors = [];
     Object.keys(required).forEach(section => {
       required[section].forEach(field => {
         if (!verifiedData?.[section]?.[field]) {
-          errors[`${section}.${field}`] = true;
+          errors.push(`${section}.${field}`);
         }
       });
     });
 
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+    if (errors.length > 0) {
+      console.log('[Validation] Missing required fields:', errors);
+    }
+    return errors.length === 0;
   };
 
   // Complete wizard → move to results
@@ -782,9 +771,8 @@ function UnderwriteV2Page() {
             <PropertyDetailsWizardTab
               verifiedData={verifiedData}
               confidence={confidence}
-              onFieldChange={updateVerifiedField}
               onViewSource={handleViewSource}
-              onResolveConflict={handleResolveConflict}
+              onSelectValue={handleSelectValue}
             />
           )}
 
@@ -792,9 +780,8 @@ function UnderwriteV2Page() {
             <FinancialDataWizardTab
               verifiedData={verifiedData}
               confidence={confidence}
-              onFieldChange={updateVerifiedField}
               onViewSource={handleViewSource}
-              onResolveConflict={handleResolveConflict}
+              onSelectValue={handleSelectValue}
             />
           )}
 
@@ -956,7 +943,7 @@ function UnderwriteV2Page() {
           </div>
         </div>
 
-        {/* Modals */}
+        {/* PDF Viewer Modal */}
         <PDFViewerModal
           isOpen={pdfViewerOpen}
           onClose={() => setPdfViewerOpen(false)}
@@ -964,15 +951,6 @@ function UnderwriteV2Page() {
           highlightInfo={highlightInfo}
           fieldLabel={selectedField?.label}
           fieldValue={selectedField?.value}
-        />
-
-        <ConflictResolutionModal
-          isOpen={conflictModalOpen}
-          onClose={() => setConflictModalOpen(false)}
-          field={conflictField}
-          alternatives={conflictAlternatives}
-          currentValue={conflictField?.value}
-          onSelectValue={handleSelectConflictValue}
         />
       </div>
     );

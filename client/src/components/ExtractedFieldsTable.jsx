@@ -1,46 +1,16 @@
-import React, { useState } from 'react';
-import { CheckCircle, AlertCircle, Eye, FileText, Info } from 'lucide-react';
+import React, { useState, Fragment } from 'react';
+import { CheckCircle, AlertCircle, FileText, File } from 'lucide-react';
 
 /**
  * ExtractedFieldsTable - Cactus-style document extraction display
- * Shows extracted fields with confidence scores, sources, and conflicts
+ * Shows extracted fields with confidence scores, sources, and inline conflict resolution
  */
 export default function ExtractedFieldsTable({ 
   fields = [],
   confidence = {},
   onViewSource,
-  onFieldChange,
-  onResolveConflict
+  onSelectValue
 }) {
-  
-  const getConfidenceBadge = (level) => {
-    const badges = {
-      high: { bg: '#dcfce7', color: '#166534', text: 'High', icon: CheckCircle },
-      medium: { bg: '#fef3c7', color: '#92400e', text: 'Medium', icon: AlertCircle },
-      low: { bg: '#fee2e2', color: '#991b1b', text: 'Low', icon: AlertCircle },
-      missing: { bg: '#f3f4f6', color: '#6b7280', text: 'Missing', icon: Info }
-    };
-    
-    const badge = badges[level] || badges.missing;
-    const Icon = badge.icon;
-    
-    return (
-      <span style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 4,
-        padding: '4px 10px',
-        borderRadius: 12,
-        fontSize: 12,
-        fontWeight: 600,
-        background: badge.bg,
-        color: badge.color
-      }}>
-        <Icon size={14} />
-        {badge.text}
-      </span>
-    );
-  };
   
   const getConfidencePercent = (level) => {
     const percentMap = {
@@ -53,29 +23,21 @@ export default function ExtractedFieldsTable({
   };
   
   return (
-    <div style={{
-      background: '#fff',
-      border: '1px solid #e5e7eb',
-      borderRadius: 12,
-      overflow: 'hidden'
-    }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+    <div style={{ marginTop: 24 }}>
+      <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
         <thead>
-          <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-            <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 13, fontWeight: 700, color: '#374151' }}>
-              Field
+          <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+            <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              FIELD NAME ↕
             </th>
-            <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 13, fontWeight: 700, color: '#374151' }}>
-              Value
+            <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              VALUE
             </th>
-            <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 13, fontWeight: 700, color: '#374151' }}>
-              Confidence
+            <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              SOURCE
             </th>
-            <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 13, fontWeight: 700, color: '#374151' }}>
-              Source
-            </th>
-            <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: 13, fontWeight: 700, color: '#374151' }}>
-              Actions
+            <th style={{ padding: '12px 16px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              CONFIDENCE
             </th>
           </tr>
         </thead>
@@ -85,113 +47,177 @@ export default function ExtractedFieldsTable({
             const conf = confidence[fieldPath] || {};
             const level = conf.level || 'missing';
             const hasAlternatives = conf.alternatives && conf.alternatives.length > 0;
+            // Conflicts are always expanded inline
+            const expanded = hasAlternatives;
             
             return (
+              <Fragment key={fieldPath}>
               <tr 
-                key={fieldPath}
                 style={{
-                  borderBottom: idx < fields.length - 1 ? '1px solid #f3f4f6' : 'none',
-                  transition: 'background 0.15s'
+                  background: '#fff',
+                  cursor: level !== 'missing' ? 'pointer' : 'default',
+                  transition: 'all 0.15s'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                onClick={() => level !== 'missing' && onViewSource && onViewSource(field, conf)}
+                onMouseEnter={(e) => {
+                  if (level !== 'missing') {
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = 'none';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
               >
-                <td style={{ padding: '12px 16px' }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>
+                <td style={{ padding: '16px', borderLeft: '3px solid transparent' }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>
                     {field.label}
                   </div>
-                  {field.required && (
-                    <div style={{ fontSize: 11, color: '#ef4444', marginTop: 2 }}>
-                      * Required
-                    </div>
-                  )}
                 </td>
                 
-                <td style={{ padding: '12px 16px' }}>
-                  <div style={{ fontSize: 14, color: '#111827', fontFamily: 'monospace' }}>
-                    {field.value !== null && field.value !== undefined && field.value !== '' 
-                      ? field.formatter ? field.formatter(field.value) : field.value 
-                      : <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>Not found</span>
-                    }
-                  </div>
-                  {hasAlternatives && (
-                    <div style={{ marginTop: 6 }}>
-                      <button
-                        onClick={() => onResolveConflict && onResolveConflict(field, conf.alternatives)}
-                        style={{
-                          padding: '4px 8px',
-                          background: '#fef3c7',
-                          color: '#92400e',
-                          border: '1px solid #fcd34d',
-                          borderRadius: 6,
-                          fontSize: 11,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4
-                        }}
-                      >
-                        <AlertCircle size={12} />
-                        {conf.alternatives.length} conflicts - click to resolve
-                      </button>
-                    </div>
-                  )}
-                </td>
-                
-                <td style={{ padding: '12px 16px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {getConfidenceBadge(level)}
-                    <div style={{ fontSize: 11, color: '#6b7280' }}>
-                      {getConfidencePercent(level)}%
-                    </div>
+                <td style={{ padding: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {level !== 'missing' && <CheckCircle size={16} color="#10b981" />}
+                    <span style={{ fontSize: 15, color: '#111827', fontWeight: 500 }}>
+                      {field.value !== null && field.value !== undefined && field.value !== '' 
+                        ? field.formatter ? field.formatter(field.value) : field.value 
+                        : <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>Not found</span>
+                      }
+                    </span>
                   </div>
                 </td>
                 
-                <td style={{ padding: '12px 16px' }}>
+                <td style={{ padding: '16px' }}>
                   <div style={{ fontSize: 13, color: '#6b7280' }}>
-                    {conf.source || 'Unknown'}
+                    {conf.source ? (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <File size={12} color="#9ca3af" />
+                          <span>{conf.source.split(' ')[0]}</span>
+                        </div>
+                      </>
+                    ) : 'Unknown'}
                   </div>
-                  {conf.note && (
-                    <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4, fontStyle: 'italic' }}>
-                      {conf.note}
-                    </div>
-                  )}
                 </td>
                 
-                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                  {level !== 'missing' && onViewSource && (
-                    <button
-                      onClick={() => onViewSource(field, conf)}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 4,
-                        padding: '6px 12px',
-                        background: '#eff6ff',
-                        color: '#1d4ed8',
-                        border: '1px solid #bfdbfe',
-                        borderRadius: 6,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#dbeafe';
-                        e.currentTarget.style.borderColor = '#93c5fd';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#eff6ff';
-                        e.currentTarget.style.borderColor = '#bfdbfe';
-                      }}
-                    >
-                      <Eye size={14} />
-                      View Source
-                    </button>
-                  )}
+                <td style={{ padding: '16px', textAlign: 'right' }}>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: level === 'high' ? '#10b981' : level === 'medium' ? '#f59e0b' : '#ef4444'
+                  }}>
+                    {level === 'high' && '↑'}
+                    {getConfidencePercent(level)}%
+                  </div>
                 </td>
               </tr>
+              
+              {/* Inline conflict resolution like Cactus */}
+              {hasAlternatives && expanded && (
+                <tr>
+                  <td colSpan="4" style={{ padding: '0 16px 16px 16px', background: '#fffbeb' }}>
+                    <div style={{
+                      padding: 16,
+                      background: '#fff',
+                      border: '2px solid #fcd34d',
+                      borderRadius: 8
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        marginBottom: 16,
+                        color: '#92400e'
+                      }}>
+                        <AlertCircle size={16} />
+                        <span style={{ fontSize: 14, fontWeight: 600 }}>
+                          {conf.alternatives.length} conflicting values found - select the correct one
+                        </span>
+                      </div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {/* Current value */}
+                        <label style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: 16,
+                          background: '#f9fafb',
+                          border: '2px solid #e5e7eb',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.borderColor = '#3b82f6'}
+                        onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e5e7eb'}
+                        >
+                          <input
+                            type="radio"
+                            name={fieldPath}
+                            value={field.value}
+                            defaultChecked
+                            onChange={() => onSelectValue && onSelectValue(field, field.value)}
+                            style={{ width: 18, height: 18, cursor: 'pointer' }}
+                          />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 15, fontWeight: 600, color: '#111827' }}>
+                              {field.formatter ? field.formatter(field.value) : field.value}
+                            </div>
+                            <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+                              {conf.source || 'Primary source'}
+                            </div>
+                          </div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#10b981' }}>
+                            {getConfidencePercent(level)}%
+                          </div>
+                        </label>
+                        
+                        {/* Alternative values */}
+                        {conf.alternatives.map((alt, altIdx) => (
+                          <label key={altIdx} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            padding: 16,
+                            background: '#fff',
+                            border: '2px solid #e5e7eb',
+                            borderRadius: 8,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.borderColor = '#3b82f6'}
+                          onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e5e7eb'}
+                          >
+                            <input
+                              type="radio"
+                              name={fieldPath}
+                              value={alt}
+                              onChange={() => onSelectValue && onSelectValue(field, alt)}
+                              style={{ width: 18, height: 18, cursor: 'pointer' }}
+                            />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 15, fontWeight: 600, color: '#111827' }}>
+                                {field.formatter ? field.formatter(alt) : alt}
+                              </div>
+                              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+                                Alternative source {altIdx + 1}
+                              </div>
+                            </div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b' }}>
+                              {Math.max(50, getConfidencePercent(level) - (altIdx + 1) * 10)}%
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             );
           })}
         </tbody>

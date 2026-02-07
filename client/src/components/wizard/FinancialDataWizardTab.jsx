@@ -8,9 +8,8 @@ import ExtractedFieldsTable from '../components/ExtractedFieldsTable';
 export default function FinancialDataWizardTab({
   verifiedData,
   confidence = {},
-  onFieldChange,
   onViewSource,
-  onResolveConflict
+  onSelectValue
 }) {
   
   const formatCurrency = (val) => {
@@ -153,8 +152,7 @@ export default function FinancialDataWizardTab({
         fields={financialFields}
         confidence={confidence}
         onViewSource={onViewSource}
-        onFieldChange={onFieldChange}
-        onResolveConflict={onResolveConflict}
+        onSelectValue={onSelectValue}
       />
 
       <div style={{
