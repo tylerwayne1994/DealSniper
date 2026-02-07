@@ -129,22 +129,13 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
       fips = stateCode + countyCode;
     }
     
-    // Try getting from property location ZIP
-    if (!fips && zipCode) {
-      // Look up county FIPS from ZIP in FMR data
-      const fmrEntry = Object.values(fmrData).find(d => d.zip === zipCode);
-      if (fmrEntry?.county_fips) {
-        fips = String(fmrEntry.county_fips).padStart(5, '0');
-      }
-    }
-    
     console.log('🏠 Property county FIPS:', fips);
     console.log('  county object:', county);
     console.log('  county_data object:', county_data);
     console.log('  state object:', state);
     console.log('  zipCode:', zipCode);
     return fips;
-  }, [county, county_data, state, zipCode, fmrData]);
+  }, [county, county_data, state, zipCode]);
 
   // Load CSV data on mount
   useEffect(() => {
