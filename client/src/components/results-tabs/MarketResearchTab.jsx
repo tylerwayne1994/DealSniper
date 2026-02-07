@@ -119,15 +119,25 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
 
   // Get property county FIPS
   const propertyCountyFips = useMemo(() => {
-    return county?.fips || county_data?.fips || null;
+    const fips = county?.fips || county_data?.fips || null;
+    console.log('🏠 Property county FIPS:', fips);
+    console.log('  county object:', county);
+    console.log('  county_data object:', county_data);
+    return fips;
   }, [county, county_data]);
 
   // Load CSV data on mount
   useEffect(() => {
+    console.log('🔄 STARTING CSV DATA LOAD...');
     const loadCSVData = async () => {
       try {
         // Load ZIP centroids
+        console.log('📍 Fetching ZIP centroids from /zcta_centroids.csv...');
         const centroidsRes = await fetch('/zcta_centroids.csv');
+        if (!centroidsRes.ok) {
+          console.error('❌ ZIP centroids fetch failed:', centroidsRes.status);
+          return;
+        }
         const centroidsTxt = await centroidsRes.text();
         Papa.parse(centroidsTxt, {
           header: true,
@@ -140,12 +150,19 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                 centroids[zip] = { lat: parseFloat(row.y), lng: parseFloat(row.x) };
               }
             });
+            console.log('✅ ZIP CENTROIDS LOADED:', Object.keys(centroids).length, 'ZIPs');
+            console.log('Sample ZIP centroids:', Object.entries(centroids).slice(0, 3));
             setZipCentroids(centroids);
           }
         });
 
         // Load FMR data (ZIP level)
+        console.log('💵 Fetching FMR data from /fmr_by_zip_clean.csv...');
         const fmrRes = await fetch('/fmr_by_zip_clean.csv');
+        if (!fmrRes.ok) {
+          console.error('❌ FMR fetch failed:', fmrRes.status);
+          return;
+        }
         const fmrTxt = await fmrRes.text();
         Papa.parse(fmrTxt, {
           header: true,
@@ -182,14 +199,21 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                 };
               }
             });
-            console.log('Loaded FMR data:', Object.keys(fmrMapByZip).length, 'ZIPs', Object.keys(fmrMapByCounty).length, 'counties');
+            console.log('✅ FMR DATA LOADED:', Object.keys(fmrMapByZip).length, 'ZIPs,', Object.keys(fmrMapByCounty).length, 'counties');
+            console.log('Sample FMR data (ZIP):', Object.entries(fmrMapByZip).slice(0, 3));
+            console.log('Sample FMR data (County):', Object.entries(fmrMapByCounty).slice(0, 3));
             setFmrData(fmrMapByZip);
             setFmrByCounty(fmrMapByCounty);
           }
         });
 
         // Load migration data
+        console.log('🚶 Fetching migration data from /migration_with_clean_zipcodes.csv...');
         const migRes = await fetch('/migration_with_clean_zipcodes.csv');
+        if (!migRes.ok) {
+          console.error('❌ Migration fetch failed:', migRes.status);
+          return;
+        }
         const migTxt = await migRes.text();
         Papa.parse(migTxt, {
           header: true,
@@ -209,11 +233,13 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                 };
               }
             });
-            console.log('Loaded migration data:', Object.keys(migMap).length, 'ZIPs');
+            console.log('✅ MIGRATION DATA LOADED:', Object.keys(migMap).length, 'ZIPs');
+            console.log('Sample migration data:', Object.entries(migMap).slice(0, 3));
             setMigrationData(migMap);
           }
         });
 
+        console.log('✅ ALL CSV DATA LOADED SUCCESSFULLY');
         setCsvLoading(false);
       } catch (err) {
         console.error('CSV load error:', err);
@@ -320,12 +346,17 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
     let cancelled = false;
     const loadCountyGeo = async () => {
       try {
+        console.log('🗺️ Fetching county GeoJSON...');
         const res = await fetch('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json');
-        if (!res.ok) return;
+        if (!res.ok) {
+          console.error('❌ County GeoJSON fetch failed:', res.status);
+          return;
+        }
         const geoJson = await res.json();
+        console.log('✅ COUNTY GEOJSON LOADED:', geoJson?.features?.length, 'counties');
         if (!cancelled) setCountyGeoJson(geoJson);
       } catch (e) {
-        console.warn('County GeoJSON load failed', e);
+        console.error('❌ County GeoJSON load error:', e);
       }
     };
     loadCountyGeo();
@@ -457,6 +488,11 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
     const map = useMap();
     
     const markersData = useMemo(() => {
+      console.log(`🎯 Building markers for metric: ${metric}`);
+      console.log('  zipCentroids count:', Object.keys(zipCentroids).length);
+      console.log('  fmrData count:', Object.keys(fmrData).length);
+      console.log('  migrationData count:', Object.keys(migrationData).length);
+      
       const markers = [];
       Object.entries(zipCentroids).forEach(([zip, coords]) => {
         let value = null;
@@ -481,7 +517,12 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
           }
         }
       });
-      console.log(`${metric} markers:`, markers.length);
+      console.log(`✅ GENERATED ${markers.length} MARKERS for ${metric}`);
+      if (markers.length > 0) {
+        console.log('Sample markers:', markers.slice(0, 5));
+      } else {
+        console.warn('⚠️ NO MARKERS GENERATED! Check data alignment.');
+      }
       return markers;
     }, [zipCentroids, fmrData, migrationData, metric]);
     
@@ -637,23 +678,32 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                 zoomOffset={-1}
               />
 
-              {countyGeoJson && mapMode === 'counties' && (
-                <GeoJSON
-                  key={`county-${propertyCountyFips}`}
-                  data={countyGeoJson}
-                  style={(feature) => {
-                    const fips = feature?.id;
-                    const fmrRow = fmrByCounty[fips];
-                    const val = fmrRow?.fmr2;
-                    const isPropertyCounty = fips === propertyCountyFips;
-                    return { 
-                      fillColor: fmrColor(val), 
-                      weight: isPropertyCounty ? 3 : 0.6, 
-                      color: isPropertyCounty ? '#2563eb' : '#ffffff', 
-                      fillOpacity: isPropertyCounty ? 0.35 : 0.82, 
-                      opacity: isPropertyCounty ? 1 : 0.35 
-                    };
-                  }}
+              {countyGeoJson && mapMode === 'counties' && (() => {
+                console.log('🗺️ RENDERING COUNTY GEOJSON');
+                console.log('  countyGeoJson exists:', !!countyGeoJson);
+                console.log('  mapMode:', mapMode);
+                console.log('  propertyCountyFips:', propertyCountyFips);
+                console.log('  fmrByCounty count:', Object.keys(fmrByCounty).length);
+                return (
+                  <GeoJSON
+                    key={`county-${propertyCountyFips}`}
+                    data={countyGeoJson}
+                    style={(feature) => {
+                      const fips = feature?.id;
+                      const fmrRow = fmrByCounty[fips];
+                      const val = fmrRow?.fmr2;
+                      const isPropertyCounty = fips === propertyCountyFips;
+                      if (isPropertyCounty) {
+                        console.log('⭐ HIGHLIGHTING PROPERTY COUNTY:', fips, fmrRow);
+                      }
+                      return { 
+                        fillColor: fmrColor(val), 
+                        weight: isPropertyCounty ? 3 : 0.6, 
+                        color: isPropertyCounty ? '#2563eb' : '#ffffff', 
+                        fillOpacity: isPropertyCounty ? 0.35 : 0.82, 
+                        opacity: isPropertyCounty ? 1 : 0.35 
+                      };
+                    }}
                   onEachFeature={(feature, layer) => {
                     const fips = feature?.id;
                     const fmrRow = fmrByCounty[fips];
@@ -665,8 +715,9 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                       { sticky: true }
                     );
                   }}
-                />
-              )}
+                  />
+                );
+              })()}
 
               {isochrone && (
                 <GeoJSON
@@ -680,23 +731,29 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                 <HeatLayer points={heatPoints} />
               )}
 
-              {heatMetric === 'fmr' && Object.keys(zipCentroids).length > 0 && Object.keys(fmrData).length > 0 && (
-                <ZipDataMarkers 
-                  zipCentroids={zipCentroids}
-                  fmrData={fmrData}
-                  migrationData={migrationData}
-                  metric="fmr"
-                />
-              )}
+              {heatMetric === 'fmr' && Object.keys(zipCentroids).length > 0 && Object.keys(fmrData).length > 0 && (() => {
+                console.log('📍 RENDERING FMR MARKERS');
+                return (
+                  <ZipDataMarkers 
+                    zipCentroids={zipCentroids}
+                    fmrData={fmrData}
+                    migrationData={migrationData}
+                    metric="fmr"
+                  />
+                );
+              })()}
 
-              {heatMetric === 'migration' && Object.keys(zipCentroids).length > 0 && Object.keys(migrationData).length > 0 && (
-                <ZipDataMarkers 
-                  zipCentroids={zipCentroids}
-                  fmrData={fmrData}
-                  migrationData={migrationData}
-                  metric="migration"
-                />
-              )}
+              {heatMetric === 'migration' && Object.keys(zipCentroids).length > 0 && Object.keys(migrationData).length > 0 && (() => {
+                console.log('🚶 RENDERING MIGRATION MARKERS');
+                return (
+                  <ZipDataMarkers 
+                    zipCentroids={zipCentroids}
+                    fmrData={fmrData}
+                    migrationData={migrationData}
+                    metric="migration"
+                  />
+                );
+              })()}
 
               {subjectLocation && (
                 <CircleMarker
