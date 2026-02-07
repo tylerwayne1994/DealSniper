@@ -117,14 +117,34 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
   const [migrationData, setMigrationData] = useState({});
   const mapRef = useRef(null);
 
-  // Get property county FIPS
+  // Get property county FIPS - try multiple sources
   const propertyCountyFips = useMemo(() => {
-    const fips = county?.fips || county_data?.fips || null;
+    // Try direct FIPS
+    let fips = county?.fips || county_data?.fips || county?.county_fips || county_data?.county_fips;
+    
+    // If not found, try to construct from state + county codes
+    if (!fips && (county?.state_code || state?.code) && (county?.code || county?.county_code)) {
+      const stateCode = String(county?.state_code || state?.code).padStart(2, '0');
+      const countyCode = String(county?.code || county?.county_code).padStart(3, '0');
+      fips = stateCode + countyCode;
+    }
+    
+    // Try getting from property location ZIP
+    if (!fips && zipCode) {
+      // Look up county FIPS from ZIP in FMR data
+      const fmrEntry = Object.values(fmrData).find(d => d.zip === zipCode);
+      if (fmrEntry?.county_fips) {
+        fips = String(fmrEntry.county_fips).padStart(5, '0');
+      }
+    }
+    
     console.log('🏠 Property county FIPS:', fips);
     console.log('  county object:', county);
     console.log('  county_data object:', county_data);
+    console.log('  state object:', state);
+    console.log('  zipCode:', zipCode);
     return fips;
-  }, [county, county_data]);
+  }, [county, county_data, state, zipCode, fmrData]);
 
   // Load CSV data on mount
   useEffect(() => {
@@ -221,19 +241,22 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
           dynamicTyping: true,
           complete: (results) => {
             const migMap = {};
+            let validCount = 0;
             results.data.forEach((row) => {
-              const zip = String(row.Residence_ZIP_Code || '').padStart(5, '0');
-              if (zip && row.y2_pop > 0) {
+              const zip = String(row.ZIP || '').padStart(5, '0');
+              const pop = row.pop_2021;
+              if (zip && pop > 0) {
+                validCount++;
                 migMap[zip] = {
-                  migrationRate: row.migration_rate || 0,
-                  netMigration: row.net_migration || 0,
-                  population2021: row.y2_pop || 0,
-                  inflow: row.inflow || 0,
-                  outflow: row.outflow || 0,
+                  migrationRate: row.n2_0_net_pc || 0,  // Net migration per capita
+                  netMigration: row.n2_0_net || 0,       // Raw net migration count
+                  population2021: pop,
+                  inflow: row.n2_0_in || 0,
+                  outflow: row.n2_0_out || 0,
                 };
               }
             });
-            console.log('✅ MIGRATION DATA LOADED:', Object.keys(migMap).length, 'ZIPs');
+            console.log('✅ MIGRATION DATA LOADED:', Object.keys(migMap).length, 'ZIPs with valid data out of', results.data.length, 'rows');
             console.log('Sample migration data:', Object.entries(migMap).slice(0, 3));
             setMigrationData(migMap);
           }
