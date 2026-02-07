@@ -81,6 +81,96 @@ const LoadingState = ({ propertyLocation }) => {
   );
 };
 
+// Heatmap layer for RIR
+const HeatLayer = ({ points, heatMetric }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (!map || !points.length) return;
+    const layer = L.heatLayer(points, {
+      radius: 28,
+      blur: 26,
+      maxZoom: 12,
+      minOpacity: 0.28,
+      gradient: heatMetric === 'affordability'
+        ? { 0.0: '#e0f2fe', 0.35: '#bfdbfe', 0.65: '#2563eb', 1.0: '#1e3a8a' }
+        : { 0.0: '#fff1f2', 0.35: '#fecdd3', 0.65: '#ef4444', 1.0: '#991b1b' }
+    }).addTo(map);
+    return () => {
+      layer.remove();
+    };
+  }, [map, points, heatMetric]);
+  return null;
+};
+
+// ZIP Circle Markers with actual data
+const ZipDataMarkers = ({ zipCentroids, fmrData, migrationData, metric }) => {
+  const map = useMap();
+  
+  const markersData = useMemo(() => {
+    console.log(`🎯 Building markers for metric: ${metric}`);
+    console.log('  zipCentroids count:', Object.keys(zipCentroids).length);
+    console.log('  fmrData count:', Object.keys(fmrData).length);
+    console.log('  migrationData count:', Object.keys(migrationData).length);
+    
+    const markers = [];
+    Object.entries(zipCentroids).forEach(([zip, coords]) => {
+      let value = null;
+      let color = '#9ca3af';
+      let displayValue = 'N/A';
+      
+      if (metric === 'fmr') {
+        const fmr2 = fmrData[zip]?.fmr2;
+        if (fmr2) {
+          value = fmr2;
+          displayValue = `$${Math.round(fmr2).toLocaleString()}`;
+          color = fmr2 < 1000 ? '#16a34a' : fmr2 < 1400 ? '#84cc16' : fmr2 < 1800 ? '#eab308' : fmr2 < 2200 ? '#f59e0b' : '#dc2626';
+          markers.push({ zip, coords, value, color, displayValue, county: fmrData[zip]?.county, state: fmrData[zip]?.state });
+        }
+      } else if (metric === 'migration') {
+        const migRate = migrationData[zip]?.migrationRate;
+        if (migRate !== null && migRate !== undefined) {
+          value = migRate;
+          displayValue = `${migRate > 0 ? '+' : ''}${migRate.toFixed(1)}‰`;
+          color = migRate < -5 ? '#dc2626' : migRate < 0 ? '#f59e0b' : migRate < 5 ? '#84cc16' : '#16a34a';
+          markers.push({ zip, coords, value, color, displayValue, netMig: migrationData[zip]?.netMigration, pop: migrationData[zip]?.population2021 });
+        }
+      }
+    });
+    console.log(`✅ GENERATED ${markers.length} MARKERS for ${metric}`);
+    if (markers.length > 0) {
+      console.log('Sample markers:', markers.slice(0, 5));
+    } else {
+      console.warn('⚠️ NO MARKERS GENERATED! Check data alignment.');
+    }
+    return markers;
+  }, [zipCentroids, fmrData, migrationData, metric]);
+  
+  return (
+    <>
+      {markersData.slice(0, 2000).map(({ zip, coords, color, displayValue, county, state, netMig, pop }) => (
+        <CircleMarker
+          key={zip}
+          center={[coords.lat, coords.lng]}
+          radius={5}
+          pathOptions={{ fillColor: color, color: color, weight: 1, fillOpacity: 0.7, opacity: 0.9 }}
+        >
+          <LeafletTooltip direction="top" offset={[0, -5]} opacity={0.95} className="text-xs">
+            <div style={{ minWidth: '120px' }}>
+              <div className="font-bold">ZIP {zip}</div>
+              {county && <div className="text-[10px] text-gray-600">{county}, {state}</div>}
+              <div className="font-semibold text-sm mt-1">
+                {metric === 'fmr' ? `FMR (2BR): ${displayValue}` : `Migration: ${displayValue}`}
+              </div>
+              {netMig !== undefined && <div className="text-[10px]">Net: {netMig > 0 ? '+' : ''}{netMig.toLocaleString()} people</div>}
+              {pop && <div className="text-[10px]">Pop: {pop.toLocaleString()}</div>}
+            </div>
+          </LeafletTooltip>
+        </CircleMarker>
+      ))}
+    </>
+  );
+};
+
 function MarketResearchTab({ marketData, propertyLocation = {}, loading = false, onRefetchMarketData }) {
 
   const hasMarketData = !!marketData;
@@ -476,96 +566,6 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
     );
   };
 
-  // Heatmap layer for RIR
-  const HeatLayer = ({ points }) => {
-    const map = useMap();
-    useEffect(() => {
-      if (!map || !points.length) return;
-      const layer = L.heatLayer(points, {
-        radius: 28,
-        blur: 26,
-        maxZoom: 12,
-        minOpacity: 0.28,
-        gradient: heatMetric === 'affordability'
-          ? { 0.0: '#e0f2fe', 0.35: '#bfdbfe', 0.65: '#2563eb', 1.0: '#1e3a8a' }
-          : { 0.0: '#fff1f2', 0.35: '#fecdd3', 0.65: '#ef4444', 1.0: '#991b1b' }
-      }).addTo(map);
-      return () => {
-        layer.remove();
-      };
-    }, [map, points, heatMetric]);
-    return null;
-  };
-
-  // ZIP Circle Markers with actual data
-  const ZipDataMarkers = ({ zipCentroids, fmrData, migrationData, metric }) => {
-    const map = useMap();
-    
-    const markersData = useMemo(() => {
-      console.log(`🎯 Building markers for metric: ${metric}`);
-      console.log('  zipCentroids count:', Object.keys(zipCentroids).length);
-      console.log('  fmrData count:', Object.keys(fmrData).length);
-      console.log('  migrationData count:', Object.keys(migrationData).length);
-      
-      const markers = [];
-      Object.entries(zipCentroids).forEach(([zip, coords]) => {
-        let value = null;
-        let color = '#9ca3af';
-        let displayValue = 'N/A';
-        
-        if (metric === 'fmr') {
-          const fmr2 = fmrData[zip]?.fmr2;
-          if (fmr2) {
-            value = fmr2;
-            displayValue = `$${Math.round(fmr2).toLocaleString()}`;
-            color = fmr2 < 1000 ? '#16a34a' : fmr2 < 1400 ? '#84cc16' : fmr2 < 1800 ? '#eab308' : fmr2 < 2200 ? '#f59e0b' : '#dc2626';
-            markers.push({ zip, coords, value, color, displayValue, county: fmrData[zip]?.county, state: fmrData[zip]?.state });
-          }
-        } else if (metric === 'migration') {
-          const migRate = migrationData[zip]?.migrationRate;
-          if (migRate !== null && migRate !== undefined) {
-            value = migRate;
-            displayValue = `${migRate > 0 ? '+' : ''}${migRate.toFixed(1)}‰`;
-            color = migRate < -5 ? '#dc2626' : migRate < 0 ? '#f59e0b' : migRate < 5 ? '#84cc16' : '#16a34a';
-            markers.push({ zip, coords, value, color, displayValue, netMig: migrationData[zip]?.netMigration, pop: migrationData[zip]?.population2021 });
-          }
-        }
-      });
-      console.log(`✅ GENERATED ${markers.length} MARKERS for ${metric}`);
-      if (markers.length > 0) {
-        console.log('Sample markers:', markers.slice(0, 5));
-      } else {
-        console.warn('⚠️ NO MARKERS GENERATED! Check data alignment.');
-      }
-      return markers;
-    }, [zipCentroids, fmrData, migrationData, metric]);
-    
-    return (
-      <>
-        {markersData.slice(0, 2000).map(({ zip, coords, color, displayValue, county, state, netMig, pop }) => (
-          <CircleMarker
-            key={zip}
-            center={[coords.lat, coords.lng]}
-            radius={5}
-            pathOptions={{ fillColor: color, color: color, weight: 1, fillOpacity: 0.7, opacity: 0.9 }}
-          >
-            <LeafletTooltip direction="top" offset={[0, -5]} opacity={0.95} className="text-xs">
-              <div style={{ minWidth: '120px' }}>
-                <div className="font-bold">ZIP {zip}</div>
-                {county && <div className="text-[10px] text-gray-600">{county}, {state}</div>}
-                <div className="font-semibold text-sm mt-1">
-                  {metric === 'fmr' ? `FMR (2BR): ${displayValue}` : `Migration: ${displayValue}`}
-                </div>
-                {netMig !== undefined && <div className="text-[10px]">Net: {netMig > 0 ? '+' : ''}{netMig.toLocaleString()} people</div>}
-                {pop && <div className="text-[10px]">Pop: {pop.toLocaleString()}</div>}
-              </div>
-            </LeafletTooltip>
-          </CircleMarker>
-        ))}
-      </>
-    );
-  };
-
   // Affordability helpers (reserved for future UI)
   // const getAffordabilityColor = (ratio) => {
   //   if (ratio < 25) return 'text-green-600';
@@ -742,7 +742,7 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
               )}
 
               {heatPoints.length > 0 && heatMetric === 'rir' && (
-                <HeatLayer points={heatPoints} />
+                <HeatLayer points={heatPoints} heatMetric={heatMetric} />
               )}
 
               {heatMetric === 'fmr' && Object.keys(zipCentroids).length > 0 && Object.keys(fmrData).length > 0 && (() => {
