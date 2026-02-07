@@ -135,7 +135,7 @@ const HeatLayer = ({ points, heatMetric }) => {
 };
 
 // ZIP Circle Markers with actual data
-const ZipDataMarkers = ({ zipCentroids, fmrData, migrationData, metric }) => {
+const ZipDataMarkers = ({ zipCentroids, fmrData, migrationData, metric, onSelectZip }) => {
   const map = useMap();
   
   const markersData = useMemo(() => {
@@ -185,6 +185,7 @@ const ZipDataMarkers = ({ zipCentroids, fmrData, migrationData, metric }) => {
           center={[coords.lat, coords.lng]}
           radius={5}
           pathOptions={{ fillColor: color, color: color, weight: 1, fillOpacity: 0.7, opacity: 0.9 }}
+          eventHandlers={{ click: () => onSelectZip && onSelectZip(zip, coords, metric === 'fmr' ? fmrData[zip] : migrationData[zip]) }}
         >
           <LeafletTooltip direction="top" offset={[0, -5]} opacity={0.95} className="text-xs">
             <div style={{ minWidth: '120px' }}>
@@ -237,6 +238,8 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
   const [csvLoading, setCsvLoading] = useState(true);
   const [fmrData, setFmrData] = useState({});
   const [migrationData, setMigrationData] = useState({});
+  const [selectedFeature, setSelectedFeature] = useState(null); // { type: 'county'|'zip'|'city', id, data, source }
+  const [showZipHeat, setShowZipHeat] = useState(true);
   const mapRef = useRef(null);
 
   const zipCode = property_location?.zip || propertyLocation?.zip;
@@ -405,6 +408,19 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
     const zip = String(zipCode).padStart(5, '0');
     return zipCentroids[zip] || null;
   }, [zipCode, zipCentroids]);
+
+  const findNearestZipWithData = (lat, lng, dataset) => {
+    if (!lat || !lng) return null;
+    let best = null;
+    Object.entries(zipCentroids).forEach(([zip, c]) => {
+      if (!c || !dataset[zip]) return;
+      const dlat = c.lat - lat;
+      const dlng = c.lng - lng;
+      const dist2 = dlat * dlat + dlng * dlng;
+      if (best === null || dist2 < best.dist2) best = { zip, coords: c, dist2 };
+    });
+    return best ? { zip: best.zip, coords: best.coords, data: dataset[best.zip] } : null;
+  };
 
   const mapCenter = useMemo(() => {
     if (property_location?.lat && property_location?.lng) return [property_location.lat, property_location.lng];
@@ -754,12 +770,24 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                     const fips = feature?.id;
                     const fmrRow = fmrByCounty[fips];
                     const isPropertyCounty = fips === propertyCountyFips;
-                    if (!fmrRow) return;
-                    const rent = fmrRow.fmr2;
-                    layer.bindTooltip(
-                      `<div style="font-size:12px;color:#111"><div style="font-weight:700">${fmrRow.county || 'County'}, ${fmrRow.state || ''}${isPropertyCounty ? ' <span style="color:#2563eb">★ Your Property</span>' : ''}</div><div>HUD FMR (2BR): ${rent ? `$${Math.round(rent).toLocaleString()}` : 'N/A'}</div><div style="color:#6b7280">FIPS: ${fips}</div></div>`,
-                      { sticky: true }
-                    );
+                    if (fmrRow) {
+                      const rent = fmrRow.fmr2;
+                      layer.bindTooltip(
+                        `<div style="font-size:12px;color:#111"><div style="font-weight:700">${fmrRow.county || 'County'}, ${fmrRow.state || ''}${isPropertyCounty ? ' <span style="color:#2563eb">★ Your Property</span>' : ''}</div><div>HUD FMR (2BR): ${rent ? `$${Math.round(rent).toLocaleString()}` : 'N/A'}</div><div style="color:#6b7280">FIPS: ${fips}</div></div>`,
+                        { sticky: true }
+                      );
+                    }
+
+                    // Click to select county and surface metrics
+                    layer.on('click', () => {
+                      const payload = fmrRow || { note: 'No county FMR data available' };
+                      setSelectedFeature({ type: 'county', id: fips, data: payload, source: fmrRow ? 'county_fmr' : 'none' });
+                      if (!fmrRow && subjectLocation) {
+                        // fallback: nearest zip with data
+                        const nearest = findNearestZipWithData(subjectLocation.lat, subjectLocation.lng, fmrData);
+                        if (nearest) setSelectedFeature({ type: 'zip', id: nearest.zip, data: nearest.data, source: 'nearest_zip' });
+                      }
+                    });
                   }}
                   />
                 );
@@ -831,6 +859,10 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                 </select>
                 <span>Drive</span>
               </div>
+              <div className="bg-white/95 backdrop-blur rounded-full shadow-sm border px-3 py-2 text-sm font-semibold flex items-center gap-2">
+                <label className="text-xs mr-2">ZIP Heat</label>
+                <input type="checkbox" checked={showZipHeat} onChange={() => setShowZipHeat((s) => !s)} />
+              </div>
             </div>
 
             <div className="absolute top-3 left-1/2 -translate-x-1/2 flex justify-center z-[1000] pointer-events-auto">
@@ -873,6 +905,33 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                 </div>
                 <div className="text-[11px] px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">Market Metrics</div>
               </div>
+
+            {/* Selected metrics panel */}
+            {selectedFeature && (
+              <div className="absolute top-28 right-3 w-80 bg-white rounded-xl shadow-lg border border-gray-100 p-4 space-y-3 z-[1200]">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold">Selected {selectedFeature.type?.toUpperCase()}</div>
+                  <button className="text-xs text-gray-500" onClick={() => setSelectedFeature(null)}>Close</button>
+                </div>
+                <div className="text-xs text-gray-600">
+                  {selectedFeature.source === 'none' && <div className="text-red-600">No direct data available — showing fallback where possible</div>}
+                  {selectedFeature.type === 'county' && selectedFeature.data && (
+                    <div>
+                      <div className="font-semibold">{selectedFeature.data.county || 'County'}</div>
+                      <div>FMR (2BR): {selectedFeature.data.fmr2 ? `$${Math.round(selectedFeature.data.fmr2).toLocaleString()}` : 'N/A'}</div>
+                    </div>
+                  )}
+                  {selectedFeature.type === 'zip' && selectedFeature.data && (
+                    <div>
+                      <div className="font-semibold">ZIP {selectedFeature.id}</div>
+                      {selectedFeature.data.fmr2 && <div>FMR (2BR): ${Math.round(selectedFeature.data.fmr2).toLocaleString()}</div>}
+                      {selectedFeature.data.migrationRate !== undefined && <div>Migration (‰): {selectedFeature.data.migrationRate}</div>}
+                      {selectedFeature.data.population2021 && <div>Population: {selectedFeature.data.population2021.toLocaleString()}</div>}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div className="flex items-start gap-2">
                   <Users size={16} className="text-blue-500 mt-0.5" />
