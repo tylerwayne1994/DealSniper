@@ -1160,8 +1160,34 @@ Return JSON matching this schema:
   },
   "expenses": {"taxes": 0, "insurance": 0, "utilities": 0, "repairs_maintenance": 0, "management": 0, "payroll": 0, "admin": 0, "marketing": 0, "other": 0, "total": 0},
   "underwriting": {"holding_period": 0, "exit_cap_rate": 0},
-  "unit_mix": [{"type": "", "units": 0, "unit_sf": 0, "rent_current": 0, "rent_market": 0}]
+  "unit_mix": [{"type": "", "units": 0, "unit_sf": 0, "rent_current": 0, "rent_market": 0}],
+  "_confidence": {
+    "property.address": {"level": "high|medium|low|missing", "source": "Page X or section name", "alternatives": [], "note": "Optional explanation"},
+    "property.units": {"level": "high|medium|low|missing", "source": "Page X", "alternatives": []},
+    "pricing_financing.price": {"level": "high|medium|low|missing", "source": "Page X", "alternatives": [], "note": "Optional"},
+    "pnl.noi_t12": {"level": "high|medium|low|missing", "source": "Page X"},
+    "pnl.gross_potential_rent": {"level": "high|medium|low|missing", "source": "Page X"},
+    "expenses.total": {"level": "high|medium|low|missing", "source": "Page X"}
+  },
+  "data_quality": {
+    "overall_confidence": 0.85,
+    "critical_missing": [],
+    "needs_review": [],
+    "assumptions": []
+  }
 }
+
+CONFIDENCE TRACKING RULES:
+- For EVERY important field (property.*, pricing_financing.price, pnl.noi*, pnl.gross_potential_rent, expenses.*, unit_mix), include an entry in "_confidence"
+- Confidence levels:
+  * "high": Found clear, unambiguous data
+  * "medium": Found data but multiple values or some ambiguity (include "alternatives" array)
+  * "low": Had to estimate or infer
+  * "missing": Could not find anywhere
+- For "medium" confidence, ALWAYS include "alternatives" array with other values found
+- For "missing" fields, include "note" explaining what you looked for
+- "source" should reference page number or section name (e.g., "Page 3 Financial Summary", "Rent Roll")
+- The "_confidence" and "data_quality" objects are REQUIRED
 
 NOI FIELD RULES:
 - If the OM shows multiple NOIs (T-1, T-3, T-12, Trailing 1 month, Pro Forma, Stabilized), ALWAYS separate them:

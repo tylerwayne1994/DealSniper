@@ -8,6 +8,11 @@ import {
   Building, FileText, ArrowLeft, Landmark
 } from 'lucide-react';
 import ResultsPageV2 from '../components/ResultsPageV2';
+import WizardStepNavigation from '../components/WizardStepNavigation';
+import PropertyDetailsWizardTab from '../components/wizard/PropertyDetailsWizardTab';
+import FinancialDataWizardTab from '../components/wizard/FinancialDataWizardTab';
+import PDFViewerModal from '../components/PDFViewerModal';
+import ConflictResolutionModal from '../components/ConflictResolutionModal';
 
 const API_BASE = "http://localhost:8010";
 
@@ -162,6 +167,18 @@ function UnderwriteV2Page() {
   const [verifiedData, setVerifiedData] = useState(null);
   const [activeTab, setActiveTab] = useState('property');
   const [validationErrors, setValidationErrors] = useState({});
+  const [completedSteps, setCompletedSteps] = useState([]);
+  
+  // PDF Viewer Modal state
+  const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState(null);
+  const [selectedField, setSelectedField] = useState(null);
+  const [highlightInfo, setHighlightInfo] = useState({});
+  
+  // Conflict Resolution Modal state
+  const [conflictModalOpen, setConflictModalOpen] = useState(false);
+  const [conflictField, setConflictField] = useState(null);
+  const [conflictAlternatives, setConflictAlternatives] = useState([]);
   
   // Results page state (live scenario modeling)
   const [scenarioData, setScenarioData] = useState(null);
@@ -349,6 +366,41 @@ function UnderwriteV2Page() {
       delete newErrors[`${section}.${field}`];
       return newErrors;
     });
+  };
+  
+  // Handle viewing source in PDF
+  const handleViewSource = (field, confidence) => {
+    console.log('[PDF Viewer] Opening for field:', field.label, confidence);
+    setSelectedField(field);
+    setHighlightInfo({
+      page: confidence.page || 1,
+      source: confidence.source,
+      note: confidence.note,
+      searchTerm: field.value?.toString()
+    });
+    
+    // TODO: Set actual PDF URL from uploaded file
+    // For now, just open the modal
+    setPdfViewerOpen(true);
+  };
+  
+  // Handle conflict resolution
+  const handleResolveConflict = (field, alternatives) => {
+    console.log('[Conflict] Opening modal for field:', field.label, alternatives);
+    setConflictField(field);
+    setConflictAlternatives(alternatives);
+    setConflictModalOpen(true);
+  };
+  
+  // Handle selecting resolved value
+  const handleSelectConflictValue = (field, selectedValue) => {
+    console.log('[Conflict] User selected value:', selectedValue, 'for field:', field.label);
+    // Update verifiedData with the selected value
+    const pathParts = field.path.split('.');
+    if (pathParts.length === 2) {
+      updateVerifiedField(pathParts[0], pathParts[1], selectedValue);
+    }
+    setConflictModalOpen(false);
   };
 
   // Validate required fields
@@ -543,14 +595,11 @@ function UnderwriteV2Page() {
     }
   };
 
-  // Wizard tabs configuration
+  // Wizard tabs configuration with new Cactus-style structure
   const tabs = [
-    { id: 'property', label: 'Property Info', icon: Building },
-    { id: 'financial', label: 'Financials', icon: DollarSign },
-    { id: 'financing', label: 'Financing', icon: Landmark },
-    { id: 'expenses', label: 'Expenses', icon: FileText },
-    { id: 'unitMix', label: 'Unit Mix', icon: Home },
-    { id: 'additional', label: 'Additional Data', icon: FileText }
+    { id: 'property', label: 'Property Details', subtitle: 'Address & characteristics', icon: Building },
+    { id: 'financial', label: 'Financial Data', subtitle: 'Income & expenses', icon: DollarSign },
+    { id: 'financing', label: 'Financing Terms', subtitle: 'Loan assumptions', icon: Landmark }
   ];
 
   // ============ RENDER ============
@@ -662,11 +711,16 @@ function UnderwriteV2Page() {
     );
   }
 
-  // STEP 2: Verify/Edit Wizard
+  // STEP 2: Verify/Edit Wizard with Cactus-style UI
   if (step === 'verify') {
+    // Extract confidence data from verifiedData
+    const confidence = verifiedData?._confidence || {};
+    const dataQuality = verifiedData?.data_quality || {};
+    
     return (
       <div style={styles.page}>
         <div style={styles.container}>
+          {/* Top Navigation Bar */}
           <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
             <button onClick={() => navigate('/')} style={styles.homeButton}>
               <Home size={16} /> Home
@@ -677,25 +731,36 @@ function UnderwriteV2Page() {
             >
               <ArrowLeft size={16} /> Back to Upload
             </button>
-            <button
-              onClick={() => navigate('/manual-entry')}
-              style={{ 
-                ...styles.homeButton, 
-                background: 'linear-gradient(135deg, #10b981, #059669)',
-                color: '#fff',
-                borderColor: '#10b981'
-              }}
-            >
-              <FileText size={16} /> Enter Manually
-            </button>
           </div>
 
-          <h1 style={{ ...styles.title, fontSize: '2rem', marginBottom: 8 }}>
-            Verify & Complete Deal Information
-          </h1>
-          <p style={{ fontSize: 16, color: '#6b7280', marginBottom: 24 }}>
-            Review the extracted data and fill in any missing fields
-          </p>
+          {/* Page Header */}
+          <div style={{ marginBottom: 32 }}>
+            <h1 style={{ ...styles.title, fontSize: '2.25rem', marginBottom: 8 }}>
+              Document Review & Verification
+            </h1>
+            <p style={{ fontSize: 16, color: '#6b7280', marginBottom: 16 }}>
+              Review extracted data with confidence scores and source citations
+            </p>
+            
+            {/* Data Quality Summary */}
+            {dataQuality.overall_confidence && (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 16px',
+                background: dataQuality.overall_confidence >= 0.8 ? '#dcfce7' : '#fef3c7',
+                border: `1px solid ${dataQuality.overall_confidence >= 0.8 ? '#bbf7d0' : '#fcd34d'}`,
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 600,
+                color: dataQuality.overall_confidence >= 0.8 ? '#166534' : '#92400e'
+              }}>
+                <CheckCircle size={16} />
+                Overall Confidence: {(dataQuality.overall_confidence * 100).toFixed(0)}%
+              </div>
+            )}
+          </div>
 
           {uploadError && (
             <div style={{ marginBottom: 20, padding: 16, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, display: 'flex', gap: 12 }}>
@@ -704,358 +769,33 @@ function UnderwriteV2Page() {
             </div>
           )}
 
-          {/* Tabs */}
-          <div style={{ display: 'flex', gap: 4, marginBottom: 24, background: '#f9fafb', padding: 4, borderRadius: 12 }}>
-            {tabs.map(tab => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    flex: 1,
-                    padding: '12px 16px',
-                    background: activeTab === tab.id ? '#fff' : 'transparent',
-                    border: 'none',
-                    borderRadius: 8,
-                    fontSize: 14,
-                    fontWeight: activeTab === tab.id ? 700 : 500,
-                    color: activeTab === tab.id ? '#111827' : '#6b7280',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    boxShadow: activeTab === tab.id ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  <Icon size={16} />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
+          {/* Step Navigation */}
+          <WizardStepNavigation
+            steps={tabs}
+            activeStep={activeTab}
+            completedSteps={completedSteps}
+            onStepClick={setActiveTab}
+          />
 
           {/* Tab Content */}
           {activeTab === 'property' && (
-            <div style={styles.card}>
-              <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Building size={20} /> Property Information
-                <span style={{ marginLeft: 'auto', fontSize: 13, color: '#ef4444' }}>* Required</span>
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20 }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Address *
-                  </label>
-                  <input
-                    type="text"
-                    style={{
-                      ...styles.input,
-                      ...(validationErrors['property.address'] ? styles.inputError : {}),
-                      ...(verifiedData?.property?.address ? styles.inputSuccess : {})
-                    }}
-                    value={verifiedData?.property?.address || ''}
-                    onChange={(e) => updateVerifiedField('property', 'address', e.target.value)}
-                    placeholder="Enter property address"
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    City
-                  </label>
-                  <input
-                    type="text"
-                    style={styles.input}
-                    value={verifiedData?.property?.city || ''}
-                    onChange={(e) => updateVerifiedField('property', 'city', e.target.value)}
-                    placeholder="City"
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    State
-                  </label>
-                  <input
-                    type="text"
-                    style={styles.input}
-                    value={verifiedData?.property?.state || ''}
-                    onChange={(e) => updateVerifiedField('property', 'state', e.target.value)}
-                    placeholder="State"
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    ZIP Code
-                  </label>
-                  <input
-                    type="text"
-                    style={styles.input}
-                    value={verifiedData?.property?.zip || ''}
-                    onChange={(e) => updateVerifiedField('property', 'zip', e.target.value)}
-                    placeholder="ZIP"
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Total Units *
-                  </label>
-                  <input
-                    type="number"
-                    style={{
-                      ...styles.input,
-                      ...(validationErrors['property.units'] ? styles.inputError : {}),
-                      ...(verifiedData?.property?.units ? styles.inputSuccess : {})
-                    }}
-                    value={verifiedData?.property?.units || ''}
-                    onChange={(e) => updateVerifiedField('property', 'units', parseFloat(e.target.value))}
-                    placeholder="Number of units"
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Year Built
-                  </label>
-                  <input
-                    type="number"
-                    style={styles.input}
-                    value={verifiedData?.property?.year_built || ''}
-                    onChange={(e) => updateVerifiedField('property', 'year_built', parseFloat(e.target.value))}
-                    placeholder="Year"
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Total Square Feet
-                  </label>
-                  <input
-                    type="number"
-                    style={styles.input}
-                    value={verifiedData?.property?.rba_sqft || ''}
-                    onChange={(e) => updateVerifiedField('property', 'rba_sqft', parseFloat(e.target.value))}
-                    placeholder="Square feet"
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Property Type
-                  </label>
-                  <input
-                    type="text"
-                    style={styles.input}
-                    value={verifiedData?.property?.property_type || ''}
-                    onChange={(e) => updateVerifiedField('property', 'property_type', e.target.value)}
-                    placeholder="e.g., Multifamily"
-                  />
-                </div>
-              </div>
-            </div>
+            <PropertyDetailsWizardTab
+              verifiedData={verifiedData}
+              confidence={confidence}
+              onFieldChange={updateVerifiedField}
+              onViewSource={handleViewSource}
+              onResolveConflict={handleResolveConflict}
+            />
           )}
 
           {activeTab === 'financial' && (
-            <div style={styles.card}>
-              <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <DollarSign size={20} /> Financial Information
-                <span style={{ marginLeft: 'auto', fontSize: 13, color: '#ef4444' }}>* Required</span>
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20 }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Purchase Price *
-                  </label>
-                  <input
-                    type="number"
-                    style={{
-                      ...styles.input,
-                      ...(validationErrors['pricing_financing.price'] ? styles.inputError : {}),
-                      ...(verifiedData?.pricing_financing?.price ? styles.inputSuccess : {})
-                    }}
-                    value={verifiedData?.pricing_financing?.price || ''}
-                    onChange={(e) => updateVerifiedField('pricing_financing', 'price', parseFloat(e.target.value))}
-                    placeholder="$0"
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Gross Potential Rent *
-                  </label>
-                  <input
-                    type="number"
-                    style={{
-                      ...styles.input,
-                      ...(validationErrors['pnl.gross_potential_rent'] ? styles.inputError : {}),
-                      ...(verifiedData?.pnl?.gross_potential_rent ? styles.inputSuccess : {})
-                    }}
-                    value={verifiedData?.pnl?.gross_potential_rent || ''}
-                    onChange={(e) => updateVerifiedField('pnl', 'gross_potential_rent', parseFloat(e.target.value))}
-                    placeholder="$0"
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Other Income
-                  </label>
-                  <input
-                    type="number"
-                    style={styles.input}
-                    value={verifiedData?.pnl?.other_income || ''}
-                    onChange={(e) => updateVerifiedField('pnl', 'other_income', parseFloat(e.target.value))}
-                    placeholder="$0"
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Vacancy Rate (%)
-                  </label>
-                  <input
-                    type="number"
-                    style={styles.input}
-                    value={verifiedData?.pnl?.vacancy_rate ? (verifiedData.pnl.vacancy_rate * 100) : ''}
-                    onChange={(e) => updateVerifiedField('pnl', 'vacancy_rate', parseFloat(e.target.value) / 100)}
-                    placeholder="5"
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Total Operating Expenses - T12 *
-                  </label>
-                  <input
-                    type="number"
-                    style={{
-                      ...styles.input,
-                      ...(validationErrors['pnl.operating_expenses_t12'] ? styles.inputError : {}),
-                      ...(verifiedData?.pnl?.operating_expenses_t12 ? styles.inputSuccess : {})
-                    }}
-                    value={verifiedData?.pnl?.operating_expenses_t12 || ''}
-                    onChange={(e) => updateVerifiedField('pnl', 'operating_expenses_t12', parseFloat(e.target.value))}
-                    placeholder="$0"
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Net Operating Income (NOI) - T12 *
-                  </label>
-                  <input
-                    type="number"
-                    style={{
-                      ...styles.input,
-                      ...(validationErrors['pnl.noi_t12'] ? styles.inputError : {}),
-                      ...(verifiedData?.pnl?.noi_t12 ? styles.inputSuccess : {})
-                    }}
-                    value={verifiedData?.pnl?.noi_t12 || ''}
-                    onChange={(e) => updateVerifiedField('pnl', 'noi_t12', parseFloat(e.target.value))}
-                    placeholder="$0"
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Net Operating Income (NOI) - Pro Forma (Optional)
-                  </label>
-                  <input
-                    type="number"
-                    style={styles.input}
-                    value={verifiedData?.pnl?.noi_proforma || ''}
-                    onChange={(e) => updateVerifiedField('pnl', 'noi_proforma', parseFloat(e.target.value))}
-                    placeholder="$0"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'expenses' && (
-            <div style={styles.card}>
-              <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <FileText size={20} /> Operating Expenses
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20 }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Property Taxes
-                  </label>
-                  <input
-                    type="number"
-                    style={styles.input}
-                    value={verifiedData?.expenses?.taxes || ''}
-                    onChange={(e) => updateVerifiedField('expenses', 'taxes', parseFloat(e.target.value))}
-                    placeholder="$0"
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Insurance
-                  </label>
-                  <input
-                    type="number"
-                    style={styles.input}
-                    value={verifiedData?.expenses?.insurance || ''}
-                    onChange={(e) => updateVerifiedField('expenses', 'insurance', parseFloat(e.target.value))}
-                    placeholder="$0"
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Utilities
-                  </label>
-                  <input
-                    type="number"
-                    style={styles.input}
-                    value={verifiedData?.expenses?.utilities || ''}
-                    onChange={(e) => updateVerifiedField('expenses', 'utilities', parseFloat(e.target.value))}
-                    placeholder="$0"
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Repairs & Maintenance
-                  </label>
-                  <input
-                    type="number"
-                    style={styles.input}
-                    value={verifiedData?.expenses?.repairs_maintenance || ''}
-                    onChange={(e) => updateVerifiedField('expenses', 'repairs_maintenance', parseFloat(e.target.value))}
-                    placeholder="$0"
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Management & Leasing
-                  </label>
-                  <input
-                    type="number"
-                    style={styles.input}
-                    value={verifiedData?.expenses?.management || ''}
-                    onChange={(e) => updateVerifiedField('expenses', 'management', parseFloat(e.target.value))}
-                    placeholder="$0"
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Payroll
-                  </label>
-                  <input
-                    type="number"
-                    style={styles.input}
-                    value={verifiedData?.expenses?.payroll || ''}
-                    onChange={(e) => updateVerifiedField('expenses', 'payroll', parseFloat(e.target.value))}
-                    placeholder="$0"
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Marketing & Turnover
-                  </label>
-                  <input
-                    type="number"
-                    style={styles.input}
-                    value={verifiedData?.expenses?.marketing || ''}
-                    onChange={(e) => updateVerifiedField('expenses', 'marketing', parseFloat(e.target.value))}
-                    placeholder="$0"
-                  />
-                </div>
-              </div>
-            </div>
+            <FinancialDataWizardTab
+              verifiedData={verifiedData}
+              confidence={confidence}
+              onFieldChange={updateVerifiedField}
+              onViewSource={handleViewSource}
+              onResolveConflict={handleResolveConflict}
+            />
           )}
 
           {activeTab === 'financing' && (
@@ -1185,252 +925,55 @@ function UnderwriteV2Page() {
             </div>
           )}
 
-          {activeTab === 'unitMix' && (
-            <div style={styles.card}>
-              <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Home size={20} /> Unit Mix
-              </h3>
-              {verifiedData?.unit_mix && verifiedData.unit_mix.length > 0 ? (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
-                        <th style={{ padding: 12, textAlign: 'left', fontSize: 13, fontWeight: 700, color: '#6b7280' }}>Unit Type</th>
-                        <th style={{ padding: 12, textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#6b7280' }}>Count</th>
-                        <th style={{ padding: 12, textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#6b7280' }}>SF</th>
-                        <th style={{ padding: 12, textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#6b7280' }}>Current Rent</th>
-                        <th style={{ padding: 12, textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#6b7280' }}>Market Rent</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {verifiedData.unit_mix.map((unit, idx) => (
-                        <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                          <td style={{ padding: 12, fontSize: 14 }}>{unit.type}</td>
-                          <td style={{ padding: 12, textAlign: 'right', fontSize: 14 }}>{unit.units}</td>
-                          <td style={{ padding: 12, textAlign: 'right', fontSize: 14 }}>{unit.unit_sf?.toLocaleString()}</td>
-                          <td style={{ padding: 12, textAlign: 'right', fontSize: 14 }}>${unit.rent_current?.toLocaleString()}</td>
-                          <td style={{ padding: 12, textAlign: 'right', fontSize: 14 }}>${unit.rent_market?.toLocaleString()}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p style={{ color: '#6b7280', fontSize: 14 }}>No unit mix data available</p>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'additional' && (
-            <div style={styles.card}>
-              <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <FileText size={20} /> Additional Parsed Data
-              </h3>
-              <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 20 }}>
-                This section shows all data extracted by Claude that doesn't have dedicated fields above.
-                This data is still available to the chat assistant.
-              </p>
-
-              {/* Financing Details */}
-              {verifiedData?.pricing_financing && (
-                <div style={{ marginBottom: 24 }}>
-                  <h4 style={{ fontSize: 15, fontWeight: 900, color: '#374151', marginBottom: 12, paddingBottom: 8, borderBottom: '2px solid #e5e7eb' }}>
-                    💰 Financing Details
-                  </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-                    {verifiedData.pricing_financing.loan_amount > 0 && (
-                      <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Loan Amount</div>
-                        <div style={{ fontSize: 16, fontWeight: 700 }}>${verifiedData.pricing_financing.loan_amount.toLocaleString()}</div>
-                      </div>
-                    )}
-                    {verifiedData.pricing_financing.down_payment > 0 && (
-                      <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Down Payment</div>
-                        <div style={{ fontSize: 16, fontWeight: 700 }}>${verifiedData.pricing_financing.down_payment.toLocaleString()}</div>
-                      </div>
-                    )}
-                    {verifiedData.pricing_financing.interest_rate > 0 && (
-                      <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Interest Rate</div>
-                        <div style={{ fontSize: 16, fontWeight: 700 }}>{(verifiedData.pricing_financing.interest_rate * 100).toFixed(2)}%</div>
-                      </div>
-                    )}
-                    {verifiedData.pricing_financing.ltv > 0 && (
-                      <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>LTV</div>
-                        <div style={{ fontSize: 16, fontWeight: 700 }}>{(verifiedData.pricing_financing.ltv * 100).toFixed(0)}%</div>
-                      </div>
-                    )}
-                    {verifiedData.pricing_financing.term_years > 0 && (
-                      <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Term</div>
-                        <div style={{ fontSize: 16, fontWeight: 700 }}>{verifiedData.pricing_financing.term_years} years</div>
-                      </div>
-                    )}
-                    {verifiedData.pricing_financing.amortization_years > 0 && (
-                      <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Amortization</div>
-                        <div style={{ fontSize: 16, fontWeight: 700 }}>{verifiedData.pricing_financing.amortization_years} years</div>
-                      </div>
-                    )}
-                    {verifiedData.pricing_financing.monthly_payment > 0 && (
-                      <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Monthly Payment</div>
-                        <div style={{ fontSize: 16, fontWeight: 700 }}>${verifiedData.pricing_financing.monthly_payment.toLocaleString()}</div>
-                      </div>
-                    )}
-                    {verifiedData.pricing_financing.annual_debt_service > 0 && (
-                      <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Annual Debt Service</div>
-                        <div style={{ fontSize: 16, fontWeight: 700 }}>${verifiedData.pricing_financing.annual_debt_service.toLocaleString()}</div>
-                      </div>
-                    )}
-                    {verifiedData.pricing_financing.price_per_unit > 0 && (
-                      <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Price per Unit</div>
-                        <div style={{ fontSize: 16, fontWeight: 700 }}>${verifiedData.pricing_financing.price_per_unit.toLocaleString()}</div>
-                      </div>
-                    )}
-                    {verifiedData.pricing_financing.price_per_sf > 0 && (
-                      <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Price per SF</div>
-                        <div style={{ fontSize: 16, fontWeight: 700 }}>${verifiedData.pricing_financing.price_per_sf.toFixed(2)}</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Underwriting Metrics */}
-              {verifiedData?.underwriting && (
-                <div style={{ marginBottom: 24 }}>
-                  <h4 style={{ fontSize: 15, fontWeight: 900, color: '#374151', marginBottom: 12, paddingBottom: 8, borderBottom: '2px solid #e5e7eb' }}>
-                    📊 Underwriting Metrics
-                  </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-                    {verifiedData.underwriting.dscr > 0 && (
-                      <div style={{ padding: 12, background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0' }}>
-                        <div style={{ fontSize: 12, color: '#166534', marginBottom: 4 }}>DSCR</div>
-                        <div style={{ fontSize: 18, fontWeight: 900, color: '#15803d' }}>{verifiedData.underwriting.dscr.toFixed(2)}</div>
-                      </div>
-                    )}
-                    {verifiedData.underwriting.cap_rate > 0 && (
-                      <div style={{ padding: 12, background: '#eff6ff', borderRadius: 8, border: '1px solid #bfdbfe' }}>
-                        <div style={{ fontSize: 12, color: '#1e40af', marginBottom: 4 }}>Cap Rate</div>
-                        <div style={{ fontSize: 18, fontWeight: 900, color: '#1e3a8a' }}>{(verifiedData.underwriting.cap_rate * 100).toFixed(2)}%</div>
-                      </div>
-                    )}
-                    {verifiedData.underwriting.cash_on_cash > 0 && (
-                      <div style={{ padding: 12, background: '#fef3c7', borderRadius: 8, border: '1px solid #fde68a' }}>
-                        <div style={{ fontSize: 12, color: '#92400e', marginBottom: 4 }}>Cash on Cash</div>
-                        <div style={{ fontSize: 18, fontWeight: 900, color: '#78350f' }}>{(verifiedData.underwriting.cash_on_cash * 100).toFixed(2)}%</div>
-                      </div>
-                    )}
-                    {verifiedData.underwriting.irr > 0 && (
-                      <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>IRR</div>
-                        <div style={{ fontSize: 16, fontWeight: 700 }}>{(verifiedData.underwriting.irr * 100).toFixed(2)}%</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Income Details */}
-              {verifiedData?.pnl && (
-                <div style={{ marginBottom: 24 }}>
-                  <h4 style={{ fontSize: 15, fontWeight: 900, color: '#374151', marginBottom: 12, paddingBottom: 8, borderBottom: '2px solid #e5e7eb' }}>
-                    💵 Income & P&L Details
-                  </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-                    {verifiedData.pnl.vacancy_amount > 0 && (
-                      <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Vacancy Amount</div>
-                        <div style={{ fontSize: 16, fontWeight: 700 }}>${verifiedData.pnl.vacancy_amount.toLocaleString()}</div>
-                      </div>
-                    )}
-                    {verifiedData.pnl.effective_gross_income > 0 && (
-                      <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Effective Gross Income</div>
-                        <div style={{ fontSize: 16, fontWeight: 700 }}>${verifiedData.pnl.effective_gross_income.toLocaleString()}</div>
-                      </div>
-                    )}
-                    {verifiedData.pnl.expense_ratio > 0 && (
-                      <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Expense Ratio</div>
-                        <div style={{ fontSize: 16, fontWeight: 700 }}>{(verifiedData.pnl.expense_ratio * 100).toFixed(2)}%</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Property Details */}
-              {verifiedData?.property && (
-                <div style={{ marginBottom: 24 }}>
-                  <h4 style={{ fontSize: 15, fontWeight: 900, color: '#374151', marginBottom: 12, paddingBottom: 8, borderBottom: '2px solid #e5e7eb' }}>
-                    🏢 Additional Property Info
-                  </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-                    {verifiedData.property.land_area_acres > 0 && (
-                      <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Land Area</div>
-                        <div style={{ fontSize: 16, fontWeight: 700 }}>{verifiedData.property.land_area_acres.toFixed(2)} acres</div>
-                      </div>
-                    )}
-                    {verifiedData.property.property_class && (
-                      <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Property Class</div>
-                        <div style={{ fontSize: 16, fontWeight: 700 }}>Class {verifiedData.property.property_class}</div>
-                      </div>
-                    )}
-                    {verifiedData.property.parking_spaces > 0 && (
-                      <div style={{ padding: 12, background: '#f9fafb', borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Parking Spaces</div>
-                        <div style={{ fontSize: 16, fontWeight: 700 }}>{verifiedData.property.parking_spaces}</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Data Quality */}
-              {verifiedData?.data_quality && (
-                <div>
-                  <h4 style={{ fontSize: 15, fontWeight: 900, color: '#374151', marginBottom: 12, paddingBottom: 8, borderBottom: '2px solid #e5e7eb' }}>
-                    ✅ Data Quality
-                  </h4>
-                  <div style={{ padding: 16, background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0' }}>
-                    <div style={{ fontSize: 14, color: '#166534', marginBottom: 8 }}>
-                      <strong>Confidence Score:</strong> {(verifiedData.data_quality.confidence * 100).toFixed(0)}%
-                    </div>
-                    {verifiedData.data_quality.missing_fields && verifiedData.data_quality.missing_fields.length > 0 && (
-                      <div style={{ fontSize: 13, color: '#166534' }}>
-                        <strong>Missing Fields:</strong> {verifiedData.data_quality.missing_fields.join(', ')}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Action Buttons */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>
+          <div style={{ marginTop: 32, display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+            <button
+              onClick={() => setStep('upload')}
+              style={{
+                padding: '12px 24px',
+                background: '#fff',
+                color: '#374151',
+                border: '1px solid #d1d5db',
+                borderRadius: 10,
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              Cancel
+            </button>
             <button
               onClick={handleCompleteWizard}
               style={{
                 ...styles.button,
-                background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
-                boxShadow: '0 4px 6px rgba(107, 114, 128, 0.3)'
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)'
               }}
             >
-              <ArrowLeft size={18} />
-              Skip to Results
+              <CheckCircle size={18} />
+              Complete & Analyze
             </button>
           </div>
         </div>
+
+        {/* Modals */}
+        <PDFViewerModal
+          isOpen={pdfViewerOpen}
+          onClose={() => setPdfViewerOpen(false)}
+          pdfUrl={pdfUrl}
+          highlightInfo={highlightInfo}
+          fieldLabel={selectedField?.label}
+          fieldValue={selectedField?.value}
+        />
+
+        <ConflictResolutionModal
+          isOpen={conflictModalOpen}
+          onClose={() => setConflictModalOpen(false)}
+          field={conflictField}
+          alternatives={conflictAlternatives}
+          currentValue={conflictField?.value}
+          onSelectValue={handleSelectConflictValue}
+        />
       </div>
     );
   }
