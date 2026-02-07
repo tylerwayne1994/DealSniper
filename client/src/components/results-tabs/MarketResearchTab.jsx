@@ -840,6 +840,26 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                   </LeafletTooltip>
                 </CircleMarker>
               )}
+              {/* City marker (if available) */}
+              {city && city.lat && city.lng && (
+                <CircleMarker
+                  center={[city.lat, city.lng]}
+                  radius={8}
+                  pathOptions={{ color: '#0ea5e9', fillColor: '#0ea5e9', fillOpacity: 0.85, weight: 2 }}
+                  eventHandlers={{ click: () => {
+                    setSelectedFeature({ type: 'city', id: city.name || `${city.lat},${city.lng}`, data: city, source: 'city' });
+                    // if city has no metrics, fallback to MSA if available
+                    if ((!city.metrics || Object.keys(city.metrics).length === 0) && msa_data?.msa_name) {
+                      setSelectedFeature({ type: 'msa', id: msa_data.msa_name, data: msa_data, source: 'msa_fallback' });
+                    }
+                  } }}
+                >
+                  <LeafletTooltip direction="top" offset={[0, -6]} opacity={0.95} className="text-xs">
+                    <div className="font-bold">{city.name || 'City'}</div>
+                    <div className="text-[10px] text-gray-600">Click for metrics</div>
+                  </LeafletTooltip>
+                </CircleMarker>
+              )}
             </MapContainer>
 
             {/* Map overlays */}
@@ -927,6 +947,27 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                       {selectedFeature.data.fmr2 && <div>FMR (2BR): ${Math.round(selectedFeature.data.fmr2).toLocaleString()}</div>}
                       {selectedFeature.data.migrationRate !== undefined && <div>Migration (‰): {selectedFeature.data.migrationRate}</div>}
                       {selectedFeature.data.population2021 && <div>Population: {selectedFeature.data.population2021.toLocaleString()}</div>}
+                    </div>
+                  )}
+                  {selectedFeature.type === 'city' && selectedFeature.data && (
+                    <div>
+                      <div className="font-semibold">{selectedFeature.data.name || 'City'}</div>
+                      {selectedFeature.data.metrics && Object.keys(selectedFeature.data.metrics).length > 0 ? (
+                        <div>
+                          {Object.entries(selectedFeature.data.metrics).map(([k,v]) => (
+                            <div key={k} className="text-[12px]"><span className="font-semibold">{k}:</span> {String(v)}</div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-gray-500">City metrics not available. Showing nearest MSA if available.</div>
+                      )}
+                    </div>
+                  )}
+                  {selectedFeature.type === 'msa' && selectedFeature.data && (
+                    <div>
+                      <div className="font-semibold">{selectedFeature.data.msa_name || selectedFeature.data.name || 'MSA'}</div>
+                      <div>YTD Permits: {fmt(selectedFeature.data.ytd_total_units || 0)}</div>
+                      <div>5+ Unit Buildings: {fmt(selectedFeature.data.ytd_5plus_units || 0)}</div>
                     </div>
                   )}
                 </div>
