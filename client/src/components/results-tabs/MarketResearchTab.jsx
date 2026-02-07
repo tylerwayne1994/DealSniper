@@ -182,9 +182,10 @@ const ZipDataMarkers = ({ zipCentroids, fmrData, migrationData, metric, onSelect
       {markersData.slice(0, 2000).map(({ zip, coords, color, displayValue, county, state, netMig, pop }) => (
         <CircleMarker
           key={zip}
+          pane="markerPane"
           center={[coords.lat, coords.lng]}
           radius={5}
-          pathOptions={{ fillColor: color, color: color, weight: 1, fillOpacity: 0.7, opacity: 0.9 }}
+          pathOptions={{ fillColor: color, color: color, weight: 1, fillOpacity: 0.7, opacity: 0.9, className: 'clickable-marker' }}
           eventHandlers={{ click: () => onSelectZip && onSelectZip(zip, coords, metric === 'fmr' ? fmrData[zip] : migrationData[zip]) }}
         >
           <LeafletTooltip direction="top" offset={[0, -5]} opacity={0.95} className="text-xs">
@@ -240,7 +241,8 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
   const [migrationData, setMigrationData] = useState({});
   const [msaCentroids, setMsaCentroids] = useState({});
   const [selectedFeature, setSelectedFeature] = useState(null); // { type: 'county'|'zip'|'city', id, data, source }
-  const [showZipHeat, setShowZipHeat] = useState(true);
+  // Default: hide ZIP heat/markers until user enables it (avoids inaccurate default layer)
+  const [showZipHeat, setShowZipHeat] = useState(false);
   const mapRef = useRef(null);
 
   const zipCode = property_location?.zip || propertyLocation?.zip;
@@ -769,6 +771,10 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                 zoomOffset={-1}
               />
 
+              <style>{`
+                .leaflet-container .clickable-marker { cursor: pointer; }
+              `}</style>
+              
               {countyGeoJson && mapMode === 'counties' && (() => {
                 console.log('🗺️ RENDERING COUNTY GEOJSON');
                 console.log('  countyGeoJson exists:', !!countyGeoJson);
@@ -862,9 +868,10 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
               {Object.entries(msaCentroids).map(([msaName, m]) => (
                 <CircleMarker
                   key={`msa-${msaName}`}
+                  pane="markerPane"
                   center={[m.lat, m.lng]}
                   radius={10}
-                  pathOptions={{ color: '#7c3aed', fillColor: '#7c3aed', fillOpacity: 0.9, weight: 2 }}
+                  pathOptions={{ color: '#7c3aed', fillColor: '#7c3aed', fillOpacity: 0.9, weight: 2, className: 'clickable-marker' }}
                   eventHandlers={{ click: () => setSelectedFeature({ type: 'msa', id: msaName, data: { name: msaName, avgFmr2: m.avgFmr2, count: m.count }, source: 'msa_agg' }) }}
                 >
                   <LeafletTooltip direction="top" offset={[0, -8]} opacity={0.95} className="text-xs">
@@ -876,9 +883,10 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
 
               {subjectLocation && (
                 <CircleMarker
+                  pane="markerPane"
                   center={[subjectLocation.lat, subjectLocation.lng]}
                   radius={12}
-                  pathOptions={{ color: '#2563eb', fillColor: '#2563eb', fillOpacity: 0.9, weight: 2 }}
+                  pathOptions={{ color: '#2563eb', fillColor: '#2563eb', fillOpacity: 0.9, weight: 2, className: 'clickable-marker' }}
                 >
                   <LeafletTooltip direction="right" offset={[8, 0]} opacity={0.95} className="text-xs font-semibold text-blue-700">
                     Subject Property
@@ -888,9 +896,10 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
               {/* City marker (if available) */}
               {city && city.lat && city.lng && (
                 <CircleMarker
+                  pane="markerPane"
                   center={[city.lat, city.lng]}
                   radius={8}
-                  pathOptions={{ color: '#0ea5e9', fillColor: '#0ea5e9', fillOpacity: 0.85, weight: 2 }}
+                  pathOptions={{ color: '#0ea5e9', fillColor: '#0ea5e9', fillOpacity: 0.85, weight: 2, className: 'clickable-marker' }}
                   eventHandlers={{ click: () => {
                     setSelectedFeature({ type: 'city', id: city.name || `${city.lat},${city.lng}`, data: city, source: 'city' });
                     // if city has no metrics, fallback to MSA if available
