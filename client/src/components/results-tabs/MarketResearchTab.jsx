@@ -7,6 +7,38 @@ import 'leaflet.heat';
 import Papa from 'papaparse';
 import 'leaflet/dist/leaflet.css';
 
+// Error boundary to prevent blank screens and surface errors to the UI
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, info: null };
+  }
+
+  componentDidCatch(error, info) {
+    console.error('🔥 ErrorBoundary caught error:', error, info);
+    this.setState({ hasError: true, error, info });
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-6 bg-white rounded-xl shadow border text-sm text-red-700">
+          <div className="font-bold mb-2">Something went wrong rendering Market Research</div>
+          <div className="mb-2">Error: {String(this.state.error?.message || this.state.error)}</div>
+          <details className="text-xs text-gray-600 whitespace-pre-wrap mb-3">
+            {this.state.info?.componentStack}
+          </details>
+          <div className="flex gap-2">
+            <button className="px-3 py-1 bg-blue-600 text-white rounded" onClick={() => window.location.reload()}>Reload page</button>
+            <button className="px-3 py-1 bg-gray-100 text-gray-800 rounded" onClick={() => console.log('ErrorBoundary info:', this.state)}>Log details</button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // Shared Mapbox token (matches dashboard Map tab)
 const MAPBOX_TOKEN = 'MAPBOX_TOKEN_REMOVED';
 
@@ -1417,4 +1449,11 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
   );
 }
 
-export default MarketResearchTab;
+// Wrap MarketResearchTab with ErrorBoundary to avoid blank screens
+export default function MarketResearchTabWrapper(props) {
+  return (
+    <ErrorBoundary>
+      <MarketResearchTab {...props} />
+    </ErrorBoundary>
+  );
+}
