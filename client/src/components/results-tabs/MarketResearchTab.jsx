@@ -239,6 +239,8 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
   const [migrationData, setMigrationData] = useState({});
   const mapRef = useRef(null);
 
+  const zipCode = property_location?.zip || propertyLocation?.zip;
+
   // Get property county FIPS - try multiple sources
   const propertyCountyFips = useMemo(() => {
     // Try direct FIPS
@@ -397,8 +399,6 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
       onRefetchMarketData(newDriveTime);
     }
   };
-
-  const zipCode = property_location?.zip || propertyLocation?.zip;
 
   const zipPoint = useMemo(() => {
     if (!zipCode) return null;
