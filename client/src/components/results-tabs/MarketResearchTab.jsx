@@ -238,6 +238,7 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
   const [csvLoading, setCsvLoading] = useState(true);
   const [fmrData, setFmrData] = useState({});
   const [migrationData, setMigrationData] = useState({});
+  const [msaCentroids, setMsaCentroids] = useState({});
   const [selectedFeature, setSelectedFeature] = useState(null); // { type: 'county'|'zip'|'city', id, data, source }
   const [showZipHeat, setShowZipHeat] = useState(true);
   const mapRef = useRef(null);
@@ -306,7 +307,7 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
           header: true,
           skipEmptyLines: true,
           dynamicTyping: true,
-          complete: (results) => {
+            complete: (results) => {
             const fmrMapByZip = {};
             const fmrMapByCounty = {};
             results.data.forEach((row) => {
@@ -320,8 +321,9 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                   fmr2: row.fmr_2br || null,
                   fmr3: row.fmr_3br || null,
                   fmr4: row.fmr_4br || null,
-                  county: row.county_name,
-                  state: row.state_usps,
+                    county: row.county_name,
+                    state: row.state_usps,
+                    msa: row.hud_area_name || row.hud_area || row.hud_area_name_raw || null,
                 };
               }
               
@@ -543,6 +545,33 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
     loadZipCentroids();
     return () => { cancelled = true; };
   }, []);
+
+  // Build MSA centroids by averaging ZIP centroids for each MSA recorded in fmrData
+  useEffect(() => {
+    try {
+      const msaAgg = {};
+      Object.entries(fmrData).forEach(([zip, r]) => {
+        const msaName = r?.msa;
+        if (!msaName) return;
+        const coords = zipCentroids[zip];
+        if (!coords) return;
+        if (!msaAgg[msaName]) msaAgg[msaName] = { latSum: 0, lngSum: 0, count: 0, fmrSum: 0 };
+        msaAgg[msaName].latSum += coords.lat;
+        msaAgg[msaName].lngSum += coords.lng;
+        msaAgg[msaName].count += 1;
+        msaAgg[msaName].fmrSum += (r.fmr2 || 0);
+      });
+      const msas = {};
+      Object.entries(msaAgg).forEach(([name, v]) => {
+        if (v.count === 0) return;
+        msas[name] = { lat: v.latSum / v.count, lng: v.lngSum / v.count, count: v.count, avgFmr2: v.fmrSum / v.count };
+      });
+      setMsaCentroids(msas);
+      console.log('✅ MSA CENTROIDS BUILT:', Object.keys(msas).length);
+    } catch (e) {
+      console.warn('MSA centroid build failed', e);
+    }
+  }, [zipCentroids, fmrData]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -828,6 +857,22 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                   />
                 );
               })()}
+
+              {/* MSA markers (aggregated from ZIPs) */}
+              {Object.entries(msaCentroids).map(([msaName, m]) => (
+                <CircleMarker
+                  key={`msa-${msaName}`}
+                  center={[m.lat, m.lng]}
+                  radius={10}
+                  pathOptions={{ color: '#7c3aed', fillColor: '#7c3aed', fillOpacity: 0.9, weight: 2 }}
+                  eventHandlers={{ click: () => setSelectedFeature({ type: 'msa', id: msaName, data: { name: msaName, avgFmr2: m.avgFmr2, count: m.count }, source: 'msa_agg' }) }}
+                >
+                  <LeafletTooltip direction="top" offset={[0, -8]} opacity={0.95} className="text-xs">
+                    <div className="font-bold">{msaName}</div>
+                    <div className="text-[10px] text-gray-600">ZIPs: {m.count}</div>
+                  </LeafletTooltip>
+                </CircleMarker>
+              ))}
 
               {subjectLocation && (
                 <CircleMarker
