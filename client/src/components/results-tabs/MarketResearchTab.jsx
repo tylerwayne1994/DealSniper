@@ -112,7 +112,104 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
   const [isochrone, setIsochrone] = useState(null);
   const [heatMetric, setHeatMetric] = useState('rir'); // 'rir' | 'affordability'
   const [selectedDriveTime, setSelectedDriveTime] = useState(drive_time_minutes);
+  const [csvLoading, setCsvLoading] = useState(true);
+  const [fmrData, setFmrData] = useState({});
+  const [migrationData, setMigrationData] = useState({});
   const mapRef = useRef(null);
+
+  // Load CSV data on mount
+  useEffect(() => {
+    const loadCSVData = async () => {
+      try {
+        // Load ZIP centroids
+        const centroidsRes = await fetch('/zcta_centroids.csv');
+        const centroidsTxt = await centroidsRes.text();
+        Papa.parse(centroidsTxt, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            const centroids = {};
+            results.data.forEach((row) => {
+              const zip = String(row.geoid || '').padStart(5, '0');
+              if (zip && row.y && row.x) {
+                centroids[zip] = { lat: parseFloat(row.y), lng: parseFloat(row.x) };
+              }
+            });
+            setZipCentroids(centroids);
+          }
+        });
+
+        // Load FMR data (ZIP level)
+        const fmrRes = await fetch('/fmr_by_zip_clean.csv');
+        const fmrTxt = await fmrRes.text();
+        Papa.parse(fmrTxt, {
+          header: true,
+          skipEmptyLines: true,
+          dynamicTyping: true,
+          complete: (results) => {
+            const fmrMapByZip = {};
+            const fmrMapByCounty = {};
+            results.data.forEach((row) => {
+              const zip = String(row.zip || '').padStart(5, '0');
+              const fips = row.county_fips ? String(row.county_fips).padStart(5, '0') : null;
+              
+              if (zip) {
+                fmrMapByZip[zip] = {
+                  fmr0: row.fmr_0br || null,
+                  fmr1: row.fmr_1br || null,
+                  fmr2: row.fmr_2br || null,
+                  fmr3: row.fmr_3br || null,
+                  fmr4: row.fmr_4br || null,
+                };
+              }
+              
+              if (fips && !fmrMapByCounty[fips]) {
+                fmrMapByCounty[fips] = {
+                  fmr0: row.fmr_0br || null,
+                  fmr1: row.fmr_1br || null,
+                  fmr2: row.fmr_2br || null,
+                  fmr3: row.fmr_3br || null,
+                  fmr4: row.fmr_4br || null,
+                };
+              }
+            });
+            setFmrData(fmrMapByZip);
+            setFmrByCounty(fmrMapByCounty);
+          }
+        });
+
+        // Load migration data
+        const migRes = await fetch('/migration_with_clean_zipcodes.csv');
+        const migTxt = await migRes.text();
+        Papa.parse(migTxt, {
+          header: true,
+          skipEmptyLines: true,
+          dynamicTyping: true,
+          complete: (results) => {
+            const migMap = {};
+            results.data.forEach((row) => {
+              const zip = String(row.Residence_ZIP_Code || '').padStart(5, '0');
+              if (zip) {
+                migMap[zip] = {
+                  migrationRate: row.migration_rate || 0,
+                  netMigration: row.net_migration || 0,
+                  population2021: row.y2_pop || 0,
+                };
+              }
+            });
+            setMigrationData(migMap);
+          }
+        });
+
+        setCsvLoading(false);
+      } catch (err) {
+        console.error('CSV load error:', err);
+        setCsvLoading(false);
+      }
+    };
+
+    loadCSVData();
+  }, []);
 
   // Sync selectedDriveTime with marketData when it updates
   useEffect(() => {
@@ -289,14 +386,25 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
     const fetchIsochrone = async () => {
       try {
         const origin = subjectLocation || { lat: mapCenter[0], lng: mapCenter[1] };
-        if (!origin?.lat || !origin?.lng) return;
+        if (!origin?.lat || !origin?.lng) {
+          setIsochrone(null);
+          return;
+        }
+        
+        console.log(`Fetching isochrone for ${selectedDriveTime} minutes...`);
         const url = `https://api.mapbox.com/isochrone/v1/mapbox/driving/${origin.lng},${origin.lat}?contours_minutes=${selectedDriveTime}&polygons=true&access_token=${MAPBOX_TOKEN}`;
         const res = await fetch(url);
-        if (!res.ok) return;
+        if (!res.ok) {
+          console.warn('Isochrone fetch failed:', res.status);
+          setIsochrone(null);
+          return;
+        }
         const gj = await res.json();
+        console.log(`Isochrone loaded for ${selectedDriveTime} minutes:`, gj);
         setIsochrone(gj);
       } catch (e) {
-        console.warn('Isochrone fetch failed', e);
+        console.warn('Isochrone fetch error:', e);
+        setIsochrone(null);
       }
     };
 
@@ -347,6 +455,57 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
         layer.remove();
       };
     }, [map, points, heatMetric]);
+    return null;
+  };
+
+  // ZIP Code Heatmap Layer using CSV data
+  const ZipHeatmapLayer = ({ zipCentroids, fmrData, migrationData, metric }) => {
+    const map = useMap();
+    
+    useEffect(() => {
+      if (!map || !zipCentroids || Object.keys(zipCentroids).length === 0) return;
+      
+      const points = [];
+      Object.entries(zipCentroids).forEach(([zip, coords]) => {
+        let intensity = 0;
+        
+        if (metric === 'fmr' && fmrData[zip]) {
+          // Use FMR data for intensity (2BR rent)
+          const fmr2 = fmrData[zip]?.fmr2;
+          if (fmr2) {
+            // Normalize FMR to 0-1 scale (800-2500 range)
+            intensity = Math.min(Math.max((fmr2 - 800) / (2500 - 800), 0), 1);
+          }
+        } else if (metric === 'migration' && migrationData[zip]) {
+          // Use migration rate for intensity
+          const migRate = migrationData[zip]?.migrationRate || 0;
+          // Normalize migration rate (-20 to +20 range)
+          intensity = Math.min(Math.max((migRate + 20) / 40, 0), 1);
+        }
+        
+        if (intensity > 0) {
+          points.push([coords.lat, coords.lng, intensity]);
+        }
+      });
+      
+      if (points.length === 0) return;
+      
+      const heatLayer = L.heatLayer(points, {
+        radius: 25,
+        blur: 20,
+        maxZoom: 13,
+        max: 1.0,
+        minOpacity: 0.3,
+        gradient: metric === 'fmr' 
+          ? { 0.0: '#16a34a', 0.35: '#84cc16', 0.5: '#eab308', 0.65: '#f59e0b', 0.85: '#ea580c', 1.0: '#dc2626' }
+          : { 0.0: '#dc2626', 0.35: '#f59e0b', 0.5: '#eab308', 0.65: '#84cc16', 0.85: '#16a34a', 1.0: '#059669' }
+      }).addTo(map);
+      
+      return () => {
+        heatLayer.remove();
+      };
+    }, [map, zipCentroids, fmrData, migrationData, metric]);
+    
     return null;
   };
 
@@ -500,13 +659,32 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
 
               {isochrone && (
                 <GeoJSON
+                  key={`isochrone-${selectedDriveTime}`}
                   data={isochrone}
                   style={() => ({ fillColor: '#3b82f6', color: '#1d4ed8', weight: 2, fillOpacity: 0.22, opacity: 0.6 })}
                 />
               )}
 
-              {heatPoints.length > 0 && (
+              {heatPoints.length > 0 && heatMetric === 'rir' && (
                 <HeatLayer points={heatPoints} />
+              )}
+
+              {heatMetric === 'fmr' && Object.keys(zipCentroids).length > 0 && (
+                <ZipHeatmapLayer 
+                  zipCentroids={zipCentroids}
+                  fmrData={fmrData}
+                  migrationData={migrationData}
+                  metric="fmr"
+                />
+              )}
+
+              {heatMetric === 'migration' && Object.keys(zipCentroids).length > 0 && (
+                <ZipHeatmapLayer 
+                  zipCentroids={zipCentroids}
+                  fmrData={fmrData}
+                  migrationData={migrationData}
+                  metric="migration"
+                />
               )}
 
               {subjectLocation && (
@@ -564,8 +742,10 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                     onChange={(e) => setHeatMetric(e.target.value)}
                     className="text-gray-900 text-xs border rounded px-2 py-1 bg-white shadow-inner"
                   >
-                    <option value="rir">Rent-to-Income Ratio</option>
-                    <option value="affordability">Affordability (lower RIR hotter)</option>
+                    <option value="rir">Rent-to-Income</option>
+                    <option value="affordability">Affordability</option>
+                    <option value="fmr">Fair Market Rent</option>
+                    <option value="migration">Migration Rate</option>
                   </select>
                 </div>
               </div>
@@ -634,37 +814,68 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
 
             <div className="absolute bottom-4 left-3 bg-white/95 backdrop-blur rounded-xl shadow-md border border-gray-100 p-4 w-72 z-[1000] pointer-events-auto">
               <div className="flex items-center justify-between mb-3 text-sm font-semibold text-gray-900">
-                <span>HUD FMR (2BR) Heat</span>
+                <span>
+                  {heatMetric === 'fmr' ? 'Fair Market Rent (2BR)' :
+                   heatMetric === 'migration' ? 'Migration Rate' :
+                   heatMetric === 'rir' ? 'Rent-to-Income Ratio' : 'Affordability'}
+                </span>
                 <div className="flex gap-2 text-xs text-gray-500">
-                  <span className="px-2 py-1 rounded-full border bg-gray-50">Counties</span>
+                  {mapMode === 'counties' && <span className="px-2 py-1 rounded-full border bg-gray-50">Counties</span>}
                   <span className="px-2 py-1 rounded-full border bg-white">ZIP Heat</span>
                 </div>
               </div>
-              <div className="space-y-2 text-xs text-gray-700">
-                {DOLLAR_SCALE.map((r, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: r.color }}></span>
-                    <span>{r.label}</span>
-                  </div>
-                ))}
-                <div className="flex items-center gap-2 text-gray-500"><span className="inline-block w-3 h-3 rounded bg-gray-200" /> No data</div>
-              </div>
-              <div className="mt-3 space-y-2 text-[11px] text-gray-600">
-                <div className="flex items-start gap-2">
-                  <Info size={14} className="mt-0.5" />
-                  <span>County colors = HUD FY26 2BR FMR.</span>
+              
+              {(heatMetric === 'fmr' || mapMode === 'counties') && (
+                <div className="space-y-2 text-xs text-gray-700 mb-3">
+                  {DOLLAR_SCALE.map((r, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: r.color }}></span>
+                      <span>{r.label}</span>
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-2 text-gray-500"><span className="inline-block w-3 h-3 rounded bg-gray-200" /> No data</div>
                 </div>
-                {heatMetric === 'rir' ? (
-                  <div className="flex items-start gap-2">
-                    <Info size={14} className="mt-0.5 text-rose-500" />
-                    <span>ZIP heat shows higher rent-to-income ratio as hotter.</span>
+              )}
+              
+              {heatMetric === 'migration' && (
+                <div className="mb-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex-1 h-4 rounded" style={{ background: 'linear-gradient(to right, #dc2626, #f59e0b, #eab308, #84cc16, #16a34a, #059669)' }}></div>
                   </div>
-                ) : (
-                  <div className="flex items-start gap-2">
-                    <Info size={14} className="mt-0.5 text-blue-500" />
-                    <span>Affordability heat shows lower RIR as hotter (more room for rent growth).</span>
+                  <div className="flex justify-between text-[10px] text-gray-600">
+                    <span>Outflow</span>
+                    <span>Neutral</span>
+                    <span>Inflow</span>
                   </div>
-                )}
+                </div>
+              )}
+              
+              {(heatMetric === 'rir' || heatMetric === 'affordability') && (
+                <div className="mb-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex-1 h-4 rounded" style={{ 
+                      background: heatMetric === 'affordability' 
+                        ? 'linear-gradient(to right, #e0f2fe, #bfdbfe, #2563eb, #1e3a8a)'
+                        : 'linear-gradient(to right, #fff1f2, #fecdd3, #ef4444, #991b1b)'
+                    }}></div>
+                  </div>
+                  <div className="flex justify-between text-[10px] text-gray-600">
+                    <span>{heatMetric === 'affordability' ? 'Less Affordable' : 'Low RIR'}</span>
+                    <span>{heatMetric === 'affordability' ? 'More Affordable' : 'High RIR'}</span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="space-y-2 text-[11px] text-gray-600 border-t pt-3">
+                <div className="flex items-start gap-2">
+                  <Info size={14} className="mt-0.5 flex-shrink-0" />
+                  <span>
+                    {heatMetric === 'fmr' ? 'ZIP colors show HUD Fair Market Rent for 2-bedroom units.' :
+                     heatMetric === 'migration' ? 'Heat shows net migration rate per 1,000 population.' :
+                     heatMetric === 'rir' ? 'Higher rent-to-income ratio appears hotter (red).' :
+                     'Lower RIR appears hotter (more room for rent growth).'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -1120,13 +1331,6 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
           </div>
         </div>
       ) : null}
-
-      {/* Data Sources Footer */}
-      <div className="bg-gray-50 rounded-lg shadow-sm p-4">
-        <p className="text-xs text-gray-500">
-          <span className="font-semibold">Data Sources:</span> ACS 2023 5-Year, IRS Migration 2021, Building Permits Survey (May 2025), Mapbox Isochrone, HUD FMR by ZIP, CBSA Monthly MSA Units, landlord.csv, ZIP renter/owner stats. Some values estimated with a low-cost LLM when not available.
-        </p>
-      </div>
     </div>
   );
 }
