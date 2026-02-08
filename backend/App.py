@@ -1537,7 +1537,7 @@ def _generate_visualization_data(data: Dict[str, Any]) -> Dict[str, Any]:
 def health():
     return {
         "ok": True,
-        "version": "9.0.0",
+        "version": "9.1.0-census-fix",
         "parser_default": "parser_v4",
         "clients": {
             "mistral": MISTRAL is not None,
