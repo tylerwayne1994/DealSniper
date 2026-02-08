@@ -3503,3 +3503,210 @@ STRUCTURE & CONSTRAINTS:
         raise HTTPException(status_code=500, detail=f"Pitch deck generation failed: {str(e)}")
 
 
+# ============================================================================
+# Document Analysis Endpoint (Try Cactus-style OM Analysis)
+# ============================================================================
+
+from .om_analysis_prompts import ANALYSIS_PROMPT, MARKET_RESEARCH_PROMPT, NO_MARKET_RESEARCH_PLACEHOLDER
+
+@router.post("/deals/{deal_id}/document-analysis")
+async def generate_document_analysis(deal_id: str, request: Request):
+    """
+    Generate a comprehensive Try Cactus-style document analysis report.
+    Takes the parsed OM data, optionally enriches with Perplexity market research,
+    then sends to Claude for institutional-grade due diligence analysis.
+    
+    Request body (optional):
+    {
+        "include_market_research": true/false (default: true),
+        "force_refresh": false
+    }
+    
+    REQUIRES 1 TOKEN.
+    """
+    log.info(f"[V2] Document analysis request for deal: {deal_id}")
+    
+    # --- Token check ---
+    try:
+        import sys
+        import os as _os
+        sys.path.insert(0, _os.path.dirname(_os.path.dirname(__file__)))
+        from token_manager import (
+            get_current_profile_id,
+            get_profile,
+            reset_tokens_if_needed,
+            TOKEN_COSTS,
+            get_supabase as get_token_supabase,
+        )
+
+        profile_id = get_current_profile_id(request)
+        profile = get_profile(profile_id)
+        profile = reset_tokens_if_needed(profile)
+
+        tokens_required = TOKEN_COSTS.get("document_analysis", 1)
+
+        if profile["token_balance"] < tokens_required:
+            raise HTTPException(
+                status_code=402,
+                detail=(
+                    f"Insufficient tokens. You need {tokens_required} token(s) "
+                    f"but have {profile['token_balance']}. Upgrade your plan to continue."
+                ),
+            )
+    except HTTPException as he:
+        if he.status_code == 402:
+            raise
+        log.warning(f"Token check failed (doc analysis): {he.detail}. Allowing for backward compat.")
+        profile_id = None
+        profile = None
+        get_token_supabase = None
+    except Exception as e:
+        log.warning(f"Token check error (doc analysis): {e}. Allowing for backward compat.")
+        profile_id = None
+        profile = None
+        get_token_supabase = None
+
+    # --- Get deal data ---
+    deal = storage.get_deal(deal_id)
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+    
+    parsed_data = deal.parsed_json or {}
+    
+    # --- Parse request body ---
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    
+    include_market_research = body.get("include_market_research", True)
+    force_refresh = body.get("force_refresh", False)
+    # Allow passing scenario_data directly from the frontend (overrides stored deal)
+    scenario_data_override = body.get("scenario_data", None)
+    if scenario_data_override:
+        parsed_data = scenario_data_override
+    
+    # --- Format OM data for the prompt ---
+    import json as _json
+    om_data_str = _json.dumps(parsed_data, indent=2, default=str)
+    
+    # --- Optionally fetch Perplexity market research ---
+    market_research_str = NO_MARKET_RESEARCH_PLACEHOLDER
+    
+    if include_market_research:
+        try:
+            property_info = parsed_data.get("property", {})
+            address = property_info.get("address", "")
+            city = property_info.get("city", "")
+            state = property_info.get("state", "")
+            zip_code = property_info.get("zip", "")
+            submarket = property_info.get("submarket", f"{city}, {state}")
+            property_type = property_info.get("property_type", "Multifamily")
+            units = property_info.get("units", property_info.get("total_units", "N/A"))
+            year_built = property_info.get("year_built", "N/A")
+            
+            if city and state:
+                from .market_research import call_perplexity
+                
+                market_prompt = MARKET_RESEARCH_PROMPT.format(
+                    property_address=address,
+                    city=city,
+                    state=state,
+                    zip=zip_code,
+                    submarket=submarket,
+                    property_type=property_type,
+                    units=units,
+                    year_built=year_built
+                )
+                
+                log.info(f"[V2] Fetching Perplexity market research for {city}, {state}")
+                perplexity_result = await call_perplexity(market_prompt, model="sonar")
+                market_research_str = perplexity_result.get("content", NO_MARKET_RESEARCH_PLACEHOLDER)
+                log.info(f"[V2] Got Perplexity market research: {len(market_research_str)} chars")
+            else:
+                log.warning("[V2] Missing city/state for market research, skipping Perplexity")
+        except Exception as e:
+            log.warning(f"[V2] Perplexity market research failed: {e}. Continuing without it.")
+            market_research_str = NO_MARKET_RESEARCH_PLACEHOLDER + f"\n\n(Market research fetch failed: {str(e)})"
+    
+    # --- Build the analysis prompt ---
+    full_prompt = ANALYSIS_PROMPT.format(
+        om_data=om_data_str,
+        market_research=market_research_str
+    )
+    
+    # --- Call Claude for the analysis ---
+    from anthropic import Anthropic
+    
+    ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
+    if not ANTHROPIC_API_KEY:
+        raise HTTPException(status_code=503, detail="Anthropic API key not configured")
+    
+    anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
+    
+    log.info(f"[V2] Sending document analysis prompt to Claude ({len(full_prompt)} chars)")
+    
+    try:
+        response = anthropic_client.messages.create(
+            model="claude-sonnet-4-5-20250929",
+            max_tokens=16000,
+            messages=[{
+                "role": "user",
+                "content": full_prompt
+            }]
+        )
+        
+        analysis_text = response.content[0].text.strip()
+        log.info(f"[V2] Document analysis complete: {len(analysis_text)} chars")
+        
+        # Extract token usage
+        prompt_tokens = getattr(response.usage, 'input_tokens', None)
+        completion_tokens = getattr(response.usage, 'output_tokens', None)
+        total_tokens = (prompt_tokens or 0) + (completion_tokens or 0)
+        
+    except Exception as e:
+        log.exception(f"[V2] Claude analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Analysis generation failed: {str(e)}")
+    
+    # --- Deduct token ---
+    if profile_id and profile and get_token_supabase:
+        try:
+            tokens_required = TOKEN_COSTS.get("document_analysis", 1)
+            sb = get_token_supabase()
+            new_balance = profile["token_balance"] - tokens_required
+            sb.table("profiles").update({"token_balance": new_balance}).eq("id", profile_id).execute()
+            log.info(f"[V2] Deducted {tokens_required} token for doc analysis, new balance: {new_balance}")
+        except Exception as e:
+            log.error(f"[V2] Failed to deduct token for doc analysis: {e}")
+    
+    # --- Log usage ---
+    try:
+        user_id = request.headers.get("X-User-ID") or request.cookies.get("user_id")
+    except Exception:
+        user_id = None
+    try:
+        from . import llm_usage
+        llm_usage.log_usage(
+            user_id=user_id,
+            action="document_analysis",
+            model="claude-sonnet-4-5-20250929",
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=total_tokens,
+            deduct_from_balance=False,
+        )
+    except Exception:
+        pass
+    
+    return JSONResponse({
+        "success": True,
+        "deal_id": deal_id,
+        "analysis": analysis_text,
+        "token_usage": {
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": total_tokens
+        },
+        "market_research_included": include_market_research and market_research_str != NO_MARKET_RESEARCH_PLACEHOLDER,
+        "generated_at": datetime.now().isoformat()
+    })
