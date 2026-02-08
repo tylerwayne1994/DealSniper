@@ -1150,50 +1150,137 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
         </div>
       </div>
 
-      {/* Demographic Metrics Grid (matching reference design) */}
+      {/* ============================================================ */}
+      {/* =================== BOTTOM HALF REDESIGN =================== */}
+      {/* ============================================================ */}
+
+      {/* Rent Growth Opportunity + Affordability Summary */}
+      <div className="grid md:grid-cols-2 gap-4">
+        {/* Rent Growth Opportunity Card */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100">
+              <TrendingUp size={20} className="text-blue-600" />
+            </div>
+            <div>
+              <div className="text-base font-bold text-gray-900">Rent Growth Opportunity</div>
+              <div className="text-xs text-gray-500">Maximum rent while maintaining market competitiveness</div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-gray-50 rounded-lg p-3">
+              <div className="text-xs text-gray-500 mb-1">Median Market Rent</div>
+              <div className="text-lg font-bold text-gray-900">{fmtCurrency(safeAggregations.median_rent)}</div>
+              <div className="text-[10px] text-gray-400">per unit</div>
+            </div>
+            <div className="bg-blue-50 rounded-lg p-3">
+              <div className="text-xs text-gray-500 mb-1">FMR (2BR)</div>
+              <div className="text-lg font-bold text-blue-700">{fmtCurrency(fmr?.fmr_2br || 0)}</div>
+              <div className="text-[10px] text-gray-400">HUD Fair Market Rent</div>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-3">
+              <div className="text-xs text-gray-500 mb-1">Median Home Value</div>
+              <div className="text-lg font-bold text-gray-900">{fmtCurrency(aggregations?.median_home_value || county_data?.median_home_value)}</div>
+              <div className="text-[10px] text-gray-400">county level</div>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-3">
+              <div className="text-xs text-gray-500 mb-1">Rent-to-Price Ratio</div>
+              <div className="text-lg font-bold text-gray-900">{aggregations?.rent_to_price_ratio ? `${aggregations.rent_to_price_ratio.toFixed(2)}%` : 'N/A'}</div>
+              <div className="text-[10px] text-gray-400">{aggregations?.rent_to_price_ratio > 0.8 ? 'Favorable for investors' : aggregations?.rent_to_price_ratio > 0.5 ? 'Moderate' : 'Below average'}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Affordability Summary Card */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-3xl font-bold text-blue-600">{fmtPercentFromFraction(marketData?.rent_to_income_ratio)}</div>
+            <div className="text-right">
+              <div className="text-sm font-semibold text-gray-900">Rent-to-Income Ratio</div>
+              <div className="text-xs text-gray-500">Affordability measure for local area</div>
+            </div>
+          </div>
+          <div className="bg-blue-50 rounded-lg p-4 text-xs text-gray-700 leading-relaxed">
+            {(() => {
+              const rir = marketData?.rent_to_income_ratio;
+              const rirPct = rir ? (rir * 100).toFixed(1) : null;
+              const countyRir = county_data?.rent_to_income_ratio ? (county_data.rent_to_income_ratio * 100).toFixed(1) : null;
+              const medIncome = safeAggregations.median_income;
+              const medRent = safeAggregations.median_rent;
+              const countyName = county?.name || county_data?.county_name || 'the county';
+              
+              if (!rirPct) return 'Affordability data not yet available for this location.';
+              
+              return (
+                <>
+                  The multifamily affordability ratio within the {drive_time_minutes}-minute drive-time area stands at <strong>{rirPct}%</strong>
+                  {countyRir && <>, compared to {countyName}'s {countyRir}%</>}.
+                  {' '}The median household income of <strong>{fmtCurrency(medIncome)}</strong> supports
+                  a median rent of <strong>{fmtCurrency(medRent)}/mo</strong>.
+                  {' '}{parseFloat(rirPct) < 25 
+                    ? 'This indicates a fundamentally affordable market with room for rent growth without displacing tenants.'
+                    : parseFloat(rirPct) < 30
+                    ? 'This suggests moderate affordability — rents are sustainable but growth potential may be limited.'
+                    : 'High rent burden indicates limited room for rent increases without impacting occupancy.'
+                  }
+                </>
+              );
+            })()}
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+            <div className="bg-gray-50 rounded-lg py-2">
+              <div className="text-xs text-gray-500">Area</div>
+              <div className="text-sm font-bold">{fmtPercentFromFraction(marketData?.rent_to_income_ratio)}</div>
+            </div>
+            <div className="bg-gray-50 rounded-lg py-2">
+              <div className="text-xs text-gray-500">County</div>
+              <div className="text-sm font-bold">{fmtPercentFromFraction(county_data?.rent_to_income_ratio)}</div>
+            </div>
+            <div className="bg-gray-50 rounded-lg py-2">
+              <div className="text-xs text-gray-500">Rating</div>
+              <div className="text-sm font-bold text-blue-600">{safeAggregations.affordability}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== MARKET METRICS GRID (8 data cards matching reference UI) ===== */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100">
-              <Clock size={20} className="text-blue-600" />
+              <MapIcon size={20} className="text-blue-600" />
             </div>
             <div>
-              <div className="text-xs text-gray-500">Analysis Area</div>
-              <div className="text-base font-bold text-gray-900">{drive_time_minutes}-min Drive</div>
+              <div className="text-base font-bold text-gray-900">Market Overview</div>
+              <div className="text-xs text-gray-500">{drive_time_minutes}-Minute Drive Time Area • {county?.name || county_data?.county_name || ''}, {state?.name || property_location?.state || ''}</div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs px-3 py-1.5 rounded-full border bg-blue-50 text-blue-700 font-semibold">Market Metrics</span>
-          </div>
+          <span className="text-xs px-3 py-1.5 rounded-full border bg-blue-50 text-blue-700 font-semibold">Census 2023</span>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Population */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
-              <Users size={18} className="text-blue-600" />
+              <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center"><Users size={15} className="text-blue-600" /></div>
               <span className="text-xs font-semibold text-gray-600">Population</span>
             </div>
             <div className="text-2xl font-bold text-gray-900 mb-1">{fmt(safeAggregations.population)}</div>
-            <div className={`text-xs font-semibold ${safeAggregations.population > 100000 ? 'text-blue-600' : safeAggregations.population > 50000 ? 'text-gray-600' : 'text-red-600'}`}>
-              {safeAggregations.population > 100000 ? 'High' : safeAggregations.population > 50000 ? 'Average' : 'Low'}
+            <div className={`text-xs font-semibold ${safeAggregations.population > 200000 ? 'text-blue-600' : safeAggregations.population > 50000 ? 'text-gray-600' : 'text-red-600'}`}>
+              {safeAggregations.population > 200000 ? 'High' : safeAggregations.population > 50000 ? 'Average' : 'Low'}
             </div>
             <div className="text-[10px] text-gray-500 mt-2">
-              {(() => {
-                const countyPop = county_data?.population || 0;
-                if (countyPop > 0 && safeAggregations.population > 0) {
-                  const diff = ((safeAggregations.population - countyPop) / countyPop * 100).toFixed(1);
-                  return `${diff > 0 ? '+' : ''}${diff}% vs county average of ${fmt(Math.round(countyPop))}`;
-                }
-                return `${drive_time_minutes}-min drive time area population`;
-              })()}
+              {aggregations?.total_housing_units > 0
+                ? `${fmt(aggregations.total_housing_units)} housing units in county`
+                : `${drive_time_minutes}-min drive time area`}
             </div>
           </div>
 
-          {/* Growth */}
+          {/* Growth (Migration) */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
-              <TrendingUp size={18} className="text-blue-600" />
+              <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center"><TrendingUp size={15} className="text-blue-600" /></div>
               <span className="text-xs font-semibold text-gray-600">Growth</span>
             </div>
             <div className="text-2xl font-bold text-gray-900 mb-1">{localPopGrowthPct !== undefined ? fmtPercent(localPopGrowthPct) : 'N/A'}</div>
@@ -1202,12 +1289,11 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
             </div>
             <div className="text-[10px] text-gray-500 mt-2">
               {(() => {
-                const stateGrowth = aggregations?.comparisons?.pop_growth_state;
-                const stateName = state?.name || property_location?.state || propertyLocation?.state || 'state';
-                if (stateGrowth !== undefined && stateGrowth !== null) {
-                  return `Yearly population growth compared to ${stateName} average of ${fmtPercent(stateGrowth)}`;
-                }
-                return localPopGrowthPct !== undefined ? 'Yearly net migration-based population growth' : 'Growth data not available';
+                const sg = aggregations?.comparisons?.pop_growth_state;
+                const sn = state?.name || property_location?.state || 'state';
+                return sg !== undefined && sg !== null
+                  ? `Yearly growth compared to ${sn} average of ${fmtPercent(sg)}`
+                  : 'Net migration-based population growth';
               })()}
             </div>
           </div>
@@ -1215,53 +1301,41 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
           {/* Households */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
-              <HomeIcon size={18} className="text-blue-600" />
+              <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center"><HomeIcon size={15} className="text-blue-600" /></div>
               <span className="text-xs font-semibold text-gray-600">Households</span>
             </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">{households > 0 ? fmt(Math.round(households)) : 'N/A'}</div>
-            <div className={`text-xs font-semibold ${households > 10000 ? 'text-blue-600' : households > 5000 ? 'text-gray-600' : 'text-red-600'}`}>
-              {households > 10000 ? 'High' : households > 5000 ? 'Average' : households > 0 ? 'Low' : 'N/A'}
+            <div className="text-2xl font-bold text-gray-900 mb-1">{aggregations?.total_housing_units > 0 ? fmt(aggregations.total_housing_units) : (households > 0 ? fmt(Math.round(households)) : 'N/A')}</div>
+            <div className={`text-xs font-semibold ${(aggregations?.total_housing_units || households) > 100000 ? 'text-blue-600' : (aggregations?.total_housing_units || households) > 30000 ? 'text-gray-600' : 'text-red-600'}`}>
+              {(aggregations?.total_housing_units || households) > 100000 ? 'High' : (aggregations?.total_housing_units || households) > 30000 ? 'Average' : 'Low'}
             </div>
             <div className="text-[10px] text-gray-500 mt-2">
-              {(() => {
-                const pop = safeAggregations.population || 0;
-                if (households > 0 && pop > 0) {
-                  const perThousand = Math.round(households / pop * 1000);
-                  return `${perThousand} households per 1,000 people in the ${drive_time_minutes}-min area`;
-                }
-                return 'Household count based on renter + owner data';
-              })()}
+              {aggregations?.total_housing_units > 0 && safeAggregations.population > 0
+                ? `${Math.round(aggregations.total_housing_units / safeAggregations.population * 1000)} units per 1,000 people`
+                : 'Total housing units in county'}
             </div>
           </div>
 
-          {/* Renter/Owner Split (replacing hardcoded Single Family) */}
+          {/* Single Family */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
-              <HomeIcon size={18} className="text-blue-600" />
-              <span className="text-xs font-semibold text-gray-600">Renter Share</span>
+              <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center"><HomeIcon size={15} className="text-blue-600" /></div>
+              <span className="text-xs font-semibold text-gray-600">Single Family</span>
             </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">
-              {zip_renter_owner?.renter_share != null ? fmtPercentFromFraction(zip_renter_owner.renter_share) : 'N/A'}
-            </div>
-            <div className={`text-xs font-semibold ${(zip_renter_owner?.renter_share || 0) > 0.5 ? 'text-blue-600' : 'text-gray-600'}`}>
-              {zip_renter_owner?.renter_share != null ? ((zip_renter_owner.renter_share > 0.5) ? 'Renter Majority' : 'Owner Majority') : 'N/A'}
+            <div className="text-2xl font-bold text-gray-900 mb-1">{aggregations?.single_family_total > 0 ? fmt(aggregations.single_family_total) : 'N/A'}</div>
+            <div className={`text-xs font-semibold ${(aggregations?.single_family_total || 0) > 50000 ? 'text-blue-600' : (aggregations?.single_family_total || 0) > 10000 ? 'text-gray-600' : 'text-red-600'}`}>
+              {aggregations?.single_family_total > 50000 ? 'High' : aggregations?.single_family_total > 10000 ? 'Average' : aggregations?.single_family_total > 0 ? 'Low' : 'N/A'}
             </div>
             <div className="text-[10px] text-gray-500 mt-2">
-              {(() => {
-                const rc = zip_renter_owner?.renter_count;
-                const oc = zip_renter_owner?.owner_count;
-                if (rc != null && oc != null) {
-                  return `${fmt(Math.round(rc))} renters / ${fmt(Math.round(oc))} owners in ZIP ${zipCode || ''}`;
-                }
-                return 'Renter vs owner breakdown for this ZIP';
-              })()}
+              {aggregations?.single_family_total > 0 && safeAggregations.population > 0
+                ? `${(aggregations.single_family_total / safeAggregations.population * 1000).toFixed(1)} homes per 1,000 people`
+                : 'Single-family detached + attached'}
             </div>
           </div>
 
           {/* Income */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
-              <DollarSign size={18} className="text-blue-600" />
+              <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center"><DollarSign size={15} className="text-blue-600" /></div>
               <span className="text-xs font-semibold text-gray-600">Income</span>
             </div>
             <div className="text-2xl font-bold text-gray-900 mb-1">{fmtCurrency(safeAggregations.median_income)}</div>
@@ -1270,13 +1344,9 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
             </div>
             <div className="text-[10px] text-gray-500 mt-2">
               {(() => {
-                const stateIncome = aggregations?.comparisons?.income_state;
-                const stateName = state?.name || property_location?.state || propertyLocation?.state || 'state';
-                if (stateIncome) {
-                  const diff = ((safeAggregations.median_income - stateIncome) / stateIncome * 100).toFixed(1);
-                  return `${diff > 0 ? '+' : ''}${diff}% vs ${stateName} avg of ${fmtCurrency(Math.round(stateIncome))}`;
-                }
-                return 'Median household income for area';
+                const si = aggregations?.comparisons?.income_state;
+                const sn = state?.name || property_location?.state || 'state';
+                return si ? `${((safeAggregations.median_income - si) / si * 100).toFixed(1)}% vs ${sn} avg of ${fmtCurrency(Math.round(si))}` : 'Median household income';
               })()}
             </div>
           </div>
@@ -1284,7 +1354,7 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
           {/* Businesses */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
-              <Briefcase size={18} className="text-blue-600" />
+              <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center"><Briefcase size={15} className="text-blue-600" /></div>
               <span className="text-xs font-semibold text-gray-600">Businesses</span>
             </div>
             <div className="text-2xl font-bold text-gray-900 mb-1">{aggregations?.businesses ? fmt(aggregations.businesses) : 'N/A'}</div>
@@ -1292,22 +1362,16 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
               {aggregations?.businesses ? ((aggregations.businesses > 5000) ? 'High' : (aggregations.businesses > 1000) ? 'Average' : 'Low') : 'N/A'}
             </div>
             <div className="text-[10px] text-gray-500 mt-2">
-              {(() => {
-                const biz = aggregations?.businesses;
-                const pop = safeAggregations.population;
-                if (biz && pop > 0) {
-                  const perThousand = Math.round(biz / pop * 1000);
-                  return `${perThousand} businesses per 1,000 people in ${drive_time_minutes}-min area`;
-                }
-                return 'Business count in the analysis area';
-              })()}
+              {aggregations?.businesses && safeAggregations.population > 0
+                ? `${Math.round(aggregations.businesses / safeAggregations.population * 1000)} per 1,000 people`
+                : 'Business count from LLM estimate'}
             </div>
           </div>
 
           {/* Walk Score */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
-              <Activity size={18} className="text-blue-600" />
+              <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center"><Activity size={15} className="text-blue-600" /></div>
               <span className="text-xs font-semibold text-gray-600">Walk Score</span>
             </div>
             <div className="text-2xl font-bold text-gray-900 mb-1">{aggregations?.walk_score ?? 'N/A'}</div>
@@ -1315,30 +1379,294 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
               {aggregations?.walk_score != null ? (aggregations.walk_score >= 70 ? 'Very Walkable' : aggregations.walk_score >= 50 ? 'Somewhat Walkable' : 'Car-Dependent') : 'N/A'}
             </div>
             <div className="text-[10px] text-gray-500 mt-2">
-              {aggregations?.walk_score != null ? `Walk score of ${aggregations.walk_score}/100 for this area` : 'Walk score data not available'}
+              {aggregations?.walk_score != null ? `Walkability score of ${aggregations.walk_score}/100` : 'Score not available'}
             </div>
           </div>
 
           {/* Affordability */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
-              <Percent size={18} className="text-blue-600" />
+              <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center"><Percent size={15} className="text-blue-600" /></div>
               <span className="text-xs font-semibold text-gray-600">Affordability</span>
             </div>
             <div className="text-2xl font-bold text-blue-600 mb-1">{safeAggregations.affordability}</div>
-            <div className="text-xs text-blue-600 font-semibold">Rent {fmtCurrency(safeAggregations.median_rent)}/mo</div>
+            <div className="text-xs font-semibold text-blue-600">Rent {fmtCurrency(safeAggregations.median_rent)}/mo</div>
             <div className="text-[10px] text-gray-500 mt-2">
-              {(() => {
-                const rir = marketData?.rent_to_income_ratio;
-                if (rir != null) {
-                  return `Rent-to-income ratio of ${fmtPercentFromFraction(rir)} for this market`;
-                }
-                return 'Rent-to-income ratio shows market affordability';
-              })()}
+              {marketData?.rent_to_income_ratio != null
+                ? `RIR of ${fmtPercentFromFraction(marketData.rent_to_income_ratio)} for this market`
+                : 'Affordability based on rent-to-income'}
             </div>
           </div>
         </div>
       </div>
+
+      {/* ===== EMPLOYMENT & ECONOMY SECTION ===== */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-1 h-6 bg-blue-600 rounded-full" />
+          <h3 className="text-xl font-bold text-gray-900">Employment & Economy</h3>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-5 border border-green-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-green-100 flex items-center justify-center"><Briefcase size={15} className="text-green-600" /></div>
+              <span className="text-xs font-semibold text-gray-600">Unemployment</span>
+            </div>
+            <div className={`text-2xl font-bold ${county_data.unemployment_rate < 4 ? 'text-green-600' : county_data.unemployment_rate < 6 ? 'text-yellow-600' : 'text-red-600'}`}>
+              {fmtPercent(county_data.unemployment_rate)}
+            </div>
+            <div className={`text-xs font-semibold mt-1 ${county_data.unemployment_rate < 4 ? 'text-green-600' : county_data.unemployment_rate < 6 ? 'text-yellow-600' : 'text-red-600'}`}>
+              {county_data.unemployment_rate < 4 ? 'Strong' : county_data.unemployment_rate < 6 ? 'Moderate' : 'Weak'}
+            </div>
+            <div className="text-[10px] text-gray-500 mt-2">County-level unemployment rate</div>
+          </div>
+
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-5 border border-green-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-green-100 flex items-center justify-center"><Users size={15} className="text-green-600" /></div>
+              <span className="text-xs font-semibold text-gray-600">Labor Force</span>
+            </div>
+            <div className="text-2xl font-bold text-gray-900">{aggregations?.labor_force_participation ? fmtPercent(aggregations.labor_force_participation) : 'N/A'}</div>
+            <div className={`text-xs font-semibold mt-1 ${(aggregations?.labor_force_participation || 0) > 65 ? 'text-green-600' : (aggregations?.labor_force_participation || 0) > 55 ? 'text-gray-600' : 'text-red-600'}`}>
+              {aggregations?.labor_force_participation > 65 ? 'High Participation' : aggregations?.labor_force_participation > 55 ? 'Average' : aggregations?.labor_force_participation ? 'Low Participation' : 'N/A'}
+            </div>
+            <div className="text-[10px] text-gray-500 mt-2">Labor force participation rate</div>
+          </div>
+
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-5 border border-green-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-green-100 flex items-center justify-center"><Activity size={15} className="text-green-600" /></div>
+              <span className="text-xs font-semibold text-gray-600">Poverty Rate</span>
+            </div>
+            <div className={`text-2xl font-bold ${(aggregations?.poverty_rate || 0) < 10 ? 'text-green-600' : (aggregations?.poverty_rate || 0) < 15 ? 'text-yellow-600' : 'text-red-600'}`}>
+              {aggregations?.poverty_rate ? fmtPercent(aggregations.poverty_rate) : 'N/A'}
+            </div>
+            <div className={`text-xs font-semibold mt-1 ${(aggregations?.poverty_rate || 0) < 10 ? 'text-green-600' : (aggregations?.poverty_rate || 0) < 15 ? 'text-yellow-600' : 'text-red-600'}`}>
+              {aggregations?.poverty_rate ? (aggregations.poverty_rate < 10 ? 'Low' : aggregations.poverty_rate < 15 ? 'Average' : 'High') : 'N/A'}
+            </div>
+            <div className="text-[10px] text-gray-500 mt-2">Population below poverty line</div>
+          </div>
+
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-5 border border-green-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-green-100 flex items-center justify-center"><Briefcase size={15} className="text-green-600" /></div>
+              <span className="text-xs font-semibold text-gray-600">Total Employed</span>
+            </div>
+            <div className="text-2xl font-bold text-gray-900">{aggregations?.total_civilian_employed ? fmt(aggregations.total_civilian_employed) : 'N/A'}</div>
+            <div className={`text-xs font-semibold mt-1 ${(aggregations?.total_civilian_employed || 0) > 100000 ? 'text-green-600' : (aggregations?.total_civilian_employed || 0) > 30000 ? 'text-gray-600' : 'text-red-600'}`}>
+              {aggregations?.total_civilian_employed > 100000 ? 'Large' : aggregations?.total_civilian_employed > 30000 ? 'Medium' : aggregations?.total_civilian_employed ? 'Small' : 'N/A'}
+            </div>
+            <div className="text-[10px] text-gray-500 mt-2">Civilian employed population (16+)</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== HOUSING MARKET DEEP DIVE ===== */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-1 h-6 bg-blue-600 rounded-full" />
+          <h3 className="text-xl font-bold text-gray-900">Housing Market</h3>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl p-5 border border-purple-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-purple-100 flex items-center justify-center"><HomeIcon size={15} className="text-purple-600" /></div>
+              <span className="text-xs font-semibold text-gray-600">Median Home Value</span>
+            </div>
+            <div className="text-2xl font-bold text-gray-900">{fmtCurrency(aggregations?.median_home_value || county_data?.median_home_value)}</div>
+            <div className={`text-xs font-semibold mt-1 ${(aggregations?.median_home_value || county_data?.median_home_value || 0) > 400000 ? 'text-red-600' : (aggregations?.median_home_value || county_data?.median_home_value || 0) > 200000 ? 'text-gray-600' : 'text-green-600'}`}>
+              {(aggregations?.median_home_value || county_data?.median_home_value || 0) > 400000 ? 'Expensive' : (aggregations?.median_home_value || county_data?.median_home_value || 0) > 200000 ? 'Average' : 'Affordable'}
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl p-5 border border-purple-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-purple-100 flex items-center justify-center"><DollarSign size={15} className="text-purple-600" /></div>
+              <span className="text-xs font-semibold text-gray-600">Median Rent</span>
+            </div>
+            <div className="text-2xl font-bold text-gray-900">{fmtCurrency(safeAggregations.median_rent)}</div>
+            <div className="text-xs text-gray-500 mt-1">Monthly gross rent</div>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl p-5 border border-purple-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-purple-100 flex items-center justify-center"><Layers size={15} className="text-purple-600" /></div>
+              <span className="text-xs font-semibold text-gray-600">Vacancy Rate</span>
+            </div>
+            <div className={`text-2xl font-bold ${(aggregations?.vacancy_rate || 0) < 5 ? 'text-green-600' : (aggregations?.vacancy_rate || 0) < 8 ? 'text-yellow-600' : 'text-red-600'}`}>
+              {aggregations?.vacancy_rate ? fmtPercent(aggregations.vacancy_rate) : 'N/A'}
+            </div>
+            <div className={`text-xs font-semibold mt-1 ${(aggregations?.vacancy_rate || 0) < 5 ? 'text-green-600' : (aggregations?.vacancy_rate || 0) < 8 ? 'text-yellow-600' : 'text-red-600'}`}>
+              {aggregations?.vacancy_rate ? (aggregations.vacancy_rate < 5 ? 'Tight Market' : aggregations.vacancy_rate < 8 ? 'Balanced' : 'High Vacancy') : 'N/A'}
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl p-5 border border-purple-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-purple-100 flex items-center justify-center"><DollarSign size={15} className="text-purple-600" /></div>
+              <span className="text-xs font-semibold text-gray-600">Owner Costs</span>
+            </div>
+            <div className="text-2xl font-bold text-gray-900">{fmtCurrency(aggregations?.median_owner_costs)}</div>
+            <div className="text-xs text-gray-500 mt-1">Monthly owner costs with mortgage</div>
+          </div>
+        </div>
+
+        {/* Housing Composition Row */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
+          <div className="bg-gray-50 rounded-xl p-4 text-center border border-gray-100">
+            <div className="text-lg font-bold text-gray-900">{aggregations?.homeownership_rate ? fmtPercent(aggregations.homeownership_rate) : 'N/A'}</div>
+            <div className="text-[10px] text-gray-500 mt-1">Homeownership Rate</div>
+          </div>
+          <div className="bg-gray-50 rounded-xl p-4 text-center border border-gray-100">
+            <div className="text-lg font-bold text-gray-900">{aggregations?.renter_percentage ? fmtPercent(aggregations.renter_percentage) : 'N/A'}</div>
+            <div className="text-[10px] text-gray-500 mt-1">Renter Percentage</div>
+          </div>
+          <div className="bg-gray-50 rounded-xl p-4 text-center border border-gray-100">
+            <div className="text-lg font-bold text-gray-900">{aggregations?.multifamily_share ? fmtPercent(aggregations.multifamily_share) : 'N/A'}</div>
+            <div className="text-[10px] text-gray-500 mt-1">Multifamily Share</div>
+          </div>
+          <div className="bg-gray-50 rounded-xl p-4 text-center border border-gray-100">
+            <div className="text-lg font-bold text-gray-900">{aggregations?.multifamily_stock ? fmt(aggregations.multifamily_stock) : 'N/A'}</div>
+            <div className="text-[10px] text-gray-500 mt-1">Multifamily Units (5+)</div>
+          </div>
+          <div className="bg-gray-50 rounded-xl p-4 text-center border border-gray-100">
+            <div className="text-lg font-bold text-gray-900">{aggregations?.median_year_built || 'N/A'}</div>
+            <div className="text-[10px] text-gray-500 mt-1">Median Year Built</div>
+          </div>
+        </div>
+
+        {/* FMR Row */}
+        <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4">
+          {[0,1,2,3,4].map(br => {
+            const fmrVal = fmr?.[`fmr_${br}br`] || (br === 2 ? fmr?.fmr_2br : null);
+            return (
+              <div key={br} className="bg-blue-50 rounded-xl p-4 text-center border border-blue-100">
+                <div className="text-lg font-bold text-blue-700">{fmrVal ? fmtCurrency(fmrVal) : 'N/A'}</div>
+                <div className="text-[10px] text-gray-500 mt-1">FMR {br}BR</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ===== MIGRATION TRENDS ===== */}
+      {zip_data && zip_data.net_migration !== undefined && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-1 h-6 bg-blue-600 rounded-full" />
+            <h3 className="text-xl font-bold text-gray-900">Migration Trends</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-100 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center"><TrendingUp size={15} className="text-amber-600" /></div>
+                <span className="text-xs font-semibold text-gray-600">Net Migration</span>
+              </div>
+              <div className={`text-2xl font-bold ${zip_data.net_migration >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {zip_data.net_migration >= 0 ? '+' : ''}{fmt(Math.round(zip_data.net_migration))}
+              </div>
+              <div className={`text-xs font-semibold mt-1 ${zip_data.net_migration >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {zip_data.net_migration >= 0 ? 'Net Inflow' : 'Net Outflow'}
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-100 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center"><Activity size={15} className="text-amber-600" /></div>
+                <span className="text-xs font-semibold text-gray-600">Per Capita</span>
+              </div>
+              <div className="text-2xl font-bold text-gray-900">{zip_data.net_migration_per_capita?.toFixed(3) || '0.000'}</div>
+              <div className="text-xs text-gray-500 mt-1">Net migration per capita</div>
+            </div>
+            <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-100 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center"><Users size={15} className="text-blue-600" /></div>
+                <span className="text-xs font-semibold text-gray-600">In-Migration</span>
+              </div>
+              <div className="text-2xl font-bold text-blue-600">{fmt(Math.round(zip_data.in_migration || 0))}</div>
+              <div className="text-xs text-gray-500 mt-1">People moving in</div>
+            </div>
+            <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-100 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center"><Users size={15} className="text-orange-600" /></div>
+                <span className="text-xs font-semibold text-gray-600">Out-Migration</span>
+              </div>
+              <div className="text-2xl font-bold text-orange-600">{fmt(Math.round(zip_data.out_migration || 0))}</div>
+              <div className="text-xs text-gray-500 mt-1">People moving out</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== RENTER / OWNER PROFILE ===== */}
+      {(zip_renter_owner && (zip_renter_owner.renter_share !== undefined || zip_renter_owner.owner_share !== undefined)) && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-1 h-6 bg-blue-600 rounded-full" />
+            <h3 className="text-xl font-bold text-gray-900">Local Housing Profile — ZIP {zipCode || ''}</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-5 border border-teal-100 shadow-sm text-center">
+              <div className="text-2xl font-bold text-gray-900">{fmtPercentFromFraction(zip_renter_owner?.renter_share ?? 0)}</div>
+              <div className="text-xs text-gray-500 mt-1">Renter Share</div>
+              <div className="text-[10px] text-gray-400 mt-1">{fmt(Math.round(zip_renter_owner?.renter_count ?? 0))} renters</div>
+            </div>
+            <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-5 border border-teal-100 shadow-sm text-center">
+              <div className="text-2xl font-bold text-gray-900">{fmtPercentFromFraction(zip_renter_owner?.owner_share ?? 0)}</div>
+              <div className="text-xs text-gray-500 mt-1">Owner Share</div>
+              <div className="text-[10px] text-gray-400 mt-1">{fmt(Math.round(zip_renter_owner?.owner_count ?? 0))} owners</div>
+            </div>
+            <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-5 border border-teal-100 shadow-sm text-center">
+              <div className="text-2xl font-bold text-blue-600">{(zip_renter_owner?.renter_share || 0) > 0.5 ? 'Renter' : 'Owner'}</div>
+              <div className="text-xs text-gray-500 mt-1">Market Type</div>
+              <div className="text-[10px] text-gray-400 mt-1">{(zip_renter_owner?.renter_share || 0) > 0.5 ? 'Favorable for MF' : 'Owner-dominated'}</div>
+            </div>
+            <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-5 border border-teal-100 shadow-sm text-center">
+              <div className="text-2xl font-bold text-gray-900">{fmt(Math.round((zip_renter_owner?.renter_count || 0) + (zip_renter_owner?.owner_count || 0)))}</div>
+              <div className="text-xs text-gray-500 mt-1">Total Households</div>
+              <div className="text-[10px] text-gray-400 mt-1">ZIP-level data</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== MULTIFAMILY CONSTRUCTION ACTIVITY ===== */}
+      {(msa_data && msa_data.msa_name) || (msa_units && (msa_units.ytd_5plus_units || msa_units.ytd_total_units)) ? (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-1 h-6 bg-blue-600 rounded-full" />
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">Multifamily Construction Activity</h3>
+              {msa_data?.msa_name && <p className="text-xs text-gray-500 mt-1">{msa_data.msa_name}</p>}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-5 border border-indigo-100 shadow-sm">
+              <div className="text-xs font-semibold text-gray-600 mb-2">YTD Total Permits</div>
+              <div className="text-2xl font-bold text-gray-900">{fmt(msa_data?.ytd_total_units || msa_units?.ytd_total_units || 0)}</div>
+            </div>
+            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-5 border border-indigo-100 shadow-sm">
+              <div className="text-xs font-semibold text-gray-600 mb-2">YTD 5+ Unit Buildings</div>
+              <div className="text-2xl font-bold text-blue-600">{fmt(msa_data?.ytd_5plus_units || msa_units?.ytd_5plus_units || 0)}</div>
+            </div>
+            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-5 border border-indigo-100 shadow-sm">
+              <div className="text-xs font-semibold text-gray-600 mb-2">Current Month Permits</div>
+              <div className="text-2xl font-bold text-green-600">{msa_data?.current_month_units || msa_units?.current_month_units ? fmt(msa_data?.current_month_units || msa_units?.current_month_units) : 'N/A'}</div>
+            </div>
+          </div>
+          {(msa_units?.absorption_units !== undefined || msa_units?.absorption_rate !== undefined) && (
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 text-center">
+                <div className="text-lg font-bold text-gray-900">{fmt(Math.round(msa_units.absorption_units || 0))}</div>
+                <div className="text-[10px] text-gray-500 mt-1">Absorption Units (proxy)</div>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 text-center">
+                <div className="text-lg font-bold text-gray-900">{msa_units.absorption_rate !== undefined ? fmtPercent(msa_units.absorption_rate * 100) : 'N/A'}</div>
+                <div className="text-[10px] text-gray-500 mt-1">Absorption Rate</div>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : null}
 
       {/* Market Comparison with charts */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
@@ -1516,148 +1844,32 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
         </div>
       </div>
 
-      {/* Housing Metrics */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-1 h-6 bg-blue-600 rounded-full" />
-          <h3 className="text-xl font-bold text-gray-900">Housing Market</h3>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div className="space-y-2">
-            <div className="text-sm font-medium text-gray-500">Median Home Value</div>
-            <div className="text-3xl font-bold text-gray-900">{county_data.median_home_value ? fmtCurrency(county_data.median_home_value) : 'N/A'}</div>
-          </div>
-          <div className="space-y-2">
-            <div className="text-sm font-medium text-gray-500">Median Gross Rent</div>
-            <div className="text-3xl font-bold text-gray-900">{fmtCurrency(safeAggregations.median_rent)}</div>
-          </div>
-          <div className="space-y-2">
-            <div className="text-sm font-medium text-gray-500">Owner-Occupied Rate</div>
-            <div className="text-3xl font-bold text-gray-900">{county_data.owner_occupied_rate != null ? fmtPercent(county_data.owner_occupied_rate) : 'N/A'}</div>
-          </div>
-          <div className="space-y-2">
-            <div className="text-sm font-medium text-gray-500">FMR (2BR)</div>
-            <div className="text-3xl font-bold text-gray-900">{fmtCurrency(fmr?.fmr_2br || 0)}</div>
-            <div className="text-xs text-gray-500">ZIP {fmr?.zip || zipCode || ''}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Migration Data */}
-      {zip_data && zip_data.net_migration !== undefined && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <div className="flex items-center gap-3 mb-6">
+      {/* Cap Rate */}
+      {market_cap_rate?.value_percent !== undefined && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-4">
             <div className="w-1 h-6 bg-blue-600 rounded-full" />
-            <h3 className="text-xl font-bold text-gray-900">Migration Trends</h3>
+            <h3 className="text-xl font-bold text-gray-900">Investment Metrics</h3>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-gray-500">Net Migration</div>
-              <div className={`text-3xl font-bold ${zip_data.net_migration >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {zip_data.net_migration >= 0 ? '+' : ''}{fmt(Math.round(zip_data.net_migration))}
-              </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl p-5 border border-purple-100 shadow-sm">
+              <div className="text-xs font-semibold text-gray-600 mb-2">Market Cap Rate</div>
+              <div className="text-2xl font-bold text-purple-700">{fmtPercent(market_cap_rate.value_percent)}</div>
+              <div className="text-[10px] text-gray-400 mt-1">Source: {market_cap_rate.source || 'estimate'}</div>
             </div>
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-gray-500">Net Per Capita</div>
-              <div className="text-3xl font-bold text-gray-900">{zip_data.net_migration_per_capita?.toFixed(2) || '0.00'}</div>
+            <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl p-5 border border-purple-100 shadow-sm">
+              <div className="text-xs font-semibold text-gray-600 mb-2">Rent-to-Price Ratio</div>
+              <div className="text-2xl font-bold text-gray-900">{aggregations?.rent_to_price_ratio ? `${aggregations.rent_to_price_ratio.toFixed(2)}%` : 'N/A'}</div>
+              <div className="text-[10px] text-gray-400 mt-1">(Annual Rent / Home Value) × 100</div>
             </div>
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-gray-500">In-Migration</div>
-              <div className="text-3xl font-bold text-blue-600">{fmt(Math.round(zip_data.in_migration || 0))}</div>
-            </div>
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-gray-500">Out-Migration</div>
-              <div className="text-3xl font-bold text-orange-600">{fmt(Math.round(zip_data.out_migration || 0))}</div>
+            <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl p-5 border border-purple-100 shadow-sm">
+              <div className="text-xs font-semibold text-gray-600 mb-2">Area Classification</div>
+              <div className="text-2xl font-bold text-gray-900">{area_classification || 'N/A'}</div>
+              <div className="text-[10px] text-gray-400 mt-1">Based on rent-to-income ratio</div>
             </div>
           </div>
         </div>
       )}
-
-      {/* MSA Construction Data */}
-      {(msa_data && msa_data.msa_name) || (msa_units && (msa_units.ytd_5plus_units || msa_units.ytd_total_units)) ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-1 h-6 bg-blue-600 rounded-full" />
-            <h3 className="text-xl font-bold text-gray-900">Multifamily Construction Activity</h3>
-          </div>
-          {msa_data?.msa_name && <p className="text-sm text-gray-600 mb-6">{msa_data.msa_name}</p>}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-6">
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-gray-500">YTD Total Permits</div>
-              <div className="text-3xl font-bold text-gray-900">{fmt(msa_data?.ytd_total_units || msa_units?.ytd_total_units || 0)}</div>
-            </div>
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-gray-500">YTD 5+ Unit Buildings</div>
-              <div className="text-3xl font-bold text-blue-600">{fmt(msa_data?.ytd_5plus_units || msa_units?.ytd_5plus_units || 0)}</div>
-            </div>
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-gray-500">Current Month Permits</div>
-              <div className="text-3xl font-bold text-green-600">{msa_data?.current_month_units || msa_units?.current_month_units ? fmt(msa_data.current_month_units || msa_units.current_month_units) : 'N/A'}</div>
-            </div>
-          </div>
-          {(msa_units?.absorption_units !== undefined || msa_units?.absorption_rate !== undefined) && (
-            <div className="grid grid-cols-2 gap-6 pt-6 border-t border-gray-100">
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-gray-500">Absorption Units (proxy)</div>
-                <div className="text-3xl font-bold text-gray-900">{fmt(Math.round(msa_units.absorption_units || 0))}</div>
-              </div>
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-gray-500">Absorption Rate</div>
-                <div className="text-3xl font-bold text-gray-900">{msa_units.absorption_rate !== undefined ? fmtPercent(msa_units.absorption_rate * 100) : 'N/A'}</div>
-              </div>
-            </div>
-          )}
-        </div>
-      ) : null}
-
-      {/* Employment */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-1 h-6 bg-blue-600 rounded-full" />
-          <h3 className="text-xl font-bold text-gray-900">Employment</h3>
-        </div>
-        <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <div className="text-sm font-medium text-gray-500">Unemployment Rate</div>
-            <div className={`text-3xl font-bold ${county_data.unemployment_rate < 5 ? 'text-green-600' : county_data.unemployment_rate < 7 ? 'text-yellow-600' : 'text-red-600'}`}>
-              {fmtPercent(county_data.unemployment_rate)}
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div className="text-sm font-medium text-gray-500">Labor Force Health</div>
-            <div className="text-base text-gray-700 mt-1">
-              {county_data.unemployment_rate < 5 ? 'Strong labor market with low unemployment' : county_data.unemployment_rate < 7 ? 'Moderate labor market conditions' : 'Elevated unemployment levels'}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Landlord & Zip Renter/Owner */}
-      {(zip_renter_owner && (zip_renter_owner.renter_share !== undefined || zip_renter_owner.owner_share !== undefined)) || (aggregations.businesses || aggregations.walk_score) ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-1 h-6 bg-blue-600 rounded-full" />
-            <h3 className="text-xl font-bold text-gray-900">Local Housing Profile</h3>
-          </div>
-          <div className="grid grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-gray-500">Renter Share</div>
-              <div className="text-3xl font-bold text-gray-900">{fmtPercentFromFraction(zip_renter_owner?.renter_share ?? 0)}</div>
-              <div className="text-xs text-gray-500">{fmt(Math.round(zip_renter_owner?.renter_count ?? 0))} renters</div>
-            </div>
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-gray-500">Owner Share</div>
-              <div className="text-3xl font-bold text-gray-900">{fmtPercentFromFraction(zip_renter_owner?.owner_share ?? 0)}</div>
-              <div className="text-xs text-gray-500">{fmt(Math.round(zip_renter_owner?.owner_count ?? 0))} owners</div>
-            </div>
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-gray-500">Businesses</div>
-              <div className="text-3xl font-bold text-gray-900">{aggregations?.businesses ? fmt(aggregations.businesses) : 'N/A'}</div>
-              <div className="text-xs text-gray-500">Walk Score: {aggregations?.walk_score != null ? aggregations.walk_score : 'N/A'}</div>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }

@@ -209,72 +209,142 @@ def load_census_data_by_county_fips(county_fips: str) -> Dict:
     try:
         geo_id = f"0500000US{county_fips}"
         
-        # Load DP03 (income/employment)
+        def safe_int(val, default=0):
+            """Parse census value to int, handling (X), *****, -, N, etc."""
+            if not val or str(val).strip() in ('', '(X)', '*****', '-', 'N', '**', 'null', 'None', '(D)', '(S)'):
+                return default
+            try:
+                return int(str(val).replace(',', '').replace('+', '').replace('$', ''))
+            except (ValueError, AttributeError):
+                return default
+        
+        def safe_float(val, default=0.0):
+            """Parse census value to float, handling special markers."""
+            if not val or str(val).strip() in ('', '(X)', '*****', '-', 'N', '**', 'null', 'None', '(D)', '(S)'):
+                return default
+            try:
+                return float(str(val).replace(',', '').replace('%', '').replace('+', ''))
+            except (ValueError, AttributeError):
+                return default
+
+        # Load DP03 (income/employment/poverty)
+        dp03_row = None
         dp03_path = os.path.join(DATA_DIR, 'ACSDP5Y2023.DP03-Data.csv')
         with open(dp03_path, 'r', encoding='utf-8-sig') as f:
             reader = csv.DictReader(f)
             next(reader)  # Skip description header row
             for row in reader:
                 if row.get('GEO_ID') == geo_id:
-                    median_income = row.get('DP03_0062E', '0')
-                    mean_income = row.get('DP03_0063E', '0')
-                    unemployment_rate = row.get('DP03_0005PE', '0')  # Percent unemployed (county-level)
+                    dp03_row = row
                     break
-            else:
-                median_income = mean_income = unemployment_rate = '0'
         
-        # Load DP04 (housing)
+        # Load DP04 (housing/rent/value)
+        dp04_row = None
         dp04_path = os.path.join(DATA_DIR, 'ACSDP5Y2023.DP04-Data.csv')
         with open(dp04_path, 'r', encoding='utf-8-sig') as f:
             reader = csv.DictReader(f)
             next(reader)  # Skip description header row
             for row in reader:
                 if row.get('GEO_ID') == geo_id:
-                    median_home_value = row.get('DP04_0089E', '0')
-                    median_rent = row.get('DP04_0134E', '0')
-                    owner_occupied_rate = row.get('DP04_0046PE', '0')
+                    dp04_row = row
                     break
-            else:
-                median_home_value = median_rent = owner_occupied_rate = '0'
         
         # Load B01003 (population)
+        population_val = '0'
         b01003_path = os.path.join(DATA_DIR, 'ACSDT5Y2023.B01003-Data.csv')
         with open(b01003_path, 'r', encoding='utf-8-sig') as f:
             reader = csv.DictReader(f)
             next(reader)  # Skip description header row
             for row in reader:
                 if row.get('GEO_ID') == geo_id:
-                    population = row.get('B01003_001E', '0')
+                    population_val = row.get('B01003_001E', '0')
                     break
-            else:
-                population = '0'
         
-        def safe_int(val, default=0):
-            """Parse census value to int, handling (X), *****, -, N, etc."""
-            if not val or val.strip() in ('', '(X)', '*****', '-', 'N', '**', 'null', 'None', '(D)', '(S)'):
-                return default
-            try:
-                return int(val.replace(',', '').replace('+', '').replace('$', ''))
-            except (ValueError, AttributeError):
-                return default
+        # Extract ALL available fields from DP03 (Economic)
+        median_income = dp03_row.get('DP03_0062E', '0') if dp03_row else '0'
+        mean_income = dp03_row.get('DP03_0063E', '0') if dp03_row else '0'
+        unemployment_rate = dp03_row.get('DP03_0005PE', '0') if dp03_row else '0'
+        labor_force_participation = dp03_row.get('DP03_0002PE', '0') if dp03_row else '0'
+        poverty_rate = dp03_row.get('DP03_0119PE', '0') if dp03_row else '0'
+        employment_pop_ratio = dp03_row.get('DP03_0003PE', '0') if dp03_row else '0'
+        median_earnings = dp03_row.get('DP03_0062E', '0') if dp03_row else '0'
+        # Industry breakdown
+        total_civilian_employed = dp03_row.get('DP03_0004E', '0') if dp03_row else '0'
         
-        def safe_float(val, default=0.0):
-            """Parse census value to float, handling special markers."""
-            if not val or val.strip() in ('', '(X)', '*****', '-', 'N', '**', 'null', 'None', '(D)', '(S)'):
-                return default
-            try:
-                return float(val.replace(',', '').replace('%', '').replace('+', ''))
-            except (ValueError, AttributeError):
-                return default
+        # Extract ALL available fields from DP04 (Housing)
+        median_home_value = dp04_row.get('DP04_0089E', '0') if dp04_row else '0'
+        median_rent = dp04_row.get('DP04_0134E', '0') if dp04_row else '0'
+        owner_occupied_rate = dp04_row.get('DP04_0046PE', '0') if dp04_row else '0'
+        total_housing_units = dp04_row.get('DP04_0001E', '0') if dp04_row else '0'
+        occupied_units = dp04_row.get('DP04_0002E', '0') if dp04_row else '0'
+        vacant_units = dp04_row.get('DP04_0003E', '0') if dp04_row else '0'
+        vacancy_rate = dp04_row.get('DP04_0003PE', '0') if dp04_row else '0'
+        owner_occupied_units = dp04_row.get('DP04_0046E', '0') if dp04_row else '0'
+        renter_occupied_units = dp04_row.get('DP04_0047E', '0') if dp04_row else '0'
+        renter_occupied_pct = dp04_row.get('DP04_0047PE', '0') if dp04_row else '0'
+        median_owner_costs = dp04_row.get('DP04_0101E', '0') if dp04_row else '0'
+        median_owner_costs_pct = dp04_row.get('DP04_0101PE', '0') if dp04_row else '0'
+        median_rent_pct_income = dp04_row.get('DP04_0142PE', '0') if dp04_row else '0'
+        # Structure types
+        single_family_detached = dp04_row.get('DP04_0007E', '0') if dp04_row else '0'
+        single_family_attached = dp04_row.get('DP04_0008E', '0') if dp04_row else '0'
+        units_2 = dp04_row.get('DP04_0009E', '0') if dp04_row else '0'
+        units_3_4 = dp04_row.get('DP04_0010E', '0') if dp04_row else '0'
+        units_5_9 = dp04_row.get('DP04_0011E', '0') if dp04_row else '0'
+        units_10_19 = dp04_row.get('DP04_0012E', '0') if dp04_row else '0'
+        units_20_plus = dp04_row.get('DP04_0013E', '0') if dp04_row else '0'
+        mobile_homes = dp04_row.get('DP04_0014E', '0') if dp04_row else '0'
+        median_year_built = dp04_row.get('DP04_0017E', '0') if dp04_row else '0'
+        
+        # Compute derived values
+        pop = safe_int(population_val)
+        total_hu = safe_int(total_housing_units)
+        occ_units = safe_int(occupied_units)
+        owner_occ = safe_int(owner_occupied_units)
+        renter_occ = safe_int(renter_occupied_units)
+        homeownership_rate = (owner_occ / occ_units * 100) if occ_units > 0 else 0.0
+        renter_pct = (renter_occ / occ_units * 100) if occ_units > 0 else 0.0
+        
+        # Multifamily stock (5+ units)
+        mf_stock = safe_int(units_5_9) + safe_int(units_10_19) + safe_int(units_20_plus)
+        mf_share = (mf_stock / total_hu * 100) if total_hu > 0 else 0.0
+        single_family_total = safe_int(single_family_detached) + safe_int(single_family_attached)
+        
+        # Rent-to-price ratio
+        med_rent = safe_int(median_rent)
+        med_value = safe_int(median_home_value)
+        rent_to_price_ratio = (med_rent * 12 / med_value * 100) if med_value > 0 else 0.0
         
         return {
-            'population': safe_int(population),
+            'population': pop,
             'median_household_income': safe_int(median_income),
             'mean_household_income': safe_int(mean_income),
             'unemployment_rate': safe_float(unemployment_rate),
+            'labor_force_participation': safe_float(labor_force_participation),
+            'poverty_rate': safe_float(poverty_rate),
+            'employment_pop_ratio': safe_float(employment_pop_ratio),
+            'total_civilian_employed': safe_int(total_civilian_employed),
             'median_home_value': safe_int(median_home_value),
-            'median_rent': safe_int(median_rent),
-            'owner_occupied_rate': safe_float(owner_occupied_rate)
+            'median_rent': med_rent,
+            'owner_occupied_rate': safe_float(owner_occupied_rate),
+            'total_housing_units': total_hu,
+            'occupied_units': occ_units,
+            'vacant_units': safe_int(vacant_units),
+            'vacancy_rate': safe_float(vacancy_rate),
+            'owner_occupied_units': owner_occ,
+            'renter_occupied_units': renter_occ,
+            'renter_occupied_pct': safe_float(renter_occupied_pct),
+            'homeownership_rate': round(homeownership_rate, 1),
+            'renter_percentage': round(renter_pct, 1),
+            'median_owner_costs': safe_int(median_owner_costs),
+            'median_owner_costs_pct': safe_float(median_owner_costs_pct),
+            'median_rent_pct_income': safe_float(median_rent_pct_income),
+            'single_family_total': single_family_total,
+            'multifamily_stock': mf_stock,
+            'multifamily_share': round(mf_share, 1),
+            'mobile_homes': safe_int(mobile_homes),
+            'median_year_built': safe_int(median_year_built),
+            'rent_to_price_ratio': round(rent_to_price_ratio, 2)
         }
     except Exception as e:
         print(f"Census data error: {e}")
@@ -706,7 +776,7 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
                     'median_home_value': llm_data.get('median_home_value'),
                     'owner_occupied_rate': llm_data.get('owner_occupied_rate'),
                     'unemployment_rate': llm_data.get('unemployment_rate', 5.0),
-                    'rent_to_income_ratio': round(llm_rir, 2)
+                    'rent_to_income_ratio': round(llm_rir / 100, 4)
                 },
                 'zip_data': {
                     'net_migration': llm_data.get('net_migration', 0.5),
@@ -725,14 +795,14 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
                     'median_home_value': llm_data.get('median_home_value'),
                     'owner_occupied_rate': llm_data.get('owner_occupied_rate'),
                     'unemployment_rate': llm_data.get('unemployment_rate', 5.0),
-                    'rent_to_income_ratio': round(llm_rir, 2)
+                    'rent_to_income_ratio': round(llm_rir / 100, 4)
                 },
                 'state': {
                     'name': state,
                     'median_income': llm_data.get('comparisons', {}).get('income_state'),
                     'rent_to_income_ratio': None
                 },
-                'rent_to_income_ratio': round(llm_rir, 2),
+                'rent_to_income_ratio': round(llm_rir / 100, 4),
                 'area_classification': llm_area_classification,
                 'zip_rir_points': llm_zip_rir_points,
                 'fmr': {'zip': zip_code, 'fmr_2br': fmr_2br},
@@ -767,6 +837,20 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
         absorption_units = min(households_from_mig, ytd5) if ytd5 else 0.0
         absorption_rate = (absorption_units / ytd5) if ytd5 > 0 else None
         
+        # Step 7b: Get supplementary data from LLM for fields not in census CSVs
+        llm_supplement = {}
+        try:
+            llm_supplement = generate_market_data_with_llm(address, city, state, zip_code, lng, lat)
+            logger.info(f"[MARKET ANALYSIS] LLM supplement: businesses={llm_supplement.get('businesses')}, walk_score={llm_supplement.get('walk_score')}")
+        except Exception as e:
+            logger.warning(f"[MARKET ANALYSIS] LLM supplement failed: {e}")
+        
+        # Merge renter/owner data from CSV or LLM
+        if not renter_owner or (not renter_owner.get('renter_share') and not renter_owner.get('renter_count')):
+            for k in ('renter_share', 'owner_share', 'renter_count', 'owner_count'):
+                if llm_supplement.get(k) is not None:
+                    renter_owner[k] = llm_supplement[k]
+        
         # Step 8: Compile response
         response = {
             'property_location': {
@@ -793,14 +877,14 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
                 **census_data,
                 'county_fips': county_fips,
                 'county_name': county_name,
-                'rent_to_income_ratio': round(rent_to_income_ratio, 2)
+                'rent_to_income_ratio': round(rent_to_income_ratio / 100, 4)
             },
             'zip_data': {
                 **migration_data,
                 'zip_code': zip_code
             },
             'msa_data': msa_data,
-            'rent_to_income_ratio': round(rent_to_income_ratio, 2),
+            'rent_to_income_ratio': round(rent_to_income_ratio / 100, 4),
             'area_classification': area_classification,
             'zip_rir_points': zip_rir_points,
             'fmr': {'zip': zip_code, 'fmr_2br': fmr_2br},
@@ -812,17 +896,31 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
                 'population': census_data.get('population', 0),
                 'median_income': median_income,
                 'median_rent': median_rent,
-                'affordability': 'Good' if rent_to_income_ratio < 0.30 else 'Fair' if rent_to_income_ratio < 0.40 else 'Poor',
-                'businesses': census_data.get('businesses') or census_data.get('total_businesses'),
-                'walk_score': census_data.get('walk_score'),
-                'comparisons': {
-                    'income_city': census_data.get('city_median_income'),
-                    'income_state': census_data.get('state_median_income'),
-                    'income_usa': census_data.get('us_median_income', 75149),
-                    'pop_growth_city': census_data.get('city_pop_growth'),
-                    'pop_growth_state': census_data.get('state_pop_growth'),
-                    'pop_growth_usa': census_data.get('us_pop_growth', 0.5)
-                }
+                'affordability': 'Good' if rent_to_income_ratio < 25 else 'Fair' if rent_to_income_ratio < 35 else 'Poor',
+                'businesses': llm_supplement.get('businesses'),
+                'walk_score': llm_supplement.get('walk_score'),
+                'vacancy_rate': census_data.get('vacancy_rate', 0),
+                'total_housing_units': census_data.get('total_housing_units', 0),
+                'homeownership_rate': census_data.get('homeownership_rate', 0),
+                'renter_percentage': census_data.get('renter_percentage', 0),
+                'labor_force_participation': census_data.get('labor_force_participation', 0),
+                'poverty_rate': census_data.get('poverty_rate', 0),
+                'multifamily_share': census_data.get('multifamily_share', 0),
+                'multifamily_stock': census_data.get('multifamily_stock', 0),
+                'single_family_total': census_data.get('single_family_total', 0),
+                'rent_to_price_ratio': census_data.get('rent_to_price_ratio', 0),
+                'median_home_value': census_data.get('median_home_value', 0),
+                'median_owner_costs': census_data.get('median_owner_costs', 0),
+                'total_civilian_employed': census_data.get('total_civilian_employed', 0),
+                'median_year_built': census_data.get('median_year_built', 0),
+                'comparisons': llm_supplement.get('comparisons', {
+                    'income_city': None,
+                    'income_state': None,
+                    'income_usa': 75149,
+                    'pop_growth_city': None,
+                    'pop_growth_state': None,
+                    'pop_growth_usa': 0.5
+                })
             },
             'city': {
                 'name': city,
@@ -838,7 +936,16 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
                 'median_home_value': census_data.get('median_home_value'),
                 'owner_occupied_rate': census_data.get('owner_occupied_rate'),
                 'unemployment_rate': census_data.get('unemployment_rate', 0),
-                'rent_to_income_ratio': round(rent_to_income_ratio, 2)
+                'vacancy_rate': census_data.get('vacancy_rate', 0),
+                'homeownership_rate': census_data.get('homeownership_rate', 0),
+                'renter_percentage': census_data.get('renter_percentage', 0),
+                'labor_force_participation': census_data.get('labor_force_participation', 0),
+                'poverty_rate': census_data.get('poverty_rate', 0),
+                'total_housing_units': census_data.get('total_housing_units', 0),
+                'multifamily_share': census_data.get('multifamily_share', 0),
+                'rent_to_price_ratio': census_data.get('rent_to_price_ratio', 0),
+                'median_owner_costs': census_data.get('median_owner_costs', 0),
+                'rent_to_income_ratio': round(rent_to_income_ratio / 100, 4)
             },
             'state': {
                 'name': state,
