@@ -211,21 +211,23 @@ def load_census_data_by_county_fips(county_fips: str) -> Dict:
         
         # Load DP03 (income/employment)
         dp03_path = os.path.join(DATA_DIR, 'ACSDP5Y2023.DP03-Data.csv')
-        with open(dp03_path, 'r', encoding='utf-8') as f:
+        with open(dp03_path, 'r', encoding='utf-8-sig') as f:
             reader = csv.DictReader(f)
+            next(reader)  # Skip description header row
             for row in reader:
                 if row.get('GEO_ID') == geo_id:
                     median_income = row.get('DP03_0062E', '0')
                     mean_income = row.get('DP03_0063E', '0')
-                    unemployment_rate = row.get('DP03_0009E', '0')
+                    unemployment_rate = row.get('DP03_0005PE', '0')  # Percent unemployed (county-level)
                     break
             else:
                 median_income = mean_income = unemployment_rate = '0'
         
         # Load DP04 (housing)
         dp04_path = os.path.join(DATA_DIR, 'ACSDP5Y2023.DP04-Data.csv')
-        with open(dp04_path, 'r', encoding='utf-8') as f:
+        with open(dp04_path, 'r', encoding='utf-8-sig') as f:
             reader = csv.DictReader(f)
+            next(reader)  # Skip description header row
             for row in reader:
                 if row.get('GEO_ID') == geo_id:
                     median_home_value = row.get('DP04_0089E', '0')
@@ -237,8 +239,9 @@ def load_census_data_by_county_fips(county_fips: str) -> Dict:
         
         # Load B01003 (population)
         b01003_path = os.path.join(DATA_DIR, 'ACSDT5Y2023.B01003-Data.csv')
-        with open(b01003_path, 'r', encoding='utf-8') as f:
+        with open(b01003_path, 'r', encoding='utf-8-sig') as f:
             reader = csv.DictReader(f)
+            next(reader)  # Skip description header row
             for row in reader:
                 if row.get('GEO_ID') == geo_id:
                     population = row.get('B01003_001E', '0')
@@ -246,14 +249,32 @@ def load_census_data_by_county_fips(county_fips: str) -> Dict:
             else:
                 population = '0'
         
+        def safe_int(val, default=0):
+            """Parse census value to int, handling (X), *****, -, N, etc."""
+            if not val or val.strip() in ('', '(X)', '*****', '-', 'N', '**', 'null', 'None', '(D)', '(S)'):
+                return default
+            try:
+                return int(val.replace(',', '').replace('+', '').replace('$', ''))
+            except (ValueError, AttributeError):
+                return default
+        
+        def safe_float(val, default=0.0):
+            """Parse census value to float, handling special markers."""
+            if not val or val.strip() in ('', '(X)', '*****', '-', 'N', '**', 'null', 'None', '(D)', '(S)'):
+                return default
+            try:
+                return float(val.replace(',', '').replace('%', '').replace('+', ''))
+            except (ValueError, AttributeError):
+                return default
+        
         return {
-            'population': int(population.replace(',', '')) if population and population != '*****' else 0,
-            'median_household_income': int(median_income.replace(',', '')) if median_income else 0,
-            'mean_household_income': int(mean_income.replace(',', '')) if mean_income else 0,
-            'unemployment_rate': float(unemployment_rate) if unemployment_rate else 0.0,
-            'median_home_value': int(median_home_value.replace(',', '')) if median_home_value else 0,
-            'median_rent': int(median_rent.replace(',', '')) if median_rent else 0,
-            'owner_occupied_rate': float(owner_occupied_rate) if owner_occupied_rate else 0.0
+            'population': safe_int(population),
+            'median_household_income': safe_int(median_income),
+            'mean_household_income': safe_int(mean_income),
+            'unemployment_rate': safe_float(unemployment_rate),
+            'median_home_value': safe_int(median_home_value),
+            'median_rent': safe_int(median_rent),
+            'owner_occupied_rate': safe_float(owner_occupied_rate)
         }
     except Exception as e:
         print(f"Census data error: {e}")
@@ -616,8 +637,8 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
         census_data = load_census_data_by_county_fips(county_fips) if county_fips else {}
         
         # If CSV data is missing, use LLM fallback
-        if not census_data or not migration_data:
-            logger.warning("[MARKET ANALYSIS] CSV data missing or incomplete, using LLM fallback")
+        if not census_data:
+            logger.warning("[MARKET ANALYSIS] Census data missing, using LLM fallback")
             use_llm_fallback = True
         
         if use_llm_fallback:
