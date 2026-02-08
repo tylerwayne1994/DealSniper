@@ -71,6 +71,8 @@ const ResultsPageV2 = ({
   const [marketData, setMarketData] = useState(null);
   const [marketDataLoading, setMarketDataLoading] = useState(false);
   const [documentAnalysis, setDocumentAnalysis] = useState(scenarioData?.document_analysis || null);
+  // Track which expense fields user is entering as monthly (key -> true means monthly input mode)
+  const [expenseMonthlyMode, setExpenseMonthlyMode] = useState({});
 
   const propertyLocation = useMemo(() => {
     const lat = scenarioData?.property?.lat ?? scenarioData?.property?.latitude ?? scenarioData?.lat ?? scenarioData?.latitude;
@@ -2044,107 +2046,137 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
 
               {/* Expenses Section */}
               <div style={{ marginTop: 20, paddingTop: 20, borderTop: '2px solid #e5e7eb' }}>
-                <h4 style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Annual Expenses</h4>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <h4 style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Operating Expenses</h4>
+                  <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                    All values stored as <strong>annual</strong>. Toggle per field if entering monthly.
+                  </div>
+                </div>
                 
                 {/* Monthly detection warning */}
                 {monthlyFlags.length > 0 && (
                   <div style={{ 
-                    padding: '12px 16px', 
+                    padding: '10px 14px', 
                     backgroundColor: '#fffbeb', 
-                    borderRadius: '10px', 
+                    borderRadius: '8px', 
                     border: '1px solid #fbbf24',
-                    marginBottom: '16px'
+                    marginBottom: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    flexWrap: 'wrap'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '16px' }}>⚠️</span>
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#92400e' }}>
-                        Possible Monthly Values Detected
-                      </span>
-                      <span style={{ fontSize: '11px', color: '#b45309' }}>
-                        — These amounts look like monthly values. Click ×12 to convert to annual.
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {monthlyFlags.map((flag) => (
-                        <div key={flag.key} style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '6px 10px',
-                          backgroundColor: 'white',
-                          borderRadius: '6px',
-                          border: '1px solid #fde68a',
-                          fontSize: '12px'
-                        }}>
-                          <span style={{ color: '#92400e', fontWeight: 600 }}>{flag.label}:</span>
-                          <span style={{ color: '#b45309' }}>${flag.value.toLocaleString()}/mo?</span>
-                          <span style={{ color: '#6b7280' }}>→</span>
-                          <span style={{ color: '#16a34a', fontWeight: 600 }}>${flag.annualized.toLocaleString()}/yr</span>
-                          <button
-                            onClick={() => handleFieldChange(`expenses.${flag.key}`, flag.annualized)}
-                            style={{
-                              padding: '2px 8px',
-                              fontSize: '11px',
-                              fontWeight: 700,
-                              color: 'white',
-                              backgroundColor: '#f59e0b',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            ×12
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        onClick={() => {
-                          monthlyFlags.forEach(flag => {
-                            handleFieldChange(`expenses.${flag.key}`, flag.annualized);
-                          });
-                        }}
-                        style={{
-                          padding: '6px 14px',
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          color: 'white',
-                          backgroundColor: '#d97706',
-                          border: 'none',
-                          borderRadius: '6px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Convert All to Annual
-                      </button>
-                    </div>
+                    <span style={{ fontSize: '14px' }}>⚠️</span>
+                    <span style={{ fontSize: '12px', color: '#92400e', fontWeight: 600 }}>
+                      {monthlyFlags.length} value(s) look like monthly amounts.
+                    </span>
+                    <button
+                      onClick={() => {
+                        monthlyFlags.forEach(flag => {
+                          handleFieldChange(`expenses.${flag.key}`, flag.annualized);
+                        });
+                      }}
+                      style={{
+                        padding: '4px 12px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        color: 'white',
+                        backgroundColor: '#d97706',
+                        border: 'none',
+                        borderRadius: '5px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Convert All to Annual (×12)
+                    </button>
                   </div>
                 )}
+
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-                  <div>
-                    <label style={labelStyle}>Real Estate Taxes</label>
-                    <input type="number" style={inputStyle} value={expensesData.taxes || ''} 
-                      onChange={(e) => handleFieldChange('expenses.taxes', parseFloat(e.target.value) || 0)} />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Insurance</label>
-                    <input type="number" style={inputStyle} value={expensesData.insurance || ''} 
-                      onChange={(e) => handleFieldChange('expenses.insurance', parseFloat(e.target.value) || 0)} />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Repairs & Maintenance</label>
-                    <input type="number" style={inputStyle} value={expensesData.repairs || ''} 
-                      onChange={(e) => handleFieldChange('expenses.repairs', parseFloat(e.target.value) || 0)} />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Management Fees</label>
-                    <input type="number" style={inputStyle} value={expensesData.management || ''} 
-                      onChange={(e) => handleFieldChange('expenses.management', parseFloat(e.target.value) || 0)} />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Payroll</label>
-                    <input type="number" style={inputStyle} value={expensesData.payroll || ''} 
-                      onChange={(e) => handleFieldChange('expenses.payroll', parseFloat(e.target.value) || 0)} />
-                  </div>
+                  {[
+                    { key: 'taxes', label: 'Real Estate Taxes' },
+                    { key: 'insurance', label: 'Insurance' },
+                    { key: 'repairs', label: 'Repairs & Maintenance' },
+                    { key: 'management', label: 'Management Fees' },
+                    { key: 'payroll', label: 'Payroll' },
+                    { key: 'admin', label: 'General & Admin' },
+                    { key: 'marketing', label: 'Marketing' },
+                    { key: 'other', label: 'Other Expenses' },
+                  ].map(({ key, label }) => {
+                    const isMonthly = expenseMonthlyMode[key] || false;
+                    const annualValue = expensesData[key] || 0;
+                    const displayValue = isMonthly ? Math.round(annualValue / 12) : annualValue;
+                    const isFlagged = monthlyFlags.some(f => f.key === key);
+                    
+                    return (
+                      <div key={key}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <label style={{ fontSize: '12px', color: '#374151', fontWeight: '600' }}>{label}</label>
+                          <div style={{ 
+                            display: 'flex', 
+                            borderRadius: '4px', 
+                            overflow: 'hidden', 
+                            border: '1px solid #d1d5db',
+                            fontSize: '9px',
+                            fontWeight: 700
+                          }}>
+                            <button
+                              onClick={() => setExpenseMonthlyMode(prev => ({ ...prev, [key]: false }))}
+                              style={{
+                                padding: '2px 6px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                backgroundColor: !isMonthly ? '#1e3a5f' : '#f3f4f6',
+                                color: !isMonthly ? 'white' : '#6b7280'
+                              }}
+                            >
+                              ANN
+                            </button>
+                            <button
+                              onClick={() => setExpenseMonthlyMode(prev => ({ ...prev, [key]: true }))}
+                              style={{
+                                padding: '2px 6px',
+                                border: 'none',
+                                borderLeft: '1px solid #d1d5db',
+                                cursor: 'pointer',
+                                backgroundColor: isMonthly ? '#1e3a5f' : '#f3f4f6',
+                                color: isMonthly ? 'white' : '#6b7280'
+                              }}
+                            >
+                              MO
+                            </button>
+                          </div>
+                        </div>
+                        <input 
+                          type="number" 
+                          style={{
+                            ...inputStyle,
+                            borderColor: isFlagged ? '#fbbf24' : '#e5e7eb',
+                            backgroundColor: isFlagged ? '#fffbeb' : 'white'
+                          }} 
+                          value={displayValue || ''} 
+                          onChange={(e) => {
+                            const rawVal = parseFloat(e.target.value) || 0;
+                            const annualVal = isMonthly ? rawVal * 12 : rawVal;
+                            handleFieldChange(`expenses.${key}`, annualVal);
+                          }} 
+                        />
+                        {annualValue > 0 && (
+                          <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px', textAlign: 'right' }}>
+                            {isMonthly 
+                              ? `= $${annualValue.toLocaleString()}/yr` 
+                              : `= $${Math.round(annualValue / 12).toLocaleString()}/mo`
+                            }
+                            {charTotalUnits > 0 && ` · $${Math.round(annualValue / charTotalUnits).toLocaleString()}/unit`}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {/* CapEx Rate + Total Utilities row */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginTop: '12px' }}>
                   <div>
                     <label style={labelStyle}>CapEx Rate (%)</label>
                     <input
@@ -2156,11 +2188,6 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
                     />
                   </div>
                   <div>
-                    <label style={labelStyle}>Other Expenses</label>
-                    <input type="number" style={inputStyle} value={expensesData.other || ''} 
-                      onChange={(e) => handleFieldChange('expenses.other', parseFloat(e.target.value) || 0)} />
-                  </div>
-                  <div>
                     <label style={labelStyle}>Total Utilities (Annual)</label>
                     <input type="number" style={readOnlyStyle} value={Math.round(totalUtilitiesMonthly * 12)} readOnly />
                   </div>
@@ -2169,33 +2196,84 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
 
               {/* Utilities Breakdown */}
               <div style={{ marginTop: 20, paddingTop: 20, borderTop: '2px solid #e5e7eb' }}>
-                <h4 style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Utilities (Monthly)</h4>
+                <h4 style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Utilities</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px' }}>
-                  <div>
-                    <label style={labelStyle}>Gas</label>
-                    <input type="number" style={inputStyle} value={Math.round((expensesData.gas || 0) / 12) || ''} 
-                      onChange={(e) => handleFieldChange('expenses.gas', (parseFloat(e.target.value) || 0) * 12)} />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Electrical</label>
-                    <input type="number" style={inputStyle} value={Math.round((expensesData.electrical || 0) / 12) || ''} 
-                      onChange={(e) => handleFieldChange('expenses.electrical', (parseFloat(e.target.value) || 0) * 12)} />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Water</label>
-                    <input type="number" style={inputStyle} value={Math.round((expensesData.water || 0) / 12) || ''} 
-                      onChange={(e) => handleFieldChange('expenses.water', (parseFloat(e.target.value) || 0) * 12)} />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Sewer</label>
-                    <input type="number" style={inputStyle} value={Math.round((expensesData.sewer || 0) / 12) || ''} 
-                      onChange={(e) => handleFieldChange('expenses.sewer', (parseFloat(e.target.value) || 0) * 12)} />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Trash</label>
-                    <input type="number" style={inputStyle} value={Math.round((expensesData.trash || 0) / 12) || ''} 
-                      onChange={(e) => handleFieldChange('expenses.trash', (parseFloat(e.target.value) || 0) * 12)} />
-                  </div>
+                  {[
+                    { key: 'gas', label: 'Gas' },
+                    { key: 'electrical', label: 'Electrical' },
+                    { key: 'water', label: 'Water' },
+                    { key: 'sewer', label: 'Sewer' },
+                    { key: 'trash', label: 'Trash' },
+                  ].map(({ key, label }) => {
+                    const isMonthly = expenseMonthlyMode[key] !== undefined ? expenseMonthlyMode[key] : true; // default monthly for utilities
+                    const annualValue = expensesData[key] || 0;
+                    const displayValue = isMonthly ? Math.round(annualValue / 12) : annualValue;
+                    const isFlagged = monthlyFlags.some(f => f.key === key);
+                    
+                    return (
+                      <div key={key}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <label style={{ fontSize: '12px', color: '#374151', fontWeight: '600' }}>{label}</label>
+                          <div style={{ 
+                            display: 'flex', 
+                            borderRadius: '4px', 
+                            overflow: 'hidden', 
+                            border: '1px solid #d1d5db',
+                            fontSize: '9px',
+                            fontWeight: 700
+                          }}>
+                            <button
+                              onClick={() => setExpenseMonthlyMode(prev => ({ ...prev, [key]: false }))}
+                              style={{
+                                padding: '2px 6px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                backgroundColor: !isMonthly ? '#1e3a5f' : '#f3f4f6',
+                                color: !isMonthly ? 'white' : '#6b7280'
+                              }}
+                            >
+                              ANN
+                            </button>
+                            <button
+                              onClick={() => setExpenseMonthlyMode(prev => ({ ...prev, [key]: true }))}
+                              style={{
+                                padding: '2px 6px',
+                                border: 'none',
+                                borderLeft: '1px solid #d1d5db',
+                                cursor: 'pointer',
+                                backgroundColor: isMonthly ? '#1e3a5f' : '#f3f4f6',
+                                color: isMonthly ? 'white' : '#6b7280'
+                              }}
+                            >
+                              MO
+                            </button>
+                          </div>
+                        </div>
+                        <input 
+                          type="number" 
+                          style={{
+                            ...inputStyle,
+                            borderColor: isFlagged ? '#fbbf24' : '#e5e7eb',
+                            backgroundColor: isFlagged ? '#fffbeb' : 'white'
+                          }} 
+                          value={displayValue || ''} 
+                          onChange={(e) => {
+                            const rawVal = parseFloat(e.target.value) || 0;
+                            const annualVal = isMonthly ? rawVal * 12 : rawVal;
+                            handleFieldChange(`expenses.${key}`, annualVal);
+                          }} 
+                        />
+                        {annualValue > 0 && (
+                          <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px', textAlign: 'right' }}>
+                            {isMonthly 
+                              ? `= $${annualValue.toLocaleString()}/yr` 
+                              : `= $${Math.round(annualValue / 12).toLocaleString()}/mo`
+                            }
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 

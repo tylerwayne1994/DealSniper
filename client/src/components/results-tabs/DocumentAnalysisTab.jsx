@@ -359,6 +359,12 @@ export default function DocumentAnalysisTab({
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const contentRef = useRef(null);
   
+  // Property info for header — must be before callbacks that reference it
+  const property = scenarioData?.property || {};
+  const addressParts = [property.address, property.city, property.state, property.zip].filter(Boolean);
+  const propertyName = property.name || addressParts.join(', ') || 'Subject Property';
+  const totalUnits = property.total_units || property.units || 'N/A';
+  
   // If existingAnalysis changes from parent, update local state
   useEffect(() => {
     if (existingAnalysis && existingAnalysis !== analysis) {
@@ -524,12 +530,6 @@ export default function DocumentAnalysisTab({
 
   // Parse sections from analysis
   const sections = analysis ? parseAnalysisSections(analysis) : [];
-  
-  // Property info for header
-  const property = scenarioData?.property || {};
-  const addressParts = [property.address, property.city, property.state, property.zip].filter(Boolean);
-  const propertyName = property.name || addressParts.join(', ') || 'Subject Property';
-  const totalUnits = property.total_units || property.units || 'N/A';
   
   // If no analysis yet, show the generation UI
   if (!analysis) {
