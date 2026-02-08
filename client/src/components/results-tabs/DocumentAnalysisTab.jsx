@@ -3,7 +3,7 @@
 // Renders Claude-generated analysis with rich formatting
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { FileText, AlertTriangle, TrendingUp, Search, Shield, HelpCircle, BarChart3, Loader2, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileText, AlertTriangle, TrendingUp, Search, Shield, HelpCircle, BarChart3, Loader2, RefreshCw, ChevronDown, ChevronUp, Download } from 'lucide-react';
 
 // Section icon/color mapping
 const SECTION_META = {
@@ -296,7 +296,7 @@ function AnalysisSection({ section, defaultOpen = true }) {
   const { number, title, content, meta } = section;
   
   return (
-    <div style={{ 
+    <div data-section-wrapper style={{ 
       marginBottom: '16px',
       backgroundColor: 'white',
       borderRadius: '12px',
@@ -336,11 +336,9 @@ function AnalysisSection({ section, defaultOpen = true }) {
       </button>
       
       {/* Section content */}
-      {isOpen && (
-        <div style={{ padding: '20px 24px' }}>
-          <SectionContent content={content} />
-        </div>
-      )}
+      <div data-section-content style={{ display: isOpen ? 'block' : 'none', padding: '20px 24px' }}>
+        <SectionContent content={content} />
+      </div>
     </div>
   );
 }
@@ -358,6 +356,7 @@ export default function DocumentAnalysisTab({
   const [error, setError] = useState(null);
   const [includeMarketResearch, setIncludeMarketResearch] = useState(true);
   const [generationProgress, setGenerationProgress] = useState('');
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
   const contentRef = useRef(null);
   
   // If existingAnalysis changes from parent, update local state
@@ -418,6 +417,19 @@ export default function DocumentAnalysisTab({
         if (onAnalysisGenerated) {
           onAnalysisGenerated(data.analysis);
         }
+        // Save analysis to backend deal storage for persistence
+        try {
+          await fetch(`${API_BASE}/v2/deals/${dealId}/save-scenario`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...scenarioData,
+              document_analysis: data.analysis
+            })
+          });
+        } catch (saveErr) {
+          console.warn('[DocumentAnalysis] Could not save analysis to backend:', saveErr);
+        }
       } else {
         throw new Error('No analysis returned from server');
       }
@@ -431,6 +443,85 @@ export default function DocumentAnalysisTab({
     }
   }, [dealId, scenarioData, includeMarketResearch, onAnalysisGenerated]);
   
+  // PDF Export
+  const handleExportPDF = useCallback(async () => {
+    if (!contentRef.current) return;
+    setIsExportingPDF(true);
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const jsPDF = (await import('jspdf')).default;
+      
+      // Expand all sections before capture
+      const details = contentRef.current.querySelectorAll('[data-section-wrapper]');
+      const originalStates = [];
+      details.forEach(el => {
+        const content = el.querySelector('[data-section-content]');
+        if (content) {
+          originalStates.push({ el: content, display: content.style.display, maxHeight: content.style.maxHeight });
+          content.style.display = 'block';
+          content.style.maxHeight = 'none';
+        }
+      });
+      
+      await new Promise(r => setTimeout(r, 300));
+      
+      const canvas = await html2canvas(contentRef.current, {
+        scale: 1.5,
+        useCORS: true,
+        backgroundColor: '#f9fafb',
+        logging: false,
+        windowWidth: 1100
+      });
+      
+      // Restore collapsed sections
+      originalStates.forEach(({ el, display, maxHeight }) => {
+        el.style.display = display;
+        el.style.maxHeight = maxHeight;
+      });
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const contentWidth = pageWidth - margin * 2;
+      
+      const imgWidth = contentWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pageContentHeight = pageHeight - margin * 2;
+      
+      let yOffset = 0;
+      let pageNum = 0;
+      
+      while (yOffset < imgHeight) {
+        if (pageNum > 0) pdf.addPage();
+        
+        const sourceY = (yOffset / imgHeight) * canvas.height;
+        const sourceH = Math.min((pageContentHeight / imgHeight) * canvas.height, canvas.height - sourceY);
+        
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = sourceH;
+        const ctx = sliceCanvas.getContext('2d');
+        ctx.drawImage(canvas, 0, sourceY, canvas.width, sourceH, 0, 0, canvas.width, sourceH);
+        
+        const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.92);
+        const sliceH = (sourceH * imgWidth) / canvas.width;
+        pdf.addImage(sliceData, 'JPEG', margin, margin, imgWidth, sliceH);
+        
+        yOffset += pageContentHeight;
+        pageNum++;
+      }
+      
+      const filename = `${propertyName.replace(/[^a-zA-Z0-9]/g, '_')}_Documents_Analysis.pdf`;
+      pdf.save(filename);
+    } catch (err) {
+      console.error('[DocumentAnalysis] PDF export error:', err);
+      alert('PDF export failed: ' + err.message);
+    } finally {
+      setIsExportingPDF(false);
+    }
+  }, [propertyName]);
+
   // Parse sections from analysis
   const sections = analysis ? parseAnalysisSections(analysis) : [];
   
@@ -696,6 +787,27 @@ export default function DocumentAnalysisTab({
             >
               <RefreshCw size={14} style={{ animation: isGenerating ? 'spin 1s linear infinite' : 'none' }} />
               {isGenerating ? 'Regenerating...' : 'Regenerate'}
+            </button>
+            <button
+              onClick={handleExportPDF}
+              disabled={isExportingPDF}
+              style={{
+                padding: '8px 16px',
+                fontSize: '12px',
+                fontWeight: 600,
+                color: '#1e3a5f',
+                backgroundColor: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: isExportingPDF ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                opacity: isExportingPDF ? 0.6 : 1
+              }}
+            >
+              <Download size={14} />
+              {isExportingPDF ? 'Exporting...' : 'Export PDF'}
             </button>
           </div>
         </div>

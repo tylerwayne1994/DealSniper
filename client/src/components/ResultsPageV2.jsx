@@ -1364,6 +1364,10 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
             existingAnalysis={documentAnalysis}
             onAnalysisGenerated={(analysis) => {
               setDocumentAnalysis(analysis);
+              // Also persist into scenarioData so it saves when pushing to pipeline
+              if (onEditData) {
+                onEditData('document_analysis', analysis);
+              }
             }}
           />
         );
@@ -1638,6 +1642,52 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
         
         // Calculate totals
         const totalUtilitiesMonthly = ((expensesData.gas || 0) + (expensesData.electrical || 0) + (expensesData.water || 0) + (expensesData.sewer || 0) + (expensesData.trash || 0)) / 12;
+        
+        // ====================================================================
+        // SMART MONTHLY VS ANNUAL EXPENSE DETECTION
+        // If a value looks suspiciously low for an annual amount, flag it
+        // Uses per-unit thresholds to detect monthly values
+        // ====================================================================
+        const detectMonthlyExpenses = () => {
+          const units = charTotalUnits || 1;
+          const flags = [];
+          
+          // Per-unit annual minimums (if below these, likely monthly)
+          const thresholds = {
+            taxes: { min: 400, label: 'Real Estate Taxes' },
+            insurance: { min: 200, label: 'Insurance' },
+            repairs: { min: 150, label: 'Repairs & Maintenance' },
+            management: { min: 100, label: 'Management Fees' },
+            payroll: { min: 100, label: 'Payroll' },
+            other: { min: 50, label: 'Other Expenses' },
+          };
+          
+          for (const [key, info] of Object.entries(thresholds)) {
+            const val = expensesData[key] || 0;
+            if (val <= 0) continue;
+            const perUnit = val / units;
+            // If per-unit annual amount is below threshold AND the value
+            // times 12 would be above it, it's likely a monthly amount
+            if (perUnit < info.min && (perUnit * 12) >= info.min) {
+              flags.push({ key, label: info.label, value: val, annualized: val * 12 });
+            }
+          }
+          
+          // Also check utilities — they're stored annual, but if per-unit < $30/yr total, suspicious
+          const utilKeys = ['gas', 'electrical', 'water', 'sewer', 'trash'];
+          for (const key of utilKeys) {
+            const val = expensesData[key] || 0;
+            if (val <= 0) continue;
+            const perUnit = val / units;
+            if (perUnit < 20 && (perUnit * 12) >= 20) {
+              flags.push({ key, label: key.charAt(0).toUpperCase() + key.slice(1), value: val, annualized: val * 12, isUtility: true });
+            }
+          }
+          
+          return flags;
+        };
+        
+        const monthlyFlags = detectMonthlyExpenses();
         const grossPotentialRent = pnl.gross_potential_rent || pnl.scheduled_gross_rent_current || scenarioData.income?.gross_potential_rent || fullCalcs?.year1?.potentialGrossIncome || 0;
         const otherIncome = pnl.other_income || scenarioData.income?.other_income || 0;
 
@@ -1995,6 +2045,80 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
               {/* Expenses Section */}
               <div style={{ marginTop: 20, paddingTop: 20, borderTop: '2px solid #e5e7eb' }}>
                 <h4 style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Annual Expenses</h4>
+                
+                {/* Monthly detection warning */}
+                {monthlyFlags.length > 0 && (
+                  <div style={{ 
+                    padding: '12px 16px', 
+                    backgroundColor: '#fffbeb', 
+                    borderRadius: '10px', 
+                    border: '1px solid #fbbf24',
+                    marginBottom: '16px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '16px' }}>⚠️</span>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#92400e' }}>
+                        Possible Monthly Values Detected
+                      </span>
+                      <span style={{ fontSize: '11px', color: '#b45309' }}>
+                        — These amounts look like monthly values. Click ×12 to convert to annual.
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {monthlyFlags.map((flag) => (
+                        <div key={flag.key} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '6px 10px',
+                          backgroundColor: 'white',
+                          borderRadius: '6px',
+                          border: '1px solid #fde68a',
+                          fontSize: '12px'
+                        }}>
+                          <span style={{ color: '#92400e', fontWeight: 600 }}>{flag.label}:</span>
+                          <span style={{ color: '#b45309' }}>${flag.value.toLocaleString()}/mo?</span>
+                          <span style={{ color: '#6b7280' }}>→</span>
+                          <span style={{ color: '#16a34a', fontWeight: 600 }}>${flag.annualized.toLocaleString()}/yr</span>
+                          <button
+                            onClick={() => handleFieldChange(`expenses.${flag.key}`, flag.annualized)}
+                            style={{
+                              padding: '2px 8px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              color: 'white',
+                              backgroundColor: '#f59e0b',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            ×12
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => {
+                          monthlyFlags.forEach(flag => {
+                            handleFieldChange(`expenses.${flag.key}`, flag.annualized);
+                          });
+                        }}
+                        style={{
+                          padding: '6px 14px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          color: 'white',
+                          backgroundColor: '#d97706',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Convert All to Annual
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
                   <div>
                     <label style={labelStyle}>Real Estate Taxes</label>
