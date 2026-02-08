@@ -47,6 +47,85 @@ export default function FinancialDataWizardTab({
   const expenseTotal = expenseLineItems.reduce((sum, item) => sum + (Number(expenses[item.key]) || 0), 0);
   const hasExpenseBreakdown = expenseLineItems.some(item => expenses[item.key] > 0);
 
+  // ===== AUTO-CALC DERIVED FIELDS =====
+  const gpr = Number(verifiedData?.pnl?.gross_potential_rent) || 0;
+  const noiT12 = Number(verifiedData?.pnl?.noi_t12) || 0;
+  const opexT12 = Number(verifiedData?.pnl?.operating_expenses_t12) || 0;
+  const price = Number(verifiedData?.pricing_financing?.price) || 0;
+  const pricePerUnit = Number(verifiedData?.pricing_financing?.price_per_unit) || 0;
+  const capRateT12 = Number(verifiedData?.pnl?.cap_rate_t12) || 0;
+
+  const autoCalcs = useMemo(() => {
+    const calcs = [];
+
+    // If GPR and NOI exist but OpEx is missing → OpEx = GPR - NOI
+    if (gpr > 0 && noiT12 > 0 && !opexT12) {
+      calcs.push({
+        id: 'calc_opex',
+        label: 'Operating Expenses (T12)',
+        formula: 'GPR − NOI',
+        value: gpr - noiT12,
+        targetPath: 'pnl.operating_expenses_t12'
+      });
+    }
+
+    // If GPR and OpEx exist but NOI is missing → NOI = GPR - OpEx
+    if (gpr > 0 && opexT12 > 0 && !noiT12) {
+      calcs.push({
+        id: 'calc_noi',
+        label: 'Net Operating Income (T12)',
+        formula: 'GPR − OpEx',
+        value: gpr - opexT12,
+        targetPath: 'pnl.noi_t12'
+      });
+    }
+
+    // If Purchase Price and Units exist but Price/Unit is missing
+    if (price > 0 && totalUnits > 1 && !pricePerUnit) {
+      calcs.push({
+        id: 'calc_ppu',
+        label: 'Price Per Unit',
+        formula: 'Price ÷ Units',
+        value: Math.round(price / totalUnits),
+        targetPath: 'pricing_financing.price_per_unit'
+      });
+    }
+
+    // If NOI and Price exist but Cap Rate is missing
+    if (noiT12 > 0 && price > 0 && !capRateT12) {
+      calcs.push({
+        id: 'calc_cap',
+        label: 'Cap Rate (T12)',
+        formula: 'NOI ÷ Price',
+        value: noiT12 / price,
+        targetPath: 'pnl.cap_rate_t12'
+      });
+    }
+
+    // If OpEx and NOI exist but GPR is missing → GPR = OpEx + NOI
+    if (!gpr && opexT12 > 0 && noiT12 > 0) {
+      calcs.push({
+        id: 'calc_gpr',
+        label: 'Gross Potential Rent',
+        formula: 'OpEx + NOI',
+        value: opexT12 + noiT12,
+        targetPath: 'pnl.gross_potential_rent'
+      });
+    }
+
+    return calcs;
+  }, [gpr, noiT12, opexT12, price, totalUnits, pricePerUnit, capRateT12]);
+
+  const applyAutoCalc = (calc) => {
+    if (onEditValue) {
+      onEditValue({ path: calc.targetPath, key: calc.targetPath, label: calc.label }, calc.value);
+    }
+  };
+
+  const applyAllAutoCalcs = () => {
+    autoCalcs.forEach(calc => applyAutoCalc(calc));
+  };
+
   const startEditExpense = (key, val) => {
     setEditingExpense(key);
     setEditExpenseValue(val !== null && val !== undefined ? String(val) : '0');
@@ -226,6 +305,76 @@ export default function FinancialDataWizardTab({
         onSelectValue={onSelectValue}
         onEditValue={onEditValue}
       />
+
+      {/* ===== AUTO-CALC SUGGESTIONS ===== */}
+      {autoCalcs.length > 0 && (
+        <div style={{
+          marginTop: 16,
+          padding: 16,
+          background: 'linear-gradient(135deg, #eff6ff, #f0fdf4)',
+          borderRadius: 12,
+          border: '1px solid #93c5fd'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 18 }}>🧮</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#1e40af' }}>Auto-Calculated Fields Available</span>
+            </div>
+            {autoCalcs.length > 1 && (
+              <button
+                onClick={applyAllAutoCalcs}
+                style={{
+                  padding: '6px 14px',
+                  background: '#2563eb',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 6,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Apply All
+              </button>
+            )}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {autoCalcs.map(calc => (
+              <div key={calc.id} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 14px',
+                background: '#fff',
+                borderRadius: 8,
+                border: '1px solid #e5e7eb'
+              }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{calc.label}</div>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
+                    Formula: {calc.formula} = <strong>{calc.targetPath.includes('cap_rate') ? formatPercent(calc.value) : formatCurrency(calc.value)}</strong>
+                  </div>
+                </div>
+                <button
+                  onClick={() => applyAutoCalc(calc)}
+                  style={{
+                    padding: '6px 16px',
+                    background: '#10b981',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Apply
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ===== OPERATING EXPENSE BREAKDOWN ===== */}
       <div style={{ ...sectionHeaderStyle, cursor: 'pointer' }} onClick={() => setShowExpenseBreakdown(prev => !prev)}>

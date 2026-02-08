@@ -20,6 +20,7 @@ export default function PDFViewerModal({
 }) {
   const canvasRef = useRef(null);
   const pdfRef = useRef(null);
+  const searchedPages = useRef(new Set());
   const [zoom, setZoom] = useState(1.0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -104,6 +105,28 @@ export default function PDFViewerModal({
       if (highlightInfo?.searchTerm) {
         const rects = await computeHighlightRects(page, viewport, highlightInfo.searchTerm);
         setHighlightRects(rects);
+        
+        // If no highlights found on this page, search other pages for the value
+        if (rects.length === 0 && pdfRef.current && !searchedPages.current?.has(currentPage)) {
+          if (!searchedPages.current) searchedPages.current = new Set();
+          searchedPages.current.add(currentPage);
+          const total = pdfRef.current.numPages || 1;
+          for (let p = 1; p <= total; p++) {
+            if (p === currentPage) continue;
+            try {
+              const otherPage = await pdfRef.current.getPage(p);
+              const textContent = await otherPage.getTextContent();
+              const pageText = textContent.items.map(item => item.str).join(' ');
+              const normalizedSearch = normalizeText(highlightInfo.searchTerm);
+              if (normalizeText(pageText).includes(normalizedSearch)) {
+                console.log('[PDF Viewer] Found search term on page', p, '- navigating');
+                searchedPages.current.add(p);
+                setCurrentPage(p);
+                break;
+              }
+            } catch (_) { /* ignore page errors */ }
+          }
+        }
       } else {
         setHighlightRects([]);
       }
@@ -121,6 +144,7 @@ export default function PDFViewerModal({
       setHighlightRects([]);
       setTotalPages(1);
       pdfRef.current = null;
+      searchedPages.current = new Set();
       return;
     }
 

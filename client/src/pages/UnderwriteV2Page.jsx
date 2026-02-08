@@ -377,14 +377,39 @@ function UnderwriteV2Page() {
     console.log('[PDF Viewer] Opening for field:', field.label, confidence);
     setSelectedField(field);
     
-    // Extract page number from explicit metadata or source string (e.g., "Page 3")
-    let pageNum = confidence?.page && Number.isFinite(confidence.page)
-      ? Number(confidence.page)
-      : 1;
-    if ((!pageNum || Number.isNaN(pageNum)) && confidence?.source) {
-      const match = confidence.source.match(/[Pp]age\s+(\d+)/);
+    // Extract page number from multiple possible locations in confidence metadata
+    let pageNum = null;
+    
+    // 1. Direct page number from confidence object
+    if (confidence?.page && Number.isFinite(Number(confidence.page))) {
+      pageNum = Number(confidence.page);
+    }
+    
+    // 2. Try extracting from source string (e.g., "Page 3", "Page 3 header", "T12 Operating Statement on page 8")
+    if (!pageNum && confidence?.source) {
+      const match = confidence.source.match(/[Pp]age\s*(\d+)/);
       if (match) pageNum = parseInt(match[1], 10);
     }
+    
+    // 3. Try extracting from note string
+    if (!pageNum && confidence?.note) {
+      const match = confidence.note.match(/[Pp]age\s*(\d+)/);
+      if (match) pageNum = parseInt(match[1], 10);
+    }
+    
+    // 4. Look up the field in _confidence from verifiedData
+    if (!pageNum && verifiedData?._confidence) {
+      const fieldPath = field.path || field.key;
+      const confEntry = verifiedData._confidence[fieldPath];
+      if (confEntry?.page && Number.isFinite(Number(confEntry.page))) {
+        pageNum = Number(confEntry.page);
+      } else if (confEntry?.source) {
+        const match = confEntry.source.match(/[Pp]age\s*(\d+)/);
+        if (match) pageNum = parseInt(match[1], 10);
+      }
+    }
+    
+    console.log('[PDF Viewer] Resolved page:', pageNum, 'for field:', field.label);
     
     setHighlightInfo({
       page: pageNum || 1,

@@ -72,8 +72,9 @@ class RealEstateParser:
             # Extract markdown text from pages
             markdown_text = ""
             if "pages" in ocr_result:
-                for page in ocr_result["pages"]:
+                for idx, page in enumerate(ocr_result["pages"], 1):
                     if isinstance(page, dict) and "markdown" in page:
+                        markdown_text += f"\n\n--- PAGE {idx} ---\n\n"
                         markdown_text += page["markdown"] + "\n\n"
             
             return {
@@ -243,16 +244,23 @@ Extract and structure the following information. BE EXTREMELY THOROUGH:
      - Price per unit
      - Price per square foot
 
-3. EXPENSE BREAKDOWN (all annual):
-   - Real Estate Taxes
-   - Insurance
-   - Utilities (break down if possible)
-   - Repairs & Maintenance
-   - Management Fees
-   - Payroll/Salaries
-   - Administrative
-   - Marketing
-   - All other expense categories
+3. EXPENSE BREAKDOWN (all annual — THIS IS CRITICAL, TRY VERY HARD):
+   - SEARCH the ENTIRE document meticulously for operating expense data
+   - Look for T12 Expenses, Trailing 12-Month, Annual Operating Statement, Pro Forma Budget
+   - Look for expense tables, financial summaries, operating statements, P&L statements
+   - Common section headers: "Operating Expenses", "Expense Summary", "Annual Budget", "Financial Overview"
+   - Real Estate Taxes (property taxes, RE taxes, tax assessed)
+   - Insurance (property insurance, hazard, liability)
+   - Utilities (break down if possible: electric, gas, water, sewer, trash)
+   - Repairs & Maintenance (R&M, maintenance, turnover costs, make-ready)
+   - Management Fees (property management, on-site management, management fee)
+   - Payroll/Salaries (payroll, on-site staff, contract labor, contract services)
+   - Administrative (G&A, admin, office, legal, accounting, professional fees)
+   - Marketing (advertising, leasing commissions, marketing budget)
+   - All other expense categories (pest control, landscaping, security, reserves, capital reserves, replacement reserves)
+   - If you see TOTAL expenses but no breakdown, still report the total and estimate the breakdown proportionally using industry standards (taxes ~30%, insurance ~8%, management ~5-8%, utilities ~15%, R&M ~12%, payroll ~10%, admin ~5%, marketing ~2%, other ~10%)
+   - If individual line items add up to a different total than stated, report BOTH the stated total AND the sum of line items
+   - ALWAYS include the page number where you found the expense data in the _confidence object
 
 4. UNIT MIX (CRITICAL - Look for rent roll tables, unit breakdowns, or lease summaries):
    - SEARCH for tables showing unit types, counts, sizes, and rents
@@ -299,6 +307,9 @@ Confidence levels:
 - "medium": Found data but there were multiple possible values or some ambiguity (include alternatives)
 - "low": Had to estimate or infer this value
 - "missing": Could not find this data anywhere in the document
+
+IMPORTANT: For EVERY field, include a "page" key with the page number (1-based integer) where you found the data.
+This is critical for the PDF viewer to navigate to the exact page when users click a value.
 
 Return a JSON object with this EXACT structure:
 {{
@@ -394,17 +405,25 @@ Return a JSON object with this EXACT structure:
     "seller_contact": ""
   }},
     "_confidence": {{
-        "property.address": {{"level": "high", "source": "Page 1 header"}},
-        "property.units": {{"level": "high", "source": "Executive Summary"}},
-        "property.year_built": {{"level": "missing", "note": "Not found in document"}},
-        "pricing_financing.price": {{"level": "medium", "source": "Page 3", "alternatives": [2500000, 2750000], "note": "Found asking price and reduced price"}},
-        "pnl.noi": {{"level": "medium", "source": "T12 income statement", "note": "Actual/T12 NOI"}},
-        "pnl.noi_proforma": {{"level": "medium", "source": "Pro Forma page", "note": "Broker pro forma NOI"}},
-        "pnl.noi_stabilized": {{"level": "low", "note": "Stabilized NOI after renovations/lease-up if explicitly provided"}},
-        "unit_mix": {{"level": "high", "source": "Rent Roll on Page 5"}},
-        "broker_info.broker_name": {{"level": "high", "source": "Contact page"}},
-        "broker_info.broker_phone": {{"level": "high", "source": "Contact page"}},
-        "broker_info.broker_email": {{"level": "high", "source": "Contact page"}}
+        "property.address": {{"level": "high", "source": "Page 1 header", "page": 1}},
+        "property.units": {{"level": "high", "source": "Executive Summary", "page": 2}},
+        "property.year_built": {{"level": "missing", "note": "Not found in document", "page": null}},
+        "pricing_financing.price": {{"level": "medium", "source": "Page 3", "page": 3, "alternatives": [2500000, 2750000], "note": "Found asking price and reduced price"}},
+        "pnl.noi": {{"level": "medium", "source": "T12 income statement", "page": 8, "note": "Actual/T12 NOI"}},
+        "pnl.noi_proforma": {{"level": "medium", "source": "Pro Forma page", "page": 10, "note": "Broker pro forma NOI"}},
+        "pnl.noi_stabilized": {{"level": "low", "note": "Stabilized NOI after renovations/lease-up if explicitly provided", "page": null}},
+        "pnl.gross_potential_rent": {{"level": "high", "source": "Financial Summary", "page": 7}},
+        "pnl.operating_expenses_t12": {{"level": "high", "source": "T12 Operating Statement", "page": 8}},
+        "expenses.taxes": {{"level": "high", "source": "Expense breakdown table", "page": 8}},
+        "expenses.insurance": {{"level": "high", "source": "Expense breakdown table", "page": 8}},
+        "expenses.management": {{"level": "high", "source": "Expense breakdown table", "page": 8}},
+        "expenses.utilities": {{"level": "high", "source": "Expense breakdown table", "page": 8}},
+        "expenses.repairs_maintenance": {{"level": "high", "source": "Expense breakdown table", "page": 8}},
+        "expenses.total": {{"level": "high", "source": "Expense breakdown table", "page": 8}},
+        "unit_mix": {{"level": "high", "source": "Rent Roll on Page 5", "page": 5}},
+        "broker_info.broker_name": {{"level": "high", "source": "Contact page", "page": 12}},
+        "broker_info.broker_phone": {{"level": "high", "source": "Contact page", "page": 12}},
+        "broker_info.broker_email": {{"level": "high", "source": "Contact page", "page": 12}}
     }},
   "data_quality": {{
     "overall_confidence": 0.85,
@@ -421,6 +440,7 @@ CONFIDENCE OBJECT RULES:
 4. "source" should reference where in the document you found the data
 5. The "_confidence" object is REQUIRED - do not skip it
 6. ALWAYS include confidence for broker contact fields
+7. ALWAYS include a "page" key (integer, 1-based) indicating the page number where you found each field. This is CRITICAL for the PDF viewer to navigate correctly. Use null only if data was not found.
 
 CRITICAL REMINDERS:
 - Convert ALL monthly amounts to annual (multiply by 12)

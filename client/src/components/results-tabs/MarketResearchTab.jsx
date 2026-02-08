@@ -971,28 +971,24 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
               </div>
             </div>
 
-            <div className="absolute top-3 right-3 w-72 bg-white rounded-xl shadow-md border border-gray-100 p-4 space-y-3 z-[1000] pointer-events-auto">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-[11px] text-gray-500">Analysis Area</div>
-                  <div className="text-sm font-semibold text-gray-900 inline-flex items-center gap-1"><Clock size={14} /> {drive_time_minutes}-min Drive</div>
-                </div>
-                <div className="text-[11px] px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">Market Metrics</div>
-              </div>
-
-            {/* Selected metrics panel */}
+            {/* Selected county/zip metrics panel - appears when user clicks a county */}
             {selectedFeature && (
-              <div className="absolute top-28 right-3 w-80 bg-white rounded-xl shadow-lg border border-gray-100 p-4 space-y-3 z-[1200]">
+              <div className="absolute top-3 right-3 w-80 bg-white rounded-xl shadow-lg border border-gray-100 p-4 space-y-3 z-[1200] pointer-events-auto">
                 <div className="flex items-center justify-between">
                   <div className="text-sm font-semibold">Selected {selectedFeature.type?.toUpperCase()}</div>
-                  <button className="text-xs text-gray-500" onClick={() => setSelectedFeature(null)}>Close</button>
+                  <button className="text-xs text-gray-500 hover:text-gray-800 cursor-pointer" onClick={() => setSelectedFeature(null)}>✕ Close</button>
                 </div>
                 <div className="text-xs text-gray-600">
                   {selectedFeature.source === 'none' && <div className="text-red-600">No direct data available — showing fallback where possible</div>}
                   {selectedFeature.type === 'county' && selectedFeature.data && (
-                    <div>
-                      <div className="font-semibold">{selectedFeature.data.county || 'County'}</div>
-                      <div>FMR (2BR): {selectedFeature.data.fmr2 ? `$${Math.round(selectedFeature.data.fmr2).toLocaleString()}` : 'N/A'}</div>
+                    <div className="space-y-1">
+                      <div className="font-semibold text-sm">{selectedFeature.data.county || 'County'}{selectedFeature.data.state ? `, ${selectedFeature.data.state}` : ''}</div>
+                      <div>FMR Studio: {selectedFeature.data.fmr0 ? `$${Math.round(selectedFeature.data.fmr0).toLocaleString()}` : 'N/A'}</div>
+                      <div>FMR 1BR: {selectedFeature.data.fmr1 ? `$${Math.round(selectedFeature.data.fmr1).toLocaleString()}` : 'N/A'}</div>
+                      <div className="font-semibold">FMR 2BR: {selectedFeature.data.fmr2 ? `$${Math.round(selectedFeature.data.fmr2).toLocaleString()}` : 'N/A'}</div>
+                      <div>FMR 3BR: {selectedFeature.data.fmr3 ? `$${Math.round(selectedFeature.data.fmr3).toLocaleString()}` : 'N/A'}</div>
+                      <div>FMR 4BR: {selectedFeature.data.fmr4 ? `$${Math.round(selectedFeature.data.fmr4).toLocaleString()}` : 'N/A'}</div>
+                      {selectedFeature.id && <div className="text-gray-400 mt-1">FIPS: {selectedFeature.id}</div>}
                     </div>
                   )}
                   {selectedFeature.type === 'zip' && selectedFeature.data && (
@@ -1027,58 +1023,6 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                 </div>
               </div>
             )}
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="flex items-start gap-2">
-                  <Users size={16} className="text-blue-500 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-gray-900">{fmt(safeAggregations.population)}</div>
-                    <div className="text-gray-500">Population</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <TrendingUp size={16} className="text-blue-500 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-gray-900">{localPopGrowthPct !== undefined ? fmtPercent(localPopGrowthPct) : 'N/A'}</div>
-                    <div className="text-gray-500">Growth</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <HomeIcon size={16} className="text-blue-500 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-gray-900">{fmt(Math.round(households))}</div>
-                    <div className="text-gray-500">Households</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <DollarSign size={16} className="text-blue-500 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-gray-900">{fmtCurrency(safeAggregations.median_income)}</div>
-                    <div className="text-gray-500">Income</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Briefcase size={16} className="text-blue-500 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-gray-900">{aggregations?.businesses ? fmt(aggregations.businesses) : 'N/A'}</div>
-                    <div className="text-gray-500">Businesses</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Activity size={16} className="text-blue-500 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-gray-900">{aggregations?.walk_score != null ? aggregations.walk_score : 'N/A'}</div>
-                    <div className="text-gray-500">Walk Score</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Percent size={16} className="text-blue-500 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-gray-900">{safeAggregations.affordability}</div>
-                    <div className="text-gray-500">Affordability</div>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             <div className="absolute bottom-4 left-3 bg-white/95 backdrop-blur rounded-xl shadow-md border border-gray-100 p-4 w-72 z-[1000] pointer-events-auto">
               <div className="flex items-center justify-between mb-3 text-sm font-semibold text-gray-900">

@@ -120,8 +120,10 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
               <thead>
                 <tr style={{ background: COLORS.tableHeader }}>
                   <th style={{ padding: '10px', textAlign: 'left', borderBottom: `1px solid ${COLORS.border}` }}>Income & Expenses</th>
-                  <th style={{ padding: '10px', textAlign: 'right', borderBottom: `1px solid ${COLORS.border}` }}>Underwriting Start</th>
-                  <th style={{ padding: '10px', textAlign: 'right', borderBottom: `1px solid ${COLORS.border}` }}>Value Add 1</th>
+                  <th style={{ padding: '10px', textAlign: 'right', borderBottom: `1px solid ${COLORS.border}` }}>Annual (UW)</th>
+                  <th style={{ padding: '10px', textAlign: 'right', borderBottom: `1px solid ${COLORS.border}` }}>Monthly (UW)</th>
+                  <th style={{ padding: '10px', textAlign: 'right', borderBottom: `1px solid ${COLORS.border}` }}>Annual (VA)</th>
+                  <th style={{ padding: '10px', textAlign: 'right', borderBottom: `1px solid ${COLORS.border}` }}>Monthly (VA)</th>
                   <th style={{ padding: '10px', textAlign: 'center', borderBottom: `1px solid ${COLORS.border}`, width: 160 }}>Actions</th>
                 </tr>
               </thead>
@@ -130,7 +132,9 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
                 <tr style={{ background: COLORS.rowA }}>
                   <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, fontWeight: 600 }}>Gross Potential Rental Income</td>
                   <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}><span style={{ fontWeight: 700 }}>{fmt(gprUW)}</span></td>
+                  <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}><span style={{ fontWeight: 600, color: COLORS.gray }}>{fmt(gprUW / 12)}</span></td>
                   <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}><span style={{ fontWeight: 700 }}>{fmt(gprVA)}</span></td>
+                  <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}><span style={{ fontWeight: 600, color: COLORS.gray }}>{fmt(gprVA / 12)}</span></td>
                   <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'center' }}><span style={{ fontSize: 12, color: COLORS.gray }}>auto</span></td>
                 </tr>
 
@@ -147,6 +151,9 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
                     </div>
                   </td>
                   <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}>
+                    <span style={{ fontSize: 12, color: COLORS.gray }}>{fmt(vacUWamt / 12)}</span>
+                  </td>
+                  <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
                       <input type="number" value={vacVApct}
                         onChange={(e)=> handleChange('value_add.optimized_expenses.vacancy_pct', parseFloat(e.target.value)||0)}
@@ -154,6 +161,9 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
                       <span style={{ fontSize: 12, color: COLORS.gray }}>{pct(vacVApct)}</span>
                       <span style={{ fontSize: 12, background: '#f1f5f9', border: `1px solid ${COLORS.border}`, borderRadius: 6, padding: '4px 6px' }}>{fmt(vacVAamt)}</span>
                     </div>
+                  </td>
+                  <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}>
+                    <span style={{ fontSize: 12, color: COLORS.gray }}>{fmt(vacVAamt / 12)}</span>
                   </td>
                   <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'center' }}>
                     <button title="Copy UW → VA" onClick={() => copyValue('expenses.vacancy_pct','value_add.optimized_expenses.vacancy_pct',vacUWpct)}
@@ -174,6 +184,9 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
                     </div>
                   </td>
                   <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}>
+                    <span style={{ fontSize: 12, color: COLORS.gray }}>{fmt(ltlUWamt / 12)}</span>
+                  </td>
+                  <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
                       <input type="number" value={ltlVApct}
                         onChange={(e)=> handleChange('value_add.optimized_expenses.loss_to_lease_pct', parseFloat(e.target.value)||0)}
@@ -181,6 +194,9 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
                       <span style={{ fontSize: 12, color: COLORS.gray }}>{pct(ltlVApct)}</span>
                       <span style={{ fontSize: 12, background: '#f1f5f9', border: `1px solid ${COLORS.border}`, borderRadius: 6, padding: '4px 6px' }}>{fmt(ltlVAamt)}</span>
                     </div>
+                  </td>
+                  <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}>
+                    <span style={{ fontSize: 12, color: COLORS.gray }}>{fmt(ltlVAamt / 12)}</span>
                   </td>
                   <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'center' }}>
                     <button title="Copy UW → VA" onClick={() => copyValue('expenses.loss_to_lease_pct','value_add.optimized_expenses.loss_to_lease_pct',ltlUWpct)}
@@ -192,7 +208,9 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
                 <tr style={{ background: COLORS.rowB }}>
                   <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, fontWeight: 600 }}>Effective Gross Rental Income</td>
                   <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}><span style={{ fontWeight: 700 }}>{fmt(egiUW)}</span></td>
+                  <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}><span style={{ fontWeight: 600, color: COLORS.gray }}>{fmt(egiUW / 12)}</span></td>
                   <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}><span style={{ fontWeight: 700 }}>{fmt(egiVA)}</span></td>
+                  <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}><span style={{ fontWeight: 600, color: COLORS.gray }}>{fmt(egiVA / 12)}</span></td>
                   <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'center' }}><span style={{ fontSize: 12, color: COLORS.gray }}>auto</span></td>
                 </tr>
 
@@ -206,9 +224,15 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
                         style={{ width: 140, padding: '6px 8px', border: `1px solid ${COLORS.inputBorder}`, background: '#ffffff', borderRadius: 6, fontSize: 12, textAlign: 'right' }} />
                     </td>
                     <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}>
+                      <span style={{ fontSize: 12, color: COLORS.gray }}>{fmt(row.uw / 12)}</span>
+                    </td>
+                    <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}>
                       <input type="number" value={row.va}
                         onChange={(e)=> handleChange(row.vaPath, parseFloat(e.target.value)||0)}
                         style={{ width: 140, padding: '6px 8px', border: `1px solid ${COLORS.inputBorder}`, borderRadius: 6, fontSize: 12, textAlign: 'right', background: '#f9fafb' }} />
+                    </td>
+                    <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'right' }}>
+                      <span style={{ fontSize: 12, color: COLORS.gray }}>{fmt(row.va / 12)}</span>
                     </td>
                     <td style={{ padding: '10px', borderBottom: `1px solid ${COLORS.border}`, textAlign: 'center' }}>
                       <div style={{ display: 'inline-flex', gap: 6 }}>
@@ -224,7 +248,9 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
                 <tr style={{ background: COLORS.tableHeader }}>
                   <td style={{ padding: '10px', borderTop: `2px solid ${COLORS.border}`, fontWeight: 800 }}>Total Operating Expenses</td>
                   <td style={{ padding: '10px', textAlign: 'right', borderTop: `2px solid ${COLORS.border}`, fontWeight: 800 }}>{fmt(totalUW)}</td>
+                  <td style={{ padding: '10px', textAlign: 'right', borderTop: `2px solid ${COLORS.border}`, fontWeight: 700, color: COLORS.gray }}>{fmt(totalUW / 12)}</td>
                   <td style={{ padding: '10px', textAlign: 'right', borderTop: `2px solid ${COLORS.border}`, fontWeight: 800 }}>{fmt(totalVA)}</td>
+                  <td style={{ padding: '10px', textAlign: 'right', borderTop: `2px solid ${COLORS.border}`, fontWeight: 700, color: COLORS.gray }}>{fmt(totalVA / 12)}</td>
                   <td style={{ padding: '10px', borderTop: `2px solid ${COLORS.border}` }}></td>
                 </tr>
               </tbody>
