@@ -1,9 +1,9 @@
 import React, { useState, Fragment } from 'react';
-import { CheckCircle, AlertCircle, FileText, File, Pencil, Check, X } from 'lucide-react';
+import { CheckCircle, AlertCircle, FileText, File, Pencil, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
 
 /**
  * ExtractedFieldsTable - Cactus-style document extraction display
- * Shows extracted fields with confidence scores, sources, inline editing, and conflict resolution
+ * Shows extracted fields with confidence scores, inline editing, and expandable value selection
  */
 export default function ExtractedFieldsTable({ 
   fields = [],
@@ -14,6 +14,7 @@ export default function ExtractedFieldsTable({
 }) {
   const [editingField, setEditingField] = useState(null);
   const [editValue, setEditValue] = useState('');
+  const [expandedField, setExpandedField] = useState(null);
   
   const getConfidencePercent = (level) => {
     const percentMap = {
@@ -28,14 +29,12 @@ export default function ExtractedFieldsTable({
   const startEditing = (field, e) => {
     e.stopPropagation();
     setEditingField(field.path || field.key);
-    // Use raw value (not formatted) for editing
     setEditValue(field.value !== null && field.value !== undefined ? String(field.value) : '');
   };
 
   const confirmEdit = (field, e) => {
     e.stopPropagation();
     if (onEditValue) {
-      // Try to parse as number if it looks numeric
       let val = editValue;
       if (val !== '' && !isNaN(val)) {
         val = parseFloat(val);
@@ -50,6 +49,19 @@ export default function ExtractedFieldsTable({
     e.stopPropagation();
     setEditingField(null);
     setEditValue('');
+  };
+
+  const toggleExpanded = (fieldPath, e) => {
+    e.stopPropagation();
+    setExpandedField(prev => prev === fieldPath ? null : fieldPath);
+  };
+
+  const handleSelectAlternative = (field, value, e) => {
+    if (e) e.stopPropagation();
+    if (onSelectValue) {
+      onSelectValue(field, value);
+    }
+    setExpandedField(null);
   };
   
   return (
@@ -77,16 +89,16 @@ export default function ExtractedFieldsTable({
             const conf = confidence[fieldPath] || {};
             const level = conf.level || 'missing';
             const hasAlternatives = conf.alternatives && conf.alternatives.length > 0;
-            // Conflicts are always expanded inline
-            const expanded = hasAlternatives;
+            const isExpanded = expandedField === fieldPath;
             
             return (
               <Fragment key={fieldPath}>
               <tr 
                 style={{
-                  background: '#fff',
+                  background: hasAlternatives ? '#fffbeb' : '#fff',
                   cursor: level !== 'missing' ? 'pointer' : 'default',
-                  transition: 'all 0.15s'
+                  transition: 'all 0.15s',
+                  borderLeft: hasAlternatives ? '3px solid #f59e0b' : '3px solid transparent'
                 }}
                 onClick={() => level !== 'missing' && onViewSource && onViewSource(field, conf)}
                 onMouseEnter={(e) => {
@@ -100,14 +112,15 @@ export default function ExtractedFieldsTable({
                   e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >
-                <td style={{ padding: '16px', borderLeft: '3px solid transparent' }}>
+                <td style={{ padding: '16px' }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>
                     {field.label}
+                    {field.required && <span style={{ color: '#ef4444', marginLeft: 4 }}>*</span>}
                   </div>
                 </td>
                 
                 <td style={{ padding: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     {editingField === fieldPath ? (
                       <>
                         <input
@@ -153,6 +166,8 @@ export default function ExtractedFieldsTable({
                             : <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>Not found</span>
                           }
                         </span>
+                        
+                        {/* Edit button */}
                         {onEditValue && (
                           <button
                             onClick={(e) => startEditing(field, e)}
@@ -173,6 +188,32 @@ export default function ExtractedFieldsTable({
                             <Pencil size={12} color="#6b7280" />
                           </button>
                         )}
+                        
+                        {/* Alternatives toggle button */}
+                        {hasAlternatives && (
+                          <button
+                            onClick={(e) => toggleExpanded(fieldPath, e)}
+                            title={`${conf.alternatives.length} alternative value${conf.alternatives.length > 1 ? 's' : ''} found — click to choose`}
+                            style={{
+                              padding: '3px 8px',
+                              background: isExpanded ? '#fef3c7' : '#fff7ed',
+                              border: '1px solid #f59e0b',
+                              borderRadius: 12,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              color: '#b45309',
+                              transition: 'all 0.15s'
+                            }}
+                          >
+                            <AlertCircle size={12} />
+                            {conf.alternatives.length} option{conf.alternatives.length > 1 ? 's' : ''}
+                            {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                          </button>
+                        )}
                       </>
                     )}
                   </div>
@@ -181,12 +222,10 @@ export default function ExtractedFieldsTable({
                 <td style={{ padding: '16px' }}>
                   <div style={{ fontSize: 13, color: '#6b7280' }}>
                     {conf.source ? (
-                      <>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <File size={12} color="#9ca3af" />
-                          <span>{conf.source.split(' ')[0]}</span>
-                        </div>
-                      </>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <File size={12} color="#9ca3af" />
+                        <span>{conf.source}</span>
+                      </div>
                     ) : 'Unknown'}
                   </div>
                 </td>
@@ -206,15 +245,16 @@ export default function ExtractedFieldsTable({
                 </td>
               </tr>
               
-              {/* Inline conflict resolution like Cactus */}
-              {hasAlternatives && expanded && (
+              {/* Expanded value selection panel */}
+              {hasAlternatives && isExpanded && (
                 <tr>
-                  <td colSpan="4" style={{ padding: '0 16px 16px 16px', background: '#fffbeb' }}>
+                  <td colSpan="4" style={{ padding: '0 16px 16px 16px' }}>
                     <div style={{
                       padding: 16,
                       background: '#fff',
                       border: '2px solid #fcd34d',
-                      borderRadius: 8
+                      borderRadius: 8,
+                      boxShadow: '0 4px 12px rgba(251, 191, 36, 0.15)'
                     }}>
                       <div style={{
                         display: 'flex',
@@ -225,82 +265,76 @@ export default function ExtractedFieldsTable({
                       }}>
                         <AlertCircle size={16} />
                         <span style={{ fontSize: 14, fontWeight: 600 }}>
-                          {conf.alternatives.length} conflicting values found - select the correct one
+                          Multiple values found — select the correct one
                         </span>
                       </div>
                       
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        {/* Current value */}
-                        <label style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 12,
-                          padding: 16,
-                          background: '#f9fafb',
-                          border: '2px solid #e5e7eb',
-                          borderRadius: 8,
-                          cursor: 'pointer',
-                          transition: 'all 0.15s'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.borderColor = '#3b82f6'}
-                        onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e5e7eb'}
-                        >
-                          <input
-                            type="radio"
-                            name={fieldPath}
-                            value={field.value}
-                            defaultChecked
-                            onChange={() => onSelectValue && onSelectValue(field, field.value)}
-                            style={{ width: 18, height: 18, cursor: 'pointer' }}
-                          />
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 15, fontWeight: 600, color: '#111827' }}>
-                              {field.formatter ? field.formatter(field.value) : field.value}
-                            </div>
-                            <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
-                              {conf.source || 'Primary source'}
-                            </div>
-                          </div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: '#10b981' }}>
-                            {getConfidencePercent(level)}%
-                          </div>
-                        </label>
-                        
-                        {/* Alternative values */}
-                        {conf.alternatives.map((alt, altIdx) => (
-                          <label key={altIdx} style={{
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {/* Current value option */}
+                        <div
+                          onClick={(e) => handleSelectAlternative(field, field.value, e)}
+                          style={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: 12,
-                            padding: 16,
-                            background: '#fff',
-                            border: '2px solid #e5e7eb',
+                            padding: '12px 16px',
+                            background: '#dcfce7',
+                            border: '2px solid #86efac',
                             borderRadius: 8,
                             cursor: 'pointer',
                             transition: 'all 0.15s'
                           }}
-                          onMouseEnter={(e) => e.currentTarget.style.borderColor = '#3b82f6'}
-                          onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e5e7eb'}
+                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.01)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
+                        >
+                          <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Check size={12} color="#fff" />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>
+                              {field.formatter ? field.formatter(field.value) : field.value}
+                            </div>
+                            <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+                              {conf.source || 'Primary source'} — <strong style={{ color: '#059669' }}>Currently selected</strong>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Alternative value options */}
+                        {conf.alternatives.map((alt, altIdx) => (
+                          <div
+                            key={altIdx}
+                            onClick={(e) => handleSelectAlternative(field, alt, e)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 12,
+                              padding: '12px 16px',
+                              background: '#fff',
+                              border: '2px solid #e5e7eb',
+                              borderRadius: 8,
+                              cursor: 'pointer',
+                              transition: 'all 0.15s'
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.background = '#eff6ff'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.background = '#fff'; }}
                           >
-                            <input
-                              type="radio"
-                              name={fieldPath}
-                              value={alt}
-                              onChange={() => onSelectValue && onSelectValue(field, alt)}
-                              style={{ width: 18, height: 18, cursor: 'pointer' }}
-                            />
+                            <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid #d1d5db', background: '#fff' }} />
                             <div style={{ flex: 1 }}>
                               <div style={{ fontSize: 15, fontWeight: 600, color: '#111827' }}>
                                 {field.formatter ? field.formatter(alt) : alt}
                               </div>
                               <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
-                                Alternative source {altIdx + 1}
+                                Alternative value {altIdx + 1} — Click to use this value
                               </div>
                             </div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b' }}>
-                              {Math.max(50, getConfidencePercent(level) - (altIdx + 1) * 10)}%
+                            <div style={{ 
+                              fontSize: 12, fontWeight: 600, color: '#3b82f6',
+                              padding: '4px 10px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6
+                            }}>
+                              Select
                             </div>
-                          </label>
+                          </div>
                         ))}
                       </div>
                     </div>

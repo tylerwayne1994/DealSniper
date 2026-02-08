@@ -132,19 +132,6 @@ export default function PropertyDetailsWizardTab({
         onEditValue={onEditValue}
       />
 
-      <div style={{
-        marginTop: 24,
-        padding: 16,
-        background: '#eff6ff',
-        borderRadius: 8,
-        border: '1px solid #bfdbfe',
-        fontSize: 13,
-        color: '#1e40af'
-      }}>
-        <strong>Tip:</strong> Click "View Source" to see where each value was extracted from in the original document.
-        If multiple values were found, click the conflict button to choose the correct one.
-      </div>
-
       {/* Unit Mix Breakdown */}
       {verifiedData?.unit_mix && verifiedData.unit_mix.length > 0 && (
         <div style={{ marginTop: 32 }}>
@@ -251,6 +238,19 @@ export default function PropertyDetailsWizardTab({
           )}
         </div>
       )}
+
+      <div style={{
+        marginTop: 24,
+        padding: 16,
+        background: '#eff6ff',
+        borderRadius: 8,
+        border: '1px solid #bfdbfe',
+        fontSize: 13,
+        color: '#1e40af'
+      }}>
+        <strong>Tip:</strong> Click the pencil icon to edit any value. Click "View Source" to see where each value was extracted from in the original document.
+        If multiple values were found, click the conflict button to choose the correct one.
+      </div>
     </div>
   );
 }

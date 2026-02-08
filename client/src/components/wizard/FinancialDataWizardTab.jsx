@@ -19,8 +19,11 @@ export default function FinancialDataWizardTab({
   };
   
   const formatPercent = (val) => {
-    if (!val) return '0%';
-    return `${(val * 100).toFixed(2)}%`;
+    if (val === null || val === undefined) return '0%';
+    // Values from API are already in percentage form (e.g. 7.16 means 7.16%)
+    // If value > 1, it's already a percentage. If <= 1, it's a decimal.
+    const pct = val > 1 ? val : val * 100;
+    return `${pct.toFixed(2)}%`;
   };
 
   // Define financial fields
