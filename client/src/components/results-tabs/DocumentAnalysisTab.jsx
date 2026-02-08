@@ -392,7 +392,7 @@ export default function DocumentAnalysisTab({
         setGenerationProgress('Finalizing analysis — this takes 30-60 seconds...');
       }, 35000);
       
-      const response = await fetch(`${API_BASE}/api/v2/deals/${dealId}/document-analysis`, {
+      const response = await fetch(`${API_BASE}/v2/deals/${dealId}/document-analysis`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
