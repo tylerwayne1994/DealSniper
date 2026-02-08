@@ -143,7 +143,7 @@ export default function PropertyDetailsWizardTab({
         const avgCurrentRent = totalUnits > 0 ? Math.round(totalCurrentMonthly / totalUnits) : 0;
         const avgMarketRent = totalUnits > 0 ? Math.round(totalMarketMonthly / totalUnits) : 0;
 
-        const th = { padding: '8px 10px', textAlign: 'center', fontWeight: 700, color: '#fff', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.03em', whiteSpace: 'nowrap' };
+        const th = { padding: '8px 10px', textAlign: 'center', fontWeight: 700, color: '#64748b', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.03em', whiteSpace: 'nowrap' };
         const td = { padding: '8px 10px', textAlign: 'center', color: '#374151', fontSize: 13, borderBottom: '1px solid #f3f4f6' };
         const inputStyle = { padding: '3px 6px', border: '1px solid #e5e7eb', borderRadius: 4, fontSize: 13, textAlign: 'center', background: '#fff' };
         const canEdit = !!onUpdateUnitMix;
@@ -176,7 +176,7 @@ export default function PropertyDetailsWizardTab({
             <div style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid #e5e7eb' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 900 }}>
                 <thead>
-                  <tr style={{ background: 'linear-gradient(135deg, #1e293b, #334155)' }}>
+                  <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0' }}>
                     <th style={{ ...th, textAlign: 'left', minWidth: 100 }}>Type</th>
                     <th style={{ ...th, minWidth: 55 }}>Units</th>
                     <th style={{ ...th, minWidth: 55 }}>Mix %</th>
@@ -265,25 +265,25 @@ export default function PropertyDetailsWizardTab({
                     {canEdit && <td style={{ ...td, borderBottom: '1px solid #e2e8f0' }} />}
                   </tr>
                   {/* Totals row */}
-                  <tr style={{ background: '#1e293b' }}>
-                    <td style={{ ...td, textAlign: 'left', fontWeight: 800, color: '#fff', borderBottom: 'none' }}>Totals</td>
-                    <td style={{ ...td, fontWeight: 800, color: '#fff', borderBottom: 'none' }}>{totalUnits}</td>
-                    <td style={{ ...td, color: '#94a3b8', borderBottom: 'none' }}>100%</td>
-                    <td style={{ ...td, fontWeight: 600, color: '#fff', borderBottom: 'none' }}>{totalSF.toLocaleString()}</td>
-                    <td style={{ ...td, color: '#94a3b8', borderBottom: 'none' }}>—</td>
-                    <td style={{ ...td, color: '#94a3b8', borderBottom: 'none' }}>—</td>
-                    <td style={{ ...td, color: '#94a3b8', borderBottom: 'none' }}>—</td>
-                    <td style={{ ...td, color: '#94a3b8', borderBottom: 'none' }}>—</td>
-                    <td style={{ ...td, color: '#94a3b8', borderBottom: 'none' }}>—</td>
-                    <td style={{ ...td, fontWeight: 800, color: '#10b981', borderBottom: 'none', fontSize: 14 }}>${totalCurrentMonthly.toLocaleString()}</td>
-                    <td style={{ ...td, fontWeight: 800, color: '#10b981', borderBottom: 'none', fontSize: 14 }}>${totalMarketMonthly.toLocaleString()}</td>
+                  <tr style={{ background: '#f9fafb', borderTop: '2px solid #e5e7eb' }}>
+                    <td style={{ ...td, textAlign: 'left', fontWeight: 800, color: '#111827', borderBottom: 'none' }}>Totals</td>
+                    <td style={{ ...td, fontWeight: 800, color: '#111827', borderBottom: 'none' }}>{totalUnits}</td>
+                    <td style={{ ...td, color: '#6b7280', borderBottom: 'none' }}>100%</td>
+                    <td style={{ ...td, fontWeight: 600, color: '#111827', borderBottom: 'none' }}>{totalSF.toLocaleString()}</td>
+                    <td style={{ ...td, color: '#9ca3af', borderBottom: 'none' }}>—</td>
+                    <td style={{ ...td, color: '#9ca3af', borderBottom: 'none' }}>—</td>
+                    <td style={{ ...td, color: '#9ca3af', borderBottom: 'none' }}>—</td>
+                    <td style={{ ...td, color: '#9ca3af', borderBottom: 'none' }}>—</td>
+                    <td style={{ ...td, color: '#9ca3af', borderBottom: 'none' }}>—</td>
+                    <td style={{ ...td, fontWeight: 800, color: '#059669', borderBottom: 'none', fontSize: 14 }}>${totalCurrentMonthly.toLocaleString()}</td>
+                    <td style={{ ...td, fontWeight: 800, color: '#059669', borderBottom: 'none', fontSize: 14 }}>${totalMarketMonthly.toLocaleString()}</td>
                     {canEdit && <td style={{ ...td, borderBottom: 'none' }} />}
                   </tr>
                   {/* Annual row */}
-                  <tr style={{ background: '#0f172a' }}>
-                    <td colSpan={9} style={{ ...td, textAlign: 'right', fontWeight: 700, color: '#94a3b8', borderBottom: 'none', fontSize: 12 }}>Annual Income:</td>
-                    <td style={{ ...td, fontWeight: 800, color: '#fbbf24', borderBottom: 'none', fontSize: 14 }}>${(totalCurrentMonthly * 12).toLocaleString()}</td>
-                    <td style={{ ...td, fontWeight: 800, color: '#fbbf24', borderBottom: 'none', fontSize: 14 }}>${(totalMarketMonthly * 12).toLocaleString()}</td>
+                  <tr style={{ background: '#f0fdf4', borderTop: '1px solid #bbf7d0' }}>
+                    <td colSpan={9} style={{ ...td, textAlign: 'right', fontWeight: 700, color: '#6b7280', borderBottom: 'none', fontSize: 12 }}>Annual Income:</td>
+                    <td style={{ ...td, fontWeight: 800, color: '#047857', borderBottom: 'none', fontSize: 14 }}>${(totalCurrentMonthly * 12).toLocaleString()}</td>
+                    <td style={{ ...td, fontWeight: 800, color: '#047857', borderBottom: 'none', fontSize: 14 }}>${(totalMarketMonthly * 12).toLocaleString()}</td>
                     {canEdit && <td style={{ ...td, borderBottom: 'none' }} />}
                   </tr>
                 </tfoot>
