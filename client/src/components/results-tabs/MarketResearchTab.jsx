@@ -1059,14 +1059,14 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                 <div className="flex items-start gap-2">
                   <Briefcase size={16} className="text-blue-500 mt-0.5" />
                   <div>
-                    <div className="font-semibold text-gray-900">{fmt(aggregations?.businesses ?? 0)}</div>
+                    <div className="font-semibold text-gray-900">{aggregations?.businesses ? fmt(aggregations.businesses) : 'N/A'}</div>
                     <div className="text-gray-500">Businesses</div>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <Activity size={16} className="text-blue-500 mt-0.5" />
                   <div>
-                    <div className="font-semibold text-gray-900">{aggregations?.walk_score ?? 'N/A'}</div>
+                    <div className="font-semibold text-gray-900">{aggregations?.walk_score != null ? aggregations.walk_score : 'N/A'}</div>
                     <div className="text-gray-500">Walk Score</div>
                   </div>
                 </div>
@@ -1175,15 +1175,17 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
               <span className="text-xs font-semibold text-gray-600">Population</span>
             </div>
             <div className="text-2xl font-bold text-gray-900 mb-1">{fmt(safeAggregations.population)}</div>
-            <div className="text-xs text-blue-600 font-semibold">High</div>
+            <div className={`text-xs font-semibold ${safeAggregations.population > 100000 ? 'text-blue-600' : safeAggregations.population > 50000 ? 'text-gray-600' : 'text-red-600'}`}>
+              {safeAggregations.population > 100000 ? 'High' : safeAggregations.population > 50000 ? 'Average' : 'Low'}
+            </div>
             <div className="text-[10px] text-gray-500 mt-2">
               {(() => {
                 const countyPop = county_data?.population || 0;
-                if (countyPop > 0) {
+                if (countyPop > 0 && safeAggregations.population > 0) {
                   const diff = ((safeAggregations.population - countyPop) / countyPop * 100).toFixed(1);
-                  return `${diff}% vs region average of ${fmt(Math.round(countyPop))} per sq`;
+                  return `${diff > 0 ? '+' : ''}${diff}% vs county average of ${fmt(Math.round(countyPop))}`;
                 }
-                return 'Area population density';
+                return `${drive_time_minutes}-min drive time area population`;
               })()}
             </div>
           </div>
@@ -1195,9 +1197,18 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
               <span className="text-xs font-semibold text-gray-600">Growth</span>
             </div>
             <div className="text-2xl font-bold text-gray-900 mb-1">{localPopGrowthPct !== undefined ? fmtPercent(localPopGrowthPct) : 'N/A'}</div>
-            <div className="text-xs text-red-600 font-semibold">{localPopGrowthPct < 0 ? 'Low' : 'High'}</div>
+            <div className={`text-xs font-semibold ${localPopGrowthPct === undefined ? 'text-gray-600' : localPopGrowthPct > 1 ? 'text-blue-600' : localPopGrowthPct > 0 ? 'text-gray-600' : 'text-red-600'}`}>
+              {localPopGrowthPct === undefined ? 'N/A' : localPopGrowthPct > 1 ? 'High' : localPopGrowthPct > 0 ? 'Average' : 'Low'}
+            </div>
             <div className="text-[10px] text-gray-500 mt-2">
-              Yearly Population Growth compared to Texas average of 1.2%
+              {(() => {
+                const stateGrowth = aggregations?.comparisons?.pop_growth_state;
+                const stateName = state?.name || property_location?.state || propertyLocation?.state || 'state';
+                if (stateGrowth !== undefined && stateGrowth !== null) {
+                  return `Yearly population growth compared to ${stateName} average of ${fmtPercent(stateGrowth)}`;
+                }
+                return localPopGrowthPct !== undefined ? 'Yearly net migration-based population growth' : 'Growth data not available';
+              })()}
             </div>
           </div>
 
@@ -1207,23 +1218,43 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
               <HomeIcon size={18} className="text-blue-600" />
               <span className="text-xs font-semibold text-gray-600">Households</span>
             </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">{fmt(Math.round(households))}</div>
-            <div className="text-xs text-blue-600 font-semibold">High</div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">{households > 0 ? fmt(Math.round(households)) : 'N/A'}</div>
+            <div className={`text-xs font-semibold ${households > 10000 ? 'text-blue-600' : households > 5000 ? 'text-gray-600' : 'text-red-600'}`}>
+              {households > 10000 ? 'High' : households > 5000 ? 'Average' : households > 0 ? 'Low' : 'N/A'}
+            </div>
             <div className="text-[10px] text-gray-500 mt-2">
-              388 households per 1,000 people, compared to Texas average of 383
+              {(() => {
+                const pop = safeAggregations.population || 0;
+                if (households > 0 && pop > 0) {
+                  const perThousand = Math.round(households / pop * 1000);
+                  return `${perThousand} households per 1,000 people in the ${drive_time_minutes}-min area`;
+                }
+                return 'Household count based on renter + owner data';
+              })()}
             </div>
           </div>
 
-          {/* Single Family */}
+          {/* Renter/Owner Split (replacing hardcoded Single Family) */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <HomeIcon size={18} className="text-blue-600" />
-              <span className="text-xs font-semibold text-gray-600">Single Family</span>
+              <span className="text-xs font-semibold text-gray-600">Renter Share</span>
             </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">60,142</div>
-            <div className="text-xs text-red-600 font-semibold">Low</div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">
+              {zip_renter_owner?.renter_share != null ? fmtPercentFromFraction(zip_renter_owner.renter_share) : 'N/A'}
+            </div>
+            <div className={`text-xs font-semibold ${(zip_renter_owner?.renter_share || 0) > 0.5 ? 'text-blue-600' : 'text-gray-600'}`}>
+              {zip_renter_owner?.renter_share != null ? ((zip_renter_owner.renter_share > 0.5) ? 'Renter Majority' : 'Owner Majority') : 'N/A'}
+            </div>
             <div className="text-[10px] text-gray-500 mt-2">
-              105.2 homes per 1,000 people, compared to Texas average of 268.7
+              {(() => {
+                const rc = zip_renter_owner?.renter_count;
+                const oc = zip_renter_owner?.owner_count;
+                if (rc != null && oc != null) {
+                  return `${fmt(Math.round(rc))} renters / ${fmt(Math.round(oc))} owners in ZIP ${zipCode || ''}`;
+                }
+                return 'Renter vs owner breakdown for this ZIP';
+              })()}
             </div>
           </div>
 
@@ -1234,9 +1265,19 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
               <span className="text-xs font-semibold text-gray-600">Income</span>
             </div>
             <div className="text-2xl font-bold text-gray-900 mb-1">{fmtCurrency(safeAggregations.median_income)}</div>
-            <div className="text-xs text-blue-600 font-semibold">High</div>
+            <div className={`text-xs font-semibold ${safeAggregations.median_income > 75000 ? 'text-blue-600' : safeAggregations.median_income > 50000 ? 'text-gray-600' : 'text-red-600'}`}>
+              {safeAggregations.median_income > 75000 ? 'High' : safeAggregations.median_income > 50000 ? 'Average' : 'Low'}
+            </div>
             <div className="text-[10px] text-gray-500 mt-2">
-              Median Household Income compared to Texas average of ${aggregations?.comparisons?.income_state ? Math.round(aggregations.comparisons.income_state).toLocaleString() : '63,799'}
+              {(() => {
+                const stateIncome = aggregations?.comparisons?.income_state;
+                const stateName = state?.name || property_location?.state || propertyLocation?.state || 'state';
+                if (stateIncome) {
+                  const diff = ((safeAggregations.median_income - stateIncome) / stateIncome * 100).toFixed(1);
+                  return `${diff > 0 ? '+' : ''}${diff}% vs ${stateName} avg of ${fmtCurrency(Math.round(stateIncome))}`;
+                }
+                return 'Median household income for area';
+              })()}
             </div>
           </div>
 
@@ -1246,10 +1287,20 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
               <Briefcase size={18} className="text-blue-600" />
               <span className="text-xs font-semibold text-gray-600">Businesses</span>
             </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">{fmt(aggregations?.businesses ?? 17476)}</div>
-            <div className="text-xs text-blue-600 font-semibold">High</div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">{aggregations?.businesses ? fmt(aggregations.businesses) : 'N/A'}</div>
+            <div className={`text-xs font-semibold ${(aggregations?.businesses || 0) > 5000 ? 'text-blue-600' : (aggregations?.businesses || 0) > 1000 ? 'text-gray-600' : 'text-red-600'}`}>
+              {aggregations?.businesses ? ((aggregations.businesses > 5000) ? 'High' : (aggregations.businesses > 1000) ? 'Average' : 'Low') : 'N/A'}
+            </div>
             <div className="text-[10px] text-gray-500 mt-2">
-              31 businesses per 1,000 people, compared to Texas average of 15
+              {(() => {
+                const biz = aggregations?.businesses;
+                const pop = safeAggregations.population;
+                if (biz && pop > 0) {
+                  const perThousand = Math.round(biz / pop * 1000);
+                  return `${perThousand} businesses per 1,000 people in ${drive_time_minutes}-min area`;
+                }
+                return 'Business count in the analysis area';
+              })()}
             </div>
           </div>
 
@@ -1259,10 +1310,12 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
               <Activity size={18} className="text-blue-600" />
               <span className="text-xs font-semibold text-gray-600">Walk Score</span>
             </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">{aggregations?.walk_score ?? 70}</div>
-            <div className="text-xs text-gray-600 font-semibold">Average</div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">{aggregations?.walk_score ?? 'N/A'}</div>
+            <div className={`text-xs font-semibold ${(aggregations?.walk_score || 0) >= 70 ? 'text-blue-600' : (aggregations?.walk_score || 0) >= 50 ? 'text-gray-600' : 'text-red-600'}`}>
+              {aggregations?.walk_score != null ? (aggregations.walk_score >= 70 ? 'Very Walkable' : aggregations.walk_score >= 50 ? 'Somewhat Walkable' : 'Car-Dependent') : 'N/A'}
+            </div>
             <div className="text-[10px] text-gray-500 mt-2">
-              This area is somewhat walkable. The national average is 48, based on 100 point scale.
+              {aggregations?.walk_score != null ? `Walk score of ${aggregations.walk_score}/100 for this area` : 'Walk score data not available'}
             </div>
           </div>
 
@@ -1273,9 +1326,15 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
               <span className="text-xs font-semibold text-gray-600">Affordability</span>
             </div>
             <div className="text-2xl font-bold text-blue-600 mb-1">{safeAggregations.affordability}</div>
-            <div className="text-xs text-blue-600 font-semibold">Rent ${fmtCurrency(safeAggregations.median_rent)}/mo</div>
+            <div className="text-xs text-blue-600 font-semibold">Rent {fmtCurrency(safeAggregations.median_rent)}/mo</div>
             <div className="text-[10px] text-gray-500 mt-2">
-              Rent-to-income ratio shows market affordability
+              {(() => {
+                const rir = marketData?.rent_to_income_ratio;
+                if (rir != null) {
+                  return `Rent-to-income ratio of ${fmtPercentFromFraction(rir)} for this market`;
+                }
+                return 'Rent-to-income ratio shows market affordability';
+              })()}
             </div>
           </div>
         </div>
@@ -1474,7 +1533,7 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
           </div>
           <div className="space-y-2">
             <div className="text-sm font-medium text-gray-500">Owner-Occupied Rate</div>
-            <div className="text-3xl font-bold text-gray-900">{fmtPercent(county_data.owner_occupied_rate || 0)}</div>
+            <div className="text-3xl font-bold text-gray-900">{county_data.owner_occupied_rate != null ? fmtPercent(county_data.owner_occupied_rate) : 'N/A'}</div>
           </div>
           <div className="space-y-2">
             <div className="text-sm font-medium text-gray-500">FMR (2BR)</div>
@@ -1593,8 +1652,8 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
             </div>
             <div className="space-y-2">
               <div className="text-sm font-medium text-gray-500">Businesses</div>
-              <div className="text-3xl font-bold text-gray-900">{fmt(aggregations?.businesses ?? 0)}</div>
-              <div className="text-xs text-gray-500">Walk Score: {aggregations?.walk_score ?? 'N/A'}</div>
+              <div className="text-3xl font-bold text-gray-900">{aggregations?.businesses ? fmt(aggregations.businesses) : 'N/A'}</div>
+              <div className="text-xs text-gray-500">Walk Score: {aggregations?.walk_score != null ? aggregations.walk_score : 'N/A'}</div>
             </div>
           </div>
         </div>

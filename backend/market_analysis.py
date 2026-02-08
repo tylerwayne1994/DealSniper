@@ -652,7 +652,7 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
             absorption_units = min(households_from_mig, ytd5) if ytd5 else 0.0
             absorption_rate = (absorption_units / ytd5) if ytd5 > 0 else None
             response = {
-                'property_location': {'lng': lng, 'lat': lat},
+                'property_location': {'lng': lng, 'lat': lat, 'address': address, 'city': city, 'state': state, 'zip': zip_code},
                 'isochrone': {
                     'type': 'FeatureCollection',
                     'features': [{
@@ -678,18 +678,36 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
                     'name': llm_data.get('county_name', f'{city} County'),
                     'population': llm_data.get('population', 100000),
                     'median_income': llm_data.get('median_income', 60000),
-                    'unemployment_rate': llm_data.get('unemployment_rate', 5.0)
+                    'median_rent': llm_data.get('median_rent', 1100),
+                    'median_home_value': llm_data.get('median_home_value'),
+                    'owner_occupied_rate': llm_data.get('owner_occupied_rate'),
+                    'unemployment_rate': llm_data.get('unemployment_rate', 5.0),
+                    'rent_to_income_ratio': round(llm_rir, 2)
                 },
-                'zip_data': {'net_migration': llm_data.get('net_migration', 0.5)},
+                'zip_data': {
+                    'net_migration': llm_data.get('net_migration', 0.5),
+                    'net_migration_per_capita': float(llm_data.get('net_migration', 0.5) or 0) / max(float(llm_data.get('population', 100000) or 100000), 1),
+                    'in_migration': llm_data.get('in_migration'),
+                    'out_migration': llm_data.get('out_migration')
+                },
                 'msa_data': {'ytd_5plus_units': llm_data.get('housing_starts', 300)},
-                'city': {'name': city, 'state': state},
+                'city': {'name': city, 'state': state, 'lat': lat, 'lng': lng},
                 'county': {
                     'name': llm_data.get('county_name', f'{city} County'),
+                    'fips': None,
                     'population': llm_data.get('population', 100000),
                     'median_income': llm_data.get('median_income', 60000),
-                    'unemployment_rate': llm_data.get('unemployment_rate', 5.0)
+                    'median_rent': llm_data.get('median_rent', 1100),
+                    'median_home_value': llm_data.get('median_home_value'),
+                    'owner_occupied_rate': llm_data.get('owner_occupied_rate'),
+                    'unemployment_rate': llm_data.get('unemployment_rate', 5.0),
+                    'rent_to_income_ratio': round(llm_rir, 2)
                 },
-                'state': {'name': state},
+                'state': {
+                    'name': state,
+                    'median_income': llm_data.get('comparisons', {}).get('income_state'),
+                    'rent_to_income_ratio': None
+                },
                 'rent_to_income_ratio': round(llm_rir, 2),
                 'area_classification': llm_area_classification,
                 'zip_rir_points': llm_zip_rir_points,
@@ -757,26 +775,41 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
             'market_cap_rate': {'value_percent': cap_rate, 'source': cap_source},
             'msa_units': {**(msa_data or {}), 'absorption_units': absorption_units, 'absorption_rate': absorption_rate},
             'aggregations': {
-                'local': {
-                    'description': '15-minute drive time',
-                    'population': census_data.get('population', 0),
-                    'median_income': median_income,
-                    'median_rent': median_rent,
-                    'affordability': 'Good' if rent_to_income_ratio < 30 else 'Fair' if rent_to_income_ratio < 40 else 'Poor'
-                },
-                'city': {
-                    'name': city,
-                    'state': state
-                },
-                'county': {
-                    'name': county_name,
-                    'population': census_data.get('population', 0),
-                    'median_income': median_income,
-                    'unemployment_rate': census_data.get('unemployment_rate', 0)
-                },
-                'state': {
-                    'name': state
+                'population': census_data.get('population', 0),
+                'median_income': median_income,
+                'median_rent': median_rent,
+                'affordability': 'Good' if rent_to_income_ratio < 0.30 else 'Fair' if rent_to_income_ratio < 0.40 else 'Poor',
+                'businesses': census_data.get('businesses') or census_data.get('total_businesses'),
+                'walk_score': census_data.get('walk_score'),
+                'comparisons': {
+                    'income_city': census_data.get('city_median_income'),
+                    'income_state': census_data.get('state_median_income'),
+                    'income_usa': census_data.get('us_median_income', 75149),
+                    'pop_growth_city': census_data.get('city_pop_growth'),
+                    'pop_growth_state': census_data.get('state_pop_growth'),
+                    'pop_growth_usa': census_data.get('us_pop_growth', 0.5)
                 }
+            },
+            'city': {
+                'name': city,
+                'lat': lat,
+                'lng': lng
+            },
+            'county': {
+                'name': county_name,
+                'fips': county_fips,
+                'population': census_data.get('population', 0),
+                'median_income': median_income,
+                'median_rent': median_rent,
+                'median_home_value': census_data.get('median_home_value'),
+                'owner_occupied_rate': census_data.get('owner_occupied_rate'),
+                'unemployment_rate': census_data.get('unemployment_rate', 0),
+                'rent_to_income_ratio': round(rent_to_income_ratio, 2)
+            },
+            'state': {
+                'name': state,
+                'median_income': census_data.get('state_median_income'),
+                'rent_to_income_ratio': census_data.get('state_rir')
             }
         }
         
