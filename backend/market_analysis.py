@@ -625,21 +625,24 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
         
         # Step 2: Generate drive-time isochrone with configurable minutes
         isochrone_geojson = generate_isochrone(lng, lat, minutes=drive_time_minutes)
-        use_llm_fallback = False
         
         if not isochrone_geojson:
-            logger.warning("[MARKET ANALYSIS] Isochrone generation failed, using LLM fallback")
-            use_llm_fallback = True
+            logger.warning("[MARKET ANALYSIS] Isochrone generation failed, will use fallback isochrone")
         
         # Step 3: Try to get census/migration data from CSVs
         county_fips = get_county_fips_from_zip(zip_code)
+        logger.info(f"[MARKET ANALYSIS] County FIPS for ZIP {zip_code}: {county_fips}")
         migration_data = load_migration_data_by_zip(zip_code) if county_fips else {}
         census_data = load_census_data_by_county_fips(county_fips) if county_fips else {}
+        logger.info(f"[MARKET ANALYSIS] Census data: {census_data}")
+        logger.info(f"[MARKET ANALYSIS] Migration data keys: {list(migration_data.keys()) if migration_data else 'EMPTY'}")
         
-        # If CSV data is missing, use LLM fallback
-        if not census_data:
+        # Decide whether to use LLM fallback — only if census data is missing
+        use_llm_fallback = not census_data
+        if use_llm_fallback:
             logger.warning("[MARKET ANALYSIS] Census data missing, using LLM fallback")
-            use_llm_fallback = True
+        else:
+            logger.info(f"[MARKET ANALYSIS] Using REAL census data: pop={census_data.get('population')}, income={census_data.get('median_household_income')}")
         
         if use_llm_fallback:
             llm_data = generate_market_data_with_llm(address, city, state, zip_code, lng, lat)
@@ -774,7 +777,17 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
                 'state': state,
                 'zip': zip_code
             },
-            'isochrone': isochrone_geojson,
+            'isochrone': isochrone_geojson or {
+                'type': 'FeatureCollection',
+                'features': [{
+                    'type': 'Feature',
+                    'geometry': {
+                        'type': 'Polygon',
+                        'coordinates': [[[lng-0.1, lat-0.1], [lng+0.1, lat-0.1], [lng+0.1, lat+0.1], [lng-0.1, lat+0.1], [lng-0.1, lat-0.1]]]
+                    },
+                    'properties': {'contour': drive_time_minutes}
+                }]
+            },
             'drive_time_minutes': drive_time_minutes,
             'county_data': {
                 **census_data,
