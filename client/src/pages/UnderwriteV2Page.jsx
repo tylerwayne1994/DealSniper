@@ -363,18 +363,20 @@ function UnderwriteV2Page() {
     console.log('[PDF Viewer] Opening for field:', field.label, confidence);
     setSelectedField(field);
     
-    // Extract page number from source string (e.g., "Page 3" -> 3)
-    let pageNum = 1;
-    if (confidence.source) {
+    // Extract page number from explicit metadata or source string (e.g., "Page 3")
+    let pageNum = confidence?.page && Number.isFinite(confidence.page)
+      ? Number(confidence.page)
+      : 1;
+    if ((!pageNum || Number.isNaN(pageNum)) && confidence?.source) {
       const match = confidence.source.match(/[Pp]age\s+(\d+)/);
       if (match) pageNum = parseInt(match[1], 10);
     }
     
     setHighlightInfo({
-      page: pageNum,
-      source: confidence.source,
-      note: confidence.note,
-      searchTerm: field.value?.toString()
+      page: pageNum || 1,
+      source: confidence?.source,
+      note: confidence?.note,
+      searchTerm: field.value?.toString() || confidence?.text || confidence?.raw_value || ''
     });
     
     setPdfUrl(uploadedFileUrl);
