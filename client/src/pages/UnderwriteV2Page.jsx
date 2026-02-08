@@ -430,6 +430,18 @@ function UnderwriteV2Page() {
     });
   };
 
+  // Handle expense line item updates
+  const handleUpdateExpenses = (key, value) => {
+    setVerifiedData(prev => {
+      const updated = { ...prev };
+      updated.expenses = { ...(updated.expenses || {}), [key]: value };
+      // Recalculate total
+      const items = ['taxes', 'insurance', 'utilities', 'repairs_maintenance', 'management', 'payroll', 'admin', 'marketing', 'other'];
+      updated.expenses.total = items.reduce((sum, k) => sum + (Number(updated.expenses[k]) || 0), 0);
+      return updated;
+    });
+  };
+
   // Validate required fields
   const fieldLabels = {
     'property.address': 'Property Address',
@@ -841,6 +853,7 @@ function UnderwriteV2Page() {
               onViewSource={handleViewSource}
               onSelectValue={handleSelectValue}
               onEditValue={handleEditValue}
+              onUpdateExpenses={handleUpdateExpenses}
             />
           )}
 

@@ -55,19 +55,26 @@ export default function PDFViewerModal({
           cleanedSearch.includes(normalizedItem)
         ) {
           try {
-            const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
-            const x = tx[4];
-            const yFromBottom = tx[5];
-            const width = (item.width || 0) * viewport.scale;
-            const height = (item.height || 0) * viewport.scale;
-            const yTop = viewport.height - yFromBottom;
+            // item.transform = [scaleX, shearX, shearY, scaleY, originX, originY]
+            // originX, originY are in PDF user-space (origin = bottom-left)
+            const t = item.transform;
+            const pdfX = t[4];
+            const pdfY = t[5];
+            const fontSize = Math.sqrt(t[2] * t[2] + t[3] * t[3]);
+            // item.width is in unscaled text-space units
+            const pdfWidth = item.width || (raw.length * fontSize * 0.6);
+            const pdfHeight = fontSize;
 
-            rects.push({
-              leftPct: (x / viewport.width) * 100,
-              topPct: (yTop / viewport.height) * 100,
-              widthPct: (width / viewport.width) * 100,
-              heightPct: (height / viewport.height) * 100
-            });
+            // Convert PDF coordinates (bottom-left origin) to viewport pixels (top-left origin)
+            const [vx1, vy1] = viewport.convertToViewportPoint(pdfX, pdfY);
+            const [vx2, vy2] = viewport.convertToViewportPoint(pdfX + pdfWidth, pdfY + pdfHeight);
+
+            const left = Math.min(vx1, vx2);
+            const top = Math.min(vy1, vy2);
+            const width = Math.abs(vx2 - vx1);
+            const height = Math.abs(vy2 - vy1);
+
+            rects.push({ left, top, width, height });
           } catch (err) {
             // Ignore transform failures for individual text runs
           }
@@ -384,31 +391,33 @@ export default function PDFViewerModal({
                     boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                   }}
                 />
-                <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  pointerEvents: 'none'
-                }}>
+                {/* Highlight overlay - uses SVG to perfectly match canvas coordinate space */}
+                <svg
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    pointerEvents: 'none'
+                  }}
+                  viewBox={canvasRef.current ? `0 0 ${canvasRef.current.width} ${canvasRef.current.height}` : '0 0 1 1'}
+                  preserveAspectRatio="none"
+                >
                   {highlightRects.map((rect, idx) => (
-                    <div
+                    <rect
                       key={idx}
-                      style={{
-                        position: 'absolute',
-                        left: `${rect.leftPct}%`,
-                        top: `${rect.topPct}%`,
-                        width: `${rect.widthPct}%`,
-                        height: `${rect.heightPct}%`,
-                        background: 'rgba(251, 191, 36, 0.35)',
-                        border: '1px solid rgba(217, 119, 6, 0.6)',
-                        borderRadius: 4,
-                        boxShadow: '0 0 12px rgba(251, 191, 36, 0.45)'
-                      }}
+                      x={rect.left - 2}
+                      y={rect.top - 2}
+                      width={rect.width + 4}
+                      height={rect.height + 4}
+                      rx={3}
+                      fill="rgba(251, 191, 36, 0.35)"
+                      stroke="rgba(217, 119, 6, 0.7)"
+                      strokeWidth={1.5}
                     />
                   ))}
-                </div>
+                </svg>
                 {isLoading && (
                   <div style={{
                     position: 'absolute',

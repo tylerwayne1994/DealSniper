@@ -1,8 +1,8 @@
-// NEW Cactus-style wizard tab for financial data
-// Shows extracted financial fields with confidence scores
+// Financial Data wizard tab 
+// Shows extracted income summary, full expense breakdown, and NOI/cap rate metrics
 
-import React, { useMemo } from 'react';
-import { DollarSign } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { DollarSign, ChevronDown, ChevronUp, Pencil, Check, X } from 'lucide-react';
 import ExtractedFieldsTable from '../ExtractedFieldsTable';
 
 export default function FinancialDataWizardTab({
@@ -10,39 +10,64 @@ export default function FinancialDataWizardTab({
   confidence = {},
   onViewSource,
   onSelectValue,
-  onEditValue
+  onEditValue,
+  onUpdateExpenses
 }) {
+  const [editingExpense, setEditingExpense] = useState(null);
+  const [editExpenseValue, setEditExpenseValue] = useState('');
+  const [showExpenseBreakdown, setShowExpenseBreakdown] = useState(true);
   
   const formatCurrency = (val) => {
-    if (!val) return '$0';
-    return `$${val.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    if (!val && val !== 0) return '$0';
+    return `$${Number(val).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
   };
   
   const formatPercent = (val) => {
     if (val === null || val === undefined) return '0%';
-    // Values from API are already in percentage form (e.g. 7.16 means 7.16%)
-    // If value > 1, it's already a percentage. If <= 1, it's a decimal.
     const pct = val > 1 ? val : val * 100;
     return `${pct.toFixed(2)}%`;
   };
 
-  // Define financial fields
-  const financialFields = useMemo(() => [
-    {
-      key: 'pricing_financing.price',
-      path: 'pricing_financing.price',
-      label: 'Purchase Price',
-      value: verifiedData?.pricing_financing?.price,
-      required: true,
-      formatter: formatCurrency
-    },
-    {
-      key: 'pricing_financing.price_per_unit',
-      path: 'pricing_financing.price_per_unit',
-      label: 'Price Per Unit',
-      value: verifiedData?.pricing_financing?.price_per_unit,
-      formatter: formatCurrency
-    },
+  const totalUnits = verifiedData?.property?.units || 1;
+  const expenses = verifiedData?.expenses || {};
+
+  // Expense line items from the OM
+  const expenseLineItems = [
+    { key: 'taxes', label: 'Real Estate Taxes', icon: '🏛️' },
+    { key: 'insurance', label: 'Insurance', icon: '🛡️' },
+    { key: 'management', label: 'Property Management', icon: '👔' },
+    { key: 'utilities', label: 'Utilities (Electric, Water, Sewer, Trash)', icon: '💡' },
+    { key: 'repairs_maintenance', label: 'Repairs & Maintenance', icon: '🔧' },
+    { key: 'payroll', label: 'Payroll / Contract Services', icon: '👷' },
+    { key: 'admin', label: 'General & Administrative', icon: '📋' },
+    { key: 'marketing', label: 'Marketing / Advertising', icon: '📢' },
+    { key: 'other', label: 'Other / Miscellaneous', icon: '📦' }
+  ];
+
+  const expenseTotal = expenseLineItems.reduce((sum, item) => sum + (Number(expenses[item.key]) || 0), 0);
+  const hasExpenseBreakdown = expenseLineItems.some(item => expenses[item.key] > 0);
+
+  const startEditExpense = (key, val) => {
+    setEditingExpense(key);
+    setEditExpenseValue(val !== null && val !== undefined ? String(val) : '0');
+  };
+
+  const confirmEditExpense = (key) => {
+    if (onUpdateExpenses) {
+      const numVal = parseFloat(editExpenseValue) || 0;
+      onUpdateExpenses(key, numVal);
+    }
+    setEditingExpense(null);
+    setEditExpenseValue('');
+  };
+
+  const cancelEditExpense = () => {
+    setEditingExpense(null);
+    setEditExpenseValue('');
+  };
+
+  // Income summary fields
+  const incomeFields = useMemo(() => [
     {
       key: 'pnl.gross_potential_rent',
       path: 'pnl.gross_potential_rent',
@@ -71,11 +96,30 @@ export default function FinancialDataWizardTab({
       label: 'Effective Gross Income',
       value: verifiedData?.pnl?.effective_gross_income,
       formatter: formatCurrency
+    }
+  ], [verifiedData]);
+
+  // Pricing & metrics fields
+  const metricsFields = useMemo(() => [
+    {
+      key: 'pricing_financing.price',
+      path: 'pricing_financing.price',
+      label: 'Purchase Price',
+      value: verifiedData?.pricing_financing?.price,
+      required: true,
+      formatter: formatCurrency
+    },
+    {
+      key: 'pricing_financing.price_per_unit',
+      path: 'pricing_financing.price_per_unit',
+      label: 'Price Per Unit',
+      value: verifiedData?.pricing_financing?.price_per_unit,
+      formatter: formatCurrency
     },
     {
       key: 'pnl.operating_expenses_t12',
       path: 'pnl.operating_expenses_t12',
-      label: 'Operating Expenses (T12)',
+      label: 'Total Operating Expenses (T12)',
       value: verifiedData?.pnl?.operating_expenses_t12,
       required: true,
       formatter: formatCurrency
@@ -118,6 +162,23 @@ export default function FinancialDataWizardTab({
     }
   ], [verifiedData]);
 
+  const sectionHeaderStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 32,
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottom: '2px solid #e5e7eb'
+  };
+
+  const sectionTitleStyle = {
+    fontSize: 16,
+    fontWeight: 800,
+    color: '#111827',
+    margin: 0
+  };
+
   return (
     <div style={{
       background: '#fff',
@@ -125,6 +186,7 @@ export default function FinancialDataWizardTab({
       borderRadius: 16,
       padding: 32
     }}>
+      {/* Header */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -147,13 +209,221 @@ export default function FinancialDataWizardTab({
             Financial Data
           </h2>
           <p style={{ fontSize: 14, color: '#6b7280', margin: '4px 0 0 0' }}>
-            Review extracted financial metrics and income/expense data
+            Review extracted income, expenses, and operating metrics from the OM
           </p>
         </div>
       </div>
 
+      {/* ===== INCOME SUMMARY ===== */}
+      <div style={sectionHeaderStyle}>
+        <span style={{ fontSize: 20 }}>💰</span>
+        <h3 style={sectionTitleStyle}>Income Summary</h3>
+      </div>
       <ExtractedFieldsTable
-        fields={financialFields}
+        fields={incomeFields}
+        confidence={confidence}
+        onViewSource={onViewSource}
+        onSelectValue={onSelectValue}
+        onEditValue={onEditValue}
+      />
+
+      {/* ===== OPERATING EXPENSE BREAKDOWN ===== */}
+      <div style={{ ...sectionHeaderStyle, cursor: 'pointer' }} onClick={() => setShowExpenseBreakdown(prev => !prev)}>
+        <span style={{ fontSize: 20 }}>📊</span>
+        <h3 style={{ ...sectionTitleStyle, flex: 1 }}>
+          Operating Expense Breakdown
+          {hasExpenseBreakdown && (
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#6b7280', marginLeft: 12 }}>
+              Total: {formatCurrency(expenseTotal)}
+            </span>
+          )}
+        </h3>
+        {showExpenseBreakdown ? <ChevronUp size={20} color="#6b7280" /> : <ChevronDown size={20} color="#6b7280" />}
+      </div>
+
+      {showExpenseBreakdown && (
+        <div style={{ border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' }}>
+          {/* Expense table header */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '2fr 1fr 1fr 80px',
+            padding: '12px 16px',
+            background: '#f9fafb',
+            borderBottom: '2px solid #e5e7eb',
+            fontSize: 11,
+            fontWeight: 700,
+            color: '#9ca3af',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
+          }}>
+            <div>Expense Category</div>
+            <div style={{ textAlign: 'right' }}>Annual Amount</div>
+            <div style={{ textAlign: 'right' }}>Per Unit</div>
+            <div style={{ textAlign: 'center' }}>Edit</div>
+          </div>
+
+          {/* Expense line items */}
+          {expenseLineItems.map((item, idx) => {
+            const val = Number(expenses[item.key]) || 0;
+            const isEditing = editingExpense === item.key;
+            const perUnit = totalUnits > 0 ? Math.round(val / totalUnits) : 0;
+            const pctOfTotal = expenseTotal > 0 ? ((val / expenseTotal) * 100).toFixed(1) : '0.0';
+
+            return (
+              <div
+                key={item.key}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '2fr 1fr 1fr 80px',
+                  padding: '12px 16px',
+                  borderBottom: idx < expenseLineItems.length - 1 ? '1px solid #f3f4f6' : 'none',
+                  alignItems: 'center',
+                  background: val > 0 ? '#fff' : '#fafafa',
+                  transition: 'background 0.15s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#f0fdf4'}
+                onMouseLeave={(e) => e.currentTarget.style.background = val > 0 ? '#fff' : '#fafafa'}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 16 }}>{item.icon}</span>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>
+                      {item.label}
+                    </div>
+                    {val > 0 && (
+                      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
+                        {pctOfTotal}% of total
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'right' }}>
+                  {isEditing ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+                      <span style={{ color: '#6b7280', fontSize: 14 }}>$</span>
+                      <input
+                        type="number"
+                        value={editExpenseValue}
+                        onChange={(e) => setEditExpenseValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') confirmEditExpense(item.key);
+                          if (e.key === 'Escape') cancelEditExpense();
+                        }}
+                        autoFocus
+                        style={{
+                          padding: '4px 8px',
+                          border: '2px solid #3b82f6',
+                          borderRadius: 6,
+                          fontSize: 14,
+                          fontWeight: 600,
+                          outline: 'none',
+                          width: 100,
+                          textAlign: 'right',
+                          background: '#eff6ff'
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <span style={{
+                      fontSize: 15,
+                      fontWeight: 600,
+                      color: val > 0 ? '#111827' : '#d1d5db'
+                    }}>
+                      {formatCurrency(val)}
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ textAlign: 'right', fontSize: 13, color: '#6b7280' }}>
+                  {val > 0 ? `$${perUnit.toLocaleString()}/unit` : '—'}
+                </div>
+
+                <div style={{ textAlign: 'center' }}>
+                  {isEditing ? (
+                    <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                      <button
+                        onClick={() => confirmEditExpense(item.key)}
+                        style={{ padding: 4, background: '#dcfce7', border: '1px solid #86efac', borderRadius: 4, cursor: 'pointer', display: 'flex' }}
+                      >
+                        <Check size={14} color="#16a34a" />
+                      </button>
+                      <button
+                        onClick={cancelEditExpense}
+                        style={{ padding: 4, background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 4, cursor: 'pointer', display: 'flex' }}
+                      >
+                        <X size={14} color="#dc2626" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => startEditExpense(item.key, val)}
+                      style={{
+                        padding: 4,
+                        background: '#f3f4f6',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: 4,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        opacity: 0.6,
+                        transition: 'opacity 0.15s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                      onMouseLeave={(e) => e.currentTarget.style.opacity = '0.6'}
+                    >
+                      <Pencil size={12} color="#6b7280" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Total row */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '2fr 1fr 1fr 80px',
+            padding: '14px 16px',
+            borderTop: '2px solid #111827',
+            background: '#f9fafb',
+            alignItems: 'center'
+          }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#111827' }}>
+              Total Operating Expenses
+            </div>
+            <div style={{ textAlign: 'right', fontSize: 16, fontWeight: 800, color: '#111827' }}>
+              {formatCurrency(expenseTotal)}
+            </div>
+            <div style={{ textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#374151' }}>
+              {totalUnits > 0 ? `$${Math.round(expenseTotal / totalUnits).toLocaleString()}/unit` : '—'}
+            </div>
+            <div />
+          </div>
+        </div>
+      )}
+
+      {!hasExpenseBreakdown && showExpenseBreakdown && (
+        <div style={{
+          padding: 20,
+          textAlign: 'center',
+          color: '#9ca3af',
+          fontSize: 14,
+          background: '#f9fafb',
+          borderRadius: 8,
+          border: '1px dashed #d1d5db',
+          marginTop: 8
+        }}>
+          No expense breakdown was extracted. Click the pencil icon to enter values manually.
+        </div>
+      )}
+
+      {/* ===== NOI & KEY METRICS ===== */}
+      <div style={sectionHeaderStyle}>
+        <span style={{ fontSize: 20 }}>📈</span>
+        <h3 style={sectionTitleStyle}>NOI & Key Metrics</h3>
+      </div>
+      <ExtractedFieldsTable
+        fields={metricsFields}
         confidence={confidence}
         onViewSource={onViewSource}
         onSelectValue={onSelectValue}
@@ -171,6 +441,14 @@ export default function FinancialDataWizardTab({
       }}>
         <strong>Note:</strong> T12 metrics represent actual trailing 12-month performance. 
         Pro Forma metrics are broker projections and should be verified carefully.
+        {hasExpenseBreakdown && expenseTotal > 0 && verifiedData?.pnl?.operating_expenses_t12 && 
+          Math.abs(expenseTotal - verifiedData.pnl.operating_expenses_t12) > 100 && (
+          <div style={{ marginTop: 8 }}>
+            <strong>⚠️ Discrepancy:</strong> Expense breakdown total ({formatCurrency(expenseTotal)}) differs from 
+            T12 Operating Expenses ({formatCurrency(verifiedData.pnl.operating_expenses_t12)}). 
+            Please verify the line items.
+          </div>
+        )}
       </div>
     </div>
   );
