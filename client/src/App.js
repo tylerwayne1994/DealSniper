@@ -7,7 +7,7 @@ import LOIPage from './pages/LOIPage';
 import DealDetailPage from './pages/DealDetailPage';
 import DashboardPage from './pages/DashboardPage';
 import PaymentSuccessRedirect from './pages/PaymentSuccessRedirect';
-import UnderwriteV2Page from './pages/UnderwriteV2Page'; // V2 Underwriter
+import UnderwriteV2Page from './pages/UnderwriteV2Page.jsx'; // V2 Underwriter (explicit .jsx to avoid legacy .js)
 import UnderwriteAnalysisPage from './pages/UnderwriteAnalysisPage'; // AI Analysis Page
 import MaxAIUnderwritePage from './pages/MaxAIUnderwritePage'; // MAX AI Underwriting
 import MarketResearchPage from './pages/MarketResearchPage'; // Market Discovery AI
