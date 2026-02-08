@@ -41,7 +41,8 @@ except ImportError:
 load_dotenv(override=True)
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-anthropic_client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+# Don't initialize Anthropic client here - do it lazily when needed
+# anthropic_client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 log = logging.getLogger("v2_underwriter")
 router = APIRouter(prefix="/v2", tags=["UnderwriterV2"])
@@ -1069,8 +1070,9 @@ async def parse_deal_v2(file: UploadFile = File(...)):
     if not data:
         raise HTTPException(status_code=400, detail="Empty file")
     
-    if not ANTHROPIC_API_KEY:
-        raise HTTPException(status_code=503, detail="Claude/Anthropic API key not configured")
+    # Skip API key check - will fail at API call if truly missing
+    # if not ANTHROPIC_API_KEY:
+    #     raise HTTPException(status_code=503, detail="Claude/Anthropic API key not configured")
     
     try:
         log.info("[V2] Parsing with Claude vision API...")
