@@ -13,7 +13,7 @@ import PropertyDetailsWizardTab from '../components/wizard/PropertyDetailsWizard
 import FinancialDataWizardTab from '../components/wizard/FinancialDataWizardTab';
 import PDFViewerModal from '../components/PDFViewerModal';
 
-const API_BASE = "http://localhost:8010";
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8010";
 
 // Styles (keeping consistent with V1)
 const styles = {
