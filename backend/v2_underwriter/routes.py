@@ -1070,9 +1070,11 @@ async def parse_deal_v2(file: UploadFile = File(...)):
     if not data:
         raise HTTPException(status_code=400, detail="Empty file")
     
-    # Skip API key check - will fail at API call if truly missing
-    # if not ANTHROPIC_API_KEY:
-    #     raise HTTPException(status_code=503, detail="Claude/Anthropic API key not configured")
+    if not ANTHROPIC_API_KEY:
+        raise HTTPException(
+            status_code=503, 
+            detail="Anthropic API key not configured. Set ANTHROPIC_API_KEY or CLAUDE_API_KEY environment variable."
+        )
     
     try:
         log.info("[V2] Parsing with Claude vision API...")
