@@ -159,6 +159,7 @@ function UnderwriteV2Page() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const [uploadedFileUrl, setUploadedFileUrl] = useState(null);
+  const [uploadedFileData, setUploadedFileData] = useState(null);
   
   // Parse result
   const [dealId, setDealId] = useState(null);
@@ -279,9 +280,14 @@ function UnderwriteV2Page() {
     if (selectedFile) {
       setFile(selectedFile);
       setUploadError(null);
-      // Create URL for PDF viewing
-      const fileUrl = URL.createObjectURL(selectedFile);
-      setUploadedFileUrl(fileUrl);
+      // Read file data for reliable PDF viewing
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setUploadedFileData(ev.target.result);
+        const blob = new Blob([ev.target.result], { type: selectedFile.type });
+        setUploadedFileUrl(URL.createObjectURL(blob));
+      };
+      reader.readAsArrayBuffer(selectedFile);
     }
   };
 
@@ -379,7 +385,13 @@ function UnderwriteV2Page() {
       searchTerm: field.value?.toString() || confidence?.text || confidence?.raw_value || ''
     });
     
-    setPdfUrl(uploadedFileUrl);
+    // Create fresh blob URL from stored file data
+    if (uploadedFileData) {
+      const blob = new Blob([uploadedFileData], { type: 'application/pdf' });
+      setPdfUrl(URL.createObjectURL(blob));
+    } else {
+      setPdfUrl(uploadedFileUrl);
+    }
     setPdfViewerOpen(true);
   };
   

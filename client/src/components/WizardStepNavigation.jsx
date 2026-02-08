@@ -27,7 +27,7 @@ export default function WizardStepNavigation({
       {steps.map((step, idx) => {
         const isActive = activeStep === step.id;
         const isCompleted = completedSteps.includes(step.id);
-        const isClickable = onStepClick && (isCompleted || isActive);
+        const isClickable = !!onStepClick;
         const Icon = step.icon;
         
         return (
