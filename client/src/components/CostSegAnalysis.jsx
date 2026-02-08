@@ -210,6 +210,10 @@ export const CostSegAnalysisView = ({ dealId, scenarioData, fullCalcs }) => {
     }
   }, [scenarioData]);
   
+  // Keep a ref to current inputs so the fetch callback doesn't depend on inputs state
+  const inputsRef = React.useRef(inputs);
+  inputsRef.current = inputs;
+
   // Fetch cost seg analysis
   const fetchCostSegAnalysis = useCallback(async (overrideInputs) => {
     if (!dealId) {
@@ -217,7 +221,7 @@ export const CostSegAnalysisView = ({ dealId, scenarioData, fullCalcs }) => {
       return;
     }
 
-    const payload = overrideInputs || inputs;
+    const payload = overrideInputs || inputsRef.current;
     
     setLoading(true);
     setError(null);
@@ -234,10 +238,7 @@ export const CostSegAnalysisView = ({ dealId, scenarioData, fullCalcs }) => {
       
       if (data.success) {
         setCostSegData(data);
-        // Update inputs with values used in calculation
-        if (data.inputs) {
-          setInputs(prev => ({ ...prev, ...data.inputs }));
-        }
+        // NOTE: Do NOT update inputs from API response — that causes infinite re-render loop
       } else {
         setError(data.error || 'Failed to calculate cost segregation');
       }
@@ -247,18 +248,17 @@ export const CostSegAnalysisView = ({ dealId, scenarioData, fullCalcs }) => {
     } finally {
       setLoading(false);
     }
-  }, [dealId, inputs]);
+  }, [dealId]);
   
-  // Auto-calculate whenever inputs are ready / change (debounced)
+  // Auto-calculate ONCE when inputs are first ready (initial load only)
+  const hasCalculatedRef = React.useRef(false);
   useEffect(() => {
+    if (hasCalculatedRef.current) return; // Only run once
     if (!dealId || !inputs.purchase_price || inputs.purchase_price <= 0) return;
 
-    const timeoutId = setTimeout(() => {
-      fetchCostSegAnalysis();
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [dealId, inputs, fetchCostSegAnalysis]);
+    hasCalculatedRef.current = true;
+    fetchCostSegAnalysis();
+  }, [dealId, inputs.purchase_price, fetchCostSegAnalysis]);
   
   // Handle input change
   const handleInputChange = (field, value) => {
