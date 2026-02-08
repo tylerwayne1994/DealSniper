@@ -419,7 +419,7 @@ function UnderwriteV2Page() {
       const updated = { ...prev };
       const mix = [...(updated.unit_mix || [])];
       if (fieldOrAction === '_add') {
-        mix.push({ type: '', units: 0, unit_sf: 0, rent_current: 0, rent_market: 0 });
+        mix.push({ type: '', units: 0, mix_pct: 0, unit_sf: 0, rent_current: 0, rent_psf: 0, rent_market: 0, rent_market_psf: 0, rent_max: 0, total_current_monthly: 0, total_market_monthly: 0 });
       } else if (fieldOrAction === '_delete') {
         mix.splice(idx, 1);
       } else {

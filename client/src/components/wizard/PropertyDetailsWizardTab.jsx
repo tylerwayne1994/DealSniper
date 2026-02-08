@@ -132,112 +132,178 @@ export default function PropertyDetailsWizardTab({
         onEditValue={onEditValue}
       />
 
-      {/* Unit Mix Breakdown */}
-      {verifiedData?.unit_mix && verifiedData.unit_mix.length > 0 && (
-        <div style={{ marginTop: 32 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Building size={18} /> Unit Mix Breakdown
-          </h3>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-              <thead>
-                <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
-                  <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 700, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Type</th>
-                  <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Units</th>
-                  <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Sq Ft</th>
-                  <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Current Rent</th>
-                  <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Market Rent</th>
-                  {onUpdateUnitMix && (
-                    <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700, color: '#6b7280', fontSize: 12, textTransform: 'uppercase', width: 50 }}></th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {verifiedData.unit_mix.map((unit, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <td style={{ padding: '10px 14px', fontWeight: 600, color: '#111827' }}>
-                      {onUpdateUnitMix ? (
-                        <input type="text" value={unit.type || ''} onChange={(e) => onUpdateUnitMix(idx, 'type', e.target.value)}
-                          style={{ padding: '4px 8px', border: '1px solid #e5e7eb', borderRadius: 4, fontSize: 14, width: 120 }} />
-                      ) : (unit.type || '—')}
-                    </td>
-                    <td style={{ padding: '10px 14px', textAlign: 'center', color: '#374151' }}>
-                      {onUpdateUnitMix ? (
-                        <input type="number" value={unit.units || ''} onChange={(e) => onUpdateUnitMix(idx, 'units', parseInt(e.target.value) || 0)}
-                          style={{ padding: '4px 8px', border: '1px solid #e5e7eb', borderRadius: 4, fontSize: 14, width: 70, textAlign: 'center' }} />
-                      ) : (unit.units || 0)}
-                    </td>
-                    <td style={{ padding: '10px 14px', textAlign: 'center', color: '#374151' }}>
-                      {onUpdateUnitMix ? (
-                        <input type="number" value={unit.unit_sf || ''} onChange={(e) => onUpdateUnitMix(idx, 'unit_sf', parseInt(e.target.value) || 0)}
-                          style={{ padding: '4px 8px', border: '1px solid #e5e7eb', borderRadius: 4, fontSize: 14, width: 80, textAlign: 'center' }} />
-                      ) : (unit.unit_sf ? unit.unit_sf.toLocaleString() : '—')}
-                    </td>
-                    <td style={{ padding: '10px 14px', textAlign: 'center', color: '#374151' }}>
-                      {onUpdateUnitMix ? (
-                        <input type="number" value={unit.rent_current || ''} onChange={(e) => onUpdateUnitMix(idx, 'rent_current', parseFloat(e.target.value) || 0)}
-                          style={{ padding: '4px 8px', border: '1px solid #e5e7eb', borderRadius: 4, fontSize: 14, width: 90, textAlign: 'center' }} />
-                      ) : (unit.rent_current ? `$${unit.rent_current.toLocaleString()}` : '—')}
-                    </td>
-                    <td style={{ padding: '10px 14px', textAlign: 'center', color: '#374151' }}>
-                      {onUpdateUnitMix ? (
-                        <input type="number" value={unit.rent_market || ''} onChange={(e) => onUpdateUnitMix(idx, 'rent_market', parseFloat(e.target.value) || 0)}
-                          style={{ padding: '4px 8px', border: '1px solid #e5e7eb', borderRadius: 4, fontSize: 14, width: 90, textAlign: 'center' }} />
-                      ) : (unit.rent_market ? `$${unit.rent_market.toLocaleString()}` : '—')}
-                    </td>
-                    {onUpdateUnitMix && (
-                      <td style={{ padding: '10px 14px', textAlign: 'center' }}>
-                        <button onClick={() => onUpdateUnitMix(idx, '_delete')}
-                          style={{ padding: 4, background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 4, cursor: 'pointer', display: 'flex' }}>
-                          <Trash2 size={14} color="#dc2626" />
-                        </button>
-                      </td>
-                    )}
+      {/* Unit Mix & Scheduled Income */}
+      {verifiedData?.unit_mix && verifiedData.unit_mix.length > 0 && (() => {
+        const mix = verifiedData.unit_mix;
+        const totalUnits = mix.reduce((s, u) => s + (u.units || 0), 0);
+        const totalSF = mix.reduce((s, u) => s + ((u.unit_sf || 0) * (u.units || 0)), 0);
+        const totalCurrentMonthly = mix.reduce((s, u) => s + (u.total_current_monthly || (u.rent_current || 0) * (u.units || 0)), 0);
+        const totalMarketMonthly = mix.reduce((s, u) => s + (u.total_market_monthly || (u.rent_market || 0) * (u.units || 0)), 0);
+        const avgSF = totalUnits > 0 ? Math.round(totalSF / totalUnits) : 0;
+        const avgCurrentRent = totalUnits > 0 ? Math.round(totalCurrentMonthly / totalUnits) : 0;
+        const avgMarketRent = totalUnits > 0 ? Math.round(totalMarketMonthly / totalUnits) : 0;
+
+        const th = { padding: '8px 10px', textAlign: 'center', fontWeight: 700, color: '#fff', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.03em', whiteSpace: 'nowrap' };
+        const td = { padding: '8px 10px', textAlign: 'center', color: '#374151', fontSize: 13, borderBottom: '1px solid #f3f4f6' };
+        const inputStyle = { padding: '3px 6px', border: '1px solid #e5e7eb', borderRadius: 4, fontSize: 13, textAlign: 'center', background: '#fff' };
+        const canEdit = !!onUpdateUnitMix;
+
+        const renderCell = (unit, idx, field, width, prefix = '', suffix = '') => {
+          const val = unit[field];
+          if (canEdit) {
+            return (
+              <input
+                type={field === 'type' ? 'text' : 'number'}
+                step={field.includes('psf') || field === 'mix_pct' ? '0.01' : '1'}
+                value={val || ''}
+                onChange={(e) => {
+                  const v = field === 'type' ? e.target.value : parseFloat(e.target.value) || 0;
+                  onUpdateUnitMix(idx, field, v);
+                }}
+                style={{ ...inputStyle, width, textAlign: field === 'type' ? 'left' : 'center' }}
+              />
+            );
+          }
+          if (val === null || val === undefined || val === 0 || val === '') return '—';
+          return `${prefix}${typeof val === 'number' ? val.toLocaleString(undefined, { maximumFractionDigits: 2 }) : val}${suffix}`;
+        };
+
+        return (
+          <div style={{ marginTop: 32 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Building size={18} /> Unit Mix & Scheduled Income
+            </h3>
+            <div style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid #e5e7eb' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 900 }}>
+                <thead>
+                  <tr style={{ background: 'linear-gradient(135deg, #1e293b, #334155)' }}>
+                    <th style={{ ...th, textAlign: 'left', minWidth: 100 }}>Type</th>
+                    <th style={{ ...th, minWidth: 55 }}>Units</th>
+                    <th style={{ ...th, minWidth: 55 }}>Mix %</th>
+                    <th style={{ ...th, minWidth: 65 }}>Unit SF</th>
+                    <th style={{ ...th, minWidth: 85 }}>Avg Rent</th>
+                    <th style={{ ...th, minWidth: 70 }}>Rent/SF</th>
+                    <th style={{ ...th, minWidth: 85 }}>Mkt Rent</th>
+                    <th style={{ ...th, minWidth: 70 }}>Mkt/SF</th>
+                    <th style={{ ...th, minWidth: 75 }}>Max Rent</th>
+                    <th style={{ ...th, minWidth: 100 }}>Total Current</th>
+                    <th style={{ ...th, minWidth: 100 }}>Total Market</th>
+                    {canEdit && <th style={{ ...th, width: 40 }}></th>}
                   </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr style={{ borderTop: '2px solid #e5e7eb', background: '#f9fafb' }}>
-                  <td style={{ padding: '10px 14px', fontWeight: 700, color: '#111827' }}>Total</td>
-                  <td style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700, color: '#111827' }}>
-                    {verifiedData.unit_mix.reduce((s, u) => s + (u.units || 0), 0)}
-                  </td>
-                  <td style={{ padding: '10px 14px', textAlign: 'center', color: '#6b7280' }}>—</td>
-                  <td style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#111827' }}>
-                    ${(() => {
-                      const totalUnits = verifiedData.unit_mix.reduce((s, u) => s + (u.units || 0), 0);
-                      const weightedRent = verifiedData.unit_mix.reduce((s, u) => s + ((u.rent_current || 0) * (u.units || 0)), 0);
-                      return totalUnits > 0 ? Math.round(weightedRent / totalUnits).toLocaleString() : '0';
-                    })()}
-                    <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 4 }}>avg</span>
-                  </td>
-                  <td style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#111827' }}>
-                    ${(() => {
-                      const totalUnits = verifiedData.unit_mix.reduce((s, u) => s + (u.units || 0), 0);
-                      const weightedRent = verifiedData.unit_mix.reduce((s, u) => s + ((u.rent_market || 0) * (u.units || 0)), 0);
-                      return totalUnits > 0 ? Math.round(weightedRent / totalUnits).toLocaleString() : '0';
-                    })()}
-                    <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 4 }}>avg</span>
-                  </td>
-                  {onUpdateUnitMix && <td />}
-                </tr>
-              </tfoot>
-            </table>
+                </thead>
+                <tbody>
+                  {mix.map((unit, idx) => {
+                    const computedCurrentTotal = (unit.rent_current || 0) * (unit.units || 0);
+                    const computedMarketTotal = (unit.rent_market || 0) * (unit.units || 0);
+                    const computedMixPct = totalUnits > 0 ? ((unit.units || 0) / totalUnits * 100) : 0;
+                    const computedRentPSF = unit.unit_sf > 0 ? (unit.rent_current / unit.unit_sf) : 0;
+                    const computedMktPSF = unit.unit_sf > 0 ? (unit.rent_market / unit.unit_sf) : 0;
+
+                    return (
+                      <tr key={idx} style={{ background: idx % 2 === 0 ? '#fff' : '#f9fafb' }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#eff6ff'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = idx % 2 === 0 ? '#fff' : '#f9fafb'}
+                      >
+                        <td style={{ ...td, textAlign: 'left', fontWeight: 600, color: '#111827' }}>
+                          {renderCell(unit, idx, 'type', 110)}
+                        </td>
+                        <td style={td}>{renderCell(unit, idx, 'units', 50)}</td>
+                        <td style={td}>
+                          {canEdit ? renderCell(unit, idx, 'mix_pct', 50, '', '%')
+                            : unit.mix_pct ? `${unit.mix_pct}%` : computedMixPct > 0 ? `${computedMixPct.toFixed(0)}%` : '—'}
+                        </td>
+                        <td style={td}>{renderCell(unit, idx, 'unit_sf', 60)}</td>
+                        <td style={td}>{renderCell(unit, idx, 'rent_current', 70, '$')}</td>
+                        <td style={{ ...td, color: '#6b7280', fontSize: 12 }}>
+                          {canEdit ? renderCell(unit, idx, 'rent_psf', 55, '$')
+                            : unit.rent_psf ? `$${unit.rent_psf.toFixed(2)}` : computedRentPSF > 0 ? `$${computedRentPSF.toFixed(2)}` : '—'}
+                        </td>
+                        <td style={td}>{renderCell(unit, idx, 'rent_market', 70, '$')}</td>
+                        <td style={{ ...td, color: '#6b7280', fontSize: 12 }}>
+                          {canEdit ? renderCell(unit, idx, 'rent_market_psf', 55, '$')
+                            : unit.rent_market_psf ? `$${unit.rent_market_psf.toFixed(2)}` : computedMktPSF > 0 ? `$${computedMktPSF.toFixed(2)}` : '—'}
+                        </td>
+                        <td style={td}>{renderCell(unit, idx, 'rent_max', 70, '$')}</td>
+                        <td style={{ ...td, fontWeight: 600 }}>
+                          {canEdit ? renderCell(unit, idx, 'total_current_monthly', 80, '$')
+                            : `$${(unit.total_current_monthly || computedCurrentTotal).toLocaleString()}`}
+                        </td>
+                        <td style={{ ...td, fontWeight: 600 }}>
+                          {canEdit ? renderCell(unit, idx, 'total_market_monthly', 80, '$')
+                            : `$${(unit.total_market_monthly || computedMarketTotal).toLocaleString()}`}
+                        </td>
+                        {canEdit && (
+                          <td style={td}>
+                            <button onClick={() => onUpdateUnitMix(idx, '_delete')}
+                              style={{ padding: 3, background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 4, cursor: 'pointer', display: 'flex' }}>
+                              <Trash2 size={12} color="#dc2626" />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  {/* Averages row */}
+                  <tr style={{ borderTop: '2px solid #e5e7eb', background: '#f1f5f9' }}>
+                    <td style={{ ...td, textAlign: 'left', fontWeight: 700, color: '#475569', borderBottom: '1px solid #e2e8f0' }}>Averages</td>
+                    <td style={{ ...td, borderBottom: '1px solid #e2e8f0' }}>—</td>
+                    <td style={{ ...td, borderBottom: '1px solid #e2e8f0' }}>—</td>
+                    <td style={{ ...td, fontWeight: 600, borderBottom: '1px solid #e2e8f0' }}>{avgSF.toLocaleString()}</td>
+                    <td style={{ ...td, fontWeight: 600, borderBottom: '1px solid #e2e8f0' }}>${avgCurrentRent.toLocaleString()}</td>
+                    <td style={{ ...td, fontSize: 12, color: '#6b7280', borderBottom: '1px solid #e2e8f0' }}>
+                      {avgSF > 0 ? `$${(avgCurrentRent / avgSF).toFixed(2)}` : '—'}
+                    </td>
+                    <td style={{ ...td, fontWeight: 600, borderBottom: '1px solid #e2e8f0' }}>${avgMarketRent.toLocaleString()}</td>
+                    <td style={{ ...td, fontSize: 12, color: '#6b7280', borderBottom: '1px solid #e2e8f0' }}>
+                      {avgSF > 0 ? `$${(avgMarketRent / avgSF).toFixed(2)}` : '—'}
+                    </td>
+                    <td style={{ ...td, borderBottom: '1px solid #e2e8f0' }}>—</td>
+                    <td style={{ ...td, borderBottom: '1px solid #e2e8f0' }}>—</td>
+                    <td style={{ ...td, borderBottom: '1px solid #e2e8f0' }}>—</td>
+                    {canEdit && <td style={{ ...td, borderBottom: '1px solid #e2e8f0' }} />}
+                  </tr>
+                  {/* Totals row */}
+                  <tr style={{ background: '#1e293b' }}>
+                    <td style={{ ...td, textAlign: 'left', fontWeight: 800, color: '#fff', borderBottom: 'none' }}>Totals</td>
+                    <td style={{ ...td, fontWeight: 800, color: '#fff', borderBottom: 'none' }}>{totalUnits}</td>
+                    <td style={{ ...td, color: '#94a3b8', borderBottom: 'none' }}>100%</td>
+                    <td style={{ ...td, fontWeight: 600, color: '#fff', borderBottom: 'none' }}>{totalSF.toLocaleString()}</td>
+                    <td style={{ ...td, color: '#94a3b8', borderBottom: 'none' }}>—</td>
+                    <td style={{ ...td, color: '#94a3b8', borderBottom: 'none' }}>—</td>
+                    <td style={{ ...td, color: '#94a3b8', borderBottom: 'none' }}>—</td>
+                    <td style={{ ...td, color: '#94a3b8', borderBottom: 'none' }}>—</td>
+                    <td style={{ ...td, color: '#94a3b8', borderBottom: 'none' }}>—</td>
+                    <td style={{ ...td, fontWeight: 800, color: '#10b981', borderBottom: 'none', fontSize: 14 }}>${totalCurrentMonthly.toLocaleString()}</td>
+                    <td style={{ ...td, fontWeight: 800, color: '#10b981', borderBottom: 'none', fontSize: 14 }}>${totalMarketMonthly.toLocaleString()}</td>
+                    {canEdit && <td style={{ ...td, borderBottom: 'none' }} />}
+                  </tr>
+                  {/* Annual row */}
+                  <tr style={{ background: '#0f172a' }}>
+                    <td colSpan={9} style={{ ...td, textAlign: 'right', fontWeight: 700, color: '#94a3b8', borderBottom: 'none', fontSize: 12 }}>Annual Income:</td>
+                    <td style={{ ...td, fontWeight: 800, color: '#fbbf24', borderBottom: 'none', fontSize: 14 }}>${(totalCurrentMonthly * 12).toLocaleString()}</td>
+                    <td style={{ ...td, fontWeight: 800, color: '#fbbf24', borderBottom: 'none', fontSize: 14 }}>${(totalMarketMonthly * 12).toLocaleString()}</td>
+                    {canEdit && <td style={{ ...td, borderBottom: 'none' }} />}
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+            {canEdit && (
+              <button
+                onClick={() => onUpdateUnitMix(-1, '_add')}
+                style={{
+                  marginTop: 12, padding: '8px 16px', background: '#eff6ff', border: '1px solid #bfdbfe',
+                  borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                  fontSize: 13, fontWeight: 600, color: '#2563eb'
+                }}
+              >
+                <Plus size={14} /> Add Unit Type
+              </button>
+            )}
           </div>
-          {onUpdateUnitMix && (
-            <button
-              onClick={() => onUpdateUnitMix(-1, '_add')}
-              style={{
-                marginTop: 12, padding: '8px 16px', background: '#eff6ff', border: '1px solid #bfdbfe',
-                borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-                fontSize: 13, fontWeight: 600, color: '#2563eb'
-              }}
-            >
-              <Plus size={14} /> Add Unit Type
-            </button>
-          )}
-        </div>
-      )}
+        );
+      })()}
 
       <div style={{
         marginTop: 24,

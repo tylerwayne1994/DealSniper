@@ -1164,7 +1164,7 @@ Return JSON matching this schema:
   },
   "expenses": {"taxes": 0, "insurance": 0, "utilities": 0, "repairs_maintenance": 0, "management": 0, "payroll": 0, "admin": 0, "marketing": 0, "other": 0, "total": 0},
   "underwriting": {"holding_period": 0, "exit_cap_rate": 0},
-  "unit_mix": [{"type": "", "units": 0, "unit_sf": 0, "rent_current": 0, "rent_market": 0}],
+  "unit_mix": [{"type": "", "units": 0, "mix_pct": 0, "unit_sf": 0, "rent_current": 0, "rent_psf": 0, "rent_market": 0, "rent_market_psf": 0, "rent_max": 0, "total_current_monthly": 0, "total_market_monthly": 0}],
   "_confidence": {
     "property.address": {"level": "high|medium|low|missing", "source": "Page X or section name", "alternatives": [], "note": "Optional explanation"},
     "property.units": {"level": "high|medium|low|missing", "source": "Page X", "alternatives": []},
