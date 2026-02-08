@@ -3,7 +3,7 @@
 
 import React, { useMemo } from 'react';
 import { DollarSign } from 'lucide-react';
-import ExtractedFieldsTable from '../components/ExtractedFieldsTable';
+import ExtractedFieldsTable from '../ExtractedFieldsTable';
 
 export default function FinancialDataWizardTab({
   verifiedData,
