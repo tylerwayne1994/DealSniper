@@ -9,7 +9,8 @@ export default function FinancialDataWizardTab({
   verifiedData,
   confidence = {},
   onViewSource,
-  onSelectValue
+  onSelectValue,
+  onEditValue
 }) {
   
   const formatCurrency = (val) => {
@@ -153,6 +154,7 @@ export default function FinancialDataWizardTab({
         confidence={confidence}
         onViewSource={onViewSource}
         onSelectValue={onSelectValue}
+        onEditValue={onEditValue}
       />
 
       <div style={{

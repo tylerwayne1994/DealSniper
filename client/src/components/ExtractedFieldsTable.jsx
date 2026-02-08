@@ -1,16 +1,19 @@
 import React, { useState, Fragment } from 'react';
-import { CheckCircle, AlertCircle, FileText, File } from 'lucide-react';
+import { CheckCircle, AlertCircle, FileText, File, Pencil, Check, X } from 'lucide-react';
 
 /**
  * ExtractedFieldsTable - Cactus-style document extraction display
- * Shows extracted fields with confidence scores, sources, and inline conflict resolution
+ * Shows extracted fields with confidence scores, sources, inline editing, and conflict resolution
  */
 export default function ExtractedFieldsTable({ 
   fields = [],
   confidence = {},
   onViewSource,
-  onSelectValue
+  onSelectValue,
+  onEditValue
 }) {
+  const [editingField, setEditingField] = useState(null);
+  const [editValue, setEditValue] = useState('');
   
   const getConfidencePercent = (level) => {
     const percentMap = {
@@ -20,6 +23,33 @@ export default function ExtractedFieldsTable({
       missing: 0
     };
     return percentMap[level] || 0;
+  };
+
+  const startEditing = (field, e) => {
+    e.stopPropagation();
+    setEditingField(field.path || field.key);
+    // Use raw value (not formatted) for editing
+    setEditValue(field.value !== null && field.value !== undefined ? String(field.value) : '');
+  };
+
+  const confirmEdit = (field, e) => {
+    e.stopPropagation();
+    if (onEditValue) {
+      // Try to parse as number if it looks numeric
+      let val = editValue;
+      if (val !== '' && !isNaN(val)) {
+        val = parseFloat(val);
+      }
+      onEditValue(field, val);
+    }
+    setEditingField(null);
+    setEditValue('');
+  };
+
+  const cancelEdit = (e) => {
+    e.stopPropagation();
+    setEditingField(null);
+    setEditValue('');
   };
   
   return (
@@ -78,13 +108,73 @@ export default function ExtractedFieldsTable({
                 
                 <td style={{ padding: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {level !== 'missing' && <CheckCircle size={16} color="#10b981" />}
-                    <span style={{ fontSize: 15, color: '#111827', fontWeight: 500 }}>
-                      {field.value !== null && field.value !== undefined && field.value !== '' 
-                        ? field.formatter ? field.formatter(field.value) : field.value 
-                        : <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>Not found</span>
-                      }
-                    </span>
+                    {editingField === fieldPath ? (
+                      <>
+                        <input
+                          type="text"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') confirmEdit(field, e);
+                            if (e.key === 'Escape') cancelEdit(e);
+                          }}
+                          autoFocus
+                          style={{
+                            padding: '6px 10px',
+                            border: '2px solid #3b82f6',
+                            borderRadius: 6,
+                            fontSize: 14,
+                            fontWeight: 500,
+                            outline: 'none',
+                            width: 160,
+                            background: '#eff6ff'
+                          }}
+                        />
+                        <button
+                          onClick={(e) => confirmEdit(field, e)}
+                          style={{ padding: 4, background: '#dcfce7', border: '1px solid #86efac', borderRadius: 4, cursor: 'pointer', display: 'flex' }}
+                        >
+                          <Check size={14} color="#16a34a" />
+                        </button>
+                        <button
+                          onClick={cancelEdit}
+                          style={{ padding: 4, background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 4, cursor: 'pointer', display: 'flex' }}
+                        >
+                          <X size={14} color="#dc2626" />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {level !== 'missing' && <CheckCircle size={16} color="#10b981" />}
+                        <span style={{ fontSize: 15, color: '#111827', fontWeight: 500 }}>
+                          {field.value !== null && field.value !== undefined && field.value !== '' 
+                            ? field.formatter ? field.formatter(field.value) : field.value 
+                            : <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>Not found</span>
+                          }
+                        </span>
+                        {onEditValue && (
+                          <button
+                            onClick={(e) => startEditing(field, e)}
+                            title="Edit value"
+                            style={{
+                              padding: 4,
+                              background: '#f3f4f6',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: 4,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              opacity: 0.6,
+                              transition: 'opacity 0.15s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                            onMouseLeave={(e) => e.currentTarget.style.opacity = '0.6'}
+                          >
+                            <Pencil size={12} color="#6b7280" />
+                          </button>
+                        )}
+                      </>
+                    )}
                   </div>
                 </td>
                 

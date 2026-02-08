@@ -13,6 +13,7 @@ export default function PDFViewerModal({
   isOpen,
   onClose,
   pdfUrl,
+  pdfData,
   highlightInfo = {},
   fieldLabel,
   fieldValue
@@ -108,7 +109,7 @@ export default function PDFViewerModal({
   }, [currentPage, zoom, highlightInfo?.searchTerm, computeHighlightRects]);
 
   useEffect(() => {
-    if (!isOpen || !pdfUrl) {
+    if (!isOpen || (!pdfUrl && !pdfData)) {
       setError(null);
       setHighlightRects([]);
       setTotalPages(1);
@@ -122,7 +123,11 @@ export default function PDFViewerModal({
 
     const loadDocument = async () => {
       try {
-        const task = pdfjsLib.getDocument({ url: pdfUrl });
+        // Prefer raw ArrayBuffer data over URL for reliability
+        const loadConfig = pdfData 
+          ? { data: pdfData.slice(0) }  // slice to copy since pdf.js transfers ownership
+          : { url: pdfUrl };
+        const task = pdfjsLib.getDocument(loadConfig);
         const doc = await task.promise;
         if (isCancelled) {
           doc.destroy();
@@ -152,7 +157,7 @@ export default function PDFViewerModal({
         pdfRef.current = null;
       }
     };
-  }, [isOpen, pdfUrl]);
+  }, [isOpen, pdfUrl, pdfData]);
 
   useEffect(() => {
     if (!isOpen || !pdfRef.current || !highlightInfo?.page) return;
@@ -357,7 +362,7 @@ export default function PDFViewerModal({
           justifyContent: 'center',
           padding: 20
         }}>
-          {!pdfUrl ? (
+          {!pdfUrl && !pdfData ? (
             <div style={{ textAlign: 'center', color: '#6b7280', padding: 40 }}>
               <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>
                 No PDF available

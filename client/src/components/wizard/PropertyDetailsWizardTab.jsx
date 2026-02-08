@@ -1,15 +1,17 @@
 // NEW Cactus-style wizard tab for property details
-// Shows extracted fields with confidence, sources, and conflict resolution
+// Shows extracted fields with confidence scores + unit mix breakdown
 
 import React, { useMemo } from 'react';
-import { Building } from 'lucide-react';
+import { Building, Plus, Trash2 } from 'lucide-react';
 import ExtractedFieldsTable from '../ExtractedFieldsTable';
 
 export default function PropertyDetailsWizardTab({
   verifiedData,
   confidence = {},
   onViewSource,
-  onSelectValue
+  onSelectValue,
+  onEditValue,
+  onUpdateUnitMix
 }) {
   
   // Define fields to display with formatters
@@ -127,6 +129,7 @@ export default function PropertyDetailsWizardTab({
         confidence={confidence}
         onViewSource={onViewSource}
         onSelectValue={onSelectValue}
+        onEditValue={onEditValue}
       />
 
       <div style={{
@@ -141,6 +144,113 @@ export default function PropertyDetailsWizardTab({
         <strong>Tip:</strong> Click "View Source" to see where each value was extracted from in the original document.
         If multiple values were found, click the conflict button to choose the correct one.
       </div>
+
+      {/* Unit Mix Breakdown */}
+      {verifiedData?.unit_mix && verifiedData.unit_mix.length > 0 && (
+        <div style={{ marginTop: 32 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Building size={18} /> Unit Mix Breakdown
+          </h3>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+              <thead>
+                <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
+                  <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 700, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Type</th>
+                  <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Units</th>
+                  <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Sq Ft</th>
+                  <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Current Rent</th>
+                  <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Market Rent</th>
+                  {onUpdateUnitMix && (
+                    <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700, color: '#6b7280', fontSize: 12, textTransform: 'uppercase', width: 50 }}></th>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {verifiedData.unit_mix.map((unit, idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '10px 14px', fontWeight: 600, color: '#111827' }}>
+                      {onUpdateUnitMix ? (
+                        <input type="text" value={unit.type || ''} onChange={(e) => onUpdateUnitMix(idx, 'type', e.target.value)}
+                          style={{ padding: '4px 8px', border: '1px solid #e5e7eb', borderRadius: 4, fontSize: 14, width: 120 }} />
+                      ) : (unit.type || '—')}
+                    </td>
+                    <td style={{ padding: '10px 14px', textAlign: 'center', color: '#374151' }}>
+                      {onUpdateUnitMix ? (
+                        <input type="number" value={unit.units || ''} onChange={(e) => onUpdateUnitMix(idx, 'units', parseInt(e.target.value) || 0)}
+                          style={{ padding: '4px 8px', border: '1px solid #e5e7eb', borderRadius: 4, fontSize: 14, width: 70, textAlign: 'center' }} />
+                      ) : (unit.units || 0)}
+                    </td>
+                    <td style={{ padding: '10px 14px', textAlign: 'center', color: '#374151' }}>
+                      {onUpdateUnitMix ? (
+                        <input type="number" value={unit.unit_sf || ''} onChange={(e) => onUpdateUnitMix(idx, 'unit_sf', parseInt(e.target.value) || 0)}
+                          style={{ padding: '4px 8px', border: '1px solid #e5e7eb', borderRadius: 4, fontSize: 14, width: 80, textAlign: 'center' }} />
+                      ) : (unit.unit_sf ? unit.unit_sf.toLocaleString() : '—')}
+                    </td>
+                    <td style={{ padding: '10px 14px', textAlign: 'center', color: '#374151' }}>
+                      {onUpdateUnitMix ? (
+                        <input type="number" value={unit.rent_current || ''} onChange={(e) => onUpdateUnitMix(idx, 'rent_current', parseFloat(e.target.value) || 0)}
+                          style={{ padding: '4px 8px', border: '1px solid #e5e7eb', borderRadius: 4, fontSize: 14, width: 90, textAlign: 'center' }} />
+                      ) : (unit.rent_current ? `$${unit.rent_current.toLocaleString()}` : '—')}
+                    </td>
+                    <td style={{ padding: '10px 14px', textAlign: 'center', color: '#374151' }}>
+                      {onUpdateUnitMix ? (
+                        <input type="number" value={unit.rent_market || ''} onChange={(e) => onUpdateUnitMix(idx, 'rent_market', parseFloat(e.target.value) || 0)}
+                          style={{ padding: '4px 8px', border: '1px solid #e5e7eb', borderRadius: 4, fontSize: 14, width: 90, textAlign: 'center' }} />
+                      ) : (unit.rent_market ? `$${unit.rent_market.toLocaleString()}` : '—')}
+                    </td>
+                    {onUpdateUnitMix && (
+                      <td style={{ padding: '10px 14px', textAlign: 'center' }}>
+                        <button onClick={() => onUpdateUnitMix(idx, '_delete')}
+                          style={{ padding: 4, background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 4, cursor: 'pointer', display: 'flex' }}>
+                          <Trash2 size={14} color="#dc2626" />
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr style={{ borderTop: '2px solid #e5e7eb', background: '#f9fafb' }}>
+                  <td style={{ padding: '10px 14px', fontWeight: 700, color: '#111827' }}>Total</td>
+                  <td style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700, color: '#111827' }}>
+                    {verifiedData.unit_mix.reduce((s, u) => s + (u.units || 0), 0)}
+                  </td>
+                  <td style={{ padding: '10px 14px', textAlign: 'center', color: '#6b7280' }}>—</td>
+                  <td style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#111827' }}>
+                    ${(() => {
+                      const totalUnits = verifiedData.unit_mix.reduce((s, u) => s + (u.units || 0), 0);
+                      const weightedRent = verifiedData.unit_mix.reduce((s, u) => s + ((u.rent_current || 0) * (u.units || 0)), 0);
+                      return totalUnits > 0 ? Math.round(weightedRent / totalUnits).toLocaleString() : '0';
+                    })()}
+                    <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 4 }}>avg</span>
+                  </td>
+                  <td style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#111827' }}>
+                    ${(() => {
+                      const totalUnits = verifiedData.unit_mix.reduce((s, u) => s + (u.units || 0), 0);
+                      const weightedRent = verifiedData.unit_mix.reduce((s, u) => s + ((u.rent_market || 0) * (u.units || 0)), 0);
+                      return totalUnits > 0 ? Math.round(weightedRent / totalUnits).toLocaleString() : '0';
+                    })()}
+                    <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 4 }}>avg</span>
+                  </td>
+                  {onUpdateUnitMix && <td />}
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          {onUpdateUnitMix && (
+            <button
+              onClick={() => onUpdateUnitMix(-1, '_add')}
+              style={{
+                marginTop: 12, padding: '8px 16px', background: '#eff6ff', border: '1px solid #bfdbfe',
+                borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                fontSize: 13, fontWeight: 600, color: '#2563eb'
+              }}
+            >
+              <Plus size={14} /> Add Unit Type
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

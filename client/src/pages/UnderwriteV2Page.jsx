@@ -363,6 +363,14 @@ function UnderwriteV2Page() {
       }
     }));
   };
+
+  // Handle inline edit from ExtractedFieldsTable
+  const handleEditValue = (field, newValue) => {
+    const pathParts = (field.path || field.key).split('.');
+    if (pathParts.length === 2) {
+      updateVerifiedField(pathParts[0], pathParts[1], newValue);
+    }
+  };
   
   // Handle viewing source in PDF
   const handleViewSource = (field, confidence) => {
@@ -405,7 +413,39 @@ function UnderwriteV2Page() {
     }
   };
 
+  // Handle unit mix updates (add, delete, edit)
+  const handleUpdateUnitMix = (idx, fieldOrAction, value) => {
+    setVerifiedData(prev => {
+      const updated = { ...prev };
+      const mix = [...(updated.unit_mix || [])];
+      if (fieldOrAction === '_add') {
+        mix.push({ type: '', units: 0, unit_sf: 0, rent_current: 0, rent_market: 0 });
+      } else if (fieldOrAction === '_delete') {
+        mix.splice(idx, 1);
+      } else {
+        mix[idx] = { ...mix[idx], [fieldOrAction]: value };
+      }
+      updated.unit_mix = mix;
+      return updated;
+    });
+  };
+
   // Validate required fields
+  const fieldLabels = {
+    'property.address': 'Property Address',
+    'property.units': 'Total Units',
+    'pricing_financing.price': 'Purchase Price',
+    'pnl.gross_potential_rent': 'Gross Potential Rent',
+    'pnl.operating_expenses_t12': 'Operating Expenses (T12)',
+    'pnl.noi_t12': 'NOI (T12)'
+  };
+
+  const fieldToTab = {
+    'property': 'property',
+    'pricing_financing': 'financial',
+    'pnl': 'financial'
+  };
+
   const validateWizard = () => {
     const required = {
       property: ['address', 'units'],
@@ -417,13 +457,17 @@ function UnderwriteV2Page() {
     Object.keys(required).forEach(section => {
       required[section].forEach(field => {
         if (!verifiedData?.[section]?.[field]) {
-          errors.push(`${section}.${field}`);
+          errors.push({ path: `${section}.${field}`, label: fieldLabels[`${section}.${field}`] || field, tab: fieldToTab[section] || 'property' });
         }
       });
     });
 
     if (errors.length > 0) {
       console.log('[Validation] Missing required fields:', errors);
+      const missingNames = errors.map(e => e.label).join(', ');
+      // Jump to the tab with the first missing field
+      setActiveTab(errors[0].tab);
+      setUploadError(`Missing required fields: ${missingNames}`);
     }
     return errors.length === 0;
   };
@@ -431,7 +475,6 @@ function UnderwriteV2Page() {
   // Complete wizard → move to results
   const handleCompleteWizard = () => {
     if (!validateWizard()) {
-      setUploadError('Please fill in all required fields');
       return;
     }
     
@@ -517,7 +560,6 @@ function UnderwriteV2Page() {
   // Route to AI Analysis page
   const handleRunAIAnalysis = () => {
     if (!validateWizard()) {
-      setUploadError('Please fill in all required fields');
       return;
     }
     
@@ -787,6 +829,8 @@ function UnderwriteV2Page() {
               confidence={confidence}
               onViewSource={handleViewSource}
               onSelectValue={handleSelectValue}
+              onEditValue={handleEditValue}
+              onUpdateUnitMix={handleUpdateUnitMix}
             />
           )}
 
@@ -796,6 +840,7 @@ function UnderwriteV2Page() {
               confidence={confidence}
               onViewSource={handleViewSource}
               onSelectValue={handleSelectValue}
+              onEditValue={handleEditValue}
             />
           )}
 
@@ -962,6 +1007,7 @@ function UnderwriteV2Page() {
           isOpen={pdfViewerOpen}
           onClose={() => setPdfViewerOpen(false)}
           pdfUrl={pdfUrl}
+          pdfData={uploadedFileData}
           highlightInfo={highlightInfo}
           fieldLabel={selectedField?.label}
           fieldValue={selectedField?.value}
