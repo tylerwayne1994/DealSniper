@@ -100,7 +100,9 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
     const fromBreakdown = Number(utilBreakdown[key]) || 0;
     const fromExpenses = Number(expenses[key]) || 0;
     const val = fromBreakdown || fromExpenses;
-    const optVal = Number(optimized[key]) || Number(optimized.utility_breakdown?.[key]) || val;
+    // Use ?? so that explicit 0 in optimized stays as 0 (not fallback to UW)
+    const optRaw = optimized[key] ?? optimized.utility_breakdown?.[key];
+    const optVal = optRaw != null ? Number(optRaw) : val;
     // Avoid duplicating electrical/electric
     if (key === 'electrical' && utilityRows.find(r => r.label === 'Electric')) return;
     if (key === 'electric' && utilityRows.find(r => r.label === 'Electric')) return;
@@ -120,8 +122,12 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
   // If breakdown doesn't account for the total, add an "Other Utilities" catch-all
   const utilDiffUW = totalUtilFromExpenses - totalUtilBreakdownUW;
   const utilDiffVA = totalUtilFromOptimized - totalUtilBreakdownVA;
-  if (utilDiffUW > 50) {
-    utilityRows.push({ key: 'utilities_other', label: 'Other Utilities', uw: utilDiffUW, va: utilDiffVA > 0 ? utilDiffVA : utilDiffUW, uwPath: 'expenses.utilities_other', vaPath: 'value_add.optimized_expenses.utilities_other' });
+  if (utilDiffUW > 50 || totalUtilFromExpenses > 0) {
+    const otherUW = Math.max(0, utilDiffUW);
+    const otherVA = Math.max(0, utilDiffVA);
+    if (otherUW > 0 || otherVA > 0) {
+      utilityRows.push({ key: 'utilities_other', label: 'Other Utilities', uw: otherUW, va: otherVA, uwPath: 'expenses.utilities_other', vaPath: 'value_add.optimized_expenses.utilities_other' });
+    }
   }
 
   // ── Expense line items (excluding utilities — we show those broken down) ──
@@ -147,20 +153,27 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
   const rows = [];
   Object.entries(expenses).forEach(([key, val]) => {
     if (skipKeys.has(key) || typeof val === 'object') return;
-    rows.push({ key, label: labelFromKey(key), uw: Number(val) || 0, va: Number(optimized[key]) || Number(val) || 0, uwPath: `expenses.${key}`, vaPath: `value_add.optimized_expenses.${key}` });
+    const uwVal = Number(val) || 0;
+    // Use ?? so optimized value of 0 stays as 0, only fall back to UW if key is truly missing
+    const vaVal = optimized[key] != null ? Number(optimized[key]) : uwVal;
+    rows.push({ key, label: labelFromKey(key), uw: uwVal, va: vaVal, uwPath: `expenses.${key}`, vaPath: `value_add.optimized_expenses.${key}` });
   });
 
-  // Total expenses = non-utility rows + utility breakdown rows
-  const nonUtilTotalUW = rows.reduce((s, r) => s + (r.uw || 0), 0);
-  const nonUtilTotalVA = rows.reduce((s, r) => s + (r.va || r.uw || 0), 0);
-  const utilTotalUW = utilityRows.reduce((s, r) => s + (r.uw || 0), 0);
-  const utilTotalVA = utilityRows.reduce((s, r) => s + (r.va || r.uw || 0), 0);
+  // ── FORMULAS: Total expenses = SUM of all displayed line items ──
+  // Every value is taken directly from the row .uw / .va (what's shown on screen)
+  const nonUtilTotalUW = rows.reduce((s, r) => s + r.uw, 0);
+  const nonUtilTotalVA = rows.reduce((s, r) => s + r.va, 0);
+  const utilTotalUW = utilityRows.reduce((s, r) => s + r.uw, 0);
+  const utilTotalVA = utilityRows.reduce((s, r) => s + r.va, 0);
   const totalExpUW = nonUtilTotalUW + utilTotalUW;
   const totalExpVA = nonUtilTotalVA + utilTotalVA;
-  const expRatioUW = egiUW > 0 ? (totalExpUW / egiUW * 100) : 0;
-  const expRatioVA = egiVA > 0 ? (totalExpVA / egiVA * 100) : 0;
+  // Expense ratio = Total Expenses / EGI (use absolute EGI if negative)
+  const absEgiUW = Math.abs(egiUW);
+  const absEgiVA = Math.abs(egiVA);
+  const expRatioUW = absEgiUW > 0 ? (totalExpUW / absEgiUW * 100) : 0;
+  const expRatioVA = absEgiVA > 0 ? (totalExpVA / absEgiVA * 100) : 0;
 
-  // NOI
+  // FORMULA: NOI = EGI - Total Operating Expenses
   const noiUW = egiUW - totalExpUW;
   const noiVA = egiVA - totalExpVA;
 
