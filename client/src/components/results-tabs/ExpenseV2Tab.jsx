@@ -31,8 +31,67 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
   });
   const reassessedTax = price > 0 ? Math.round(price * taxRatePct / 100) : 0;
 
-  // ── Financing state — supports all 5 structures ──
-  const [selectedStructure, setSelectedStructure] = useState(financing.debt_product || 'Traditional (Bank/Agency)');
+  // ── Financing state — multi-loan Cactus-style system ──
+  // Each loan is an object: { id, type, enabled, loanAmtMode, ltvOrPct, rate, term, amort, io, fees, ... }
+  const [loans, setLoans] = useState(() => {
+    const saved = financing.loans || [];
+    if (saved.length > 0) return saved;
+    // Default: single Senior Loan
+    return [{
+      id: 'senior', type: 'Senior Loan', enabled: true,
+      loanAmtMode: 'ltv', // 'ltv' | 'dollar' | 'ltc'
+      ltv: Number(financing.ltv) || 70, loanDollar: 0,
+      rate: Number(financing.interest_rate) || 5.96, term: Number(financing.loan_term_years) || 10,
+      amort: Number(financing.amortization_years) || 30, io: Number(financing.io_years) || 0,
+      fees: Number(financing.loan_fees_percent) || 1.5,
+    }];
+  });
+  const [showAddMenu, setShowAddMenu] = useState(false);
+
+  // Available loan types to add
+  const addableLoanTypes = [
+    { type: 'Mezzanine Loan', icon: '🏦', desc: 'Secondary debt such as mezzanine' },
+    { type: 'Seller Financing', icon: '🤝', desc: 'Seller-carried note with deferred start' },
+    { type: 'Second Debt', icon: '📄', desc: 'Additional junior debt position' },
+    { type: 'Equity Partner', icon: '👥', desc: 'JV equity with preferred return' },
+  ];
+
+  // Calculate monthly payment for a single loan
+  const calcLoanPayment = (loan) => {
+    const loanAmt = loan.loanAmtMode === 'ltv'
+      ? price * (Number(loan.ltv) || 0) / 100
+      : loan.loanAmtMode === 'ltc'
+      ? price * (Number(loan.ltv) || 0) / 100
+      : Number(loan.loanDollar) || 0;
+    const r = (Number(loan.rate) || 0) / 100 / 12;
+    const n = (Number(loan.amort) || 30) * 12;
+    if (loanAmt <= 0 || r <= 0) return { loanAmt, monthlyPmt: 0, fees: loanAmt * (Number(loan.fees) || 0) / 100 };
+    const pmt = loanAmt * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+    return { loanAmt, monthlyPmt: pmt, fees: loanAmt * (Number(loan.fees) || 0) / 100 };
+  };
+
+  // Equity partner calc (different — pref return on equity, not debt service)
+  const calcEquityPartner = (loan) => {
+    const partnerEquity = Number(loan.loanDollar) || 0;
+    const prefReturn = (Number(loan.rate) || 8) / 100;
+    const annualPref = partnerEquity * prefReturn;
+    return { loanAmt: 0, monthlyPmt: annualPref / 12, fees: 0, partnerEquity };
+  };
+
+  // Aggregate all loans
+  const loanCalcs = loans.filter(l => l.enabled !== false).map(l => {
+    if (l.type === 'Equity Partner') return { ...l, calc: calcEquityPartner(l) };
+    return { ...l, calc: calcLoanPayment(l) };
+  });
+  const totalLoanAmt = loanCalcs.reduce((s, l) => s + (l.calc.loanAmt || 0), 0);
+  const totalMonthlyPmt = loanCalcs.reduce((s, l) => s + (l.calc.monthlyPmt || 0), 0);
+  const totalFees = loanCalcs.reduce((s, l) => s + (l.calc.fees || 0), 0);
+  const totalEquityPartner = loanCalcs.filter(l => l.type === 'Equity Partner').reduce((s, l) => s + (l.calc.partnerEquity || 0), 0);
+  const totalAcquisitionCost = price + totalFees;
+  const downPmt = Math.max(0, price - totalLoanAmt - totalEquityPartner);
+  const annualDS = totalMonthlyPmt * 12;
+  const ltcRatio = totalAcquisitionCost > 0 ? (totalLoanAmt / totalAcquisitionCost * 100) : 0;
+  const downPmtPct = price > 0 ? (downPmt / price * 100) : 0;
 
   // ── Editable VA rents per unit type ──
   const [vaRents, setVaRents] = useState(() => {
@@ -49,16 +108,6 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
   const [utilPaidBy, setUtilPaidBy] = useState(() => {
     const saved = scenarioData?.value_add?.utility_paid_by || {};
     return { water_sewer: 'owner', electric: 'owner', electrical: 'owner', gas: 'owner', trash: 'owner', utilities_other: 'owner', ...saved };
-  });
-  const [structures, setStructures] = useState(() => {
-    const saved = financing.structures || {};
-    return {
-      'Traditional (Bank/Agency)': { ltv: 75, rate: 5.8, term: 10, amort: 30, io: 0, fees: 1.0, ...saved['Traditional (Bank/Agency)'] },
-      'Seller Finance': { ltv: 90, rate: 5.0, term: 10, amort: 30, io: 0, fees: 0, downPct: 10, ...saved['Seller Finance'] },
-      'Equity Partner': { ltv: 75, rate: 5.8, term: 10, amort: 30, io: 0, fees: 1.0, partnerEquityPct: 70, prefReturn: 8, ...saved['Equity Partner'] },
-      'Seller Carry (Bank + Seller 2nd)': { ltv: 65, rate: 5.8, term: 10, amort: 30, io: 0, fees: 1.0, seller2ndPct: 15, seller2ndRate: 5.0, seller2ndTerm: 10, seller2ndAmort: 30, ...saved['Seller Carry (Bank + Seller 2nd)'] },
-      'Lease Option': { monthlyLease: 0, optionFee: 0, optionTerm: 24, purchasePrice: price, ...saved['Lease Option'] },
-    };
   });
 
   // ── Style constants ──
@@ -230,82 +279,7 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
   const capexUW = egiUW * capexUWpct / 100;
   const capexVA = egiVA * capexVApct / 100;
 
-  // ── Calculate metrics for any structure ──
-  const calcStructure = (name) => {
-    const s = structures[name];
-    if (!s) return { loanAmt: 0, cashReq: price, monthlyPmt: 0, annualDS: 0, annualCF: 0, dscr: 0, coc: 0 };
-
-    if (name === 'Lease Option') {
-      const monthly = Number(s.monthlyLease) || 0;
-      const optFee = Number(s.optionFee) || 0;
-      return { loanAmt: 0, cashReq: optFee, monthlyPmt: monthly, annualDS: monthly * 12, annualCF: noiUW - monthly * 12, dscr: monthly > 0 ? noiUW / (monthly * 12) : 0, coc: optFee > 0 ? ((noiUW - monthly * 12) / optFee * 100) : 0 };
-    }
-
-    const ltvVal = Number(s.ltv) || 75;
-    const rateVal = Number(s.rate) || 6;
-    const amortVal = Number(s.amort) || 30;
-    const loan1 = price * ltvVal / 100;
-    let totalLoan = loan1;
-    let totalMonthly = 0;
-
-    // Primary loan payment
-    const mr1 = rateVal / 100 / 12;
-    const n1 = amortVal * 12;
-    const mp1 = mr1 > 0 && loan1 > 0 ? loan1 * (mr1 * Math.pow(1 + mr1, n1)) / (Math.pow(1 + mr1, n1) - 1) : 0;
-    totalMonthly = mp1;
-
-    // Seller Carry — add 2nd loan
-    if (name === 'Seller Carry (Bank + Seller 2nd)') {
-      const s2pct = Number(s.seller2ndPct) || 15;
-      const s2rate = Number(s.seller2ndRate) || 5;
-      const s2amort = Number(s.seller2ndAmort) || 30;
-      const loan2 = price * s2pct / 100;
-      totalLoan += loan2;
-      const mr2 = s2rate / 100 / 12;
-      const n2 = s2amort * 12;
-      const mp2 = mr2 > 0 && loan2 > 0 ? loan2 * (mr2 * Math.pow(1 + mr2, n2)) / (Math.pow(1 + mr2, n2) - 1) : 0;
-      totalMonthly += mp2;
-    }
-
-    let cashRequired = price - totalLoan;
-
-    // Equity Partner — reduces cash required
-    if (name === 'Equity Partner') {
-      const partnerPct = Number(s.partnerEquityPct) || 70;
-      const equity = price - loan1;
-      const partnerShare = equity * partnerPct / 100;
-      cashRequired = equity - partnerShare;
-      // Partner gets pref return
-      const prefAnnual = partnerShare * (Number(s.prefReturn) || 8) / 100;
-      totalMonthly += prefAnnual / 12;
-    }
-
-    // Seller Finance — different down payment
-    if (name === 'Seller Finance') {
-      const downPctSF = Number(s.downPct) || 10;
-      const sellerLoan = price * (1 - downPctSF / 100);
-      totalLoan = sellerLoan;
-      cashRequired = price * downPctSF / 100;
-      const mrSF = rateVal / 100 / 12;
-      const nSF = amortVal * 12;
-      totalMonthly = mrSF > 0 && sellerLoan > 0 ? sellerLoan * (mrSF * Math.pow(1 + mrSF, nSF)) / (Math.pow(1 + mrSF, nSF) - 1) : 0;
-    }
-
-    if (cashRequired < 0) cashRequired = 0;
-    const aDS = totalMonthly * 12;
-    const aCF = noiUW - aDS;
-    const dscrVal = aDS > 0 ? noiUW / aDS : 0;
-    const cocVal = cashRequired > 0 ? (aCF / cashRequired * 100) : 0;
-
-    return { loanAmt: totalLoan, cashReq: cashRequired, monthlyPmt: totalMonthly, annualDS: aDS, annualCF: aCF, dscr: dscrVal, coc: cocVal };
-  };
-
-  // Active structure metrics
-  const activeCalc = calcStructure(selectedStructure);
-  const downPmt = activeCalc.cashReq;
-  const annualDS = activeCalc.annualDS;
-
-  // Net Income from Operations
+  // Cash Flow (uses multi-loan annualDS computed above)
   const netIncomeUW = noiUW - capexUW - annualDS;
   const netIncomeVA = noiVA - capexVA - annualDS;
 
@@ -317,29 +291,49 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
   const cocUW = downPmt > 0 ? (netIncomeUW / downPmt * 100) : 0;
   const cocVA = downPmt > 0 ? (netIncomeVA / downPmt * 100) : 0;
 
-  // ── Update a structure field ──
-  const updateStructField = (structName, field, val) => {
-    setStructures(prev => ({ ...prev, [structName]: { ...prev[structName], [field]: val } }));
+  // ── Update a loan field ──
+  const updateLoanField = (loanId, field, val) => {
+    setLoans(prev => prev.map(l => l.id === loanId ? { ...l, [field]: val } : l));
+  };
+
+  // ── Add a new loan ──
+  const addLoan = (type) => {
+    const defaults = {
+      'Mezzanine Loan': { loanAmtMode: 'dollar', ltv: 0, loanDollar: 0, rate: 5.21, term: 10, amort: 25, io: 0, fees: 0 },
+      'Seller Financing': { loanAmtMode: 'dollar', ltv: 0, loanDollar: 0, rate: 8.5, term: 15, amort: 15, io: 0, fees: 0, startMonth: 24, paymentFree: 0 },
+      'Second Debt': { loanAmtMode: 'dollar', ltv: 0, loanDollar: 0, rate: 7.0, term: 10, amort: 25, io: 0, fees: 0 },
+      'Equity Partner': { loanAmtMode: 'dollar', ltv: 0, loanDollar: 0, rate: 8, term: 0, amort: 0, io: 0, fees: 0 },
+    };
+    const newLoan = { id: `${type.replace(/\s/g, '_').toLowerCase()}_${Date.now()}`, type, enabled: true, ...defaults[type] };
+    setLoans(prev => [...prev, newLoan]);
+    setShowAddMenu(false);
+  };
+
+  // ── Remove a loan ──
+  const removeLoan = (loanId) => {
+    setLoans(prev => prev.filter(l => l.id !== loanId));
   };
 
   // ── Save financing changes back ──
   const saveFinancing = () => {
-    handleChange('financing.debt_product', selectedStructure);
-    handleChange('financing.structures', structures);
-    const s = structures[selectedStructure];
-    if (s) {
-      handleChange('financing.ltv', s.ltv || 0);
-      handleChange('financing.interest_rate', s.rate || 0);
-      handleChange('financing.loan_term_years', s.term || 0);
-      handleChange('financing.amortization_years', s.amort || 0);
-      handleChange('financing.io_years', s.io || 0);
-      handleChange('financing.loan_fees_percent', s.fees || 0);
+    handleChange('financing.loans', loans);
+    handleChange('financing.total_loan_amount', totalLoanAmt);
+    handleChange('financing.annual_debt_service', annualDS);
+    handleChange('financing.down_payment', downPmt);
+    handleChange('financing.total_acquisition_cost', totalAcquisitionCost);
+    handleChange('financing.ltc_ratio', ltcRatio);
+    // Also write legacy fields from senior loan
+    const senior = loans.find(l => l.type === 'Senior Loan');
+    if (senior) {
+      handleChange('financing.ltv', senior.ltv || 0);
+      handleChange('financing.interest_rate', senior.rate || 0);
+      handleChange('financing.loan_term_years', senior.term || 0);
+      handleChange('financing.amortization_years', senior.amort || 0);
+      handleChange('financing.io_years', senior.io || 0);
+      handleChange('financing.loan_fees_percent', senior.fees || 0);
     }
     setShowDebtModal(false);
   };
-
-  // Structure names list
-  const structureNames = ['Traditional (Bank/Agency)', 'Seller Finance', 'Equity Partner', 'Seller Carry (Bank + Seller 2nd)', 'Lease Option'];
 
   // ── Table cell helper ──
   const td = (content, opts = {}) => {
@@ -664,7 +658,7 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span>Annual Debt Service</span>
                     <span style={{ fontSize: 10, fontWeight: 600, color: GRAY, background: '#f3f4f6', padding: '2px 8px', borderRadius: 4 }}>
-                      {selectedStructure}
+                      {loans.length} loan{loans.length !== 1 ? 's' : ''}
                     </span>
                     <span style={{ fontSize: 10, color: '#6366f1', fontWeight: 600 }}>✎ edit</span>
                   </div>
@@ -710,243 +704,305 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
       </div>
 
       {/* ══════════════════════════════════════════════════════════ */}
-      {/* ─── DEBT SERVICE MODAL — ALL STRUCTURES COMPARISON ─── */}
+      {/* ─── DEBT SERVICE MODAL — CACTUS-STYLE MULTI-LOAN ─── */}
       {/* ══════════════════════════════════════════════════════════ */}
-      {showDebtModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}
-          onClick={e => { if (e.target === e.currentTarget) setShowDebtModal(false); }}>
-          <div style={{ background: '#fff', borderRadius: 16, width: 1100, maxHeight: '92vh', overflow: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.25)' }}>
+      {showDebtModal && (() => {
+        // ── Reusable loan field input ──
+        const LoanField = ({ label, value, onChange, suffix, hint, step, prefix }) => (
+          <div>
+            <label style={{ display: 'block', marginBottom: 4, fontSize: 11, color: GRAY, fontWeight: 600 }}>{label}</label>
+            <div style={{ position: 'relative' }}>
+              {prefix && <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>{prefix}</span>}
+              <input type="number" step={step || 1} value={value}
+                onChange={e => onChange(parseFloat(e.target.value) || 0)}
+                style={{ width: '100%', padding: `9px ${suffix ? '36px' : '12px'} 9px ${prefix ? '24px' : '12px'}`, border: `1px solid ${B}`, borderRadius: 8, fontSize: 13, fontWeight: 600, outline: 'none', boxSizing: 'border-box' }} />
+              {suffix && <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>{suffix}</span>}
+            </div>
+            {hint && <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 2, display: 'block' }}>{hint}</span>}
+          </div>
+        );
 
-            {/* ── Modal Header ── */}
-            <div style={{ padding: '20px 28px', borderBottom: `1px solid ${B}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 20 }}>📊</span>
+        // ── Loan card component ──
+        const LoanCard = ({ loan, isFirst }) => {
+          const calc = loan.type === 'Equity Partner' ? calcEquityPartner(loan) : calcLoanPayment(loan);
+          const loanAmt = calc.loanAmt;
+          const isEquity = loan.type === 'Equity Partner';
+          const isSeller = loan.type === 'Seller Financing';
+          const loanIcon = { 'Senior Loan': '🏦', 'Mezzanine Loan': '🏛️', 'Seller Financing': '🤝', 'Second Debt': '📄', 'Equity Partner': '👥' }[loan.type] || '💰';
+
+          return (
+            <div style={{ border: `1px solid ${B}`, borderRadius: 12, padding: 0, background: '#fff', flex: 1, minWidth: 340 }}>
+              {/* Card header */}
+              <div style={{ padding: '14px 18px', borderBottom: `1px solid ${B}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ borderLeft: '3px solid #4f46e5', paddingLeft: 8, fontWeight: 800, fontSize: 14, color: '#111827' }}>
+                    {loanIcon} {loan.type}
+                  </span>
+                </div>
+                {!isFirst && (
+                  <button onClick={() => removeLoan(loan.id)}
+                    style={{ cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#ef4444', background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    Remove
+                  </button>
+                )}
+                {isFirst && (
+                  <div style={{ position: 'relative' }}>
+                    <button onClick={() => setShowAddMenu(!showAddMenu)}
+                      style={{ cursor: 'pointer', padding: '6px 12px', border: `1px solid ${B}`, borderRadius: 8, fontSize: 12, fontWeight: 700, color: '#374151', background: '#fff' }}>
+                      + Add Financing
+                    </button>
+                    {showAddMenu && (
+                      <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: '#fff', border: `1px solid ${B}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 10, width: 240, overflow: 'hidden' }}>
+                        {addableLoanTypes.map(lt => (
+                          <button key={lt.type} onClick={() => addLoan(lt.type)}
+                            style={{ display: 'block', width: '100%', padding: '10px 14px', border: 'none', background: '#fff', cursor: 'pointer', textAlign: 'left', borderBottom: `1px solid ${B}`, fontSize: 12 }}
+                            onMouseEnter={e => e.target.style.background = '#f8fafc'}
+                            onMouseLeave={e => e.target.style.background = '#fff'}>
+                            <div style={{ fontWeight: 700, color: '#111827' }}>{lt.icon} {lt.type}</div>
+                            <div style={{ fontSize: 10, color: GRAY, marginTop: 2 }}>{lt.desc}</div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Card body — fields */}
+              <div style={{ padding: '16px 18px' }}>
+                {isEquity ? (
+                  /* ── Equity Partner fields ── */
+                  <>
+                    <p style={{ fontSize: 11, color: GRAY, margin: '0 0 12px' }}>Add complementary equity for your deal, such as a JV partner, to see its impact on cash flow projections.</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      <LoanField label="Partner Equity Amount" value={loan.loanDollar || 0} prefix="$"
+                        onChange={v => updateLoanField(loan.id, 'loanDollar', v)} />
+                      <LoanField label="Preferred Return (annual %)" value={loan.rate || 8} suffix="%"
+                        onChange={v => updateLoanField(loan.id, 'rate', v)} step={0.25} />
+                    </div>
+                  </>
+                ) : (
+                  /* ── Standard debt fields ── */
+                  <>
+                    {!isFirst && (
+                      <p style={{ fontSize: 11, color: GRAY, margin: '0 0 12px' }}>
+                        {isSeller ? 'Enter seller financing details to see its impact on cash flow projections.' : `Add complementary financing for your secondary debt, such as ${loan.type.toLowerCase()}, to see its impact on cash flow projections.`}
+                      </p>
+                    )}
+                    {/* Loan Amount row */}
+                    <div style={{ marginBottom: 14 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <label style={{ fontSize: 11, color: GRAY, fontWeight: 600 }}>Loan Amount</label>
+                        <div style={{ display: 'flex', border: `1px solid ${B}`, borderRadius: 6, overflow: 'hidden' }}>
+                          {[{ mode: 'ltv', label: isFirst ? 'Purchase Price %' : 'LTC %' }, { mode: 'dollar', label: 'Amount in $' }].map(m => (
+                            <button key={m.mode} onClick={() => updateLoanField(loan.id, 'loanAmtMode', m.mode)}
+                              style={{ padding: '3px 10px', fontSize: 10, fontWeight: 700, border: 'none', cursor: 'pointer',
+                                background: loan.loanAmtMode === m.mode ? '#4f46e5' : '#fff',
+                                color: loan.loanAmtMode === m.mode ? '#fff' : '#6b7280' }}>
+                              {m.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {loan.loanAmtMode === 'ltv' ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+                            <div style={{ position: 'relative', flex: 1 }}>
+                              <input type="number" step={1} value={loan.ltv || 0}
+                                onChange={e => updateLoanField(loan.id, 'ltv', parseFloat(e.target.value) || 0)}
+                                style={{ width: '100%', padding: '9px 36px 9px 12px', border: `1px solid ${B}`, borderRadius: 8, fontSize: 13, fontWeight: 600, outline: 'none', boxSizing: 'border-box' }} />
+                              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>%</span>
+                            </div>
+                            {isFirst && <span style={{ fontSize: 11, color: GRAY }}>of Purchase Price ✓</span>}
+                            <span style={{ fontSize: 11, fontWeight: 700, color: '#4338ca', background: '#eef2ff', padding: '3px 8px', borderRadius: 4 }}>
+                              <span style={{ fontSize: 10, color: GRAY, fontWeight: 400 }}>ƒ</span> {fmt(loanAmt)}
+                            </span>
+                          </div>
+                        ) : (
+                          <div style={{ position: 'relative', flex: 1 }}>
+                            <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>$</span>
+                            <input type="number" value={loan.loanDollar || 0}
+                              onChange={e => updateLoanField(loan.id, 'loanDollar', parseFloat(e.target.value) || 0)}
+                              style={{ width: '100%', padding: '9px 12px 9px 24px', border: `1px solid ${B}`, borderRadius: 8, fontSize: 13, fontWeight: 600, outline: 'none', boxSizing: 'border-box' }} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Interest Rate + Amortization + IO */}
+                    <div style={{ display: 'grid', gridTemplateColumns: isSeller ? '1fr 1fr 1fr' : '1fr 1fr 1fr', gap: 12, marginBottom: 14 }}>
+                      <LoanField label="Interest Rate" value={loan.rate || 0} suffix="% per year"
+                        onChange={v => updateLoanField(loan.id, 'rate', v)} step={0.01} />
+                      <LoanField label="Amortization" value={loan.amort || 30} suffix="years"
+                        onChange={v => updateLoanField(loan.id, 'amort', v)} />
+                      <LoanField label="Interest Only" value={loan.io || 0} suffix="months"
+                        onChange={v => updateLoanField(loan.id, 'io', v)} />
+                    </div>
+
+                    {/* Seller Financing extra fields */}
+                    {isSeller && (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+                        <LoanField label="Seller Financing Start" value={loan.startMonth || 0} suffix="months"
+                          onChange={v => updateLoanField(loan.id, 'startMonth', v)} hint="Months until payments begin" />
+                        <LoanField label="Payment-Free Period" value={loan.paymentFree || 0} suffix="months"
+                          onChange={v => updateLoanField(loan.id, 'paymentFree', v)} />
+                      </div>
+                    )}
+
+                    {/* Loan Fees + Monthly Payment */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      <LoanField label="Loan Fees" value={loan.fees || 0} suffix="%"
+                        onChange={v => updateLoanField(loan.id, 'fees', v)} step={0.1} />
+                      <div>
+                        <label style={{ display: 'block', marginBottom: 4, fontSize: 11, color: GRAY, fontWeight: 600 }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>📋 Monthly Payment</span>
+                        </label>
+                        <div style={{ padding: '9px 12px', border: `1px solid ${B}`, borderRadius: 8, fontSize: 16, fontWeight: 800, color: '#111827', background: '#f8fafc' }}>
+                          {calc.monthlyPmt > 0 ? `$${calc.monthlyPmt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        };
+
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}
+            onClick={e => { if (e.target === e.currentTarget) { setShowDebtModal(false); setShowAddMenu(false); } }}>
+            <div style={{ background: '#f3f4f6', borderRadius: 16, width: 1200, maxHeight: '94vh', overflow: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.25)' }}
+              onClick={() => showAddMenu && setShowAddMenu(false)}>
+
+              {/* ── Modal Header ── */}
+              <div style={{ padding: '20px 28px', background: '#fff', borderBottom: `1px solid ${B}`, borderRadius: '16px 16px 0 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#111827' }}>All Structures Comparison</h2>
-                  <p style={{ margin: '4px 0 0', fontSize: 12, color: GRAY }}>Compare financing structures side-by-side, click a row to select</p>
+                  <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#111827' }}>Debt Calculator</h2>
+                  <p style={{ margin: '4px 0 0', fontSize: 12, color: GRAY }}>Configure your financing structure — add multiple loans to build your capital stack</p>
+                </div>
+                <button onClick={() => setShowDebtModal(false)}
+                  style={{ width: 32, height: 32, border: 'none', borderRadius: 8, background: '#f3f4f6', cursor: 'pointer', fontSize: 16, color: GRAY, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+              </div>
+
+              {/* ── Loan Cards ── */}
+              <div style={{ padding: '20px 28px' }}>
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                  {loans.map((loan, idx) => (
+                    <LoanCard key={loan.id} loan={loan} isFirst={idx === 0} />
+                  ))}
                 </div>
               </div>
-              <button onClick={() => setShowDebtModal(false)}
-                style={{ width: 32, height: 32, border: 'none', borderRadius: 8, background: '#f3f4f6', cursor: 'pointer', fontSize: 16, color: GRAY, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
-            </div>
 
-            {/* ── Comparison Table ── */}
-            <div style={{ padding: '0 28px 20px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginTop: 16 }}>
-                <thead>
-                  <tr style={{ borderBottom: `2px solid ${B}` }}>
-                    <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: GRAY, textTransform: 'uppercase' }}>Structure</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: GRAY, textTransform: 'uppercase' }}>Loan Amount</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: GRAY, textTransform: 'uppercase' }}>Cash Required</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: GRAY, textTransform: 'uppercase' }}>Monthly Payment</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: GRAY, textTransform: 'uppercase' }}>Annual Cashflow</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: GRAY, textTransform: 'uppercase' }}>DSCR</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: GRAY, textTransform: 'uppercase' }}>Cash on Cash</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {structureNames.map((name) => {
-                    const c = calcStructure(name);
-                    const isSelected = selectedStructure === name;
-                    return (
-                      <tr key={name}
-                        onClick={() => setSelectedStructure(name)}
-                        style={{ cursor: 'pointer', borderLeft: isSelected ? '3px solid #3b82f6' : '3px solid transparent', background: isSelected ? '#eff6ff' : '#fff', borderBottom: `1px solid ${B}` }}>
-                        <td style={{ padding: '12px', fontWeight: 600, color: '#111827' }}>
-                          <div>{name}</div>
-                          {isSelected && <div style={{ fontSize: 10, fontWeight: 700, color: '#3b82f6', marginTop: 2 }}>★ YOUR CHOICE</div>}
-                        </td>
-                        <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600 }}>{fmt(c.loanAmt)}</td>
-                        <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600 }}>{fmt(c.cashReq)}</td>
-                        <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600 }}>{fmt(c.monthlyPmt)}</td>
-                        <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700, color: c.annualCF >= 0 ? '#16a34a' : '#dc2626' }}>
-                          {c.annualCF >= 0 ? fmt(c.annualCF) : `-${fmt(Math.abs(c.annualCF))}`}
-                        </td>
-                        <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: c.dscr >= 1.2 ? '#f59e0b' : c.dscr >= 1 ? '#6b7280' : '#dc2626' }}>
-                          {c.dscr > 0 ? `${c.dscr.toFixed(2)}x` : '—'}
-                        </td>
-                        <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: c.coc >= 0 ? '#111827' : '#dc2626' }}>
-                          {c.coc !== 0 ? `${c.coc.toFixed(2)}%` : '0.00%'}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* ── Edit Selected Structure ── */}
-            <div style={{ padding: '0 28px 20px' }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#111827', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span>✎ Edit:</span>
-                <span style={{ color: '#3b82f6' }}>{selectedStructure}</span>
+              {/* ── Financing Summary ── */}
+              <div style={{ padding: '0 28px 20px' }}>
+                <div style={{ borderLeft: '3px solid #4f46e5', paddingLeft: 12, marginBottom: 14 }}>
+                  <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#111827' }}>Financing Summary</h3>
+                  <p style={{ margin: '2px 0 0', fontSize: 11, color: GRAY }}>Overview of your project's financing structure including total loan amount, down payment, and loan-to-cost ratio.</p>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+                  {/* Total Acquisition Cost */}
+                  <div style={{ background: '#fff', border: `1px solid ${B}`, borderRadius: 10, padding: '16px 18px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: GRAY, textTransform: 'uppercase' }}>Total Acquisition Cost</span>
+                      <span style={{ fontSize: 14 }}>📁</span>
+                    </div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: '#111827' }}>{fmt(totalAcquisitionCost)}</div>
+                    <div style={{ fontSize: 10, color: GRAY, marginTop: 4 }}>
+                      Acquisition Cost: {fmt(price)}<br/>
+                      Loan Fees: {fmt(totalFees)}
+                    </div>
+                  </div>
+                  {/* Total Loan Amount */}
+                  <div style={{ background: '#fff', border: `1px solid ${B}`, borderRadius: 10, padding: '16px 18px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: GRAY, textTransform: 'uppercase' }}>Total Loan Amount</span>
+                      <span style={{ fontSize: 14 }}>💰</span>
+                    </div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: '#111827' }}>{fmt(totalLoanAmt)}</div>
+                    <div style={{ fontSize: 10, color: GRAY, marginTop: 4 }}>
+                      {loans.filter(l => l.type !== 'Equity Partner').length} debt position{loans.filter(l => l.type !== 'Equity Partner').length !== 1 ? 's' : ''}
+                      {totalEquityPartner > 0 && <> + {fmt(totalEquityPartner)} equity</>}
+                    </div>
+                  </div>
+                  {/* Down Payment Amount */}
+                  <div style={{ background: '#fff', border: `1px solid ${B}`, borderRadius: 10, padding: '16px 18px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: GRAY, textTransform: 'uppercase' }}>Down Payment Amount</span>
+                      <span style={{ fontSize: 14 }}>📊</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                      <span style={{ fontSize: 22, fontWeight: 800, color: '#111827' }}>{fmt(downPmt)}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: downPmtPct < 30 ? '#16a34a' : '#f59e0b' }}>↑ {downPmtPct.toFixed(2)}%</span>
+                    </div>
+                  </div>
+                  {/* Loan-to-Cost */}
+                  <div style={{ background: '#fff', border: `1px solid ${B}`, borderRadius: 10, padding: '16px 18px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: GRAY, textTransform: 'uppercase' }}>Loan-to-Cost (LTC)</span>
+                      <span style={{ fontSize: 14 }}>📈</span>
+                    </div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: '#111827' }}>{ltcRatio.toFixed(2)}%</div>
+                  </div>
+                </div>
               </div>
 
-              {/* ── Traditional / Bank / Agency fields ── */}
-              {selectedStructure === 'Traditional (Bank/Agency)' && (() => {
-                const s = structures[selectedStructure];
-                return (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-                    {[{ label: 'LTV', field: 'ltv', suffix: '%', hint: '65–80%' },
-                      { label: 'Interest Rate', field: 'rate', suffix: '%', hint: '5.0–7.5%', step: 0.1 },
-                      { label: 'Loan Term', field: 'term', suffix: 'yrs', hint: '5–10 years' },
-                      { label: 'Amortization', field: 'amort', suffix: 'yrs', hint: '25–30 years' },
-                      { label: 'IO Period', field: 'io', suffix: 'yrs', hint: '0–3 years' },
-                      { label: 'Loan Fees', field: 'fees', suffix: '%', hint: 'Origination', step: 0.1 },
-                    ].map(f => (
-                      <div key={f.field}>
-                        <label style={{ display: 'block', marginBottom: 4, fontSize: 11, color: GRAY, fontWeight: 700, textTransform: 'uppercase' }}>{f.label}</label>
-                        <div style={{ position: 'relative' }}>
-                          <input type="number" step={f.step || 1} value={s[f.field] || 0}
-                            onChange={e => updateStructField(selectedStructure, f.field, parseFloat(e.target.value) || 0)}
-                            style={{ width: '100%', padding: '9px 36px 9px 12px', border: `1px solid ${B}`, borderRadius: 8, fontSize: 13, fontWeight: 600, outline: 'none', boxSizing: 'border-box' }} />
-                          <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>{f.suffix}</span>
-                        </div>
-                        <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 2, display: 'block' }}>{f.hint}</span>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-
-              {/* ── Seller Finance fields ── */}
-              {selectedStructure === 'Seller Finance' && (() => {
-                const s = structures[selectedStructure];
-                return (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-                    {[{ label: 'Down Payment', field: 'downPct', suffix: '%', hint: 'Seller carries the rest' },
-                      { label: 'Interest Rate', field: 'rate', suffix: '%', hint: 'Negotiated with seller', step: 0.1 },
-                      { label: 'Loan Term', field: 'term', suffix: 'yrs', hint: 'Note maturity' },
-                      { label: 'Amortization', field: 'amort', suffix: 'yrs', hint: 'Payment schedule' },
-                      { label: 'IO Period', field: 'io', suffix: 'yrs', hint: 'Interest-only period' },
-                    ].map(f => (
-                      <div key={f.field}>
-                        <label style={{ display: 'block', marginBottom: 4, fontSize: 11, color: GRAY, fontWeight: 700, textTransform: 'uppercase' }}>{f.label}</label>
-                        <div style={{ position: 'relative' }}>
-                          <input type="number" step={f.step || 1} value={s[f.field] || 0}
-                            onChange={e => updateStructField(selectedStructure, f.field, parseFloat(e.target.value) || 0)}
-                            style={{ width: '100%', padding: '9px 36px 9px 12px', border: `1px solid ${B}`, borderRadius: 8, fontSize: 13, fontWeight: 600, outline: 'none', boxSizing: 'border-box' }} />
-                          <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>{f.suffix}</span>
-                        </div>
-                        <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 2, display: 'block' }}>{f.hint}</span>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-
-              {/* ── Equity Partner fields ── */}
-              {selectedStructure === 'Equity Partner' && (() => {
-                const s = structures[selectedStructure];
-                return (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-                    {[{ label: 'Bank LTV', field: 'ltv', suffix: '%', hint: 'Senior loan LTV' },
-                      { label: 'Bank Rate', field: 'rate', suffix: '%', hint: 'Senior loan rate', step: 0.1 },
-                      { label: 'Loan Term', field: 'term', suffix: 'yrs', hint: 'Senior loan term' },
-                      { label: 'Amortization', field: 'amort', suffix: 'yrs', hint: 'Senior amort' },
-                      { label: 'Partner Equity %', field: 'partnerEquityPct', suffix: '%', hint: '% of equity from partner' },
-                      { label: 'Pref Return', field: 'prefReturn', suffix: '%', hint: 'Annual preferred return', step: 0.5 },
-                    ].map(f => (
-                      <div key={f.field}>
-                        <label style={{ display: 'block', marginBottom: 4, fontSize: 11, color: GRAY, fontWeight: 700, textTransform: 'uppercase' }}>{f.label}</label>
-                        <div style={{ position: 'relative' }}>
-                          <input type="number" step={f.step || 1} value={s[f.field] || 0}
-                            onChange={e => updateStructField(selectedStructure, f.field, parseFloat(e.target.value) || 0)}
-                            style={{ width: '100%', padding: '9px 36px 9px 12px', border: `1px solid ${B}`, borderRadius: 8, fontSize: 13, fontWeight: 600, outline: 'none', boxSizing: 'border-box' }} />
-                          <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>{f.suffix}</span>
-                        </div>
-                        <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 2, display: 'block' }}>{f.hint}</span>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-
-              {/* ── Seller Carry (Bank + Seller 2nd) fields ── */}
-              {selectedStructure === 'Seller Carry (Bank + Seller 2nd)' && (() => {
-                const s = structures[selectedStructure];
-                return (
-                  <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#3b82f6', marginBottom: 8, textTransform: 'uppercase' }}>1st Mortgage (Bank)</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 16 }}>
-                      {[{ label: 'Bank LTV', field: 'ltv', suffix: '%', hint: '1st position LTV' },
-                        { label: 'Bank Rate', field: 'rate', suffix: '%', hint: '1st mortgage rate', step: 0.1 },
-                        { label: 'Term', field: 'term', suffix: 'yrs', hint: 'Bank loan term' },
-                        { label: 'Amortization', field: 'amort', suffix: 'yrs', hint: '1st mortgage amort' },
-                        { label: 'Loan Fees', field: 'fees', suffix: '%', hint: 'Bank origination', step: 0.1 },
-                      ].map(f => (
-                        <div key={f.field}>
-                          <label style={{ display: 'block', marginBottom: 4, fontSize: 11, color: GRAY, fontWeight: 700, textTransform: 'uppercase' }}>{f.label}</label>
-                          <div style={{ position: 'relative' }}>
-                            <input type="number" step={f.step || 1} value={s[f.field] || 0}
-                              onChange={e => updateStructField(selectedStructure, f.field, parseFloat(e.target.value) || 0)}
-                              style={{ width: '100%', padding: '9px 36px 9px 12px', border: `1px solid ${B}`, borderRadius: 8, fontSize: 13, fontWeight: 600, outline: 'none', boxSizing: 'border-box' }} />
-                            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>{f.suffix}</span>
-                          </div>
-                          <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 2, display: 'block' }}>{f.hint}</span>
-                        </div>
+              {/* ── Debt Service Breakdown ── */}
+              <div style={{ padding: '0 28px 20px' }}>
+                <div style={{ background: '#fff', border: `1px solid ${B}`, borderRadius: 10, overflow: 'hidden' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc' }}>
+                        <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: GRAY, textTransform: 'uppercase', borderBottom: `2px solid ${B}` }}>Loan</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: GRAY, textTransform: 'uppercase', borderBottom: `2px solid ${B}` }}>Loan Amount</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: GRAY, textTransform: 'uppercase', borderBottom: `2px solid ${B}` }}>Rate</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: GRAY, textTransform: 'uppercase', borderBottom: `2px solid ${B}` }}>Monthly Pmt</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: GRAY, textTransform: 'uppercase', borderBottom: `2px solid ${B}` }}>Annual DS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loanCalcs.map(l => (
+                        <tr key={l.id} style={{ borderBottom: `1px solid ${B}` }}>
+                          <td style={{ padding: '10px 14px', fontWeight: 600, color: '#111827' }}>{l.type}</td>
+                          <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600 }}>
+                            {l.type === 'Equity Partner' ? `${fmt(l.calc.partnerEquity)} equity` : fmt(l.calc.loanAmt)}
+                          </td>
+                          <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600 }}>{pctFmt(l.rate)}</td>
+                          <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600 }}>{fmt(l.calc.monthlyPmt)}</td>
+                          <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700 }}>{fmt(l.calc.monthlyPmt * 12)}</td>
+                        </tr>
                       ))}
-                    </div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', marginBottom: 8, textTransform: 'uppercase' }}>2nd Position (Seller Carry)</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-                      {[{ label: 'Seller 2nd %', field: 'seller2ndPct', suffix: '%', hint: '% of purchase price' },
-                        { label: 'Seller Rate', field: 'seller2ndRate', suffix: '%', hint: 'Seller carry rate', step: 0.1 },
-                        { label: 'Seller Term', field: 'seller2ndTerm', suffix: 'yrs', hint: 'Seller note term' },
-                        { label: 'Seller Amort', field: 'seller2ndAmort', suffix: 'yrs', hint: 'Seller amort schedule' },
-                      ].map(f => (
-                        <div key={f.field}>
-                          <label style={{ display: 'block', marginBottom: 4, fontSize: 11, color: GRAY, fontWeight: 700, textTransform: 'uppercase' }}>{f.label}</label>
-                          <div style={{ position: 'relative' }}>
-                            <input type="number" step={f.step || 1} value={s[f.field] || 0}
-                              onChange={e => updateStructField(selectedStructure, f.field, parseFloat(e.target.value) || 0)}
-                              style={{ width: '100%', padding: '9px 36px 9px 12px', border: `1px solid ${B}`, borderRadius: 8, fontSize: 13, fontWeight: 600, outline: 'none', boxSizing: 'border-box' }} />
-                            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>{f.suffix}</span>
-                          </div>
-                          <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 2, display: 'block' }}>{f.hint}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
+                      <tr style={{ background: NAVY }}>
+                        <td style={{ padding: '10px 14px', fontWeight: 800, color: '#fff' }}>Total Debt Service</td>
+                        <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 800, color: '#fff' }}>{fmt(totalLoanAmt)}</td>
+                        <td style={{ padding: '10px 14px' }}></td>
+                        <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 800, color: '#fff' }}>{fmt(totalMonthlyPmt)}</td>
+                        <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 800, color: '#fff' }}>{fmt(annualDS)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
 
-              {/* ── Lease Option fields ── */}
-              {selectedStructure === 'Lease Option' && (() => {
-                const s = structures[selectedStructure];
-                return (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-                    {[{ label: 'Monthly Lease Payment', field: 'monthlyLease', suffix: '$', hint: 'Monthly option lease' },
-                      { label: 'Option Fee (Upfront)', field: 'optionFee', suffix: '$', hint: 'Non-refundable option fee' },
-                      { label: 'Option Term', field: 'optionTerm', suffix: 'mo', hint: 'Months to exercise' },
-                      { label: 'Purchase Price at Exercise', field: 'purchasePrice', suffix: '$', hint: 'Locked-in price' },
-                    ].map(f => (
-                      <div key={f.field}>
-                        <label style={{ display: 'block', marginBottom: 4, fontSize: 11, color: GRAY, fontWeight: 700, textTransform: 'uppercase' }}>{f.label}</label>
-                        <div style={{ position: 'relative' }}>
-                          <input type="number" value={s[f.field] || 0}
-                            onChange={e => updateStructField(selectedStructure, f.field, parseFloat(e.target.value) || 0)}
-                            style={{ width: '100%', padding: '9px 36px 9px 12px', border: `1px solid ${B}`, borderRadius: 8, fontSize: 13, fontWeight: 600, outline: 'none', boxSizing: 'border-box' }} />
-                          <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>{f.suffix}</span>
-                        </div>
-                        <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 2, display: 'block' }}>{f.hint}</span>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
+              {/* ── Modal Footer ── */}
+              <div style={{ padding: '16px 28px', background: '#fff', borderTop: `1px solid ${B}`, borderRadius: '0 0 16px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: 12, color: GRAY }}>
+                  Annual Debt Service: <strong style={{ color: RED }}>{fmtNeg(annualDS)}</strong>
+                  &nbsp;•&nbsp; DSCR: <strong>{annualDS > 0 ? `${(noiUW / annualDS).toFixed(2)}x` : '—'}</strong>
+                  &nbsp;•&nbsp; Cash-on-Cash: <strong>{downPmt > 0 ? `${((noiUW - capexUW - annualDS) / downPmt * 100).toFixed(2)}%` : '—'}</strong>
+                </div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button onClick={() => setShowDebtModal(false)}
+                    style={{ padding: '10px 20px', border: `1px solid ${B}`, borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#374151', background: '#fff', cursor: 'pointer' }}>Cancel</button>
+                  <button onClick={saveFinancing}
+                    style={{ padding: '10px 24px', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, color: '#fff', background: '#4f46e5', cursor: 'pointer' }}>Apply Financing</button>
+                </div>
+              </div>
+
             </div>
-
-            {/* ── Modal Footer ── */}
-            <div style={{ padding: '16px 28px', borderTop: `1px solid ${B}`, display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <button onClick={() => setShowDebtModal(false)}
-                style={{ padding: '10px 20px', border: `1px solid ${B}`, borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#374151', background: '#fff', cursor: 'pointer' }}>Cancel</button>
-              <button onClick={saveFinancing}
-                style={{ padding: '10px 24px', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, color: '#fff', background: '#4f46e5', cursor: 'pointer' }}>Apply Selected Structure</button>
-            </div>
-
           </div>
-        </div>
-      )}
+        );
+      })()}
 
     </div>
   );
