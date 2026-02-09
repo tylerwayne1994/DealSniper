@@ -241,29 +241,6 @@ export default function FinancialDataWizardTab({
     }
   ], [verifiedData]);
 
-  // ─── Derived financial summary values ───
-  const derivedPrice = Number(verifiedData?.pricing_financing?.price) || 0;
-  const derivedNoi = noiT12 || Number(verifiedData?.pnl?.noi) || 0;
-  const derivedOpex = opexT12 || expenseTotal || 0;
-  const derivedCapRate = Number(verifiedData?.pnl?.cap_rate_t12) || Number(verifiedData?.pnl?.cap_rate) || (derivedNoi > 0 && derivedPrice > 0 ? derivedNoi / derivedPrice : 0);
-  
-  // Debt calcs for bottom line (using financing defaults)
-  const finLtv = Number(verifiedData?.financing?.ltv) || 75;
-  const finRate = Number(verifiedData?.financing?.interest_rate) || 6.0;
-  const finAmort = Number(verifiedData?.financing?.amortization_years) || 30;
-  const finLoanAmt = derivedPrice > 0 ? derivedPrice * finLtv / 100 : 0;
-  const finDownPmt = derivedPrice - finLoanAmt;
-  const finMonthlyRate = finRate / 100 / 12;
-  const finTotalPmts = finAmort * 12;
-  const finMonthlyPmt = finMonthlyRate > 0 && finLoanAmt > 0
-    ? finLoanAmt * (finMonthlyRate * Math.pow(1 + finMonthlyRate, finTotalPmts)) / (Math.pow(1 + finMonthlyRate, finTotalPmts) - 1)
-    : 0;
-  const finAnnualDS = finMonthlyPmt * 12;
-  const finDscr = finAnnualDS > 0 && derivedNoi > 0 ? derivedNoi / finAnnualDS : 0;
-  const finCashFlow = derivedNoi - finAnnualDS;
-  const finCashOnCash = finDownPmt > 0 ? (finCashFlow / finDownPmt) * 100 : 0;
-  const finExpenseRatio = gpr > 0 ? (derivedOpex / gpr) * 100 : 0;
-
   const sectionHeaderStyle = {
     display: 'flex',
     alignItems: 'center',
@@ -609,76 +586,6 @@ export default function FinancialDataWizardTab({
         onSelectValue={onSelectValue}
         onEditValue={onEditValue}
       />
-
-      {/* ===== BOTTOM LINE SUMMARY CARDS ===== */}
-      <div style={sectionHeaderStyle}>
-        <span style={{ fontSize: 20 }}>🎯</span>
-        <h3 style={sectionTitleStyle}>Bottom Line</h3>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
-        {/* NOI */}
-        <div style={{ padding: 20, background: derivedNoi > 0 ? '#f0fdf4' : '#fff', border: derivedNoi > 0 ? '2px solid #10b981' : '1px solid #e5e7eb', borderRadius: 12 }}>
-          <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Net Operating Income (T12)</div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: derivedNoi > 0 ? '#059669' : '#d1d5db' }}>{formatCurrency(derivedNoi)}</div>
-          <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>
-            {derivedNoi > 0 ? `${formatCurrency(Math.round(derivedNoi / 12))}/mo` : 'Needs GPR & OpEx'}
-            {totalUnits > 1 && derivedNoi > 0 ? ` • ${formatCurrency(Math.round(derivedNoi / totalUnits))}/unit` : ''}
-          </div>
-        </div>
-
-        {/* Cap Rate */}
-        <div style={{ padding: 20, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12 }}>
-          <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Cap Rate</div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: derivedCapRate > 0 ? '#111827' : '#d1d5db' }}>
-            {derivedCapRate > 0 ? formatPercent(derivedCapRate) : 'N/A'}
-          </div>
-          <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>
-            NOI ÷ Purchase Price{derivedPrice > 0 ? ` (${formatCurrency(derivedPrice)})` : ''}
-          </div>
-        </div>
-
-        {/* DSCR */}
-        <div style={{ padding: 20, background: finDscr >= 1.25 ? '#f0fdf4' : finDscr > 0 ? '#fef3c7' : '#fff', border: finDscr >= 1.25 ? '2px solid #10b981' : finDscr > 0 ? '2px solid #f59e0b' : '1px solid #e5e7eb', borderRadius: 12 }}>
-          <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>DSCR</div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: finDscr >= 1.25 ? '#059669' : finDscr > 0 ? '#d97706' : '#d1d5db' }}>
-            {finDscr > 0 ? `${finDscr.toFixed(2)}x` : 'N/A'}
-          </div>
-          <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>
-            {finDscr >= 1.25 ? '✅ Passes 1.25x minimum' : finDscr > 0 ? '⚠️ Below 1.25x' : 'Needs NOI + financing'}
-          </div>
-        </div>
-
-        {/* Cash Flow */}
-        <div style={{ padding: 20, background: finCashFlow > 0 ? '#f0fdf4' : finCashFlow < 0 ? '#fef2f2' : '#fff', border: finCashFlow > 0 ? '2px solid #10b981' : finCashFlow < 0 ? '2px solid #ef4444' : '1px solid #e5e7eb', borderRadius: 12 }}>
-          <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Annual Cash Flow</div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: finCashFlow > 0 ? '#059669' : finCashFlow < 0 ? '#dc2626' : '#d1d5db' }}>
-            {finAnnualDS > 0 ? formatCurrency(finCashFlow) : 'N/A'}
-          </div>
-          <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>
-            {finCashOnCash !== 0 ? `CoC: ${finCashOnCash.toFixed(2)}%` : ''}
-            {finCashFlow !== 0 && finAnnualDS > 0 ? ` • ${formatCurrency(Math.round(finCashFlow / 12))}/mo` : ''}
-          </div>
-        </div>
-      </div>
-
-      {/* Expense Ratio bar */}
-      {finExpenseRatio > 0 && (
-        <div style={{ marginTop: 16, padding: 14, background: '#f9fafb', borderRadius: 10, border: '1px solid #e5e7eb' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 8 }}>
-            <span>Expense Ratio</span>
-            <span>{finExpenseRatio.toFixed(1)}%</span>
-          </div>
-          <div style={{ height: 8, background: '#e5e7eb', borderRadius: 4, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${Math.min(finExpenseRatio, 100)}%`, background: finExpenseRatio > 60 ? '#ef4444' : finExpenseRatio > 50 ? '#f59e0b' : '#10b981', borderRadius: 4, transition: 'width 0.3s' }} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
-            <span>Efficient (&lt;45%)</span>
-            <span>Avg (45-55%)</span>
-            <span>High (&gt;55%)</span>
-          </div>
-        </div>
-      )}
 
       <div style={{
         marginTop: 24,

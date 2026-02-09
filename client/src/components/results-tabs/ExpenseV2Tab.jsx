@@ -99,6 +99,39 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
   const totalUW = rows.reduce((sum, r) => sum + (r.uw || 0), 0);
   const totalVA = rows.reduce((sum, r) => sum + (r.va || r.uw || 0), 0);
 
+  // ─── Bottom Line derivations ───
+  const units = scenarioData?.property?.units || 1;
+  const price = Number(scenarioData?.pricing_financing?.price) || Number(scenarioData?.pricing_financing?.purchase_price) || 0;
+
+  // NOI: UW = EGI - Total Expenses, VA = EGI(VA) - Total Expenses(VA)
+  const noiUW = egiUW - totalUW;
+  const noiVA = egiVA - totalVA;
+
+  // Cap Rate
+  const capRateUW = price > 0 ? (noiUW / price) : 0;
+  const capRateVA = price > 0 ? (noiVA / price) : 0;
+
+  // Debt Service
+  const ltv = Number(scenarioData?.financing?.ltv) || Number(fullCalcs?.financing?.ltv) || 75;
+  const interestRate = Number(scenarioData?.financing?.interest_rate) || Number(fullCalcs?.financing?.interestRate) || 6.0;
+  const amortYears = Number(scenarioData?.financing?.amortization_years) || Number(fullCalcs?.financing?.amortizationYears) || 30;
+  const loanAmount = price * ltv / 100;
+  const downPayment = price - loanAmount;
+  const monthlyRate = interestRate / 100 / 12;
+  const totalPmts = amortYears * 12;
+  const monthlyPayment = monthlyRate > 0 && loanAmount > 0
+    ? loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, totalPmts)) / (Math.pow(1 + monthlyRate, totalPmts) - 1)
+    : 0;
+  const annualDS = monthlyPayment * 12;
+  const dscrUW = annualDS > 0 && noiUW > 0 ? noiUW / annualDS : 0;
+  const dscrVA = annualDS > 0 && noiVA > 0 ? noiVA / annualDS : 0;
+  const cashFlowUW = noiUW - annualDS;
+  const cashFlowVA = noiVA - annualDS;
+  const cocUW = downPayment > 0 ? (cashFlowUW / downPayment) * 100 : 0;
+  const cocVA = downPayment > 0 ? (cashFlowVA / downPayment) * 100 : 0;
+  const expRatioUW = egiUW > 0 ? (totalUW / egiUW) * 100 : 0;
+  const expRatioVA = egiVA > 0 ? (totalVA / egiVA) * 100 : 0;
+
   return (
     <div style={{ padding: '24px', backgroundColor: '#f9fafb' }}>
       <div style={{ maxWidth: 1600, margin: '0 auto' }}>
@@ -253,10 +286,134 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
                   <td style={{ padding: '10px', textAlign: 'right', borderTop: `2px solid ${COLORS.border}`, fontWeight: 700, color: COLORS.gray }}>{fmt(totalVA / 12)}</td>
                   <td style={{ padding: '10px', borderTop: `2px solid ${COLORS.border}` }}></td>
                 </tr>
+
+                {/* NOI Row */}
+                <tr style={{ background: '#f0fdf4' }}>
+                  <td style={{ padding: '10px', borderTop: `2px solid #10b981`, fontWeight: 800, color: '#059669' }}>Net Operating Income</td>
+                  <td style={{ padding: '10px', textAlign: 'right', borderTop: `2px solid #10b981`, fontWeight: 800, color: '#059669' }}>{fmt(noiUW)}</td>
+                  <td style={{ padding: '10px', textAlign: 'right', borderTop: `2px solid #10b981`, fontWeight: 700, color: '#6b7280' }}>{fmt(noiUW / 12)}</td>
+                  <td style={{ padding: '10px', textAlign: 'right', borderTop: `2px solid #10b981`, fontWeight: 800, color: '#059669' }}>{fmt(noiVA)}</td>
+                  <td style={{ padding: '10px', textAlign: 'right', borderTop: `2px solid #10b981`, fontWeight: 700, color: '#6b7280' }}>{fmt(noiVA / 12)}</td>
+                  <td style={{ padding: '10px', borderTop: `2px solid #10b981` }}></td>
+                </tr>
+
+                {/* Debt Service Row */}
+                {annualDS > 0 && (
+                  <tr style={{ background: '#eff6ff' }}>
+                    <td style={{ padding: '10px', borderTop: `1px solid ${COLORS.border}`, fontWeight: 700, color: '#1e40af' }}>Annual Debt Service</td>
+                    <td style={{ padding: '10px', textAlign: 'right', borderTop: `1px solid ${COLORS.border}`, fontWeight: 700, color: '#dc2626' }}>({fmt(annualDS)})</td>
+                    <td style={{ padding: '10px', textAlign: 'right', borderTop: `1px solid ${COLORS.border}`, fontWeight: 600, color: '#6b7280' }}>({fmt(monthlyPayment)})</td>
+                    <td style={{ padding: '10px', textAlign: 'right', borderTop: `1px solid ${COLORS.border}`, fontWeight: 700, color: '#dc2626' }}>({fmt(annualDS)})</td>
+                    <td style={{ padding: '10px', textAlign: 'right', borderTop: `1px solid ${COLORS.border}`, fontWeight: 600, color: '#6b7280' }}>({fmt(monthlyPayment)})</td>
+                    <td style={{ padding: '10px', borderTop: `1px solid ${COLORS.border}`, textAlign: 'center' }}>
+                      <span style={{ fontSize: 11, color: '#6b7280' }}>{ltv}% LTV</span>
+                    </td>
+                  </tr>
+                )}
+
+                {/* Cash Flow Row */}
+                {annualDS > 0 && (
+                  <tr style={{ background: cashFlowUW > 0 ? '#f0fdf4' : '#fef2f2' }}>
+                    <td style={{ padding: '10px', borderTop: `2px solid ${COLORS.border}`, fontWeight: 800, color: cashFlowUW > 0 ? '#059669' : '#dc2626' }}>Cash Flow (Pre-Tax)</td>
+                    <td style={{ padding: '10px', textAlign: 'right', borderTop: `2px solid ${COLORS.border}`, fontWeight: 800, color: cashFlowUW > 0 ? '#059669' : '#dc2626' }}>{fmt(cashFlowUW)}</td>
+                    <td style={{ padding: '10px', textAlign: 'right', borderTop: `2px solid ${COLORS.border}`, fontWeight: 700, color: '#6b7280' }}>{fmt(cashFlowUW / 12)}</td>
+                    <td style={{ padding: '10px', textAlign: 'right', borderTop: `2px solid ${COLORS.border}`, fontWeight: 800, color: cashFlowVA > 0 ? '#059669' : '#dc2626' }}>{fmt(cashFlowVA)}</td>
+                    <td style={{ padding: '10px', textAlign: 'right', borderTop: `2px solid ${COLORS.border}`, fontWeight: 700, color: '#6b7280' }}>{fmt(cashFlowVA / 12)}</td>
+                    <td style={{ padding: '10px', borderTop: `2px solid ${COLORS.border}` }}></td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
         </div>
+
+        {/* ═══════ BOTTOM LINE SUMMARY CARDS ═══════ */}
+        <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+          {/* NOI Card */}
+          <div style={{ padding: 18, background: '#fff', border: noiUW > 0 ? '2px solid #10b981' : '1px solid #e5e7eb', borderRadius: 12 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 }}>Net Operating Income</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <div>
+                <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2 }}>UW</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: noiUW > 0 ? '#059669' : '#d1d5db' }}>{fmt(noiUW)}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2 }}>VA</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: noiVA > 0 ? '#059669' : '#d1d5db' }}>{fmt(noiVA)}</div>
+              </div>
+            </div>
+            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>{fmt(noiUW / 12)}/mo • {units > 1 ? `${fmt(Math.round(noiUW / units))}/unit` : ''}</div>
+          </div>
+
+          {/* Cap Rate Card */}
+          <div style={{ padding: 18, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 }}>Cap Rate</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <div>
+                <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2 }}>UW</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#111827' }}>{capRateUW > 0 ? pct(capRateUW * 100) : 'N/A'}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2 }}>VA</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: capRateVA > capRateUW ? '#059669' : '#111827' }}>{capRateVA > 0 ? pct(capRateVA * 100) : 'N/A'}</div>
+              </div>
+            </div>
+            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>NOI ÷ Price{price > 0 ? ` (${fmt(price)})` : ''}</div>
+          </div>
+
+          {/* DSCR Card */}
+          <div style={{ padding: 18, background: dscrUW >= 1.25 ? '#f0fdf4' : dscrUW > 0 ? '#fffbeb' : '#fff', border: dscrUW >= 1.25 ? '2px solid #10b981' : dscrUW > 0 ? '2px solid #f59e0b' : '1px solid #e5e7eb', borderRadius: 12 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 }}>DSCR</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <div>
+                <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2 }}>UW</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: dscrUW >= 1.25 ? '#059669' : dscrUW > 0 ? '#d97706' : '#d1d5db' }}>{dscrUW > 0 ? `${dscrUW.toFixed(2)}x` : 'N/A'}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2 }}>VA</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: dscrVA >= 1.25 ? '#059669' : dscrVA > 0 ? '#d97706' : '#d1d5db' }}>{dscrVA > 0 ? `${dscrVA.toFixed(2)}x` : 'N/A'}</div>
+              </div>
+            </div>
+            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>{dscrUW >= 1.25 ? '✅ Passes 1.25x' : dscrUW > 0 ? '⚠️ Below 1.25x' : 'Needs financing'}</div>
+          </div>
+
+          {/* Cash Flow Card */}
+          <div style={{ padding: 18, background: cashFlowUW > 0 ? '#f0fdf4' : cashFlowUW < 0 ? '#fef2f2' : '#fff', border: cashFlowUW > 0 ? '2px solid #10b981' : cashFlowUW < 0 ? '2px solid #ef4444' : '1px solid #e5e7eb', borderRadius: 12 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 }}>Annual Cash Flow</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <div>
+                <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2 }}>UW</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: cashFlowUW > 0 ? '#059669' : cashFlowUW < 0 ? '#dc2626' : '#d1d5db' }}>{annualDS > 0 ? fmt(cashFlowUW) : 'N/A'}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2 }}>VA</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: cashFlowVA > 0 ? '#059669' : cashFlowVA < 0 ? '#dc2626' : '#d1d5db' }}>{annualDS > 0 ? fmt(cashFlowVA) : 'N/A'}</div>
+              </div>
+            </div>
+            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>
+              {cocUW !== 0 ? `CoC: ${cocUW.toFixed(2)}%` : ''}{cocVA !== 0 && cocVA !== cocUW ? ` → ${cocVA.toFixed(2)}%` : ''}
+            </div>
+          </div>
+        </div>
+
+        {/* Expense Ratio Bar */}
+        {expRatioUW > 0 && (
+          <div style={{ marginTop: 14, padding: 14, background: '#fff', borderRadius: 10, border: '1px solid #e5e7eb' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
+              <span>Expense Ratio</span>
+              <span>UW: {expRatioUW.toFixed(1)}% {expRatioVA !== expRatioUW ? `→ VA: ${expRatioVA.toFixed(1)}%` : ''}</span>
+            </div>
+            <div style={{ position: 'relative', height: 10, background: '#e5e7eb', borderRadius: 5, overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', height: '100%', width: `${Math.min(expRatioUW, 100)}%`, background: expRatioUW > 60 ? '#ef4444' : expRatioUW > 50 ? '#f59e0b' : '#10b981', borderRadius: 5, transition: 'width 0.3s', opacity: 0.5 }} />
+              <div style={{ position: 'absolute', height: '100%', width: `${Math.min(expRatioVA, 100)}%`, background: expRatioVA > 60 ? '#ef4444' : expRatioVA > 50 ? '#f59e0b' : '#10b981', borderRadius: 5, transition: 'width 0.3s' }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#9ca3af', marginTop: 4 }}>
+              <span>Efficient (&lt;45%)</span>
+              <span>Avg (45-55%)</span>
+              <span>High (&gt;55%)</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
