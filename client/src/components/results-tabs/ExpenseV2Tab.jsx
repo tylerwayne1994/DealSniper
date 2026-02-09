@@ -21,8 +21,35 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
   const [capexVApct, setCapexVApct] = useState(Number(optimized.capex_pct) || 2);
   const [showDebtModal, setShowDebtModal] = useState(false);
 
+  // ── Tax reassessment estimate ──
+  const [taxRatePct, setTaxRatePct] = useState(() => {
+    if (scenarioData?.value_add?.tax_rate_pct) return Number(scenarioData.value_add.tax_rate_pct);
+    // Estimate from current taxes: taxRate = currentTaxes / price * 100
+    const currentTax = Number(expenses.taxes) || 0;
+    if (currentTax > 0 && price > 0) return parseFloat((currentTax / price * 100).toFixed(3));
+    return 1.25; // Default
+  });
+  const reassessedTax = price > 0 ? Math.round(price * taxRatePct / 100) : 0;
+
   // ── Financing state — supports all 5 structures ──
   const [selectedStructure, setSelectedStructure] = useState(financing.debt_product || 'Traditional (Bank/Agency)');
+
+  // ── Editable VA rents per unit type ──
+  const [vaRents, setVaRents] = useState(() => {
+    const saved = scenarioData?.value_add?.unit_rents || {};
+    const init = {};
+    unitMix.forEach((u, i) => {
+      const key = u.type || u.bed_bath || `Unit ${i + 1}`;
+      init[key] = saved[key] ?? u.rent_market ?? u.rent_current ?? 0;
+    });
+    return init;
+  });
+
+  // ── Utility owner/tenant paid toggles ──
+  const [utilPaidBy, setUtilPaidBy] = useState(() => {
+    const saved = scenarioData?.value_add?.utility_paid_by || {};
+    return { water_sewer: 'owner', electric: 'owner', electrical: 'owner', gas: 'owner', trash: 'owner', utilities_other: 'owner', ...saved };
+  });
   const [structures, setStructures] = useState(() => {
     const saved = financing.structures || {};
     return {
@@ -67,7 +94,13 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
 
   // ── Income ──
   const gprUW = Number(pnl.gross_potential_rent) || Number(fullCalcs?.year1?.potentialGrossIncome) || 0;
-  const gprVA = Number(fullCalcs?.year1?.potentialGrossIncome) || gprUW;
+  // VA GPR is driven by editable per-unit VA rents
+  const gprVA = unitMix.length > 0
+    ? unitMix.reduce((s, u, i) => {
+        const key = u.type || u.bed_bath || `Unit ${i + 1}`;
+        return s + (u.units || 1) * (Number(vaRents[key]) || 0) * 12;
+      }, 0)
+    : Number(fullCalcs?.year1?.potentialGrossIncome) || gprUW;
   const avgRentPerUnit = units > 0 && gprUW > 0 ? gprUW / 12 / units : 0;
 
   // Vacancy & LTL
@@ -86,20 +119,32 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
 
   // ── Utility breakdown ──
   const utilitySubKeys = [
-    { key: 'water_sewer', label: 'Water / Sewer' },
-    { key: 'electric', label: 'Electric' },
-    { key: 'electrical', label: 'Electric' },
-    { key: 'gas', label: 'Gas' },
-    { key: 'trash', label: 'Trash Removal' },
+    { key: 'water_sewer', label: 'Water / Sewer', defaultPct: 30 },
+    { key: 'electric', label: 'Electric', defaultPct: 35 },
+    { key: 'electrical', label: 'Electric', defaultPct: 35 },
+    { key: 'gas', label: 'Gas', defaultPct: 20 },
+    { key: 'trash', label: 'Trash Removal', defaultPct: 15 },
   ];
   // Build utility sub-rows from expenses data
   const utilBreakdown = expenses.utility_breakdown || {};
   const utilityRows = [];
+
+  // Check if we have a lump sum but NO individual breakdown values
+  const totalUtilLumpSum = Number(expenses.utilities) || 0;
+  const hasAnyBreakdown = utilitySubKeys.some(({ key }) => {
+    return (Number(utilBreakdown[key]) || 0) > 0 || (Number(expenses[key]) || 0) > 0;
+  });
+  const useLumpSumSplit = totalUtilLumpSum > 0 && !hasAnyBreakdown;
+
   // Check both utility_breakdown object and top-level expense keys
-  utilitySubKeys.forEach(({ key, label }) => {
+  utilitySubKeys.forEach(({ key, label, defaultPct }) => {
     const fromBreakdown = Number(utilBreakdown[key]) || 0;
     const fromExpenses = Number(expenses[key]) || 0;
-    const val = fromBreakdown || fromExpenses;
+    let val = fromBreakdown || fromExpenses;
+    // If lump sum with no breakdown, auto-split using industry %
+    if (useLumpSumSplit && key !== 'electrical') {
+      val = Math.round(totalUtilLumpSum * defaultPct / 100);
+    }
     // Use ?? so that explicit 0 in optimized stays as 0 (not fallback to UW)
     const optRaw = optimized[key] ?? optimized.utility_breakdown?.[key];
     const optVal = optRaw != null ? Number(optRaw) : val;
@@ -117,12 +162,13 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
   }
   const totalUtilBreakdownUW = utilityRows.reduce((s, r) => s + r.uw, 0);
   const totalUtilBreakdownVA = utilityRows.reduce((s, r) => s + r.va, 0);
-  const totalUtilFromExpenses = Number(expenses.utilities) || 0;
+  const totalUtilFromExpenses = totalUtilLumpSum;
   const totalUtilFromOptimized = Number(optimized.utilities) || totalUtilFromExpenses;
   // If breakdown doesn't account for the total, add an "Other Utilities" catch-all
-  const utilDiffUW = totalUtilFromExpenses - totalUtilBreakdownUW;
+  // (skip if we auto-split from lump sum — already accounts for 100%)
+  const utilDiffUW = totalUtilLumpSum - totalUtilBreakdownUW;
   const utilDiffVA = totalUtilFromOptimized - totalUtilBreakdownVA;
-  if (utilDiffUW > 50 || totalUtilFromExpenses > 0) {
+  if (!useLumpSumSplit && (utilDiffUW > 50 || totalUtilLumpSum > 0)) {
     const otherUW = Math.max(0, utilDiffUW);
     const otherVA = Math.max(0, utilDiffVA);
     if (otherUW > 0 || otherVA > 0) {
@@ -164,7 +210,10 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
   const nonUtilTotalUW = rows.reduce((s, r) => s + r.uw, 0);
   const nonUtilTotalVA = rows.reduce((s, r) => s + r.va, 0);
   const utilTotalUW = utilityRows.reduce((s, r) => s + r.uw, 0);
-  const utilTotalVA = utilityRows.reduce((s, r) => s + r.va, 0);
+  const utilTotalVA = utilityRows.reduce((s, r) => {
+    // If tenant pays this utility in VA scenario, owner expense = $0
+    return s + ((utilPaidBy[r.key] || 'owner') === 'tenant' ? 0 : r.va);
+  }, 0);
   const totalExpUW = nonUtilTotalUW + utilTotalUW;
   const totalExpVA = nonUtilTotalVA + utilTotalVA;
   // Expense ratio = Total Expenses / EGI (use absolute EGI if negative)
@@ -320,23 +369,48 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
     </tr>
   );
 
-  // Expense sub-row (indented, smaller text)
-  const subRow = (row, i, bgAlt) => (
-    <tr key={row.key} style={{ background: bgAlt ? '#fafafa' : '#fff' }}>
-      {td(row.label, { indent: true, color: GRAY })}
-      <td style={{ padding: '5px 10px', borderBottom: `1px solid ${B}`, textAlign: 'right', background: bgAlt ? '#fafafa' : '#fff' }}>
-        <input type="number" value={row.uw} onChange={e => handleChange(row.uwPath, parseFloat(e.target.value) || 0)} style={{ ...INPUT_S, width: 100 }} />
-      </td>
-      <td style={{ padding: '5px 10px', borderBottom: `1px solid ${B}`, textAlign: 'center', background: bgAlt ? '#fafafa' : '#fff' }}>
-        <button title="Copy →" onClick={() => copyVal(row.vaPath, row.uw)}
-          style={{ cursor: 'pointer', padding: '2px 7px', border: `1px solid ${B}`, borderRadius: 4, fontSize: 10, color: GRAY, background: '#f8fafc' }}>→</button>
-      </td>
-      <td style={{ padding: '5px 10px', borderBottom: `1px solid ${B}`, textAlign: 'right', background: bgAlt ? '#fafafa' : '#fff' }}>
-        <input type="number" value={row.va} onChange={e => handleChange(row.vaPath, parseFloat(e.target.value) || 0)} style={{ ...INPUT_VA, width: 100 }} />
-      </td>
-      <td style={{ padding: '5px 10px', borderBottom: `1px solid ${B}`, textAlign: 'center', fontSize: 10, color: GRAY, background: bgAlt ? '#fafafa' : '#fff' }}>$</td>
-    </tr>
-  );
+  // Expense sub-row (indented, smaller text, with owner/tenant toggle)
+  const subRow = (row, i, bgAlt) => {
+    const paidBy = utilPaidBy[row.key] || 'owner';
+    const isTenantPaid = paidBy === 'tenant';
+    return (
+      <tr key={row.key} style={{ background: bgAlt ? '#fafafa' : '#fff' }}>
+        <td style={{ padding: '5px 10px', paddingLeft: 28, borderBottom: `1px solid ${B}`, color: GRAY, fontSize: 12, fontWeight: 600 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>{row.label}</span>
+            {/* Owner / Tenant toggle */}
+            <button onClick={() => {
+              const next = paidBy === 'owner' ? 'tenant' : 'owner';
+              setUtilPaidBy(prev => ({ ...prev, [row.key]: next }));
+              handleChange(`value_add.utility_paid_by.${row.key}`, next);
+            }} style={{
+              cursor: 'pointer', padding: '1px 6px', border: `1px solid ${isTenantPaid ? '#86efac' : '#fca5a5'}`,
+              borderRadius: 4, fontSize: 9, fontWeight: 700, letterSpacing: '0.3px',
+              color: isTenantPaid ? '#15803d' : '#b91c1c',
+              background: isTenantPaid ? '#f0fdf4' : '#fef2f2',
+            }}>
+              {isTenantPaid ? 'TENANT' : 'OWNER'}
+            </button>
+          </div>
+        </td>
+        <td style={{ padding: '5px 10px', borderBottom: `1px solid ${B}`, textAlign: 'right', background: bgAlt ? '#fafafa' : '#fff' }}>
+          <input type="number" value={row.uw} onChange={e => handleChange(row.uwPath, parseFloat(e.target.value) || 0)} style={{ ...INPUT_S, width: 100 }} />
+        </td>
+        <td style={{ padding: '5px 10px', borderBottom: `1px solid ${B}`, textAlign: 'center', background: bgAlt ? '#fafafa' : '#fff' }}>
+          <button title="Copy →" onClick={() => copyVal(row.vaPath, row.uw)}
+            style={{ cursor: 'pointer', padding: '2px 7px', border: `1px solid ${B}`, borderRadius: 4, fontSize: 10, color: GRAY, background: '#f8fafc' }}>→</button>
+        </td>
+        <td style={{ padding: '5px 10px', borderBottom: `1px solid ${B}`, textAlign: 'right', background: bgAlt ? '#fafafa' : '#fff' }}>
+          {isTenantPaid ? (
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#15803d' }}>$0 — Tenant Paid</span>
+          ) : (
+            <input type="number" value={row.va} onChange={e => handleChange(row.vaPath, parseFloat(e.target.value) || 0)} style={{ ...INPUT_VA, width: 100 }} />
+          )}
+        </td>
+        <td style={{ padding: '5px 10px', borderBottom: `1px solid ${B}`, textAlign: 'center', fontSize: 10, color: GRAY, background: bgAlt ? '#fafafa' : '#fff' }}>$</td>
+      </tr>
+    );
+  };
 
   return (
     <div style={{ padding: 24, backgroundColor: '#f3f4f6' }}>
@@ -374,16 +448,40 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
                 {td('', { bg: '#f8fafc' })}{td('', { bg: '#f8fafc' })}{td('', { bg: '#f8fafc' })}{td('', { bg: '#f8fafc' })}
               </tr>
 
-              {/* Per-unit rent breakdown */}
-              {unitMix.length > 0 && unitMix.map((u, i) => (
-                <tr key={`unit-${i}`} style={{ background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                  {td(`  ${u.type || u.bed_bath || `Unit ${i + 1}`}  —  ${u.units || 1} units × $${(u.rent_current || 0).toLocaleString()}/mo`, { color: GRAY })}
-                  {td(fmt((u.units || 1) * (u.rent_current || 0) * 12), { right: true })}
-                  {td('', {})}
-                  {td(fmt((u.units || 1) * (u.rent_market || u.rent_current || 0) * 12), { right: true })}
-                  {td('', {})}
-                </tr>
-              ))}
+              {/* Per-unit rent breakdown — VA rents are editable */}
+              {unitMix.length > 0 && unitMix.map((u, i) => {
+                const unitKey = u.type || u.bed_bath || `Unit ${i + 1}`;
+                const currentRent = Number(u.rent_current) || 0;
+                const vaRent = Number(vaRents[unitKey]) || 0;
+                const rentDelta = vaRent - currentRent;
+                const rentDeltaPct = currentRent > 0 ? (rentDelta / currentRent * 100) : 0;
+                return (
+                  <tr key={`unit-${i}`} style={{ background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                    {td(`  ${unitKey}  —  ${u.units || 1} units × $${currentRent.toLocaleString()}/mo`, { color: GRAY })}
+                    {td(fmt((u.units || 1) * currentRent * 12), { right: true })}
+                    {td('', {})}
+                    <td style={{ padding: '6px 10px', borderBottom: `1px solid ${B}`, textAlign: 'right', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+                        <span style={{ fontSize: 11, color: GRAY }}>$</span>
+                        <input type="number" value={vaRent}
+                          onChange={e => {
+                            const newRent = parseFloat(e.target.value) || 0;
+                            setVaRents(prev => ({ ...prev, [unitKey]: newRent }));
+                            handleChange(`value_add.unit_rents.${unitKey}`, newRent);
+                          }}
+                          style={{ ...INPUT_VA, width: 90 }} />
+                        <span style={{ fontSize: 10, color: GRAY }}>/mo</span>
+                        {rentDelta !== 0 && (
+                          <span style={{ fontSize: 10, fontWeight: 700, color: rentDelta > 0 ? '#16a34a' : '#dc2626', marginLeft: 2 }}>
+                            {rentDelta > 0 ? '+' : ''}{rentDeltaPct.toFixed(1)}%
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    {td('', {})}
+                  </tr>
+                );
+              })}
 
               {/* Gross Potential Rental Income — green text */}
               <tr style={{ background: '#f8fafc' }}>
@@ -449,25 +547,59 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
 
               {/* Non-utility expense rows */}
               {rows.map((row, i) => (
-                <tr key={row.key} style={{ background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                  {td(row.label, {})}
-                  <td style={{ padding: '6px 10px', borderBottom: `1px solid ${B}`, textAlign: 'right', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                    <input type="number" value={row.uw} onChange={e => handleChange(row.uwPath, parseFloat(e.target.value) || 0)} style={INPUT_S} />
-                  </td>
-                  <td style={{ padding: '6px 10px', borderBottom: `1px solid ${B}`, textAlign: 'center', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                    <button title="Copy →" onClick={() => copyVal(row.vaPath, row.uw)}
-                      style={{ cursor: 'pointer', padding: '2px 8px', border: `1px solid ${B}`, borderRadius: 4, fontSize: 11, color: GRAY, background: '#f8fafc' }}>→</button>
-                  </td>
-                  <td style={{ padding: '6px 10px', borderBottom: `1px solid ${B}`, textAlign: 'right', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                    <input type="number" value={row.va} onChange={e => handleChange(row.vaPath, parseFloat(e.target.value) || 0)} style={INPUT_VA} />
-                  </td>
-                  <td style={{ padding: '6px 10px', borderBottom: `1px solid ${B}`, textAlign: 'center', fontSize: 11, color: GRAY, background: i % 2 === 0 ? '#fff' : '#fafafa' }}>$</td>
-                </tr>
+                <React.Fragment key={row.key}>
+                  <tr style={{ background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                    {td(row.label, {})}
+                    <td style={{ padding: '6px 10px', borderBottom: `1px solid ${B}`, textAlign: 'right', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                      <input type="number" value={row.uw} onChange={e => handleChange(row.uwPath, parseFloat(e.target.value) || 0)} style={INPUT_S} />
+                    </td>
+                    <td style={{ padding: '6px 10px', borderBottom: `1px solid ${B}`, textAlign: 'center', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                      <button title="Copy →" onClick={() => copyVal(row.vaPath, row.uw)}
+                        style={{ cursor: 'pointer', padding: '2px 8px', border: `1px solid ${B}`, borderRadius: 4, fontSize: 11, color: GRAY, background: '#f8fafc' }}>→</button>
+                    </td>
+                    <td style={{ padding: '6px 10px', borderBottom: `1px solid ${B}`, textAlign: 'right', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                      <input type="number" value={row.va} onChange={e => handleChange(row.vaPath, parseFloat(e.target.value) || 0)} style={INPUT_VA} />
+                    </td>
+                    <td style={{ padding: '6px 10px', borderBottom: `1px solid ${B}`, textAlign: 'center', fontSize: 11, color: GRAY, background: i % 2 === 0 ? '#fff' : '#fafafa' }}>$</td>
+                  </tr>
+                  {/* Tax reassessment hint row after Property Taxes */}
+                  {row.key === 'taxes' && price > 0 && (
+                    <tr style={{ background: '#fffbeb' }}>
+                      <td colSpan={5} style={{ padding: '4px 10px 4px 28px', borderBottom: `1px solid ${B}`, fontSize: 11 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <span style={{ color: '#92400e', fontWeight: 600 }}>⚠ Est. Reassessed Tax:</span>
+                          <span style={{ fontWeight: 700, color: '#92400e' }}>{fmt(reassessedTax)}</span>
+                          <span style={{ color: '#b45309' }}>@ </span>
+                          <input type="number" step="0.01" value={taxRatePct}
+                            onChange={e => {
+                              const v = parseFloat(e.target.value) || 0;
+                              setTaxRatePct(v);
+                              handleChange('value_add.tax_rate_pct', v);
+                            }}
+                            style={{ width: 60, padding: '2px 6px', border: '1px solid #fbbf24', borderRadius: 4, fontSize: 11, textAlign: 'center', background: '#fffbeb', fontWeight: 700, color: '#92400e' }} />
+                          <span style={{ color: '#b45309', fontSize: 10 }}>% of purchase price ({fmt(price)})</span>
+                          <button onClick={() => {
+                            handleChange('value_add.optimized_expenses.taxes', reassessedTax);
+                          }} style={{ cursor: 'pointer', padding: '2px 8px', border: '1px solid #fbbf24', borderRadius: 4, fontSize: 10, fontWeight: 700, color: '#92400e', background: '#fef3c7', marginLeft: 4 }}>
+                            Use as VA →
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))}
 
               {/* ── Utilities Section Header ── */}
               <tr>
-                {td('UTILITIES BREAKDOWN', { bold: true, color: '#4338ca', bg: '#eef2ff', py: 5 })}
+                <td style={{ padding: '5px 10px', borderBottom: `1px solid ${B}`, background: '#eef2ff', fontWeight: 700, fontSize: 12, color: '#4338ca' }}>
+                  UTILITIES BREAKDOWN
+                  {useLumpSumSplit && (
+                    <span style={{ fontSize: 9, fontWeight: 600, color: '#6366f1', marginLeft: 8, background: '#ddd6fe', padding: '1px 6px', borderRadius: 4 }}>
+                      Auto-split from lump sum
+                    </span>
+                  )}
+                </td>
                 <td style={{ padding: '5px 10px', borderBottom: `1px solid ${B}`, textAlign: 'right', background: '#eef2ff', fontSize: 11, fontWeight: 700, color: '#4338ca' }}>
                   {fmt(utilTotalUW)}
                 </td>
@@ -543,8 +675,8 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
                 {td('', {})}
               </tr>
 
-              {/* ─── Net Income from Operations — NAVY ROW ─── */}
-              {navyRow('Net Income from Operations', netIncomeUW, netIncomeVA)}
+              {/* ─── Cash Flow — NAVY ROW ─── */}
+              {navyRow('Cash Flow Before Tax', netIncomeUW, netIncomeVA)}
 
             </tbody>
           </table>
@@ -557,7 +689,7 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
             { label: 'DSCR', uw: dscrUW > 0 ? `${dscrUW.toFixed(2)}x` : '—', va: dscrVA > 0 ? `${dscrVA.toFixed(2)}x` : '—' },
             { label: 'CASH-ON-CASH', uw: pctFmt(cocUW), va: pctFmt(cocVA) },
             { label: 'EXPENSE RATIO', uw: pctFmt(expRatioUW), va: pctFmt(expRatioVA) },
-            { label: 'AVG RENT/UNIT', uw: fmt(avgRentPerUnit), va: unitMix.length > 0 ? fmt(unitMix.reduce((s, u) => s + (u.units || 1) * (u.rent_market || u.rent_current || 0), 0) / units) : fmt(avgRentPerUnit) },
+            { label: 'AVG RENT/UNIT', uw: fmt(avgRentPerUnit), va: unitMix.length > 0 ? fmt(unitMix.reduce((s, u, i) => { const k = u.type || u.bed_bath || `Unit ${i+1}`; return s + (u.units || 1) * (Number(vaRents[k]) || 0); }, 0) / units) : fmt(avgRentPerUnit) },
           ].map((m, i) => (
             <div key={m.label} style={{ textAlign: 'center', flex: 1, borderRight: i < 4 ? `1px solid ${B}` : 'none' }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: GRAY, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 }}>{m.label}</div>
