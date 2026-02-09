@@ -591,6 +591,47 @@ Return ONLY the JSON object."""
                     if val:
                         total += val
             data["expenses"]["total"] = total
+            
+            # Bridge expenses.total → pnl.operating_expenses_t12
+            # The parser often extracts line-item expenses but fails to set the T12 summary field
+            if total > 0 and "pnl" in data:
+                if not data["pnl"].get("operating_expenses_t12"):
+                    data["pnl"]["operating_expenses_t12"] = total
+                    print(f"[post_process] Set pnl.operating_expenses_t12 = {total} from expense line items")
+                if not data["pnl"].get("operating_expenses"):
+                    data["pnl"]["operating_expenses"] = total
+                    print(f"[post_process] Set pnl.operating_expenses = {total} from expense line items")
+                
+                # Recalculate NOI from EGI/GPR - expenses if NOI is missing
+                egi_val = data["pnl"].get("effective_gross_income") or data["pnl"].get("gross_potential_rent")
+                if egi_val and not data["pnl"].get("noi"):
+                    data["pnl"]["noi"] = egi_val - total
+                    print(f"[post_process] Calculated pnl.noi = {egi_val} - {total} = {data['pnl']['noi']}")
+                if egi_val and not data["pnl"].get("noi_t12"):
+                    noi_val = data["pnl"].get("noi") or (egi_val - total)
+                    data["pnl"]["noi_t12"] = noi_val
+                    print(f"[post_process] Set pnl.noi_t12 = {noi_val}")
+                
+                # Recalculate cap rate with updated NOI
+                noi_for_cap = data["pnl"].get("noi_t12") or data["pnl"].get("noi")
+                price_val = data.get("pricing_financing", {}).get("price")
+                if noi_for_cap and price_val and not data["pnl"].get("cap_rate_t12"):
+                    data["pnl"]["cap_rate_t12"] = noi_for_cap / price_val
+                    print(f"[post_process] Calculated pnl.cap_rate_t12 = {data['pnl']['cap_rate_t12']:.4f}")
+                
+                # Expense ratio
+                if egi_val and not data["pnl"].get("expense_ratio_t12"):
+                    data["pnl"]["expense_ratio_t12"] = total / egi_val
+                    print(f"[post_process] Calculated pnl.expense_ratio_t12 = {data['pnl']['expense_ratio_t12']:.4f}")
+        
+        # Also bridge noi → noi_t12 if noi exists but noi_t12 doesn't
+        if "pnl" in data:
+            if data["pnl"].get("noi") and not data["pnl"].get("noi_t12"):
+                data["pnl"]["noi_t12"] = data["pnl"]["noi"]
+                print(f"[post_process] Bridged pnl.noi → pnl.noi_t12 = {data['pnl']['noi']}")
+            if data["pnl"].get("cap_rate") and not data["pnl"].get("cap_rate_t12"):
+                data["pnl"]["cap_rate_t12"] = data["pnl"]["cap_rate"]
+                print(f"[post_process] Bridged pnl.cap_rate → pnl.cap_rate_t12 = {data['pnl']['cap_rate']}")
         
         # Process underwriting metrics
         if "underwriting" in data:

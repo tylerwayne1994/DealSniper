@@ -884,128 +884,181 @@ function UnderwriteV2Page() {
 
           {activeTab === 'financing' && (
             <div style={styles.card}>
-              <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Landmark size={20} /> Loan & Financing Terms
-              </h3>
-              <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 20 }}>
-                Enter your financing assumptions. Default values are typical market terms.
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20 }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Loan-to-Value (LTV) %
-                  </label>
-                  <input
-                    type="number"
-                    style={styles.input}
-                    value={verifiedData?.financing?.ltv || 75}
-                    onChange={(e) => updateVerifiedField('financing', 'ltv', parseFloat(e.target.value))}
-                    placeholder="75"
-                  />
-                  <span style={{ fontSize: 12, color: '#9ca3af' }}>Typical: 65-80%</span>
+              {/* ── Header ── */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: 'linear-gradient(135deg, #6366f1, #4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Landmark size={22} color="#fff" />
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Interest Rate %
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    style={styles.input}
-                    value={verifiedData?.financing?.interest_rate || 6.0}
-                    onChange={(e) => updateVerifiedField('financing', 'interest_rate', parseFloat(e.target.value))}
-                    placeholder="6.0"
-                  />
-                  <span style={{ fontSize: 12, color: '#9ca3af' }}>Current market: 5.5-7.5%</span>
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Loan Term (Years)
-                  </label>
-                  <input
-                    type="number"
-                    style={styles.input}
-                    value={verifiedData?.financing?.loan_term_years || 10}
-                    onChange={(e) => updateVerifiedField('financing', 'loan_term_years', parseFloat(e.target.value))}
-                    placeholder="10"
-                  />
-                  <span style={{ fontSize: 12, color: '#9ca3af' }}>Typical: 5-10 years</span>
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Amortization (Years)
-                  </label>
-                  <input
-                    type="number"
-                    style={styles.input}
-                    value={verifiedData?.financing?.amortization_years || 30}
-                    onChange={(e) => updateVerifiedField('financing', 'amortization_years', parseFloat(e.target.value))}
-                    placeholder="30"
-                  />
-                  <span style={{ fontSize: 12, color: '#9ca3af' }}>Typical: 25-30 years</span>
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Interest-Only Years
-                  </label>
-                  <input
-                    type="number"
-                    style={styles.input}
-                    value={verifiedData?.financing?.io_years || 0}
-                    onChange={(e) => updateVerifiedField('financing', 'io_years', parseFloat(e.target.value))}
-                    placeholder="0"
-                  />
-                  <span style={{ fontSize: 12, color: '#9ca3af' }}>Optional: 0-3 years</span>
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#6b7280', fontWeight: 700 }}>
-                    Loan Fees %
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    style={styles.input}
-                    value={verifiedData?.financing?.loan_fees_percent || 1.5}
-                    onChange={(e) => updateVerifiedField('financing', 'loan_fees_percent', parseFloat(e.target.value))}
-                    placeholder="1.5"
-                  />
-                  <span style={{ fontSize: 12, color: '#9ca3af' }}>Origination fees</span>
+                  <h3 style={{ fontSize: 18, fontWeight: 800, color: '#111827', margin: 0 }}>Financing Assumptions</h3>
+                  <p style={{ fontSize: 13, color: '#6b7280', margin: '2px 0 0 0' }}>Configure your loan terms to calculate debt service & cash flow</p>
                 </div>
               </div>
-              
-              {/* Calculated loan summary */}
-              {verifiedData?.pricing_financing?.price && (
-                <div style={{ marginTop: 24, padding: 16, background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0' }}>
-                  <h4 style={{ fontSize: 14, fontWeight: 700, color: '#166534', marginBottom: 12 }}>Calculated Loan Summary</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-                    <div>
-                      <div style={{ fontSize: 12, color: '#6b7280' }}>Loan Amount</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>
-                        ${((verifiedData.pricing_financing.price * (verifiedData.financing?.ltv || 75) / 100)).toLocaleString(undefined, {maximumFractionDigits: 0})}
+
+              {/* ── Senior Loan Card ── */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: 24, marginBottom: 24 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+                  <span style={{ fontSize: 18 }}>🏦</span>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Senior Loan</span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 6, fontSize: 12, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                      Loan-to-Value (LTV)
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input type="number" style={{ ...styles.input, paddingRight: 32 }} value={verifiedData?.financing?.ltv || 75} onChange={(e) => updateVerifiedField('financing', 'ltv', parseFloat(e.target.value))} placeholder="75" />
+                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#94a3b8', fontWeight: 600 }}>%</span>
+                    </div>
+                    <span style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, display: 'block' }}>Typical: 65–80%</span>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 6, fontSize: 12, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                      Interest Rate
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input type="number" step="0.1" style={{ ...styles.input, paddingRight: 32 }} value={verifiedData?.financing?.interest_rate || 6.0} onChange={(e) => updateVerifiedField('financing', 'interest_rate', parseFloat(e.target.value))} placeholder="6.0" />
+                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#94a3b8', fontWeight: 600 }}>%</span>
+                    </div>
+                    <span style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, display: 'block' }}>Current market: 5.5–7.5%</span>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 6, fontSize: 12, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                      Loan Term
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input type="number" style={{ ...styles.input, paddingRight: 40 }} value={verifiedData?.financing?.loan_term_years || 10} onChange={(e) => updateVerifiedField('financing', 'loan_term_years', parseFloat(e.target.value))} placeholder="10" />
+                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>yrs</span>
+                    </div>
+                    <span style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, display: 'block' }}>Typical: 5–10 years</span>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 6, fontSize: 12, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                      Amortization
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input type="number" style={{ ...styles.input, paddingRight: 40 }} value={verifiedData?.financing?.amortization_years || 30} onChange={(e) => updateVerifiedField('financing', 'amortization_years', parseFloat(e.target.value))} placeholder="30" />
+                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>yrs</span>
+                    </div>
+                    <span style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, display: 'block' }}>Typical: 25–30 years</span>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 6, fontSize: 12, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                      Interest-Only Period
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input type="number" style={{ ...styles.input, paddingRight: 40 }} value={verifiedData?.financing?.io_years || 0} onChange={(e) => updateVerifiedField('financing', 'io_years', parseFloat(e.target.value))} placeholder="0" />
+                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>yrs</span>
+                    </div>
+                    <span style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, display: 'block' }}>Optional: 0–3 years</span>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 6, fontSize: 12, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                      Loan Fees
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input type="number" step="0.1" style={{ ...styles.input, paddingRight: 32 }} value={verifiedData?.financing?.loan_fees_percent || 1.5} onChange={(e) => updateVerifiedField('financing', 'loan_fees_percent', parseFloat(e.target.value))} placeholder="1.5" />
+                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#94a3b8', fontWeight: 600 }}>%</span>
+                    </div>
+                    <span style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, display: 'block' }}>Origination fees</span>
+                  </div>
+                </div>
+
+                {/* ── Monthly Payment Display ── */}
+                {verifiedData?.pricing_financing?.price && (() => {
+                  const P = verifiedData.pricing_financing.price * (verifiedData?.financing?.ltv || 75) / 100;
+                  const r = (verifiedData?.financing?.interest_rate || 6) / 100 / 12;
+                  const n = (verifiedData?.financing?.amortization_years || 30) * 12;
+                  const monthly = r > 0 ? P * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1) : (P / n);
+                  return (
+                    <div style={{ marginTop: 20, padding: 16, background: '#fff', borderRadius: 10, border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 8, background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <DollarSign size={18} color="#2563eb" />
+                        </div>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: '#475569' }}>Monthly Payment</span>
+                      </div>
+                      <span style={{ fontSize: 22, fontWeight: 800, color: '#1e293b' }}>
+                        ${monthly.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </span>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* ── Financing Summary Cards ── */}
+              {verifiedData?.pricing_financing?.price && (() => {
+                const purchasePrice = verifiedData.pricing_financing.price;
+                const ltvPct = verifiedData?.financing?.ltv || 75;
+                const loanFeesPct = verifiedData?.financing?.loan_fees_percent || 1.5;
+                const loanAmt = purchasePrice * ltvPct / 100;
+                const downPmt = purchasePrice - loanAmt;
+                const loanFees = loanAmt * loanFeesPct / 100;
+                const closingCosts = purchasePrice * 0.02; // 2% estimate
+                const totalAcquisitionCost = purchasePrice + loanFees + closingCosts;
+                const ltcPct = (loanAmt / totalAcquisitionCost) * 100;
+                const equityRequired = totalAcquisitionCost - loanAmt;
+
+                return (
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                      <span style={{ fontSize: 18 }}>📊</span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Financing Summary</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+                      {/* Total Acquisition Cost */}
+                      <div style={{ padding: 20, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: 8 }}>Total Acquisition Cost</div>
+                        <div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>${totalAcquisitionCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 6 }}>
+                          Purchase + fees + closing
+                        </div>
+                      </div>
+                      {/* Total Loan Amount */}
+                      <div style={{ padding: 20, background: '#eff6ff', borderRadius: 12, border: '1px solid #bfdbfe' }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: 8 }}>Total Loan Amount</div>
+                        <div style={{ fontSize: 24, fontWeight: 800, color: '#1e40af' }}>${loanAmt.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                        <div style={{ fontSize: 11, color: '#93c5fd', marginTop: 6 }}>
+                          {ltvPct}% of purchase price
+                        </div>
+                      </div>
+                      {/* Down Payment / Equity */}
+                      <div style={{ padding: 20, background: '#f0fdf4', borderRadius: 12, border: '1px solid #86efac' }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: 8 }}>Down Payment</div>
+                        <div style={{ fontSize: 24, fontWeight: 800, color: '#15803d' }}>${downPmt.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#22c55e', fontWeight: 700, marginTop: 6 }}>
+                          <span>↑</span>{(100 - ltvPct).toFixed(1)}%
+                        </div>
+                      </div>
+                      {/* Loan-to-Cost */}
+                      <div style={{ padding: 20, background: '#faf5ff', borderRadius: 12, border: '1px solid #d8b4fe' }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: 8 }}>Loan-to-Cost (LTC)</div>
+                        <div style={{ fontSize: 24, fontWeight: 800, color: '#6d28d9' }}>{ltcPct.toFixed(1)}%</div>
+                        <div style={{ fontSize: 11, color: '#a78bfa', marginTop: 6 }}>
+                          Equity: ${equityRequired.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <div style={{ fontSize: 12, color: '#6b7280' }}>Down Payment</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>
-                        ${((verifiedData.pricing_financing.price * (100 - (verifiedData.financing?.ltv || 75)) / 100)).toLocaleString(undefined, {maximumFractionDigits: 0})}
+
+                    {/* Fees breakdown */}
+                    <div style={{ marginTop: 16, padding: 14, background: '#fffbeb', borderRadius: 10, border: '1px solid #fde68a', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                      <div>
+                        <div style={{ fontSize: 11, color: '#92400e', fontWeight: 600 }}>Loan Fees ({loanFeesPct}%)</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: '#78350f' }}>${loanFees.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                       </div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 12, color: '#6b7280' }}>Est. Monthly Payment</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>
-                        ${(() => {
-                          const P = verifiedData.pricing_financing.price * (verifiedData.financing?.ltv || 75) / 100;
-                          const r = (verifiedData.financing?.interest_rate || 6) / 100 / 12;
-                          const n = (verifiedData.financing?.amortization_years || 30) * 12;
-                          if (r === 0) return (P / n).toLocaleString(undefined, {maximumFractionDigits: 0});
-                          const payment = P * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-                          return payment.toLocaleString(undefined, {maximumFractionDigits: 0});
-                        })()}
+                      <div>
+                        <div style={{ fontSize: 11, color: '#92400e', fontWeight: 600 }}>Est. Closing Costs (2%)</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: '#78350f' }}>${closingCosts.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 11, color: '#92400e', fontWeight: 600 }}>Total Cash to Close</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: '#78350f' }}>${(downPmt + loanFees + closingCosts).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           )}
 
