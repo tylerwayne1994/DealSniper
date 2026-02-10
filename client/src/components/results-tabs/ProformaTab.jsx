@@ -32,25 +32,44 @@ const ProformaTab = ({
                            scenarioData?.pnl?.other_income || 
                            scenarioData?.pnl?.additional_income || 0;
   
-  // Operating expenses
+  // Operating expenses — individual line items for detailed proforma
   const expMap = scenarioData?.expenses || {};
   const utilMap = expMap.utility_breakdown || {};
   const utilitiesSum = Object.keys(utilMap).length > 0
     ? Object.values(utilMap).reduce((s, v) => s + (parseFloat(v) || 0), 0)
     : (parseFloat(expMap.utilities) || 0);
-  const computedOperatingExpensesAnnual = (
-    (parseFloat(expMap.taxes) || 0) +
-    (parseFloat(expMap.insurance) || 0) +
-    (parseFloat(expMap.management) || 0) +
-    (parseFloat(expMap.vacancy) || 0) +
-    (parseFloat(expMap.capex) || 0) +
-    utilitiesSum
-  );
-  const year1Expenses = fullCalcs?.year1?.operatingExpenses || 
-                        computedOperatingExpensesAnnual ||
-                        scenarioData?.pnl?.total_operating_expenses ||
-                        scenarioData?.expenses?.total_operating_expenses || 
-                        scenarioData?.pnl?.operating_expenses || 0;
+  // Individual expense line items for detailed year-over-year view
+  const labelMap = {
+    taxes: 'Property Taxes', insurance: 'Insurance',
+    repairs_maintenance: 'Maintenance', management: 'Management Fees',
+    payroll: 'Payroll', admin: 'Administrative', marketing: 'Marketing',
+    other: 'Other Expenses', turnover_costs: 'Turnover',
+    professional_fees: 'Professional Fees',
+  };
+  const skipKeys = new Set([
+    'utility_breakdown', 'utilities', 'water_sewer', 'electric', 'electrical', 'gas', 'trash',
+    'management_pct', 'vacancy_pct', 'loss_to_lease_pct', 'capex_pct',
+    'management_rate', 'vacancy_rate', 'capex_rate', 'total',
+    'electric_reimbursable', 'gas_submeter', 'trash_service_fee', 'water_sewer_revenue',
+    'utilities_other', 'capex', 'vacancy',
+  ]);
+  const expenseLineItems = [];
+  Object.entries(expMap).forEach(([key, val]) => {
+    if (skipKeys.has(key) || typeof val === 'object') return;
+    const v = Number(val) || 0;
+    if (v > 0) expenseLineItems.push({ key, label: labelMap[key] || key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), year1: v });
+  });
+  // Add utilities as a single line
+  if (utilitiesSum > 0) expenseLineItems.push({ key: 'utilities', label: 'Utilities', year1: utilitiesSum });
+
+  // Loss to Lease
+  const ltlPct = Number(expMap.loss_to_lease_pct || 0) / 100;
+
+  // CAPEX
+  const capexPct = Number(expMap.capex_pct || 2) / 100;
+
+  // Total units for per-unit metrics
+  const totalUnits = Number(scenarioData?.property?.units) || unitMix.reduce((s, u) => s + (u.units || 0), 0) || 1;
   
   const year1NOI = fullCalcs?.year1?.noi || 
                    scenarioData?.pnl?.noi ||
@@ -66,34 +85,51 @@ const ProformaTab = ({
                        scenarioData?.pricing_financing?.price || 
                        fullCalcs?.acquisition?.purchasePrice || 0;
   
-  // Calculate proforma for multiple years
+  // Calculate proforma for multiple years — with detailed line items
   const generateProforma = () => {
     const years = [];
     
     for (let year = 1; year <= yearsToShow; year++) {
-      const growthFactor = Math.pow(1 + rentGrowthRate, year - 1);
-      const expenseGrowthFactor = Math.pow(1 + expenseGrowthRate, year - 1);
+      const rentGF = Math.pow(1 + rentGrowthRate, year - 1);
+      const expGF = Math.pow(1 + expenseGrowthRate, year - 1);
       
-      const grossRent = year1Rent * growthFactor;
-      const otherIncome = year1OtherIncome * growthFactor;
+      const grossRent = year1Rent * rentGF;
+      const otherIncome = year1OtherIncome * rentGF;
       const grossIncome = grossRent + otherIncome;
+      const lossToLease = grossIncome * ltlPct;
       const vacancy = grossIncome * vacancyRate;
-      const effectiveGrossIncome = grossIncome - vacancy;
-      const operatingExpenses = year1Expenses * expenseGrowthFactor;
+      const effectiveGrossIncome = grossIncome - vacancy - lossToLease;
+      
+      // Individual expense line items projected with expense growth
+      const expLines = expenseLineItems.map(item => ({
+        ...item,
+        projected: item.year1 * expGF,
+      }));
+      const operatingExpenses = expLines.reduce((s, e) => s + e.projected, 0);
       const noi = effectiveGrossIncome - operatingExpenses;
-      const cashFlow = noi - annualDebtService;
+      const capex = effectiveGrossIncome * capexPct;
+      const cashFlow = noi - capex - annualDebtService;
+      const capRate = purchasePrice > 0 ? (noi / purchasePrice) : 0;
+      const dscr = annualDebtService > 0 ? (noi / annualDebtService) : 0;
       
       years.push({
         year,
         grossRent,
         otherIncome,
         grossIncome,
+        lossToLease,
         vacancy,
         effectiveGrossIncome,
+        expLines,
         operatingExpenses,
         noi,
+        capex,
         debtService: annualDebtService,
-        cashFlow
+        cashFlow,
+        capRate,
+        dscr,
+        noiPerUnit: noi / totalUnits,
+        expPerUnit: operatingExpenses / totalUnits,
       });
     }
     
@@ -533,77 +569,42 @@ const ProformaTab = ({
               </tr>
             </thead>
             <tbody>
-              {/* Revenue Section */}
-              <ProformaRow 
-                label="Gross Rental Income"
-                values={proformaYears.map(y => y.grossRent)}
-                fmt={fmt}
-                isHeader={false}
-              />
-              <ProformaRow 
-                label="Other Income"
-                values={proformaYears.map(y => y.otherIncome)}
-                fmt={fmt}
-              />
-              <ProformaRow 
-                label="Gross Potential Income"
-                values={proformaYears.map(y => y.grossIncome)}
-                fmt={fmt}
-                isBold
-              />
-              <ProformaRow 
-                label="Vacancy & Credit Loss"
-                values={proformaYears.map(y => -y.vacancy)}
-                fmt={fmt}
-                isNegative
-              />
-              <ProformaRow 
-                label="Effective Gross Income"
-                values={proformaYears.map(y => y.effectiveGrossIncome)}
-                fmt={fmt}
-                isBold
-                bgColor="#f0f9ff"
-              />
+              {/* ═══ REVENUE ═══ */}
+              <ProformaRow label="Gross Rental Income" values={proformaYears.map(y => y.grossRent)} fmt={fmt} />
+              <ProformaRow label="Other Income" values={proformaYears.map(y => y.otherIncome)} fmt={fmt} />
+              <ProformaRow label="Gross Potential Income" values={proformaYears.map(y => y.grossIncome)} fmt={fmt} isBold bgColor="#f0fdf4" />
+              <ProformaRow label="Vacancy & Credit Loss" values={proformaYears.map(y => -y.vacancy)} fmt={fmt} isNegative />
+              {ltlPct > 0 && <ProformaRow label="Loss to Lease" values={proformaYears.map(y => -y.lossToLease)} fmt={fmt} isNegative />}
+              <ProformaRow label="Effective Gross Income" values={proformaYears.map(y => y.effectiveGrossIncome)} fmt={fmt} isBold bgColor="#f0fdf4" />
               
-              {/* Expenses Section */}
-              <tr style={{ height: '12px', backgroundColor: '#f9fafb' }}>
-                <td colSpan={yearsToShow + 1}></td>
+              {/* ═══ OPERATING EXPENSES (individual line items) ═══ */}
+              <tr style={{ backgroundColor: '#f8fafc' }}>
+                <td colSpan={yearsToShow + 1} style={{ padding: '8px 16px', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #e5e7eb' }}>Operating Expenses</td>
               </tr>
-              <ProformaRow 
-                label="Operating Expenses"
-                values={proformaYears.map(y => -y.operatingExpenses)}
-                fmt={fmt}
-                isNegative
-              />
+              {expenseLineItems.map(item => (
+                <ProformaRow key={item.key} label={`  ${item.label}`} values={proformaYears.map(y => -(y.expLines.find(e => e.key === item.key)?.projected || 0))} fmt={fmt} isNegative isIndented />
+              ))}
+              <ProformaRow label="Total Operating Expenses" values={proformaYears.map(y => -y.operatingExpenses)} fmt={fmt} isBold isNegative bgColor="#fef2f2" />
               
-              {/* NOI Section */}
-              <ProformaRow 
-                label="Net Operating Income"
-                values={proformaYears.map(y => y.noi)}
-                fmt={fmt}
-                isBold
-                bgColor="#dcfce7"
-              />
+              {/* ═══ NOI ═══ */}
+              <ProformaRow label="Net Operating Income" values={proformaYears.map(y => y.noi)} fmt={fmt} isBold bgColor="#dbeafe" />
               
-              {/* Financing Section */}
-              <tr style={{ height: '12px', backgroundColor: '#f9fafb' }}>
-                <td colSpan={yearsToShow + 1}></td>
+              {/* ═══ BELOW THE LINE ═══ */}
+              <tr style={{ backgroundColor: '#f8fafc' }}>
+                <td colSpan={yearsToShow + 1} style={{ padding: '8px 16px', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #e5e7eb' }}>Below the Line</td>
               </tr>
-              <ProformaRow 
-                label="Debt Service"
-                values={proformaYears.map(y => -y.debtService)}
-                fmt={fmt}
-                isNegative
-              />
-              
-              {/* Cash Flow Section */}
-              <ProformaRow 
-                label="Cash Flow After Financing"
-                values={proformaYears.map(y => y.cashFlow)}
-                fmt={fmt}
-                isBold
-                bgColor="#dbeafe"
-              />
+              <ProformaRow label="CAPEX Reserve" values={proformaYears.map(y => -y.capex)} fmt={fmt} isNegative />
+              <ProformaRow label="Debt Service" values={proformaYears.map(y => -y.debtService)} fmt={fmt} isNegative />
+              <ProformaRow label="Cash Flow Before Tax" values={proformaYears.map(y => y.cashFlow)} fmt={fmt} isBold bgColor="#dbeafe" />
+
+              {/* ═══ KEY METRICS ROW ═══ */}
+              <tr style={{ backgroundColor: '#f8fafc' }}>
+                <td colSpan={yearsToShow + 1} style={{ padding: '8px 16px', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #e5e7eb' }}>Key Metrics</td>
+              </tr>
+              <ProformaRow label="Cap Rate" values={proformaYears.map(y => y.capRate * 100)} fmt={(v) => `${v.toFixed(2)}%`} />
+              <ProformaRow label="DSCR" values={proformaYears.map(y => y.dscr)} fmt={(v) => `${v.toFixed(2)}x`} />
+              <ProformaRow label="NOI / Unit" values={proformaYears.map(y => y.noiPerUnit)} fmt={fmt} />
+              <ProformaRow label="Expenses / Unit" values={proformaYears.map(y => y.expPerUnit)} fmt={fmt} />
             </tbody>
           </table>
         </div>
@@ -702,7 +703,7 @@ const ProformaTab = ({
 };
 
 // Helper component for table rows
-const ProformaRow = ({ label, values, fmt, isBold, bgColor, isNegative, isHeader }) => {
+const ProformaRow = ({ label, values, fmt, isBold, bgColor, isNegative, isHeader, isIndented }) => {
   return (
     <tr style={{ 
       borderBottom: '1px solid #e5e7eb',
@@ -710,6 +711,7 @@ const ProformaRow = ({ label, values, fmt, isBold, bgColor, isNegative, isHeader
     }}>
       <td style={{
         padding: '10px 16px',
+        paddingLeft: isIndented ? '32px' : '16px',
         fontSize: '13px',
         fontWeight: isBold ? '700' : '500',
         color: isNegative ? '#ef4444' : '#111827',
