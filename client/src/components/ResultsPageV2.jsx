@@ -2351,767 +2351,334 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
           />
         );
 
-      case 'value-add':
-        // Calculate current metrics (use T12 NOI as baseline)
+      case 'value-add': {
+        // ════════════════════════════════════════════════════════════
+        // VALUE-ADD STRATEGY — Cactus-inspired clean layout
+        // ════════════════════════════════════════════════════════════
+        const vB='#e5e7eb',vLB='#6b7280',vVL='#111827';
+        const vSC={backgroundColor:'#fff',borderRadius:16,padding:'24px 28px',marginBottom:24,boxShadow:'0 1px 3px rgba(0,0,0,0.06)',border:`1px solid ${vB}`};
+        const vFmt=(v)=>{if(v==null||isNaN(v))return'$0';return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(v);};
+        const vPct=(v)=>{if(v==null||isNaN(v))return'0.0%';return`${Number(v).toFixed(2)}%`;};
+        const vINP={padding:'8px 12px',border:`1px solid ${vB}`,borderRadius:8,fontSize:13,fontWeight:600,outline:'none',textAlign:'right',background:'#fff',fontFamily:'inherit',boxSizing:'border-box'};
+
+        // ── Data ──
         const currentNOI = noiT12;
         const currentPurchasePrice = scenarioData.pricing_financing?.purchase_price || 0;
         const currentCapRate = fullCalcs.year1?.capRate || 0;
         const currentDSCR = fullCalcs.year1?.dscr || 0;
         const valueAddTotalUnits = scenarioData.property?.units || 0;
         const valueAddAnnualDebtService = scenarioData.pricing_financing?.annual_debt_service || fullCalcs.financing?.annualDebtService || 0;
-        
-        // Get current and market rents from actual unit mix data - SHOW TOTAL NOT AVERAGE
+
         const valueAddUnitMix = scenarioData.unit_mix || [];
-        const totalCurrentMonthlyRent = valueAddUnitMix.reduce((sum, u) => sum + ((u.units || 0) * (u.rent_current || 0)), 0);
+        const totalCurrentMonthlyRent = valueAddUnitMix.reduce((s, u) => s + ((u.units || 0) * (u.rent_current || 0)), 0);
         const avgCurrentRent = valueAddTotalUnits > 0 ? totalCurrentMonthlyRent / valueAddTotalUnits : 0;
-        
-        // Calculate market rent from unit mix (use rent_market if exists, otherwise use rent_current)
-        const valueAddTotalMarketMonthlyRent = valueAddUnitMix.reduce((sum, u) => {
-          const marketRent = u.rent_market && u.rent_market > 0 ? u.rent_market : u.rent_current || 0;
-          return sum + ((u.units || 0) * marketRent);
+        const valueAddTotalMarketMonthlyRent = valueAddUnitMix.reduce((s, u) => {
+          const mr = u.rent_market && u.rent_market > 0 ? u.rent_market : u.rent_current || 0;
+          return s + ((u.units || 0) * mr);
         }, 0);
         const avgMarketRent = valueAddTotalUnits > 0 ? valueAddTotalMarketMonthlyRent / valueAddTotalUnits : 0;
-        
-        // Use calculated totals
         const currentRent = totalCurrentMonthlyRent;
         const marketRent = valueAddTotalMarketMonthlyRent;
         const rentUpside = marketRent - currentRent;
-        const totalMonthlyRentUpside = rentUpside;
-        const totalAnnualRentUpside = totalMonthlyRentUpside * 12;
-        
-        // Get expense optimization data with RUBS
+        const totalAnnualRentUpside = rentUpside * 12;
+
+        // Expenses
         const currentExpenses = {
-          taxes: scenarioData.expenses?.taxes || 0,
-          insurance: scenarioData.expenses?.insurance || 0,
-          utilities: scenarioData.expenses?.utilities || 0,
-          repairs: scenarioData.expenses?.repairs_maintenance || 0,
-          management: scenarioData.expenses?.management || 0,
-          payroll: scenarioData.expenses?.payroll || 0,
-          admin: scenarioData.expenses?.admin || 0,
-          marketing: scenarioData.expenses?.marketing || 0,
-          other: scenarioData.expenses?.other || 0
+          taxes: scenarioData.expenses?.taxes || 0, insurance: scenarioData.expenses?.insurance || 0,
+          utilities: scenarioData.expenses?.utilities || 0, repairs: scenarioData.expenses?.repairs_maintenance || 0,
+          management: scenarioData.expenses?.management || 0, payroll: scenarioData.expenses?.payroll || 0,
+          admin: scenarioData.expenses?.admin || 0, marketing: scenarioData.expenses?.marketing || 0,
+          other: scenarioData.expenses?.other || 0,
         };
-        
-        // RUBS configuration (Ratio Utility Billing System)
-        const rubsConfig = scenarioData.value_add?.rubs_config || {
-          water: { tenant_paid: false, split_method: 'per_unit' },
-          electricity: { tenant_paid: false, split_method: 'sqft' },
-          gas: { tenant_paid: false, split_method: 'per_unit' },
-          trash: { tenant_paid: false, split_method: 'per_unit' },
-          sewer: { tenant_paid: false, split_method: 'per_unit' }
-        };
-        
-        // Tenant Utility Passthrough config (alternative to RUBS - raise rents to cover utilities)
-        const utilityPassthroughConfig = scenarioData.value_add?.utility_passthrough_config || {
-          water: { enabled: false },
-          electricity: { enabled: false },
-          gas: { enabled: false },
-          trash: { enabled: false },
-          sewer: { enabled: false }
-        };
-        
-        // Calculate utility breakdown for value-add
-        const valueAddUtilityBreakdown = scenarioData.expenses?.utility_breakdown || {
-          water: currentExpenses.utilities / 5,
-          electricity: currentExpenses.utilities / 5,
-          gas: currentExpenses.utilities / 5,
-          trash: currentExpenses.utilities / 5,
-          sewer: currentExpenses.utilities / 5
-        };
-        
-        // Calculate RUBS savings (utilities pushed to tenants via RUBS)
-        const rubsSavings = Object.keys(valueAddUtilityBreakdown).reduce((total, utility) => {
-          if (rubsConfig[utility]?.tenant_paid) {
-            return total + (valueAddUtilityBreakdown[utility] || 0);
-          }
-          return total;
-        }, 0);
-        
-        // Calculate Utility Passthrough savings (raise rent to cover utilities)
-        const utilityPassthroughTotal = Object.keys(valueAddUtilityBreakdown).reduce((total, utility) => {
-          if (utilityPassthroughConfig[utility]?.enabled) {
-            return total + (valueAddUtilityBreakdown[utility] || 0);
-          }
-          return total;
-        }, 0);
+
+        // RUBS (Ratio Utility Billing — allocate by sqft/unit/occupancy)
+        const rubsConfig = scenarioData.value_add?.rubs_config || {};
+        const valueAddUtilityBreakdown = scenarioData.expenses?.utility_breakdown || {};
+        const rubsSavings = Object.entries(valueAddUtilityBreakdown).reduce((t, [k, v]) => rubsConfig[k]?.tenant_paid ? t + (Number(v) || 0) : t, 0);
+
+        // Tenant Utility Passthrough (raise rents to cover)
+        const utilityPassthroughConfig = scenarioData.value_add?.utility_passthrough_config || {};
+        const utilityPassthroughTotal = Object.entries(valueAddUtilityBreakdown).reduce((t, [k, v]) => utilityPassthroughConfig[k]?.enabled ? t + (Number(v) || 0) : t, 0);
         const rentIncreasePerUnit = valueAddTotalUnits > 0 ? (utilityPassthroughTotal / 12) / valueAddTotalUnits : 0;
-        
-        // Optimized expenses with RUBS and Utility Passthrough
-        const optimizedExpenses = scenarioData.value_add?.optimized_expenses || { ...currentExpenses };
-        optimizedExpenses.utilities = currentExpenses.utilities - rubsSavings - utilityPassthroughTotal;
-        
+
         const totalCurrentExpenses = Object.values(currentExpenses).reduce((a, b) => a + b, 0);
+        const optimizedExpenses = scenarioData.value_add?.optimized_expenses || { ...currentExpenses };
+        optimizedExpenses.utilities = Math.max(0, currentExpenses.utilities - rubsSavings - utilityPassthroughTotal);
         const totalOptimizedExpenses = Object.values(optimizedExpenses).reduce((a, b) => a + b, 0);
         const expenseSavings = totalCurrentExpenses - totalOptimizedExpenses;
-        
-        // Total utility savings (RUBS + Passthrough)
         const totalUtilitySavings = rubsSavings + utilityPassthroughTotal;
 
-        // Simple utility responsibility summary for AI prompt
-        const utilityKeys = Object.keys(valueAddUtilityBreakdown);
-        const ownerPaidUtilities = utilityKeys.filter((u) => !rubsConfig[u]?.tenant_paid && !utilityPassthroughConfig[u]?.enabled);
-        const tenantPaidViaRubs = utilityKeys.filter((u) => rubsConfig[u]?.tenant_paid);
-        const tenantPaidViaRentBump = utilityKeys.filter((u) => utilityPassthroughConfig[u]?.enabled);
-        
-        // Calculate stabilized metrics
-        // Use market cap rate if available, otherwise fall back to current cap rate
+        // Stabilized
         const valueAddMarketCapRate = marketCapRate?.market_cap_rate ? (marketCapRate.market_cap_rate / 100) : (currentCapRate / 100 || 0.05);
         const stabilizedNOI = currentNOI + totalAnnualRentUpside + expenseSavings;
         const valueAddStabilizedValue = valueAddMarketCapRate > 0 ? stabilizedNOI / valueAddMarketCapRate : 0;
         const valueCreation = valueAddStabilizedValue - currentPurchasePrice;
         const stabilizedDSCR = valueAddAnnualDebtService > 0 ? stabilizedNOI / valueAddAnnualDebtService : 0;
-        
-        // iOS-style toggle switch component
-        const ToggleSwitch = ({ checked, onChange, label }) => (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div 
-              onClick={() => onChange(!checked)}
-              style={{ 
-                width: '44px', 
-                height: '24px', 
-                backgroundColor: checked ? '#10b981' : '#d1d5db',
-                borderRadius: '12px',
-                padding: '2px',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: checked ? 'flex-end' : 'flex-start'
-              }}
-            >
-              <div style={{
-                width: '20px',
-                height: '20px',
-                backgroundColor: 'white',
-                borderRadius: '50%',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-                transition: 'transform 0.2s ease'
-              }} />
-            </div>
-            {label && <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280' }}>{label}</span>}
+
+        // Toggle component
+        const VToggle = ({ checked, onChange }) => (
+          <div onClick={() => onChange(!checked)} style={{ width: 40, height: 22, backgroundColor: checked ? '#4f46e5' : '#d1d5db', borderRadius: 11, padding: 2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: checked ? 'flex-end' : 'flex-start', transition: 'background 0.2s' }}>
+            <div style={{ width: 18, height: 18, backgroundColor: '#fff', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
           </div>
         );
-        
+
+        // ── Waterfall data ──
+        const waterfallItems = [];
+        if (totalAnnualRentUpside > 0) waterfallItems.push({ label: 'Rent Upside', value: totalAnnualRentUpside, color: '#4f46e5' });
+        if (rubsSavings > 0) waterfallItems.push({ label: 'RUBS Recovery', value: rubsSavings, color: '#0ea5e9' });
+        if (utilityPassthroughTotal > 0) waterfallItems.push({ label: 'Utility Passthrough', value: utilityPassthroughTotal, color: '#8b5cf6' });
+        const otherExpSavings = expenseSavings - rubsSavings - utilityPassthroughTotal;
+        if (otherExpSavings > 0) waterfallItems.push({ label: 'Other Expense Savings', value: otherExpSavings, color: '#10b981' });
+        const totalNOILift = totalAnnualRentUpside + expenseSavings;
+        const waterfallMax = Math.max(totalNOILift, valueCreation, 1);
+
         return (
-          <div style={{ padding: '24px', backgroundColor: '#f9fafb', minHeight: '100vh' }}>
-            <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-              
-              {/* Section Header */}
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px' }}>
-                <div style={{ 
-                  width: '32px', 
-                  height: '32px', 
-                  borderRadius: '50%', 
-                  backgroundColor: '#e5e7eb', 
-                  color: '#111827', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  fontWeight: '700', 
-                  fontSize: '16px',
-                  marginRight: '12px'
-                }}>6</div>
-                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  VALUE-ADD STRATEGY
-                </h2>
-              </div>
+          <div style={{ padding: 24, backgroundColor: '#f3f4f6' }}>
+            <div style={{ maxWidth: 1200, margin: '0 auto' }}>
 
-              {/* Value Creation Summary Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px', marginBottom: '24px' }}>
-                <div style={{ 
-                  backgroundColor: 'white', 
-                  borderRadius: '12px', 
-                  padding: '20px',
-                  border: '1px solid #e5e7eb'
-                }}>
-                  <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    CURRENT VALUE
-                  </div>
-                  <div style={{ fontSize: '24px', fontWeight: '800', color: '#111827' }}>
-                    ${currentPurchasePrice.toLocaleString()}
+              {/* ═══ 1. VALUE CREATION CALCULATOR — Cactus-style ═══ */}
+              <div style={vSC}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                  <span style={{ fontSize: 18 }}>📈</span>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: vVL }}>Property Value Creation Calculator</h3>
+                    <p style={{ margin: '2px 0 0', fontSize: 12, color: vLB }}>Calculate potential value creation from rent increases</p>
                   </div>
                 </div>
-                
-                <div style={{ 
-                  backgroundColor: 'white', 
-                  borderRadius: '12px', 
-                  padding: '20px',
-                  border: marketCapRate ? '2px solid #bae6fd' : '1px solid #e5e7eb'
-                }}>
-                  <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    MARKET CAP RATE {marketCapRate ? '✓' : ''}
-                  </div>
-                  <div style={{ fontSize: '24px', fontWeight: '800', color: marketCapRate ? '#0f766e' : '#6b7280' }}>
-                    {marketCapRate ? `${marketCapRate.market_cap_rate.toFixed(2)}%` : marketCapRateLoading ? 'Loading...' : '-'}
-                  </div>
-                  {marketCapRate && (
-                    <div style={{ fontSize: '10px', color: '#0f766e', marginTop: '4px' }}>
-                      {marketCapRate.asset_class} Class • {marketCapRate.market_tier}
-                    </div>
-                  )}
-                </div>
-                
-                <div style={{ 
-                  backgroundColor: 'white', 
-                  borderRadius: '12px', 
-                  padding: '20px',
-                  border: '1px solid #e5e7eb'
-                }}>
-                  <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    STABILIZED VALUE
-                  </div>
-                  <div style={{ fontSize: '24px', fontWeight: '800', color: '#111827' }}>
-                    ${valueAddStabilizedValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                  </div>
-                  <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '4px' }}>
-                    @ {marketCapRate ? `${marketCapRate.market_cap_rate.toFixed(2)}%` : `${(valueAddMarketCapRate * 100).toFixed(2)}%`} cap
-                  </div>
-                </div>
-                
-                <div style={{ 
-                  backgroundColor: 'white', 
-                  borderRadius: '12px', 
-                  padding: '20px',
-                  border: '1px solid #e5e7eb'
-                }}>
-                  <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    VALUE CREATION
-                  </div>
-                  <div style={{ fontSize: '24px', fontWeight: '800', color: '#111827' }}>
-                    ${valueCreation.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                  </div>
-                </div>
-
-                <div style={{ 
-                  backgroundColor: 'white', 
-                  borderRadius: '12px', 
-                  padding: '20px',
-                  border: '1px solid #e5e7eb'
-                }}>
-                  <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    ROI ON COST
-                  </div>
-                  <div style={{ fontSize: '24px', fontWeight: '800', color: '#111827' }}>
-                    {currentPurchasePrice > 0 ? ((valueCreation / currentPurchasePrice) * 100).toFixed(1) : '0.0'}%
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
-                
-                {/* RENT OPTIMIZATION */}
-                <div style={{ 
-                  padding: '24px', 
-                  backgroundColor: 'white',
-                  border: '1px solid #e5e7eb', 
-                  borderRadius: '16px'
-                }}>
-                  <div style={{ 
-                    marginBottom: '20px',
-                    borderBottom: '1px solid #e5e7eb',
-                    paddingBottom: '12px'
-                  }}>
-                    <h4 style={{ 
-                      margin: 0, 
-                      fontSize: '14px', 
-                      fontWeight: '700', 
-                      color: '#111827', 
-                      textTransform: 'uppercase', 
-                      letterSpacing: '0.5px' 
-                    }}>Rent Optimization</h4>
-                  </div>
-
-                  <div style={{ marginBottom: '24px' }}>
-                    {/* Individual Unit Rows */}
-                    <div style={{ marginBottom: '20px' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', gap: '12px', padding: '10px 12px', backgroundColor: '#f9fafb', borderRadius: '8px', marginBottom: '8px', border: '1px solid #e5e7eb' }}>
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase' }}>Unit Type</div>
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', textAlign: 'center' }}>Units</div>
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', textAlign: 'right' }}>Current Rent</div>
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', textAlign: 'right' }}>Market Rent</div>
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', textAlign: 'right' }}>$ Raise Per Unit</div>
+                {/* Editable inputs row */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 14, marginTop: 20, marginBottom: 20 }}>
+                  {[
+                    { label: '% Increase', icon: '📈', val: avgMarketRent > 0 && avgCurrentRent > 0 ? ((avgMarketRent - avgCurrentRent) / avgCurrentRent * 100).toFixed(1) : '0', suffix: '%', readOnly: true },
+                    { label: 'Avg. Rent', icon: '$', val: Math.round(avgCurrentRent), suffix: '/mo', readOnly: true },
+                    { label: 'Units', icon: '🏢', val: valueAddTotalUnits, suffix: 'units', readOnly: true },
+                    { label: '% Vacancy', icon: '%', val: (scenarioData.expenses?.vacancy_pct || scenarioData.growth?.vacancy_rate * 100 || 5).toFixed(0), suffix: '%', readOnly: true },
+                    { label: 'Exp. Ratio', icon: '📊', val: (totalCurrentExpenses > 0 && currentNOI + totalCurrentExpenses > 0 ? (totalCurrentExpenses / (currentNOI + totalCurrentExpenses) * 100) : 0).toFixed(0), suffix: '%', readOnly: true },
+                    { label: 'Cap Rate', icon: '⊙', val: (valueAddMarketCapRate * 100).toFixed(2), suffix: '%', readOnly: true },
+                  ].map((f, i) => (
+                    <div key={i}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: vLB, marginBottom: 6 }}>{f.label}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', border: `1px solid ${vB}`, borderRadius: 8, background: '#f9fafb' }}>
+                        <span style={{ fontSize: 12, color: vLB }}>{f.icon}</span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: vVL }}>{f.val}</span>
+                        <span style={{ fontSize: 11, color: vLB }}>{f.suffix}</span>
                       </div>
-                      
-                      {valueAddUnitMix.map((unit, index) => {
-                        const unitCurrentRent = unit.rent_current || 0;
-                        const unitMarketRent = unit.rent_market || unitCurrentRent;
-                        const raisePerUnit = unitMarketRent - unitCurrentRent;
+                    </div>
+                  ))}
+                </div>
+                {/* Results */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+                  {[
+                    { label: 'Annual Revenue Increase', val: totalAnnualRentUpside, icon: '$', color: '#4f46e5' },
+                    { label: 'NOI Impact', val: totalNOILift, icon: '📈', color: '#10b981' },
+                    { label: 'Estimated Value Add', val: valueCreation, icon: '🏢', color: '#111827' },
+                  ].map((c, i) => (
+                    <div key={i} style={{ background: '#f8fafc', borderRadius: 12, padding: '20px 24px', textAlign: 'center', border: `1px solid ${vB}` }}>
+                      <div style={{ fontSize: 14, marginBottom: 8, color: vLB }}>{c.icon}</div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: c.color }}>{vFmt(c.val)}</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: vLB, marginTop: 4 }}>{c.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* ═══ 2. RENT OPTIMIZATION ═══ */}
+              <div style={vSC}>
+                <h3 style={{ margin: '0 0 20px', fontSize: 15, fontWeight: 800, color: vVL }}>Rent Optimization</h3>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc' }}>
+                        {['Unit Type', 'Units', 'Current Rent', 'Market Rent', 'Raise / Unit', 'Annual Upside'].map(h => (
+                          <th key={h} style={{ padding: '10px 14px', textAlign: h === 'Unit Type' ? 'left' : 'right', fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: `2px solid ${vB}` }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {valueAddUnitMix.map((unit, idx) => {
+                        const cr = unit.rent_current || 0;
+                        const mr = unit.rent_market || cr;
+                        const raise = mr - cr;
+                        const annUp = raise * (unit.units || 0) * 12;
                         return (
-                          <div key={index} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', gap: '12px', padding: '14px 16px', backgroundColor: 'white', borderRadius: '8px', marginBottom: '8px', border: '1px solid #e5e7eb' }}>
-                            <div style={{ fontSize: '14px', fontWeight: '700', color: '#111827' }}>{unit.unit_type || `Unit ${index + 1}`}</div>
-                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#6b7280', textAlign: 'center' }}>{unit.units || 0}</div>
-                            <div style={{ fontSize: '14px', fontWeight: '700', color: '#111827', textAlign: 'right' }}>${unitCurrentRent.toLocaleString()}</div>
-                            <div style={{ textAlign: 'right' }}>
-                              <input 
-                                type="number"
-                                value={unitMarketRent}
-                                onChange={(e) => {
-                                  const newMarketRent = parseFloat(e.target.value) || 0;
-                                  const updatedUnitMix = [...valueAddUnitMix];
-                                  updatedUnitMix[index] = { ...updatedUnitMix[index], rent_market: newMarketRent };
-                                  handleFieldChange('unit_mix', updatedUnitMix);
-                                }}
-                                style={{ 
-                                  width: '100%', 
-                                  fontSize: '14px', 
-                                  fontWeight: '700', 
-                                  color: '#111827', 
-                                  backgroundColor: '#f9fafb',
-                                  border: '1px solid #d1d5db',
-                                  borderRadius: '6px',
-                                  outline: 'none',
-                                  padding: '6px 8px',
-                                  textAlign: 'right'
-                                }}
-                              />
-                            </div>
-                            <div style={{ fontSize: '14px', fontWeight: '700', color: raisePerUnit >= 0 ? '#111827' : '#b91c1c', textAlign: 'right' }}>
-                              {raisePerUnit >= 0 ? '+' : ''}${raisePerUnit.toLocaleString()}
-                            </div>
-                          </div>
+                          <tr key={idx} style={{ borderBottom: `1px solid ${vB}` }}>
+                            <td style={{ padding: '10px 14px', fontWeight: 600, color: vVL }}>{unit.unit_type || unit.type || unit.bed_bath || `Unit ${idx + 1}`}</td>
+                            <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, color: vLB }}>{unit.units || 0}</td>
+                            <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600 }}>{vFmt(cr)}/mo</td>
+                            <td style={{ padding: '10px 14px', textAlign: 'right' }}>
+                              <input type="number" value={mr} onChange={e => {
+                                const v = parseFloat(e.target.value) || 0;
+                                const updated = [...valueAddUnitMix];
+                                updated[idx] = { ...updated[idx], rent_market: v };
+                                handleFieldChange('unit_mix', updated);
+                              }} style={{ ...vINP, width: 100 }} />
+                            </td>
+                            <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: raise > 0 ? '#16a34a' : raise < 0 ? '#ef4444' : vVL }}>
+                              {raise >= 0 ? '+' : ''}{vFmt(raise)}
+                            </td>
+                            <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: annUp > 0 ? '#16a34a' : vVL }}>{vFmt(annUp)}</td>
+                          </tr>
                         );
                       })}
-                    </div>
+                      {/* Totals row */}
+                      <tr style={{ background: '#f8fafc', borderTop: `2px solid ${vB}` }}>
+                        <td style={{ padding: '12px 14px', fontWeight: 800, color: vVL }}>Total</td>
+                        <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 800, color: vVL }}>{valueAddTotalUnits}</td>
+                        <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 800 }}>{vFmt(currentRent)}/mo</td>
+                        <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 800 }}>{vFmt(marketRent)}/mo</td>
+                        <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 800, color: rentUpside > 0 ? '#16a34a' : vVL }}>+{vFmt(rentUpside)}</td>
+                        <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 800, color: '#16a34a' }}>{vFmt(totalAnnualRentUpside)}/yr</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
 
-                    {/* Total Summary */}
-                    <div style={{ padding: '20px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#374151' }}>Total Current Rent</span>
-                        <span style={{ fontSize: '22px', fontWeight: '800', color: '#111827' }}>
-                          ${currentRent.toLocaleString(undefined, { maximumFractionDigits: 0 })}/mo
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid #e5e7eb', marginBottom: '12px' }}>
-                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#374151' }}>Total Market Rent</span>
-                        <span style={{ fontSize: '22px', fontWeight: '800', color: '#111827' }}>
-                          ${marketRent.toLocaleString(undefined, { maximumFractionDigits: 0 })}/mo
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid #e5e7eb', marginBottom: '12px' }}>
-                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#374151' }}>Monthly Upside</span>
-                        <span style={{ fontSize: '22px', fontWeight: '800', color: '#111827' }}>
-                          ${rentUpside.toLocaleString(undefined, { maximumFractionDigits: 0 })}/mo
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid #e5e7eb' }}>
-                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#374151' }}>Total Annual Increase</span>
-                        <span style={{ fontSize: '22px', fontWeight: '800', color: '#111827' }}>
-                          ${totalAnnualRentUpside.toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr
-                        </span>
+              {/* ═══ 3. UTILITY OPTIMIZATION — RUBS + Passthrough side by side ═══ */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+                {/* RUBS */}
+                <div style={vSC}>
+                  <h3 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 800, color: vVL }}>RUBS — Ratio Utility Billing</h3>
+                  <p style={{ margin: '0 0 16px', fontSize: 11, color: vLB }}>Bill tenants proportionally by sqft, unit count, or occupancy. Owner pays master bill, tenants reimburse their share.</p>
+                  {Object.entries(valueAddUtilityBreakdown).map(([utility, amount]) => (
+                    <div key={utility} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: `1px solid ${vB}` }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: vVL, textTransform: 'capitalize' }}>{utility.replace(/_/g, ' ')}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: vVL }}>{vFmt(Number(amount) || 0)}/yr</span>
+                        <VToggle checked={rubsConfig[utility]?.tenant_paid || false} onChange={checked => {
+                          const nc = { ...rubsConfig, [utility]: { ...rubsConfig[utility], tenant_paid: checked, split_method: rubsConfig[utility]?.split_method || 'per_unit' }};
+                          handleFieldChange('value_add.rubs_config', nc);
+                        }} />
                       </div>
                     </div>
-                  </div>
-
-                  <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '12px', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                    <strong>Calculation:</strong> (${marketRent.toLocaleString()} market - ${currentRent.toLocaleString()} current) × 12 months = ${totalAnnualRentUpside.toLocaleString(undefined, { maximumFractionDigits: 0 })} annual increase
+                  ))}
+                  <div style={{ marginTop: 14, padding: '12px 16px', background: '#eef2ff', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: `1px solid #c7d2fe` }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#4338ca' }}>Annual RUBS Recovery</span>
+                    <span style={{ fontSize: 18, fontWeight: 800, color: '#4338ca' }}>{vFmt(rubsSavings)}</span>
                   </div>
                 </div>
 
-                {/* EXPENSE OPTIMIZATION WITH RUBS */}
-                <div style={{ 
-                  padding: '24px', 
-                  backgroundColor: 'white',
-                  border: '1px solid #e5e7eb', 
-                  borderRadius: '16px'
-                }}>
-                  <div style={{ 
-                    marginBottom: '20px',
-                    borderBottom: '1px solid #e5e7eb',
-                    paddingBottom: '12px'
-                  }}>
-                    <h4 style={{ 
-                      margin: 0, 
-                      fontSize: '14px', 
-                      fontWeight: '700', 
-                      color: '#111827', 
-                      textTransform: 'uppercase', 
-                      letterSpacing: '0.5px' 
-                    }}>Expense Optimization</h4>
-                  </div>
-
-                  {/* RUBS Configuration */}
-                    <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-                    <h5 style={{ margin: '0 0 12px 0', fontSize: '12px', fontWeight: '700', color: '#1f2937', textTransform: 'uppercase' }}>
-                      RUBS - Ratio Utility Billing System
-                    </h5>
-                    <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '12px' }}>
-                      Push utility costs to tenants based on unit size or occupancy
-                    </div>
-                    {Object.keys(valueAddUtilityBreakdown).map(utility => (
-                      <div key={utility} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #e5e7eb' }}>
-                        <span style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937', textTransform: 'capitalize' }}>
-                          {utility}
-                        </span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <span style={{ fontSize: '11px', fontWeight: '700', color: '#1f2937' }}>
-                            ${(valueAddUtilityBreakdown[utility] || 0).toLocaleString()}/yr
-                          </span>
-                          <ToggleSwitch 
-                            checked={rubsConfig[utility]?.tenant_paid || false}
-                            onChange={(checked) => {
-                              const newConfig = { ...rubsConfig, [utility]: { ...rubsConfig[utility], tenant_paid: checked }};
-                              handleFieldChange('value_add.rubs_config', newConfig);
-                            }}
-                          />
+                {/* Passthrough */}
+                <div style={vSC}>
+                  <h3 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 800, color: vVL }}>Tenant Utility Passthrough</h3>
+                  <p style={{ margin: '0 0 16px', fontSize: 11, color: vLB }}>Raise rents to cover owner-paid utility costs. Simple alternative to RUBS — no separate billing.</p>
+                  {Object.entries(valueAddUtilityBreakdown).map(([utility, amount]) => {
+                    const isRubs = rubsConfig[utility]?.tenant_paid;
+                    return (
+                      <div key={`pt-${utility}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: `1px solid ${vB}`, opacity: isRubs ? 0.35 : 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: vVL, textTransform: 'capitalize' }}>{utility.replace(/_/g, ' ')}</span>
+                          {isRubs && <span style={{ fontSize: 9, fontWeight: 700, color: '#4338ca', background: '#eef2ff', padding: '1px 6px', borderRadius: 4 }}>via RUBS</span>}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: vVL }}>{vFmt(Number(amount) || 0)}/yr</span>
+                          <VToggle checked={!isRubs && (utilityPassthroughConfig[utility]?.enabled || false)} onChange={checked => {
+                            if (isRubs) return;
+                            handleFieldChange('value_add.utility_passthrough_config', { ...utilityPassthroughConfig, [utility]: { enabled: checked }});
+                          }} />
                         </div>
                       </div>
-                    ))}
-                    <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#10b981', borderRadius: '8px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '12px', fontWeight: '700', color: 'white' }}>Annual RUBS Savings</span>
-                        <span style={{ fontSize: '18px', fontWeight: '800', color: 'white' }}>
-                          ${rubsSavings.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Tenant Utility Passthrough - Rent Increase to Cover Utilities */}
-                    <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-                    <h5 style={{ margin: '0 0 12px 0', fontSize: '12px', fontWeight: '700', color: '#1f2937', textTransform: 'uppercase' }}>
-                      Tenant Utility Passthrough
-                    </h5>
-                    <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '12px' }}>
-                      Alternative to RUBS: Raise rents to cover owner-paid utilities instead of billing separately
-                    </div>
-                    {Object.keys(valueAddUtilityBreakdown).map(utility => {
-                      const isDisabled = rubsConfig[utility]?.tenant_paid;
-                      return (
-                        <div key={`passthrough-${utility}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #e5e7eb', opacity: isDisabled ? 0.4 : 1 }}>
-                          <span style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937', textTransform: 'capitalize' }}>
-                            {utility}
-                          </span>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <span style={{ fontSize: '11px', fontWeight: '700', color: '#1f2937' }}>
-                              ${(valueAddUtilityBreakdown[utility] || 0).toLocaleString()}/yr
-                            </span>
-                            <ToggleSwitch 
-                              checked={!isDisabled && (utilityPassthroughConfig[utility]?.enabled || false)}
-                              onChange={(checked) => {
-                                if (isDisabled) return;
-                                const newConfig = { ...utilityPassthroughConfig, [utility]: { enabled: checked }};
-                                handleFieldChange('value_add.utility_passthrough_config', newConfig);
-                              }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                    
-                    {/* Passthrough Summary */}
-                    {utilityPassthroughTotal > 0 && (
-                      <div style={{ marginTop: '16px', padding: '16px', backgroundColor: '#eff6ff', borderRadius: '8px', border: '1px solid #60a5fa' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                          <div>
-                            <div style={{ fontSize: '10px', color: '#1e40af', marginBottom: '4px', fontWeight: '600', textTransform: 'uppercase' }}>Annual Utility Cost to Cover</div>
-                            <div style={{ fontSize: '18px', fontWeight: '800', color: '#1e40af' }}>
-                              ${utilityPassthroughTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                            </div>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: '10px', color: '#1e40af', marginBottom: '4px', fontWeight: '600', textTransform: 'uppercase' }}>Rent Increase Needed Per Unit</div>
-                            <div style={{ fontSize: '18px', fontWeight: '800', color: '#1e40af' }}>
-                              +${rentIncreasePerUnit.toLocaleString(undefined, { maximumFractionDigits: 0 })}/mo
-                            </div>
-                          </div>
-                        </div>
-                        <div style={{ marginTop: '12px', fontSize: '11px', color: '#3b82f6' }}>
-                          <strong>How it works:</strong> ${utilityPassthroughTotal.toLocaleString()}/yr ÷ 12 months ÷ {valueAddTotalUnits} units = ${rentIncreasePerUnit.toFixed(0)}/unit/mo rent increase
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f5f3ff', borderRadius: '8px', border: '1px solid #ddd6fe' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '12px', fontWeight: '700', color: '#4c1d95' }}>Annual Passthrough Savings</span>
-                        <span style={{ fontSize: '18px', fontWeight: '800', color: '#4c1d95' }}>
-                          ${utilityPassthroughTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Total Expense Comparison */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <div style={{ padding: '16px', backgroundColor: '#fef2f2', borderRadius: '12px', border: '1px solid #fecaca' }}>
-                      <div style={{ fontSize: '11px', color: '#991b1b', marginBottom: '6px', fontWeight: '700', textTransform: 'uppercase' }}>Current Expenses</div>
-                      <div style={{ fontSize: '20px', fontWeight: '800', color: '#dc2626' }}>
-                        ${totalCurrentExpenses.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                      </div>
-                    </div>
-                    <div style={{ padding: '16px', backgroundColor: '#ecfdf5', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
-                      <div style={{ fontSize: '11px', color: '#166534', marginBottom: '6px', fontWeight: '700', textTransform: 'uppercase' }}>Optimized Expenses</div>
-                      <div style={{ fontSize: '20px', fontWeight: '800', color: '#15803d' }}>
-                        ${totalOptimizedExpenses.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/** Show combined annual savings: rent upside + expense savings */}
-                  <div style={{ marginTop: '16px', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+                    );
+                  })}
+                  <div style={{ marginTop: 14, padding: '12px 16px', background: '#f5f3ff', borderRadius: 8, border: '1px solid #ddd6fe' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '13px', fontWeight: '700', color: '#374151' }}>Total Annual Savings (Rent + Expense)</span>
-                      <span style={{ fontSize: '22px', fontWeight: '800', color: '#111827' }}>
-                        ${( (expenseSavings || 0) + (totalAnnualRentUpside || 0) ).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                      </span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#6d28d9' }}>Annual Passthrough Savings</span>
+                      <span style={{ fontSize: 18, fontWeight: 800, color: '#6d28d9' }}>{vFmt(utilityPassthroughTotal)}</span>
                     </div>
-                    <div style={{ marginTop: '8px', fontSize: '11px', color: '#4b5563' }}>
-                      Rent Upside: ${totalAnnualRentUpside.toLocaleString(undefined, { maximumFractionDigits: 0 })} • Expense Savings: ${expenseSavings.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                    </div>
-                    {totalUtilitySavings > 0 && (
-                      <div style={{ marginTop: '8px', fontSize: '11px', color: '#4b5563' }}>
-                        RUBS: ${rubsSavings.toLocaleString()} + Passthrough: ${utilityPassthroughTotal.toLocaleString()}
+                    {utilityPassthroughTotal > 0 && (
+                      <div style={{ marginTop: 8, fontSize: 11, color: '#7c3aed' }}>
+                        ≈ +{vFmt(rentIncreasePerUnit)}/unit/mo rent increase needed to cover
                       </div>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Stabilized Performance Metrics */}
-              <div style={{ 
-                padding: '24px', 
-                backgroundColor: 'white',
-                borderRadius: '16px',
-                marginBottom: '24px',
-                border: '1px solid #e5e7eb'
-              }}>
-                <h4 style={{ 
-                  fontSize: '14px', 
-                  fontWeight: '700', 
-                  color: '#111827', 
-                  marginBottom: '20px',
-                  textTransform: 'uppercase', 
-                  letterSpacing: '0.5px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  Current vs Stabilized Performance
-                </h4>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px' }}>
-                  {/* NOI Comparison */}
-                  <div style={{ backgroundColor: '#f9fafb', borderRadius: '12px', padding: '20px', border: '1px solid #e5e7eb' }}>
-                    <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '12px', fontWeight: '600', textTransform: 'uppercase' }}>Net Operating Income</div>
-                    <div style={{ marginBottom: '12px' }}>
-                      <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px' }}>Current</div>
-                      <div style={{ fontSize: '18px', fontWeight: '800', color: '#111827' }}>${currentNOI.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                      {noiProforma > 0 && (
-                        <div style={{ fontSize: '11px', color: '#2563eb', marginTop: '4px' }}>
-                          Pro Forma NOI: ${noiProforma.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ paddingTop: '12px', borderTop: '1px solid #e5e7eb' }}>
-                      <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px' }}>Stabilized</div>
-                      <div style={{ fontSize: '18px', fontWeight: '800', color: '#111827' }}>${stabilizedNOI.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                    </div>
-                  </div>
-
-                  {/* Cap Rate */}
-                  <div style={{ backgroundColor: '#f9fafb', borderRadius: '12px', padding: '20px', border: '1px solid #e5e7eb' }}>
-                    <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '12px', fontWeight: '600', textTransform: 'uppercase' }}>Cap Rate</div>
-                    <div style={{ marginBottom: '12px' }}>
-                      <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px' }}>Going-In</div>
-                      <div style={{ fontSize: '18px', fontWeight: '800', color: '#111827' }}>{currentCapRate.toFixed(2)}%</div>
-                    </div>
-                    <div style={{ paddingTop: '12px', borderTop: '1px solid #e5e7eb' }}>
-                      <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px' }}>Market Cap</div>
-                      <div style={{ fontSize: '18px', fontWeight: '800', color: '#111827' }}>
-                        {marketCapRate?.market_cap_rate?.toFixed(2) || currentCapRate.toFixed(2)}%
+              {/* ═══ 4. VALUE-ADD WATERFALL ═══ */}
+              <div style={vSC}>
+                <h3 style={{ margin: '0 0 20px', fontSize: 15, fontWeight: 800, color: vVL }}>Value-Add Waterfall</h3>
+                <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', minHeight: 200, padding: '0 10px' }}>
+                  {/* Source bars */}
+                  {waterfallItems.map((item, i) => {
+                    const pct = waterfallMax > 0 ? (item.value / waterfallMax) * 160 : 0;
+                    return (
+                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: item.color, marginBottom: 6 }}>{vFmt(item.value)}</div>
+                        <div style={{ width: '100%', maxWidth: 80, height: Math.max(pct, 8), background: item.color, borderRadius: '6px 6px 0 0', transition: 'height 0.3s' }} />
+                        <div style={{ fontSize: 10, fontWeight: 600, color: vLB, marginTop: 8, textAlign: 'center', lineHeight: 1.3 }}>{item.label}</div>
                       </div>
-                      <div style={{ fontSize: '9px', color: '#6b7280', marginTop: '4px' }}>
-                        {marketCapRate ? 'LLM estimate' : 'Same as going-in'}
-                      </div>
-                    </div>
+                    );
+                  })}
+                  {/* Arrow */}
+                  <div style={{ display: 'flex', alignItems: 'center', padding: '0 8px', fontSize: 20, color: vLB }}>→</div>
+                  {/* Total NOI Lift */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: '#16a34a', marginBottom: 6 }}>{vFmt(totalNOILift)}</div>
+                    <div style={{ width: '100%', maxWidth: 80, height: Math.max(waterfallMax > 0 ? (totalNOILift / waterfallMax) * 160 : 0, 8), background: '#16a34a', borderRadius: '6px 6px 0 0' }} />
+                    <div style={{ fontSize: 10, fontWeight: 700, color: '#16a34a', marginTop: 8, textAlign: 'center' }}>Total NOI Lift</div>
                   </div>
-
-                  {/* Property Value */}
-                  <div style={{ backgroundColor: '#f9fafb', borderRadius: '12px', padding: '20px', border: '1px solid #e5e7eb' }}>
-                    <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '12px', fontWeight: '600', textTransform: 'uppercase' }}>Property Value</div>
-                    <div style={{ marginBottom: '12px' }}>
-                      <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px' }}>Current</div>
-                      <div style={{ fontSize: '18px', fontWeight: '800', color: '#111827' }}>${currentPurchasePrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                    </div>
-                    <div style={{ paddingTop: '12px', borderTop: '1px solid #e5e7eb' }}>
-                      <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px' }}>Stabilized</div>
-                      <div style={{ fontSize: '18px', fontWeight: '800', color: '#111827' }}>${valueAddStabilizedValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                    </div>
-                  </div>
-
-                  {/* DSCR */}
-                  <div style={{ backgroundColor: '#f9fafb', borderRadius: '12px', padding: '20px', border: '1px solid #e5e7eb' }}>
-                    <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '12px', fontWeight: '600', textTransform: 'uppercase' }}>DSCR</div>
-                    <div style={{ marginBottom: '12px' }}>
-                      <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px' }}>Current</div>
-                      <div style={{ fontSize: '18px', fontWeight: '800', color: '#111827' }}>{currentDSCR.toFixed(2)}x</div>
-                    </div>
-                    <div style={{ paddingTop: '12px', borderTop: '1px solid #e5e7eb' }}>
-                      <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px' }}>Stabilized</div>
-                      <div style={{ fontSize: '18px', fontWeight: '800', color: '#111827' }}>{stabilizedDSCR.toFixed(2)}x</div>
-                    </div>
-                  </div>
-
+                  {/* Arrow */}
+                  <div style={{ display: 'flex', alignItems: 'center', padding: '0 8px', fontSize: 20, color: vLB }}>→</div>
                   {/* Value Creation */}
-                  <div style={{ backgroundColor: '#f9fafb', borderRadius: '12px', padding: '20px', border: '1px solid #e5e7eb' }}>
-                    <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '12px', fontWeight: '600', textTransform: 'uppercase' }}>Total Value Creation</div>
-                    <div style={{ fontSize: '24px', fontWeight: '800', color: '#111827', marginBottom: '8px' }}>
-                      ${valueCreation.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                    </div>
-                    <div style={{ fontSize: '10px', color: '#6b7280' }}>
-                      {currentPurchasePrice > 0 ? ((valueCreation / currentPurchasePrice) * 100).toFixed(1) : '0.0'}% increase in value
-                    </div>
+                  <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: vVL, marginBottom: 6 }}>{vFmt(valueCreation)}</div>
+                    <div style={{ width: '100%', maxWidth: 90, height: Math.max(waterfallMax > 0 ? (valueCreation / waterfallMax) * 160 : 0, 8), background: vVL, borderRadius: '6px 6px 0 0' }} />
+                    <div style={{ fontSize: 10, fontWeight: 700, color: vVL, marginTop: 8, textAlign: 'center' }}>Value Creation<br/><span style={{ color: vLB, fontWeight: 500 }}>@ {vPct(valueAddMarketCapRate * 100)} cap</span></div>
                   </div>
                 </div>
               </div>
 
-              {/* AI Creative Suggestions */}
-              <div style={{ 
-                padding: '24px', 
-                backgroundColor: 'white',
-                border: '1px solid #e5e7eb', 
-                borderRadius: '16px'
-              }}>
-                <h4 style={{ 
-                  fontSize: '14px', 
-                  fontWeight: '700', 
-                  color: '#111827', 
-                  marginBottom: '20px',
-                  textTransform: 'uppercase', 
-                  letterSpacing: '0.5px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  AI Value-Add Recommendations
-                </h4>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div style={{ padding: '20px', backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-                    <h5 style={{ fontSize: '12px', fontWeight: '700', color: '#6d28d9', marginBottom: '12px', textTransform: 'uppercase' }}>
-                      Revenue Enhancement Ideas
-                    </h5>
-                    <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '12px', color: '#4b5563', lineHeight: '1.8' }}>
-                      <li>Implement paid parking program (+${(valueAddTotalUnits * 25).toLocaleString()}/mo)</li>
-                      <li>Add pet fees ($300/pet one-time + $25/mo)</li>
-                      <li>Install package lockers with monthly fee</li>
-                      <li>Offer premium storage units</li>
-                      <li>Laundry room revenue optimization</li>
-                      <li>Vending machines & amenity income</li>
-                      <li>Application & admin fees review</li>
-                    </ul>
-                  </div>
-
-                  <div style={{ padding: '20px', backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-                    <h5 style={{ fontSize: '12px', fontWeight: '700', color: '#6d28d9', marginBottom: '12px', textTransform: 'uppercase' }}>
-                      Expense Reduction Ideas
-                    </h5>
-                    <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '12px', color: '#4b5563', lineHeight: '1.8' }}>
-                      <li>Implement RUBS billing system (utilities)</li>
-                      <li>LED lighting conversion (-20% electric)</li>
-                      <li>Low-flow fixtures (-15% water)</li>
-                      <li>Negotiate insurance quotes annually</li>
-                      <li>Contest property tax assessment</li>
-                      <li>Bulk purchasing agreements for supplies</li>
-                      <li>In-house maintenance vs contractors</li>
-                    </ul>
-                  </div>
+              {/* ═══ 5. CURRENT vs STABILIZED — Clean table ═══ */}
+              <div style={vSC}>
+                <h3 style={{ margin: '0 0 20px', fontSize: 15, fontWeight: 800, color: vVL }}>Current vs Stabilized Performance</h3>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: `2px solid ${vB}` }}>
+                      <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase' }}>Metric</th>
+                      <th style={{ padding: '10px 14px', textAlign: 'right', fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase' }}>Current</th>
+                      <th style={{ padding: '10px 14px', textAlign: 'right', fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase' }}>Stabilized</th>
+                      <th style={{ padding: '10px 14px', textAlign: 'right', fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase' }}>Change</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { label: 'Net Operating Income', cur: vFmt(currentNOI), stab: vFmt(stabilizedNOI), delta: stabilizedNOI - currentNOI, isCurrency: true },
+                      { label: 'Cap Rate', cur: vPct(currentCapRate), stab: vPct(currentPurchasePrice > 0 ? (stabilizedNOI / currentPurchasePrice * 100) : 0), delta: currentPurchasePrice > 0 ? (stabilizedNOI / currentPurchasePrice * 100 - currentCapRate) : 0, suffix: '%' },
+                      { label: 'Property Value', cur: vFmt(currentPurchasePrice), stab: vFmt(valueAddStabilizedValue), delta: valueCreation, isCurrency: true },
+                      { label: 'DSCR', cur: `${currentDSCR.toFixed(2)}x`, stab: `${stabilizedDSCR.toFixed(2)}x`, delta: stabilizedDSCR - currentDSCR, suffix: 'x' },
+                      { label: 'Annual Debt Service', cur: vFmt(valueAddAnnualDebtService), stab: vFmt(valueAddAnnualDebtService), delta: 0, isCurrency: true },
+                      { label: 'Monthly Rent (Total)', cur: `${vFmt(currentRent)}/mo`, stab: `${vFmt(marketRent)}/mo`, delta: rentUpside, isCurrency: true },
+                    ].map((row, i) => (
+                      <tr key={i} style={{ borderBottom: `1px solid ${vB}` }}>
+                        <td style={{ padding: '12px 14px', fontWeight: 600, color: vVL }}>{row.label}</td>
+                        <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 600 }}>{row.cur}</td>
+                        <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 700 }}>{row.stab}</td>
+                        <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 700, color: row.delta > 0 ? '#16a34a' : row.delta < 0 ? '#ef4444' : vLB }}>
+                          {row.delta === 0 ? '—' : row.isCurrency ? `+${vFmt(row.delta)}` : `+${row.delta.toFixed(2)}${row.suffix || ''}`}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {/* Bottom summary */}
+                <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+                  {[
+                    { label: 'Total Value Creation', val: vFmt(valueCreation), sub: `${currentPurchasePrice > 0 ? ((valueCreation / currentPurchasePrice) * 100).toFixed(1) : '0.0'}% ROI on cost` },
+                    { label: 'Total NOI Lift', val: vFmt(totalNOILift), sub: `Rent: ${vFmt(totalAnnualRentUpside)} + Expense: ${vFmt(expenseSavings)}` },
+                    { label: 'Utility Recovery', val: vFmt(totalUtilitySavings), sub: `RUBS: ${vFmt(rubsSavings)} · Passthrough: ${vFmt(utilityPassthroughTotal)}` },
+                  ].map((c, i) => (
+                    <div key={i} style={{ background: '#f8fafc', borderRadius: 10, padding: '16px 20px', border: `1px solid ${vB}` }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase', marginBottom: 6 }}>{c.label}</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: vVL }}>{c.val}</div>
+                      <div style={{ fontSize: 11, color: vLB, marginTop: 4 }}>{c.sub}</div>
+                    </div>
+                  ))}
                 </div>
-
-                <button
-                  onClick={() => {
-                    if (!setInputValue || !handleSendMessage) return;
-
-                    const ownerPaysText = ownerPaidUtilities.length
-                      ? ownerPaidUtilities.join(', ')
-                      : 'none (all major utilities recovered from tenants)';
-                    const rubsText = tenantPaidViaRubs.length
-                      ? tenantPaidViaRubs.join(', ')
-                      : 'none';
-                    const passthroughText = tenantPaidViaRentBump.length
-                      ? tenantPaidViaRentBump.join(', ')
-                      : 'none';
-
-                    const valueAddPrompt = `You are Max, my multifamily value-add strategist.
-
-Here is the current value-add picture for this deal:
-- Current annual NOI: $${currentNOI.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-- Stabilized annual NOI (after planned value-add): $${stabilizedNOI.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-- Current DSCR: ${currentDSCR.toFixed(2)}x, Stabilized DSCR: ${stabilizedDSCR.toFixed(2)}x
-- Current purchase price / basis: $${currentPurchasePrice.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-- Stabilized value (at value-add cap rate): $${valueAddStabilizedValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-- Modeled value creation: $${valueCreation.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-
-Rents and income:
-- Total current monthly rent: $${currentRent.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-- Total market monthly rent (fully pushed): $${marketRent.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-- Total annual rent upside modeled: $${totalAnnualRentUpside.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-- Total units: ${valueAddTotalUnits}
-
-Expenses and utilities:
-- Current total annual operating expenses: $${totalCurrentExpenses.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-- Optimized annual expenses after value-add: $${totalOptimizedExpenses.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-- Annual expense savings modeled: $${expenseSavings.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-- Annual utility savings (RUBS + passthrough): $${totalUtilitySavings.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-- Owner currently pays (not recovered from tenants): ${ownerPaysText}
-- Utilities billed directly via RUBS: ${rubsText}
-- Utilities recovered via rent increases (passthrough): ${passthroughText}
-
-Using ONLY the numbers above and the rest of the underwriting model, do all of the following:
-
-1) Decide whether the best value-add focus for THIS property is primarily:
-   - pushing rents (closing the gap between current and market),
-   - driving operating expense reductions (especially utilities and controllable expenses),
-   - or a balanced mix of both.
-   Be explicit and quantify how much of the modeled NOI growth is coming from rent vs expense savings.
-
-2) Look at who is currently paying each major utility and tell me, in plain English, whether I should:
-   - push harder on RUBS / tenant-paid utilities,
-   - convert more to utility passthrough via rent bumps,
-   - or leave utilities as-is to stay competitive.
-   Call out any utilities where I am obviously leaving money on the table.
-
-3) Stress-test the modeled value creation:
-   - Re-run (conceptually) a softer scenario where I only capture HALF of the rent upside and HALF of the expense savings.
-   - In that softer case, estimate what stabilized NOI, DSCR, and value creation would look like.
-   - Tell me whether the deal is still worth executing as a value-add play under that more conservative outcome.
-
-4) Give me a concrete value-add game plan for the next 18-24 months:
-   - Top 5 rent strategies (unit upgrades, amenities, fees) that fit this deal.
-   - Top 5 expense strategies (utilities, payroll/maintenance, management, contracts) that move the needle the most.
-   - A simple timeline of which levers to pull first for fastest DSCR and cash-flow improvement.
-
-Keep the answer tight but specific to this property and the numbers above.`;
-
-                    setInputValue(valueAddPrompt);
-                    setTimeout(() => handleSendMessage(), 100);
-                  }}
-                  style={{
-                    marginTop: '16px',
-                    width: '100%',
-                    padding: '16px',
-                    backgroundColor: '#111827',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    boxShadow: '0 4px 6px rgba(15, 23, 42, 0.15)',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseOver={(e) => e.target.style.backgroundColor = '#000000'}
-                  onMouseOut={(e) => e.target.style.backgroundColor = '#111827'}
-                >
-                  Ask AI for Custom Value-Add Strategy
-                </button>
               </div>
 
             </div>
           </div>
         );
+      }
 
       case 'exit-strategy': {
         // ============================================================================
