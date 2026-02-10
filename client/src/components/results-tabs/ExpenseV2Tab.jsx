@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { calculateAmortizationSchedule } from '../../utils/realEstateCalculations';
 
 // ──────────────────────────────────────────────────────────────────
 // ExpenseV2Tab — Clean P&L with colored TEXT values (no boxes)
@@ -290,6 +291,53 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
   const dscrVA = annualDS > 0 ? noiVA / annualDS : 0;
   const cocUW = downPmt > 0 ? (netIncomeUW / downPmt * 100) : 0;
   const cocVA = downPmt > 0 ? (netIncomeVA / downPmt * 100) : 0;
+
+  // ══════════════════════════════════════════════════════════════
+  // ── MULTI-YEAR PROJECTIONS — replaces standalone Proforma tab ──
+  // ══════════════════════════════════════════════════════════════
+  const [yearsToShow, setYearsToShow] = useState(5);
+  const rentGrowthRate = scenarioData?.growth?.annual_rent_growth || 0.03;
+  const expenseGrowthRate = scenarioData?.growth?.annual_expense_growth || 0.03;
+
+  // Build proforma years from the P&L computed above
+  const generateProforma = () => {
+    const years = [];
+    for (let yr = 1; yr <= yearsToShow; yr++) {
+      const rg = Math.pow(1 + rentGrowthRate, yr - 1);
+      const eg = Math.pow(1 + expenseGrowthRate, yr - 1);
+      const gpi = gprUW * rg;
+      const vac = gpi * (vacUWpct / 100);
+      const ltl = gpi * (ltlUWpct / 100);
+      const egi = gpi - vac - ltl;
+      const opex = totalExpUW * eg;
+      const noi = egi - opex;
+      const capex = egi * capexUWpct / 100;
+      const cf = noi - capex - annualDS;
+      const capR = price > 0 ? noi / price : 0;
+      const dscr = annualDS > 0 ? noi / annualDS : 0;
+      years.push({ year: yr, gpi, vac, ltl, egi, opex, noi, capex, debtService: annualDS, cf, capR, dscr, noiPerUnit: noi / units, expPerUnit: opex / units });
+    }
+    return years;
+  };
+  const proformaYears = generateProforma();
+  const totalCF = proformaYears.reduce((s, y) => s + y.cf, 0);
+
+  // Principal paydown via amortization schedule (use senior loan)
+  const seniorLoan = loans.find(l => l.type === 'Senior Loan') || loans[0];
+  const amortLoanAmt = seniorLoan ? (seniorLoan.loanAmtMode === 'ltv' ? price * (Number(seniorLoan.ltv) || 0) / 100 : Number(seniorLoan.loanDollar) || 0) : 0;
+  const amortRate = seniorLoan ? Number(seniorLoan.rate) || 0 : 0;
+  const amortYearsVal = seniorLoan ? Number(seniorLoan.amort) || 30 : 30;
+  const amortSchedule = (amortLoanAmt > 0 && amortRate > 0 && amortYearsVal > 0)
+    ? calculateAmortizationSchedule(amortLoanAmt, amortRate, amortYearsVal, yearsToShow)
+    : [];
+  const principalSeries = amortSchedule.length > 0
+    ? amortSchedule.map(r => r.cumulativePrincipal)
+    : new Array(yearsToShow).fill(0);
+
+  const proFmt = (val) => {
+    if (val == null || isNaN(val)) return '$0';
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(val);
+  };
 
   // ── Update a loan field ──
   const updateLoanField = (loanId, field, val) => {
@@ -701,6 +749,151 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
           ))}
         </div>
 
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════ */}
+      {/* ─── MULTI-YEAR PROJECTIONS ─── */}
+      {/* ══════════════════════════════════════════════════════════ */}
+      <div style={{ marginTop: 24, background: '#fff', border: `1px solid ${B}`, borderRadius: 12, overflow: 'hidden' }}>
+        {/* Header bar */}
+        <div style={{ padding: '16px 20px', borderBottom: `1px solid ${B}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#111827' }}>Projected Proforma</h3>
+            <p style={{ margin: '2px 0 0', fontSize: 11, color: GRAY }}>Rent growth {(rentGrowthRate * 100).toFixed(1)}% · Expense growth {(expenseGrowthRate * 100).toFixed(1)}% · Vacancy {vacUWpct.toFixed(0)}%</p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: GRAY, textTransform: 'uppercase' }}>Total Cash Flow</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: totalCF >= 0 ? '#10b981' : '#ef4444' }}>{proFmt(totalCF)}</div>
+            </div>
+            <select value={yearsToShow} onChange={e => setYearsToShow(Number(e.target.value))}
+              style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${B}`, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: '#fff' }}>
+              <option value={5}>5 Years</option>
+              <option value={10}>10 Years</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Proforma table */}
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: '#f8fafc' }}>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: GRAY, textTransform: 'uppercase', letterSpacing: '0.5px', position: 'sticky', left: 0, background: '#f8fafc', zIndex: 1, borderBottom: `2px solid ${B}` }}>Line Item</th>
+                {proformaYears.map(y => (
+                  <th key={y.year} style={{ padding: '10px 14px', textAlign: 'right', fontSize: 10, fontWeight: 700, color: GRAY, textTransform: 'uppercase', letterSpacing: '0.5px', minWidth: 110, borderBottom: `2px solid ${B}` }}>Year {y.year}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {/* Revenue */}
+              {[{ label: 'Gross Potential Income', key: 'gpi' },
+                { label: 'Vacancy', key: 'vac', neg: true },
+                { label: 'Loss to Lease', key: 'ltl', neg: true },
+                { label: 'Effective Gross Income', key: 'egi', bold: true, bg: '#f0fdf4' },
+              ].map(r => (
+                <tr key={r.label} style={{ borderBottom: `1px solid ${B}`, background: r.bg || 'transparent' }}>
+                  <td style={{ padding: '8px 14px', fontWeight: r.bold ? 700 : 500, color: r.neg ? '#ef4444' : '#111827', position: 'sticky', left: 0, background: r.bg || '#fff', zIndex: 1 }}>{r.label}</td>
+                  {proformaYears.map(y => {
+                    const v = r.neg ? -y[r.key] : y[r.key];
+                    return <td key={y.year} style={{ padding: '8px 14px', textAlign: 'right', fontWeight: r.bold ? 700 : 500, color: v < 0 ? '#ef4444' : '#111827' }}>{proFmt(v)}</td>;
+                  })}
+                </tr>
+              ))}
+              {/* Operating Expenses */}
+              <tr style={{ borderBottom: `1px solid ${B}`, background: '#fef2f2' }}>
+                <td style={{ padding: '8px 14px', fontWeight: 700, color: '#991b1b', position: 'sticky', left: 0, background: '#fef2f2', zIndex: 1 }}>Total Operating Expenses</td>
+                {proformaYears.map(y => <td key={y.year} style={{ padding: '8px 14px', textAlign: 'right', fontWeight: 700, color: '#991b1b' }}>{proFmt(-y.opex)}</td>)}
+              </tr>
+              {/* NOI */}
+              <tr style={{ borderBottom: `1px solid ${B}`, background: '#dbeafe' }}>
+                <td style={{ padding: '8px 14px', fontWeight: 700, color: '#111827', position: 'sticky', left: 0, background: '#dbeafe', zIndex: 1 }}>Net Operating Income</td>
+                {proformaYears.map(y => <td key={y.year} style={{ padding: '8px 14px', textAlign: 'right', fontWeight: 700, color: '#111827' }}>{proFmt(y.noi)}</td>)}
+              </tr>
+              {/* Below the Line */}
+              <tr style={{ background: '#f8fafc' }}><td colSpan={yearsToShow + 1} style={{ padding: '6px 14px', fontSize: 10, fontWeight: 700, color: GRAY, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: `1px solid ${B}` }}>Below the Line</td></tr>
+              {[{ label: 'CAPEX Reserve', key: 'capex', neg: true },
+                { label: 'Debt Service', key: 'debtService', neg: true },
+              ].map(r => (
+                <tr key={r.label} style={{ borderBottom: `1px solid ${B}` }}>
+                  <td style={{ padding: '8px 14px', fontWeight: 500, color: '#ef4444', position: 'sticky', left: 0, background: '#fff', zIndex: 1 }}>{r.label}</td>
+                  {proformaYears.map(y => <td key={y.year} style={{ padding: '8px 14px', textAlign: 'right', fontWeight: 500, color: '#ef4444' }}>{proFmt(-y[r.key])}</td>)}
+                </tr>
+              ))}
+              {/* Cash Flow */}
+              <tr style={{ borderBottom: `1px solid ${B}`, background: '#dbeafe' }}>
+                <td style={{ padding: '8px 14px', fontWeight: 700, color: '#111827', position: 'sticky', left: 0, background: '#dbeafe', zIndex: 1 }}>Cash Flow Before Tax</td>
+                {proformaYears.map(y => <td key={y.year} style={{ padding: '8px 14px', textAlign: 'right', fontWeight: 700, color: y.cf >= 0 ? '#111827' : '#ef4444' }}>{proFmt(y.cf)}</td>)}
+              </tr>
+              {/* Key Metrics */}
+              <tr style={{ background: '#f8fafc' }}><td colSpan={yearsToShow + 1} style={{ padding: '6px 14px', fontSize: 10, fontWeight: 700, color: GRAY, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: `1px solid ${B}` }}>Key Metrics</td></tr>
+              <tr style={{ borderBottom: `1px solid ${B}` }}>
+                <td style={{ padding: '8px 14px', fontWeight: 500, color: '#111827', position: 'sticky', left: 0, background: '#fff', zIndex: 1 }}>Cap Rate</td>
+                {proformaYears.map(y => <td key={y.year} style={{ padding: '8px 14px', textAlign: 'right', fontWeight: 500 }}>{(y.capR * 100).toFixed(2)}%</td>)}
+              </tr>
+              <tr style={{ borderBottom: `1px solid ${B}` }}>
+                <td style={{ padding: '8px 14px', fontWeight: 500, color: '#111827', position: 'sticky', left: 0, background: '#fff', zIndex: 1 }}>DSCR</td>
+                {proformaYears.map(y => <td key={y.year} style={{ padding: '8px 14px', textAlign: 'right', fontWeight: 500 }}>{y.dscr.toFixed(2)}x</td>)}
+              </tr>
+              <tr style={{ borderBottom: `1px solid ${B}` }}>
+                <td style={{ padding: '8px 14px', fontWeight: 500, color: '#111827', position: 'sticky', left: 0, background: '#fff', zIndex: 1 }}>NOI / Unit</td>
+                {proformaYears.map(y => <td key={y.year} style={{ padding: '8px 14px', textAlign: 'right', fontWeight: 500 }}>{proFmt(y.noiPerUnit)}</td>)}
+              </tr>
+              <tr>
+                <td style={{ padding: '8px 14px', fontWeight: 500, color: '#111827', position: 'sticky', left: 0, background: '#fff', zIndex: 1 }}>Expenses / Unit</td>
+                {proformaYears.map(y => <td key={y.year} style={{ padding: '8px 14px', textAlign: 'right', fontWeight: 500 }}>{proFmt(y.expPerUnit)}</td>)}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── Cash Flow vs Principal Paydown Chart ── */}
+      <div style={{ marginTop: 16, background: '#fff', border: `1px solid ${B}`, borderRadius: 12, padding: 20 }}>
+        <h3 style={{ margin: '0 0 10px', fontSize: 15, fontWeight: 800, color: '#111827' }}>Trajectory: Cash Flow vs Debt Paydown</h3>
+        <div style={{ display: 'flex', gap: 16, marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 20, height: 2, background: '#10b981' }} /><span style={{ fontSize: 11, fontWeight: 600, color: '#374151' }}>Cash Flow</span></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 20, height: 2, background: '#0ea5e9' }} /><span style={{ fontSize: 11, fontWeight: 600, color: '#374151' }}>Cumulative Principal Paid</span></div>
+        </div>
+        {(() => {
+          const W = 960, H = 220, P = 32;
+          const cfS = proformaYears.map(y => y.cf);
+          const ppS = principalSeries;
+          const all = [...cfS, ...ppS];
+          const yMin = Math.min(...all), yMax = Math.max(...all);
+          const yR = yMax - yMin || 1;
+          const xStep = (W - P * 2) / (yearsToShow - 1 || 1);
+          const xF = i => P + i * xStep;
+          const yF = v => P + (H - P * 2) - ((v - yMin) / yR) * (H - P * 2);
+          const cfPts = cfS.map((v, i) => `${xF(i)},${yF(v)}`).join(' ');
+          const ppPts = ppS.map((v, i) => `${xF(i)},${yF(v)}`).join(' ');
+          return (
+            <div>
+              <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+                <line x1={P} y1={yF(0)} x2={W - P} y2={yF(0)} stroke="#e5e7eb" strokeWidth="1" />
+                <polyline points={cfPts} fill="none" stroke="#10b981" strokeWidth="2" />
+                <polyline points={ppPts} fill="none" stroke="#0ea5e9" strokeWidth="2" />
+              </svg>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, padding: '0 12px' }}>
+                {proformaYears.map(y => <div key={y.year} style={{ fontSize: 11, color: GRAY, fontWeight: 600 }}>Yr {y.year}</div>)}
+              </div>
+            </div>
+          );
+        })()}
+        {/* Summary cards */}
+        <div style={{ marginTop: 10, padding: 12, background: '#f9fafb', borderRadius: 8, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+          {[
+            { label: 'Year 1 Cash Flow', val: proformaYears[0]?.cf || 0, color: (proformaYears[0]?.cf || 0) >= 0 ? '#10b981' : '#ef4444' },
+            { label: `Year ${yearsToShow} Cash Flow`, val: proformaYears[yearsToShow - 1]?.cf || 0, color: '#10b981' },
+            { label: 'Year 1 Principal Paid', val: principalSeries[0] || 0, color: '#0ea5e9' },
+            { label: `Year ${yearsToShow} Principal Paid`, val: principalSeries[yearsToShow - 1] || 0, color: '#0ea5e9' },
+          ].map(c => (
+            <div key={c.label} style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 10, color: GRAY, fontWeight: 600, textTransform: 'uppercase' }}>{c.label}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: c.color, marginTop: 3 }}>{proFmt(c.val)}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* ══════════════════════════════════════════════════════════ */}

@@ -32,7 +32,6 @@ import DocumentAnalysisTab from './results-tabs/DocumentAnalysisTab';
 import DealStructureTab from './results-tabs/DealStructureTab';
 import CashFlowTab from './results-tabs/CashFlowTab';
 import ExpenseV2Tab from './results-tabs/ExpenseV2Tab';
-import ProformaTab from './results-tabs/ProformaTab';
 import UnderwritingTablePage from '../pages/UnderwritingTablePage';
 import { saveDeal } from '../lib/dealsService';
 import ScenarioSheet from './ScenarioSheet';
@@ -577,7 +576,6 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
         { id: 'summary', name: 'Summary' },
         { id: 'market-research', name: 'Market Research' },
         { id: 'deal-structure', name: 'Deal Structure' },
-        { id: 'proforma', name: 'Pro Forma' },
         { id: 'rent-roll', name: 'Rent Roll' },
         { id: 'returns', name: 'Returns' },
         { id: 'cost-seg', name: 'Cost Segregation' }
@@ -1211,7 +1209,6 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
     { id: 'summary', label: 'Documents Analysis', icon: FileText },
     { id: 'scenario-sheet', label: 'Scenario Sheet', icon: FileSpreadsheet },
     { id: 'cashflow', label: 'Cash Flow', icon: FileBarChart },
-    { id: 'proforma', label: 'Proforma', icon: FileText },
     { id: 'deal-structure', label: 'Deal Structure', icon: Layers },
     { id: 'expenses-v2', label: 'Expenses V2', icon: FileText },
     { id: 'value-add', label: 'Value-Add Strategy', icon: TrendingUp },
@@ -4235,15 +4232,6 @@ Keep the answer tight but specific to this property and the numbers above.`;
           </div>
         );
       
-      case 'proforma':
-        return (
-          <ProformaTab
-            fullCalcs={fullCalcs}
-            scenarioData={scenarioData}
-            onFieldChange={handleFieldChange}
-          />
-        );
-
       default:
         return <div style={{ padding: '24px', color: '#6b7280' }}>Select a tab to view details</div>;
     }
