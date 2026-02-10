@@ -4409,6 +4409,7 @@ Keep the answer tight but specific to this property and the numbers above.`;
               calculations={calculations} 
               fullCalcs={fullCalcs} 
               marketCapRate={marketCapRate}
+              onFieldChange={handleFieldChange}
               onRecommendationChange={setRecommendedStructure}
               onSelectedStructureMetricsChange={setSelectedStructureMetrics}
             />
