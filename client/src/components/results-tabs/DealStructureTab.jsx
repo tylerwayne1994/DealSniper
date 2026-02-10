@@ -1,13 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   DollarSign, Calculator,
-  Sparkles, AlertTriangle,
-  Target, Wallet, RefreshCw, Plus, X, Trash2,
+  Target, Wallet, Plus, X, Trash2,
   BarChart3, Activity, ArrowRight, Edit3
 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8010";
 
 const calcMonthlyPayment = (principal, annualRate, amortMonths) => {
   if (principal <= 0 || amortMonths <= 0) return 0;
@@ -40,7 +36,8 @@ const buildStructureFromLoans = (loans, pp, noi) => {
   const dp=Math.max(0,pp-tla-te), coop=dp+tf, cf=noi-tapm;
   const dscr=ads>0?noi/ads:0, coc=coop>0?(cf/coop)*100:0;
   const ltv=pp>0?(tla/pp*100):0, ltc=(pp+tf)>0?(tla/(pp+tf)*100):0;
-  return {loanDetails:ld,equityDetails:ed,totalLoanAmt:tla,totalMonthlyDebt:tmd,totalFees:tf,totalEquity:te,totalAnnualPref:tap,annualDebtService:ads,totalMonthlyPmt:tmp,totalAnnualPmt:tapm,downPayment:dp,cashOutOfPocket:coop,cashflow:cf,dscr,cashOnCash:coc,ltv,ltc,totalAcquisitionCost:pp+tf};
+  const blendedRate=tla>0?ld.reduce((s,l)=>s+(l.loanAmt/tla)*Number(l.rate||0),0):0;
+  return {loanDetails:ld,equityDetails:ed,totalLoanAmt:tla,totalMonthlyDebt:tmd,totalFees:tf,totalEquity:te,totalAnnualPref:tap,annualDebtService:ads,totalMonthlyPmt:tmp,totalAnnualPmt:tapm,downPayment:dp,cashOutOfPocket:coop,cashflow:cf,dscr,cashOnCash:coc,ltv,ltc,blendedRate,totalAcquisitionCost:pp+tf};
 };
 
 const generateAlts = (pp, noi) => {
@@ -164,11 +161,6 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
     return {irr,emx,coc:structure.cashOnCash,total_profit:tp,monthly_cf:mc};
   },[structure,exit.holdYrs,netProceeds]);
 
-  // AI
-  const [aiRec,setAiRec]=useState(null);
-  const [loading,setLoading]=useState(false);
-  const [error,setError]=useState(null);
-
   useEffect(()=>{
     if(!structure)return;
     if(onSelectedStructureMetricsChange)onSelectedStructureMetricsChange({name:'Your Financing',key:'user-structure',annualCashFlow:structure.cashflow,cashOnCash:structure.cashOnCash,dscr:structure.dscr,capRate:goingInCap});
@@ -206,17 +198,6 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
       setLoans(p=>{const u=[...p,nl];setTimeout(()=>saveToParent(u),0);return u;});
     }
     setShowSellerModal(false);
-  };
-
-  const fetchAI=async()=>{
-    try{const tc=await fetch(`${API_BASE}/api/tokens/check`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({operation_type:'deal_structure_analysis'})});const td=await tc.json();if(!td.has_tokens){window.confirm(`Cost: ${td.tokens_required} token\nBalance: ${td.token_balance}\n\nYou need more tokens.`);return;}if(!window.confirm(`Cost: ${td.tokens_required} token\nBalance: ${td.token_balance}\n\nContinue?`))return;}catch(e){return;}
-    setLoading(true);setError(null);
-    try{
-      const r=await fetch(`${API_BASE}/api/deal-structure/recommend`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({property:{address:scenarioData?.property?.address||'',units:scenarioData?.property?.total_units||0},financials:{purchasePrice:pp,currentNOI:noi,proformaNOI,goingInCapRate:goingInCap},userStructure:structure?{totalLoanAmt:structure.totalLoanAmt,downPayment:structure.downPayment,cashOutOfPocket:structure.cashOutOfPocket,annualDebtService:structure.annualDebtService,cashflow:structure.cashflow,dscr:structure.dscr,cashOnCash:structure.cashOnCash,ltv:structure.ltv,loans}:null,structures:Object.entries(alts).map(([k,s])=>({key:k,structure:s.name,loanAmount:s.totalLoanAmt,downPayment:s.downPayment,cashOutOfPocket:s.cashOutOfPocket,monthlyPayment:s.totalMonthlyPmt,annualDebtService:s.annualDebtService,annualCashflow:s.cashflow,dscr:s.dscr,cashOnCash:s.cashOnCash}))})});
-      if(!r.ok)throw new Error('Failed');
-      const d=await r.json();setAiRec(d.recommendation);
-      if(onRecommendationChange&&d.recommendation?.recommendedStructure)onRecommendationChange(d.recommendation.recommendedStructure);
-    }catch(e){setError(e.message);}finally{setLoading(false);}
   };
 
   const Field=({label,value,onChange,suffix,prefix,step,min})=>(
@@ -599,39 +580,17 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
               </table>
             </div>
 
-            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14,marginTop:20}}>
-              <div style={{padding:14,borderRadius:12,backgroundColor:structure.cashflow>=0?'#ecfdf5':'#fef2f2',textAlign:'center'}}><div style={{fontSize:11,color:LB,marginBottom:4}}>Annual Cashflow</div><div style={{fontSize:20,fontWeight:800,color:cfC(structure.cashflow)}}>{fmt(structure.cashflow)}</div><div style={{fontSize:11,color:LB,marginTop:2}}>{fmt(structure.cashflow/12)}/mo</div></div>
-              <div style={{padding:14,borderRadius:12,backgroundColor:structure.dscr>=1.25?'#ecfdf5':structure.dscr>=1.0?'#fef3c7':'#fef2f2',textAlign:'center'}}><div style={{fontSize:11,color:LB,marginBottom:4}}>DSCR</div><div style={{fontSize:20,fontWeight:800,color:dscrC(structure.dscr)}}>{structure.dscr.toFixed(2)}x</div><div style={{fontSize:11,color:LB,marginTop:2}}>{structure.dscr>=1.25?'✓ Strong':structure.dscr>=1.0?'⚠ Tight':'✗ Negative'}</div></div>
-              <div style={{padding:14,borderRadius:12,backgroundColor:'#f3f4f6',textAlign:'center'}}><div style={{fontSize:11,color:LB,marginBottom:4}}>Cash on Cash</div><div style={{fontSize:20,fontWeight:800,color:cocC(structure.cashOnCash)}}>{pct(structure.cashOnCash)}</div></div>
-              <div style={{padding:14,borderRadius:12,backgroundColor:'#dbeafe',textAlign:'center'}}><div style={{fontSize:11,color:'#1e40af',marginBottom:4}}>LTC Ratio</div><div style={{fontSize:20,fontWeight:800,color:'#1e40af'}}>{pct(structure.ltc)}</div></div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:14,marginTop:20}}>
+              <div style={{padding:14,borderRadius:12,backgroundColor:'white',border:`1px solid ${B}`,textAlign:'center'}}><div style={{fontSize:11,color:LB,marginBottom:4}}>Annual Cashflow</div><div style={{fontSize:20,fontWeight:800,color:cfC(structure.cashflow)}}>{fmt(structure.cashflow)}</div><div style={{fontSize:11,color:LB,marginTop:2}}>{fmt(structure.cashflow/12)}/mo</div></div>
+              <div style={{padding:14,borderRadius:12,backgroundColor:'white',border:`1px solid ${B}`,textAlign:'center'}}><div style={{fontSize:11,color:LB,marginBottom:4}}>DSCR</div><div style={{fontSize:20,fontWeight:800,color:dscrC(structure.dscr)}}>{structure.dscr.toFixed(2)}x</div><div style={{fontSize:11,color:LB,marginTop:2}}>{structure.dscr>=1.25?'✓ Strong':structure.dscr>=1.0?'⚠ Tight':'✗ Negative'}</div></div>
+              <div style={{padding:14,borderRadius:12,backgroundColor:'white',border:`1px solid ${B}`,textAlign:'center'}}><div style={{fontSize:11,color:LB,marginBottom:4}}>Cash on Cash</div><div style={{fontSize:20,fontWeight:800,color:cocC(structure.cashOnCash)}}>{pct(structure.cashOnCash)}</div></div>
+              <div style={{padding:14,borderRadius:12,backgroundColor:'white',border:`1px solid ${B}`,textAlign:'center'}}><div style={{fontSize:11,color:LB,marginBottom:4}}>LTC Ratio</div><div style={{fontSize:20,fontWeight:800,color:VL}}>{pct(structure.ltc)}</div></div>
+              <div style={{padding:14,borderRadius:12,backgroundColor:'white',border:`1px solid ${B}`,textAlign:'center'}}><div style={{fontSize:11,color:LB,marginBottom:4}}>Blended Rate</div><div style={{fontSize:20,fontWeight:800,color:AC}}>{pct(structure.blendedRate)}</div><div style={{fontSize:11,color:LB,marginTop:2}}>{structure.loanDetails.length} position{structure.loanDetails.length!==1?'s':''}</div></div>
             </div>
           </div>
         )}
 
-        {/* ═══ 5. AI RECOMMENDATION ═══ */}
-        <div style={{marginBottom:24}}>
-          {loading?(
-            <div style={{...SC,padding:60,textAlign:'center'}}><div className="spin" style={{display:'inline-block',marginBottom:16}}><Sparkles size={32} color={AC}/></div><p style={{color:LB,margin:0}}>Analyzing your deal structure...</p></div>
-          ):error?(
-            <div style={{...SC,padding:40,textAlign:'center',backgroundColor:'#fef2f2',border:'1px solid #fecaca'}}><AlertTriangle size={32} color="#ef4444" style={{marginBottom:12}}/><p style={{color:'#b91c1c',margin:0}}>{error}</p><button onClick={fetchAI} style={{marginTop:16,padding:'8px 16px',backgroundColor:'#ef4444',color:'white',border:'none',borderRadius:6,cursor:'pointer'}}>Try Again</button></div>
-          ):aiRec?(
-            <div style={{...SC,border:'2px solid #22c55e'}}>
-              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:16}}>
-                <Sparkles size={20} color="#10b981"/><h3 style={{margin:0,fontSize:16,fontWeight:700,color:VL}}>AI Analysis</h3>
-                <span style={{marginLeft:'auto',backgroundColor:'#10b981',color:'white',fontSize:11,fontWeight:700,padding:'2px 10px',borderRadius:999}}>AI</span>
-                <button onClick={fetchAI} style={{display:'flex',alignItems:'center',gap:4,padding:'6px 14px',backgroundColor:`${AC}10`,color:AC,border:`1px solid ${AC}40`,borderRadius:6,fontSize:12,fontWeight:600,cursor:'pointer'}}><RefreshCw size={14}/> Refresh</button>
-              </div>
-              <div style={{fontSize:14,color:'#374151',lineHeight:1.6}}><ReactMarkdown>{aiRec.summary||''}</ReactMarkdown></div>
-            </div>
-          ):(
-            <div style={{padding:40,textAlign:'center',backgroundColor:'#fafafa',borderRadius:12,border:`2px dashed ${B}`}}>
-              <div style={{width:56,height:56,borderRadius:'50%',backgroundColor:AC,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}><Sparkles size={28} color="white"/></div>
-              <h4 style={{margin:'0 0 8px',fontSize:16,fontWeight:700,color:'#374151'}}>AI Structure Analysis</h4>
-              <p style={{color:LB,marginBottom:20,fontSize:13}}>Let AI analyze your financing and recommend optimizations</p>
-              <button onClick={fetchAI} style={{display:'inline-flex',alignItems:'center',gap:8,padding:'12px 24px',backgroundColor:AC,color:'white',border:'none',borderRadius:10,fontSize:14,fontWeight:700,cursor:'pointer',boxShadow:`0 4px 14px ${AC}66`}}><Sparkles size={16}/> Get AI Recommendation</button>
-            </div>
-          )}
-        </div>
+
 
         {/* ═══ 6. SCENARIO COMPARISON ═══ */}
         {structure&&Object.keys(alts).length>0&&(
