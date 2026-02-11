@@ -895,6 +895,22 @@ function RapidFirePage() {
         </button>
         <button
           type="button"
+          onClick={() => setSourceType('propstream')}
+          style={{
+            padding: '8px 14px',
+            borderRadius: '999px',
+            border: 'none',
+            fontSize: '12px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            backgroundColor: sourceType === 'propstream' ? '#000000' : '#e5e7eb',
+            color: sourceType === 'propstream' ? '#ffffff' : '#4b5563',
+          }}
+        >
+          PropStream spreadsheet upload
+        </button>
+        <button
+          type="button"
           onClick={() => setSourceType('reonomy')}
           style={{
             padding: '8px 14px',
@@ -939,7 +955,7 @@ function RapidFirePage() {
           </div>
           <div>
             <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
-              {sourceType === 'crexi' ? 'Upload CREXI Spreadsheet' : 'Upload Reonomy Spreadsheet'}
+              {sourceType === 'crexi' ? 'Upload CREXI Spreadsheet' : sourceType === 'propstream' ? 'Upload PropStream Spreadsheet' : 'Upload Reonomy Spreadsheet'}
             </div>
             <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
               Drag and drop or click to upload .xlsx, .xls, or .csv
@@ -1112,6 +1128,16 @@ function RapidFirePage() {
                         <div style={{ fontWeight: '600', color: '#111827', maxWidth: '220px' }}>
                           {deal.name || '-'}
                         </div>
+                        {(deal.yearBuilt || deal.sqft) && (
+                          <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '2px' }}>
+                            {deal.yearBuilt ? `Built ${deal.yearBuilt}` : ''}{deal.yearBuilt && deal.sqft ? ' · ' : ''}{deal.sqft ? `${deal.sqft.toLocaleString()} SF` : ''}
+                          </div>
+                        )}
+                        {deal.annualTaxes != null && (
+                          <div style={{ fontSize: '10px', color: '#6b7280' }}>
+                            Taxes: {fmtCurrency(deal.annualTaxes)}/yr
+                          </div>
+                        )}
                       </td>
                       <td style={tdStyle}>
                         <div style={{ fontSize: '12px', color: '#4b5563', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

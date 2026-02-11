@@ -454,10 +454,11 @@ async def rapid_fire_underwrite(
     settings: str = Form(...),
     sourceType: str = Form("crexi"),
 ):
-    """Rapid Fire underwriting for CREXI exports.
+    """Rapid Fire underwriting for CREXI, Reonomy, and PropStream exports.
 
-    - Accepts a CREXI export spreadsheet as `file` (csv/xls/xlsx).
+    - Accepts a spreadsheet as `file` (csv/xls/xlsx) from CREXI, Reonomy, or PropStream.
     - Accepts `settings` JSON string with buy-box assumptions.
+    - Accepts `sourceType` form field: 'crexi' (default), 'reonomy', or 'propstream'.
     - Returns one RapidFireDeal-style dict per row using simple napkin math.
     """
 
@@ -686,34 +687,85 @@ async def rapid_fire_underwrite(
                 continue
             
             # Check header name first for quick wins
+            # ADDRESS: CREXI="Address", PropStream="Property Address"/"Property Street Address"
             if "address" in col_lower or "property" in col_lower or "location" in col_lower:
                 column_scores[col]["address"] += 20
+            # Exclude mailing/owner address from property address
+            if "mailing" in col_lower or "owner" in col_lower:
+                column_scores[col]["address"] -= 25
+
+            # UNITS: CREXI="Units", PropStream="# of Units"/"Units"
             if "unit" in col_lower and "price" not in col_lower:
                 column_scores[col]["units"] += 15
+            # PropStream: Bedrooms as proxy for units on single-family (only if no units col exists)
+            if col_lower in ("bedrooms", "beds", "bed"):
+                column_scores[col]["units"] += 3  # Low score — only used as last resort
+
+            # PRICE: CREXI="Price", PropStream="Estimated Value"/"Last Sale Price"/"Assessed Total Value"
             if any(word in col_lower for word in ["price", "sale", "mortgage amount", "asking"]):
                 column_scores[col]["price"] += 15
+            if "estimated value" in col_lower or "estimated market value" in col_lower:
+                column_scores[col]["price"] += 18
+            if "assessed total" in col_lower or "assessed value" in col_lower:
+                column_scores[col]["price"] += 10
+            if "last sale price" in col_lower or "last sale amount" in col_lower:
+                column_scores[col]["price"] += 14
+
+            # CAP RATE
             if "cap" in col_lower and "rate" in col_lower:
                 column_scores[col]["cap"] += 15
-            if "noi" in col_lower:
+
+            # NOI
+            if "noi" in col_lower or "net operating" in col_lower:
                 column_scores[col]["noi"] += 15
-            # NEW: gross income / revenue detection
-            if any(word in col_lower for word in ["income", "revenue", "gross", "gpi", "gpr", "egi"]):
+
+            # GROSS INCOME / revenue
+            if any(word in col_lower for word in ["income", "revenue", "gross", "gpi", "gpr", "egi", "rent"]):
                 column_scores[col]["gross_income"] += 15
-            # NEW: city detection
-            if col_lower in ("city", "market", "metro"):
+            # PropStream: "Estimated Rent" / "Est. Rental Value"
+            if "estimated rent" in col_lower or "rental value" in col_lower or "est rent" in col_lower:
+                column_scores[col]["gross_income"] += 18
+
+            # CITY: CREXI/PropStream="City"
+            if col_lower in ("city", "market", "metro", "property city"):
                 column_scores[col]["city"] += 20
-            # NEW: state detection
-            if col_lower in ("state", "st"):
+
+            # STATE: PropStream="State" / "Property State"
+            if col_lower in ("state", "st", "property state"):
                 column_scores[col]["state"] += 20
-            # NEW: zip detection
+            if "mailing" in col_lower:
+                column_scores[col]["state"] -= 25
+
+            # ZIP: PropStream="Zip"/"Zip Code"/"Property Zip"
             if any(word in col_lower for word in ["zip", "postal"]):
                 column_scores[col]["zip"] += 20
-            # NEW: listing URL detection
+            if "mailing" in col_lower:
+                column_scores[col]["zip"] -= 25
+
+            # LISTING URL
             if any(word in col_lower for word in ["url", "link", "listing"]):
                 column_scores[col]["url"] += 20
-            # NEW: owner detection
+
+            # OWNER: PropStream="Owner First Name" / "Owner Last Name" / "Owner Name"
             if any(word in col_lower for word in ["owner", "seller", "contact"]):
                 column_scores[col]["owner"] += 20
+
+            # ── PropStream-specific bonus fields (used later for enrichment) ──
+            # Annual Taxes → stored as extra context
+            if "annual tax" in col_lower or "tax amount" in col_lower:
+                column_scores[col]["annual_taxes"] = column_scores[col].get("annual_taxes", 0) + 20
+            # Year Built
+            if "year built" in col_lower or "yr built" in col_lower:
+                column_scores[col]["year_built"] = column_scores[col].get("year_built", 0) + 20
+            # Sq Ft
+            if any(word in col_lower for word in ["sq ft", "sqft", "square feet", "square foot", "living area"]):
+                column_scores[col]["sqft"] = column_scores[col].get("sqft", 0) + 20
+            # Equity
+            if col_lower in ("equity", "estimated equity", "equity %"):
+                column_scores[col]["equity_col"] = column_scores[col].get("equity_col", 0) + 20
+            # Mortgage balance
+            if any(word in col_lower for word in ["mortgage balance", "loan balance", "open mortgage"]):
+                column_scores[col]["mortgage_balance"] = column_scores[col].get("mortgage_balance", 0) + 20
             
             # Analyze each value
             for val in values:
@@ -775,8 +827,10 @@ async def rapid_fire_underwrite(
         detected = {}
         used_cols = set()
         # Process in priority order — address/price/units first, then derived fields
+        # Include PropStream bonus fields: annual_taxes, year_built, sqft, equity_col, mortgage_balance
         for field in ["address", "price", "units", "noi", "gross_income", "price_per_unit",
-                       "cap", "city", "state", "zip", "url", "owner"]:
+                       "cap", "city", "state", "zip", "url", "owner",
+                       "annual_taxes", "year_built", "sqft", "equity_col", "mortgage_balance"]:
             best_col = None
             best_score = 0
             for col, scores in column_scores.items():
@@ -812,6 +866,12 @@ async def rapid_fire_underwrite(
     gross_income_header = detected_cols.get("gross_income", "")
     url_header = detected_cols.get("url", "")
     owner_header = detected_cols.get("owner", "")
+    # PropStream bonus columns
+    annual_taxes_header = detected_cols.get("annual_taxes", "")
+    year_built_header = detected_cols.get("year_built", "")
+    sqft_header = detected_cols.get("sqft", "")
+    equity_col_header = detected_cols.get("equity_col", "")
+    mortgage_balance_header = detected_cols.get("mortgage_balance", "")
 
     log.info(
         "[RapidFire] Using columns -> address=%r units=%r total_price=%r ppu=%r broker_cap=%r noi=%r "
@@ -827,10 +887,10 @@ async def rapid_fire_underwrite(
     deals = []
     skipped_no_price = 0
 
-    # Preload external market data only when needed (Reonomy path)
+    # Preload external market data for Reonomy and PropStream (both rarely have NOI/income)
     fmr_by_zip = None
     tax_by_county = None
-    if source_type == "reonomy":
+    if source_type in ("reonomy", "propstream"):
         fmr_by_zip = _load_fmr_by_zip()
         tax_by_county = _load_property_tax_by_county()
 
@@ -873,6 +933,28 @@ async def rapid_fire_underwrite(
         broker_cap = as_float(row.get(broker_cap_header)) if broker_cap_header else None
         noi = as_float(row.get(noi_header)) if noi_header else None
         gross_income = as_float(row.get(gross_income_header)) if gross_income_header else None
+
+        # PropStream bonus fields
+        annual_taxes = as_float(row.get(annual_taxes_header)) if annual_taxes_header else None
+        year_built = as_float(row.get(year_built_header)) if year_built_header else None
+        sqft = as_float(row.get(sqft_header)) if sqft_header else None
+        mortgage_balance = as_float(row.get(mortgage_balance_header)) if mortgage_balance_header else None
+
+        # PropStream: if "Estimated Rent" detected as gross_income, it's monthly per unit
+        # Convert to annual gross income
+        if source_type == "propstream" and gross_income is not None and gross_income > 0:
+            # PropStream estimated rent is monthly, check if it's per-unit or total
+            if units is not None and units > 1 and gross_income < 10000:
+                # Looks like monthly per-unit rent → annualize for all units
+                gross_income = gross_income * units * 12.0
+            elif gross_income < 50000:
+                # Looks like monthly total rent → annualize
+                gross_income = gross_income * 12.0
+            # else: already annual
+
+        # PropStream: single-family with no units column → default to 1 unit
+        if units is None and source_type == "propstream":
+            units = 1
 
         # Derive missing pricing fields according to explicit rules.
         # 1) Try to get total_price from explicit total price columns.
@@ -920,9 +1002,43 @@ async def rapid_fire_underwrite(
             # Back into NOI from broker cap rate — mark as broker-stated, less reliable
             noi_source = "broker cap rate (unverified)"
             noi = total_price * (broker_cap / 100.0)
-            # IMPORTANT: broker-stated cap rates are marketing numbers.
-            # Apply a haircut to be conservative — assume actual cap is 50-75 bps lower.
-            # We'll still use the broker NOI for the math, but add a warning.
+
+        elif source_type == "propstream" and zip_code and units not in (None, 0) and total_price is not None:
+            # ── PropStream NOI derivation ──
+            # PropStream exports rarely have NOI/income. Use FMR + actual taxes.
+            noi_source = "PropStream FMR + taxes"
+            if fmr_by_zip is None:
+                fmr_by_zip = _load_fmr_by_zip()
+            zip_row = fmr_by_zip.get(zip_code) if fmr_by_zip else None
+            if zip_row is not None:
+                try:
+                    rent_2br = float(zip_row.get("fmr_2br") or 0.0)
+                except Exception:
+                    rent_2br = 0.0
+                if rent_2br > 0:
+                    annual_gross_rent = rent_2br * float(units) * 12.0
+                    effective_income = annual_gross_rent * (1.0 - vacancy_rate / 100.0)
+                    base_opex = effective_income * (expense_ratio / 100.0)
+
+                    # Use ACTUAL annual taxes from PropStream if available
+                    tax_expense = 0.0
+                    if annual_taxes is not None and annual_taxes > 0:
+                        tax_expense = annual_taxes
+                    elif tax_by_county is not None:
+                        if tax_by_county is None:
+                            tax_by_county = _load_property_tax_by_county()
+                        ps_state = str(zip_row.get("state_name") or state or "").strip()
+                        ps_county = str(zip_row.get("county_name") or "").strip()
+                        if ps_state and ps_county:
+                            key = (ps_state.lower(), ps_county.lower())
+                            rate = tax_by_county.get(key)
+                            if rate is not None and rate > 0:
+                                tax_expense = float(total_price) * rate
+
+                    insurance_estimate = total_price * 0.005
+                    reserves_estimate = float(units) * 250.0
+                    total_opex = base_opex + tax_expense + insurance_estimate + reserves_estimate
+                    noi = effective_income - total_opex
 
         elif source_type == "reonomy" and fmr_by_zip is not None and zip_code and units not in (None, 0):
             # Reonomy path — try AI, then FMR fallback
@@ -1166,6 +1282,10 @@ async def rapid_fire_underwrite(
             "noiPerUnit": float(noi_per_unit) if noi_per_unit is not None else None,
             "totalEquity": float(equity) if equity > 0 else None,
             "loanAmount": float(loan_amount) if loan_amount > 0 else None,
+            "yearBuilt": int(year_built) if year_built is not None else None,
+            "sqft": int(sqft) if sqft is not None else None,
+            "annualTaxes": float(annual_taxes) if annual_taxes is not None else None,
+            "mortgageBalance": float(mortgage_balance) if mortgage_balance is not None else None,
             "listingUrl": str(listing_url).strip() if listing_url else None,
             "ownerName": str(owner_name).strip() if owner_name else None,
             "verdict": verdict,
