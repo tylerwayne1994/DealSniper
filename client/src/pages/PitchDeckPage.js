@@ -172,6 +172,11 @@ function PitchDeckPage() {
   const [showThumbnails, setShowThumbnails] = useState(true);   // NEW — thumbnail strip
   const slideContainerRef = useRef(null);                       // NEW — for PDF capture
 
+  // Property Images
+  const [propertyImages, setPropertyImages] = useState([]);     // Array of { url, filename, storage_path }
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const imageInputRef = useRef(null);
+
   // Load deal if dealId in URL
   useEffect(() => {
     if (dealIdFromUrl) {
@@ -193,6 +198,11 @@ function PitchDeckPage() {
         const price = dealData.purchasePrice || dealData.scenarioData?.financing?.purchase_price || 0;
         console.log('[PitchDeck] Setting purchase price:', price);
         setPurchasePrice(price.toString());
+        // Load existing property images
+        if (dealData.images && dealData.images.length > 0) {
+          setPropertyImages(dealData.images);
+          console.log('[PitchDeck] Loaded', dealData.images.length, 'existing images');
+        }
       } else {
         console.error('[PitchDeck] Deal not found');
         alert('Deal not found');
@@ -204,6 +214,56 @@ function PitchDeckPage() {
       navigate('/pipeline');
     } finally {
       setIsLoadingDeal(false);
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploadingImages(true);
+    try {
+      const formData = new FormData();
+      for (let i = 0; i < files.length; i++) {
+        formData.append('files', files[i]);
+      }
+
+      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
+      const resp = await fetch(`${API_BASE}/v2/deals/${selectedDeal.dealId}/upload-images`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(text || 'Upload failed');
+      }
+
+      const data = await resp.json();
+      if (data.uploaded && data.uploaded.length > 0) {
+        setPropertyImages(prev => [...prev, ...data.uploaded]);
+        console.log('[PitchDeck] Uploaded', data.uploaded.length, 'images');
+      }
+    } catch (err) {
+      console.error('[PitchDeck] Image upload failed:', err);
+      alert('Failed to upload images: ' + err.message);
+    } finally {
+      setIsUploadingImages(false);
+      if (imageInputRef.current) imageInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveImage = async (image) => {
+    try {
+      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
+      await fetch(`${API_BASE}/v2/deals/${selectedDeal.dealId}/images`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storage_path: image.storage_path }),
+      });
+      setPropertyImages(prev => prev.filter(img => img.storage_path !== image.storage_path));
+    } catch (err) {
+      console.error('[PitchDeck] Remove image failed:', err);
     }
   };
 
@@ -232,6 +292,7 @@ function PitchDeckPage() {
           website: sponsorWebsite || '[Website]',
           signature: signature || null
         },
+        images: propertyImages,  // Pass property images to embed in slides
         ...(structureType === 'jv' ? {
           partnerEquity: Number(partnerEquity) || 0,
           cashflowSplit: Number(cashflowSplit) || 50,
@@ -865,6 +926,141 @@ function PitchDeckPage() {
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+
+              {/* ============ Property Images Section ============ */}
+              {structureType && (
+                <div style={{
+                  backgroundColor: '#fefce8',
+                  borderRadius: '12px',
+                  padding: '24px',
+                  marginBottom: '24px',
+                  border: '1px solid #fde68a',
+                }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>
+                    📸 Property Images
+                  </h3>
+                  <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px', margin: 0, marginTop: '4px' }}>
+                    Upload photos of the property to include in your pitch deck slides (Title Page & Property Overview).
+                  </p>
+
+                  {/* Image Grid */}
+                  {propertyImages.length > 0 && (
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+                      gap: '10px',
+                      marginBottom: '16px',
+                    }}>
+                      {propertyImages.map((img, idx) => (
+                        <div
+                          key={img.storage_path || idx}
+                          style={{
+                            position: 'relative',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            border: '1px solid #e5e7eb',
+                            backgroundColor: '#f9fafb',
+                            aspectRatio: '4/3',
+                          }}
+                        >
+                          <img
+                            src={img.url}
+                            alt={img.filename || `Property ${idx + 1}`}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                            }}
+                          />
+                          <button
+                            onClick={() => handleRemoveImage(img)}
+                            style={{
+                              position: 'absolute',
+                              top: '4px',
+                              right: '4px',
+                              width: '22px',
+                              height: '22px',
+                              backgroundColor: 'rgba(239,68,68,0.9)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '50%',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              fontWeight: '700',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              lineHeight: 1,
+                            }}
+                            title="Remove image"
+                          >
+                            ×
+                          </button>
+                          <div style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            padding: '4px 6px',
+                            backgroundColor: 'rgba(0,0,0,0.6)',
+                            color: '#fff',
+                            fontSize: '10px',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}>
+                            {img.filename || `Image ${idx + 1}`}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Upload Button */}
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    style={{ display: 'none' }}
+                  />
+                  <button
+                    onClick={() => imageInputRef.current?.click()}
+                    disabled={isUploadingImages}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      backgroundColor: isUploadingImages ? '#e5e7eb' : 'white',
+                      border: '2px dashed #d1d5db',
+                      borderRadius: '8px',
+                      cursor: isUploadingImages ? 'not-allowed' : 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#6b7280',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      transition: 'border-color 0.2s',
+                    }}
+                    onMouseEnter={(e) => { if (!isUploadingImages) e.currentTarget.style.borderColor = '#0052FF'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d1d5db'; }}
+                  >
+                    {isUploadingImages ? (
+                      <>⏳ Uploading...</>
+                    ) : (
+                      <>📷 {propertyImages.length > 0 ? 'Add More Photos' : 'Upload Property Photos'}</>
+                    )}
+                  </button>
+
+                  {propertyImages.length > 0 && (
+                    <p style={{ fontSize: '12px', color: '#059669', marginTop: '8px', fontWeight: '600' }}>
+                      ✓ {propertyImages.length} image{propertyImages.length !== 1 ? 's' : ''} will be embedded in your pitch deck slides
+                    </p>
+                  )}
                 </div>
               )}
 

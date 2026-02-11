@@ -3364,6 +3364,127 @@ from .pitch_deck_prompts import (
 from .manus_client import is_available as manus_is_available
 
 
+# ---- Property Image Upload for Pitch Deck ----
+
+@router.post("/deals/{deal_id}/upload-images")
+async def upload_property_images(request: Request, deal_id: str):
+    """Upload property photos to Supabase Storage and attach to deal.
+
+    Accepts multipart/form-data with multiple files under the key "files".
+    Returns array of { url, filename, storage_path }.
+    """
+    import uuid
+    from fastapi import UploadFile
+
+    log.info(f"[Images] Upload request for deal {deal_id}")
+
+    form = await request.form()
+    files = form.getlist("files")
+
+    if not files:
+        raise HTTPException(status_code=400, detail="No files provided")
+
+    try:
+        from token_manager import get_supabase as _get_supabase
+        sb = _get_supabase()
+    except Exception as e:
+        log.error(f"[Images] Supabase init failed: {e}")
+        raise HTTPException(status_code=503, detail="Storage unavailable")
+
+    bucket = "deal-images"
+    uploaded = []
+
+    for f in files:
+        try:
+            file_bytes = await f.read()
+            if not file_bytes:
+                continue
+
+            # Determine content type
+            ct = f.content_type or "image/jpeg"
+            ext = ct.split("/")[-1] if "/" in ct else "jpg"
+            if ext not in ("jpeg", "jpg", "png", "webp", "gif"):
+                ext = "jpg"
+
+            safe_name = f"{uuid.uuid4().hex[:12]}.{ext}"
+            storage_path = f"{deal_id}/{safe_name}"
+
+            sb.storage.from_(bucket).upload(
+                path=storage_path,
+                file=file_bytes,
+                file_options={"content-type": ct, "upsert": "true"},
+            )
+
+            public_url = sb.storage.from_(bucket).get_public_url(storage_path)
+
+            uploaded.append({
+                "url": public_url,
+                "filename": f.filename or safe_name,
+                "storage_path": storage_path,
+            })
+            log.info(f"[Images] Uploaded {storage_path}")
+        except Exception as e:
+            log.error(f"[Images] Failed to upload {f.filename}: {e}")
+            continue
+
+    # Append to deal's images JSONB column
+    if uploaded:
+        try:
+            existing = sb.table("deals").select("images").eq("deal_id", deal_id).single().execute()
+            current_images = (existing.data or {}).get("images") or []
+            new_images = current_images + uploaded
+            sb.table("deals").update({"images": new_images}).eq("deal_id", deal_id).execute()
+            log.info(f"[Images] Updated deal {deal_id} with {len(uploaded)} new images (total: {len(new_images)})")
+        except Exception as e:
+            log.warning(f"[Images] Failed to update deal images column: {e}")
+
+    return JSONResponse({
+        "success": True,
+        "uploaded": uploaded,
+        "count": len(uploaded),
+    })
+
+
+@router.delete("/deals/{deal_id}/images")
+async def delete_property_image(request: Request, deal_id: str):
+    """Remove a specific image from a deal.
+
+    Request body: { "storage_path": "deal_id/filename.jpg" }
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    storage_path = body.get("storage_path")
+    if not storage_path:
+        raise HTTPException(status_code=400, detail="storage_path required")
+
+    try:
+        from token_manager import get_supabase as _get_supabase
+        sb = _get_supabase()
+    except Exception as e:
+        raise HTTPException(status_code=503, detail="Storage unavailable")
+
+    # Remove from Supabase Storage
+    try:
+        sb.storage.from_("deal-images").remove([storage_path])
+    except Exception as e:
+        log.warning(f"[Images] Storage delete failed (may not exist): {e}")
+
+    # Remove from deal's images array
+    try:
+        existing = sb.table("deals").select("images").eq("deal_id", deal_id).single().execute()
+        current_images = (existing.data or {}).get("images") or []
+        updated_images = [img for img in current_images if img.get("storage_path") != storage_path]
+        sb.table("deals").update({"images": updated_images}).eq("deal_id", deal_id).execute()
+        log.info(f"[Images] Removed image {storage_path} from deal {deal_id}")
+    except Exception as e:
+        log.error(f"[Images] Failed to update deal images: {e}")
+
+    return JSONResponse({"success": True})
+
+
 @router.post("/deals/{deal_id}/pitch-deck")
 async def generate_pitch_deck(request: Request, deal_id: str):
     """Generate an investor pitch deck with visual HTML slides.
@@ -3469,6 +3590,17 @@ async def generate_pitch_deck(request: Request, deal_id: str):
     scenario_data = deal.get("scenario_data") or {}
     parsed_data = deal.get("parsed_data") or {}
     calcs = scenario_data.get("calculations") or {}
+
+    # ----- Extract property images -----
+    deal_images = deal.get("images") or []
+    # Also accept images passed from frontend body (freshly uploaded)
+    body_images = body.get("images") or []
+    all_image_urls = []
+    for img in (deal_images + body_images):
+        url = img.get("url") if isinstance(img, dict) else img
+        if url:
+            all_image_urls.append(url)
+    log.info(f"[PitchDeck] Found {len(all_image_urls)} property images")
 
     # ----- Extract comprehensive deal fields -----
     address = deal.get("address") or parsed_data.get("property", {}).get("address") or "Property Address TBD"
@@ -3674,6 +3806,17 @@ STABILIZATION & EXIT:
 
             stage2_prompt = STAGE_2_CLAUDE_FALLBACK_PROMPT.format(deal_summary=deal_summary)
 
+            # Inject property images into prompt so Claude can embed them in slides
+            if all_image_urls:
+                image_section = "\n\nPROPERTY IMAGES (embed these in the Title Page and Property Overview slides using <img> tags):\n"
+                for i, url in enumerate(all_image_urls[:8]):  # Cap at 8 images
+                    image_section += f"  Image {i+1}: {url}\n"
+                image_section += "\nFor the Title Page (slide 1): Use the first image as a large hero background or prominent photo.\n"
+                image_section += "For Property Overview (slide 3): Display 2-4 images in a grid layout.\n"
+                image_section += "Use <img src=\"URL\" style=\"...\" /> tags with object-fit: cover for clean rendering.\n"
+                stage2_prompt += image_section
+                log.info(f"[PitchDeck] Injected {len(all_image_urls[:8])} image URLs into Stage 2 prompt")
+
             stage2_response = anthropic_client.messages.create(
                 model="claude-sonnet-4-5-20250929",
                 max_tokens=64000,
@@ -3810,6 +3953,7 @@ STABILIZATION & EXIT:
             "sections": legacy_sections,         # LEGACY — backward compat
             "summary": deal_summary[:3000],      # Stage 1 summary preview
             "signature": signature,
+            "images": all_image_urls,            # Property image URLs
             "contactInfo": {
                 "sponsorName": sponsor_name,
                 "email": email,
