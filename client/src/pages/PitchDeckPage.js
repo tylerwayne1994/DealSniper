@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Sparkles, Download, Users, Building2 } from 'lucide-react';
+import { ArrowLeft, Sparkles, Download, Users, Building2, ChevronLeft, ChevronRight, Maximize2, Minimize2, Layers } from 'lucide-react';
 import DashboardShell from '../components/DashboardShell';
 import { loadDeal } from '../lib/dealsService';
 import html2canvas from 'html2canvas';
@@ -162,9 +162,15 @@ function PitchDeckPage() {
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [pitchDeckContent, setPitchDeckContent] = useState(null);
+  const [pitchDeckSlides, setPitchDeckSlides] = useState(null); // NEW — HTML slides
+  const [currentSlide, setCurrentSlide] = useState(0);          // NEW — slide navigator index
+  const [isFullscreen, setIsFullscreen] = useState(false);      // NEW — fullscreen slide view
   const [pitchDeckSignature, setPitchDeckSignature] = useState(null);
   const [generationProgress, setGenerationProgress] = useState(0);
+  const [generationStage, setGenerationStage] = useState('');   // NEW — progress label
   const [showSourceData, setShowSourceData] = useState(false);
+  const [showThumbnails, setShowThumbnails] = useState(true);   // NEW — thumbnail strip
+  const slideContainerRef = useRef(null);                       // NEW — for PDF capture
 
   // Load deal if dealId in URL
   useEffect(() => {
@@ -239,13 +245,24 @@ function PitchDeckPage() {
       console.log('[PitchDeck] Request body:', JSON.stringify(requestBody, null, 2));
       console.log('[PitchDeck] Calling API:', `http://127.0.0.1:8010/v2/deals/${selectedDeal.dealId}/pitch-deck`);
       
-      // Simulate progress
+      // Simulate progress with stage labels
+      const stages = [
+        { pct: 10, label: 'Loading deal data...' },
+        { pct: 25, label: 'Stage 1: Analyzing financials...' },
+        { pct: 45, label: 'Stage 1: Building deal summary...' },
+        { pct: 60, label: 'Stage 2: Designing HTML slides...' },
+        { pct: 75, label: 'Stage 2: Generating visualizations...' },
+        { pct: 85, label: 'Stage 2: Styling slides...' },
+        { pct: 92, label: 'Finalizing pitch deck...' },
+      ];
+      let stageIdx = 0;
       const progressInterval = setInterval(() => {
-        setGenerationProgress(prev => {
-          if (prev >= 90) return prev;
-          return prev + 10;
-        });
-      }, 500);
+        if (stageIdx < stages.length) {
+          setGenerationProgress(stages[stageIdx].pct);
+          setGenerationStage(stages[stageIdx].label);
+          stageIdx++;
+        }
+      }, 3000);
 
       const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
       const response = await fetch(`${API_BASE}/v2/deals/${selectedDeal.dealId}/pitch-deck`, {
@@ -267,21 +284,28 @@ function PitchDeckPage() {
       }
 
       const data = await response.json();
-      console.log('[PitchDeck] Success! Response data:', data);
+      console.log('[PitchDeck] Success! Response data keys:', Object.keys(data));
       
-      // Backend returns { sections: [...], signature: '...' } format
-      if (data.sections && Array.isArray(data.sections)) {
-        console.log('[PitchDeck] Found sections:', data.sections.length);
-        console.log('[PitchDeck] Signature from response:', data.signature ? 'YES - length: ' + data.signature?.length : 'NO');
-        setPitchDeckContent(data.sections);
+      // NEW: Handle HTML slides from two-stage system
+      if (data.slides && Array.isArray(data.slides) && data.slides.length > 0) {
+        console.log('[PitchDeck] Found HTML slides:', data.slides.length);
+        setPitchDeckSlides(data.slides);
+        setCurrentSlide(0);
+        setPitchDeckContent(data.sections || []);  // Legacy sections for fallback
         setPitchDeckSignature(data.signature || null);
-        console.log('[PitchDeck] State updated - signature:', data.signature ? 'saved' : 'none');
+        console.log('[PitchDeck] Slide view activated');
+      }
+      // LEGACY: Handle old text sections format
+      else if (data.sections && Array.isArray(data.sections)) {
+        console.log('[PitchDeck] Found legacy sections:', data.sections.length);
+        setPitchDeckContent(data.sections);
+        setPitchDeckSlides(null);
+        setPitchDeckSignature(data.signature || null);
       } else {
-        // Fallback for other response formats
         const content = data.text || data.content || JSON.stringify(data, null, 2);
         setPitchDeckContent([{ id: 'content', title: 'Pitch Deck', body: content }]);
+        setPitchDeckSlides(null);
         setPitchDeckSignature(null);
-        console.log('[PitchDeck] Content set (fallback)');
       }
       
     } catch (error) {
@@ -295,82 +319,76 @@ function PitchDeckPage() {
   };
 
   const handleDownloadPDF = async () => {
-    if (!pitchDeckContent || !selectedDeal) {
+    if ((!pitchDeckSlides || pitchDeckSlides.length === 0) && !pitchDeckContent) {
       alert('No pitch deck content to download');
       return;
     }
 
     try {
       console.log('[PitchDeck] Starting PDF generation...');
-      
-      // Find the pitch deck content container
-      const contentElement = document.querySelector('[data-pitch-deck-content]');
-      if (!contentElement) {
-        alert('Could not find pitch deck content to export');
-        return;
-      }
 
-      // Create PDF
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      // Landscape PDF for slides (1280x720 aspect ratio)
+      const pdf = new jsPDF('l', 'mm', [338.7, 190.5]); // 1280/3.78 x 720/3.78
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 15;
-      const contentWidth = pageWidth - (margin * 2);
-      const maxPageHeight = pageHeight - (margin * 2);
 
-      console.log('[PitchDeck] Capturing content as canvas...');
-      const canvas = await html2canvas(contentElement, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        windowWidth: 1200,
-        scrollY: -window.scrollY,
-        scrollX: -window.scrollX
-      });
+      if (pitchDeckSlides && pitchDeckSlides.length > 0) {
+        // Render each HTML slide to canvas → PDF page
+        for (let i = 0; i < pitchDeckSlides.length; i++) {
+          if (i > 0) pdf.addPage();
 
-      console.log(`[PitchDeck] Canvas captured: ${canvas.width}x${canvas.height}`);
+          const slide = pitchDeckSlides[i];
+          
+          // Create an off-screen iframe to render the slide
+          const iframe = document.createElement('iframe');
+          iframe.style.position = 'fixed';
+          iframe.style.left = '-9999px';
+          iframe.style.top = '0';
+          iframe.style.width = '1280px';
+          iframe.style.height = '720px';
+          iframe.style.border = 'none';
+          document.body.appendChild(iframe);
 
-      const imgWidth = contentWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          // Write HTML into iframe
+          const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+          iframeDoc.open();
+          iframeDoc.write(slide.html);
+          iframeDoc.close();
 
-      // Split into multiple pages if content exceeds one page
-      let yOffset = 0;
-      let isFirstPage = true;
+          // Wait for fonts and content to load
+          await new Promise(resolve => setTimeout(resolve, 500));
 
-      while (yOffset < imgHeight) {
-        if (!isFirstPage) {
-          pdf.addPage();
+          try {
+            const canvas = await html2canvas(iframeDoc.body, {
+              width: 1280,
+              height: 720,
+              scale: 2,
+              useCORS: true,
+              logging: false,
+              backgroundColor: '#ffffff',
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
+            console.log(`[PitchDeck] Rendered slide ${i + 1}/${pitchDeckSlides.length}`);
+          } catch (err) {
+            console.warn(`[PitchDeck] Failed to render slide ${i + 1}:`, err);
+          } finally {
+            document.body.removeChild(iframe);
+          }
         }
-        isFirstPage = false;
-
-        // Calculate how much of the image to show on this page
-        const remainingHeight = imgHeight - yOffset;
-        const heightForThisPage = Math.min(remainingHeight, maxPageHeight);
-
-        // Calculate source position in the canvas
-        const srcY = (yOffset / imgHeight) * canvas.height;
-        const srcHeight = (heightForThisPage / imgHeight) * canvas.height;
-
-        // Create a slice of the canvas for this page
-        const pageCanvas = document.createElement('canvas');
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = srcHeight;
-        const ctx = pageCanvas.getContext('2d');
-
-        ctx.drawImage(
-          canvas,
-          0, srcY,
-          canvas.width, srcHeight,
-          0, 0,
-          canvas.width, srcHeight
-        );
-
-        const pageImgData = pageCanvas.toDataURL('image/png');
-        pdf.addImage(pageImgData, 'PNG', margin, margin, imgWidth, heightForThisPage);
-
-        yOffset += heightForThisPage;
-        console.log(`[PitchDeck] Added page, yOffset: ${yOffset}/${imgHeight}`);
+      } else {
+        // Fallback: capture the content element as before
+        const contentElement = document.querySelector('[data-pitch-deck-content]');
+        if (contentElement) {
+          const canvas = await html2canvas(contentElement, {
+            scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff',
+          });
+          const imgData = canvas.toDataURL('image/png');
+          const imgWidth = pageWidth;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, Math.min(imgHeight, pageHeight));
+        }
       }
 
       const fileName = `Pitch_Deck_${selectedDeal.address?.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
@@ -382,6 +400,25 @@ function PitchDeckPage() {
       alert('Failed to generate PDF: ' + error.message);
     }
   };
+
+  // Keyboard navigation for slides
+  const handleKeyDown = useCallback((e) => {
+    if (!pitchDeckSlides || pitchDeckSlides.length === 0) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      setCurrentSlide(prev => Math.min(prev + 1, pitchDeckSlides.length - 1));
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      setCurrentSlide(prev => Math.max(prev - 1, 0));
+    } else if (e.key === 'Escape' && isFullscreen) {
+      setIsFullscreen(false);
+    }
+  }, [pitchDeckSlides, isFullscreen]);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   if (isLoadingDeal) {
     return (
@@ -865,10 +902,7 @@ function PitchDeckPage() {
                     marginBottom: '8px' 
                   }}>
                     <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: '600' }}>
-                      {generationProgress < 30 ? 'Loading deal data...' :
-                       generationProgress < 60 ? 'Analyzing financials...' :
-                       generationProgress < 90 ? 'Generating content...' :
-                       'Finalizing pitch deck...'}
+                      {generationStage || 'Initializing...'}
                     </span>
                     <span style={{ fontSize: '13px', color: '#10b981', fontWeight: '700' }}>
                       {generationProgress}%
@@ -894,8 +928,8 @@ function PitchDeckPage() {
             </div>
           )}
 
-          {/* Generated Content */}
-          {pitchDeckContent && (
+          {/* Generated Content — HTML Slide Viewer */}
+          {(pitchDeckSlides || pitchDeckContent) && (
             <>
               {/* Source Data Verification */}
               <div style={{
@@ -962,149 +996,395 @@ function PitchDeckPage() {
                 )}
               </div>
 
-              <div 
-                data-pitch-deck-content
-                style={{
-                  backgroundColor: 'white',
-                  borderRadius: '16px',
-                  padding: '32px',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
-                }}
-              >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#111827', margin: 0 }}>
-                  Generated Pitch Deck
-                </h2>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={() => setPitchDeckContent(null)}
-                    style={{
-                      padding: '8px 16px',
-                      backgroundColor: '#f3f4f6',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '13px'
-                    }}
-                  >
-                    Start Over
-                  </button>
-                  <button
-                    onClick={handleDownloadPDF}
-                    style={{
-                      padding: '8px 16px',
-                      backgroundColor: '#10b981',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '13px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}
-                  >
-                    <Download size={16} />
-                    Download PDF
-                  </button>
-                </div>
-              </div>
-              <div style={{
-                lineHeight: '1.8',
-                color: '#374151',
-                fontSize: '14px'
-              }}>
-                {Array.isArray(pitchDeckContent) && pitchDeckContent.map((section, sectionIdx) => (
-                  <div key={section.id || sectionIdx} style={{ marginBottom: '40px' }}>
-                    {/* Section Header */}
-                    <h3 style={{
-                      fontSize: '20px',
-                      fontWeight: '700',
-                      color: '#111827',
-                      marginBottom: '16px',
-                      paddingBottom: '10px',
-                      borderBottom: '2px solid #e5e7eb'
-                    }}>
-                      {section.title}
-                    </h3>
-                    
-                    {/* Section Body */}
-                    <div style={{ lineHeight: '1.8' }}>
-                      {section.body.split('\n').map((line, lineIdx) => {
-                        const trimmed = line.trim();
-                        
-                        // Skip empty lines
-                        if (!trimmed) {
-                          return <div key={lineIdx} style={{ height: '12px' }} />;
-                        }
-                        
-                        // Handle bullet points
-                        if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
-                          return (
-                            <div key={lineIdx} style={{
-                              paddingLeft: '20px',
-                              marginBottom: '8px',
-                              display: 'flex',
-                              gap: '10px'
-                            }}>
-                              <span style={{ color: '#10b981', fontWeight: '700', flexShrink: 0 }}>•</span>
-                              <span>{trimmed.replace(/^[\s\-•]+/, '')}</span>
-                            </div>
-                          );
-                        }
-                        
-                        // Regular paragraph
-                        return (
-                          <p key={lineIdx} style={{
-                            marginBottom: '10px',
-                            lineHeight: '1.7'
-                          }}>
-                            {line}
-                          </p>
-                        );
-                      })}
+              {/* ============ SLIDE VIEWER ============ */}
+              {pitchDeckSlides && pitchDeckSlides.length > 0 ? (
+                <div 
+                  ref={slideContainerRef}
+                  data-pitch-deck-content
+                  style={{
+                    backgroundColor: '#111827',
+                    borderRadius: '16px',
+                    overflow: 'hidden',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                    ...(isFullscreen ? {
+                      position: 'fixed',
+                      top: 0, left: 0, right: 0, bottom: 0,
+                      zIndex: 9999,
+                      borderRadius: 0,
+                    } : {})
+                  }}
+                >
+                  {/* Toolbar */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px 20px',
+                    backgroundColor: '#1f2937',
+                    borderBottom: '1px solid #374151',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#f9fafb', margin: 0 }}>
+                        Investment Pitch Deck
+                      </h2>
+                      <span style={{
+                        padding: '2px 10px',
+                        backgroundColor: '#0052FF',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        color: 'white',
+                      }}>
+                        {pitchDeckSlides.length} Slides
+                      </span>
                     </div>
-                    
-                    {/* Divider between sections */}
-                    {sectionIdx < pitchDeckContent.length - 1 && (
-                      <hr style={{
-                        border: 'none',
-                        borderTop: '1px solid #e5e7eb',
-                        marginTop: '30px'
-                      }} />
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        onClick={() => setShowThumbnails(!showThumbnails)}
+                        title="Toggle thumbnails"
+                        style={{
+                          padding: '6px 10px',
+                          backgroundColor: showThumbnails ? '#374151' : 'transparent',
+                          border: '1px solid #4b5563',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          color: '#d1d5db',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                        }}
+                      >
+                        <Layers size={14} />
+                        Thumbnails
+                      </button>
+                      <button
+                        onClick={() => { setPitchDeckContent(null); setPitchDeckSlides(null); }}
+                        style={{
+                          padding: '6px 14px',
+                          backgroundColor: 'transparent',
+                          border: '1px solid #4b5563',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontWeight: '600',
+                          fontSize: '12px',
+                          color: '#d1d5db',
+                        }}
+                      >
+                        Start Over
+                      </button>
+                      <button
+                        onClick={() => setIsFullscreen(!isFullscreen)}
+                        title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                        style={{
+                          padding: '6px 10px',
+                          backgroundColor: 'transparent',
+                          border: '1px solid #4b5563',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          color: '#d1d5db',
+                        }}
+                      >
+                        {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                      </button>
+                      <button
+                        onClick={handleDownloadPDF}
+                        style={{
+                          padding: '6px 14px',
+                          backgroundColor: '#0052FF',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontWeight: '600',
+                          fontSize: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <Download size={14} />
+                        PDF
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex' }}>
+                    {/* Thumbnail sidebar */}
+                    {showThumbnails && (
+                      <div style={{
+                        width: '180px',
+                        backgroundColor: '#1f2937',
+                        borderRight: '1px solid #374151',
+                        overflowY: 'auto',
+                        maxHeight: isFullscreen ? 'calc(100vh - 110px)' : '560px',
+                        padding: '8px',
+                      }}>
+                        {pitchDeckSlides.map((slide, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setCurrentSlide(idx)}
+                            style={{
+                              width: '100%',
+                              padding: '6px',
+                              marginBottom: '6px',
+                              backgroundColor: idx === currentSlide ? '#374151' : 'transparent',
+                              border: idx === currentSlide ? '2px solid #0052FF' : '2px solid transparent',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              transition: 'all 0.15s',
+                            }}
+                          >
+                            <div style={{
+                              width: '100%',
+                              aspectRatio: '16/9',
+                              backgroundColor: '#f5f5f5',
+                              borderRadius: '4px',
+                              overflow: 'hidden',
+                              marginBottom: '4px',
+                              position: 'relative',
+                            }}>
+                              <iframe
+                                srcDoc={slide.html}
+                                title={`Thumbnail ${idx + 1}`}
+                                style={{
+                                  width: '1280px',
+                                  height: '720px',
+                                  transform: 'scale(0.122)',
+                                  transformOrigin: 'top left',
+                                  border: 'none',
+                                  pointerEvents: 'none',
+                                }}
+                                sandbox="allow-same-origin"
+                              />
+                            </div>
+                            <div style={{
+                              fontSize: '11px',
+                              fontWeight: idx === currentSlide ? '700' : '500',
+                              color: idx === currentSlide ? '#60a5fa' : '#9ca3af',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}>
+                              {idx + 1}. {slide.title || `Slide ${idx + 1}`}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
                     )}
-                  </div>
-                ))}
-                
-                {/* Display Signature at the bottom if present */}
-                {pitchDeckSignature && (
-                  <div style={{ marginTop: '48px', paddingTop: '32px', borderTop: '2px solid #e5e7eb' }}>
-                    <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#6b7280', marginBottom: '16px' }}>
-                      Digital Signature:
-                    </h4>
-                    <img 
-                      src={pitchDeckSignature} 
-                      alt="Digital Signature" 
-                      onLoad={() => console.log('[PitchDeck] Signature image loaded successfully')}
-                      onError={(e) => console.error('[PitchDeck] Signature image failed to load:', e)}
-                      style={{ 
-                        maxWidth: '400px', 
-                        height: 'auto',
-                        border: '1px solid #e5e7eb',
+
+                    {/* Main slide viewport */}
+                    <div style={{
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '20px',
+                      minHeight: isFullscreen ? 'calc(100vh - 110px)' : '500px',
+                    }}>
+                      {/* Slide iframe */}
+                      <div style={{
+                        width: '100%',
+                        maxWidth: '960px',
+                        aspectRatio: '16/9',
+                        backgroundColor: '#ffffff',
                         borderRadius: '8px',
-                        padding: '12px',
-                        backgroundColor: '#ffffff'
-                      }} 
-                    />
+                        overflow: 'hidden',
+                        boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+                        position: 'relative',
+                      }}>
+                        <iframe
+                          srcDoc={pitchDeckSlides[currentSlide]?.html || ''}
+                          title={`Slide ${currentSlide + 1}`}
+                          style={{
+                            width: '1280px',
+                            height: '720px',
+                            transform: 'scale(0.75)',
+                            transformOrigin: 'top left',
+                            border: 'none',
+                          }}
+                          sandbox="allow-same-origin allow-scripts"
+                        />
+                      </div>
+
+                      {/* Navigation */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '16px',
+                        marginTop: '16px',
+                      }}>
+                        <button
+                          onClick={() => setCurrentSlide(prev => Math.max(prev - 1, 0))}
+                          disabled={currentSlide === 0}
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: currentSlide === 0 ? '#374151' : '#4b5563',
+                            color: currentSlide === 0 ? '#6b7280' : '#f9fafb',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: currentSlide === 0 ? 'not-allowed' : 'pointer',
+                            fontWeight: '600',
+                            fontSize: '13px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          <ChevronLeft size={16} /> Prev
+                        </button>
+
+                        <span style={{
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: '#d1d5db',
+                          minWidth: '120px',
+                          textAlign: 'center',
+                        }}>
+                          Slide {currentSlide + 1} / {pitchDeckSlides.length}
+                        </span>
+
+                        <button
+                          onClick={() => setCurrentSlide(prev => Math.min(prev + 1, pitchDeckSlides.length - 1))}
+                          disabled={currentSlide === pitchDeckSlides.length - 1}
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: currentSlide === pitchDeckSlides.length - 1 ? '#374151' : '#4b5563',
+                            color: currentSlide === pitchDeckSlides.length - 1 ? '#6b7280' : '#f9fafb',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: currentSlide === pitchDeckSlides.length - 1 ? 'not-allowed' : 'pointer',
+                            fontWeight: '600',
+                            fontSize: '13px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          Next <ChevronRight size={16} />
+                        </button>
+                      </div>
+
+                      {/* Slide title */}
+                      <div style={{
+                        marginTop: '8px',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        color: '#9ca3af',
+                      }}>
+                        {pitchDeckSlides[currentSlide]?.title || `Slide ${currentSlide + 1}`}
+                      </div>
+                    </div>
                   </div>
-                )}
-                
-                {/* Debug signature status */}
-                {!pitchDeckSignature && console.log('[PitchDeck] No signature in state to display')}
-              </div>
-            </div>
+                </div>
+              ) : pitchDeckContent ? (
+                /* ============ LEGACY TEXT SECTION VIEW (fallback) ============ */
+                <div
+                  data-pitch-deck-content
+                  style={{
+                    backgroundColor: 'white',
+                    borderRadius: '16px',
+                    padding: '32px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                    <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#111827', margin: 0 }}>
+                      Generated Pitch Deck
+                    </h2>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        onClick={() => { setPitchDeckContent(null); setPitchDeckSlides(null); }}
+                        style={{
+                          padding: '8px 16px',
+                          backgroundColor: '#f3f4f6',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontWeight: '600',
+                          fontSize: '13px'
+                        }}
+                      >
+                        Start Over
+                      </button>
+                      <button
+                        onClick={handleDownloadPDF}
+                        style={{
+                          padding: '8px 16px',
+                          backgroundColor: '#10b981',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontWeight: '600',
+                          fontSize: '13px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        <Download size={16} />
+                        Download PDF
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{ lineHeight: '1.8', color: '#374151', fontSize: '14px' }}>
+                    {Array.isArray(pitchDeckContent) && pitchDeckContent.map((section, sectionIdx) => (
+                      <div key={section.id || sectionIdx} style={{ marginBottom: '40px' }}>
+                        <h3 style={{
+                          fontSize: '20px', fontWeight: '700', color: '#111827',
+                          marginBottom: '16px', paddingBottom: '10px', borderBottom: '2px solid #e5e7eb'
+                        }}>
+                          {section.title}
+                        </h3>
+                        <div style={{ lineHeight: '1.8' }}>
+                          {(section.body || '').split('\n').map((line, lineIdx) => {
+                            const trimmed = line.trim();
+                            if (!trimmed) return <div key={lineIdx} style={{ height: '12px' }} />;
+                            if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+                              return (
+                                <div key={lineIdx} style={{ paddingLeft: '20px', marginBottom: '8px', display: 'flex', gap: '10px' }}>
+                                  <span style={{ color: '#10b981', fontWeight: '700', flexShrink: 0 }}>•</span>
+                                  <span>{trimmed.replace(/^[\s\-•]+/, '')}</span>
+                                </div>
+                              );
+                            }
+                            return <p key={lineIdx} style={{ marginBottom: '10px', lineHeight: '1.7' }}>{line}</p>;
+                          })}
+                        </div>
+                        {sectionIdx < pitchDeckContent.length - 1 && (
+                          <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', marginTop: '30px' }} />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Signature */}
+              {pitchDeckSignature && (
+                <div style={{
+                  marginTop: '16px', padding: '24px', backgroundColor: 'white',
+                  borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
+                }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#6b7280', marginBottom: '12px' }}>
+                    Digital Signature:
+                  </h4>
+                  <img
+                    src={pitchDeckSignature}
+                    alt="Digital Signature"
+                    style={{
+                      maxWidth: '400px', height: 'auto',
+                      border: '1px solid #e5e7eb', borderRadius: '8px',
+                      padding: '12px', backgroundColor: '#ffffff'
+                    }}
+                  />
+                </div>
+              )}
             </>
           )}
 

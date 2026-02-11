@@ -3351,107 +3351,44 @@ Generate a complete, professional LOI ready for submission. Include appropriate 
 
 
 # =============================================================================
-# PITCH DECK GENERATION ENDPOINT (EQUITY PARTNER / JV / SYNDICATION)
+# PITCH DECK GENERATION ENDPOINT — TWO-STAGE ROCKET
+# Stage 1: Claude (The Analyst) → Structured Deal Summary
+# Stage 2: Claude Fallback / Manus (The Designer) → Visual HTML Slides
 # =============================================================================
 
-PITCH_DECK_SYSTEM_PROMPT = """You are an expert real estate capital raiser and investment storyteller.
-Your job is to turn detailed underwriting results into a concise, investor-ready pitch deck narrative.
-
-OUTPUT FORMAT (STRICT):
-- Output JSON ONLY (no markdown, no backticks, no commentary).
-- The JSON must be an object with a single key: "sections".
-- "sections" must be an array of objects.
-- Each section object must have:
-    - "id": short snake_case identifier from the list below.
-    - "title": human-readable slide title.
-    - "body": multi-line string containing the slide content.
-
-TARGET SECTIONS (EQUITY PARTNER REAL ESTATE PITCH):
-- id: "cover"
-    - title: Cover Slide
-    - body: project/fund name, subtitle, presenter. CRITICAL: Replace ALL placeholders with actual contact info. Use: Presented by: {sponsor_name}\nContact: {email} | {phone}\nWebsite: {website}
-- id: "executive_summary"
-    - title: Executive Summary
-    - body: one-sentence elevator pitch, asset type, location, size, equity required, target returns.
-- id: "opportunity"
-    - title: The Opportunity
-    - body: market inefficiencies, rent growth, supply constraints, why now.
-- id: "problem"
-    - title: Problem / Pain Point
-    - body: distressed operations, inefficiencies, under-utilized revenue streams.
-- id: "strategy"
-    - title: Solution / Strategy
-    - body: value-add / renovation / repositioning / stabilization plan.
-- id: "deal_overview"
-    - title: The Deal Overview
-    - body: purchase price, loan details, equity required & breakdown, sponsor vs investor equity, hold period.
-- id: "financial_summary"
-    - title: Financial Summary (Projections)
-    - body: IRR, cash-on-cash, equity multiple, NOI growth, stabilized cap rate; can reference base/best/worst.
-- id: "use_of_funds"
-    - title: Use of Funds
-    - body: allocation across purchase, renovation/CapEx, reserves, closing costs, fees.
-- id: "sources_uses"
-    - title: Sources & Uses
-    - body: simple table-like text for sources (senior loan, equity partner, sponsor roll) vs uses (purchase, CapEx, reserves).
-- id: "returns_waterfall"
-    - title: Returns Waterfall
-    - body: preferred return %, catch-up, sponsor split, promote tiers for JV or syndication.
-- id: "exit_strategies"
-    - title: Exit Strategies
-    - body: sale at stabilization, refinance, extended hold options, multiple exit scenarios.
-- id: "risk_mitigation"
-    - title: Risk & Mitigation
-    - body: key risks (cost overrun, rates, market) and how they are mitigated.
-- id: "team_track_record"
-    - title: Track Record / Team
-    - body: sponsor experience, completed deals, realized returns, roles.
-- id: "market_data"
-    - title: Market Data
-    - body: rental growth, population, jobs, comps based on available data.
-- id: "case_studies"
-    - title: Case Studies (Optional)
-    - body: similar deals before/after if you can infer any; otherwise keep this section brief.
-- id: "legal_structure"
-    - title: Legal / Structure
-    - body: high-level LLC structure, rights/responsibilities, distribution schedule (no legalese).
-- id: "ask_next_steps"
-    - title: Ask & Next Steps
-    - body: precise equity raise amount, minimum check size, timeline, how to invest.
-- id: "contact"
-    - title: Contact
-    - body: MUST USE THE EXACT CONTACT INFO PROVIDED. Format as:\nCONTACT:\n\n{sponsor_name}\n{email}\n{phone}\n{website}
-
-You may keep sections very concise, but try to include all of them.
-If you truly lack information for a section, still include it with a short, generic body.
-
-COPY GUIDELINES:
-- Assume the deck is for an equity partner/JV or a syndication (you will be told which).
-- Emphasize: opportunity, returns, and risk/mitigation.
-- Use clear bullet-style copy inside each body, but just as plain text lines starting with "-".
-- Keep the overall length appropriate for a 1–2 page pitch summary.
-- DO NOT include legal disclaimers or LOI-style contracting language.
-- CRITICAL: For the "cover" and "contact" sections, USE THE EXACT CONTACT INFO PROVIDED in the prompt. Do NOT use placeholders like [Sponsor Name] or [Email].
-"""
+from .pitch_deck_prompts import (
+    STAGE_1_DEAL_SUMMARY_PROMPT,
+    STAGE_2_MANUS_DESIGN_PROMPT_TEMPLATE,
+    STAGE_2_CLAUDE_FALLBACK_PROMPT,
+)
+from .manus_client import is_available as manus_is_available
 
 
 @router.post("/deals/{deal_id}/pitch-deck")
 async def generate_pitch_deck(request: Request, deal_id: str):
-    """Generate an investor pitch deck narrative from a saved deal.
+    """Generate an investor pitch deck with visual HTML slides.
+
+    Two-Stage Rocket:
+      Stage 1 — Claude analyses the deal and produces a structured 16-section summary.
+      Stage 2 — Claude (fallback) or Manus (premium) converts the summary into
+                self-contained 1280×720 HTML slides.
 
     REQUIRES 1 TOKEN (pitch_deck_generation).
 
     Request body:
     {
       "structureType": "jv" | "syndication",
-      "maxSections": int (optional, default 7)
+      "purchasePrice": number,
+      "contactInfo": { sponsorName, email, phone, website, signature },
+      ...JV or Syndication term fields...
+      "mode": "claude" | "manus"  (optional, defaults to "claude")
     }
     """
     from anthropic import Anthropic
 
-    log.info(f"[V2] Pitch deck generation request received for deal {deal_id}")
+    log.info(f"[PitchDeck] 🚀 Two-stage pitch deck request for deal {deal_id}")
 
-    # Token check
+    # ----- Token check -----
     try:
         import sys
         import os as _os
@@ -3481,44 +3418,49 @@ async def generate_pitch_deck(request: Request, deal_id: str):
     except HTTPException as he:
         if he.status_code == 402:
             raise
-        log.warning(f"Token check failed (pitch deck): {he.detail}. Allowing request for backward compatibility.")
+        log.warning(f"Token check failed (pitch deck): {he.detail}. Allowing for backward compat.")
         profile_id = None
         profile = None
-        get_token_supabase = None  # type: ignore
+        get_token_supabase = None
     except Exception as e:
-        log.warning(f"Token check error (pitch deck): {e}. Allowing request for backward compatibility.")
+        log.warning(f"Token check error (pitch deck): {e}. Allowing for backward compat.")
         profile_id = None
         profile = None
-        get_token_supabase = None  # type: ignore
+        get_token_supabase = None
 
-    # Parse body
+    # ----- Parse body -----
     try:
         body = await request.json()
     except Exception:
         body = {}
 
     structure_type = (body.get("structureType") or "jv").lower()
-    max_sections = int(body.get("maxSections") or 7)
-    
-    # Extract contact info
+    generation_mode = (body.get("mode") or "claude").lower()  # "claude" or "manus"
+
     contact_info = body.get("contactInfo") or {}
     sponsor_name = contact_info.get("sponsorName") or "[Sponsor Name]"
     email = contact_info.get("email") or "[Email]"
     phone = contact_info.get("phone") or "[Phone]"
     website = contact_info.get("website") or "[Website]"
-    signature = contact_info.get("signature")  # Base64 image data
-    
-    log.info(f"[V2] Pitch deck contact info received: Name='{sponsor_name}', Email='{email}', Phone='{phone}', Website='{website}'")
+    signature = contact_info.get("signature")
 
-    # Load deal + scenario data from Supabase
+    # JV / Syndication terms
+    partner_equity = body.get("partnerEquity", 0)
+    cashflow_split = body.get("cashflowSplit", 50)
+    preferred_return = body.get("preferredReturn", 8)
+    gp_split = body.get("gpSplit", 20)
+    lp_split = body.get("lpSplit", 80)
+
+    log.info(f"[PitchDeck] Mode={generation_mode}, Structure={structure_type}, Contact={sponsor_name}")
+
+    # ----- Load deal from Supabase -----
     try:
         from token_manager import get_supabase as _get_supabase
-
         sb = _get_supabase()
         result = sb.table("deals").select("*").eq("deal_id", deal_id).single().execute()
         deal = (result.data or {})
     except Exception as e:
-        log.error(f"[V2] Failed to load deal {deal_id} for pitch deck: {e}")
+        log.error(f"[PitchDeck] Failed to load deal {deal_id}: {e}")
         raise HTTPException(status_code=404, detail="Deal not found for pitch deck generation")
 
     if not deal:
@@ -3526,12 +3468,12 @@ async def generate_pitch_deck(request: Request, deal_id: str):
 
     scenario_data = deal.get("scenario_data") or {}
     parsed_data = deal.get("parsed_data") or {}
-    calcs = (scenario_data.get("calculations") or {})
+    calcs = scenario_data.get("calculations") or {}
 
-    # Extract core fields
+    # ----- Extract comprehensive deal fields -----
     address = deal.get("address") or parsed_data.get("property", {}).get("address") or "Property Address TBD"
     units = deal.get("units") or parsed_data.get("property", {}).get("units") or 0
-    purchase_price = deal.get("purchase_price") or 0
+    purchase_price = deal.get("purchase_price") or body.get("purchasePrice") or 0
     deal_structure = deal.get("deal_structure") or "Traditional"
 
     asset_type = (
@@ -3543,6 +3485,9 @@ async def generate_pitch_deck(request: Request, deal_id: str):
     city = parsed_data.get("property", {}).get("city") or scenario_data.get("property", {}).get("city")
     state = parsed_data.get("property", {}).get("state") or scenario_data.get("property", {}).get("state")
     location = ", ".join([x for x in [city, state] if x]) or "Target Market"
+    year_built = parsed_data.get("property", {}).get("year_built") or scenario_data.get("property", {}).get("year_built") or "N/A"
+    total_sf = parsed_data.get("property", {}).get("total_sf") or parsed_data.get("property", {}).get("square_feet") or "N/A"
+    occupancy = parsed_data.get("property", {}).get("occupancy") or scenario_data.get("property", {}).get("occupancy") or "N/A"
 
     irr = calcs.get("leveredIRR") or calcs.get("irr")
     coc = calcs.get("avgCashOnCash") or calcs.get("cashOnCash")
@@ -3550,12 +3495,28 @@ async def generate_pitch_deck(request: Request, deal_id: str):
     noi_year1 = calcs.get("noiYear1") or calcs.get("noi_year1") or 0
     cap_rate = calcs.get("inPlaceCapRate") or calcs.get("capRate")
     dscr = calcs.get("dscr")
-    ltv = calcs.get("ltv")
+    ltv = calcs.get("ltv") or scenario_data.get("financing", {}).get("ltv")
     hold_years = scenario_data.get("hold_period_years") or scenario_data.get("holdPeriodYears") or 5
 
     day_one_cf = calcs.get("dayOneCashFlow") or 0
     stabilized_cf = calcs.get("stabilizedCashFlow") or 0
     refi_value = calcs.get("refiValue") or 0
+
+    # Financing details
+    financing = scenario_data.get("financing") or {}
+    loan_amount = financing.get("loan_amount") or financing.get("loanAmount") or 0
+    interest_rate = financing.get("interest_rate") or financing.get("interestRate") or 0
+    amort_years = financing.get("amortization") or financing.get("amortYears") or 30
+    annual_debt_service = calcs.get("annualDebtService") or financing.get("annual_debt_service") or 0
+    total_equity = calcs.get("totalEquity") or financing.get("total_equity") or 0
+
+    # Income/expense details
+    income_data = scenario_data.get("income") or parsed_data.get("income") or {}
+    expense_data = scenario_data.get("expenses") or parsed_data.get("expenses") or {}
+    rent_roll = parsed_data.get("rent_roll") or scenario_data.get("rent_roll") or []
+
+    # Annual projections if available
+    annual_projections = calcs.get("annualProjections") or calcs.get("yearByYear") or []
 
     def fmt_currency(val):
         try:
@@ -3577,175 +3538,251 @@ async def generate_pitch_deck(request: Request, deal_id: str):
 
     structure_label = "Syndication" if structure_type == "syndication" else "JV / Equity Partner"
 
-    # Build user prompt summarizing the deal
-    user_prompt = f"""Generate an investor pitch deck narrative for an equity partner in commercial real estate.
+    # =====================================================================
+    # STAGE 1: Claude Analyst — Structured Deal Summary
+    # =====================================================================
+    log.info(f"[PitchDeck] === STAGE 1: Claude Analyst ===")
 
-Deal Type (framing): {structure_label}
-Underlying Deal Structure in Model: {deal_structure}
+    stage1_user_prompt = f"""Create a comprehensive deal breakdown document for this investment opportunity.
 
-CONTACT INFORMATION (USE THESE IN COVER SLIDE):
-- Sponsor Name: {sponsor_name}
+DEAL TYPE: {structure_label}
+MODEL STRUCTURE: {deal_structure}
+
+SPONSOR / CONTACT:
+- Sponsor: {sponsor_name}
 - Email: {email}
 - Phone: {phone}
 - Website: {website}
 
-PROPERTY:
+PROPERTY DETAILS:
 - Address: {address}
 - Asset Type: {asset_type}
 - Location: {location}
-- Units: {units}
+- Total Units: {units}
+- Year Built: {year_built}
+- Total SF: {total_sf}
+- Occupancy: {occupancy}
 
-PRICING & CAPITALIZATION:
+ACQUISITION & FINANCING:
 - Purchase Price: {fmt_currency(purchase_price)}
+- Loan Amount: {fmt_currency(loan_amount)}
+- LTV: {fmt_pct(ltv) if ltv else 'N/A'}
+- Interest Rate: {fmt_pct(interest_rate) if interest_rate else 'N/A'}
+- Amortization: {amort_years} years
+- Annual Debt Service: {fmt_currency(annual_debt_service)}
+- Total Equity Required: {fmt_currency(total_equity)}
+
+EQUITY STRUCTURE:
+- Structure: {structure_label}
+"""
+
+    if structure_type == "syndication":
+        stage1_user_prompt += f"""- Preferred Return: {preferred_return}%
+- GP Split: {gp_split}%
+- LP Split: {lp_split}%
+"""
+    else:
+        stage1_user_prompt += f"""- Partner Equity: {fmt_currency(partner_equity)}
+- Cash Flow Split to Partner: {cashflow_split}%
+- Cash Flow Split to Sponsor: {100 - int(cashflow_split)}%
+"""
+
+    stage1_user_prompt += f"""
+CURRENT FINANCIALS:
 - Year 1 NOI: {fmt_currency(noi_year1)}
-- Going-in Cap Rate: {fmt_pct(cap_rate) if cap_rate is not None else 'N/A'}
-- LTV: {fmt_pct(ltv) if ltv is not None else 'N/A'}
+- Going-in Cap Rate: {fmt_pct(cap_rate) if cap_rate else 'N/A'}
+- Day-One Annual Cash Flow: {fmt_currency(day_one_cf)}
+- DSCR: {fmt_multiple(dscr) if dscr else 'N/A'}
 
 RETURNS SUMMARY:
-- Target IRR: {fmt_pct(irr) if irr is not None else 'N/A'}
-- Avg Cash-on-Cash: {fmt_pct(coc) if coc is not None else 'N/A'}
-- Equity Multiple: {fmt_multiple(equity_multiple)}
+- Target IRR: {fmt_pct(irr) if irr else 'N/A'}
+- Avg Cash-on-Cash: {fmt_pct(coc) if coc else 'N/A'}
+- Equity Multiple: {fmt_multiple(equity_multiple) if equity_multiple else 'N/A'}
 - Hold Period: {hold_years} years
 
-CASH FLOWS:
-- Day-One Annual Cash Flow: {fmt_currency(day_one_cf)}
+STABILIZATION & EXIT:
 - Stabilized Annual Cash Flow: {fmt_currency(stabilized_cf)}
 - Projected Refi/Exit Value: {fmt_currency(refi_value)}
-
-RISK & MITIGATION (for your internal reasoning):
-- You have access to the full underwriting, including expenses, taxes, reserves, rent roll, and market data.
-- Highlight the main risks you infer (execution, financing, market) and how the sponsor plans to mitigate them inside the risk_mitigation section.
-
-STRUCTURE & CONSTRAINTS:
-- Use the exact section IDs and meanings defined in the system prompt.
-- Include ALL of those sections in the JSON output, even if some bodies are short or generic.
-- Keep each section concise enough that the whole thing could fit in a 1–2 page pitch summary.
-- Do NOT include legal disclaimers or LOI-style language.
-- CRITICAL: In the "cover" and "contact" sections, replace ALL placeholders ([Sponsor Name], [Email], [Phone], [Website]) with the ACTUAL values provided above: {sponsor_name}, {email}, {phone}, {website}
 """
+
+    # Add income/expense breakdowns if available
+    if income_data:
+        stage1_user_prompt += f"\nINCOME DATA:\n{json.dumps(income_data, indent=2, default=str)}\n"
+    if expense_data:
+        stage1_user_prompt += f"\nEXPENSE DATA:\n{json.dumps(expense_data, indent=2, default=str)}\n"
+    if rent_roll and len(rent_roll) > 0:
+        stage1_user_prompt += f"\nRENT ROLL ({len(rent_roll)} units):\n{json.dumps(rent_roll[:20], indent=2, default=str)}\n"
+        if len(rent_roll) > 20:
+            stage1_user_prompt += f"  ... and {len(rent_roll) - 20} more units\n"
+    if annual_projections:
+        stage1_user_prompt += f"\nANNUAL PROJECTIONS:\n{json.dumps(annual_projections, indent=2, default=str)}\n"
+
+    # Add full scenario_data dump for completeness
+    stage1_user_prompt += f"\nFULL SCENARIO DATA (for reference):\n{json.dumps(scenario_data, indent=2, default=str)[:8000]}\n"
 
     ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
     if not ANTHROPIC_API_KEY:
-        raise HTTPException(status_code=503, detail="Claude/Anthropic API key not configured")
+        raise HTTPException(status_code=503, detail="Anthropic API key not configured")
 
     try:
         anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
-        response = anthropic_client.messages.create(
+        # Stage 1: Get structured summary from Claude
+        log.info(f"[PitchDeck] Stage 1 prompt length: {len(stage1_user_prompt)} chars")
+        stage1_response = anthropic_client.messages.create(
             model="claude-sonnet-4-5-20250929",
-            max_tokens=8000,
-            system=PITCH_DECK_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_prompt}],
+            max_tokens=12000,
+            system=STAGE_1_DEAL_SUMMARY_PROMPT,
+            messages=[{"role": "user", "content": stage1_user_prompt}],
         )
 
-        raw_text = response.content[0].text.strip()
-        
-        log.info(f"[V2] Raw AI response (first 500 chars): {raw_text[:500]}")
+        deal_summary = stage1_response.content[0].text.strip()
+        log.info(f"[PitchDeck] Stage 1 complete: {len(deal_summary)} chars of structured summary")
 
-        # Strip markdown code fences if present
-        if raw_text.startswith("```json"):
-            raw_text = raw_text[7:]  # Remove ```json
-        elif raw_text.startswith("```"):
-            raw_text = raw_text[3:]  # Remove ```
-            
-        if raw_text.endswith("```"):
-            raw_text = raw_text[:-3]  # Remove trailing ```
-            
-        raw_text = raw_text.strip()
-        
-        log.info(f"[V2] Cleaned response (first 500 chars): {raw_text[:500]}")
+        # Track Stage 1 tokens
+        s1_prompt_tokens = getattr(stage1_response.usage, 'input_tokens', None)
+        s1_completion_tokens = getattr(stage1_response.usage, 'output_tokens', None)
 
-        # Attempt to parse JSON; if it fails, wrap as a single section
-        import json as _json
+        # =====================================================================
+        # STAGE 2: Visual HTML Slide Generation
+        # =====================================================================
+        slides = []
+        s2_prompt_tokens = 0
+        s2_completion_tokens = 0
 
-        sections = []
-        try:
-            parsed = _json.loads(raw_text)
-            if isinstance(parsed, dict) and isinstance(parsed.get("sections"), list):
-                sections = parsed["sections"]
-                log.info(f"[V2] Successfully parsed {len(sections)} sections")
-            else:
-                log.warning(f"[V2] Parsed JSON but no sections array found: {list(parsed.keys())}")
-        except Exception as e:
-            log.warning(f"[V2] Failed to parse pitch deck JSON: {e}. Raw text: {raw_text[:200]}")
-            sections = [
-                {
-                    "id": "summary",
-                    "title": "Pitch Deck Narrative",
-                    "body": raw_text,
-                }
-            ]
+        if generation_mode == "manus" and manus_is_available():
+            # --- MANUS PATH (Premium) ---
+            log.info(f"[PitchDeck] === STAGE 2: Manus Designer ===")
+            try:
+                from .manus_client import create_task, poll_until_complete, extract_slides_from_task
 
-        # POST-PROCESS: Replace ALL placeholder text with actual contact info
-        # Claude sometimes ignores instructions and uses placeholders anyway
+                manus_prompt = STAGE_2_MANUS_DESIGN_PROMPT_TEMPLATE.format(deal_summary=deal_summary)
+                task_id = create_task(manus_prompt)
+                log.info(f"[PitchDeck] Manus task created: {task_id}")
+
+                task_result = poll_until_complete(task_id, max_wait=600)
+                slides = extract_slides_from_task(task_result)
+                log.info(f"[PitchDeck] Manus returned {len(slides)} slides")
+
+            except Exception as manus_err:
+                log.error(f"[PitchDeck] Manus failed, falling back to Claude: {manus_err}")
+                generation_mode = "claude"  # Fall through to Claude below
+
+        if generation_mode != "manus" or not slides:
+            # --- CLAUDE FALLBACK PATH ---
+            log.info(f"[PitchDeck] === STAGE 2: Claude HTML Slide Generator ===")
+
+            stage2_prompt = STAGE_2_CLAUDE_FALLBACK_PROMPT.format(deal_summary=deal_summary)
+
+            stage2_response = anthropic_client.messages.create(
+                model="claude-sonnet-4-5-20250929",
+                max_tokens=64000,
+                messages=[{"role": "user", "content": stage2_prompt}],
+            )
+
+            raw_slides_text = stage2_response.content[0].text.strip()
+            log.info(f"[PitchDeck] Stage 2 raw response: {len(raw_slides_text)} chars")
+
+            s2_prompt_tokens = getattr(stage2_response.usage, 'input_tokens', 0)
+            s2_completion_tokens = getattr(stage2_response.usage, 'output_tokens', 0)
+
+            # Strip markdown fences
+            if raw_slides_text.startswith("```json"):
+                raw_slides_text = raw_slides_text[7:]
+            elif raw_slides_text.startswith("```"):
+                raw_slides_text = raw_slides_text[3:]
+            if raw_slides_text.endswith("```"):
+                raw_slides_text = raw_slides_text[:-3]
+            raw_slides_text = raw_slides_text.strip()
+
+            # Parse slides JSON
+            import json as _json
+            try:
+                parsed_slides = _json.loads(raw_slides_text)
+                if isinstance(parsed_slides, list):
+                    slides = parsed_slides
+                elif isinstance(parsed_slides, dict) and isinstance(parsed_slides.get("slides"), list):
+                    slides = parsed_slides["slides"]
+                else:
+                    log.warning(f"[PitchDeck] Unexpected slides format: {type(parsed_slides)}")
+                    slides = []
+            except Exception as parse_err:
+                log.error(f"[PitchDeck] Failed to parse slides JSON: {parse_err}")
+                log.error(f"[PitchDeck] Raw text (first 500): {raw_slides_text[:500]}")
+                # Emergency fallback — wrap the entire summary in a single HTML slide
+                slides = [{
+                    "slideNumber": 1,
+                    "title": "Investment Summary",
+                    "html": f"""<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+  body {{ width: 1280px; height: 720px; font-family: 'Inter', sans-serif; padding: 60px; background: #fff; color: #1A1A1A; overflow: hidden; }}
+  h1 {{ font-size: 36px; font-weight: 700; color: #0052FF; margin-bottom: 24px; }}
+  pre {{ font-size: 13px; line-height: 1.7; white-space: pre-wrap; word-wrap: break-word; }}
+</style>
+</head><body>
+<h1>Investment Summary — {address}</h1>
+<pre>{deal_summary[:2500]}</pre>
+</body></html>"""
+                }]
+
+        # Inject contact info & sponsor placeholders into slides
         placeholder_map = {
             "[Sponsor Name]": sponsor_name,
             "[sponsor name]": sponsor_name,
             "[SPONSOR NAME]": sponsor_name,
-            "[Email]": email,
-            "[email]": email,
-            "[EMAIL]": email,
-            "[Phone]": phone,
-            "[phone]": phone,
-            "[PHONE]": phone,
-            "[Website]": website,
-            "[website]": website,
-            "[WEBSITE]": website,
+            "[Email]": email, "[email]": email, "[EMAIL]": email,
+            "[Phone]": phone, "[phone]": phone, "[PHONE]": phone,
+            "[Website]": website, "[website]": website, "[WEBSITE]": website,
             "[Current Date]": datetime.now().strftime("%B %d, %Y"),
             "[current date]": datetime.now().strftime("%B %d, %Y"),
-            "[Insert Date]": datetime.now().strftime("%B %d, %Y"),
-            "[insert date]": datetime.now().strftime("%B %d, %Y"),
-            "[DATE]": datetime.now().strftime("%B %d, %Y"),
         }
-        
-        for section in sections:
-            if section.get("body"):
-                original = section["body"]
-                for placeholder, actual_value in placeholder_map.items():
-                    section["body"] = section["body"].replace(placeholder, actual_value)
-                if original != section["body"]:
-                    log.info(f"[V2] Replaced placeholders in section {section.get('id')}")
-        
-        log.info(f"[V2] Post-processed sections - Contact info: {sponsor_name}, {email}, {phone}, {website}")
+        for slide in slides:
+            html = slide.get("html") or ""
+            for placeholder, actual in placeholder_map.items():
+                html = html.replace(placeholder, actual)
+            slide["html"] = html
 
-        # usage metrics
-        prompt_tokens = None
-        completion_tokens = None
-        total_tokens = None
-        try:
-            usage = getattr(response, "usage", None) or (response.get("usage") if isinstance(response, dict) else None)
-            if usage:
-                prompt_tokens = usage.get("prompt_tokens") if isinstance(usage, dict) else getattr(usage, "prompt_tokens", None)
-                completion_tokens = usage.get("completion_tokens") if isinstance(usage, dict) else getattr(usage, "completion_tokens", None)
-                total_tokens = usage.get("total_tokens") if isinstance(usage, dict) else getattr(usage, "total_tokens", None)
-        except Exception:
-            pass
+        log.info(f"[PitchDeck] ✅ Generated {len(slides)} HTML slides")
 
-        # Deduct token after success
+        # ----- Also generate legacy text sections for backward compatibility -----
+        # (The old frontend still understands {sections: [{id, title, body}]})
+        legacy_sections = []
+        for s in slides:
+            legacy_sections.append({
+                "id": f"slide_{s.get('slideNumber', 0)}",
+                "title": s.get("title", f"Slide {s.get('slideNumber', '?')}"),
+                "body": f"[Visual HTML Slide — view in Slide Viewer]",
+            })
+
+        # ----- Token usage -----
+        total_prompt_tokens = (s1_prompt_tokens or 0) + (s2_prompt_tokens or 0)
+        total_completion_tokens = (s1_completion_tokens or 0) + (s2_completion_tokens or 0)
+        total_tokens = total_prompt_tokens + total_completion_tokens
+
+        # ----- Deduct token -----
         if profile_id and profile and get_token_supabase:
             try:
                 token_supabase = get_token_supabase()
                 tokens_required = 1
                 new_balance = max(0, profile["token_balance"] - tokens_required)
                 token_supabase.table("profiles").update({"token_balance": new_balance}).eq("id", profile_id).execute()
-                token_supabase.table("token_usage").insert(
-                    {
-                        "profile_id": profile_id,
-                        "operation_type": "pitch_deck_generation",
-                        "tokens_used": tokens_required,
-                        "deal_id": deal_id,
-                        "deal_name": address,
-                        "location": location,
-                    }
-                ).execute()
-                log.info(
-                    f"[V2] Deducted {tokens_required} token for pitch deck from profile {profile_id}, "
-                    f"new balance: {new_balance}"
-                )
+                token_supabase.table("token_usage").insert({
+                    "profile_id": profile_id,
+                    "operation_type": "pitch_deck_generation",
+                    "tokens_used": tokens_required,
+                    "deal_id": deal_id,
+                    "deal_name": address,
+                    "location": location,
+                }).execute()
+                log.info(f"[PitchDeck] Deducted {tokens_required} token, new balance: {new_balance}")
             except Exception as e:
-                log.error(f"[V2] Failed to deduct token for pitch deck: {e}")
+                log.error(f"[PitchDeck] Failed to deduct token: {e}")
 
-        # Log usage via llm_usage
+        # ----- Log LLM usage -----
         try:
             user_id = request.headers.get("X-User-ID") or request.cookies.get("user_id")
         except Exception:
@@ -3753,36 +3790,46 @@ STRUCTURE & CONSTRAINTS:
         try:
             llm_usage.log_usage(
                 user_id=user_id,
-                action="generate_pitch_deck",
+                action="generate_pitch_deck_v2",
                 model="claude-sonnet-4-5-20250929",
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
+                prompt_tokens=total_prompt_tokens,
+                completion_tokens=total_completion_tokens,
                 total_tokens=total_tokens,
                 deduct_from_balance=False,
             )
         except Exception:
             pass
 
-        return JSONResponse(
-            {
-                "success": True,
-                "deal_id": deal_id,
-                "deal_address": address,
-                "structure_type": structure_type,
-                "sections": sections,
-                "signature": signature,
-                "contactInfo": {
-                    "sponsorName": sponsor_name,
-                    "email": email,
-                    "phone": phone,
-                    "website": website
-                },
-                "generated_at": datetime.now().isoformat(),
-            }
-        )
+        return JSONResponse({
+            "success": True,
+            "deal_id": deal_id,
+            "deal_address": address,
+            "structure_type": structure_type,
+            "generation_mode": generation_mode,
+            "slides": slides,                    # NEW — array of {slideNumber, title, html}
+            "sections": legacy_sections,         # LEGACY — backward compat
+            "summary": deal_summary[:3000],      # Stage 1 summary preview
+            "signature": signature,
+            "contactInfo": {
+                "sponsorName": sponsor_name,
+                "email": email,
+                "phone": phone,
+                "website": website,
+            },
+            "token_usage": {
+                "stage1_prompt": s1_prompt_tokens,
+                "stage1_completion": s1_completion_tokens,
+                "stage2_prompt": s2_prompt_tokens,
+                "stage2_completion": s2_completion_tokens,
+                "total": total_tokens,
+            },
+            "generated_at": datetime.now().isoformat(),
+        })
 
+    except HTTPException:
+        raise
     except Exception as e:
-        log.exception(f"[V2] Pitch deck generation FAILED for deal {deal_id}")
+        log.exception(f"[PitchDeck] Two-stage generation FAILED for deal {deal_id}")
         raise HTTPException(status_code=500, detail=f"Pitch deck generation failed: {str(e)}")
 
 
