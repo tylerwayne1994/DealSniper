@@ -222,7 +222,10 @@ export async function loadPipelineDeals() {
         scenario_data,
         parsed_data,
         latitude,
-        longitude
+        longitude,
+        deal_stage,
+        stage_changed_at,
+        death_reason
       `;
   let query = supabase
     .from('deals')
@@ -258,6 +261,10 @@ export async function loadPipelineDeals() {
     cashOutRefiAmount: deal.scenario_data?.calculations?.cashOutRefiAmount || 0,
     userTotalInPocket: deal.scenario_data?.calculations?.userTotalInPocket || 0,
     postRefiCashFlow: deal.scenario_data?.calculations?.postRefiCashFlow || 0,
+    // Pipeline CRM stage tracking
+    deal_stage: deal.deal_stage || 'underwritten',
+    stage_changed_at: deal.stage_changed_at,
+    death_reason: deal.death_reason,
     // Keep full data for view/LOI
     fullScenarioData: deal.scenario_data,
     fullParsedData: deal.parsed_data

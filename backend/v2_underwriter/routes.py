@@ -673,7 +673,11 @@ async def rapid_fire_underwrite(
         # Sample first 20 rows for analysis
         sample_rows = rows[:min(20, len(rows))]
         
-        column_scores = {h: {"address": 0, "units": 0, "price": 0, "price_per_unit": 0, "cap": 0, "noi": 0} for h in headers}
+        FIELD_TYPES = [
+            "address", "units", "price", "price_per_unit", "cap", "noi",
+            "gross_income", "city", "state", "zip", "url", "owner",
+        ]
+        column_scores = {h: {f: 0 for f in FIELD_TYPES} for h in headers}
         
         for col in headers:
             col_lower = str(col).lower().strip()
@@ -692,6 +696,24 @@ async def rapid_fire_underwrite(
                 column_scores[col]["cap"] += 15
             if "noi" in col_lower:
                 column_scores[col]["noi"] += 15
+            # NEW: gross income / revenue detection
+            if any(word in col_lower for word in ["income", "revenue", "gross", "gpi", "gpr", "egi"]):
+                column_scores[col]["gross_income"] += 15
+            # NEW: city detection
+            if col_lower in ("city", "market", "metro"):
+                column_scores[col]["city"] += 20
+            # NEW: state detection
+            if col_lower in ("state", "st"):
+                column_scores[col]["state"] += 20
+            # NEW: zip detection
+            if any(word in col_lower for word in ["zip", "postal"]):
+                column_scores[col]["zip"] += 20
+            # NEW: listing URL detection
+            if any(word in col_lower for word in ["url", "link", "listing"]):
+                column_scores[col]["url"] += 20
+            # NEW: owner detection
+            if any(word in col_lower for word in ["owner", "seller", "contact"]):
+                column_scores[col]["owner"] += 20
             
             # Analyze each value
             for val in values:
@@ -725,21 +747,47 @@ async def rapid_fire_underwrite(
                     # NOI detection: medium-large numbers ($10k - $50M)
                     if 10000 <= val_num <= 50000000:
                         column_scores[col]["noi"] += 4
+                    
+                    # GROSS INCOME detection: medium-large numbers, slightly wider range
+                    if 20000 <= val_num <= 100000000:
+                        column_scores[col]["gross_income"] += 3
                 
                 if "%" in val_str and val_num is not None and 0 < val_num < 100:
                     column_scores[col]["cap"] += 5
+                
+                # ZIP detection: exactly 5 digits
+                if re.match(r"^\d{5}$", val_str):
+                    column_scores[col]["zip"] += 12
+                
+                # CITY detection: short text, no digits, common city names
+                if val_num is None and 2 < len(val_str) < 40 and not any(c.isdigit() for c in val_str):
+                    column_scores[col]["city"] += 3
+                
+                # STATE detection: exactly 2 uppercase letters (state abbrev)
+                if re.match(r"^[A-Z]{2}$", val_str):
+                    column_scores[col]["state"] += 12
+                
+                # URL detection
+                if val_str.startswith("http") or ".com" in val_str:
+                    column_scores[col]["url"] += 10
         
-        # Find best column for each type
+        # Find best column for each type (no column can be assigned to two types)
         detected = {}
-        for field in ["address", "units", "price", "price_per_unit", "cap", "noi"]:
+        used_cols = set()
+        # Process in priority order — address/price/units first, then derived fields
+        for field in ["address", "price", "units", "noi", "gross_income", "price_per_unit",
+                       "cap", "city", "state", "zip", "url", "owner"]:
             best_col = None
             best_score = 0
             for col, scores in column_scores.items():
+                if col in used_cols:
+                    continue  # Already assigned to a higher-priority type
                 if scores[field] > best_score:
                     best_score = scores[field]
                     best_col = col
             if best_score >= 5:  # Confidence threshold
                 detected[field] = best_col
+                used_cols.add(best_col)
         
         log.info(f"[RapidFire] Column scores: {column_scores}")
         log.info(f"[RapidFire] AUTO-DETECTED columns: {detected}")
@@ -757,22 +805,20 @@ async def rapid_fire_underwrite(
     broker_cap_header = detected_cols.get("cap", "")
     noi_header = detected_cols.get("noi", "")
     
-    # These are harder to detect from data, so leave empty for now
-    city_header = ""
-    state_header = ""
-    zip_header = ""
-    gross_income_header = ""
-    url_header = ""
-    owner_header = ""
+    # Now detected by intelligent column detection
+    city_header = detected_cols.get("city", "")
+    state_header = detected_cols.get("state", "")
+    zip_header = detected_cols.get("zip", "")
+    gross_income_header = detected_cols.get("gross_income", "")
+    url_header = detected_cols.get("url", "")
+    owner_header = detected_cols.get("owner", "")
 
     log.info(
-        "[RapidFire] Using columns -> address=%r units=%r total_price=%r ppu=%r broker_cap=%r noi=%r",
-        address_header,
-        units_header,
-        total_price_header,
-        price_per_unit_header,
-        broker_cap_header,
-        noi_header,
+        "[RapidFire] Using columns -> address=%r units=%r total_price=%r ppu=%r broker_cap=%r noi=%r "
+        "gross_income=%r city=%r state=%r zip=%r url=%r owner=%r",
+        address_header, units_header, total_price_header, price_per_unit_header,
+        broker_cap_header, noi_header, gross_income_header, city_header,
+        state_header, zip_header, url_header, owner_header,
     )
 
     if not total_price_header and not price_per_unit_header:
@@ -843,89 +889,138 @@ async def rapid_fire_underwrite(
         ai_reasoning = None
         ai_confidence = None
         use_ai_verdict = False
+        noi_source = None  # Track where NOI came from for transparency
         
-        # If NOI missing, approximate from gross income + settings, or from total price & broker cap.
-        if noi is None:
-            if gross_income is not None and gross_income > 0:
-                effective_income = gross_income * (1.0 - vacancy_rate / 100.0)
-                operating_expenses = effective_income * (expense_ratio / 100.0)
-                noi = effective_income - operating_expenses
-            elif broker_cap is not None and broker_cap > 0:
-                noi = total_price * (broker_cap / 100.0)
-            # Reonomy-style soft underwriting using FMR + taxes when NOI is missing
-            elif source_type == "reonomy" and fmr_by_zip is not None and zip_code and units not in (None, 0):
-                # Try AI-powered analysis for Reonomy deals with limited data
-                log.info(f"[AI] Using AI analysis for property: {name}")
-                
-                # Extract additional fields for AI context
-                sqft = as_float(row.get("total sqft")) if "total sqft" in row else None
-                mortgage_amt = as_float(row.get("last mortgage")) if "last mortgage" in row else None
-                
-                ai_analysis = analyze_property_with_ai(
-                    address=str(name or address_header),
-                    units=units,
-                    sale_price=total_price,
-                    sqft=sqft,
-                    mortgage_amount=mortgage_amt,
-                    zip_code=zip_code,
-                    fmr_data=fmr_by_zip,
-                    tax_by_county=tax_by_county,
-                    settings={
-                        "vacancyRate": vacancy_rate,
-                        "expenseRatio": expense_ratio,
-                        "closingCosts": closing_costs_pct,
-                        "acquisitionFee": acquisition_fee_pct,
-                        "ltv": ltv_pct,
-                        "interestRate": interest_rate_pct,
-                        "minDscr": min_dscr,
-                        "minCoC": min_coc,
-                        "minCapRate": min_cap,
-                    }
-                )
-                
-                # Use AI results if available
-                if ai_analysis.get("estimatedNOI"):
-                    noi = ai_analysis["estimatedNOI"]
-                    ai_reasoning = ai_analysis.get("reasoning", "AI-powered analysis")
-                    ai_confidence = ai_analysis.get("confidence", "medium")
-                    use_ai_verdict = True
-                    
-                    # Use AI's verdict directly - don't override with math logic
-                    ai_verdict = ai_analysis.get("verdict", "MAYBE").upper()
-                    
-                    log.info(f"[AI] Estimated NOI: ${noi:,.0f}, Verdict: {ai_verdict}, Confidence: {ai_confidence}")
-                
-                # Fallback: Use basic FMR calculation if AI didn't produce NOI
-                if noi is None:
-                    zip_row = fmr_by_zip.get(zip_code)
-                    if zip_row is not None:
-                        try:
-                            # Prefer 2BR FMR as a proxy for per-unit rent
-                            rent_2br = float(zip_row.get("fmr_2br") or 0.0)
-                        except Exception:
-                            rent_2br = 0.0
+        # ================================================================
+        # NOI DERIVATION — improved accuracy hierarchy
+        # ================================================================
+        if noi is not None and noi > 0:
+            # Spreadsheet provided NOI directly — sanity-check it
+            noi_source = "spreadsheet"
+            # Cross-check: if broker_cap also exists, verify they're consistent
+            if broker_cap is not None and broker_cap > 0 and total_price > 0:
+                implied_noi = total_price * (broker_cap / 100.0)
+                deviation = abs(noi - implied_noi) / max(noi, implied_noi)
+                if deviation > 0.30:
+                    # NOI and cap rate are inconsistent — flag it but still use spreadsheet NOI
+                    noi_source = "spreadsheet (cap rate inconsistent)"
 
-                        if rent_2br > 0:
-                            annual_gross_rent = rent_2br * float(units) * 12.0
-                            effective_income = annual_gross_rent * (1.0 - vacancy_rate / 100.0)
-                            base_operating_expenses = effective_income * (expense_ratio / 100.0)
+        elif gross_income is not None and gross_income > 0:
+            # Derive NOI from gross income using user settings
+            noi_source = "derived from gross income"
+            effective_income = gross_income * (1.0 - vacancy_rate / 100.0)
+            operating_expenses = effective_income * (expense_ratio / 100.0)
+            # Add insurance estimate: ~0.50% of purchase price (industry standard)
+            insurance_estimate = total_price * 0.005
+            # Add replacement reserves: ~$250/unit/year
+            reserves_estimate = (units or 1) * 250.0
+            noi = effective_income - operating_expenses - insurance_estimate - reserves_estimate
 
-                            tax_expense = 0.0
-                            if tax_by_county is not None:
-                                state_name = str(zip_row.get("state_name") or "").strip()
-                                county_name = str(zip_row.get("county_name") or "").strip()
-                                if state_name and county_name and total_price is not None:
-                                    key = (state_name.lower(), county_name.lower())
-                                    rate = tax_by_county.get(key)
-                                    if rate is not None and rate > 0:
-                                        tax_expense = float(total_price) * rate
+        elif broker_cap is not None and broker_cap > 0:
+            # Back into NOI from broker cap rate — mark as broker-stated, less reliable
+            noi_source = "broker cap rate (unverified)"
+            noi = total_price * (broker_cap / 100.0)
+            # IMPORTANT: broker-stated cap rates are marketing numbers.
+            # Apply a haircut to be conservative — assume actual cap is 50-75 bps lower.
+            # We'll still use the broker NOI for the math, but add a warning.
 
-                            operating_expenses = base_operating_expenses + tax_expense
-                            noi = effective_income - operating_expenses
+        elif source_type == "reonomy" and fmr_by_zip is not None and zip_code and units not in (None, 0):
+            # Reonomy path — try AI, then FMR fallback
+            log.info(f"[AI] Using AI analysis for property: {name}")
+            noi_source = "AI estimate"
+            
+            # Extract additional fields for AI context
+            sqft = as_float(row.get("total sqft")) if "total sqft" in row else None
+            mortgage_amt = as_float(row.get("last mortgage")) if "last mortgage" in row else None
+            
+            ai_analysis = analyze_property_with_ai(
+                address=str(name or address_header),
+                units=units,
+                sale_price=total_price,
+                sqft=sqft,
+                mortgage_amount=mortgage_amt,
+                zip_code=zip_code,
+                fmr_data=fmr_by_zip,
+                tax_by_county=tax_by_county,
+                settings={
+                    "vacancyRate": vacancy_rate,
+                    "expenseRatio": expense_ratio,
+                    "closingCosts": closing_costs_pct,
+                    "acquisitionFee": acquisition_fee_pct,
+                    "ltv": ltv_pct,
+                    "interestRate": interest_rate_pct,
+                    "minDscr": min_dscr,
+                    "minCoC": min_coc,
+                    "minCapRate": min_cap,
+                }
+            )
+            
+            if ai_analysis.get("estimatedNOI"):
+                noi = ai_analysis["estimatedNOI"]
+                ai_reasoning = ai_analysis.get("reasoning", "AI-powered analysis")
+                ai_confidence = ai_analysis.get("confidence", "medium")
+                use_ai_verdict = True
+                ai_verdict = ai_analysis.get("verdict", "MAYBE").upper()
+                log.info(f"[AI] Estimated NOI: ${noi:,.0f}, Verdict: {ai_verdict}, Confidence: {ai_confidence}")
+            
+            # Fallback: basic FMR calculation
+            if noi is None:
+                noi_source = "FMR estimate"
+                zip_row = fmr_by_zip.get(zip_code)
+                if zip_row is not None:
+                    try:
+                        rent_2br = float(zip_row.get("fmr_2br") or 0.0)
+                    except Exception:
+                        rent_2br = 0.0
 
+                    if rent_2br > 0:
+                        annual_gross_rent = rent_2br * float(units) * 12.0
+                        effective_income = annual_gross_rent * (1.0 - vacancy_rate / 100.0)
+                        base_operating_expenses = effective_income * (expense_ratio / 100.0)
+
+                        # Add property tax from county data
+                        tax_expense = 0.0
+                        if tax_by_county is not None:
+                            fmr_state = str(zip_row.get("state_name") or "").strip()
+                            fmr_county = str(zip_row.get("county_name") or "").strip()
+                            if fmr_state and fmr_county and total_price is not None:
+                                key = (fmr_state.lower(), fmr_county.lower())
+                                rate = tax_by_county.get(key)
+                                if rate is not None and rate > 0:
+                                    tax_expense = float(total_price) * rate
+
+                        # Insurance + reserves (same as gross income path)
+                        insurance_estimate = total_price * 0.005
+                        reserves_estimate = (units or 1) * 250.0
+                        
+                        operating_expenses = base_operating_expenses + tax_expense + insurance_estimate + reserves_estimate
+                        noi = effective_income - operating_expenses
+
+        # If CREXI path has no NOI, no gross income, and no broker cap — try FMR as last resort
+        if noi is None and source_type == "crexi" and zip_code and units not in (None, 0):
+            noi_source = "FMR estimate (CREXI fallback)"
+            if fmr_by_zip is None:
+                fmr_by_zip = _load_fmr_by_zip()
+            if fmr_by_zip:
+                zip_row = fmr_by_zip.get(zip_code)
+                if zip_row is not None:
+                    try:
+                        rent_2br = float(zip_row.get("fmr_2br") or 0.0)
+                    except Exception:
+                        rent_2br = 0.0
+                    if rent_2br > 0:
+                        annual_gross_rent = rent_2br * float(units) * 12.0
+                        effective_income = annual_gross_rent * (1.0 - vacancy_rate / 100.0)
+                        operating_expenses = effective_income * (expense_ratio / 100.0)
+                        insurance_estimate = total_price * 0.005
+                        reserves_estimate = (units or 1) * 250.0
+                        noi = effective_income - operating_expenses - insurance_estimate - reserves_estimate
+
+        # ================================================================
+        # METRIC CALCULATIONS
+        # ================================================================
         calculated_cap_rate = None
         if noi is not None and total_price > 0:
-            # Use totalPrice only; this is the underwriting cap rate.
             calculated_cap_rate = (noi / total_price) * 100.0
 
         ads = annual_debt_service(total_price)
@@ -933,27 +1028,39 @@ async def rapid_fire_underwrite(
         if noi is not None and ads not in (None, 0):
             dscr = noi / ads
 
-        # Simple equity + CoC calc, always based on TOTAL PRICE
+        # Debt yield: NOI / Loan Amount (institutional metric)
+        debt_yield = None
+        loan_amount = total_price * (ltv_pct / 100.0)
+        if noi is not None and loan_amount > 0:
+            debt_yield = (noi / loan_amount) * 100.0
+
+        # Equity = down payment + closing costs + acquisition fee
         equity = total_price * (1.0 - ltv_pct / 100.0)
         equity += total_price * (closing_costs_pct / 100.0)
         equity += total_price * (acquisition_fee_pct / 100.0)
 
         cash_on_cash = None
         monthly_cf = None
+        annual_cf = None
         if noi is not None and ads is not None and equity > 0:
             annual_cf = noi - ads
             cash_on_cash = (annual_cf / equity) * 100.0
             monthly_cf = annual_cf / 12.0
 
-        # Verdict classification with reasons
+        # Per-unit metrics for sanity checking
+        noi_per_unit = None
+        if noi is not None and units is not None and units > 0:
+            noi_per_unit = noi / units
+
+        # ================================================================
+        # VERDICT — smarter multi-threshold scoring
+        # ================================================================
         verdict_reasons = []
 
-        # If AI was used, trust its verdict instead of recalculating
         if use_ai_verdict:
             verdict = ai_verdict
             verdict_reasons.append(ai_reasoning or "AI-powered analysis")
         else:
-            # Traditional math-based verdict logic
             missing_total = total_price is None or total_price <= 0
             missing_noi = noi is None or noi <= 0
             missing_units = units is None or units <= 0
@@ -967,23 +1074,73 @@ async def rapid_fire_underwrite(
                 if missing_units:
                     verdict_reasons.append("Missing or invalid units")
             else:
-                # DSCR gate
-                if dscr is not None and dscr < min_dscr:
+                # Count how many thresholds fail, and by how much
+                fails = 0
+                close_misses = 0  # Within 15% of threshold
+
+                # DSCR check
+                if dscr is not None:
+                    if dscr < min_dscr:
+                        pct_miss = ((min_dscr - dscr) / min_dscr) * 100.0
+                        if pct_miss <= 15:
+                            close_misses += 1
+                            verdict_reasons.append(f"DSCR {dscr:.2f} slightly below {min_dscr:.2f} (-{pct_miss:.0f}%)")
+                        else:
+                            fails += 1
+                            verdict_reasons.append(f"DSCR {dscr:.2f} below minimum {min_dscr:.2f} (-{pct_miss:.0f}%)")
+                    else:
+                        verdict_reasons.append(f"DSCR {dscr:.2f} ✓")
+
+                # Cash-on-cash check
+                if cash_on_cash is not None:
+                    if cash_on_cash < min_coc:
+                        pct_miss = ((min_coc - cash_on_cash) / min_coc) * 100.0
+                        if pct_miss <= 15:
+                            close_misses += 1
+                            verdict_reasons.append(f"CoC {cash_on_cash:.1f}% slightly below {min_coc:.1f}% (-{pct_miss:.0f}%)")
+                        else:
+                            fails += 1
+                            verdict_reasons.append(f"CoC {cash_on_cash:.1f}% below minimum {min_coc:.1f}% (-{pct_miss:.0f}%)")
+                    else:
+                        verdict_reasons.append(f"CoC {cash_on_cash:.1f}% ✓")
+
+                # Cap rate check
+                if calculated_cap_rate is not None:
+                    if calculated_cap_rate < min_cap:
+                        pct_miss = ((min_cap - calculated_cap_rate) / min_cap) * 100.0
+                        if pct_miss <= 15:
+                            close_misses += 1
+                            verdict_reasons.append(f"Cap {calculated_cap_rate:.1f}% slightly below {min_cap:.1f}% (-{pct_miss:.0f}%)")
+                        else:
+                            fails += 1
+                            verdict_reasons.append(f"Cap {calculated_cap_rate:.1f}% below minimum {min_cap:.1f}% (-{pct_miss:.0f}%)")
+                    else:
+                        verdict_reasons.append(f"Cap {calculated_cap_rate:.1f}% ✓")
+
+                # Negative cash flow is always TRASH
+                if annual_cf is not None and annual_cf < 0:
+                    fails += 1
+                    verdict_reasons.append(f"Negative cash flow: ${annual_cf:,.0f}/yr")
+
+                # Classify verdict based on scoring
+                if fails >= 2:
                     verdict = "TRASH"
-                    verdict_reasons.append(f"DSCR {dscr:.2f} below minimum {min_dscr:.2f}")
-                # Cash-on-cash gate
-                elif cash_on_cash is not None and cash_on_cash < min_coc:
+                elif fails == 1:
                     verdict = "TRASH"
-                    verdict_reasons.append(f"Cash-on-cash {cash_on_cash:.1f}% below minimum {min_coc:.1f}%")
-                # Cap rate gate
-                elif calculated_cap_rate is not None and calculated_cap_rate < min_cap:
+                elif close_misses >= 2:
                     verdict = "MAYBE"
-                    verdict_reasons.append(f"Cap rate {calculated_cap_rate:.1f}% below minimum {min_cap:.1f}%")
+                elif close_misses == 1:
+                    verdict = "MAYBE"
                 else:
                     verdict = "DEAL"
-                    verdict_reasons.append("Meets all minimum underwriting thresholds")
 
-        # Final price-per-unit for DTO: always derived from total price and units.
+                # Add NOI source warning if derived from broker cap
+                if noi_source and "broker" in noi_source:
+                    verdict_reasons.append("⚠ NOI from broker cap rate (unverified)")
+                elif noi_source and "FMR" in noi_source:
+                    verdict_reasons.append("⚠ NOI estimated from HUD Fair Market Rents")
+
+        # Final price-per-unit for DTO
         price_per_unit_dto = None
         if total_price is not None and total_price > 0 and units is not None and units > 0:
             price_per_unit_dto = total_price / units
@@ -999,10 +1156,16 @@ async def rapid_fire_underwrite(
             "pricePerUnit": float(price_per_unit_dto) if price_per_unit_dto is not None and price_per_unit_dto > 0 else None,
             "brokerCapRate": float(broker_cap) if broker_cap is not None else None,
             "noi": float(noi) if noi is not None else None,
+            "noiSource": noi_source,
             "calculatedCapRate": float(calculated_cap_rate) if calculated_cap_rate is not None else None,
             "dscr": float(dscr) if dscr is not None else None,
+            "debtYield": float(debt_yield) if debt_yield is not None else None,
             "cashOnCash": float(cash_on_cash) if cash_on_cash is not None else None,
             "monthlyCashFlow": float(monthly_cf) if monthly_cf is not None else None,
+            "annualCashFlow": float(annual_cf) if annual_cf is not None else None,
+            "noiPerUnit": float(noi_per_unit) if noi_per_unit is not None else None,
+            "totalEquity": float(equity) if equity > 0 else None,
+            "loanAmount": float(loan_amount) if loan_amount > 0 else None,
             "listingUrl": str(listing_url).strip() if listing_url else None,
             "ownerName": str(owner_name).strip() if owner_name else None,
             "verdict": verdict,

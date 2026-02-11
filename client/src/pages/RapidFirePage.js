@@ -1088,12 +1088,14 @@ function RapidFirePage() {
                     <th style={thStyle}>Price</th>
                     <th style={thStyle}>Broker Cap</th>
                     <th style={thStyle}>NOI</th>
+                    <th style={thStyle}>NOI Source</th>
                     <th style={thStyle}>Mo. Cash</th>
                     <th style={thStyle}>{renderSortLabel('Calc Cap', 'calculatedCapRate')}</th>
                     <th style={thStyle}>{renderSortLabel('DSCR', 'dscr')}</th>
+                    <th style={thStyle}>Debt Yield</th>
                     <th style={thStyle}>{renderSortLabel('CoC', 'cashOnCash')}</th>
                     <th style={thStyle}>Verdict</th>
-                    <th style={thStyle}>AI Analysis</th>
+                    <th style={thStyle}>Details</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1171,6 +1173,37 @@ function RapidFirePage() {
                         <span style={{ color: '#111827' }}>
                           {deal.noi != null ? fmtCurrency(deal.noi) : '-'}
                         </span>
+                        {deal.noiPerUnit != null && (
+                          <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '2px' }}>
+                            {fmtCurrency(deal.noiPerUnit)}/unit
+                          </div>
+                        )}
+                      </td>
+                      <td style={tdStyle}>
+                        {deal.noiSource ? (
+                          <span style={{
+                            fontSize: '10px',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontWeight: 600,
+                            backgroundColor: deal.noiSource === 'spreadsheet' ? '#dcfce7' :
+                                           deal.noiSource?.includes('broker') ? '#fef3c7' :
+                                           deal.noiSource?.includes('AI') ? '#e0e7ff' :
+                                           deal.noiSource?.includes('FMR') ? '#fce7f3' : '#f3f4f6',
+                            color: deal.noiSource === 'spreadsheet' ? '#166534' :
+                                   deal.noiSource?.includes('broker') ? '#92400e' :
+                                   deal.noiSource?.includes('AI') ? '#3730a3' :
+                                   deal.noiSource?.includes('FMR') ? '#9d174d' : '#4b5563',
+                          }}>
+                            {deal.noiSource === 'spreadsheet' ? '📊 Sheet' :
+                             deal.noiSource?.includes('broker') ? '🏢 Broker' :
+                             deal.noiSource?.includes('AI') ? '🤖 AI' :
+                             deal.noiSource?.includes('gross') ? '📈 Derived' :
+                             deal.noiSource?.includes('FMR') ? '🏠 FMR' : deal.noiSource}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '11px', color: '#9ca3af' }}>-</span>
+                        )}
                       </td>
                       <td style={tdStyle}>
                         <span style={{ color: '#111827' }}>
@@ -1185,6 +1218,11 @@ function RapidFirePage() {
                       <td style={tdStyle}>
                         <span style={{ fontWeight: '600', color: deal.dscr != null && deal.dscr >= 1.25 ? '#059669' : '#b91c1c' }}>
                           {deal.dscr != null ? deal.dscr.toFixed(2) : '-'}
+                        </span>
+                      </td>
+                      <td style={tdStyle}>
+                        <span style={{ fontWeight: '600', color: deal.debtYield != null && deal.debtYield >= 10 ? '#059669' : '#b91c1c' }}>
+                          {deal.debtYield != null ? fmtPercent(deal.debtYield) : '-'}
                         </span>
                       </td>
                       <td style={tdStyle}>
@@ -1217,31 +1255,41 @@ function RapidFirePage() {
                         })()}
                       </td>
                       <td style={{ ...tdStyle, maxWidth: '300px' }}>
-                        {deal.aiAnalysis?.used ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                          {deal.verdictReasons?.length > 0 ? (
+                            deal.verdictReasons.map((reason, ri) => (
+                              <div key={ri} style={{ 
+                                fontSize: '10px', 
+                                color: reason.includes('✓') ? '#059669' : 
+                                       reason.includes('⚠') ? '#d97706' : 
+                                       reason.includes('below') ? '#dc2626' : '#374151',
+                                lineHeight: '1.4',
+                                fontWeight: reason.includes('✓') ? 600 : 400,
+                              }}>
+                                {reason}
+                              </div>
+                            ))
+                          ) : (
+                            <span style={{ fontSize: '11px', color: '#9ca3af' }}>-</span>
+                          )}
+                          {deal.aiAnalysis?.used && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
                               <span style={{
                                 backgroundColor: deal.aiAnalysis.confidence === 'high' ? '#dcfce7' : 
                                                deal.aiAnalysis.confidence === 'medium' ? '#fef9c3' : '#fee2e2',
                                 color: deal.aiAnalysis.confidence === 'high' ? '#166534' : 
                                        deal.aiAnalysis.confidence === 'medium' ? '#854d0e' : '#991b1b',
-                                padding: '2px 8px',
+                                padding: '1px 6px',
                                 borderRadius: '999px',
-                                fontSize: '10px',
+                                fontSize: '9px',
                                 fontWeight: '700',
                                 textTransform: 'uppercase'
                               }}>
-                                {deal.aiAnalysis.confidence || 'medium'}
+                                🤖 {deal.aiAnalysis.confidence || 'medium'}
                               </span>
-                              <span style={{ fontSize: '10px', color: '#6b7280', fontWeight: '600' }}>AI-POWERED</span>
                             </div>
-                            <div style={{ fontSize: '11px', color: '#374151', lineHeight: '1.4' }}>
-                              {deal.aiAnalysis.reasoning || 'AI analysis completed'}
-                            </div>
-                          </div>
-                        ) : (
-                          <span style={{ fontSize: '11px', color: '#9ca3af' }}>-</span>
-                        )}
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
