@@ -3788,7 +3788,7 @@ STABILIZATION & EXIT:
             try:
                 from .manus_client import create_task, poll_until_complete, extract_slides_from_task
 
-                manus_prompt = STAGE_2_MANUS_DESIGN_PROMPT_TEMPLATE.format(deal_summary=deal_summary)
+                manus_prompt = STAGE_2_MANUS_DESIGN_PROMPT_TEMPLATE.replace("{deal_summary}", deal_summary)
                 task_id = create_task(manus_prompt)
                 log.info(f"[PitchDeck] Manus task created: {task_id}")
 
@@ -3804,7 +3804,7 @@ STABILIZATION & EXIT:
             # --- CLAUDE FALLBACK PATH ---
             log.info(f"[PitchDeck] === STAGE 2: Claude HTML Slide Generator ===")
 
-            stage2_prompt = STAGE_2_CLAUDE_FALLBACK_PROMPT.format(deal_summary=deal_summary)
+            stage2_prompt = STAGE_2_CLAUDE_FALLBACK_PROMPT.replace("{deal_summary}", deal_summary)
 
             # Inject property images into prompt so Claude can embed them in slides
             if all_image_urls:
@@ -3829,14 +3829,25 @@ STABILIZATION & EXIT:
             s2_prompt_tokens = getattr(stage2_response.usage, 'input_tokens', 0)
             s2_completion_tokens = getattr(stage2_response.usage, 'output_tokens', 0)
 
-            # Strip markdown fences
-            if raw_slides_text.startswith("```json"):
-                raw_slides_text = raw_slides_text[7:]
+            # Strip markdown fences (handle all variations)
+            import re as _re
+            # Remove ```json ... ``` or ``` ... ``` wrapping
+            fence_match = _re.search(r'```(?:json)?\s*\n?([\s\S]*?)\n?\s*```', raw_slides_text)
+            if fence_match:
+                raw_slides_text = fence_match.group(1).strip()
             elif raw_slides_text.startswith("```"):
-                raw_slides_text = raw_slides_text[3:]
-            if raw_slides_text.endswith("```"):
-                raw_slides_text = raw_slides_text[:-3]
-            raw_slides_text = raw_slides_text.strip()
+                raw_slides_text = _re.sub(r'^```\w*\n?', '', raw_slides_text)
+                raw_slides_text = _re.sub(r'\n?```$', '', raw_slides_text)
+                raw_slides_text = raw_slides_text.strip()
+
+            # If Claude added any preamble text before the JSON array, strip it
+            first_bracket = raw_slides_text.find('[')
+            if first_bracket > 0 and first_bracket < 200:
+                raw_slides_text = raw_slides_text[first_bracket:]
+            # Similarly, trim any trailing text after the JSON array
+            last_bracket = raw_slides_text.rfind(']')
+            if last_bracket > 0:
+                raw_slides_text = raw_slides_text[:last_bracket + 1]
 
             # Parse slides JSON
             import json as _json
@@ -3853,23 +3864,25 @@ STABILIZATION & EXIT:
                 log.error(f"[PitchDeck] Failed to parse slides JSON: {parse_err}")
                 log.error(f"[PitchDeck] Raw text (first 500): {raw_slides_text[:500]}")
                 # Emergency fallback — wrap the entire summary in a single HTML slide
+                import html as _html
+                safe_summary = _html.escape(deal_summary[:2500])
+                safe_address = _html.escape(str(address))
+                fallback_html = (
+                    '<!DOCTYPE html><html><head><meta charset="utf-8">'
+                    '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">'
+                    '<style>* { margin: 0; padding: 0; box-sizing: border-box; }'
+                    'body { width: 1280px; height: 720px; font-family: Inter, sans-serif; padding: 60px; background: #fff; color: #1A1A1A; overflow: hidden; }'
+                    'h1 { font-size: 36px; font-weight: 700; color: #0052FF; margin-bottom: 24px; }'
+                    'pre { font-size: 13px; line-height: 1.7; white-space: pre-wrap; word-wrap: break-word; }'
+                    '</style></head><body>'
+                    '<h1>Investment Summary &mdash; ' + safe_address + '</h1>'
+                    '<pre>' + safe_summary + '</pre>'
+                    '</body></html>'
+                )
                 slides = [{
                     "slideNumber": 1,
                     "title": "Investment Summary",
-                    "html": f"""<!DOCTYPE html>
-<html><head>
-<meta charset="utf-8">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-  * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-  body {{ width: 1280px; height: 720px; font-family: 'Inter', sans-serif; padding: 60px; background: #fff; color: #1A1A1A; overflow: hidden; }}
-  h1 {{ font-size: 36px; font-weight: 700; color: #0052FF; margin-bottom: 24px; }}
-  pre {{ font-size: 13px; line-height: 1.7; white-space: pre-wrap; word-wrap: break-word; }}
-</style>
-</head><body>
-<h1>Investment Summary — {address}</h1>
-<pre>{deal_summary[:2500]}</pre>
-</body></html>"""
+                    "html": fallback_html
                 }]
 
         # Inject contact info & sponsor placeholders into slides
