@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Sparkles, Download, Users, Building2, ChevronLeft, ChevronRight, Maximize2, Minimize2, Layers } from 'lucide-react';
+import { ArrowLeft, Sparkles, Download, Users, Building2, ChevronLeft, ChevronRight, Maximize2, Minimize2, Layers, Edit3, Eye, Code, Undo2, Redo2, Trash2, Copy, ArrowUp, ArrowDown, Check, X } from 'lucide-react';
 import DashboardShell from '../components/DashboardShell';
 import { loadDeal } from '../lib/dealsService';
 import html2canvas from 'html2canvas';
@@ -177,6 +177,15 @@ function PitchDeckPage() {
   const [isUploadingImages, setIsUploadingImages] = useState(false);
   const imageInputRef = useRef(null);
 
+  // ============ INTERACTIVE EDITING STATE ============
+  const [isEditMode, setIsEditMode] = useState(false);           // Edit mode toggle
+  const [showCodeEditor, setShowCodeEditor] = useState(false);   // HTML code editor panel
+  const [editingHtml, setEditingHtml] = useState('');            // Working copy of HTML in code editor
+  const [slideHistory, setSlideHistory] = useState({});          // Per-slide undo history: { [slideIdx]: [html1, html2, ...] }
+  const [slideHistoryIndex, setSlideHistoryIndex] = useState({}); // Per-slide current index: { [slideIdx]: number }
+  const [hasUnsavedEdits, setHasUnsavedEdits] = useState(false); // Dirty flag for visual edits
+  const editIframeRef = useRef(null);                            // Ref to the main slide iframe
+
   // Load deal if dealId in URL
   useEffect(() => {
     if (dealIdFromUrl) {
@@ -266,6 +275,227 @@ function PitchDeckPage() {
       console.error('[PitchDeck] Remove image failed:', err);
     }
   };
+
+  // ============ INTERACTIVE EDITING HANDLERS ============
+
+  // Push current slide HTML to undo history
+  const pushToHistory = useCallback((slideIdx, html) => {
+    setSlideHistory(prev => {
+      const history = prev[slideIdx] || [];
+      const currentIdx = (slideHistoryIndex[slideIdx] !== undefined) ? slideHistoryIndex[slideIdx] : -1;
+      // Truncate any redo entries beyond current position
+      const truncated = history.slice(0, currentIdx + 1);
+      return { ...prev, [slideIdx]: [...truncated, html] };
+    });
+    setSlideHistoryIndex(prev => {
+      const currentIdx = (prev[slideIdx] !== undefined) ? prev[slideIdx] : -1;
+      return { ...prev, [slideIdx]: currentIdx + 1 };
+    });
+  }, [slideHistoryIndex]);
+
+  // Initialize history when slides are first generated
+  useEffect(() => {
+    if (pitchDeckSlides && pitchDeckSlides.length > 0) {
+      const initialHistory = {};
+      const initialIndex = {};
+      pitchDeckSlides.forEach((slide, idx) => {
+        initialHistory[idx] = [slide.html];
+        initialIndex[idx] = 0;
+      });
+      setSlideHistory(initialHistory);
+      setSlideHistoryIndex(initialIndex);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pitchDeckSlides?.length]); // Only re-run when slide count changes
+
+  // Capture edits from contentEditable iframe back into slides state
+  const captureVisualEdits = useCallback(() => {
+    const iframe = editIframeRef.current;
+    if (!iframe) return;
+    try {
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) return;
+      const newHtml = '<!DOCTYPE html><html>' + iframeDoc.documentElement.innerHTML + '</html>';
+      const currentHtml = pitchDeckSlides[currentSlide]?.html;
+      if (newHtml !== currentHtml) {
+        updateSlideHtml(currentSlide, newHtml);
+      }
+    } catch (err) {
+      console.warn('[PitchDeck] Failed to capture visual edits:', err);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSlide, pitchDeckSlides]);
+
+  // Update a slide's HTML and push to history
+  const updateSlideHtml = useCallback((slideIdx, newHtml) => {
+    setPitchDeckSlides(prev => {
+      if (!prev) return prev;
+      const updated = [...prev];
+      updated[slideIdx] = { ...updated[slideIdx], html: newHtml };
+      return updated;
+    });
+    pushToHistory(slideIdx, newHtml);
+    setHasUnsavedEdits(false);
+  }, [pushToHistory]);
+
+  // Toggle edit mode — when entering, make iframe editable
+  const handleToggleEditMode = useCallback(() => {
+    if (isEditMode) {
+      // Exiting edit mode — capture any unsaved visual edits
+      captureVisualEdits();
+    }
+    setIsEditMode(prev => !prev);
+    setShowCodeEditor(false);
+    setHasUnsavedEdits(false);
+  }, [isEditMode, captureVisualEdits]);
+
+  // Undo for current slide
+  const handleUndo = useCallback(() => {
+    const idx = currentSlide;
+    const histIdx = slideHistoryIndex[idx];
+    if (histIdx === undefined || histIdx <= 0) return;
+    const newIdx = histIdx - 1;
+    const html = slideHistory[idx][newIdx];
+    setSlideHistoryIndex(prev => ({ ...prev, [idx]: newIdx }));
+    setPitchDeckSlides(prev => {
+      const updated = [...prev];
+      updated[idx] = { ...updated[idx], html };
+      return updated;
+    });
+    if (showCodeEditor) setEditingHtml(html);
+  }, [currentSlide, slideHistory, slideHistoryIndex, showCodeEditor]);
+
+  // Redo for current slide
+  const handleRedo = useCallback(() => {
+    const idx = currentSlide;
+    const histIdx = slideHistoryIndex[idx];
+    const history = slideHistory[idx] || [];
+    if (histIdx === undefined || histIdx >= history.length - 1) return;
+    const newIdx = histIdx + 1;
+    const html = history[newIdx];
+    setSlideHistoryIndex(prev => ({ ...prev, [idx]: newIdx }));
+    setPitchDeckSlides(prev => {
+      const updated = [...prev];
+      updated[idx] = { ...updated[idx], html };
+      return updated;
+    });
+    if (showCodeEditor) setEditingHtml(html);
+  }, [currentSlide, slideHistory, slideHistoryIndex, showCodeEditor]);
+
+  const canUndo = (slideHistoryIndex[currentSlide] || 0) > 0;
+  const canRedo = (slideHistoryIndex[currentSlide] !== undefined) && 
+                  (slideHistoryIndex[currentSlide] < ((slideHistory[currentSlide] || []).length - 1));
+
+  // Open HTML code editor for current slide
+  const handleOpenCodeEditor = useCallback(() => {
+    if (isEditMode) captureVisualEdits(); // Save visual edits first
+    setEditingHtml(pitchDeckSlides[currentSlide]?.html || '');
+    setShowCodeEditor(true);
+  }, [currentSlide, pitchDeckSlides, isEditMode, captureVisualEdits]);
+
+  // Save code editor changes
+  const handleSaveCodeEdit = useCallback(() => {
+    updateSlideHtml(currentSlide, editingHtml);
+    setShowCodeEditor(false);
+  }, [currentSlide, editingHtml, updateSlideHtml]);
+
+  // Discard code editor changes
+  const handleDiscardCodeEdit = useCallback(() => {
+    setShowCodeEditor(false);
+    setEditingHtml('');
+  }, []);
+
+  // Delete current slide
+  const handleDeleteSlide = useCallback(() => {
+    if (!pitchDeckSlides || pitchDeckSlides.length <= 1) {
+      alert('Cannot delete the last slide');
+      return;
+    }
+    if (!window.confirm(`Delete slide ${currentSlide + 1}: "${pitchDeckSlides[currentSlide]?.title}"?`)) return;
+    setPitchDeckSlides(prev => {
+      const updated = prev.filter((_, i) => i !== currentSlide);
+      return updated.map((s, i) => ({ ...s, slideNumber: i + 1 }));
+    });
+    setCurrentSlide(prev => Math.min(prev, (pitchDeckSlides.length - 2)));
+  }, [currentSlide, pitchDeckSlides]);
+
+  // Duplicate current slide
+  const handleDuplicateSlide = useCallback(() => {
+    setPitchDeckSlides(prev => {
+      const cloned = { ...prev[currentSlide], title: prev[currentSlide].title + ' (Copy)' };
+      const updated = [...prev];
+      updated.splice(currentSlide + 1, 0, cloned);
+      return updated.map((s, i) => ({ ...s, slideNumber: i + 1 }));
+    });
+    setCurrentSlide(currentSlide + 1);
+  }, [currentSlide]);
+
+  // Move slide up/down
+  const handleMoveSlide = useCallback((direction) => {
+    const newIdx = currentSlide + direction;
+    if (newIdx < 0 || newIdx >= pitchDeckSlides.length) return;
+    setPitchDeckSlides(prev => {
+      const updated = [...prev];
+      const temp = updated[currentSlide];
+      updated[currentSlide] = updated[newIdx];
+      updated[newIdx] = temp;
+      return updated.map((s, i) => ({ ...s, slideNumber: i + 1 }));
+    });
+    setCurrentSlide(newIdx);
+  }, [currentSlide, pitchDeckSlides]);
+
+  // When switching slides in edit mode, capture edits from the old slide first
+  const handleSlideChange = useCallback((newSlideIdx) => {
+    if (isEditMode && editIframeRef.current) {
+      captureVisualEdits();
+    }
+    setCurrentSlide(newSlideIdx);
+    setShowCodeEditor(false);
+    setHasUnsavedEdits(false);
+  }, [isEditMode, captureVisualEdits]);
+
+  // Effect: when edit mode is on, inject contentEditable into the iframe once it loads
+  useEffect(() => {
+    if (!isEditMode || !editIframeRef.current) return;
+    const iframe = editIframeRef.current;
+    const onLoad = () => {
+      try {
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!iframeDoc || !iframeDoc.body) return;
+        iframeDoc.body.contentEditable = 'true';
+        iframeDoc.body.style.cursor = 'text';
+        // Add a subtle editing border
+        iframeDoc.body.style.outline = 'none';
+        // Listen for changes
+        iframeDoc.body.addEventListener('input', () => {
+          setHasUnsavedEdits(true);
+        });
+        // Add some editing helper styles
+        const style = iframeDoc.createElement('style');
+        style.textContent = `
+          [contenteditable]:hover { outline: 2px dashed rgba(0, 82, 255, 0.3) !important; }
+          [contenteditable]:focus { outline: 2px solid rgba(0, 82, 255, 0.5) !important; }
+          *:hover { outline: 1px dashed rgba(0, 82, 255, 0.15); }
+        `;
+        iframeDoc.head.appendChild(style);
+      } catch (err) {
+        console.warn('[PitchDeck] Could not enable editing in iframe:', err);
+      }
+    };
+    iframe.addEventListener('load', onLoad);
+    // Also try immediately in case it's already loaded
+    onLoad();
+    return () => iframe.removeEventListener('load', onLoad);
+  }, [isEditMode, currentSlide]);
+
+  // Capture visual edits when navigating away from slide
+  const prevSlideRef = useRef(currentSlide);
+  useEffect(() => {
+    if (prevSlideRef.current !== currentSlide && isEditMode) {
+      // Slide changed while in edit mode — edits already captured by handleSlideChange
+    }
+    prevSlideRef.current = currentSlide;
+  }, [currentSlide, isEditMode]);
 
   const handleGeneratePitchDeck = async () => {
     if (!structureType) {
@@ -465,16 +695,25 @@ function PitchDeckPage() {
   // Keyboard navigation for slides
   const handleKeyDown = useCallback((e) => {
     if (!pitchDeckSlides || pitchDeckSlides.length === 0) return;
+    if (showCodeEditor) return; // Don't nav while editing HTML
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
       e.preventDefault();
-      setCurrentSlide(prev => Math.min(prev + 1, pitchDeckSlides.length - 1));
+      const next = Math.min(currentSlide + 1, pitchDeckSlides.length - 1);
+      handleSlideChange(next);
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
       e.preventDefault();
-      setCurrentSlide(prev => Math.max(prev - 1, 0));
+      const prev = Math.max(currentSlide - 1, 0);
+      handleSlideChange(prev);
     } else if (e.key === 'Escape' && isFullscreen) {
       setIsFullscreen(false);
+    } else if (e.ctrlKey && e.key === 'z' && isEditMode) {
+      e.preventDefault();
+      handleUndo();
+    } else if (e.ctrlKey && e.key === 'y' && isEditMode) {
+      e.preventDefault();
+      handleRedo();
     }
-  }, [pitchDeckSlides, isFullscreen]);
+  }, [pitchDeckSlides, isFullscreen, showCodeEditor, currentSlide, handleSlideChange, isEditMode, handleUndo, handleRedo]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -1233,8 +1472,175 @@ function PitchDeckPage() {
                       }}>
                         {pitchDeckSlides.length} Slides
                       </span>
+                      {isEditMode && (
+                        <span style={{
+                          padding: '2px 10px',
+                          backgroundColor: '#f59e0b',
+                          borderRadius: '12px',
+                          fontSize: '11px',
+                          fontWeight: '700',
+                          color: '#111827',
+                          animation: 'pulse 2s infinite',
+                        }}>
+                          ✏️ EDITING
+                        </span>
+                      )}
+                      {hasUnsavedEdits && (
+                        <span style={{
+                          padding: '2px 8px',
+                          backgroundColor: '#ef4444',
+                          borderRadius: '8px',
+                          fontSize: '10px',
+                          fontWeight: '700',
+                          color: 'white',
+                        }}>
+                          UNSAVED
+                        </span>
+                      )}
                     </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      {/* Edit Mode Toggle */}
+                      <button
+                        onClick={handleToggleEditMode}
+                        title={isEditMode ? 'Exit edit mode' : 'Edit slides'}
+                        style={{
+                          padding: '6px 12px',
+                          backgroundColor: isEditMode ? '#f59e0b' : 'transparent',
+                          border: isEditMode ? '1px solid #f59e0b' : '1px solid #4b5563',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          color: isEditMode ? '#111827' : '#d1d5db',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        {isEditMode ? <><Eye size={14} /> Preview</> : <><Edit3 size={14} /> Edit</>}
+                      </button>
+                      {/* Undo/Redo (only in edit mode) */}
+                      {isEditMode && (
+                        <>
+                          <button
+                            onClick={handleUndo}
+                            disabled={!canUndo}
+                            title="Undo (Ctrl+Z)"
+                            style={{
+                              padding: '6px 8px',
+                              backgroundColor: 'transparent',
+                              border: '1px solid #4b5563',
+                              borderRadius: '6px',
+                              cursor: canUndo ? 'pointer' : 'not-allowed',
+                              color: canUndo ? '#d1d5db' : '#4b5563',
+                            }}
+                          >
+                            <Undo2 size={14} />
+                          </button>
+                          <button
+                            onClick={handleRedo}
+                            disabled={!canRedo}
+                            title="Redo (Ctrl+Y)"
+                            style={{
+                              padding: '6px 8px',
+                              backgroundColor: 'transparent',
+                              border: '1px solid #4b5563',
+                              borderRadius: '6px',
+                              cursor: canRedo ? 'pointer' : 'not-allowed',
+                              color: canRedo ? '#d1d5db' : '#4b5563',
+                            }}
+                          >
+                            <Redo2 size={14} />
+                          </button>
+                          <div style={{ width: '1px', height: '20px', backgroundColor: '#374151' }} />
+                          {/* HTML Code Editor */}
+                          <button
+                            onClick={handleOpenCodeEditor}
+                            title="Edit HTML source"
+                            style={{
+                              padding: '6px 10px',
+                              backgroundColor: showCodeEditor ? '#374151' : 'transparent',
+                              border: '1px solid #4b5563',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              color: '#d1d5db',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                            }}
+                          >
+                            <Code size={14} />
+                            HTML
+                          </button>
+                          <div style={{ width: '1px', height: '20px', backgroundColor: '#374151' }} />
+                          {/* Slide management */}
+                          <button
+                            onClick={handleDuplicateSlide}
+                            title="Duplicate slide"
+                            style={{
+                              padding: '6px 8px',
+                              backgroundColor: 'transparent',
+                              border: '1px solid #4b5563',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              color: '#d1d5db',
+                            }}
+                          >
+                            <Copy size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleMoveSlide(-1)}
+                            disabled={currentSlide === 0}
+                            title="Move slide up"
+                            style={{
+                              padding: '6px 8px',
+                              backgroundColor: 'transparent',
+                              border: '1px solid #4b5563',
+                              borderRadius: '6px',
+                              cursor: currentSlide === 0 ? 'not-allowed' : 'pointer',
+                              color: currentSlide === 0 ? '#4b5563' : '#d1d5db',
+                            }}
+                          >
+                            <ArrowUp size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleMoveSlide(1)}
+                            disabled={currentSlide === pitchDeckSlides.length - 1}
+                            title="Move slide down"
+                            style={{
+                              padding: '6px 8px',
+                              backgroundColor: 'transparent',
+                              border: '1px solid #4b5563',
+                              borderRadius: '6px',
+                              cursor: currentSlide === pitchDeckSlides.length - 1 ? 'not-allowed' : 'pointer',
+                              color: currentSlide === pitchDeckSlides.length - 1 ? '#4b5563' : '#d1d5db',
+                            }}
+                          >
+                            <ArrowDown size={14} />
+                          </button>
+                          <button
+                            onClick={handleDeleteSlide}
+                            title="Delete slide"
+                            disabled={pitchDeckSlides.length <= 1}
+                            style={{
+                              padding: '6px 8px',
+                              backgroundColor: 'transparent',
+                              border: '1px solid #ef4444',
+                              borderRadius: '6px',
+                              cursor: pitchDeckSlides.length <= 1 ? 'not-allowed' : 'pointer',
+                              color: pitchDeckSlides.length <= 1 ? '#4b5563' : '#ef4444',
+                            }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </>
+                      )}
+                      {isEditMode && (
+                        <div style={{ width: '1px', height: '20px', backgroundColor: '#374151' }} />
+                      )}
                       <button
                         onClick={() => setShowThumbnails(!showThumbnails)}
                         title="Toggle thumbnails"
@@ -1253,10 +1659,9 @@ function PitchDeckPage() {
                         }}
                       >
                         <Layers size={14} />
-                        Thumbnails
                       </button>
                       <button
-                        onClick={() => { setPitchDeckContent(null); setPitchDeckSlides(null); }}
+                        onClick={() => { setPitchDeckContent(null); setPitchDeckSlides(null); setIsEditMode(false); setShowCodeEditor(false); }}
                         style={{
                           padding: '6px 14px',
                           backgroundColor: 'transparent',
@@ -1306,6 +1711,43 @@ function PitchDeckPage() {
                     </div>
                   </div>
 
+                  {/* Edit mode hint banner */}
+                  {isEditMode && !showCodeEditor && (
+                    <div style={{
+                      padding: '8px 20px',
+                      backgroundColor: '#fef3c7',
+                      borderBottom: '1px solid #fde68a',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      color: '#92400e',
+                    }}>
+                      <span>✏️ Click on any text in the slide to edit it directly. Changes are saved when you switch slides or exit edit mode.</span>
+                      {hasUnsavedEdits && (
+                        <button
+                          onClick={captureVisualEdits}
+                          style={{
+                            padding: '4px 12px',
+                            backgroundColor: '#10b981',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          <Check size={12} /> Save Changes
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   <div style={{ display: 'flex' }}>
                     {/* Thumbnail sidebar */}
                     {showThumbnails && (
@@ -1314,13 +1756,13 @@ function PitchDeckPage() {
                         backgroundColor: '#1f2937',
                         borderRight: '1px solid #374151',
                         overflowY: 'auto',
-                        maxHeight: isFullscreen ? 'calc(100vh - 110px)' : '560px',
+                        maxHeight: isFullscreen ? 'calc(100vh - 110px)' : '600px',
                         padding: '8px',
                       }}>
                         {pitchDeckSlides.map((slide, idx) => (
                           <button
                             key={idx}
-                            onClick={() => setCurrentSlide(idx)}
+                            onClick={() => handleSlideChange(idx)}
                             style={{
                               width: '100%',
                               padding: '6px',
@@ -1381,99 +1823,232 @@ function PitchDeckPage() {
                       padding: '20px',
                       minHeight: isFullscreen ? 'calc(100vh - 110px)' : '500px',
                     }}>
-                      {/* Slide iframe */}
-                      <div style={{
-                        width: '100%',
-                        maxWidth: '960px',
-                        aspectRatio: '16/9',
-                        backgroundColor: '#ffffff',
-                        borderRadius: '8px',
-                        overflow: 'hidden',
-                        boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
-                        position: 'relative',
-                      }}>
-                        <iframe
-                          srcDoc={pitchDeckSlides[currentSlide]?.html || ''}
-                          title={`Slide ${currentSlide + 1}`}
-                          style={{
-                            width: '1280px',
-                            height: '720px',
-                            transform: 'scale(0.75)',
-                            transformOrigin: 'top left',
-                            border: 'none',
-                          }}
-                          sandbox="allow-same-origin allow-scripts"
-                        />
-                      </div>
-
-                      {/* Navigation */}
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '16px',
-                        marginTop: '16px',
-                      }}>
-                        <button
-                          onClick={() => setCurrentSlide(prev => Math.max(prev - 1, 0))}
-                          disabled={currentSlide === 0}
-                          style={{
-                            padding: '8px 16px',
-                            backgroundColor: currentSlide === 0 ? '#374151' : '#4b5563',
-                            color: currentSlide === 0 ? '#6b7280' : '#f9fafb',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: currentSlide === 0 ? 'not-allowed' : 'pointer',
-                            fontWeight: '600',
-                            fontSize: '13px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                          }}
-                        >
-                          <ChevronLeft size={16} /> Prev
-                        </button>
-
-                        <span style={{
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          color: '#d1d5db',
-                          minWidth: '120px',
-                          textAlign: 'center',
+                      {/* HTML Code Editor Panel */}
+                      {showCodeEditor ? (
+                        <div style={{
+                          width: '100%',
+                          maxWidth: '1100px',
+                          display: 'flex',
+                          gap: '16px',
+                          height: isFullscreen ? 'calc(100vh - 180px)' : '540px',
                         }}>
-                          Slide {currentSlide + 1} / {pitchDeckSlides.length}
-                        </span>
+                          {/* Code editor */}
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                            <div style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              marginBottom: '8px',
+                            }}>
+                              <span style={{ fontSize: '13px', fontWeight: '700', color: '#9ca3af' }}>
+                                📝 HTML Source — Slide {currentSlide + 1}
+                              </span>
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                <button
+                                  onClick={handleDiscardCodeEdit}
+                                  style={{
+                                    padding: '4px 12px',
+                                    backgroundColor: '#374151',
+                                    border: '1px solid #4b5563',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    color: '#d1d5db',
+                                    fontSize: '12px',
+                                    fontWeight: '600',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                  }}
+                                >
+                                  <X size={12} /> Discard
+                                </button>
+                                <button
+                                  onClick={handleSaveCodeEdit}
+                                  style={{
+                                    padding: '4px 12px',
+                                    backgroundColor: '#10b981',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    color: 'white',
+                                    fontSize: '12px',
+                                    fontWeight: '700',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                  }}
+                                >
+                                  <Check size={12} /> Apply Changes
+                                </button>
+                              </div>
+                            </div>
+                            <textarea
+                              value={editingHtml}
+                              onChange={(e) => setEditingHtml(e.target.value)}
+                              spellCheck={false}
+                              style={{
+                                flex: 1,
+                                width: '100%',
+                                backgroundColor: '#0d1117',
+                                color: '#c9d1d9',
+                                border: '1px solid #30363d',
+                                borderRadius: '8px',
+                                padding: '16px',
+                                fontFamily: '"Fira Code", "Cascadia Code", "JetBrains Mono", Consolas, monospace',
+                                fontSize: '12px',
+                                lineHeight: '1.6',
+                                resize: 'none',
+                                outline: 'none',
+                                tabSize: 2,
+                              }}
+                            />
+                          </div>
+                          {/* Live preview */}
+                          <div style={{ width: '400px', display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '13px', fontWeight: '700', color: '#9ca3af', marginBottom: '8px' }}>
+                              👁️ Live Preview
+                            </span>
+                            <div style={{
+                              flex: 1,
+                              backgroundColor: '#ffffff',
+                              borderRadius: '8px',
+                              overflow: 'hidden',
+                              position: 'relative',
+                            }}>
+                              <iframe
+                                srcDoc={editingHtml}
+                                title="Code Preview"
+                                style={{
+                                  width: '1280px',
+                                  height: '720px',
+                                  transform: 'scale(0.31)',
+                                  transformOrigin: 'top left',
+                                  border: 'none',
+                                }}
+                                sandbox="allow-same-origin"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Slide iframe — editable or read-only */}
+                          <div style={{
+                            width: '100%',
+                            maxWidth: '960px',
+                            aspectRatio: '16/9',
+                            backgroundColor: '#ffffff',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            boxShadow: isEditMode
+                              ? '0 0 0 3px #f59e0b, 0 4px 24px rgba(0,0,0,0.3)'
+                              : '0 4px 24px rgba(0,0,0,0.3)',
+                            position: 'relative',
+                          }}>
+                            <iframe
+                              ref={isEditMode ? editIframeRef : undefined}
+                              key={`slide-${currentSlide}-${isEditMode ? 'edit' : 'view'}`}
+                              srcDoc={pitchDeckSlides[currentSlide]?.html || ''}
+                              title={`Slide ${currentSlide + 1}`}
+                              style={{
+                                width: '1280px',
+                                height: '720px',
+                                transform: 'scale(0.75)',
+                                transformOrigin: 'top left',
+                                border: 'none',
+                              }}
+                              sandbox="allow-same-origin allow-scripts"
+                            />
+                            {/* Edit mode overlay indicator */}
+                            {isEditMode && (
+                              <div style={{
+                                position: 'absolute',
+                                top: '8px',
+                                right: '8px',
+                                padding: '4px 10px',
+                                backgroundColor: 'rgba(245, 158, 11, 0.9)',
+                                borderRadius: '4px',
+                                fontSize: '11px',
+                                fontWeight: '700',
+                                color: '#111827',
+                                zIndex: 10,
+                                pointerEvents: 'none',
+                              }}>
+                                ✏️ CLICK TO EDIT
+                              </div>
+                            )}
+                          </div>
 
-                        <button
-                          onClick={() => setCurrentSlide(prev => Math.min(prev + 1, pitchDeckSlides.length - 1))}
-                          disabled={currentSlide === pitchDeckSlides.length - 1}
-                          style={{
-                            padding: '8px 16px',
-                            backgroundColor: currentSlide === pitchDeckSlides.length - 1 ? '#374151' : '#4b5563',
-                            color: currentSlide === pitchDeckSlides.length - 1 ? '#6b7280' : '#f9fafb',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: currentSlide === pitchDeckSlides.length - 1 ? 'not-allowed' : 'pointer',
-                            fontWeight: '600',
-                            fontSize: '13px',
+                          {/* Navigation */}
+                          <div style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '4px',
-                          }}
-                        >
-                          Next <ChevronRight size={16} />
-                        </button>
-                      </div>
+                            justifyContent: 'center',
+                            gap: '16px',
+                            marginTop: '16px',
+                          }}>
+                            <button
+                              onClick={() => handleSlideChange(Math.max(currentSlide - 1, 0))}
+                              disabled={currentSlide === 0}
+                              style={{
+                                padding: '8px 16px',
+                                backgroundColor: currentSlide === 0 ? '#374151' : '#4b5563',
+                                color: currentSlide === 0 ? '#6b7280' : '#f9fafb',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: currentSlide === 0 ? 'not-allowed' : 'pointer',
+                                fontWeight: '600',
+                                fontSize: '13px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                            >
+                              <ChevronLeft size={16} /> Prev
+                            </button>
 
-                      {/* Slide title */}
-                      <div style={{
-                        marginTop: '8px',
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        color: '#9ca3af',
-                      }}>
-                        {pitchDeckSlides[currentSlide]?.title || `Slide ${currentSlide + 1}`}
-                      </div>
+                            <span style={{
+                              fontSize: '14px',
+                              fontWeight: '600',
+                              color: '#d1d5db',
+                              minWidth: '120px',
+                              textAlign: 'center',
+                            }}>
+                              Slide {currentSlide + 1} / {pitchDeckSlides.length}
+                            </span>
+
+                            <button
+                              onClick={() => handleSlideChange(Math.min(currentSlide + 1, pitchDeckSlides.length - 1))}
+                              disabled={currentSlide === pitchDeckSlides.length - 1}
+                              style={{
+                                padding: '8px 16px',
+                                backgroundColor: currentSlide === pitchDeckSlides.length - 1 ? '#374151' : '#4b5563',
+                                color: currentSlide === pitchDeckSlides.length - 1 ? '#6b7280' : '#f9fafb',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: currentSlide === pitchDeckSlides.length - 1 ? 'not-allowed' : 'pointer',
+                                fontWeight: '600',
+                                fontSize: '13px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                            >
+                              Next <ChevronRight size={16} />
+                            </button>
+                          </div>
+
+                          {/* Slide title */}
+                          <div style={{
+                            marginTop: '8px',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            color: '#9ca3af',
+                          }}>
+                            {pitchDeckSlides[currentSlide]?.title || `Slide ${currentSlide + 1}`}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
