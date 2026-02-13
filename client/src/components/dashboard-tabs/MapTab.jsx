@@ -24,8 +24,6 @@ import {
   Layers
 } from 'lucide-react';
 
-// Mapbox access token – set REACT_APP_MAPBOX_TOKEN env var in Vercel
-const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN || '';
 // Helper to create Tailwind-styled divIcon
 function createDivIcon({ bgClass, borderClass = 'border-white/60', icon: Icon, iconColor = '#fff', size = 'normal' }) {
   const sizeClasses = size === 'small' ? 'w-7 h-7' : 'w-9 h-9';
@@ -95,7 +93,7 @@ function DashboardMapTab() {
   const [processingStatus, setProcessingStatus] = useState('');
   const [mapFilter, setMapFilter] = useState('all'); // 'all' | 'rapidfire' | 'prospects' | 'pipeline'
   const [userId, setUserId] = useState(null);
-  const [mapStyle, setMapStyle] = useState(MAPBOX_TOKEN ? 'mapbox' : 'voyager');
+  const [mapStyle, setMapStyle] = useState('voyager');
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -274,12 +272,8 @@ function DashboardMapTab() {
     }
   };
 
-  // Map tile layer configurations
+  // Map tile layer configurations (all free, no API key needed)
   const tileConfigs = {
-    ...(MAPBOX_TOKEN ? { mapbox: {
-      url: `https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`,
-      attribution: '&copy; Mapbox &copy; OpenStreetMap'
-    }} : {}),
     voyager: {
       url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
       attribution: '&copy; OpenStreetMap, &copy; CartoDB'
@@ -1696,23 +1690,6 @@ function DashboardMapTab() {
                 <MapPin size={14} style={{ color: '#6b7280' }} />
                 <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>Map Style:</label>
                 <div style={{ display: 'flex', gap: '6px' }}>
-                  {MAPBOX_TOKEN && (
-                  <button
-                    onClick={() => setMapStyle('mapbox')}
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: mapStyle === 'mapbox' ? '#3b82f6' : 'white',
-                      color: mapStyle === 'mapbox' ? 'white' : '#6b7280',
-                      border: mapStyle === 'mapbox' ? 'none' : '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Mapbox
-                  </button>
-                  )}
                   <button
                     onClick={() => setMapStyle('voyager')}
                     style={{
@@ -1876,8 +1853,6 @@ function DashboardMapTab() {
             <TileLayer 
               url={tileUrl} 
               attribution={attribution} 
-              tileSize={mapStyle === 'mapbox' ? 512 : undefined}
-              zoomOffset={mapStyle === 'mapbox' ? -1 : undefined}
             />
             <CommandExecutor commands={pendingCommands} onDone={() => setPendingCommands([])} addPin={addPinFromCommand} />
 
