@@ -12,6 +12,8 @@ import {
   MapPin,
 } from 'lucide-react';
 
+const SIDEBAR_WIDTH = 200;
+
 const dashboardStyles = {
   page: {
     minHeight: '100vh',
@@ -29,43 +31,60 @@ const dashboardStyles = {
     overflow: 'hidden',
   },
   iconSidebar: {
-    width: 56,
-    backgroundColor: '#000000',
+    width: SIDEBAR_WIDTH,
+    minWidth: SIDEBAR_WIDTH,
+    backgroundColor: '#0f172a',
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'center',
-    padding: '16px 0',
+    padding: '20px 0',
     boxSizing: 'border-box',
-    gap: 10,
+    gap: 2,
     zIndex: 10000,
     position: 'relative',
+    overflowY: 'auto',
+    overflowX: 'hidden',
   },
   logoBoxOuter: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
+    gap: 10,
+    padding: '0 16px',
+    marginBottom: 20,
   },
   logoBoxInner: {
-    width: 26,
-    height: 26,
-    borderRadius: 6,
-    backgroundColor: '#ffffff',
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: '#3b82f6',
+    flexShrink: 0,
   },
-  iconButton: (active = false) => ({
-    width: 34,
-    height: 34,
+  sidebarItem: (active = false) => ({
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 12,
+    padding: '10px 16px',
+    margin: '0 8px',
     borderRadius: 8,
-    color: active ? '#ffffff' : '#9ca3af',
-    backgroundColor: active ? '#374151' : 'transparent',
+    color: active ? '#ffffff' : '#94a3b8',
+    backgroundColor: active ? '#1e293b' : 'transparent',
     cursor: 'pointer',
+    fontSize: 13,
+    fontWeight: active ? 600 : 500,
+    letterSpacing: '0.01em',
+    transition: 'all 0.15s ease',
+    textDecoration: 'none',
+    border: 'none',
+    outline: 'none',
+    whiteSpace: 'nowrap',
   }),
+  sidebarSection: {
+    fontSize: 10,
+    fontWeight: 700,
+    color: '#475569',
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+    padding: '16px 16px 6px 24px',
+  },
   main: {
     flex: 1,
     display: 'flex',
@@ -124,53 +143,34 @@ const dashboardStyles = {
   },
 };
 
-// Sidebar icon with hover label tooltip
-const SidebarIcon = ({ icon: Icon, label, active = false, onClick }) => {
+// Sidebar item with icon + label
+const SidebarItem = ({ icon: Icon, label, active = false, onClick }) => {
   const [hovered, setHovered] = React.useState(false);
 
   return (
     <div
-      style={{ position: 'relative' }}
+      style={{
+        ...dashboardStyles.sidebarItem(active),
+        ...(hovered && !active ? { backgroundColor: '#1e293b', color: '#e2e8f0' } : {}),
+      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={onClick}
     >
-      <div style={dashboardStyles.iconButton(active)}>
-        <Icon size={18} />
-      </div>
-      {hovered && (
-        <div
-          style={{
-            position: 'absolute',
-            left: 44,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            backgroundColor: '#111827',
-            color: '#f9fafb',
-            fontSize: 11,
-            padding: '4px 10px',
-            borderRadius: 999,
-            whiteSpace: 'nowrap',
-            boxShadow: '0 6px 20px rgba(0, 0, 0, 0.45)',
-            pointerEvents: 'none',
-            zIndex: 10000,
-          }}
-        >
-          {label}
-        </div>
-      )}
+      <Icon size={18} style={{ flexShrink: 0 }} />
+      <span>{label}</span>
     </div>
   );
 };
 
 const tabs = [
-  { id: 'home', label: 'Home', icon: Home },
-  { id: 'profile', label: 'Profile', icon: User },
-  { id: 'pipeline', label: 'Pipeline', icon: Layers },
-  { id: 'underwrite', label: 'Underwrite', icon: FileSpreadsheet },
-  { id: 'rapid-fire', label: 'Rapid Fire', icon: Zap },
-  { id: 'market', label: 'Market', icon: BarChart3 },
-  { id: 'pitch-deck', label: 'Pitch Deck', icon: Presentation },
+  { id: 'home', label: 'Home', icon: Home, section: 'main' },
+  { id: 'profile', label: 'Profile', icon: User, section: 'main' },
+  { id: 'pipeline', label: 'Pipeline', icon: Layers, section: 'deals' },
+  { id: 'underwrite', label: 'Underwrite', icon: FileSpreadsheet, section: 'deals' },
+  { id: 'rapid-fire', label: 'Rapid Fire', icon: Zap, section: 'deals' },
+  { id: 'market', label: 'Market Research', icon: BarChart3, section: 'analysis' },
+  { id: 'pitch-deck', label: 'Pitch Deck', icon: Presentation, section: 'analysis' },
 ];
 
 function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }) {
@@ -208,24 +208,48 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
   return (
     <div style={dashboardStyles.page}>
       <div style={dashboardStyles.appCard}>
-        {/* Left icon sidebar */}
+        {/* Left sidebar with labels */}
         <div style={dashboardStyles.iconSidebar}>
+          {/* Logo */}
           <div style={dashboardStyles.logoBoxOuter}>
             <div style={dashboardStyles.logoBoxInner} />
+            <span style={{ color: '#ffffff', fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em' }}>DealSniper</span>
           </div>
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <SidebarIcon
-                key={tab.id}
-                icon={Icon}
-                label={tab.label}
-                active={isActive}
-                onClick={() => handleTabClick(tab.id)}
-              />
-            );
-          })}
+
+          {/* Main section */}
+          {tabs.filter(t => t.section === 'main').map((tab) => (
+            <SidebarItem
+              key={tab.id}
+              icon={tab.icon}
+              label={tab.label}
+              active={activeTab === tab.id}
+              onClick={() => handleTabClick(tab.id)}
+            />
+          ))}
+
+          {/* Deals section */}
+          <div style={dashboardStyles.sidebarSection}>Deals</div>
+          {tabs.filter(t => t.section === 'deals').map((tab) => (
+            <SidebarItem
+              key={tab.id}
+              icon={tab.icon}
+              label={tab.label}
+              active={activeTab === tab.id}
+              onClick={() => handleTabClick(tab.id)}
+            />
+          ))}
+
+          {/* Analysis section */}
+          <div style={dashboardStyles.sidebarSection}>Analysis</div>
+          {tabs.filter(t => t.section === 'analysis').map((tab) => (
+            <SidebarItem
+              key={tab.id}
+              icon={tab.icon}
+              label={tab.label}
+              active={activeTab === tab.id}
+              onClick={() => handleTabClick(tab.id)}
+            />
+          ))}
         </div>
 
         {/* Main content area */}
