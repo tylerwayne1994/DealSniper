@@ -3596,11 +3596,16 @@ async def generate_pitch_deck(request: Request, deal_id: str):
     # Also accept images passed from frontend body (freshly uploaded)
     body_images = body.get("images") or []
     all_image_urls = []
+    seen_urls = set()
     for img in (deal_images + body_images):
         url = img.get("url") if isinstance(img, dict) else img
-        if url:
+        if url and url not in seen_urls:
             all_image_urls.append(url)
-    log.info(f"[PitchDeck] Found {len(all_image_urls)} property images")
+            seen_urls.add(url)
+    log.info(f"[PitchDeck] Found {len(all_image_urls)} unique property images")
+    if all_image_urls:
+        for i, url in enumerate(all_image_urls):
+            log.info(f"[PitchDeck]   Image {i+1}: {url[:120]}")
 
     # ----- Extract comprehensive deal fields -----
     address = deal.get("address") or parsed_data.get("property", {}).get("address") or "Property Address TBD"
@@ -3908,6 +3913,61 @@ STABILIZATION & EXIT:
             for placeholder, actual in placeholder_map.items():
                 html = html.replace(placeholder, actual)
             slide["html"] = html
+
+        # ----- Force-inject property images into slides -----
+        # Claude sometimes ignores the image URLs, so we inject them directly
+        if all_image_urls and len(slides) >= 3:
+            log.info(f"[PitchDeck] Force-injecting {len(all_image_urls)} property images into slides")
+
+            # Slide 1 (Title Page) — add hero image as background or large photo
+            first_img = all_image_urls[0]
+            title_slide = slides[0]
+            title_html = title_slide.get("html") or ""
+            # Check if image is already embedded
+            if first_img not in title_html:
+                # Inject a hero image div right after <body> tag
+                hero_block = (
+                    '<div style="position:absolute;top:0;right:0;width:50%;height:100%;overflow:hidden;z-index:0;">'
+                    f'<img src="{first_img}" style="width:100%;height:100%;object-fit:cover;opacity:0.85;" crossorigin="anonymous" />'
+                    '</div>'
+                    '<div style="position:relative;z-index:1;">'
+                )
+                # Find body tag and inject after it
+                import re as _re_img
+                body_match = _re_img.search(r'(<body[^>]*>)', title_html, _re_img.IGNORECASE)
+                if body_match:
+                    insert_pos = body_match.end()
+                    title_html = title_html[:insert_pos] + hero_block + title_html[insert_pos:]
+                    # Close the z-index wrapper div before </body>
+                    title_html = title_html.replace('</body>', '</div></body>')
+                    slides[0]["html"] = title_html
+                    log.info(f"[PitchDeck] Injected hero image into Title slide")
+
+            # Slide 3 (Property Overview) — add image grid
+            if len(all_image_urls) >= 1:
+                overview_slide = slides[2] if len(slides) > 2 else None
+                if overview_slide:
+                    overview_html = overview_slide.get("html") or ""
+                    # Check if images already embedded
+                    images_already_present = any(url in overview_html for url in all_image_urls[:4])
+                    if not images_already_present:
+                        grid_imgs = all_image_urls[:4]
+                        cols = min(len(grid_imgs), 2)
+                        img_tags = "".join(
+                            f'<div style="border-radius:6px;overflow:hidden;aspect-ratio:16/9;">'
+                            f'<img src="{url}" style="width:100%;height:100%;object-fit:cover;display:block;" crossorigin="anonymous" />'
+                            f'</div>'
+                            for url in grid_imgs
+                        )
+                        grid_block = (
+                            f'<div style="display:grid;grid-template-columns:repeat({cols},1fr);gap:10px;margin-top:16px;margin-bottom:16px;">'
+                            f'{img_tags}'
+                            f'</div>'
+                        )
+                        # Insert the image grid before </body>
+                        overview_html = overview_html.replace('</body>', grid_block + '</body>')
+                        slides[2]["html"] = overview_html
+                        log.info(f"[PitchDeck] Injected {len(grid_imgs)} images into Property Overview slide")
 
         log.info(f"[PitchDeck] ✅ Generated {len(slides)} HTML slides")
 
