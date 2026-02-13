@@ -67,6 +67,7 @@ const ResultsPageV2 = ({
   const [isPushingToPipeline, setIsPushingToPipeline] = useState(false);
   const [pipelineSuccess, setPipelineSuccess] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [amortSubTab, setAmortSubTab] = useState('schedule');
   const [marketData, setMarketData] = useState(null);
   const [marketDataLoading, setMarketDataLoading] = useState(false);
   const [documentAnalysis, setDocumentAnalysis] = useState(scenarioData?.document_analysis || null);
@@ -3206,22 +3207,41 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
           }
         }
 
-        // Neutral card style (match Deal Structure look, no dark colors)
-        const darkBoxStyle = {
-          backgroundColor: 'white',
-          borderRadius: '12px',
-          padding: '16px 18px',
-          border: '1px solid #e5e7eb',
-          boxShadow: '0 10px 30px rgba(15,23,42,0.04)'
-        };
-        const darkLabelStyle = {
-          fontSize: '11px',
-          color: '#6b7280',
-          marginBottom: '8px',
-          fontWeight: '600',
-          textTransform: 'uppercase',
-          letterSpacing: '0.06em'
-        };
+        // Neutral card style – redesigned with colored left borders and tinted backgrounds
+        const metricCards = [
+          { label: 'LOAN AMOUNT', value: '$' + amortLoanAmount.toLocaleString(undefined, {maximumFractionDigits: 0}), color: '#3b82f6', bg: '#eff6ff' },
+          { label: 'INTEREST RATE', value: (amortInterestRate * 100).toFixed(2) + '%', color: '#8b5cf6', bg: '#f5f3ff' },
+          { label: 'LOAN TERM', value: loanTerm + ' Years', color: '#06b6d4', bg: '#ecfeff' },
+          { label: 'MONTHLY DEBT SERVICE', value: '$' + monthlyDebtService.toLocaleString(undefined, {maximumFractionDigits: 0}), color: '#f59e0b', bg: '#fffbeb' },
+          { label: 'ANNUAL DEBT SERVICE', value: '$' + amortAnnualDebtService.toLocaleString(undefined, {maximumFractionDigits: 0}), color: '#ef4444', bg: '#fef2f2' },
+          { label: 'CAP RATE', value: capRateDecimal != null ? (capRateDecimal * 100).toFixed(2) + '%' : '—', color: '#10b981', bg: '#ecfdf5' },
+          { label: 'LOAN CONSTANT', value: loanConstant != null ? (loanConstant * 100).toFixed(2) + '%' : '—', color: '#6366f1', bg: '#eef2ff' },
+          { label: 'SPREAD (CAP - CONSTANT)', value: spreadCapMinusConstant != null ? (spreadCapMinusConstant * 100).toFixed(2) + '%' : '—', color: spreadCapMinusConstant != null && spreadCapMinusConstant >= 0 ? '#10b981' : '#ef4444', bg: spreadCapMinusConstant != null && spreadCapMinusConstant >= 0 ? '#ecfdf5' : '#fef2f2', sub: leverageStatus },
+        ];
+
+        // ── Interest Rate Stress Test computation ──
+        const baseRatePct = amortInterestRate * 100;
+        const stressRates = [baseRatePct - 1, baseRatePct - 0.5, baseRatePct, baseRatePct + 0.5, baseRatePct + 1];
+        // NOI for cash flow calcs
+        const stressNOI = fullCalcs?.year1?.noi || 0;
+        // Down payment / equity
+        const stressEquity = fullCalcs?.financing?.totalEquityRequired || fullCalcs?.financing?.downPayment ||
+          (amortPrice > 0 && amortDownPct > 0 ? amortPrice * (amortDownPct / 100) : (amortPrice - amortLoanAmount)) || 0;
+
+        const stressRows = stressRates.map(ratePct => {
+          const r = ratePct / 100;
+          const mr = r / 12;
+          const n = amortizationYears * 12;
+          const mp = amortLoanAmount > 0 && r > 0 && n > 0
+            ? amortLoanAmount * (mr / (1 - Math.pow(1 + mr, -n)))
+            : 0;
+          const annualDS = mp * 12;
+          const annualCF = stressNOI - annualDS;
+          const monthlyCF = annualCF / 12;
+          const coc = stressEquity > 0 ? (annualCF / stressEquity) * 100 : 0;
+          const dscr = annualDS > 0 ? stressNOI / annualDS : 0;
+          return { ratePct, mp, annualDS, annualCF, monthlyCF, coc, dscr };
+        });
 
         return (
           <div style={{ padding: '24px', backgroundColor: '#f9fafb', minHeight: '100vh' }}>
@@ -3247,66 +3267,29 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
                 </h2>
               </div>
 
-              {/* Loan Summary Cards - All Dark Theme */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '16px', marginBottom: '24px' }}>
-                <div style={darkBoxStyle}>
-                  <div style={darkLabelStyle}>LOAN AMOUNT</div>
-                  <div style={{ fontSize: '20px', fontWeight: '800', color: '#111827' }}>
-                    ${amortLoanAmount.toLocaleString(undefined, {maximumFractionDigits: 0})}
+              {/* Redesigned Loan Summary Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px' }}>
+                {metricCards.map((card, i) => (
+                  <div key={i} style={{
+                    backgroundColor: card.bg,
+                    borderRadius: '12px',
+                    padding: '16px 18px',
+                    borderLeft: `4px solid ${card.color}`,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                    transition: 'transform 0.15s, box-shadow 0.15s',
+                  }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.08)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'; }}
+                  >
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '8px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{card.label}</div>
+                    <div style={{ fontSize: '22px', fontWeight: '800', color: '#111827', lineHeight: 1.1 }}>{card.value}</div>
+                    {card.sub && (
+                      <div style={{ marginTop: '6px', fontSize: '11px', fontWeight: '700', color: card.color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        {card.sub}
+                      </div>
+                    )}
                   </div>
-                </div>
-                
-                <div style={darkBoxStyle}>
-                  <div style={darkLabelStyle}>INTEREST RATE</div>
-                  <div style={{ fontSize: '20px', fontWeight: '800', color: '#111827' }}>
-                    {(amortInterestRate * 100).toFixed(2)}%
-                  </div>
-                </div>
-                
-                <div style={darkBoxStyle}>
-                  <div style={darkLabelStyle}>LOAN TERM</div>
-                  <div style={{ fontSize: '20px', fontWeight: '800', color: '#111827' }}>
-                    {loanTerm} Years
-                  </div>
-                </div>
-
-                <div style={darkBoxStyle}>
-                  <div style={darkLabelStyle}>MONTHLY DEBT SERVICE</div>
-                  <div style={{ fontSize: '20px', fontWeight: '800', color: '#111827' }}>
-                    ${monthlyDebtService.toLocaleString(undefined, {maximumFractionDigits: 0})}
-                  </div>
-                </div>
-
-                <div style={darkBoxStyle}>
-                  <div style={darkLabelStyle}>ANNUAL DEBT SERVICE</div>
-                  <div style={{ fontSize: '20px', fontWeight: '800', color: '#111827' }}>
-                    ${amortAnnualDebtService.toLocaleString(undefined, {maximumFractionDigits: 0})}
-                  </div>
-                </div>
-
-                <div style={darkBoxStyle}>
-                  <div style={darkLabelStyle}>CAP RATE</div>
-                  <div style={{ fontSize: '20px', fontWeight: '800', color: '#111827' }}>
-                    {capRateDecimal != null ? (capRateDecimal * 100).toFixed(2) + '%' : '—'}
-                  </div>
-                </div>
-
-                <div style={darkBoxStyle}>
-                  <div style={darkLabelStyle}>LOAN CONSTANT</div>
-                  <div style={{ fontSize: '20px', fontWeight: '800', color: '#111827' }}>
-                    {loanConstant != null ? (loanConstant * 100).toFixed(2) + '%' : '—'}
-                  </div>
-                </div>
-
-                <div style={darkBoxStyle}>
-                  <div style={darkLabelStyle}>SPREAD (CAP - CONSTANT)</div>
-                  <div style={{ fontSize: '20px', fontWeight: '800', color: '#111827' }}>
-                    {spreadCapMinusConstant != null ? (spreadCapMinusConstant * 100).toFixed(2) + '%' : '—'}
-                  </div>
-                  <div style={{ marginTop: '8px', fontSize: '12px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    {leverageStatus}
-                  </div>
-                </div>
+                ))}
               </div>
 
               {/* Positive/Negative Leverage Explanation */}
@@ -3324,63 +3307,206 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
                   </div>
                 </div>
               </div>
-            
-              {amortSchedule && amortSchedule.length > 0 ? (
-                <div style={{ 
+
+              {/* ── Sub-Tab Selector ── */}
+              <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', borderBottom: '2px solid #e5e7eb' }}>
+                {[
+                  { id: 'schedule', label: 'Amortization Schedule' },
+                  { id: 'stress', label: 'Interest Rate Stress Test' },
+                ].map(st => (
+                  <button key={st.id}
+                    onClick={() => setAmortSubTab(st.id)}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: amortSubTab === st.id ? 'white' : 'transparent',
+                      color: amortSubTab === st.id ? '#111827' : '#6b7280',
+                      border: 'none',
+                      borderBottom: amortSubTab === st.id ? '3px solid #3b82f6' : '3px solid transparent',
+                      fontSize: '13px',
+                      fontWeight: amortSubTab === st.id ? '700' : '500',
+                      cursor: 'pointer',
+                      marginBottom: '-2px',
+                      transition: 'all 0.15s',
+                    }}
+                  >{st.label}</button>
+                ))}
+              </div>
+
+              {/* ── Sub-Tab: Amortization Schedule ── */}
+              {amortSubTab === 'schedule' && (
+                <>
+                  {amortSchedule && amortSchedule.length > 0 ? (
+                    <div style={{ 
+                      backgroundColor: 'white',
+                      border: '1px solid #e5e7eb', 
+                      borderRadius: '16px', 
+                      overflow: 'hidden', 
+                      boxShadow: '0 10px 30px rgba(15,23,42,0.04)'
+                    }}>
+                      <div style={{ 
+                        padding: '16px 20px', 
+                        borderBottom: '1px solid #e5e7eb', 
+                        backgroundColor: '#f9fafb'
+                      }}>
+                        <h4 style={{ 
+                          margin: 0, 
+                          fontSize: '13px', 
+                          fontWeight: '700', 
+                          color: '#111827', 
+                          textTransform: 'uppercase', 
+                          letterSpacing: '0.08em' 
+                        }}>Year-by-Year Breakdown</h4>
+                      </div>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ backgroundColor: '#f3f4f6' }}>
+                              <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #d1d5db' }}>Year</th>
+                              <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: '12px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #d1d5db' }}>Total Payment</th>
+                              <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: '12px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #d1d5db' }}>Principal</th>
+                              <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: '12px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #d1d5db' }}>Interest</th>
+                              <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: '12px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #d1d5db' }}>Remaining Balance</th>
+                              <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: '12px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #d1d5db' }}>Cumulative Principal</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {amortSchedule.map((row, idx) => (
+                              <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb', transition: 'background 0.15s', backgroundColor: 'white' }} 
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'} 
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}>
+                                <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: '700', color: '#111827' }}>Year {row.year}</td>
+                                <td style={{ padding: '16px 24px', textAlign: 'right', fontSize: '14px', fontWeight: '600', color: '#374151' }}>${row.payment.toLocaleString()}</td>
+                                <td style={{ padding: '16px 24px', textAlign: 'right', fontSize: '14px', fontWeight: '700', color: '#111827' }}>${row.principal.toLocaleString()}</td>
+                                <td style={{ padding: '16px 24px', textAlign: 'right', fontSize: '14px', fontWeight: '700', color: '#111827' }}>${row.interest.toLocaleString()}</td>
+                                <td style={{ padding: '16px 24px', textAlign: 'right', fontSize: '14px', fontWeight: '700', color: '#111827' }}>${row.balance.toLocaleString()}</td>
+                                <td style={{ padding: '16px 24px', textAlign: 'right', fontSize: '14px', fontWeight: '600', color: '#6b7280' }}>${row.cumulativePrincipal.toLocaleString()}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ padding: '60px', textAlign: 'center', backgroundColor: 'white', borderRadius: '16px', border: '1px solid #e5e7eb' }}>
+                      <p style={{ color: '#6b7280', fontSize: '14px' }}>No amortization schedule available (interest-only loan or no loan)</p>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* ── Sub-Tab: Interest Rate Stress Test ── */}
+              {amortSubTab === 'stress' && (
+                <div style={{
                   backgroundColor: 'white',
-                  border: '1px solid #e5e7eb', 
-                  borderRadius: '16px', 
-                  overflow: 'hidden', 
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
                   boxShadow: '0 10px 30px rgba(15,23,42,0.04)'
                 }}>
-                  <div style={{ 
-                    padding: '16px 20px', 
-                    borderBottom: '1px solid #e5e7eb', 
-                    backgroundColor: '#f9fafb'
+                  {/* Header bar */}
+                  <div style={{
+                    padding: '16px 24px',
+                    borderBottom: '1px solid #e5e7eb',
+                    background: 'linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
                   }}>
-                    <h4 style={{ 
-                      margin: 0, 
-                      fontSize: '13px', 
-                      fontWeight: '700', 
-                      color: '#111827', 
-                      textTransform: 'uppercase', 
-                      letterSpacing: '0.08em' 
-                    }}>Year-by-Year Breakdown</h4>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '700', color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        Interest Rate Sensitivity — Scenario B (Realistic, Reassessed Tax)
+                      </h4>
+                      <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
+                        Loan: ${amortLoanAmount.toLocaleString()} &bull; NOI: ${stressNOI.toLocaleString()} &bull; Equity: ${stressEquity > 0 ? '$' + stressEquity.toLocaleString() : '—'}
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Stress test table */}
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
-                        <tr style={{ backgroundColor: '#f3f4f6' }}>
-                          <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #d1d5db' }}>Year</th>
-                          <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: '12px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #d1d5db' }}>Total Payment</th>
-                          <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: '12px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #d1d5db' }}>Principal</th>
-                          <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: '12px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #d1d5db' }}>Interest</th>
-                          <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: '12px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #d1d5db' }}>Remaining Balance</th>
-                          <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: '12px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #d1d5db' }}>Cumulative Principal</th>
+                        <tr>
+                          <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: '#1e3a5f', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #1e3a5f', backgroundColor: '#f0f4f8' }}>METRIC</th>
+                          {stressRows.map((sr, i) => {
+                            const isBase = Math.abs(sr.ratePct - baseRatePct) < 0.01;
+                            return (
+                              <th key={i} style={{
+                                padding: '14px 20px',
+                                textAlign: 'center',
+                                fontSize: '13px',
+                                fontWeight: '800',
+                                color: isBase ? '#ffffff' : '#1e3a5f',
+                                backgroundColor: isBase ? '#dc2626' : '#f0f4f8',
+                                borderBottom: isBase ? '2px solid #dc2626' : '2px solid #1e3a5f',
+                                letterSpacing: '0.02em',
+                                minWidth: '100px',
+                              }}>
+                                {sr.ratePct.toFixed(1)}%
+                                {isBase && <div style={{ fontSize: '10px', fontWeight: '700', marginTop: '2px', letterSpacing: '0.08em' }}>(BASE)</div>}
+                              </th>
+                            );
+                          })}
                         </tr>
                       </thead>
                       <tbody>
-                        {amortSchedule.map((row, idx) => (
-                          <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb', transition: 'background 0.15s', backgroundColor: 'white' }} 
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'} 
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}>
-                            <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: '700', color: '#111827' }}>Year {row.year}</td>
-                            <td style={{ padding: '16px 24px', textAlign: 'right', fontSize: '14px', fontWeight: '600', color: '#374151' }}>${row.payment.toLocaleString()}</td>
-                            <td style={{ padding: '16px 24px', textAlign: 'right', fontSize: '14px', fontWeight: '700', color: '#111827' }}>${row.principal.toLocaleString()}</td>
-                            <td style={{ padding: '16px 24px', textAlign: 'right', fontSize: '14px', fontWeight: '700', color: '#111827' }}>${row.interest.toLocaleString()}</td>
-                            <td style={{ padding: '16px 24px', textAlign: 'right', fontSize: '14px', fontWeight: '700', color: '#111827' }}>${row.balance.toLocaleString()}</td>
-                            <td style={{ padding: '16px 24px', textAlign: 'right', fontSize: '14px', fontWeight: '600', color: '#6b7280' }}>${row.cumulativePrincipal.toLocaleString()}</td>
+                        {[
+                          { label: 'Monthly Payment', key: 'mp', fmt: v => '$' + v.toLocaleString(undefined, { maximumFractionDigits: 0 }) },
+                          { label: 'Annual Debt Service', key: 'annualDS', fmt: v => '$' + v.toLocaleString(undefined, { maximumFractionDigits: 0 }) },
+                          { label: 'Annual Cash Flow', key: 'annualCF', fmt: v => '$' + v.toLocaleString(undefined, { maximumFractionDigits: 0 }) },
+                          { label: 'Monthly Cash Flow', key: 'monthlyCF', fmt: v => '$' + v.toLocaleString(undefined, { maximumFractionDigits: 0 }) },
+                          { label: `Cash-on-Cash (on $${stressEquity > 0 ? Math.round(stressEquity / 1000) + 'k' : '—'})`, key: 'coc', fmt: v => v.toFixed(1) + '%' },
+                          { label: 'DSCR', key: 'dscr', fmt: v => v.toFixed(2) + 'x' },
+                        ].map((metric, mIdx) => (
+                          <tr key={mIdx} style={{ borderBottom: '1px solid #e5e7eb' }}
+                            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+                          >
+                            <td style={{ padding: '14px 20px', fontSize: '13px', fontWeight: '600', color: '#1e3a5f', backgroundColor: '#f0f4f8', borderRight: '1px solid #e2e8f0' }}>{metric.label}</td>
+                            {stressRows.map((sr, i) => {
+                              const isBase = Math.abs(sr.ratePct - baseRatePct) < 0.01;
+                              const val = sr[metric.key];
+                              // Color code: green if positive cash flow / good DSCR, red if negative
+                              let valColor = '#111827';
+                              if (metric.key === 'annualCF' || metric.key === 'monthlyCF') {
+                                valColor = val >= 0 ? '#047857' : '#dc2626';
+                              } else if (metric.key === 'dscr') {
+                                valColor = val >= 1.25 ? '#047857' : val >= 1.0 ? '#d97706' : '#dc2626';
+                              } else if (metric.key === 'coc') {
+                                valColor = val >= 8 ? '#047857' : val >= 4 ? '#d97706' : '#dc2626';
+                              }
+                              return (
+                                <td key={i} style={{
+                                  padding: '14px 20px',
+                                  textAlign: 'center',
+                                  fontSize: '14px',
+                                  fontWeight: isBase ? '800' : '600',
+                                  color: valColor,
+                                  backgroundColor: isBase ? '#fef9f0' : 'white',
+                                  borderLeft: isBase ? '2px solid #fbbf24' : 'none',
+                                  borderRight: isBase ? '2px solid #fbbf24' : 'none',
+                                }}>
+                                  {metric.fmt(val)}
+                                </td>
+                              );
+                            })}
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
-                </div>
-              ) : (
-                <div style={{ padding: '60px', textAlign: 'center', backgroundColor: 'white', borderRadius: '16px', border: '1px solid #e5e7eb' }}>
-                  <p style={{ color: '#6b7280', fontSize: '14px' }}>No amortization schedule available (interest-only loan or no loan)</p>
+
+                  {/* Footer note */}
+                  <div style={{ padding: '14px 24px', borderTop: '1px solid #e5e7eb', backgroundColor: '#f8fafc' }}>
+                    <div style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.6 }}>
+                      <strong style={{ color: '#334155' }}>How to read:</strong> The <span style={{ color: '#dc2626', fontWeight: 700 }}>red column</span> is your base underwriting rate ({baseRatePct.toFixed(1)}%).
+                      Columns to the left show a rate decrease (better terms), columns to the right show a rate increase (worse terms).
+                      DSCR ≥ 1.25x is green (bankable), 1.0–1.25x is amber (tight), &lt; 1.0x is red (debt service coverage shortfall).
+                    </div>
+                  </div>
                 </div>
               )}
+
             </div>
           </div>
         );
