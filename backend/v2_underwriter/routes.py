@@ -3759,21 +3759,25 @@ STABILIZATION & EXIT:
     try:
         anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
-        # Stage 1: Get structured summary from Claude
+        # Stage 1: Get structured summary from Claude (streaming to avoid 10-min timeout)
         log.info(f"[PitchDeck] Stage 1 prompt length: {len(stage1_user_prompt)} chars")
-        stage1_response = anthropic_client.messages.create(
+        s1_chunks = []
+        s1_prompt_tokens = 0
+        s1_completion_tokens = 0
+        with anthropic_client.messages.stream(
             model="claude-sonnet-4-5-20250929",
             max_tokens=12000,
             system=STAGE_1_DEAL_SUMMARY_PROMPT,
             messages=[{"role": "user", "content": stage1_user_prompt}],
-        )
+        ) as stream:
+            for text in stream.text_stream:
+                s1_chunks.append(text)
+            final_msg = stream.get_final_message()
+            s1_prompt_tokens = getattr(final_msg.usage, 'input_tokens', 0)
+            s1_completion_tokens = getattr(final_msg.usage, 'output_tokens', 0)
 
-        deal_summary = stage1_response.content[0].text.strip()
+        deal_summary = "".join(s1_chunks).strip()
         log.info(f"[PitchDeck] Stage 1 complete: {len(deal_summary)} chars of structured summary")
-
-        # Track Stage 1 tokens
-        s1_prompt_tokens = getattr(stage1_response.usage, 'input_tokens', None)
-        s1_completion_tokens = getattr(stage1_response.usage, 'output_tokens', None)
 
         # =====================================================================
         # STAGE 2: Visual HTML Slide Generation
@@ -3817,17 +3821,20 @@ STABILIZATION & EXIT:
                 stage2_prompt += image_section
                 log.info(f"[PitchDeck] Injected {len(all_image_urls[:8])} image URLs into Stage 2 prompt")
 
-            stage2_response = anthropic_client.messages.create(
+            s2_chunks = []
+            with anthropic_client.messages.stream(
                 model="claude-sonnet-4-5-20250929",
                 max_tokens=64000,
                 messages=[{"role": "user", "content": stage2_prompt}],
-            )
+            ) as stream:
+                for text in stream.text_stream:
+                    s2_chunks.append(text)
+                final_msg = stream.get_final_message()
+                s2_prompt_tokens = getattr(final_msg.usage, 'input_tokens', 0)
+                s2_completion_tokens = getattr(final_msg.usage, 'output_tokens', 0)
 
-            raw_slides_text = stage2_response.content[0].text.strip()
+            raw_slides_text = "".join(s2_chunks).strip()
             log.info(f"[PitchDeck] Stage 2 raw response: {len(raw_slides_text)} chars")
-
-            s2_prompt_tokens = getattr(stage2_response.usage, 'input_tokens', 0)
-            s2_completion_tokens = getattr(stage2_response.usage, 'output_tokens', 0)
 
             # Strip markdown fences (handle all variations)
             import re as _re
