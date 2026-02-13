@@ -6,6 +6,7 @@ import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
 import { loadPipelineDeals } from '../../lib/dealsService';
+import MapOverlayLayers, { COUNTY_METRIC_OPTIONS, ZIP_METRIC_OPTIONS, OverlayLegend } from './MapOverlayLayers';
 import {
   MessageSquare,
   MapPin,
@@ -19,11 +20,12 @@ import {
   Calendar,
   Download,
   UploadCloud,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Layers
 } from 'lucide-react';
 
-// Mapbox access token (shared with HomeMapView)
-const MAPBOX_TOKEN = 'MAPBOX_TOKEN_REMOVED';
+// Mapbox access token – set REACT_APP_MAPBOX_TOKEN env var in Vercel
+const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN || '';
 // Helper to create Tailwind-styled divIcon
 function createDivIcon({ bgClass, borderClass = 'border-white/60', icon: Icon, iconColor = '#fff', size = 'normal' }) {
   const sizeClasses = size === 'small' ? 'w-7 h-7' : 'w-9 h-9';
@@ -93,9 +95,15 @@ function DashboardMapTab() {
   const [processingStatus, setProcessingStatus] = useState('');
   const [mapFilter, setMapFilter] = useState('all'); // 'all' | 'rapidfire' | 'prospects' | 'pipeline'
   const [userId, setUserId] = useState(null);
-  const [mapStyle, setMapStyle] = useState('mapbox'); // 'mapbox' | 'satellite' | 'streets' | 'dark'
+  const [mapStyle, setMapStyle] = useState(MAPBOX_TOKEN ? 'mapbox' : 'voyager');
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Overlay layer state
+  const [countyOverlay, setCountyOverlay] = useState(false);
+  const [zipOverlay, setZipOverlay] = useState(false);
+  const [countyMetric, setCountyMetric] = useState('populationGrowth');
+  const [zipMetric, setZipMetric] = useState('density_sqmi');
 
   // Uploaded property sheets state
   const [uploadedSheets, setUploadedSheets] = useState([]); // Array of { id, name, properties: [...] }
@@ -268,10 +276,10 @@ function DashboardMapTab() {
 
   // Map tile layer configurations
   const tileConfigs = {
-    mapbox: {
+    ...(MAPBOX_TOKEN ? { mapbox: {
       url: `https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`,
       attribution: '&copy; Mapbox &copy; OpenStreetMap'
-    },
+    }} : {}),
     voyager: {
       url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
       attribution: '&copy; OpenStreetMap, &copy; CartoDB'
@@ -1688,6 +1696,7 @@ function DashboardMapTab() {
                 <MapPin size={14} style={{ color: '#6b7280' }} />
                 <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>Map Style:</label>
                 <div style={{ display: 'flex', gap: '6px' }}>
+                  {MAPBOX_TOKEN && (
                   <button
                     onClick={() => setMapStyle('mapbox')}
                     style={{
@@ -1703,6 +1712,7 @@ function DashboardMapTab() {
                   >
                     Mapbox
                   </button>
+                  )}
                   <button
                     onClick={() => setMapStyle('voyager')}
                     style={{
@@ -1763,6 +1773,97 @@ function DashboardMapTab() {
                   >
                     Dark
                   </button>
+                </div>
+              </div>
+
+              {/* ═══ Data Overlay Layers ═══ */}
+              <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '12px', marginTop: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <Layers size={14} style={{ color: '#6b7280' }} />
+                  <label style={{ fontSize: '13px', fontWeight: '700', color: '#374151' }}>Data Overlays:</label>
+                </div>
+
+                {/* County Heat Map Toggle */}
+                <div style={{
+                  backgroundColor: countyOverlay ? '#eff6ff' : '#f9fafb',
+                  border: `1px solid ${countyOverlay ? '#bfdbfe' : '#e5e7eb'}`,
+                  borderRadius: '8px',
+                  padding: '10px 12px',
+                  marginBottom: '8px',
+                  transition: 'all 0.2s',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#374151' }}>
+                      <input
+                        type="checkbox"
+                        checked={countyOverlay}
+                        onChange={(e) => setCountyOverlay(e.target.checked)}
+                        style={{ accentColor: '#3b82f6', width: '15px', height: '15px', cursor: 'pointer' }}
+                      />
+                      🗺️ County Heat Map
+                    </label>
+                    {countyOverlay && (
+                      <select
+                        value={countyMetric}
+                        onChange={(e) => setCountyMetric(e.target.value)}
+                        style={{
+                          padding: '4px 8px',
+                          fontSize: '11px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '5px',
+                          backgroundColor: 'white',
+                          color: '#374151',
+                          fontWeight: '500',
+                        }}
+                      >
+                        {COUNTY_METRIC_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                  {countyOverlay && <OverlayLegend type="county" metric={countyMetric} />}
+                </div>
+
+                {/* ZIP Centroid Toggle */}
+                <div style={{
+                  backgroundColor: zipOverlay ? '#ecfdf5' : '#f9fafb',
+                  border: `1px solid ${zipOverlay ? '#a7f3d0' : '#e5e7eb'}`,
+                  borderRadius: '8px',
+                  padding: '10px 12px',
+                  transition: 'all 0.2s',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#374151' }}>
+                      <input
+                        type="checkbox"
+                        checked={zipOverlay}
+                        onChange={(e) => setZipOverlay(e.target.checked)}
+                        style={{ accentColor: '#10b981', width: '15px', height: '15px', cursor: 'pointer' }}
+                      />
+                      📍 ZIP Centroid Points
+                    </label>
+                    {zipOverlay && (
+                      <select
+                        value={zipMetric}
+                        onChange={(e) => setZipMetric(e.target.value)}
+                        style={{
+                          padding: '4px 8px',
+                          fontSize: '11px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '5px',
+                          backgroundColor: 'white',
+                          color: '#374151',
+                          fontWeight: '500',
+                        }}
+                      >
+                        {ZIP_METRIC_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                  {zipOverlay && <OverlayLegend type="zip" metric={zipMetric} />}
                 </div>
               </div>
             </div>
@@ -1960,6 +2061,14 @@ function DashboardMapTab() {
                 </Popup>
               </Marker>
             ))}
+
+            {/* Data overlay layers (county heat map + ZIP centroids) */}
+            <MapOverlayLayers
+              countyEnabled={countyOverlay}
+              zipEnabled={zipOverlay}
+              countyMetric={countyMetric}
+              zipMetric={zipMetric}
+            />
           </MapContainer>
         </div>
 

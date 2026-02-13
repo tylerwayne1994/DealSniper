@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-const MAPBOX_TOKEN = 'MAPBOX_TOKEN_REMOVED';
+const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN || '';
 
 function MapViewPage() {
   const mapContainer = useRef(null);

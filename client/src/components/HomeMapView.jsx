@@ -6,7 +6,7 @@ import { loadPipelineDeals, deleteDeal } from '../lib/dealsService';
 import { PipelineTable } from './tables';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-mapboxgl.accessToken = 'MAPBOX_TOKEN_REMOVED';
+mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN || '';
 
 // Geocode an address to coordinates using Mapbox Geocoding API
 async function geocodeAddress(address) {

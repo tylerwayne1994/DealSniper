@@ -18,8 +18,8 @@ from pydantic import BaseModel
 logging.basicConfig(level=logging.INFO, stream=sys.stdout, force=True)
 logger = logging.getLogger(__name__)
 
-# Mapbox API configuration
-MAPBOX_ACCESS_TOKEN = "MAPBOX_TOKEN_REMOVED"
+# Mapbox API configuration – set MAPBOX_ACCESS_TOKEN env var on Render
+MAPBOX_ACCESS_TOKEN = os.environ.get('MAPBOX_ACCESS_TOKEN', '')
 ABSTRACT_API_KEY = "da7556aa39cc4a3c85673d39e0bfda42"
 
 # Path to CSV data files - check multiple locations

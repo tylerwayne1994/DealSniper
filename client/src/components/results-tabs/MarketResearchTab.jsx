@@ -39,8 +39,8 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// Shared Mapbox token (matches dashboard Map tab)
-const MAPBOX_TOKEN = 'MAPBOX_TOKEN_REMOVED';
+// Mapbox token – set REACT_APP_MAPBOX_TOKEN env var in Vercel
+const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN || '';
 
 // Formatting helpers
 const fmt = (val) => val?.toLocaleString() || 'N/A';
