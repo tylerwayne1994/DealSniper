@@ -230,6 +230,7 @@ function PitchDeckPage() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    console.log('[PitchDeck] Uploading', files.length, 'image(s)');
     setIsUploadingImages(true);
     try {
       const formData = new FormData();
@@ -237,7 +238,8 @@ function PitchDeckPage() {
         formData.append('files', files[i]);
       }
 
-      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
+      const API_BASE = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
+      console.log('[PitchDeck] Upload URL:', `${API_BASE}/v2/deals/${selectedDeal.dealId}/upload-images`);
       const resp = await fetch(`${API_BASE}/v2/deals/${selectedDeal.dealId}/upload-images`, {
         method: 'POST',
         body: formData,
@@ -264,7 +266,7 @@ function PitchDeckPage() {
 
   const handleRemoveImage = async (image) => {
     try {
-      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
+      const API_BASE = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
       await fetch(`${API_BASE}/v2/deals/${selectedDeal.dealId}/images`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
@@ -536,15 +538,25 @@ function PitchDeckPage() {
       console.log('[PitchDeck] Request body:', JSON.stringify(requestBody, null, 2));
       console.log('[PitchDeck] Calling API:', `http://127.0.0.1:8010/v2/deals/${selectedDeal.dealId}/pitch-deck`);
       
-      // Simulate progress with stage labels
+      // Simulate progress with stage labels — keeps animating so user knows it's working
       const stages = [
         { pct: 10, label: 'Loading deal data...' },
-        { pct: 25, label: 'Stage 1: Analyzing financials...' },
-        { pct: 45, label: 'Stage 1: Building deal summary...' },
-        { pct: 60, label: 'Stage 2: Designing HTML slides...' },
-        { pct: 75, label: 'Stage 2: Generating visualizations...' },
-        { pct: 85, label: 'Stage 2: Styling slides...' },
-        { pct: 92, label: 'Finalizing pitch deck...' },
+        { pct: 20, label: 'Stage 1: Analyzing financials...' },
+        { pct: 35, label: 'Stage 1: Building deal summary...' },
+        { pct: 50, label: 'Stage 2: Designing HTML slides...' },
+        { pct: 60, label: 'Stage 2: Generating slide layouts...' },
+        { pct: 68, label: 'Stage 2: Rendering charts & tables...' },
+        { pct: 75, label: 'Stage 2: Styling slides...' },
+        { pct: 80, label: 'Stage 2: Building data visualizations...' },
+        { pct: 84, label: 'Stage 2: Generating 16 slides...' },
+        { pct: 87, label: 'Almost there — finalizing slides...' },
+        { pct: 89, label: 'Almost there — polishing design...' },
+        { pct: 91, label: 'Almost there — assembling deck...' },
+        { pct: 93, label: 'Almost there — this takes 1-3 min...' },
+        { pct: 94, label: 'Still working — large deck generation...' },
+        { pct: 95, label: 'Still working — hang tight...' },
+        { pct: 96, label: 'Still working — almost done...' },
+        { pct: 97, label: 'Wrapping up...' },
       ];
       let stageIdx = 0;
       const progressInterval = setInterval(() => {
@@ -553,9 +565,9 @@ function PitchDeckPage() {
           setGenerationStage(stages[stageIdx].label);
           stageIdx++;
         }
-      }, 3000);
+      }, 5000);
 
-      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
+      const API_BASE = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
       const response = await fetch(`${API_BASE}/v2/deals/${selectedDeal.dealId}/pitch-deck`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
