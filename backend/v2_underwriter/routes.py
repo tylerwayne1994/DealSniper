@@ -3374,7 +3374,6 @@ async def upload_property_images(request: Request, deal_id: str):
     Returns array of { url, filename, storage_path }.
     """
     import uuid
-    from fastapi import UploadFile
 
     log.info(f"[Images] Upload request for deal {deal_id}")
 
@@ -3392,6 +3391,24 @@ async def upload_property_images(request: Request, deal_id: str):
         raise HTTPException(status_code=503, detail="Storage unavailable")
 
     bucket = "deal-images"
+
+    # Ensure bucket exists and is public
+    try:
+        existing_buckets = sb.storage.list_buckets()
+        bucket_names = [b.name if hasattr(b, 'name') else b.get('name', '') for b in existing_buckets]
+        if bucket not in bucket_names:
+            log.info(f"[Images] Creating bucket '{bucket}' (public)")
+            sb.storage.create_bucket(bucket, options={"public": True})
+        else:
+            # Try to make it public if it isn't already
+            try:
+                sb.storage.update_bucket(bucket, options={"public": True})
+                log.info(f"[Images] Ensured bucket '{bucket}' is public")
+            except Exception:
+                pass  # May fail if already public, that's fine
+    except Exception as bucket_err:
+        log.warning(f"[Images] Bucket check/create warning: {bucket_err}")
+
     uploaded = []
 
     for f in files:
@@ -3409,22 +3426,40 @@ async def upload_property_images(request: Request, deal_id: str):
             safe_name = f"{uuid.uuid4().hex[:12]}.{ext}"
             storage_path = f"{deal_id}/{safe_name}"
 
+            log.info(f"[Images] Uploading {f.filename} -> {storage_path} ({len(file_bytes)} bytes, {ct})")
+
             sb.storage.from_(bucket).upload(
                 path=storage_path,
                 file=file_bytes,
                 file_options={"content-type": ct, "upsert": "true"},
             )
 
+            # Get public URL
             public_url = sb.storage.from_(bucket).get_public_url(storage_path)
+            log.info(f"[Images] Public URL: {public_url}")
+
+            # Also try creating a signed URL as fallback (valid for 1 year)
+            try:
+                signed = sb.storage.from_(bucket).create_signed_url(storage_path, 60 * 60 * 24 * 365)
+                signed_url = signed.get("signedURL") or signed.get("signedUrl") or ""
+                if signed_url:
+                    log.info(f"[Images] Signed URL available: {signed_url[:80]}...")
+            except Exception:
+                signed_url = ""
+
+            # Use the public URL, fall back to signed if needed
+            final_url = public_url or signed_url
 
             uploaded.append({
-                "url": public_url,
+                "url": final_url,
                 "filename": f.filename or safe_name,
                 "storage_path": storage_path,
             })
-            log.info(f"[Images] Uploaded {storage_path}")
+            log.info(f"[Images] ✅ Uploaded {storage_path}")
         except Exception as e:
-            log.error(f"[Images] Failed to upload {f.filename}: {e}")
+            log.error(f"[Images] ❌ Failed to upload {getattr(f, 'filename', 'unknown')}: {e}")
+            import traceback
+            log.error(f"[Images] Traceback: {traceback.format_exc()}")
             continue
 
     # Append to deal's images JSONB column
@@ -3437,6 +3472,8 @@ async def upload_property_images(request: Request, deal_id: str):
             log.info(f"[Images] Updated deal {deal_id} with {len(uploaded)} new images (total: {len(new_images)})")
         except Exception as e:
             log.warning(f"[Images] Failed to update deal images column: {e}")
+    else:
+        log.warning(f"[Images] No images were successfully uploaded for deal {deal_id}")
 
     return JSONResponse({
         "success": True,

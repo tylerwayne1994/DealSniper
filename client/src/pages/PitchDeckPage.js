@@ -536,7 +536,6 @@ function PitchDeckPage() {
       };
 
       console.log('[PitchDeck] Request body:', JSON.stringify(requestBody, null, 2));
-      console.log('[PitchDeck] Calling API:', `http://127.0.0.1:8010/v2/deals/${selectedDeal.dealId}/pitch-deck`);
       
       // Simulate progress with stage labels — keeps animating so user knows it's working
       const stages = [
@@ -568,6 +567,7 @@ function PitchDeckPage() {
       }, 5000);
 
       const API_BASE = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
+      console.log('[PitchDeck] Calling API:', `${API_BASE}/v2/deals/${selectedDeal.dealId}/pitch-deck`);
       const response = await fetch(`${API_BASE}/v2/deals/${selectedDeal.dealId}/pitch-deck`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1219,6 +1219,13 @@ function PitchDeckPage() {
                           <img
                             src={img.url}
                             alt={img.filename || `Property ${idx + 1}`}
+                            crossOrigin="anonymous"
+                            onError={(e) => {
+                              console.warn('[PitchDeck] Image failed to load:', img.url);
+                              e.target.style.display = 'none';
+                              e.target.parentElement.style.backgroundColor = '#fee2e2';
+                              e.target.parentElement.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#dc2626;font-size:11px;padding:8px;text-align:center;">⚠️ Image failed to load</div>`;
+                            }}
                             style={{
                               width: '100%',
                               height: '100%',

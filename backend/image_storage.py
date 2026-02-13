@@ -28,6 +28,21 @@ def upload_images_to_supabase(deal_id: str, images: List[Dict[str, Any]]) -> Lis
     supabase = get_supabase_client()
     bucket_name = "deal-images"
     uploaded_images = []
+
+    # Ensure bucket exists and is public
+    try:
+        existing_buckets = supabase.storage.list_buckets()
+        bucket_names = [b.name if hasattr(b, 'name') else b.get('name', '') for b in existing_buckets]
+        if bucket_name not in bucket_names:
+            print(f"[ImageStorage] Creating bucket '{bucket_name}' (public)")
+            supabase.storage.create_bucket(bucket_name, options={"public": True})
+        else:
+            try:
+                supabase.storage.update_bucket(bucket_name, options={"public": True})
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"[ImageStorage] Bucket check/create warning: {e}")
     
     for img in images:
         try:
