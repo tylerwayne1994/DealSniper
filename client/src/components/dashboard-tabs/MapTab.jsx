@@ -94,6 +94,7 @@ function DashboardMapTab() {
   const [mapFilter, setMapFilter] = useState('all'); // 'all' | 'rapidfire' | 'prospects' | 'pipeline'
   const [userId, setUserId] = useState(null);
   const [mapStyle, setMapStyle] = useState('voyager');
+  const [isChatMinimized, setIsChatMinimized] = useState(false);
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -276,6 +277,14 @@ function DashboardMapTab() {
   const tileConfigs = {
     voyager: {
       url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+      attribution: '&copy; OpenStreetMap, &copy; CartoDB'
+    },
+    modern: {
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+      attribution: '&copy; Esri, HERE, Garmin, USGS'
+    },
+    clean: {
+      url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png',
       attribution: '&copy; OpenStreetMap, &copy; CartoDB'
     },
     satellite: {
@@ -1689,7 +1698,7 @@ function DashboardMapTab() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <MapPin size={14} style={{ color: '#6b7280' }} />
                 <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>Map Style:</label>
-                <div style={{ display: 'flex', gap: '6px' }}>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                   <button
                     onClick={() => setMapStyle('voyager')}
                     style={{
@@ -1697,6 +1706,36 @@ function DashboardMapTab() {
                       backgroundColor: mapStyle === 'voyager' ? '#3b82f6' : 'white',
                       color: mapStyle === 'voyager' ? 'white' : '#6b7280',
                       border: mapStyle === 'voyager' ? 'none' : '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Voyager
+                  </button>
+                  <button
+                    onClick={() => setMapStyle('modern')}
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: mapStyle === 'modern' ? '#3b82f6' : 'white',
+                      color: mapStyle === 'modern' ? 'white' : '#6b7280',
+                      border: mapStyle === 'modern' ? 'none' : '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Modern
+                  </button>
+                  <button
+                    onClick={() => setMapStyle('clean')}
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: mapStyle === 'clean' ? '#3b82f6' : 'white',
+                      color: mapStyle === 'clean' ? 'white' : '#6b7280',
+                      border: mapStyle === 'clean' ? 'none' : '1px solid #d1d5db',
                       borderRadius: '6px',
                       fontSize: '12px',
                       fontWeight: '500',
@@ -2051,37 +2090,41 @@ function DashboardMapTab() {
 
       {/* Max AI Sidebar - Right Side */}
       <div style={{
-        width: 420,
-        minWidth: 420,
-        maxWidth: 420,
+        width: isChatMinimized ? 40 : 420,
+        minWidth: isChatMinimized ? 40 : 420,
+        maxWidth: isChatMinimized ? 40 : 420,
         flexShrink: 0,
         borderLeft: '1px solid #e5e7eb',
         display: 'flex',
         flexDirection: 'column',
         backgroundColor: '#ffffff',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        transition: 'width 0.2s ease, min-width 0.2s ease, max-width 0.2s ease'
       }}>
         {/* AI Header */}
         <div style={{
-          padding: '10px 14px',
+          padding: isChatMinimized ? '8px' : '10px 14px',
           borderBottom: '1px solid #e5e7eb',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          justifyContent: isChatMinimized ? 'center' : 'space-between',
           fontSize: 15,
           fontWeight: 600,
           color: '#111827'
         }}>
-          <span>Max</span>
+          {!isChatMinimized && <span>Max</span>}
           <button
             type="button"
-            style={{ border: 'none', background: 'transparent', cursor: 'default', color: '#9ca3af' }}
+            onClick={() => setIsChatMinimized(!isChatMinimized)}
+            title={isChatMinimized ? 'Expand chat' : 'Minimize chat'}
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#374151' }}
           >
             <MessageSquare size={15} />
           </button>
         </div>
 
         {/* AI Body - Messages */}
+        {!isChatMinimized && (
         <div style={{
           flex: 1,
           padding: '12px 14px',
@@ -2130,8 +2173,10 @@ function DashboardMapTab() {
             )}
           </div>
         </div>
+        )}
 
         {/* AI Input */}
+        {!isChatMinimized && (
         <div style={{
           padding: '12px 14px',
           borderTop: '1px solid #e5e7eb',
@@ -2329,6 +2374,7 @@ MAP COMMANDS (output JSON at end of response):
             </button>
           </div>
         </div>
+        )}
       </div>
 
       {/* Property Sheet Preview Modal */}
