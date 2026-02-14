@@ -68,6 +68,7 @@ const ResultsPageV2 = ({
   const [pipelineSuccess, setPipelineSuccess] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [amortSubTab, setAmortSubTab] = useState('schedule');
+  const [rubsEnabled, setRubsEnabled] = useState(false);
   const [marketData, setMarketData] = useState(null);
   const [marketDataLoading, setMarketDataLoading] = useState(false);
   const [documentAnalysis, setDocumentAnalysis] = useState(scenarioData?.document_analysis || null);
@@ -2396,38 +2397,55 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
 
         // ═══════════════════════════════════════════════════════════
         // RUBS MODEL — Ratio Utility Billing System
-        // Owner pays master utility bills. Tenants reimburse a %
-        // allocated proportionally by unit count, sqft, or occupancy.
+        // Auto-generate utility breakdown from total utility expense
+        // using industry-standard CRE proportions, then calculate
+        // per-unit RUBS charges with master on/off toggle.
         // ═══════════════════════════════════════════════════════════
         const rubsConfig = scenarioData.value_add?.rubs_config || {};
-        const valueAddUtilityBreakdown = scenarioData.expenses?.utility_breakdown || {};
+        const totalUtilityCost = currentExpenses.utilities || 0;
+
+        // Industry-standard utility cost breakdown proportions for multifamily
+        // Source: IREM/NAA benchmarks — Water/Sewer ~35%, Electric ~30%, Gas ~15%, Trash ~20%
+        const utilityProportions = { water_sewer: 0.35, electric: 0.30, gas: 0.15, trash: 0.20 };
+        const utilityLabels = { water_sewer: 'Water & Sewer', electric: 'Electric', gas: 'Gas', trash: 'Trash' };
+        const utilityIcons = { water_sewer: '💧', electric: '⚡', gas: '🔥', trash: '🗑️' };
+
+        // Build utility breakdown: use custom values if set, otherwise split from total
+        const utilityBreakdown = {};
+        Object.entries(utilityProportions).forEach(([key, pct]) => {
+          const customVal = rubsConfig[key]?.annual_cost;
+          utilityBreakdown[key] = customVal != null && customVal > 0 ? customVal : Math.round(totalUtilityCost * pct);
+        });
+        const computedUtilityTotal = Object.values(utilityBreakdown).reduce((s, v) => s + v, 0);
 
         // Total property sqft for sqft-based allocation
         const totalPropertySqft = valueAddUnitMix.reduce((s, u) => s + ((u.units || 0) * (u.sqft || u.avg_sqft || 800)), 0);
         const avgSqftPerUnit = valueAddTotalUnits > 0 ? totalPropertySqft / valueAddTotalUnits : 800;
 
-        // Build the RUBS schedule: for each utility, compute per-unit monthly charge
-        const rubsSchedule = Object.entries(valueAddUtilityBreakdown).map(([utility, annualCost]) => {
+        // Default recovery percentages by utility type
+        const defaultRecovery = { water_sewer: 90, electric: 85, gas: 85, trash: 95 };
+
+        // Build the RUBS schedule from auto-generated utility breakdown
+        const rubsSchedule = Object.entries(utilityBreakdown).map(([utility, annualCost]) => {
           const cost = Number(annualCost) || 0;
           const cfg = rubsConfig[utility] || {};
-          const enabled = cfg.tenant_paid || false;
+          // Each utility line is enabled when master RUBS toggle is ON (individual overrides via cfg)
+          const lineEnabled = rubsEnabled && (cfg.enabled !== false);
           const method = cfg.split_method || 'per_unit';
-          const recoveryPct = cfg.recovery_pct != null ? cfg.recovery_pct : 90; // default 90% recovery
+          const recoveryPct = cfg.recovery_pct != null ? cfg.recovery_pct : (defaultRecovery[utility] || 90);
           const ownerRetainPct = 100 - recoveryPct;
 
           // Annual amount recoverable from tenants
           const recoverableAnnual = cost * (recoveryPct / 100);
-          // Monthly charge per unit (simplified — per_unit divides equally)
+          // Monthly charge per unit
           let monthlyPerUnit = 0;
-          if (enabled && valueAddTotalUnits > 0) {
+          if (lineEnabled && valueAddTotalUnits > 0) {
             if (method === 'per_unit') {
               monthlyPerUnit = recoverableAnnual / 12 / valueAddTotalUnits;
             } else if (method === 'by_sqft') {
-              // Charge per sqft/mo, then multiply by avg unit sqft
               const perSqftMo = recoverableAnnual / 12 / (totalPropertySqft || 1);
               monthlyPerUnit = perSqftMo * avgSqftPerUnit;
             } else if (method === 'by_occupancy') {
-              // Assume 93% occupancy baseline
               const occRate = 1 - ((scenarioData.expenses?.vacancy_pct || 5) / 100);
               const occupiedUnits = Math.round(valueAddTotalUnits * occRate);
               monthlyPerUnit = occupiedUnits > 0 ? recoverableAnnual / 12 / occupiedUnits : 0;
@@ -2436,16 +2454,19 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
 
           return {
             utility,
-            label: utility.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+            icon: utilityIcons[utility] || '📋',
+            label: utilityLabels[utility] || utility.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
             annualCost: cost,
-            enabled,
+            monthlyCost: cost / 12,
+            perUnitMonthly: valueAddTotalUnits > 0 ? cost / 12 / valueAddTotalUnits : 0,
+            enabled: lineEnabled,
             method,
             recoveryPct,
             ownerRetainPct,
-            recoverableAnnual: enabled ? recoverableAnnual : 0,
-            ownerRetainedAnnual: enabled ? cost - recoverableAnnual : cost,
+            recoverableAnnual: lineEnabled ? recoverableAnnual : 0,
+            ownerRetainedAnnual: lineEnabled ? cost - recoverableAnnual : cost,
             monthlyPerUnit,
-            annualRecovery: enabled ? monthlyPerUnit * valueAddTotalUnits * 12 : 0,
+            annualRecovery: lineEnabled ? monthlyPerUnit * valueAddTotalUnits * 12 : 0,
           };
         });
 
@@ -2578,123 +2599,182 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
                 </div>
               </div>
 
-              {/* ═══ 3. RUBS MODEL — Real billing schedule ═══ */}
+              {/* ═══ 3. RUBS MODEL — Auto-calculated with utility breakdown ═══ */}
               <div style={vSC}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <div>
-                    <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: vVL }}>RUBS — Ratio Utility Billing System</h3>
-                    <p style={{ margin: '4px 0 0', fontSize: 12, color: vLB }}>
-                      Owner pays master utility bills → tenants reimburse proportionally by unit count, sqft, or occupancy
-                    </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: vVL }}>RUBS — Ratio Utility Billing System</h3>
+                      <p style={{ margin: '4px 0 0', fontSize: 12, color: vLB }}>
+                        Owner pays master utility bills → tenants reimburse proportionally
+                      </p>
+                    </div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 11, color: vLB }}>Avg unit size</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: vVL }}>{Math.round(avgSqftPerUnit).toLocaleString()} sqft</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ textAlign: 'right', marginRight: 8 }}>
+                      <div style={{ fontSize: 11, color: vLB }}>Implement RUBS</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: rubsEnabled ? '#4f46e5' : vLB }}>{rubsEnabled ? 'ON' : 'OFF'}</div>
+                    </div>
+                    <VToggle checked={rubsEnabled} onChange={(v) => setRubsEnabled(v)} />
                   </div>
                 </div>
 
-                {/* RUBS Billing Schedule Table */}
-                <div style={{ overflowX: 'auto', marginTop: 20 }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                    <thead>
-                      <tr style={{ background: '#f8fafc' }}>
-                        {['Utility', 'Annual Cost', 'RUBS', 'Allocation', 'Recovery %', 'Mo / Unit', 'Annual Recovery', 'Owner Retains'].map(h => (
-                          <th key={h} style={{ padding: '10px 12px', textAlign: h === 'Utility' ? 'left' : (h === 'RUBS' || h === 'Allocation' ? 'center' : 'right'), fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: `2px solid ${vB}`, whiteSpace: 'nowrap' }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rubsSchedule.map((row) => (
-                        <tr key={row.utility} style={{ borderBottom: `1px solid ${vB}`, opacity: row.enabled ? 1 : 0.5 }}>
-                          <td style={{ padding: '12px 12px', fontWeight: 600, color: vVL }}>{row.label}</td>
-                          <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 600 }}>{vFmt(row.annualCost)}</td>
-                          <td style={{ padding: '12px 12px', textAlign: 'center' }}>
-                            <VToggle checked={row.enabled} onChange={checked => {
-                              const nc = { ...rubsConfig, [row.utility]: { ...rubsConfig[row.utility], tenant_paid: checked, split_method: rubsConfig[row.utility]?.split_method || 'per_unit', recovery_pct: rubsConfig[row.utility]?.recovery_pct ?? 90 }};
-                              handleFieldChange('value_add.rubs_config', nc);
-                            }} />
-                          </td>
-                          <td style={{ padding: '12px 12px', textAlign: 'center' }}>
-                            {row.enabled ? (
-                              <select value={row.method} onChange={e => {
-                                handleFieldChange('value_add.rubs_config', { ...rubsConfig, [row.utility]: { ...rubsConfig[row.utility], split_method: e.target.value }});
-                              }} style={{ padding: '4px 8px', border: `1px solid ${vB}`, borderRadius: 6, fontSize: 11, fontWeight: 600, color: vVL, background: '#f9fafb', cursor: 'pointer' }}>
-                                <option value="per_unit">Per Unit</option>
-                                <option value="by_sqft">By Sqft</option>
-                                <option value="by_occupancy">By Occupancy</option>
-                              </select>
-                            ) : (
-                              <span style={{ fontSize: 11, color: vLB }}>—</span>
-                            )}
-                          </td>
-                          <td style={{ padding: '12px 12px', textAlign: 'right' }}>
-                            {row.enabled ? (
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
-                                <input type="number" min="0" max="100" value={row.recoveryPct} onChange={e => {
-                                  const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                                  handleFieldChange('value_add.rubs_config', { ...rubsConfig, [row.utility]: { ...rubsConfig[row.utility], recovery_pct: v }});
-                                }} style={{ ...vINP, width: 55, fontSize: 12, padding: '4px 6px' }} />
-                                <span style={{ fontSize: 11, color: vLB }}>%</span>
-                              </div>
-                            ) : (
-                              <span style={{ fontSize: 11, color: vLB }}>—</span>
-                            )}
-                          </td>
-                          <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 700, color: row.enabled ? '#4f46e5' : vLB }}>
-                            {row.enabled ? `$${row.monthlyPerUnit.toFixed(0)}` : '—'}
-                          </td>
-                          <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 700, color: row.enabled ? '#16a34a' : vLB }}>
-                            {row.enabled ? vFmt(row.annualRecovery) : '—'}
-                          </td>
-                          <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 600, color: vLB }}>
-                            {vFmt(row.ownerRetainedAnnual)}
-                          </td>
-                        </tr>
-                      ))}
-                      {/* Totals */}
-                      <tr style={{ background: '#f8fafc', borderTop: `2px solid ${vB}` }}>
-                        <td style={{ padding: '12px 12px', fontWeight: 800, color: vVL }}>Total</td>
-                        <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800 }}>{vFmt(rubsSchedule.reduce((s, r) => s + r.annualCost, 0))}</td>
-                        <td style={{ padding: '12px 12px' }} />
-                        <td style={{ padding: '12px 12px' }} />
-                        <td style={{ padding: '12px 12px' }} />
-                        <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#4f46e5' }}>
-                          ${totalMonthlyRubsPerUnit.toFixed(0)}/unit
-                        </td>
-                        <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#16a34a' }}>{vFmt(totalRubsRecovery)}</td>
-                        <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: vLB }}>{vFmt(totalOwnerRetained)}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                {/* Current Utility Costs Breakdown */}
+                <div style={{ marginTop: 20, marginBottom: 20 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: vLB, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10 }}>Current Utility Costs</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 }}>
+                    {rubsSchedule.map((row) => (
+                      <div key={row.utility} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', border: `1px solid ${vB}`, textAlign: 'center' }}>
+                        <div style={{ fontSize: 18, marginBottom: 4 }}>{row.icon}</div>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase', marginBottom: 4 }}>{row.label}</div>
+                        <div style={{ fontSize: 16, fontWeight: 800, color: vVL }}>{vFmt(row.annualCost)}<span style={{ fontSize: 10, color: vLB }}>/yr</span></div>
+                        <div style={{ fontSize: 11, color: vLB, marginTop: 2 }}>{vFmt(Math.round(row.monthlyCost))}/mo</div>
+                        <div style={{ fontSize: 10, color: vLB }}>{vFmt(Math.round(row.perUnitMonthly))}/unit/mo</div>
+                      </div>
+                    ))}
+                    <div style={{ background: totalUtilityCost > 0 ? '#eef2ff' : '#f8fafc', borderRadius: 10, padding: '12px 14px', border: `1px solid ${totalUtilityCost > 0 ? '#c7d2fe' : vB}`, textAlign: 'center' }}>
+                      <div style={{ fontSize: 18, marginBottom: 4 }}>📊</div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: totalUtilityCost > 0 ? '#4338ca' : vLB, textTransform: 'uppercase', marginBottom: 4 }}>Total</div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: totalUtilityCost > 0 ? '#4338ca' : vVL }}>{vFmt(computedUtilityTotal)}<span style={{ fontSize: 10, color: vLB }}>/yr</span></div>
+                      <div style={{ fontSize: 11, color: vLB, marginTop: 2 }}>{vFmt(Math.round(computedUtilityTotal / 12))}/mo</div>
+                      <div style={{ fontSize: 10, color: vLB }}>{valueAddTotalUnits > 0 ? vFmt(Math.round(computedUtilityTotal / 12 / valueAddTotalUnits)) : '$0'}/unit/mo</div>
+                    </div>
+                  </div>
+                  {totalUtilityCost === 0 && (
+                    <div style={{ marginTop: 8, padding: '8px 12px', background: '#fffbeb', borderRadius: 8, border: '1px solid #fde68a', fontSize: 11, color: '#92400e' }}>
+                      ⚠️ No utility costs found in parsed data. RUBS estimates will be $0. Enter utility costs in the Expenses V2 tab or manually adjust below.
+                    </div>
+                  )}
                 </div>
+
+                {/* RUBS Billing Schedule Table — only shown when RUBS is ON */}
+                {rubsEnabled && (
+                  <>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#4338ca', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10 }}>RUBS Billing Schedule</div>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                        <thead>
+                          <tr style={{ background: '#eef2ff' }}>
+                            {['Utility', 'Annual Cost', 'Enabled', 'Allocation', 'Recovery %', 'RUBS / Unit / Mo', 'Annual Recovery', 'Owner Retains'].map(h => (
+                              <th key={h} style={{ padding: '10px 12px', textAlign: h === 'Utility' ? 'left' : (h === 'Enabled' || h === 'Allocation' ? 'center' : 'right'), fontSize: 10, fontWeight: 700, color: '#4338ca', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #c7d2fe', whiteSpace: 'nowrap' }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rubsSchedule.map((row) => (
+                            <tr key={row.utility} style={{ borderBottom: `1px solid ${vB}`, opacity: row.enabled ? 1 : 0.5 }}>
+                              <td style={{ padding: '12px 12px', fontWeight: 600, color: vVL }}>
+                                <span style={{ marginRight: 6 }}>{row.icon}</span>{row.label}
+                              </td>
+                              <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 600 }}>
+                                <input type="number" value={row.annualCost} onChange={e => {
+                                  const v = parseFloat(e.target.value) || 0;
+                                  const nc = { ...rubsConfig, [row.utility]: { ...rubsConfig[row.utility], annual_cost: v }};
+                                  handleFieldChange('value_add.rubs_config', nc);
+                                }} style={{ ...vINP, width: 90, fontSize: 12, padding: '4px 6px' }} />
+                              </td>
+                              <td style={{ padding: '12px 12px', textAlign: 'center' }}>
+                                <VToggle checked={row.enabled} onChange={checked => {
+                                  const nc = { ...rubsConfig, [row.utility]: { ...rubsConfig[row.utility], enabled: checked, split_method: rubsConfig[row.utility]?.split_method || 'per_unit', recovery_pct: rubsConfig[row.utility]?.recovery_pct ?? (defaultRecovery[row.utility] || 90) }};
+                                  handleFieldChange('value_add.rubs_config', nc);
+                                }} />
+                              </td>
+                              <td style={{ padding: '12px 12px', textAlign: 'center' }}>
+                                {row.enabled ? (
+                                  <select value={row.method} onChange={e => {
+                                    handleFieldChange('value_add.rubs_config', { ...rubsConfig, [row.utility]: { ...rubsConfig[row.utility], split_method: e.target.value }});
+                                  }} style={{ padding: '4px 8px', border: `1px solid ${vB}`, borderRadius: 6, fontSize: 11, fontWeight: 600, color: vVL, background: '#f9fafb', cursor: 'pointer' }}>
+                                    <option value="per_unit">Per Unit</option>
+                                    <option value="by_sqft">By Sqft</option>
+                                    <option value="by_occupancy">By Occupancy</option>
+                                  </select>
+                                ) : (
+                                  <span style={{ fontSize: 11, color: vLB }}>—</span>
+                                )}
+                              </td>
+                              <td style={{ padding: '12px 12px', textAlign: 'right' }}>
+                                {row.enabled ? (
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
+                                    <input type="number" min="0" max="100" value={row.recoveryPct} onChange={e => {
+                                      const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                                      handleFieldChange('value_add.rubs_config', { ...rubsConfig, [row.utility]: { ...rubsConfig[row.utility], recovery_pct: v }});
+                                    }} style={{ ...vINP, width: 55, fontSize: 12, padding: '4px 6px' }} />
+                                    <span style={{ fontSize: 11, color: vLB }}>%</span>
+                                  </div>
+                                ) : (
+                                  <span style={{ fontSize: 11, color: vLB }}>—</span>
+                                )}
+                              </td>
+                              <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 700, color: row.enabled ? '#4f46e5' : vLB }}>
+                                {row.enabled ? `$${row.monthlyPerUnit.toFixed(0)}` : '—'}
+                              </td>
+                              <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 700, color: row.enabled ? '#16a34a' : vLB }}>
+                                {row.enabled ? vFmt(Math.round(row.annualRecovery)) : '—'}
+                              </td>
+                              <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 600, color: vLB }}>
+                                {vFmt(Math.round(row.ownerRetainedAnnual))}
+                              </td>
+                            </tr>
+                          ))}
+                          {/* Totals */}
+                          <tr style={{ background: '#eef2ff', borderTop: '2px solid #c7d2fe' }}>
+                            <td style={{ padding: '12px 12px', fontWeight: 800, color: '#4338ca' }}>Total</td>
+                            <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#4338ca' }}>{vFmt(computedUtilityTotal)}</td>
+                            <td style={{ padding: '12px 12px' }} />
+                            <td style={{ padding: '12px 12px' }} />
+                            <td style={{ padding: '12px 12px' }} />
+                            <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#4f46e5' }}>
+                              ${totalMonthlyRubsPerUnit.toFixed(0)}/unit
+                            </td>
+                            <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#16a34a' }}>{vFmt(Math.round(totalRubsRecovery))}</td>
+                            <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: vLB }}>{vFmt(Math.round(totalOwnerRetained))}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
 
                 {/* RUBS Summary Cards */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginTop: 20 }}>
-                  <div style={{ background: '#eef2ff', borderRadius: 10, padding: '16px 18px', border: '1px solid #c7d2fe' }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: '#4338ca', textTransform: 'uppercase', marginBottom: 4 }}>Total RUBS / Unit / Mo</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: '#4338ca' }}>${totalMonthlyRubsPerUnit.toFixed(0)}</div>
-                    <div style={{ fontSize: 10, color: '#6366f1', marginTop: 2 }}>Added to tenant bill monthly</div>
+                  <div style={{ background: rubsEnabled ? '#eef2ff' : '#f8fafc', borderRadius: 10, padding: '16px 18px', border: `1px solid ${rubsEnabled ? '#c7d2fe' : vB}` }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: rubsEnabled ? '#4338ca' : vLB, textTransform: 'uppercase', marginBottom: 4 }}>RUBS / Unit / Mo</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: rubsEnabled ? '#4338ca' : vLB }}>${rubsEnabled ? totalMonthlyRubsPerUnit.toFixed(0) : '0'}</div>
+                    <div style={{ fontSize: 10, color: rubsEnabled ? '#6366f1' : vLB, marginTop: 2 }}>Added to tenant bill monthly</div>
                   </div>
-                  <div style={{ background: '#ecfdf5', borderRadius: 10, padding: '16px 18px', border: '1px solid #bbf7d0' }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: '#166534', textTransform: 'uppercase', marginBottom: 4 }}>Annual RUBS Recovery</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: '#166534' }}>{vFmt(totalRubsRecovery)}</div>
-                    <div style={{ fontSize: 10, color: '#16a34a', marginTop: 2 }}>Reduces owner utility expense</div>
+                  <div style={{ background: rubsEnabled ? '#ecfdf5' : '#f8fafc', borderRadius: 10, padding: '16px 18px', border: `1px solid ${rubsEnabled ? '#bbf7d0' : vB}` }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: rubsEnabled ? '#166534' : vLB, textTransform: 'uppercase', marginBottom: 4 }}>Annual RUBS Recovery</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: rubsEnabled ? '#166534' : vLB }}>{rubsEnabled ? vFmt(Math.round(totalRubsRecovery)) : '$0'}</div>
+                    <div style={{ fontSize: 10, color: rubsEnabled ? '#16a34a' : vLB, marginTop: 2 }}>Reduces owner utility expense</div>
                   </div>
                   <div style={{ background: '#f8fafc', borderRadius: 10, padding: '16px 18px', border: `1px solid ${vB}` }}>
                     <div style={{ fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase', marginBottom: 4 }}>Owner Retains</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: vVL }}>{vFmt(totalOwnerRetained)}</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: vVL }}>{rubsEnabled ? vFmt(Math.round(totalOwnerRetained)) : vFmt(computedUtilityTotal)}</div>
                     <div style={{ fontSize: 10, color: vLB, marginTop: 2 }}>Common area + unrecovered %</div>
                   </div>
                   <div style={{ background: '#f8fafc', borderRadius: 10, padding: '16px 18px', border: `1px solid ${vB}` }}>
                     <div style={{ fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase', marginBottom: 4 }}>Effective Recovery Rate</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: vVL }}>
-                      {rubsSchedule.reduce((s, r) => s + r.annualCost, 0) > 0
-                        ? `${(totalRubsRecovery / rubsSchedule.reduce((s, r) => s + r.annualCost, 0) * 100).toFixed(0)}%`
+                    <div style={{ fontSize: 20, fontWeight: 800, color: rubsEnabled && totalRubsRecovery > 0 ? '#16a34a' : vVL }}>
+                      {rubsEnabled && computedUtilityTotal > 0
+                        ? `${(totalRubsRecovery / computedUtilityTotal * 100).toFixed(0)}%`
                         : '0%'}
                     </div>
                     <div style={{ fontSize: 10, color: vLB, marginTop: 2 }}>Of total utility spend recovered</div>
                   </div>
                 </div>
+
+                {/* RUBS NOI Impact — only when ON */}
+                {rubsEnabled && totalRubsRecovery > 0 && (
+                  <div style={{ marginTop: 16, background: 'linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)', borderRadius: 10, padding: '14px 18px', border: '1px solid #bbf7d0', display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 16 }}>✅</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#166534' }}>RUBS Active</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: '#15803d' }}>
+                      NOI increases by <strong>{vFmt(Math.round(totalRubsRecovery))}/yr</strong> • Stabilized NOI: <strong>{vFmt(Math.round(stabilizedNOI))}</strong> • Value creation boosted by <strong>{vFmt(Math.round(valueAddMarketCapRate > 0 ? totalRubsRecovery / valueAddMarketCapRate : 0))}</strong>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* ═══ 4. VALUE-ADD WATERFALL ═══ */}
