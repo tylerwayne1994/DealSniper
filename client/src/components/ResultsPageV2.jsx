@@ -2408,7 +2408,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
         // Source: IREM/NAA benchmarks — Water/Sewer ~35%, Electric ~30%, Gas ~15%, Trash ~20%
         const utilityProportions = { water_sewer: 0.35, electric: 0.30, gas: 0.15, trash: 0.20 };
         const utilityLabels = { water_sewer: 'Water & Sewer', electric: 'Electric', gas: 'Gas', trash: 'Trash' };
-        const utilityIcons = { water_sewer: '💧', electric: '⚡', gas: '🔥', trash: '🗑️' };
+        const utilityIcons = { water_sewer: '', electric: '', gas: '', trash: '' };
 
         // Build utility breakdown: use custom values if set, otherwise split from total
         const utilityBreakdown = {};
@@ -2454,7 +2454,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
 
           return {
             utility,
-            icon: utilityIcons[utility] || '📋',
+            icon: utilityIcons[utility] || '',
             label: utilityLabels[utility] || utility.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
             annualCost: cost,
             monthlyCost: cost / 12,
@@ -2625,7 +2625,6 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 }}>
                     {rubsSchedule.map((row) => (
                       <div key={row.utility} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', border: `1px solid ${vB}`, textAlign: 'center' }}>
-                        <div style={{ fontSize: 18, marginBottom: 4 }}>{row.icon}</div>
                         <div style={{ fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase', marginBottom: 4 }}>{row.label}</div>
                         <div style={{ fontSize: 16, fontWeight: 800, color: vVL }}>{vFmt(row.annualCost)}<span style={{ fontSize: 10, color: vLB }}>/yr</span></div>
                         <div style={{ fontSize: 11, color: vLB, marginTop: 2 }}>{vFmt(Math.round(row.monthlyCost))}/mo</div>
@@ -2664,7 +2663,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
                           {rubsSchedule.map((row) => (
                             <tr key={row.utility} style={{ borderBottom: `1px solid ${vB}`, opacity: row.enabled ? 1 : 0.5 }}>
                               <td style={{ padding: '12px 12px', fontWeight: 600, color: vVL }}>
-                                <span style={{ marginRight: 6 }}>{row.icon}</span>{row.label}
+                                {row.label}
                               </td>
                               <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 600 }}>
                                 <input type="number" value={row.annualCost} onChange={e => {
