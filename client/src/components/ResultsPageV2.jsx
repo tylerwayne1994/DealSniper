@@ -3164,12 +3164,12 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
           amortAnnualDebtService = monthlyDebtService * 12;
         }
         
-        // Loan constant (aka loan factor rate) and spread vs cap rate
-        const loanConstant = (amortLoanAmount > 0 && amortAnnualDebtService > 0) ? (amortAnnualDebtService / amortLoanAmount) : null; // decimal e.g. 0.1025 for 10.25%
-        // capRate from global scope is already a percentage (e.g. 5.24 for 5.24%), convert to decimal for comparison
+        // Loan Factor Rate = Monthly Payment per $1,000 of loan amount
+        const loanFactorRate = (amortLoanAmount > 0 && monthlyDebtService > 0) ? (monthlyDebtService / amortLoanAmount) * 1000 : null;
+        // DSCR for leverage insight
         const capRateDecimal = capRate != null ? (capRate > 1 ? capRate / 100 : capRate) : (fullCalcs?.year1?.capRate != null ? (fullCalcs.year1.capRate > 1 ? fullCalcs.year1.capRate / 100 : fullCalcs.year1.capRate) : null);
-        const spreadCapMinusConstant = (capRateDecimal != null && loanConstant != null) ? (capRateDecimal - loanConstant) : null;
-        const leverageStatus = spreadCapMinusConstant != null ? (spreadCapMinusConstant >= 0 ? 'Positive Leverage' : 'Negative Leverage') : '—';
+        const amortDSCR = (amortAnnualDebtService > 0 && fullCalcs?.year1?.noi > 0) ? (fullCalcs.year1.noi / amortAnnualDebtService) : null;
+        const dscrStatus = amortDSCR != null ? (amortDSCR >= 1.25 ? 'Strong' : amortDSCR >= 1.0 ? 'Adequate' : 'Below 1.0x') : '—';
 
         // Generate amortization schedule if not available
         let amortSchedule = fullCalcs.amortizationSchedule || [];
@@ -3215,8 +3215,8 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
           { label: 'MONTHLY DEBT SERVICE', value: '$' + monthlyDebtService.toLocaleString(undefined, {maximumFractionDigits: 0}), color: '#f59e0b', bg: '#fffbeb' },
           { label: 'ANNUAL DEBT SERVICE', value: '$' + amortAnnualDebtService.toLocaleString(undefined, {maximumFractionDigits: 0}), color: '#ef4444', bg: '#fef2f2' },
           { label: 'CAP RATE', value: capRateDecimal != null ? (capRateDecimal * 100).toFixed(2) + '%' : '—', color: '#10b981', bg: '#ecfdf5' },
-          { label: 'LOAN CONSTANT', value: loanConstant != null ? (loanConstant * 100).toFixed(2) + '%' : '—', color: '#6366f1', bg: '#eef2ff' },
-          { label: 'SPREAD (CAP - CONSTANT)', value: spreadCapMinusConstant != null ? (spreadCapMinusConstant * 100).toFixed(2) + '%' : '—', color: spreadCapMinusConstant != null && spreadCapMinusConstant >= 0 ? '#10b981' : '#ef4444', bg: spreadCapMinusConstant != null && spreadCapMinusConstant >= 0 ? '#ecfdf5' : '#fef2f2', sub: leverageStatus },
+          { label: 'LOAN FACTOR RATE', value: loanFactorRate != null ? '$' + loanFactorRate.toFixed(2) + ' / $1K' : '—', color: '#6366f1', bg: '#eef2ff', sub: 'per $1,000 borrowed' },
+          { label: 'DSCR', value: amortDSCR != null ? amortDSCR.toFixed(2) + 'x' : '—', color: amortDSCR != null && amortDSCR >= 1.25 ? '#10b981' : amortDSCR != null && amortDSCR >= 1.0 ? '#f59e0b' : '#ef4444', bg: amortDSCR != null && amortDSCR >= 1.25 ? '#ecfdf5' : amortDSCR != null && amortDSCR >= 1.0 ? '#fffbeb' : '#fef2f2', sub: dscrStatus },
         ];
 
         // ── Interest Rate Stress Test computation ──
@@ -3292,18 +3292,18 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
                 ))}
               </div>
 
-              {/* Positive/Negative Leverage Explanation */}
+              {/* Loan Factor Rate + DSCR Explanation */}
               <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
                 <div style={{ fontSize: '13px', color: '#374151' }}>
-                  <div style={{ fontWeight: 700, marginBottom: 6 }}>Cap rate vs loan constant</div>
+                  <div style={{ fontWeight: 700, marginBottom: 6 }}>Loan Factor Rate & DSCR</div>
                   <div style={{ marginBottom: 6 }}>
-                    Cap rate {capRateDecimal != null ? ((capRateDecimal * 100).toFixed(2) + '%') : ''} vs loan constant {loanConstant != null ? ((loanConstant * 100).toFixed(2) + '%') : ''} -&gt; {leverageStatus}.
+                    Loan Factor: {loanFactorRate != null ? ('$' + loanFactorRate.toFixed(2) + ' per $1,000 borrowed') : '—'} &nbsp;|&nbsp; DSCR: {amortDSCR != null ? (amortDSCR.toFixed(2) + 'x') : '—'}
                   </div>
                   <div style={{ color: '#111827' }}>
-                    Cap rate greater than loan constant means positive leverage. The property yield exceeds the cost of debt, so borrowing helps cash flow.
+                    The <strong>Loan Factor Rate</strong> is your monthly payment per $1,000 of loan amount. Multiply by your loan amount (in thousands) to quickly estimate monthly debt service. Lower factor = cheaper debt.
                   </div>
                   <div style={{ marginTop: 4, color: '#111827' }}>
-                    Cap rate less than loan constant means negative leverage. The debt costs more than the property yields, hurting cash flow.
+                    The <strong>DSCR</strong> (Debt Service Coverage Ratio) measures NOI ÷ Annual Debt Service. Lenders typically require 1.25x+. Above 1.25x is strong, 1.0–1.25x is adequate, below 1.0x means the property doesn't cover its debt.
                   </div>
                 </div>
               </div>
