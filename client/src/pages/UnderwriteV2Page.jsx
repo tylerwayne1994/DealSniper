@@ -327,6 +327,62 @@ function UnderwriteV2Page() {
       
       // Initialize verifiedData as editable copy with default financing
       const parsedCopy = JSON.parse(JSON.stringify(data.parsed));
+      
+      // ===== Bridge operating expenses & NOI fields for wizard =====
+      // Backend post-processing should handle this, but double-check on frontend too
+      if (parsedCopy.pnl) {
+        // Bridge operating_expenses → operating_expenses_t12
+        if (!parsedCopy.pnl.operating_expenses_t12 && parsedCopy.pnl.operating_expenses) {
+          parsedCopy.pnl.operating_expenses_t12 = parsedCopy.pnl.operating_expenses;
+          console.log('[BRIDGE] operating_expenses → operating_expenses_t12:', parsedCopy.pnl.operating_expenses);
+        }
+        // Bridge expenses.total → operating_expenses_t12
+        if (!parsedCopy.pnl.operating_expenses_t12 && parsedCopy.expenses?.total) {
+          parsedCopy.pnl.operating_expenses_t12 = parsedCopy.expenses.total;
+          parsedCopy.pnl.operating_expenses = parsedCopy.expenses.total;
+          console.log('[BRIDGE] expenses.total → operating_expenses_t12:', parsedCopy.expenses.total);
+        }
+        // Bridge noi → noi_t12
+        if (!parsedCopy.pnl.noi_t12 && parsedCopy.pnl.noi) {
+          parsedCopy.pnl.noi_t12 = parsedCopy.pnl.noi;
+          console.log('[BRIDGE] noi → noi_t12:', parsedCopy.pnl.noi);
+        }
+        // Bridge cap_rate → cap_rate_t12
+        if (!parsedCopy.pnl.cap_rate_t12 && parsedCopy.pnl.cap_rate) {
+          parsedCopy.pnl.cap_rate_t12 = parsedCopy.pnl.cap_rate;
+          console.log('[BRIDGE] cap_rate → cap_rate_t12:', parsedCopy.pnl.cap_rate);
+        }
+        // Bridge expense_ratio → expense_ratio_t12
+        if (!parsedCopy.pnl.expense_ratio_t12 && parsedCopy.pnl.expense_ratio) {
+          parsedCopy.pnl.expense_ratio_t12 = parsedCopy.pnl.expense_ratio;
+        }
+        // If proforma NOI exists but no T12 NOI, use proforma as fallback
+        if (!parsedCopy.pnl.noi_t12 && parsedCopy.pnl.noi_proforma) {
+          parsedCopy.pnl.noi_t12 = parsedCopy.pnl.noi_proforma;
+          parsedCopy.pnl.noi = parsedCopy.pnl.noi_proforma;
+          console.log('[BRIDGE] noi_proforma → noi_t12 (fallback):', parsedCopy.pnl.noi_proforma);
+        }
+        // Calculate NOI if we have GPR/EGI and OpEx but no NOI
+        const egi = parsedCopy.pnl.effective_gross_income || parsedCopy.pnl.gross_potential_rent;
+        const opex = parsedCopy.pnl.operating_expenses_t12 || parsedCopy.pnl.operating_expenses;
+        if (!parsedCopy.pnl.noi_t12 && egi && opex) {
+          const calcNoi = egi - opex;
+          parsedCopy.pnl.noi = calcNoi;
+          parsedCopy.pnl.noi_t12 = calcNoi;
+          console.log('[BRIDGE] Calculated NOI = EGI/GPR - OpEx:', egi, '-', opex, '=', calcNoi);
+        }
+        // Calculate OpEx if we have income and NOI but no expenses
+        if (!parsedCopy.pnl.operating_expenses_t12 && egi && parsedCopy.pnl.noi_t12) {
+          const calcOpex = egi - parsedCopy.pnl.noi_t12;
+          if (calcOpex > 0) {
+            parsedCopy.pnl.operating_expenses = calcOpex;
+            parsedCopy.pnl.operating_expenses_t12 = calcOpex;
+            console.log('[BRIDGE] Calculated OpEx = EGI/GPR - NOI:', egi, '-', parsedCopy.pnl.noi_t12, '=', calcOpex);
+          }
+        }
+      }
+      console.log('[BRIDGE] Final pnl state:', JSON.stringify(parsedCopy.pnl, null, 2));
+      
       // Ensure financing object exists with defaults
       if (!parsedCopy.financing) {
         parsedCopy.financing = {};

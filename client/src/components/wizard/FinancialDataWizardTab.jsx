@@ -49,11 +49,12 @@ export default function FinancialDataWizardTab({
 
   // ===== AUTO-CALC DERIVED FIELDS =====
   const gpr = Number(verifiedData?.pnl?.gross_potential_rent) || 0;
-  const noiT12 = Number(verifiedData?.pnl?.noi_t12) || 0;
-  const opexT12 = Number(verifiedData?.pnl?.operating_expenses_t12) || 0;
+  // Read T12 fields first, fall back to non-T12 variants
+  const noiT12 = Number(verifiedData?.pnl?.noi_t12) || Number(verifiedData?.pnl?.noi) || 0;
+  const opexT12 = Number(verifiedData?.pnl?.operating_expenses_t12) || Number(verifiedData?.pnl?.operating_expenses) || (Number(verifiedData?.expenses?.total) || 0);
   const price = Number(verifiedData?.pricing_financing?.price) || 0;
   const pricePerUnit = Number(verifiedData?.pricing_financing?.price_per_unit) || 0;
-  const capRateT12 = Number(verifiedData?.pnl?.cap_rate_t12) || 0;
+  const capRateT12 = Number(verifiedData?.pnl?.cap_rate_t12) || Number(verifiedData?.pnl?.cap_rate) || 0;
 
   const autoCalcs = useMemo(() => {
     const calcs = [];
@@ -199,7 +200,7 @@ export default function FinancialDataWizardTab({
       key: 'pnl.operating_expenses_t12',
       path: 'pnl.operating_expenses_t12',
       label: 'Total Operating Expenses (T12)',
-      value: verifiedData?.pnl?.operating_expenses_t12,
+      value: verifiedData?.pnl?.operating_expenses_t12 || verifiedData?.pnl?.operating_expenses || verifiedData?.expenses?.total,
       required: true,
       formatter: formatCurrency
     },
@@ -207,7 +208,7 @@ export default function FinancialDataWizardTab({
       key: 'pnl.noi_t12',
       path: 'pnl.noi_t12',
       label: 'Net Operating Income (T12)',
-      value: verifiedData?.pnl?.noi_t12,
+      value: verifiedData?.pnl?.noi_t12 || verifiedData?.pnl?.noi,
       required: true,
       formatter: formatCurrency
     },

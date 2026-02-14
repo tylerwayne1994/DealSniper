@@ -351,7 +351,11 @@ def score_page_for_financial_data(text: str) -> int:
         'proforma', 'pro forma', 'actual', 'budget', 'projected',
         'cash flow', 'return', 'irr', 'coc', 'cash on cash',
         'bedroom', 'br', 'bath', 'ba', 'sqft', 'sf', 'square feet',
-        'tenant', 'lease', 'occupancy', 'occupied', 'vacant'
+        'tenant', 'lease', 'occupancy', 'occupied', 'vacant',
+        't12', 't-12', 'trailing 12', 'trailing twelve', 'ttm',
+        'net operating income', 'operating expenses', 'total expenses',
+        'p&l', 'profit', 'loss', 'income statement', 'operating statement',
+        'financial summary', 'expense summary', 'opex'
     ]
     
     for keyword in financial_keywords:
@@ -1330,6 +1334,223 @@ async def rapid_fire_underwrite(
     return {"deals": deals, "debug": debug}
 
 
+def _post_process_parsed_data(data: dict) -> dict:
+    """
+    Post-process Claude's raw parse output to ensure operating expenses and NOI 
+    are properly bridged across all field variants the frontend wizard expects.
+    
+    The wizard reads: pnl.operating_expenses_t12, pnl.noi_t12, expenses.total
+    Claude may only fill: pnl.operating_expenses, pnl.noi, or just expenses line items
+    This function bridges the gaps.
+    """
+    import copy
+    data = copy.deepcopy(data)
+    
+    def to_num(val):
+        """Safely convert any value to a float, return None if not possible."""
+        if val is None or val == "" or val == 0:
+            return None
+        try:
+            if isinstance(val, str):
+                val = val.replace(',', '').replace('$', '').replace('%', '').strip()
+            result = float(val)
+            return result if result != 0 else None
+        except (ValueError, TypeError):
+            return None
+
+    pnl = data.get("pnl", {})
+    expenses = data.get("expenses", {})
+    pricing = data.get("pricing_financing", {})
+
+    # ------------------------------------------------------------------
+    # 1. Ensure all pnl numeric fields are actually numbers
+    # ------------------------------------------------------------------
+    for key in list(pnl.keys()):
+        if key.startswith("_"):
+            continue
+        raw = to_num(pnl[key])
+        pnl[key] = raw if raw is not None else 0
+
+    # ------------------------------------------------------------------
+    # 2. Recalculate expenses.total from line items if line items exist
+    # ------------------------------------------------------------------
+    expense_keys = ['taxes', 'insurance', 'utilities', 'repairs_maintenance', 
+                    'management', 'payroll', 'admin', 'marketing', 'other']
+    line_item_total = 0
+    has_line_items = False
+    for key in expense_keys:
+        val = to_num(expenses.get(key))
+        if val is not None:
+            expenses[key] = val
+            line_item_total += val
+            has_line_items = True
+        else:
+            expenses[key] = 0
+
+    if has_line_items and line_item_total > 0:
+        expenses['total'] = line_item_total
+        log.info(f"[post_process] Computed expenses.total = {line_item_total} from line items")
+    elif to_num(expenses.get('total')):
+        expenses['total'] = to_num(expenses['total'])
+    else:
+        expenses['total'] = 0
+
+    # ------------------------------------------------------------------
+    # 3. Bridge operating_expenses → operating_expenses_t12 and vice versa
+    # ------------------------------------------------------------------
+    opex = to_num(pnl.get('operating_expenses'))
+    opex_t12 = to_num(pnl.get('operating_expenses_t12'))
+    opex_proforma = to_num(pnl.get('operating_expenses_proforma'))
+    exp_total = to_num(expenses.get('total'))
+
+    # Determine the best operating expense value from all sources
+    best_opex = opex_t12 or opex or exp_total or None
+
+    if best_opex:
+        if not opex_t12:
+            pnl['operating_expenses_t12'] = best_opex
+            log.info(f"[post_process] Set pnl.operating_expenses_t12 = {best_opex}")
+        if not opex:
+            pnl['operating_expenses'] = best_opex
+            log.info(f"[post_process] Set pnl.operating_expenses = {best_opex}")
+        # Also sync expenses.total if it was empty but we have opex
+        if not exp_total and best_opex:
+            expenses['total'] = best_opex
+            log.info(f"[post_process] Set expenses.total = {best_opex} from pnl opex")
+
+    # ------------------------------------------------------------------
+    # 4. Bridge noi → noi_t12 and vice versa
+    # ------------------------------------------------------------------
+    noi = to_num(pnl.get('noi'))
+    noi_t12 = to_num(pnl.get('noi_t12'))
+    noi_proforma = to_num(pnl.get('noi_proforma'))
+
+    # Determine the best NOI value
+    best_noi = noi_t12 or noi or None
+
+    if best_noi:
+        if not noi_t12:
+            pnl['noi_t12'] = best_noi
+            log.info(f"[post_process] Set pnl.noi_t12 = {best_noi}")
+        if not noi:
+            pnl['noi'] = best_noi
+            log.info(f"[post_process] Set pnl.noi = {best_noi}")
+    
+    # If still no NOI, try to calculate from income - expenses
+    if not to_num(pnl.get('noi_t12')):
+        egi = to_num(pnl.get('effective_gross_income'))
+        gpr = to_num(pnl.get('gross_potential_rent'))
+        best_opex_now = to_num(pnl.get('operating_expenses_t12')) or to_num(pnl.get('operating_expenses'))
+        
+        if egi and best_opex_now:
+            calc_noi = egi - best_opex_now
+            pnl['noi'] = calc_noi
+            pnl['noi_t12'] = calc_noi
+            log.info(f"[post_process] Calculated NOI = EGI({egi}) - OpEx({best_opex_now}) = {calc_noi}")
+        elif gpr and best_opex_now:
+            # Use GPR as rough EGI (before vacancy)
+            vacancy_rate = to_num(pnl.get('vacancy_rate')) or 0
+            vacancy_amt = to_num(pnl.get('vacancy_amount')) or 0
+            if vacancy_amt:
+                calc_egi = gpr - vacancy_amt
+            elif vacancy_rate:
+                vr = vacancy_rate if vacancy_rate < 1 else vacancy_rate / 100
+                calc_egi = gpr * (1 - vr)
+            else:
+                calc_egi = gpr  # no vacancy info, use GPR as EGI
+            calc_noi = calc_egi - best_opex_now
+            pnl['noi'] = calc_noi
+            pnl['noi_t12'] = calc_noi
+            log.info(f"[post_process] Calculated NOI = GPR({gpr}) adj({calc_egi}) - OpEx({best_opex_now}) = {calc_noi}")
+    
+    # If still no NOI but we have cap rate and price, derive it
+    if not to_num(pnl.get('noi_t12')):
+        cap = to_num(pnl.get('cap_rate_t12')) or to_num(pnl.get('cap_rate'))
+        price = to_num(pricing.get('price'))
+        if cap and price:
+            # Cap rate may be decimal (0.065) or percent (6.5)
+            cap_decimal = cap if cap < 1 else cap / 100
+            calc_noi = price * cap_decimal
+            pnl['noi'] = calc_noi
+            pnl['noi_t12'] = calc_noi
+            log.info(f"[post_process] Derived NOI = Price({price}) × Cap({cap_decimal}) = {calc_noi}")
+
+    # ------------------------------------------------------------------
+    # 5. If we have NOI and income but no expenses, derive expenses
+    # ------------------------------------------------------------------
+    if not to_num(pnl.get('operating_expenses_t12')):
+        noi_val = to_num(pnl.get('noi_t12')) or to_num(pnl.get('noi'))
+        egi = to_num(pnl.get('effective_gross_income')) or to_num(pnl.get('gross_potential_rent'))
+        if noi_val and egi and egi > noi_val:
+            calc_opex = egi - noi_val
+            pnl['operating_expenses'] = calc_opex
+            pnl['operating_expenses_t12'] = calc_opex
+            expenses['total'] = calc_opex
+            log.info(f"[post_process] Derived OpEx = Income({egi}) - NOI({noi_val}) = {calc_opex}")
+
+    # ------------------------------------------------------------------
+    # 6. Bridge cap rates
+    # ------------------------------------------------------------------
+    cap = to_num(pnl.get('cap_rate'))
+    cap_t12 = to_num(pnl.get('cap_rate_t12'))
+    
+    if cap and not cap_t12:
+        pnl['cap_rate_t12'] = cap
+        log.info(f"[post_process] Bridged cap_rate → cap_rate_t12 = {cap}")
+    elif cap_t12 and not cap:
+        pnl['cap_rate'] = cap_t12
+
+    # Calculate cap rate if missing but we have NOI and price
+    if not to_num(pnl.get('cap_rate_t12')):
+        noi_val = to_num(pnl.get('noi_t12')) or to_num(pnl.get('noi'))
+        price = to_num(pricing.get('price'))
+        if noi_val and price and price > 0:
+            cap_val = noi_val / price
+            pnl['cap_rate'] = cap_val
+            pnl['cap_rate_t12'] = cap_val
+            log.info(f"[post_process] Calculated cap_rate = NOI({noi_val}) / Price({price}) = {cap_val:.4f}")
+
+    # ------------------------------------------------------------------
+    # 7. Bridge expense ratios
+    # ------------------------------------------------------------------
+    er = to_num(pnl.get('expense_ratio'))
+    er_t12 = to_num(pnl.get('expense_ratio_t12'))
+    
+    if er and not er_t12:
+        pnl['expense_ratio_t12'] = er
+    elif er_t12 and not er:
+        pnl['expense_ratio'] = er_t12
+
+    # Calculate expense ratio if missing
+    if not to_num(pnl.get('expense_ratio_t12')):
+        opex_val = to_num(pnl.get('operating_expenses_t12'))
+        egi = to_num(pnl.get('effective_gross_income')) or to_num(pnl.get('gross_potential_rent'))
+        if opex_val and egi and egi > 0:
+            ratio = opex_val / egi
+            pnl['expense_ratio'] = ratio
+            pnl['expense_ratio_t12'] = ratio
+            log.info(f"[post_process] Calculated expense_ratio = OpEx({opex_val}) / EGI({egi}) = {ratio:.4f}")
+
+    # ------------------------------------------------------------------
+    # 8. If only proforma NOI exists, also copy to noi/noi_t12 as fallback
+    # ------------------------------------------------------------------
+    if not to_num(pnl.get('noi_t12')) and to_num(pnl.get('noi_proforma')):
+        pnl['noi'] = pnl['noi_proforma']
+        pnl['noi_t12'] = pnl['noi_proforma']
+        log.info(f"[post_process] Fallback: copied noi_proforma → noi/noi_t12 = {pnl['noi_proforma']}")
+
+    # Write back
+    data['pnl'] = pnl
+    data['expenses'] = expenses
+
+    # Log final state of critical fields
+    log.info(f"[post_process] FINAL: noi={pnl.get('noi')}, noi_t12={pnl.get('noi_t12')}, "
+             f"opex={pnl.get('operating_expenses')}, opex_t12={pnl.get('operating_expenses_t12')}, "
+             f"expenses.total={expenses.get('total')}, cap_rate_t12={pnl.get('cap_rate_t12')}")
+
+    return data
+
+
 @router.post("/deals/parse")
 async def parse_deal_v2(file: UploadFile = File(...)):
     log.info(f"[V2] Parse request for file: {file.filename}")
@@ -1430,6 +1651,8 @@ Return JSON matching this schema:
         "vacancy_rate_stabilized": 0,
     "effective_gross_income": 0,
     "operating_expenses": 0,
+    "operating_expenses_t12": 0,
+    "operating_expenses_proforma": 0,
     "noi": 0,
     "noi_t12": 0,
     "noi_t3": 0,
@@ -1503,6 +1726,38 @@ EXPENSE RATIO FIELD RULES:
 - When the OM shows "Total Expenses as % of EGI" or similar expense ratio metrics:
     • Actual / T12 expense ratio → store in pnl.expense_ratio_t12 and ALSO as pnl.expense_ratio (this is the default for underwriting).
     • Pro Forma / Stabilized expense ratio → store in pnl.expense_ratio_proforma.
+
+OPERATING EXPENSES EXTRACTION — THIS IS CRITICAL, DO NOT SKIP:
+- You MUST search the ENTIRE document thoroughly for operating expenses / total expenses.
+- Look for ALL of these keywords and synonyms (they all mean operating expenses):
+  • "Operating Expenses", "Total Operating Expenses", "OpEx", "Total OpEx"
+  • "Expenses", "Total Expenses", "Annual Expenses"
+  • "Operating Costs", "Total Operating Costs"
+  • "Expense Summary", "Expense Breakdown"
+  • "T12 Expenses", "Trailing 12 Expenses", "TTM Expenses"
+  • "Annual Operating Statement", "Operating Statement"
+  • "P&L", "Profit & Loss", "Income & Expense"
+  • "Budget", "Annual Budget", "Pro Forma Budget"
+- The expense total does NOT need to say "T12" next to it — any annual total of operating expenses counts.
+- If you find a total expenses figure from an income statement, operating statement, P&L, or financial summary: put it in BOTH pnl.operating_expenses AND pnl.operating_expenses_t12.
+- If there are separate Actual/T12 vs Pro Forma expense totals:
+  • Actual / T12 / In-Place / Current → pnl.operating_expenses AND pnl.operating_expenses_t12
+  • Pro Forma / Projected / Year 1 → pnl.operating_expenses_proforma
+- If you can only find individual expense line items (taxes, insurance, etc.) but no stated total, SUM them up and put the total in pnl.operating_expenses AND pnl.operating_expenses_t12.
+- Also fill in the "expenses" object with the individual line items (taxes, insurance, utilities, repairs_maintenance, management, payroll, admin, marketing, other, total).
+
+NET OPERATING INCOME EXTRACTION — THIS IS CRITICAL, DO NOT SKIP:
+- You MUST search the ENTIRE document thoroughly for NOI.
+- Look for ALL of these keywords and synonyms:
+  • "Net Operating Income", "NOI"
+  • "Net Income", "Operating Income" (when used in real estate context)
+  • "Income After Expenses"
+  • "T12 NOI", "Trailing 12 NOI", "TTM NOI", "In-Place NOI", "Current NOI", "Actual NOI"
+  • "Pro Forma NOI", "Stabilized NOI", "Projected NOI"
+- The NOI does NOT need to say "T12" next to it — if it's from an actual/current income statement, treat it as T12.
+- If you find NOI from an income statement or financial summary: put it in BOTH pnl.noi AND pnl.noi_t12.
+- If NOI is not explicitly stated but you have EGI/GPR and Total Expenses, CALCULATE it: NOI = EGI - Total Expenses (or GPR - Vacancy - Expenses).
+- If you find a cap rate and a price but no NOI, CALCULATE it: NOI = Cap Rate × Price.
 """
         
         content_items.append({
@@ -1546,7 +1801,16 @@ EXPENSE RATIO FIELD RULES:
         
         # DEBUG: Log complete parsed JSON
         log.info("="*80)
-        log.info("[V2 DEBUG] COMPLETE CLAUDE PARSE RESULT:")
+        log.info("[V2 DEBUG] COMPLETE CLAUDE PARSE RESULT (before post-processing):")
+        log.info("="*80)
+        log.info(json.dumps(parsed_json, indent=2, default=str))
+        log.info("="*80)
+        
+        # ===== POST-PROCESS: Bridge expense & NOI fields =====
+        parsed_json = _post_process_parsed_data(parsed_json)
+        
+        log.info("="*80)
+        log.info("[V2 DEBUG] AFTER POST-PROCESSING:")
         log.info("="*80)
         log.info(json.dumps(parsed_json, indent=2, default=str))
         log.info("="*80)

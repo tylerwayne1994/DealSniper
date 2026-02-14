@@ -232,21 +232,27 @@ Extract and structure the following information. BE EXTREMELY THOROUGH:
      - Other Income (annual)
      - Vacancy rate and amount
      - Effective Gross Income (annual)
-     - Total Operating Expenses (annual)
-     - Net Operating Income (annual)
+     - Total Operating Expenses (annual) — CRITICAL: search for "Operating Expenses", "Total Expenses", "Expenses", "OpEx", "Operating Costs", "Annual Expenses" (does NOT need to say "T12")
+       • Put in BOTH pnl.operating_expenses AND pnl.operating_expenses_t12
+       • If you find separate Actual/T12 vs Pro Forma expenses, put Actual/T12 in operating_expenses + operating_expenses_t12, Pro Forma in operating_expenses_proforma
+     - Net Operating Income (annual) — CRITICAL: search for "Net Operating Income", "NOI", "Net Income", "Operating Income", "Income After Expenses" (does NOT need to say "T12")
          • If the OM shows multiple NOIs (Actual/T12, "Current", Pro Forma, Stabilized), you MUST separate them:
-             - "Actual" / "T12" / "Current" NOI → store in pnl.noi AND pnl.noi_t12
-             - "Pro Forma" / "Year 1" projected NOI → store in pnl.noi_proforma
+             - "Actual" / "T12" / "Current" / "In-Place" NOI → store in pnl.noi AND pnl.noi_t12
+             - "Pro Forma" / "Year 1" / "Projected" NOI → store in pnl.noi_proforma
              - "Stabilized" NOI after renovations/lease-up → store in pnl.noi_stabilized
+         • If only ONE NOI value is shown (no label like T12/ProForma), store it in BOTH pnl.noi AND pnl.noi_t12.
          • NEVER put broker pro forma NOI into pnl.noi if an actual/T12 NOI is available.
-         • If ONLY pro forma NOI is given and you truly cannot find actual/T12, put it in pnl.noi_proforma and ALSO copy to pnl.noi but mark pnl.noi as low confidence in the _confidence object explaining this.
+         • If ONLY pro forma NOI is given and you truly cannot find actual/T12, put it in pnl.noi_proforma and ALSO copy to pnl.noi.
+         • If NOI is not stated but you have EGI/GPR and Total Expenses, CALCULATE it: NOI = EGI - Total Expenses.
      - Cap Rate
      - Price per unit
      - Price per square foot
 
 3. EXPENSE BREAKDOWN (all annual — THIS IS CRITICAL, TRY VERY HARD):
    - SEARCH the ENTIRE document meticulously for operating expense data
-   - Look for T12 Expenses, Trailing 12-Month, Annual Operating Statement, Pro Forma Budget
+   - Look for ALL of these keyword variations: "Operating Expenses", "Total Operating Expenses", "OpEx", "Total Expenses", "Expenses", "Annual Expenses", "Operating Costs", "T12 Expenses", "Trailing 12 Expenses", "TTM Expenses", "Annual Operating Statement", "Operating Statement", "P&L", "Profit & Loss", "Income & Expense", "Pro Forma Budget", "Annual Budget"
+   - The expense data does NOT need to say "T12" next to it — any annual total of operating expenses from an income statement or financial summary counts
+   - Put the total in BOTH pnl.operating_expenses AND pnl.operating_expenses_t12
    - Look for expense tables, financial summaries, operating statements, P&L statements
    - Common section headers: "Operating Expenses", "Expense Summary", "Annual Budget", "Financial Overview"
    - Real Estate Taxes (property taxes, RE taxes, tax assessed)
@@ -347,6 +353,8 @@ Return a JSON object with this EXACT structure:
         "vacancy_rate_stabilized": 0,
         "effective_gross_income": 0,
         "operating_expenses": 0,
+        "operating_expenses_t12": 0,
+        "operating_expenses_proforma": 0,
         "noi": 0,
         "noi_t12": 0,
         "noi_proforma": 0,
@@ -632,6 +640,19 @@ Return ONLY the JSON object."""
             if data["pnl"].get("cap_rate") and not data["pnl"].get("cap_rate_t12"):
                 data["pnl"]["cap_rate_t12"] = data["pnl"]["cap_rate"]
                 print(f"[post_process] Bridged pnl.cap_rate → pnl.cap_rate_t12 = {data['pnl']['cap_rate']}")
+            # Bridge operating_expenses → operating_expenses_t12
+            if data["pnl"].get("operating_expenses") and not data["pnl"].get("operating_expenses_t12"):
+                data["pnl"]["operating_expenses_t12"] = data["pnl"]["operating_expenses"]
+                print(f"[post_process] Bridged pnl.operating_expenses → pnl.operating_expenses_t12 = {data['pnl']['operating_expenses']}")
+            # Bridge operating_expenses_t12 → operating_expenses
+            if data["pnl"].get("operating_expenses_t12") and not data["pnl"].get("operating_expenses"):
+                data["pnl"]["operating_expenses"] = data["pnl"]["operating_expenses_t12"]
+                print(f"[post_process] Bridged pnl.operating_expenses_t12 → pnl.operating_expenses = {data['pnl']['operating_expenses_t12']}")
+            # If only proforma NOI exists, copy to noi/noi_t12 as fallback
+            if not data["pnl"].get("noi_t12") and data["pnl"].get("noi_proforma"):
+                data["pnl"]["noi"] = data["pnl"]["noi_proforma"]
+                data["pnl"]["noi_t12"] = data["pnl"]["noi_proforma"]
+                print(f"[post_process] Fallback: copied noi_proforma → noi/noi_t12 = {data['pnl']['noi_proforma']}")
         
         # Process underwriting metrics
         if "underwriting" in data:
