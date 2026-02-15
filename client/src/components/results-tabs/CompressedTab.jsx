@@ -27,102 +27,106 @@ export default function CompressedTab({
 
   // ── Theme ──
   const B = '#e5e7eb', AC = '#4f46e5', LB = '#6b7280', VL = '#111827';
-  const SC = { backgroundColor: '#fff', borderRadius: 16, padding: '24px 28px', marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: `1px solid ${B}` };
-  const cFmt = (v) => { if (v == null || isNaN(v)) return '$0'; return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v); };
-  const cPct = (v) => { if (v == null || isNaN(v)) return '0%'; return `${Number(v).toFixed(2)}%`; };
+  const card = {
+    backgroundColor: '#fff', borderRadius: 16, padding: '24px 28px',
+    marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: `1px solid ${B}`,
+  };
 
-  // ── Data sources ──
-  const exitScenarios = fullCalcs?.returns?.exitScenarios || [];
+  // ── Formatters ──
+  const fmt = (v) => {
+    if (v == null || isNaN(v)) return '$0';
+    const sign = v < 0 ? '-' : '';
+    return `${sign}$${Math.abs(Math.round(v)).toLocaleString()}`;
+  };
+  const pct = (v) => {
+    if (v == null || isNaN(v)) return '0.00%';
+    return `${Number(v).toFixed(2)}%`;
+  };
+
+  // ── Data sources (same sources as Exit Strategy & other tabs) ──
   const projections = useMemo(() => fullCalcs?.projections || [], [fullCalcs]);
   const debtTimeline = useMemo(() => fullCalcs?.exit?.debtTimeline || [], [fullCalcs]);
-  const equityRows = useMemo(() => {
-    const timeline = fullCalcs?.exit?.equityExitTimeline || { rows: [] };
-    return timeline.rows || [];
-  }, [fullCalcs]);
+  const exitScenarios = fullCalcs?.returns?.exitScenarios || [];
   const selectedScenario = exitScenarios.find(s => s.exitYear === selectedHoldPeriod) || exitScenarios[0] || {};
-  const totalEquity = fullCalcs?.financing?.totalEquityRequired || fullCalcs?.total_project_cost || 0;
+
+  // Metrics — leveredIRR is already *100 (e.g. 9.10 = 9.10%)
+  const totalEquity = fullCalcs?.financing?.totalEquityRequired || 0;
   const loanAmount = fullCalcs?.financing?.loanAmount || 0;
-  const irr = fullCalcs?.returns?.leveredIRR || 0;
-  const equityMultiple = fullCalcs?.returns?.equityMultiple || selectedScenario.equityMultiple || 0;
-  const coc = fullCalcs?.year1?.cashOnCash || 0;
+  const irrVal = fullCalcs?.returns?.leveredIRR || 0;  // Already a percentage number
+  const equityMultiple = fullCalcs?.returns?.leveredEquityMultiple || selectedScenario.equityMultiple || 0;
+  const cocVal = fullCalcs?.year1?.cashOnCash || 0;     // Already a percentage number
   const totalProfit = selectedScenario.totalProfit || 0;
   const startingNOI = fullCalcs?.year1?.noi || noiT12 || 0;
   const closingCosts = fullCalcs?.acquisition?.closingCosts || (purchasePrice * 0.02) || 0;
   const acquisitionCost = fullCalcs?.acquisition?.totalAcquisitionCosts || (purchasePrice + closingCosts);
 
-  // ── Purchase price slider ──
+  // DSCR — try multiple sources
+  const dscrVal = dscr || fullCalcs?.year1?.dscr || projections[0]?.dscr || 0;
+
+  // Purchase price slider range
   const minPrice = Math.round(purchasePrice * 0.4);
   const maxPrice = Math.round(purchasePrice * 1.6);
-  const currentPrice = purchasePrice;
 
-  // ── Cap rate sensitivity ──
+  // Cap rate sensitivity
   const baseCapRate = capRate > 0 ? capRate : 5.0;
-  const capRates = [];
   const baseIdx = 3;
-  for (let i = 0; i < 7; i++) {
-    capRates.push(Number((baseCapRate + (i - baseIdx) * 0.25).toFixed(2)));
-  }
-
-  // Optimized NOI = stabilized / value-add NOI
+  const capRates = Array.from({ length: 7 }, (_, i) =>
+    Number((baseCapRate + (i - baseIdx) * 0.25).toFixed(2))
+  );
   const optimizedNOI = fullCalcs?.stabilized?.noi || (startingNOI * 1.15);
 
-  // ── Yearly data for cash flow chart + profitability table ──
+  // ── Yearly data — use projections[].cashFlowAfterFinancing (operating only, no sale) ──
   const yearlyData = useMemo(() => {
+    const holdYears = selectedHoldPeriod || 5;
+    const count = Math.min(holdYears, projections.length, 10);
     const data = [];
-    const holdYears = selectedHoldPeriod || 10;
-    const annualGrowth = scenarioData?.growth?.income_growth || 0.03;
-    const debtSvc = annualDebtService || 0;
 
-    for (let yr = 1; yr <= Math.min(holdYears, 10); yr++) {
-      const proj = projections.find(p => p.year === yr);
-      const eqRow = equityRows[yr - 1];
-      const debtRow = debtTimeline[yr - 1];
-
-      const yrNOI = proj?.noi || (startingNOI * Math.pow(1 + annualGrowth, yr));
-      const yrCashFlow = eqRow?.totalDistribution || (yrNOI - debtSvc);
-      const yrPrincipalPaydown = debtRow?.principalPaid || 0;
-      const yrLoanBalance = proj?.loanBalance || debtRow?.endingBalance || 0;
-      const yrSalePrice = proj?.grossSalesPrice || 0;
-      const yrNetSaleProceeds = proj?.netSalesProceeds || 0;
+    for (let i = 0; i < count; i++) {
+      const p = projections[i];
+      if (!p) continue;
+      const yr = p.year || (i + 1);
+      const cashFlow = p.cashFlowAfterFinancing || 0;
+      const debtRow = debtTimeline[i];
+      const principalPaydown = debtRow?.principalPaid || 0;
       const increaseInValue = 0;
-      const netWorthIncrease = yrCashFlow + yrPrincipalPaydown + increaseInValue;
 
       data.push({
         year: yr,
         label: `Year ${yr}`,
         dateLabel: `${new Date().toLocaleString('default', { month: 'short' })} ${new Date().getFullYear() + yr}`,
-        noi: yrNOI,
-        cashFlow: yrCashFlow,
-        principalPaydown: yrPrincipalPaydown,
-        loanBalance: yrLoanBalance,
-        salePrice: yrSalePrice,
-        netSaleProceeds: yrNetSaleProceeds,
+        noi: p.noi || 0,
+        cashFlow,
+        principalPaydown,
+        loanBalance: p.loanBalance || 0,
+        salePrice: p.grossSalesPrice || 0,
+        netSaleProceeds: p.netSalesProceeds || 0,
         increaseInValue,
-        netWorthIncrease,
+        netWorthIncrease: cashFlow + principalPaydown + increaseInValue,
         cumulativeCashFlow: 0,
       });
     }
+
     let running = 0;
     data.forEach(d => { running += d.cashFlow; d.cumulativeCashFlow = running; });
     return data;
-  }, [selectedHoldPeriod, scenarioData, projections, equityRows, debtTimeline, startingNOI, annualDebtService]);
+  }, [selectedHoldPeriod, projections, debtTimeline]);
 
-  // Averages for profitability
+  // Aggregates
   const avgCashFlow = yearlyData.length > 0 ? yearlyData.reduce((s, d) => s + d.cashFlow, 0) / yearlyData.length : 0;
   const avgPrincipal = yearlyData.length > 0 ? yearlyData.reduce((s, d) => s + d.principalPaydown, 0) / yearlyData.length : 0;
-  const avgIncValue = 0;
   const avgNetWorth = yearlyData.length > 0 ? yearlyData.reduce((s, d) => s + d.netWorthIncrease, 0) / yearlyData.length : 0;
 
-  // Capital structure per year
+  // Capital structure
   const capStructData = useMemo(() => {
     if (capStructYear === 0) {
-      return { equity: totalEquity, debt: loanAmount, ltc: loanAmount > 0 ? (loanAmount / acquisitionCost) * 100 : 0, dscr: dscr };
+      return { equity: totalEquity, debt: loanAmount, ltc: loanAmount > 0 ? (loanAmount / acquisitionCost) * 100 : 0, dscr: dscrVal };
     }
-    const debtRow = debtTimeline[capStructYear - 1];
-    const bal = debtRow?.endingBalance || loanAmount;
+    const proj = projections[capStructYear - 1];
+    const bal = proj?.loanBalance || loanAmount;
     const eqVal = acquisitionCost - bal;
-    return { equity: eqVal > 0 ? eqVal : totalEquity, debt: bal, ltc: acquisitionCost > 0 ? (bal / acquisitionCost) * 100 : 0, dscr: dscr };
-  }, [capStructYear, totalEquity, loanAmount, acquisitionCost, dscr, debtTimeline]);
+    const yrDscr = proj?.dscr || dscrVal;
+    return { equity: eqVal > 0 ? eqVal : totalEquity, debt: bal, ltc: acquisitionCost > 0 ? (bal / acquisitionCost) * 100 : 0, dscr: yrDscr };
+  }, [capStructYear, totalEquity, loanAmount, acquisitionCost, dscrVal, projections]);
 
   const totalCapital = capStructData.equity + capStructData.debt;
   const equityPct = totalCapital > 0 ? Math.round((capStructData.equity / totalCapital) * 100) : 0;
@@ -130,244 +134,273 @@ export default function CompressedTab({
 
   // Total Investment Return
   const cumCashFlows = yearlyData.reduce((s, d) => s + d.cashFlow, 0);
-  const netSalePrice = projections.find(p => p.year === selectedHoldPeriod)?.grossSalesPrice || selectedScenario.salePrice || 0;
-  const loanBalAtExit = projections.find(p => p.year === selectedHoldPeriod)?.loanBalance || (debtTimeline[selectedHoldPeriod - 1]?.endingBalance) || 0;
+  const exitProj = projections.find(p => p.year === selectedHoldPeriod);
+  const netSalePrice = exitProj?.grossSalesPrice || selectedScenario.salePrice || 0;
+  const loanBalAtExit = exitProj?.loanBalance || 0;
   const financedByDebt = loanAmount;
   const initialInvestment = 0;
+  const totalCashReceived = cumCashFlows + netSalePrice - Math.abs(loanBalAtExit);
   const totalCashInvested = purchasePrice + closingCosts + initialInvestment - financedByDebt;
-  const compTotalProfit = (cumCashFlows + netSalePrice - Math.abs(loanBalAtExit)) - totalCashInvested;
+  const compTotalProfit = totalCashReceived - (totalCashInvested > 0 ? totalCashInvested : totalEquity);
 
-  // ── Profitability rows ──
+  // Profitability rows
   const profitRows = [
-    { label: 'Cash Flow', avg: avgCashFlow, values: yearlyData.map(d => d.cashFlow), pctBase: totalEquity },
-    { label: 'Principal Paydown', avg: avgPrincipal, values: yearlyData.map(d => d.principalPaydown), pctBase: totalEquity },
-    { label: 'Increase in Value', avg: avgIncValue, values: yearlyData.map(d => d.increaseInValue), pctBase: totalEquity },
-    { label: 'Increase in Networth', avg: avgNetWorth, values: yearlyData.map(d => d.netWorthIncrease), pctBase: totalEquity, highlight: true },
+    { label: 'Cash Flow', avg: avgCashFlow, values: yearlyData.map(d => d.cashFlow) },
+    { label: 'Principal Paydown', avg: avgPrincipal, values: yearlyData.map(d => d.principalPaydown) },
+    { label: 'Increase in Value', avg: 0, values: yearlyData.map(() => 0) },
+    { label: 'Increase in Networth', avg: avgNetWorth, values: yearlyData.map(d => d.netWorthIncrease), highlight: true },
   ];
 
-  const formatVal = (v) => {
-    if (displayMode === 'monetary') return cFmt(Math.round(v));
-    return cPct(totalEquity > 0 ? (v / totalEquity) * 100 : 0);
+  const fmtProfitVal = (v) => {
+    if (displayMode === 'percentage') return pct(totalEquity > 0 ? (v / totalEquity) * 100 : 0);
+    return fmt(v);
   };
 
-  const handleFieldChange = (path, value) => {
-    if (onFieldChange) onFieldChange(path, value);
-  };
+  const handleChange = (path, value) => { if (onFieldChange) onFieldChange(path, value); };
+
+  // ── Section heading helper ──
+  const SectionHead = ({ title, color, children }) => (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 4, height: 24, backgroundColor: color || AC, borderRadius: 2 }} />
+        <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: VL, letterSpacing: '-0.01em' }}>{title}</h3>
+      </div>
+      {children}
+    </div>
+  );
+
+  // ── Tooltip badge ──
+  const Tip = ({ text }) => (
+    <span title={text} style={{ width: 15, height: 15, borderRadius: '50%', border: `1.5px solid ${B}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: LB, cursor: 'help', flexShrink: 0 }}>?</span>
+  );
 
   return (
-    <div style={{ padding: 0 }}>
+    <div style={{ maxWidth: 1400, margin: '0 auto' }}>
 
-      {/* ═══ 1. OVERVIEW ═══ */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 0, marginBottom: 24 }}>
-        <div style={SC}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-            <div style={{ width: 4, height: 24, backgroundColor: AC, borderRadius: 2 }} />
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: VL }}>Overview</h3>
-          </div>
-          {/* Top metrics row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24, marginBottom: 24 }}>
-            {[
-              { label: 'IRR', value: `${(irr * 100).toFixed(0)}%`, tip: 'Internal Rate of Return — annualized return accounting for time value of money' },
-              { label: 'Total Potential Profit', value: cFmt(totalProfit), tip: 'Cumulative profit including cash flow, principal paydown, and sale proceeds' },
-              { label: 'Cash on Cash Return', value: `${coc.toFixed(0)}%`, tip: 'Year 1 cash flow divided by total equity invested' },
-              { label: 'Equity Multiple', value: `${equityMultiple.toFixed(2)}x`, tip: 'Total cash returned divided by total equity invested' },
-            ].map((m, i) => (
-              <div key={i}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
-                  <span style={{ fontSize: 12, color: LB, fontWeight: 600 }}>{m.label}</span>
-                  <span title={m.tip} style={{ width: 14, height: 14, borderRadius: '50%', border: `1px solid ${B}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: LB, cursor: 'help' }}>?</span>
-                </div>
-                <div style={{ fontSize: 28, fontWeight: 800, color: VL }}>{m.value}</div>
-              </div>
-            ))}
-          </div>
+      {/* ═══════════════════════════════════════════════════════════════
+          1. OVERVIEW
+          ═══════════════════════════════════════════════════════════════ */}
+      <div style={card}>
+        <SectionHead title="Overview" color={AC} />
 
-          {/* Purchase Price slider */}
-          <div style={{ background: '#f9fafb', borderRadius: 12, padding: '20px 24px', border: `1px solid ${B}` }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: VL, textAlign: 'center', marginBottom: 12 }}>Purchase Price</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, justifyContent: 'center', marginBottom: 12 }}>
-              <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: LB, fontWeight: 600 }}>$</span>
-                <input
-                  type="text"
-                  value={currentPrice.toLocaleString()}
-                  onChange={(e) => {
-                    const v = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0;
-                    handleFieldChange('pricing_financing.purchase_price', v);
-                    handleFieldChange('pricing_financing.price', v);
-                  }}
-                  style={{ width: 180, padding: '10px 12px 10px 28px', fontSize: 18, fontWeight: 700, border: `1.5px solid ${AC}`, borderRadius: 10, outline: 'none', textAlign: 'center', color: VL }}
-                />
+        {/* KPI row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 28 }}>
+          {[
+            { label: 'IRR', value: `${irrVal.toFixed(1)}%`, tip: 'Internal Rate of Return — annualized return accounting for time value of money' },
+            { label: 'Total Potential Profit', value: fmt(totalProfit), tip: 'Cumulative profit including cash flow, principal paydown, and sale proceeds' },
+            { label: 'Cash on Cash Return', value: `${cocVal.toFixed(1)}%`, tip: 'Year 1 cash flow divided by total equity invested' },
+            { label: 'Equity Multiple', value: `${equityMultiple.toFixed(2)}x`, tip: 'Total cash returned divided by total equity invested' },
+          ].map((m, i) => (
+            <div key={i} style={{ padding: '16px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <span style={{ fontSize: 12, color: LB, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{m.label}</span>
+                <Tip text={m.tip} />
               </div>
-              <button
-                onClick={() => {
-                  handleFieldChange('pricing_financing.purchase_price', currentPrice);
-                  handleFieldChange('pricing_financing.price', currentPrice);
-                }}
-                style={{ padding: '10px 20px', fontSize: 13, fontWeight: 600, color: AC, background: 'none', border: 'none', cursor: 'pointer' }}
-              >Save</button>
+              <div style={{ fontSize: 32, fontWeight: 800, color: VL, letterSpacing: '-0.02em' }}>{m.value}</div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 12, color: LB, fontWeight: 600, minWidth: 80, textAlign: 'right' }}>{cFmt(minPrice)}</span>
+          ))}
+        </div>
+
+        {/* Purchase Price slider */}
+        <div style={{ background: '#f9fafb', borderRadius: 12, padding: '24px 28px', border: `1px solid ${B}` }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: VL, textAlign: 'center', marginBottom: 14 }}>Purchase Price</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, justifyContent: 'center', marginBottom: 14 }}>
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 15, color: LB, fontWeight: 600 }}>$</span>
               <input
-                type="range"
-                min={minPrice}
-                max={maxPrice}
-                step={50000}
-                value={currentPrice}
+                type="text"
+                value={purchasePrice.toLocaleString()}
                 onChange={(e) => {
-                  const v = parseInt(e.target.value);
-                  handleFieldChange('pricing_financing.purchase_price', v);
-                  handleFieldChange('pricing_financing.price', v);
+                  const v = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0;
+                  handleChange('pricing_financing.purchase_price', v);
+                  handleChange('pricing_financing.price', v);
                 }}
-                style={{ flex: 1, accentColor: AC }}
+                style={{ width: 200, padding: '12px 14px 12px 32px', fontSize: 20, fontWeight: 700, border: `2px solid ${AC}`, borderRadius: 10, outline: 'none', textAlign: 'center', color: VL, background: '#fff' }}
               />
-              <span style={{ fontSize: 12, color: LB, fontWeight: 600, minWidth: 80 }}>{cFmt(maxPrice)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 16 }}>
-              <button onClick={() => navigate('/loi-generator')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 12, fontWeight: 600, color: VL, background: '#fff', border: `1px solid ${B}`, borderRadius: 8, cursor: 'pointer' }}>
-                <span style={{ fontSize: 14 }}>+</span> Create new LOI
+            <button
+              onClick={() => { handleChange('pricing_financing.purchase_price', purchasePrice); handleChange('pricing_financing.price', purchasePrice); }}
+              style={{ padding: '10px 24px', fontSize: 13, fontWeight: 700, color: AC, background: 'none', border: 'none', cursor: 'pointer' }}
+            >Save</button>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <span style={{ fontSize: 12, color: LB, fontWeight: 600, minWidth: 85, textAlign: 'right' }}>{fmt(minPrice)}</span>
+            <input
+              type="range"
+              min={minPrice}
+              max={maxPrice}
+              step={50000}
+              value={purchasePrice}
+              onChange={(e) => {
+                const v = parseInt(e.target.value);
+                handleChange('pricing_financing.purchase_price', v);
+                handleChange('pricing_financing.price', v);
+              }}
+              style={{ flex: 1, accentColor: AC, height: 6 }}
+            />
+            <span style={{ fontSize: 12, color: LB, fontWeight: 600, minWidth: 85 }}>{fmt(maxPrice)}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 20 }}>
+            {[
+              { label: '+ Create new LOI', action: () => navigate('/loi-generator') },
+              { label: '+ Include Refinancing', action: () => { if (onTabChange) onTabChange('exit-strategy'); } },
+            ].map((btn, i) => (
+              <button key={i} onClick={btn.action} style={{ padding: '10px 22px', fontSize: 12, fontWeight: 600, color: VL, background: '#fff', border: `1px solid ${B}`, borderRadius: 8, cursor: 'pointer' }}>
+                {btn.label}
               </button>
-              <button onClick={() => { if (onTabChange) onTabChange('exit-strategy'); }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 12, fontWeight: 600, color: VL, background: '#fff', border: `1px solid ${B}`, borderRadius: 8, cursor: 'pointer' }}>
-                <span style={{ fontSize: 14 }}>+</span> Include Refinancing
-              </button>
-            </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* ═══ 2. PROJECT VALUATION — Cap Rate Sensitivity ═══ */}
-      <div style={SC}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-          <div style={{ width: 4, height: 24, backgroundColor: VL, borderRadius: 2 }} />
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: VL }}>Project Valuation</h3>
-        </div>
+      {/* ═══════════════════════════════════════════════════════════════
+          2. PROJECT VALUATION — Cap Rate Sensitivity
+          ═══════════════════════════════════════════════════════════════ */}
+      <div style={card}>
+        <SectionHead title="Project Valuation" color={VL} />
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 700, color: LB, fontSize: 12, borderBottom: `2px solid ${B}` }}>Cap Rate</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 700, color: LB, fontSize: 12, borderBottom: `2px solid ${B}` }}>Cap Rate</th>
                 {capRates.map((cr, i) => (
-                  <th key={i} style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700, fontSize: 12, borderBottom: `2px solid ${B}`, backgroundColor: i === baseIdx ? `${AC}10` : 'transparent', color: i === baseIdx ? AC : LB, borderRadius: i === baseIdx ? '8px 8px 0 0' : 0 }}>
+                  <th key={i} style={{
+                    padding: '12px 16px', textAlign: 'center', fontWeight: 700, fontSize: 12,
+                    borderBottom: `2px solid ${i === baseIdx ? AC : B}`,
+                    backgroundColor: i === baseIdx ? '#eef2ff' : 'transparent',
+                    color: i === baseIdx ? AC : LB,
+                    borderRadius: i === baseIdx ? '8px 8px 0 0' : 0,
+                  }}>
                     {cr.toFixed(2)}%
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td style={{ padding: '10px 14px', fontWeight: 600, color: LB, fontSize: 12, borderBottom: `1px solid ${B}` }}>Based on Starting NOI</td>
-                {capRates.map((cr, i) => {
-                  const val = cr > 0 ? startingNOI / (cr / 100) : 0;
-                  return (
-                    <td key={i} style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: i === baseIdx ? AC : VL, backgroundColor: i === baseIdx ? `${AC}10` : 'transparent', borderBottom: `1px solid ${B}`, fontSize: 12 }}>
-                      {cFmt(Math.round(val))}
-                    </td>
-                  );
-                })}
-              </tr>
-              <tr>
-                <td style={{ padding: '10px 14px', fontWeight: 600, color: LB, fontSize: 12 }}>Based on Optimized NOI</td>
-                {capRates.map((cr, i) => {
-                  const val = cr > 0 ? optimizedNOI / (cr / 100) : 0;
-                  return (
-                    <td key={i} style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 700, color: i === baseIdx ? AC : VL, backgroundColor: i === baseIdx ? `${AC}10` : 'transparent', fontSize: 12 }}>
-                      {cFmt(Math.round(val))}
-                    </td>
-                  );
-                })}
-              </tr>
+              {[
+                { label: 'Based on Starting NOI', noi: startingNOI, bold: false },
+                { label: 'Based on Optimized NOI', noi: optimizedNOI, bold: true },
+              ].map((row, ri) => (
+                <tr key={ri}>
+                  <td style={{ padding: '12px 16px', fontWeight: 600, color: LB, fontSize: 12, borderBottom: ri === 0 ? `1px solid ${B}` : 'none' }}>{row.label}</td>
+                  {capRates.map((cr, i) => {
+                    const val = cr > 0 ? row.noi / (cr / 100) : 0;
+                    return (
+                      <td key={i} style={{
+                        padding: '12px 16px', textAlign: 'center', fontWeight: row.bold ? 700 : 600,
+                        color: i === baseIdx ? AC : VL,
+                        backgroundColor: i === baseIdx ? '#eef2ff' : 'transparent',
+                        borderBottom: ri === 0 ? `1px solid ${B}` : 'none', fontSize: 13,
+                      }}>
+                        {fmt(val)}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* ═══ 3. YEARLY CASH FLOW CHART ═══ */}
-      <div style={SC}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 4, height: 24, backgroundColor: VL, borderRadius: 2 }} />
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: VL }}>Yearly Cash Flow</h3>
-          </div>
-          <button onClick={() => { if (onTabChange) onTabChange('cashflow'); }} style={{ fontSize: 12, color: LB, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>View Details &rsaquo;</button>
-        </div>
-        <div style={{ width: '100%', height: 280 }}>
+      {/* ═══════════════════════════════════════════════════════════════
+          3. YEARLY CASH FLOW CHART
+          ═══════════════════════════════════════════════════════════════ */}
+      <div style={card}>
+        <SectionHead title="Yearly Cash Flow" color={VL}>
+          <button onClick={() => { if (onTabChange) onTabChange('cashflow'); }} style={{ fontSize: 12, color: LB, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>View Details ›</button>
+        </SectionHead>
+        <div style={{ width: '100%', height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={yearlyData} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
               <defs>
-                <linearGradient id="cfGrad" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="compCfGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={AC} stopOpacity={0.15} />
                   <stop offset="95%" stopColor={AC} stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: LB }} axisLine={false} tickLine={false} />
-              <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: LB }} axisLine={false} tickLine={false} width={60}
-                domain={['auto', 'auto']} />
-              <Tooltip formatter={(v) => [cFmt(Math.round(v)), 'Cash Flow']} labelStyle={{ fontWeight: 700 }} />
-              <Area type="monotone" dataKey="cashFlow" stroke={AC} strokeWidth={2.5} fill="url(#cfGrad)" dot={{ r: 3, fill: AC }} activeDot={{ r: 5 }} />
+              <YAxis
+                tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                tick={{ fontSize: 11, fill: LB }} axisLine={false} tickLine={false} width={65}
+              />
+              <Tooltip
+                formatter={(v) => [fmt(v), 'Cash Flow']}
+                labelStyle={{ fontWeight: 700 }}
+                contentStyle={{ borderRadius: 8, border: `1px solid ${B}`, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+              />
+              <Area type="monotone" dataKey="cashFlow" stroke={AC} strokeWidth={2.5} fill="url(#compCfGrad)" dot={{ r: 4, fill: AC, stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 6 }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
         {yearlyData.length > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-            <span style={{ fontSize: 11, color: LB }}>{cFmt(Math.round(Math.min(...yearlyData.map(d => d.cashFlow))))}</span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: VL }}>{cFmt(Math.round(Math.max(...yearlyData.map(d => d.cashFlow))))}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, padding: '0 4px' }}>
+            <span style={{ fontSize: 11, color: LB }}>{fmt(Math.min(...yearlyData.map(d => d.cashFlow)))}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: VL }}>{fmt(Math.max(...yearlyData.map(d => d.cashFlow)))}</span>
           </div>
         )}
       </div>
 
-      {/* ═══ 4. PROFITABILITY TABLE ═══ */}
-      <div style={SC}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 4, height: 24, backgroundColor: VL, borderRadius: 2 }} />
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: VL }}>Profitability</h3>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      {/* ═══════════════════════════════════════════════════════════════
+          4. PROFITABILITY
+          ═══════════════════════════════════════════════════════════════ */}
+      <div style={card}>
+        <SectionHead title="Profitability" color={VL}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             {/* Include Sale toggle */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 12, color: LB, fontWeight: 600 }}>Include Sale</span>
-              <div onClick={() => setIncludeSale(!includeSale)} style={{ width: 40, height: 22, backgroundColor: includeSale ? AC : '#d1d5db', borderRadius: 11, padding: 2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: includeSale ? 'flex-end' : 'flex-start', transition: 'background 0.2s' }}>
+              <div
+                onClick={() => setIncludeSale(!includeSale)}
+                style={{
+                  width: 40, height: 22, backgroundColor: includeSale ? AC : '#d1d5db',
+                  borderRadius: 11, padding: 2, cursor: 'pointer', display: 'flex', alignItems: 'center',
+                  justifyContent: includeSale ? 'flex-end' : 'flex-start', transition: 'background 0.2s',
+                }}
+              >
                 <div style={{ width: 18, height: 18, backgroundColor: '#fff', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
               </div>
             </div>
-            {/* Monetary / Percentage selector */}
-            <select value={displayMode} onChange={(e) => setDisplayMode(e.target.value)} style={{ fontSize: 12, padding: '4px 8px', border: `1px solid ${B}`, borderRadius: 6, color: VL, fontWeight: 600, cursor: 'pointer' }}>
+            {/* Monetary / Percentage */}
+            <select value={displayMode} onChange={(e) => setDisplayMode(e.target.value)} style={{ fontSize: 12, padding: '5px 10px', border: `1px solid ${B}`, borderRadius: 6, color: VL, fontWeight: 600, cursor: 'pointer', background: '#fff' }}>
               <option value="monetary">Monetary</option>
               <option value="percentage">Percentage</option>
             </select>
-            {/* Table / Chart toggle */}
+            {/* Table / Chart */}
             <div style={{ display: 'flex', border: `1px solid ${B}`, borderRadius: 6, overflow: 'hidden' }}>
-              <button onClick={() => setProfitView('table')} style={{ padding: '4px 10px', fontSize: 12, fontWeight: 600, background: profitView === 'table' ? AC : '#fff', color: profitView === 'table' ? '#fff' : LB, border: 'none', cursor: 'pointer' }}>&#9638;</button>
-              <button onClick={() => setProfitView('chart')} style={{ padding: '4px 10px', fontSize: 12, fontWeight: 600, background: profitView === 'chart' ? AC : '#fff', color: profitView === 'chart' ? '#fff' : LB, border: 'none', cursor: 'pointer' }}>&#9636;</button>
+              <button onClick={() => setProfitView('table')} style={{ padding: '5px 12px', fontSize: 13, fontWeight: 600, background: profitView === 'table' ? AC : '#fff', color: profitView === 'table' ? '#fff' : LB, border: 'none', cursor: 'pointer' }}>▦</button>
+              <button onClick={() => setProfitView('chart')} style={{ padding: '5px 12px', fontSize: 13, fontWeight: 600, background: profitView === 'chart' ? AC : '#fff', color: profitView === 'chart' ? '#fff' : LB, border: 'none', cursor: 'pointer', borderLeft: `1px solid ${B}` }}>▤</button>
             </div>
           </div>
-        </div>
+        </SectionHead>
 
         {profitView === 'table' ? (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
                 <tr style={{ borderBottom: `2px solid ${B}` }}>
-                  <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 700, color: LB, minWidth: 140 }}></th>
-                  <th style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: LB }}>Average</th>
+                  <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 700, color: LB, minWidth: 160 }}></th>
+                  <th style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 700, color: LB }}>Average</th>
                   {yearlyData.map((d, i) => (
-                    <th key={i} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: LB, minWidth: 90 }}>
+                    <th key={i} style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 700, color: LB, minWidth: 100 }}>
                       <div>Year {d.year}</div>
-                      <div style={{ fontSize: 10, fontWeight: 500 }}>{d.dateLabel}</div>
+                      <div style={{ fontSize: 10, fontWeight: 500, color: '#9ca3af' }}>{d.dateLabel}</div>
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {profitRows.map((row, ri) => (
-                  <tr key={ri} style={{ backgroundColor: row.highlight ? `${AC}08` : (ri % 2 === 0 ? '#fff' : '#f9fafb'), borderBottom: `1px solid ${B}` }}>
-                    <td style={{ padding: '10px 14px', fontWeight: row.highlight ? 700 : 600, color: row.highlight ? AC : VL }}>{row.label}</td>
-                    <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, color: VL }}>{formatVal(row.avg)}</td>
+                  <tr key={ri} style={{
+                    backgroundColor: row.highlight ? '#f5f3ff' : (ri % 2 === 0 ? '#fff' : '#fafafa'),
+                    borderBottom: `1px solid ${B}`,
+                  }}>
+                    <td style={{ padding: '12px 16px', fontWeight: row.highlight ? 700 : 600, color: row.highlight ? AC : VL, fontSize: 12 }}>{row.label}</td>
+                    <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: VL }}>{fmtProfitVal(row.avg)}</td>
                     {row.values.map((v, vi) => (
-                      <td key={vi} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: row.highlight ? 700 : 500, color: row.highlight ? AC : (v > 0 ? VL : v < 0 ? '#ef4444' : LB) }}>
-                        {formatVal(v)}
+                      <td key={vi} style={{ padding: '12px 16px', textAlign: 'right', fontWeight: row.highlight ? 700 : 500, color: row.highlight ? AC : (v > 0 ? VL : v < 0 ? '#ef4444' : LB) }}>
+                        {fmtProfitVal(v)}
                       </td>
                     ))}
                   </tr>
@@ -376,13 +409,13 @@ export default function CompressedTab({
             </table>
           </div>
         ) : (
-          <div style={{ width: '100%', height: 300 }}>
+          <div style={{ width: '100%', height: 320 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={yearlyData} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: LB }} />
-                <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: LB }} width={60} />
-                <Tooltip formatter={(v, name) => [cFmt(Math.round(v)), name]} />
+                <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: LB }} width={65} />
+                <Tooltip formatter={(v, name) => [fmt(v), name]} contentStyle={{ borderRadius: 8, border: `1px solid ${B}` }} />
                 <Legend />
                 <Bar dataKey="cashFlow" name="Cash Flow" fill={AC} radius={[4, 4, 0, 0]} />
                 <Bar dataKey="principalPaydown" name="Principal Paydown" fill="#10b981" radius={[4, 4, 0, 0]} />
@@ -392,120 +425,125 @@ export default function CompressedTab({
         )}
       </div>
 
-      {/* ═══ 5. CAPITAL STRUCTURE + TOTAL INVESTMENT RETURN (side by side) ═══ */}
+      {/* ═══════════════════════════════════════════════════════════════
+          5. CAPITAL STRUCTURE + TOTAL INVESTMENT RETURN (side by side)
+          ═══════════════════════════════════════════════════════════════ */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
 
         {/* Capital Structure */}
-        <div style={SC}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 4, height: 24, backgroundColor: VL, borderRadius: 2 }} />
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: VL }}>Capital Structure</h3>
-            </div>
+        <div style={card}>
+          <SectionHead title="Capital Structure" color={VL}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: 12, color: LB, fontWeight: 600 }}>Year {capStructYear}</span>
-                <select value={capStructYear} onChange={(e) => setCapStructYear(Number(e.target.value))} style={{ fontSize: 12, padding: '2px 6px', border: `1px solid ${B}`, borderRadius: 4, color: VL }}>
+                <select value={capStructYear} onChange={(e) => setCapStructYear(Number(e.target.value))} style={{ fontSize: 12, padding: '3px 8px', border: `1px solid ${B}`, borderRadius: 6, color: VL, background: '#fff' }}>
                   {[0, ...yearlyData.map(d => d.year)].map(yr => <option key={yr} value={yr}>Year {yr}</option>)}
                 </select>
               </div>
-              <div style={{ display: 'flex', gap: 16 }}>
+              <div style={{ display: 'flex', gap: 20 }}>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 10, color: LB, fontWeight: 600 }}>LTC</div>
+                  <div style={{ fontSize: 10, color: LB, fontWeight: 600, textTransform: 'uppercase' }}>LTC</div>
                   <div style={{ fontSize: 16, fontWeight: 800, color: '#10b981' }}>{Math.round(capStructData.ltc)}%</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 10, color: LB, fontWeight: 600 }}>DSCR</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: '#10b981' }}>{capStructData.dscr.toFixed(2)}x</div>
+                  <div style={{ fontSize: 10, color: LB, fontWeight: 600, textTransform: 'uppercase' }}>DSCR</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#10b981' }}>{(capStructData.dscr || 0).toFixed(2)}x</div>
                 </div>
               </div>
             </div>
-          </div>
+          </SectionHead>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-            <div style={{ background: '#1e293b', borderRadius: 12, padding: '20px 24px', color: '#fff' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>Equity</span>
-                <span title="Total equity invested" style={{ width: 14, height: 14, borderRadius: '50%', border: '1px solid #475569', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: '#94a3b8', cursor: 'help' }}>?</span>
+            {[
+              { label: 'Equity', value: capStructData.equity, pctLabel: `${equityPct}%`, tip: 'Total equity invested' },
+              { label: 'Debt', value: capStructData.debt, pctLabel: `${debtPct}%`, tip: 'Total debt / loan amount' },
+            ].map((item, i) => (
+              <div key={i} style={{ background: '#1e293b', borderRadius: 12, padding: '20px 24px', color: '#fff' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{item.label}</span>
+                  <span title={item.tip} style={{ width: 14, height: 14, borderRadius: '50%', border: '1px solid #475569', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: '#94a3b8', cursor: 'help' }}>?</span>
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 800 }}>{fmt(item.value)}</div>
+                <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>{item.pctLabel}</div>
               </div>
-              <div style={{ fontSize: 24, fontWeight: 800 }}>{cFmt(capStructData.equity)}</div>
-              <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>{equityPct}%</div>
-            </div>
-            <div style={{ background: '#1e293b', borderRadius: 12, padding: '20px 24px', color: '#fff' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>Debt</span>
-                <span title="Total debt / loan amount" style={{ width: 14, height: 14, borderRadius: '50%', border: '1px solid #475569', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: '#94a3b8', cursor: 'help' }}>?</span>
-              </div>
-              <div style={{ fontSize: 24, fontWeight: 800 }}>{cFmt(capStructData.debt)}</div>
-              <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>{debtPct}%</div>
-            </div>
+            ))}
           </div>
-          <div style={{ background: `${AC}08`, borderRadius: 12, padding: '16px 20px', border: `1px solid ${AC}20` }}>
+          <div style={{ background: '#f5f3ff', borderRadius: 12, padding: '16px 20px', border: '1px solid #e0e0ff' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
               <span style={{ fontSize: 11, color: LB, fontWeight: 600 }}>Acquisition Cost</span>
-              <span title="Purchase price + closing costs + capex" style={{ width: 14, height: 14, borderRadius: '50%', border: `1px solid ${B}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: LB, cursor: 'help' }}>?</span>
+              <Tip text="Purchase price + closing costs + capex" />
             </div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: AC }}>{cFmt(acquisitionCost)}</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: AC }}>{fmt(acquisitionCost)}</div>
           </div>
         </div>
 
         {/* Total Investment Return */}
-        <div style={SC}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 4, height: 24, backgroundColor: VL, borderRadius: 2 }} />
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: VL }}>Total Investment Return</h3>
-            </div>
+        <div style={card}>
+          <SectionHead title="Total Investment Return" color={VL}>
             <div style={{ display: 'flex', border: `1px solid ${B}`, borderRadius: 6, overflow: 'hidden' }}>
-              <button style={{ padding: '4px 12px', fontSize: 12, fontWeight: 600, background: '#fff', color: VL, border: 'none', borderRight: `1px solid ${B}`, cursor: 'pointer' }}>$</button>
-              <button style={{ padding: '4px 12px', fontSize: 12, fontWeight: 600, background: '#f9fafb', color: LB, border: 'none', cursor: 'pointer' }}>$/sq. ft</button>
+              <button style={{ padding: '5px 14px', fontSize: 12, fontWeight: 600, background: '#fff', color: VL, border: 'none', borderRight: `1px solid ${B}`, cursor: 'pointer' }}>$</button>
+              <button style={{ padding: '5px 14px', fontSize: 12, fontWeight: 600, background: '#f9fafb', color: LB, border: 'none', cursor: 'pointer' }}>$/sq. ft</button>
             </div>
-          </div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: VL, marginBottom: 12 }}>Profit Breakdown</div>
+          </SectionHead>
+
+          <div style={{ fontSize: 13, fontWeight: 700, color: VL, marginBottom: 14 }}>Profit Breakdown</div>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <tbody>
               {[
-                { label: 'Annual Cash Flows', value: cumCashFlows, tip: 'Sum of all annual cash flows over hold period', color: VL },
-                { label: 'Net Sale Price', value: netSalePrice, tip: 'Gross sale price at exit', color: VL },
-                { label: 'Loan Balance at Exit', value: -Math.abs(loanBalAtExit), tip: 'Remaining loan balance paid off at sale', color: '#ef4444' },
+                { label: 'Annual Cash Flows', value: cumCashFlows, tip: 'Sum of all annual cash flows over hold period', negative: false },
+                { label: 'Net Sale Price', value: netSalePrice, tip: 'Gross sale price at exit', negative: false },
+                { label: 'Loan Balance at Exit', value: loanBalAtExit, tip: 'Remaining loan balance paid off at sale', negative: true },
               ].map((r, i) => (
-                <tr key={i}>
-                  <td style={{ padding: '8px 0', color: LB, fontWeight: 500 }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '10px 0', color: LB, fontWeight: 500 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       {r.label}
-                      <span title={r.tip} style={{ width: 14, height: 14, borderRadius: '50%', border: `1px solid ${B}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: LB, cursor: 'help' }}>?</span>
+                      <Tip text={r.tip} />
                     </span>
                   </td>
-                  <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: 600, color: r.color }}>{r.value < 0 ? `$-${Math.abs(r.value).toLocaleString()}` : cFmt(Math.round(r.value))}</td>
+                  <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 600, color: r.negative ? '#ef4444' : VL }}>
+                    {r.negative ? `-${fmt(Math.abs(r.value))}` : fmt(r.value)}
+                  </td>
                 </tr>
               ))}
               <tr style={{ borderTop: `2px solid ${B}` }}>
-                <td style={{ padding: '10px 0', fontWeight: 700, color: VL }}>Total Cash Received</td>
-                <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 800, color: VL }}>{cFmt(Math.round(cumCashFlows + netSalePrice - Math.abs(loanBalAtExit)))}</td>
+                <td style={{ padding: '12px 0', fontWeight: 700, color: VL }}>Total Cash Received</td>
+                <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 800, color: VL, fontSize: 14 }}>{fmt(totalCashReceived)}</td>
               </tr>
-              <tr><td colSpan={2} style={{ height: 8 }}></td></tr>
+
+              <tr><td colSpan={2} style={{ height: 12 }}></td></tr>
+
               {[
-                { label: 'Purchase Price', value: purchasePrice, color: VL },
-                { label: 'Closing Cost and Fees', value: closingCosts, tip: 'Estimated closing costs (legal, title, etc.)', color: VL },
-                { label: 'Initial Investment', value: initialInvestment, tip: 'Additional upfront capital investment', color: VL },
-                { label: 'Financed By Debt', value: -financedByDebt, tip: 'Loan proceeds used to fund acquisition', color: '#10b981' },
+                { label: 'Purchase Price', value: purchasePrice, negative: false },
+                { label: 'Closing Cost and Fees', value: closingCosts, tip: 'Estimated closing costs (legal, title, etc.)', negative: false },
+                { label: 'Initial Investment', value: initialInvestment, tip: 'Additional upfront capital investment', negative: false },
+                { label: 'Financed By Debt', value: financedByDebt, tip: 'Loan proceeds used to fund acquisition', negative: true, green: true },
               ].map((r, i) => (
-                <tr key={i}>
-                  <td style={{ padding: '8px 0', color: LB, fontWeight: 500 }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '10px 0', color: LB, fontWeight: 500 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       {r.label}
-                      {r.tip && <span title={r.tip} style={{ width: 14, height: 14, borderRadius: '50%', border: `1px solid ${B}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: LB, cursor: 'help' }}>?</span>}
+                      {r.tip && <Tip text={r.tip} />}
                     </span>
                   </td>
-                  <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: 600, color: r.color }}>{r.value < 0 ? `$-${Math.abs(r.value).toLocaleString()}` : cFmt(Math.round(r.value))}</td>
+                  <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 600, color: r.green ? '#10b981' : VL }}>
+                    {r.negative ? `-${fmt(Math.abs(r.value))}` : fmt(r.value)}
+                  </td>
                 </tr>
               ))}
               <tr style={{ borderTop: `2px solid ${B}` }}>
-                <td style={{ padding: '10px 0', fontWeight: 700, color: VL }}>Total Cash Invested</td>
-                <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 800, color: VL }}>{cFmt(Math.round(totalCashInvested > 0 ? totalCashInvested : totalEquity))}</td>
+                <td style={{ padding: '12px 0', fontWeight: 700, color: VL }}>Total Cash Invested</td>
+                <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 800, color: VL, fontSize: 14 }}>{fmt(totalCashInvested > 0 ? totalCashInvested : totalEquity)}</td>
               </tr>
-              <tr style={{ backgroundColor: `${AC}08`, borderRadius: 8 }}>
-                <td style={{ padding: '12px 8px', fontWeight: 800, color: AC, borderRadius: '8px 0 0 8px' }}>Total Profit</td>
-                <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 800, fontSize: 16, color: compTotalProfit >= 0 ? '#10b981' : '#ef4444', borderRadius: '0 8px 8px 0' }}>{cFmt(Math.round(compTotalProfit > 0 ? compTotalProfit : totalProfit))}</td>
+              <tr>
+                <td colSpan={2} style={{ paddingTop: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f5f3ff', borderRadius: 10, padding: '14px 16px', border: '1px solid #e0e0ff' }}>
+                    <span style={{ fontWeight: 800, color: AC, fontSize: 14 }}>Total Profit</span>
+                    <span style={{ fontWeight: 800, fontSize: 18, color: (compTotalProfit > 0 ? compTotalProfit : totalProfit) >= 0 ? '#10b981' : '#ef4444' }}>
+                      {fmt(compTotalProfit > 0 ? compTotalProfit : totalProfit)}
+                    </span>
+                  </div>
+                </td>
               </tr>
             </tbody>
           </table>

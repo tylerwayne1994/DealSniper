@@ -368,7 +368,7 @@ Deal context (for quick reference):
 - Year 1 DSCR: ${promptDSCR.toFixed(2)}x
 - Year 1 cash-on-cash: ${promptCashOnCash.toFixed(2)}%
 - Day-one cash flow after financing: $${promptDayOneCashFlow.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-- Modeled hold IRR (levered): ${(promptLeveredIRR * 100).toFixed(2)}%
+- Modeled hold IRR (levered): ${promptLeveredIRR.toFixed(2)}%
 - Modeled equity multiple: ${promptEquityMultiple.toFixed(2)}x
 
 Using ALL of the underlying scenario data and structures (Traditional, Seller Finance, Equity Partner, Seller Carry, Lease Option, and any others the model exposes), do the following in order:
@@ -1442,7 +1442,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
                       : 'N/A'}
                   </div>
                   <div style={{ flex: '1', padding: '12px 20px', textAlign: 'right', fontSize: '14px', color: '#ef4444' }}>
-                    {fullCalcs.returns?.leveredIRR ? `${(fullCalcs.returns.leveredIRR * 100).toFixed(1)}%` : '-174.0%'}
+                    {fullCalcs.returns?.leveredIRR != null ? `${fullCalcs.returns.leveredIRR.toFixed(1)}%` : 'N/A'}
                   </div>
                 </div>
                 
