@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Legend, Cell } from 'recharts';
 import { Clock, Percent, Layers, Users, TrendingUp, Home as HomeIcon, DollarSign, Briefcase, Activity, Map as MapIcon, Info, Shield } from 'lucide-react';
 import { MapContainer, TileLayer, CircleMarker, Tooltip as LeafletTooltip, GeoJSON, useMap } from 'react-leaflet';
@@ -442,16 +442,19 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
   useEffect(() => {
     const loadEnrichedData = async () => {
       try {
-        const [densityRes, renterOwnerRes, zipDp03Res, zipDp04Res, zipPopRes, zhviRes, countyDp03Res, countyDp04Res, countyPopRes] = await Promise.all([
+        const [densityRes, renterOwnerRes, zipDp03Res, zipDp04Res, zipPopRes, zhviRes, countyDp03Res, countyDp04Res, countyPopRes, zhviGrowthRes, propTaxRes, popGrowthRes] = await Promise.all([
           fetch('/zcta_density.csv'),
           fetch('/zip_renter_owner_stats_with_counts.csv'),
           fetch('/ZIPACSDP5Y2023.DP03-Data.csv'),
           fetch('/ZIPACSDP5Y2023.DP04-Data.csv'),
           fetch('/ZIPACSDT5Y2023.B01003-Data.csv'),
           fetch('/Zip_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv'),
-          fetch('/ACSDP5Y2023.DP03-Data.csv'),
-          fetch('/ACSDP5Y2023.DP04-Data.csv'),
+          fetch('/county_dp03_slim.csv'),
+          fetch('/county_dp04_slim.csv'),
           fetch('/ACSDT5Y2023.B01003-Data.csv'),
+          fetch('/Zip_zhvf_growth_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv'),
+          fetch('/Property Taxes by State and County, 2025  Tax Foundation Maps.csv'),
+          fetch('/zip_city_units_rent_percent_pop_2017_23.csv'),
         ]);
 
         const zipMerged = {};
@@ -554,28 +557,62 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
           }});
         }
 
-        // 7. County DP03 (income, employment)
+        // 6b. Zillow ZHVI growth forecast
+        if (zhviGrowthRes?.ok) {
+          const txt = await zhviGrowthRes.text();
+          Papa.parse(txt, { header: true, skipEmptyLines: true, complete: (r) => {
+            if (r.data.length > 0) {
+              const cols = Object.keys(r.data[0]);
+              const lastDateCol = cols[cols.length - 1]; // furthest forecast
+              r.data.forEach(row => {
+                const z = String(row.RegionName || '').padStart(5, '0');
+                if (!zipMerged[z]) zipMerged[z] = {};
+                zipMerged[z].zhviGrowth = pf(row[lastDateCol]);
+                zipMerged[z].zhviBaseDate = row.BaseDate || null;
+              });
+            }
+          }});
+        }
+
+        // 6c. Population growth (2017-2023)
+        if (popGrowthRes?.ok) {
+          const txt = await popGrowthRes.text();
+          Papa.parse(txt, { header: true, skipEmptyLines: true, complete: (r) => {
+            r.data.forEach(row => {
+              const z = String(row.zip || '').padStart(5, '0');
+              if (!zipMerged[z]) zipMerged[z] = {};
+              const pop23 = pf(row.population_2023);
+              const pop17 = pf(row.population_2017);
+              if (pop23 && pop17 && pop17 > 0) {
+                zipMerged[z].popGrowth = ((pop23 - pop17) / pop17 * 100);
+              }
+              if (pop23) zipMerged[z].population = pop23; // overwrite with newer data
+              zipMerged[z].zipCity = row.city || null;
+              zipMerged[z].zipState = row.state || null;
+            });
+          }});
+        }
+
+        // 7. County DP03 (income, employment) - using slimmed CSV
         if (countyDp03Res.ok) {
           const txt = await countyDp03Res.text();
           Papa.parse(txt, { header: true, skipEmptyLines: true, complete: (r) => {
             r.data.forEach(row => {
-              if (row.GEO_ID === 'Geography') return; // skip descriptor row
               const fips = getFips5(row.GEO_ID);
               if (!fips) return;
               if (!countyMerged[fips]) countyMerged[fips] = {};
-              countyMerged[fips].name = (row.NAME || '').replace(' County', '').replace(' Parish', '').replace(' Borough', '');
+              countyMerged[fips].name = (row.NAME || '').replace(/ County| Parish| Borough/gi, '').trim();
               countyMerged[fips].income = pf(row.DP03_0062E);
               countyMerged[fips].empRate = pf(row.DP03_0002PE);
             });
           }});
         }
 
-        // 8. County DP04 (housing, rent, vacancy, home value)
+        // 8. County DP04 (housing, rent, vacancy, home value, tenure) - using slimmed CSV
         if (countyDp04Res.ok) {
           const txt = await countyDp04Res.text();
           Papa.parse(txt, { header: true, skipEmptyLines: true, complete: (r) => {
             r.data.forEach(row => {
-              if (row.GEO_ID === 'Geography') return;
               const fips = getFips5(row.GEO_ID);
               if (!fips) return;
               if (!countyMerged[fips]) countyMerged[fips] = {};
@@ -583,6 +620,14 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
               countyMerged[fips].occupied = pf(row.DP04_0002E);
               countyMerged[fips].vacant = pf(row.DP04_0003E);
               countyMerged[fips].vacancyRate = pf(row.DP04_0003PE);
+              countyMerged[fips].ownerOccupied = pf(row.DP04_0051E);
+              countyMerged[fips].renterOccupied = pf(row.DP04_0052E);
+              const owner = pf(row.DP04_0051E);
+              const renter = pf(row.DP04_0052E);
+              if (owner && renter && (owner + renter) > 0) {
+                countyMerged[fips].pctRenter = (renter / (owner + renter)) * 100;
+                countyMerged[fips].pctOwner = (owner / (owner + renter)) * 100;
+              }
               countyMerged[fips].rent = pf(row.DP04_0134E);
               countyMerged[fips].medianHomeValue = pf(row.DP04_0089E);
             });
@@ -599,6 +644,28 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
               if (!fips) return;
               if (!countyMerged[fips]) countyMerged[fips] = {};
               countyMerged[fips].population = pf(row.B01003_001E);
+            });
+          }});
+        }
+
+        // 10. Property tax rates by county
+        if (propTaxRes?.ok) {
+          const txt = await propTaxRes.text();
+          Papa.parse(txt, { header: true, skipEmptyLines: true, complete: (r) => {
+            r.data.forEach(row => {
+              const countyName = (row.County || '').trim();
+              const stateName = (row.State || '').trim();
+              const taxRate = row['Effective Property Tax Rate (2023)'];
+              const medTax = row['Median Property Taxes Paid, 2023 ($)(5-Year Estimate)'];
+              // Match to county by finding FIPS in countyMerged that matches name
+              Object.entries(countyMerged).forEach(([fips, cd]) => {
+                const cdName = (cd.name || '').toLowerCase().replace(/ county| parish| borough/gi, '').trim();
+                const csvName = countyName.toLowerCase().replace(/ county| parish| borough/gi, '').trim();
+                if (cdName === csvName && (cd.name || '').toLowerCase().includes(stateName.toLowerCase().substring(0, 4))) {
+                  cd.taxRate = taxRate ? parseFloat(taxRate.replace('%', '')) : null;
+                  cd.medianTax = pf(medTax);
+                }
+              });
             });
           }});
         }
@@ -1010,9 +1077,18 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                     const v = cd.medianHomeValue;
                     return v < 150000 ? '#16a34a' : v < 250000 ? '#84cc16' : v < 400000 ? '#eab308' : v < 600000 ? '#f59e0b' : '#dc2626';
                   }
-                  if (heatMetric === 'renterPct' && cd?.totalHousing && cd?.occupied) {
-                    const renterEst = cd.totalHousing - cd.occupied > 0 ? ((cd.totalHousing - cd.occupied) / cd.totalHousing * 100) : 0;
-                    return renterEst < 20 ? '#f5f3ff' : renterEst < 30 ? '#ddd6fe' : renterEst < 40 ? '#a78bfa' : renterEst < 55 ? '#7c3aed' : '#5b21b6';
+                  if (heatMetric === 'renterPct' && cd?.pctRenter != null) {
+                    const rp = cd.pctRenter;
+                    return rp < 20 ? '#f5f3ff' : rp < 30 ? '#ddd6fe' : rp < 40 ? '#a78bfa' : rp < 55 ? '#7c3aed' : '#5b21b6';
+                  }
+                  if (heatMetric === 'density' && cd?.population) {
+                    // County-level density proxy: use population brackets
+                    const p = cd.population;
+                    return p < 10000 ? '#dbeafe' : p < 50000 ? '#93c5fd' : p < 200000 ? '#3b82f6' : p < 500000 ? '#1d4ed8' : '#1e3a8a';
+                  }
+                  if (heatMetric === 'migration') {
+                    // No direct county migration data, use FMR as fallback
+                    return fmrColor(fmrRow?.fmr2);
                   }
                   // Default: FMR-based color
                   return fmrColor(fmrRow?.fmr2);
@@ -1047,6 +1123,8 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                     if (cd?.vacancyRate != null) tip += `<div>Vacancy: ${cd.vacancyRate.toFixed(1)}%</div>`;
                     if (cd?.medianHomeValue) tip += `<div>Home Value: $${Math.round(cd.medianHomeValue).toLocaleString()}</div>`;
                     if (cd?.rent) tip += `<div>Median Rent: $${Math.round(cd.rent).toLocaleString()}</div>`;
+                    if (cd?.pctRenter != null) tip += `<div>Renter: ${cd.pctRenter.toFixed(1)}%</div>`;
+                    if (cd?.taxRate != null) tip += `<div>Tax Rate: ${cd.taxRate.toFixed(2)}%</div>`;
                     tip += `<div style="color:#6b7280;font-size:10px">FIPS: ${fips}</div></div>`;
                     layer.bindTooltip(tip, { sticky: true });
 
@@ -1084,6 +1162,9 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                   migrationData={migrationData}
                   censusData={zipCensusData}
                   metric={heatMetric}
+                  onSelectZip={(zip, coords, data) => {
+                    setSelectedFeature({ type: 'zip', id: zip, data: data || fmrData[zip] || {}, source: 'zip_marker' });
+                  }}
                 />
               )}
 
@@ -1229,8 +1310,11 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                         <div className="border-t border-gray-200 pt-1 mt-1" />
                         {d.totalHousing && <div>Housing Units: {Math.round(d.totalHousing).toLocaleString()}</div>}
                         {d.vacancyRate != null && <div>Vacancy Rate: {d.vacancyRate.toFixed(1)}%</div>}
+                        {d.pctRenter != null && <div>Renter: {d.pctRenter.toFixed(1)}% | Owner: {(d.pctOwner || 0).toFixed(1)}%</div>}
                         {d.rent && <div>Median Rent: ${Math.round(d.rent).toLocaleString()}</div>}
                         {d.medianHomeValue && <div>Median Home Value: ${Math.round(d.medianHomeValue).toLocaleString()}</div>}
+                        {d.taxRate != null && <div>Effective Tax Rate: {d.taxRate.toFixed(2)}%</div>}
+                        {d.medianTax && <div>Median Tax Paid: ${Math.round(d.medianTax).toLocaleString()}</div>}
                         {selectedFeature.id && <div className="text-gray-400 mt-1 text-[10px]">FIPS: {selectedFeature.id}</div>}
                       </div>
                     );
@@ -1249,11 +1333,13 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                         {d.fmr2 && <div className="font-semibold">FMR (2BR): ${Math.round(d.fmr2).toLocaleString()}</div>}
                         {zc.rent && <div>Census Median Rent: ${Math.round(zc.rent).toLocaleString()}</div>}
                         {zc.zhvi && <div>Home Value (ZHVI): ${Math.round(zc.zhvi).toLocaleString()}</div>}
+                        {zc.zhviGrowth != null && <div>ZHVI Forecast: <span className={zc.zhviGrowth >= 0 ? 'text-green-600' : 'text-red-600'}>{zc.zhviGrowth > 0 ? '+' : ''}{zc.zhviGrowth.toFixed(1)}%</span></div>}
                         <div className="border-t border-gray-200 pt-1 mt-1" />
                         {zc.totalHousing && <div>Housing Units: {Math.round(zc.totalHousing).toLocaleString()}</div>}
                         {zc.vacancyRate != null && <div>Vacancy Rate: {zc.vacancyRate.toFixed(1)}%</div>}
                         {zc.pctRenter != null && <div>Renter: {zc.pctRenter.toFixed(1)}% | Owner: {(zc.pctOwner || 0).toFixed(1)}%</div>}
                         {d.migrationRate !== undefined && <div>Migration: {d.migrationRate > 0 ? '+' : ''}{d.migrationRate.toFixed(1)}‰</div>}
+                        {zc.popGrowth != null && <div>Pop Growth (6yr): <span className={zc.popGrowth >= 0 ? 'text-green-600' : 'text-red-600'}>{zc.popGrowth > 0 ? '+' : ''}{zc.popGrowth.toFixed(1)}%</span></div>}
                         {zc.zhviMetro && <div className="text-[10px] text-gray-400 mt-1">{zc.zhviMetro}</div>}
                       </div>
                     );
