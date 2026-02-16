@@ -184,7 +184,7 @@ const ZipDataMarkers = ({ zipCentroids, fmrData, migrationData, metric, onSelect
           key={zip}
           pane="markerPane"
           center={[coords.lat, coords.lng]}
-          radius={5}
+          radius={3}
           pathOptions={{ fillColor: color, color: color, weight: 1, fillOpacity: 0.7, opacity: 0.9, className: 'clickable-marker' }}
           eventHandlers={{ click: () => onSelectZip && onSelectZip(zip, coords, metric === 'fmr' ? fmrData[zip] : migrationData[zip]) }}
         >
@@ -243,6 +243,7 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
   const [selectedFeature, setSelectedFeature] = useState(null); // { type: 'county'|'zip'|'city', id, data, source }
   // Default: hide ZIP heat/markers until user enables it (avoids inaccurate default layer)
   const [showZipHeat, setShowZipHeat] = useState(false);
+  const [showZipMarkers, setShowZipMarkers] = useState(true);
   const mapRef = useRef(null);
 
   const zipCode = property_location?.zip || propertyLocation?.zip;
@@ -840,7 +841,7 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                 <HeatLayer points={heatPoints} heatMetric={heatMetric} />
               )}
 
-              {heatMetric === 'fmr' && Object.keys(zipCentroids).length > 0 && Object.keys(fmrData).length > 0 && (() => {
+              {showZipMarkers && heatMetric === 'fmr' && Object.keys(zipCentroids).length > 0 && Object.keys(fmrData).length > 0 && (() => {
                 console.log('📍 RENDERING FMR MARKERS');
                 return (
                   <ZipDataMarkers 
@@ -852,7 +853,7 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                 );
               })()}
 
-              {heatMetric === 'migration' && Object.keys(zipCentroids).length > 0 && Object.keys(migrationData).length > 0 && (() => {
+              {showZipMarkers && heatMetric === 'migration' && Object.keys(zipCentroids).length > 0 && Object.keys(migrationData).length > 0 && (() => {
                 console.log('🚶 RENDERING MIGRATION MARKERS');
                 return (
                   <ZipDataMarkers 
@@ -936,6 +937,10 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
               <div className="bg-white/95 backdrop-blur rounded-full shadow-sm border px-3 py-2 text-sm font-semibold flex items-center gap-2">
                 <label className="text-xs mr-2">ZIP Heat</label>
                 <input type="checkbox" checked={showZipHeat} onChange={() => setShowZipHeat((s) => !s)} />
+              </div>
+              <div className="bg-white/95 backdrop-blur rounded-full shadow-sm border px-3 py-2 text-sm font-semibold flex items-center gap-2">
+                <label className="text-xs mr-2">ZIP Dots</label>
+                <input type="checkbox" checked={showZipMarkers} onChange={() => setShowZipMarkers((s) => !s)} />
               </div>
             </div>
 
