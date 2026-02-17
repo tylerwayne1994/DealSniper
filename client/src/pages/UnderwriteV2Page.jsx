@@ -590,6 +590,11 @@ function UnderwriteV2Page() {
           transformedData.pricing_financing.loan_amount = price * (ltv / 100);
         }
       }
+
+      // Stamp the original purchase price so the calculation engine can detect
+      // price changes and recalculate all financing fields proportionally.
+      transformedData.pricing_financing._original_purchase_price =
+        transformedData.pricing_financing.price || transformedData.pricing_financing.purchase_price || 0;
     }
     
     // Ensure financing object exists with defaults from pricing_financing

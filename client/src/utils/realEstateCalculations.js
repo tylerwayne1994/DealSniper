@@ -200,15 +200,55 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   const totalAcquisitionCosts = purchasePrice + closingCosts + acquisitionFee + upfrontCapEx;
   
   // === FINANCING ASSUMPTIONS ===
-  // Use ONLY backend parsed data - NO CALCULATIONS
-  const loanAmount = pricing_financing.loan_amount || 0;
-  const annualDebtService = pricing_financing.annual_debt_service || 0;
-  const downPayment = pricing_financing.down_payment || 0;
-  const monthlyPayment = pricing_financing.monthly_payment || 0;
+  // Read the originally-parsed financing data
+  const parsedLoanAmount = pricing_financing.loan_amount || 0;
+  const parsedDebtService = pricing_financing.annual_debt_service || 0;
+  const parsedDownPayment = pricing_financing.down_payment || 0;
+  const parsedMonthlyPayment = pricing_financing.monthly_payment || 0;
   const rawInterestRate = pricing_financing.interest_rate || 0;
   const interestRate = rawInterestRate > 1 ? rawInterestRate / 100 : rawInterestRate;
   const loanTermYears = pricing_financing.term_years || 10;
   const amortYears = pricing_financing.amortization_years || 30;
+
+  // Derive the original purchase price the loan was underwritten against.
+  // If the user has changed the purchase price, we need to scale all
+  // financing fields proportionally so that every downstream metric
+  // (debt service, DSCR, cash-on-cash, IRR, equity multiple, etc.)
+  // recalculates when the price slider moves.
+  // _original_purchase_price is stamped on initial load. If absent, fall back
+  // to deriving from loan_amount + down_payment (the full capital stack).
+  const originalPrice = pricing_financing._original_purchase_price
+    || (parsedLoanAmount > 0 && parsedDownPayment > 0 ? parsedLoanAmount + parsedDownPayment : 0);
+  const priceHasChanged = originalPrice > 0 && purchasePrice > 0 && Math.abs(purchasePrice - originalPrice) > 1;
+
+  let loanAmount, annualDebtService, downPayment, monthlyPayment;
+
+  if (priceHasChanged && parsedLoanAmount > 0 && originalPrice > 0) {
+    // Preserve the original LTV ratio across price changes
+    const ltv = parsedLoanAmount / originalPrice;
+    loanAmount = purchasePrice * ltv;
+    downPayment = purchasePrice - loanAmount;
+
+    // Recalculate debt service from the new loan amount
+    if (interestRate > 0 && amortYears > 0) {
+      monthlyPayment = calculateMortgagePayment(loanAmount, interestRate, amortYears);
+      annualDebtService = monthlyPayment * 12;
+    } else if (parsedDebtService > 0 && parsedLoanAmount > 0) {
+      // Fallback: scale debt service proportionally
+      const ratio = loanAmount / parsedLoanAmount;
+      annualDebtService = parsedDebtService * ratio;
+      monthlyPayment = annualDebtService / 12;
+    } else {
+      annualDebtService = parsedDebtService;
+      monthlyPayment = parsedMonthlyPayment;
+    }
+  } else {
+    // No price change — use original parsed values as-is
+    loanAmount = parsedLoanAmount;
+    annualDebtService = parsedDebtService;
+    downPayment = parsedDownPayment;
+    monthlyPayment = parsedMonthlyPayment;
+  }
   
   // For display only (percentage 0-100)
   const ltvDecimal = loanAmount > 0 && purchasePrice > 0 ? (loanAmount / purchasePrice) : 0;

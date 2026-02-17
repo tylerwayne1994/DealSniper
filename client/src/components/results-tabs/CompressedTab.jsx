@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
          ResponsiveContainer, Area, AreaChart } from 'recharts';
@@ -63,9 +63,11 @@ export default function CompressedTab({
   // DSCR — try multiple sources
   const dscrVal = dscr || fullCalcs?.year1?.dscr || projections[0]?.dscr || 0;
 
-  // Purchase price slider range
-  const minPrice = Math.round(purchasePrice * 0.4);
-  const maxPrice = Math.round(purchasePrice * 1.6);
+  // Purchase price slider range — based on initial price so range stays stable
+  const initialPriceRef = useRef(purchasePrice);
+  const basePrice = initialPriceRef.current || purchasePrice;
+  const minPrice = Math.round(basePrice * 0.4);
+  const maxPrice = Math.round(basePrice * 1.6);
 
   // Cap rate sensitivity
   const baseCapRate = capRate > 0 ? capRate : 5.0;
