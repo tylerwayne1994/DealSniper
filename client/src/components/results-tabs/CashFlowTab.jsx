@@ -7,10 +7,10 @@ export default function CashFlowTab({ scenarioData }) {
 
   const revenueProjections = useMemo(() => calc.calculateRevenueProjections(data), [data]);
   const expenseProjections = useMemo(() => calc.calculateExpenseProjections(data, revenueProjections), [data, revenueProjections]);
-  const noiProjections = useMemo(() => calc.calculateNOIProjections(revenueProjections, expenseProjections, data.units), [revenueProjections, expenseProjections, data]);
+  const otherIncomeAnnual = useMemo(() => calc.calculateTotalOtherIncome(data.otherIncome), [data]);
+  const noiProjections = useMemo(() => calc.calculateNOIProjections(revenueProjections, expenseProjections, data.units, otherIncomeAnnual), [revenueProjections, expenseProjections, data, otherIncomeAnnual]);
   const financingMetrics = useMemo(() => calc.calculateFinancingMetrics(data, noiProjections), [data, noiProjections]);
   const cashFlowProjections = useMemo(() => calc.calculateCashFlowProjections(noiProjections, financingMetrics, data), [noiProjections, financingMetrics, data]);
-  const otherIncomeAnnual = useMemo(() => calc.calculateTotalOtherIncome(data.otherIncome), [data]);
   const saleAnalysis = useMemo(() => calc.calculateSaleAnalysis(noiProjections, data, financingMetrics), [noiProjections, data, financingMetrics]);
   const equityInvestment = useMemo(() => calc.calculateEquityInvestment(data, financingMetrics), [data, financingMetrics]);
   const irrCashFlows = useMemo(() => calc.calculateIRRCashFlows(equityInvestment, cashFlowProjections, saleAnalysis), [equityInvestment, cashFlowProjections, saleAnalysis]);
@@ -160,7 +160,7 @@ export default function CashFlowTab({ scenarioData }) {
               <td style={{ padding: '8px', fontWeight: 700 }}>Total Operating Expenses</td>
               <td style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderLeft: '1px solid #e5e7eb' }}>$0</td>
               {expenseProjections.map((exp, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(exp.totalOperatingExpenses)}</td>
+                <td key={i} style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(exp.totalExpenses)}</td>
               ))}
             </tr>
 

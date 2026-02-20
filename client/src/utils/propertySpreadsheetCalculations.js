@@ -731,7 +731,7 @@ export const calculateReturnSummary = (data) => {
  * @param {number} units - Number of units
  * @returns {Array} Array of 10 NOI projection objects
  */
-export function calculateNOIProjections(revenueProjections, expenseProjections, units) {
+export function calculateNOIProjections(revenueProjections, expenseProjections, units, otherIncomeAnnual = 0) {
   const years = 10;
   const projections = [];
   
@@ -740,10 +740,10 @@ export function calculateNOIProjections(revenueProjections, expenseProjections, 
     const expense = expenseProjections[year];
     
     // Calculate EGI (Effective Gross Income)
-    const effectiveGrossIncome = revenue.netRentalIncome + revenue.totalOtherIncome;
+    const effectiveGrossIncome = (revenue?.netRentalIncome || 0) + otherIncomeAnnual;
     
     // Calculate NOI
-    const noi = effectiveGrossIncome - expense.totalExpenses;
+    const noi = effectiveGrossIncome - (expense?.totalExpenses || 0);
     
     // Calculate expense ratio (Operating Expenses / EGI)
     const expenseRatio = safeDivide(expense.totalExpenses, effectiveGrossIncome);

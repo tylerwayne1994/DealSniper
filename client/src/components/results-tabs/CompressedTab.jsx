@@ -34,12 +34,12 @@ export default function CompressedTab({
 
   // ── Formatters ──
   const fmt = (v) => {
-    if (v == null || isNaN(v)) return '$0';
+    if (v == null || isNaN(v) || !isFinite(v)) return '$0';
     const sign = v < 0 ? '-' : '';
     return `${sign}$${Math.abs(Math.round(v)).toLocaleString()}`;
   };
   const pct = (v) => {
-    if (v == null || isNaN(v)) return '0.00%';
+    if (v == null || isNaN(v) || !isFinite(v)) return '0.00%';
     return `${Number(v).toFixed(2)}%`;
   };
 
@@ -52,14 +52,18 @@ export default function CompressedTab({
   // === ALL METRICS sourced from fullCalcs ===
   const totalEquity = fullCalcs?.financing?.totalEquityRequired || 0;
   const loanAmount = fullCalcs?.financing?.loanAmount || 0;
-  const irrVal = fullCalcs?.returns?.leveredIRR || 0;
-  const equityMultiple = fullCalcs?.returns?.leveredEquityMultiple || selectedScenario.equityMultiple || 0;
-  const cocVal = fullCalcs?.year1?.cashOnCash || 0;
+  const rawIRR = fullCalcs?.returns?.leveredIRR || 0;
+  const irrVal = isFinite(rawIRR) ? rawIRR : 0;
+  const rawEM = fullCalcs?.returns?.leveredEquityMultiple || selectedScenario.equityMultiple || 0;
+  const equityMultiple = isFinite(rawEM) ? rawEM : 0;
+  const rawCoC = fullCalcs?.year1?.cashOnCash || 0;
+  const cocVal = isFinite(rawCoC) ? rawCoC : 0;
   const totalProfit = selectedScenario.totalProfit || 0;
   const startingNOI = fullCalcs?.year1?.noi || noiT12 || 0;
   const closingCosts = fullCalcs?.acquisition?.closingCosts || (purchasePrice * 0.02) || 0;
   const acquisitionCost = fullCalcs?.acquisition?.totalAcquisitionCosts || (purchasePrice + closingCosts);
   const dscrVal = fullCalcs?.year1?.dscr || dscr || projections[0]?.dscr || 0;
+  const safeDscr = isFinite(dscrVal) ? dscrVal : 0;
 
   // === Financials — Income & Expenses (from fullCalcs.year1) ===
   const rentalIncome = fullCalcs?.year1?.potentialGrossIncome || 0;
@@ -74,32 +78,45 @@ export default function CompressedTab({
 
   // === Expense Items for donut chart ===
   const expenseItems = fullCalcs?.year1?.expenseItems || {};
-  const expenseLabels = {
+  // Pretty labels for known keys; any unknown key gets a formatted fallback
+  const knownLabels = {
     taxes: 'Real Estate Taxes',
     insurance: 'Insurance',
     utilities: 'Gas & Electric',
-    repairs_maintenance: 'Repairs and Maintenance',
+    repairs_maintenance: 'Repairs & Maintenance',
     management: 'Management Fee',
     payroll: 'Payroll',
     admin: 'General/Admin',
     marketing: 'Advertising',
+    other: 'Other Expenses',
+    contract_services: 'Contract Services',
+    legal_fees: 'Legal Fees',
+    accounting: 'Accounting',
+    landscaping: 'Landscaping',
+    trash: 'Trash Removal',
+    reserves: 'Replacement Reserve',
+    capital_reserve: 'Capital Reserve',
   };
-  const DONUT_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e'];
+  const prettyLabel = (key) => knownLabels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const DONUT_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e', '#6366f1', '#84cc16'];
 
   const donutData = useMemo(() => {
     const items = [];
     const total = totalOperatingExpenses || Object.values(expenseItems).reduce((s, v) => s + (v || 0), 0) || 1;
-    Object.entries(expenseLabels).forEach(([key, label]) => {
-      const val = expenseItems[key] || 0;
+    // Iterate ALL keys in expenseItems dynamically
+    Object.entries(expenseItems).forEach(([key, val]) => {
       if (val > 0) {
-        items.push({ name: label, value: val, pct: ((val / total) * 100).toFixed(1) });
+        items.push({ name: prettyLabel(key), value: val, pct: ((val / total) * 100).toFixed(1) });
       }
     });
-    // Add "Other" for anything not categorized
+    // If itemized expenses don't sum to total, add residual as "Other"
     const categorized = items.reduce((s, i) => s + i.value, 0);
-    if (total > 0 && total - categorized > 0) {
-      items.push({ name: 'Other', value: total - categorized, pct: (((total - categorized) / total) * 100).toFixed(1) });
+    const residual = total - categorized;
+    if (total > 0 && residual > 1) {
+      items.push({ name: 'Other', value: residual, pct: ((residual / total) * 100).toFixed(1) });
     }
+    // Sort by value descending for better visual
+    items.sort((a, b) => b.value - a.value);
     return items;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expenseItems, totalOperatingExpenses]);
@@ -175,14 +192,14 @@ export default function CompressedTab({
   // Capital structure
   const capStructData = useMemo(() => {
     if (capStructYear === 0) {
-      return { equity: totalEquity, debt: loanAmount, ltc: loanAmount > 0 ? (loanAmount / acquisitionCost) * 100 : 0, dscr: dscrVal };
+      return { equity: totalEquity, debt: loanAmount, ltc: loanAmount > 0 ? (loanAmount / acquisitionCost) * 100 : 0, dscr: safeDscr };
     }
     const proj = projections[capStructYear - 1];
     const bal = proj?.loanBalance || loanAmount;
     const eqVal = acquisitionCost - bal;
-    const yrDscr = proj?.dscr || dscrVal;
+    const yrDscr = proj?.dscr || safeDscr;
     return { equity: eqVal > 0 ? eqVal : totalEquity, debt: bal, ltc: acquisitionCost > 0 ? (bal / acquisitionCost) * 100 : 0, dscr: yrDscr };
-  }, [capStructYear, totalEquity, loanAmount, acquisitionCost, dscrVal, projections]);
+  }, [capStructYear, totalEquity, loanAmount, acquisitionCost, safeDscr, projections]);
 
   const totalCapital = capStructData.equity + capStructData.debt;
   const equityPct = totalCapital > 0 ? Math.round((capStructData.equity / totalCapital) * 100) : 0;
@@ -519,7 +536,7 @@ export default function CompressedTab({
           <div style={{ marginTop: 16, background: '#f9fafb', borderRadius: 10, padding: '14px 16px', border: `1px solid ${B}` }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
               <span style={{ fontSize: 12, fontWeight: 600, color: LB }}>DSCR</span>
-              <span style={{ fontSize: 14, fontWeight: 800, color: dscrVal >= 1.25 ? '#16a34a' : dscrVal >= 1.0 ? '#eab308' : '#ef4444' }}>{dscrVal.toFixed(2)}x</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: safeDscr >= 1.25 ? '#16a34a' : safeDscr >= 1.0 ? '#eab308' : '#ef4444' }}>{safeDscr.toFixed(2)}x</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 12, fontWeight: 600, color: LB }}>Cash Flow After Debt</span>

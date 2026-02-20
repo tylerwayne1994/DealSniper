@@ -22,16 +22,19 @@ export function calculateIRR(cashFlows, guess = 0.1) {
       dnpv -= j * cashFlows[j] / Math.pow(1 + rate, j + 1);
     }
     
+    if (dnpv === 0) return rate; // Avoid division by zero
     const newRate = rate - npv / dnpv;
     
+    if (!isFinite(newRate)) return rate; // Newton-Raphson diverged
+    
     if (Math.abs(newRate - rate) < tolerance) {
-      return newRate;
+      return isFinite(newRate) ? newRate : 0;
     }
     
     rate = newRate;
   }
   
-  return rate;
+  return isFinite(rate) ? rate : 0;
 }
 
 /**
@@ -269,7 +272,10 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   const loanFees = 0;
   const financingFees = 0;
   const netLoanFunding = loanAmount;
-  const totalEquityRequired = downPayment > 0 ? downPayment : (purchasePrice - loanAmount);
+  // Total equity = down payment + closing costs + capex (what investor actually puts in)
+  // If no explicit down payment, derive from price minus loan
+  const rawDownPayment = downPayment > 0 ? downPayment : Math.max(purchasePrice - loanAmount, 0);
+  const totalEquityRequired = Math.max(rawDownPayment + closingCosts + upfrontCapEx, 1); // Never zero
 
   if (debug) {
     debug.inputs.loanAmount = loanAmount;
@@ -327,16 +333,19 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
     debug.intermediates.noi = noi;
   }
   
-  const expenseItems = {
-    taxes: expenses.taxes || 0,
-    insurance: expenses.insurance || 0,
-    utilities: expenses.utilities || 0,
-    repairs_maintenance: expenses.repairs_maintenance || 0,
-    management: expenses.management || 0,
-    payroll: expenses.payroll || 0,
-    admin: expenses.admin || 0,
-    marketing: expenses.marketing || 0
-  };
+  // Build expense items dynamically — include ALL keys from backend expenses object
+  const expenseItems = {};
+  const knownExpenseKeys = ['taxes', 'insurance', 'utilities', 'repairs_maintenance', 'management', 'payroll', 'admin', 'marketing', 'other'];
+  // First add known keys
+  knownExpenseKeys.forEach(key => {
+    if (expenses[key]) expenseItems[key] = expenses[key];
+  });
+  // Then add any extra keys the backend/spreadsheet mapper might have sent
+  Object.keys(expenses).forEach(key => {
+    if (key !== 'total' && !expenseItems[key] && typeof expenses[key] === 'number' && expenses[key] > 0) {
+      expenseItems[key] = expenses[key];
+    }
+  });
   // === YEAR 1 METRICS ===
   // Calculate from backend data only
   const capRate = purchasePrice > 0 && noi > 0 ? (noi / purchasePrice) * 100 : 0;
@@ -397,7 +406,7 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   // the core Year 1 metrics the rest of the app uses.
   let currentEGI = effectiveGrossIncome;
   let currentExpenses = totalOperatingExpenses;
-  let currentTaxes = expenseItems.taxes;
+  let currentTaxes = expenseItems.taxes || 0;
   let currentLoanBalance = loanAmount;
   
   for (let year = 1; year <= 10; year++) {
@@ -534,14 +543,17 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
     ];
     exitCashFlows[exitYear] += projections[exitYear - 1].reversionCashFlow;
     
-    const exitIRR = calculateIRR(exitCashFlows) * 100;
+    const rawExitIRR = calculateIRR(exitCashFlows) * 100;
+    const exitIRR = isFinite(rawExitIRR) ? rawExitIRR : 0;
+    const exitCashSum = exitCashFlows.slice(1).reduce((sum, cf) => sum + cf, 0);
+    const rawEM = totalEquityRequired > 0 ? exitCashSum / totalEquityRequired : 0;
     
     exitScenarios.push({
       exitYear: exitYear,
       irr: exitIRR,
-      equityMultiple: exitCashFlows.slice(1).reduce((sum, cf) => sum + cf, 0) / totalEquityRequired,
-      totalCashReturned: Math.round(exitCashFlows.slice(1).reduce((sum, cf) => sum + cf, 0)),
-      totalProfit: Math.round(exitCashFlows.slice(1).reduce((sum, cf) => sum + cf, 0) - totalEquityRequired)
+      equityMultiple: isFinite(rawEM) ? rawEM : 0,
+      totalCashReturned: Math.round(exitCashSum),
+      totalProfit: Math.round(exitCashSum - totalEquityRequired)
     });
   }
   
@@ -553,8 +565,10 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   // Add reversion at exit
   unleveredCashFlows[holdingPeriod] += projections[holdingPeriod - 1].netSalesProceeds;
   
-  const unleveredIRR = calculateIRR(unleveredCashFlows) * 100;
-  const unleveredEquityMultiple = unleveredCashFlows.slice(1).reduce((sum, cf) => sum + cf, 0) / totalAcquisitionCosts;
+  const rawUnleveredIRR = calculateIRR(unleveredCashFlows) * 100;
+  const unleveredIRR = isFinite(rawUnleveredIRR) ? rawUnleveredIRR : 0;
+  const rawUnleveredEM = unleveredCashFlows.slice(1).reduce((sum, cf) => sum + cf, 0) / totalAcquisitionCosts;
+  const unleveredEquityMultiple = isFinite(rawUnleveredEM) ? rawUnleveredEM : 0;
   
   // === LEVERED IRR (with debt) ===
   const leveredCashFlows = [
@@ -564,8 +578,10 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   // Add reversion at exit
   leveredCashFlows[holdingPeriod] += projections[holdingPeriod - 1].reversionCashFlow;
   
-  const leveredIRR = calculateIRR(leveredCashFlows) * 100;
-  const leveredEquityMultiple = leveredCashFlows.slice(1).reduce((sum, cf) => sum + cf, 0) / totalEquityRequired;
+  const rawLeveredIRR = calculateIRR(leveredCashFlows) * 100;
+  const leveredIRR = isFinite(rawLeveredIRR) ? rawLeveredIRR : 0;
+  const rawLeveredEM = leveredCashFlows.slice(1).reduce((sum, cf) => sum + cf, 0) / totalEquityRequired;
+  const leveredEquityMultiple = isFinite(rawLeveredEM) ? rawLeveredEM : 0;
   
   // === AVERAGE RETURNS ===
   const avgCashOnCash = projections.slice(0, holdingPeriod).reduce((sum, p) => sum + p.cashOnCash, 0) / holdingPeriod;
