@@ -2,12 +2,13 @@
 // Flow: Upload → Parse → Wizard (verify/edit) → Results + Chat (side-by-side)
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Upload, Home, Loader, AlertCircle, CheckCircle, DollarSign, 
   Building, FileText, ArrowLeft, Landmark
 } from 'lucide-react';
 import ResultsPageV2 from '../components/ResultsPageV2';
+import { loadDealForResults } from '../lib/dealsService';
 import WizardStepNavigation from '../components/WizardStepNavigation';
 import PropertyDetailsWizardTab from '../components/wizard/PropertyDetailsWizardTab';
 import FinancialDataWizardTab from '../components/wizard/FinancialDataWizardTab';
@@ -148,11 +149,13 @@ const styles = {
 
 function UnderwriteV2Page() {
   const navigate = useNavigate();
+  const location = useLocation();
   const fileInputRef = useRef(null);
   const chatMessagesRef = useRef(null);
 
   // Step control: 'upload' | 'verify' | 'results'
   const [step, setStep] = useState('upload');
+  const [isLoadingSavedDeal, setIsLoadingSavedDeal] = useState(false);
 
   // Upload state
   const [file, setFile] = useState(null);
@@ -194,6 +197,67 @@ function UnderwriteV2Page() {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // ── Load saved deal from pipeline (viewDeal query param) ──
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const viewDealId = params.get('viewDeal');
+    if (!viewDealId) return;
+
+    let cancelled = false;
+    const load = async () => {
+      setIsLoadingSavedDeal(true);
+      try {
+        const saved = await loadDealForResults(viewDealId);
+        if (cancelled || !saved) {
+          if (!saved) setUploadError('Deal not found. It may have been deleted.');
+          setIsLoadingSavedDeal(false);
+          return;
+        }
+
+        // The saved scenarioData (or parsedData) is the deal's full data
+        const dealData = saved.scenarioData || saved.parsedData || {};
+
+        // Ensure pricing_financing has _original_purchase_price stamp
+        if (dealData.pricing_financing) {
+          if (!dealData.pricing_financing._original_purchase_price) {
+            dealData.pricing_financing._original_purchase_price =
+              dealData.pricing_financing.price || dealData.pricing_financing.purchase_price || 0;
+          }
+          dealData.pricing_financing.purchase_price =
+            dealData.pricing_financing.purchase_price || dealData.pricing_financing.price || saved.purchasePrice || 0;
+        }
+
+        // Normalize vacancy_rate if still a decimal
+        if (dealData.pnl) {
+          const rawVac = dealData.pnl.vacancy_rate || 0;
+          if (rawVac > 0 && rawVac < 1) {
+            dealData.pnl.vacancy_rate = rawVac * 100;
+          }
+        }
+
+        setDealId(viewDealId);
+        setScenarioData(dealData);
+        setVerifiedData(dealData);
+        setModifiedFields({});
+        setStep('results');
+
+        setMessages([{
+          role: 'assistant',
+          content: `Welcome back! I've loaded the deal at ${saved.address || dealData.property?.address || 'this property'}. Feel free to adjust assumptions or ask me anything.`
+        }]);
+      } catch (err) {
+        console.error('Error loading saved deal:', err);
+        setUploadError('Failed to load deal: ' + err.message);
+      } finally {
+        if (!cancelled) setIsLoadingSavedDeal(false);
+      }
+    };
+
+    load();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
 
   // Modify scenario field (for live edits from chat)
   const modifyScenarioField = (path, newValue, originalValue) => {
@@ -749,6 +813,19 @@ function UnderwriteV2Page() {
   ];
 
   // ============ RENDER ============
+
+  // Loading saved deal from pipeline
+  if (isLoadingSavedDeal) {
+    return (
+      <div style={styles.page}>
+        <div style={{ ...styles.container, textAlign: 'center', paddingTop: 120 }}>
+          <Loader size={48} className="spin" style={{ animation: 'spin 1s linear infinite', color: '#3b82f6', marginBottom: 20 }} />
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111827' }}>Loading Deal from Pipeline...</h2>
+          <p style={{ color: '#6b7280', marginTop: 8 }}>Pulling your saved underwriting data</p>
+        </div>
+      </div>
+    );
+  }
 
   // STEP 1: Upload
   if (step === 'upload') {
