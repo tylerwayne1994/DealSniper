@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-         ResponsiveContainer, Area, AreaChart } from 'recharts';
+         ResponsiveContainer, Area, AreaChart, PieChart, Pie, Cell } from 'recharts';
 
 export default function CompressedTab({
   scenarioData,
@@ -43,25 +43,81 @@ export default function CompressedTab({
     return `${Number(v).toFixed(2)}%`;
   };
 
-  // ── Data sources (same sources as Exit Strategy & other tabs) ──
+  // ── Data sources — ALL from fullCalcs (single source of truth) ──
   const projections = useMemo(() => fullCalcs?.projections || [], [fullCalcs]);
   const debtTimeline = useMemo(() => fullCalcs?.exit?.debtTimeline || [], [fullCalcs]);
   const exitScenarios = fullCalcs?.returns?.exitScenarios || [];
   const selectedScenario = exitScenarios.find(s => s.exitYear === selectedHoldPeriod) || exitScenarios[0] || {};
 
-  // Metrics — leveredIRR is already *100 (e.g. 9.10 = 9.10%)
+  // === ALL METRICS sourced from fullCalcs ===
   const totalEquity = fullCalcs?.financing?.totalEquityRequired || 0;
   const loanAmount = fullCalcs?.financing?.loanAmount || 0;
-  const irrVal = fullCalcs?.returns?.leveredIRR || 0;  // Already a percentage number
+  const irrVal = fullCalcs?.returns?.leveredIRR || 0;
   const equityMultiple = fullCalcs?.returns?.leveredEquityMultiple || selectedScenario.equityMultiple || 0;
-  const cocVal = fullCalcs?.year1?.cashOnCash || 0;     // Already a percentage number
+  const cocVal = fullCalcs?.year1?.cashOnCash || 0;
   const totalProfit = selectedScenario.totalProfit || 0;
   const startingNOI = fullCalcs?.year1?.noi || noiT12 || 0;
   const closingCosts = fullCalcs?.acquisition?.closingCosts || (purchasePrice * 0.02) || 0;
   const acquisitionCost = fullCalcs?.acquisition?.totalAcquisitionCosts || (purchasePrice + closingCosts);
+  const dscrVal = fullCalcs?.year1?.dscr || dscr || projections[0]?.dscr || 0;
 
-  // DSCR — try multiple sources
-  const dscrVal = dscr || fullCalcs?.year1?.dscr || projections[0]?.dscr || 0;
+  // === Financials — Income & Expenses (from fullCalcs.year1) ===
+  const rentalIncome = fullCalcs?.year1?.potentialGrossIncome || 0;
+  const otherIncome = fullCalcs?.year1?.otherIncome || 0;
+  const grossOperatingIncome = rentalIncome + otherIncome;
+  const totalOperatingExpenses = fullCalcs?.year1?.totalOperatingExpenses || 0;
+  const capitalReserve = scenarioData?.expenses?.capital_reserve || scenarioData?.expenses?.reserves || 0;
+  const capitalExpenditure = fullCalcs?.acquisition?.upfrontCapEx || 0;
+  const noiYear1 = fullCalcs?.year1?.noi || noiT12 || 0;
+  const debtServiceYear1 = fullCalcs?.financing?.annualDebtService || annualDebtService || 0;
+  const cashFlowYear1 = fullCalcs?.year1?.cashFlow || 0;
+
+  // === Expense Items for donut chart ===
+  const expenseItems = fullCalcs?.year1?.expenseItems || {};
+  const expenseLabels = {
+    taxes: 'Real Estate Taxes',
+    insurance: 'Insurance',
+    utilities: 'Gas & Electric',
+    repairs_maintenance: 'Repairs and Maintenance',
+    management: 'Management Fee',
+    payroll: 'Payroll',
+    admin: 'General/Admin',
+    marketing: 'Advertising',
+  };
+  const DONUT_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e'];
+
+  const donutData = useMemo(() => {
+    const items = [];
+    const total = totalOperatingExpenses || Object.values(expenseItems).reduce((s, v) => s + (v || 0), 0) || 1;
+    Object.entries(expenseLabels).forEach(([key, label]) => {
+      const val = expenseItems[key] || 0;
+      if (val > 0) {
+        items.push({ name: label, value: val, pct: ((val / total) * 100).toFixed(1) });
+      }
+    });
+    // Add "Other" for anything not categorized
+    const categorized = items.reduce((s, i) => s + i.value, 0);
+    if (total > 0 && total - categorized > 0) {
+      items.push({ name: 'Other', value: total - categorized, pct: (((total - categorized) / total) * 100).toFixed(1) });
+    }
+    return items;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expenseItems, totalOperatingExpenses]);
+
+  // === Loan / Mortgage data ===
+  const ltvPct = fullCalcs?.financing?.ltv || 0;
+  const interestRate = fullCalcs?.financing?.interestRate || 0;
+  const monthlyPayment = fullCalcs?.financing?.monthlyPayment || 0;
+  const downPayment = purchasePrice - loanAmount;
+  const downPaymentPct = purchasePrice > 0 ? ((downPayment / purchasePrice) * 100) : 0;
+  const closingCostPct = purchasePrice > 0 ? ((closingCosts / purchasePrice) * 100) : 0;
+  const nonFinancedCapEx = capitalExpenditure;
+
+  // === Key Operating Ratios ===
+  const capRateVal = fullCalcs?.year1?.capRate || capRate || 0;
+  const grm = rentalIncome > 0 ? (purchasePrice / rentalIncome) : 0;
+  const nim = totalOperatingExpenses > 0 ? (noiYear1 / totalOperatingExpenses) : 0;
+  const expenseRatio = fullCalcs?.year1?.expenseRatio || 0;
 
   // Purchase price slider range — based on initial price so range stays stable
   const initialPriceRef = useRef(purchasePrice);
@@ -70,14 +126,14 @@ export default function CompressedTab({
   const maxPrice = Math.round(basePrice * 1.6);
 
   // Cap rate sensitivity
-  const baseCapRate = capRate > 0 ? capRate : 5.0;
+  const baseCapRate = capRateVal > 0 ? capRateVal : 5.0;
   const baseIdx = 3;
   const capRates = Array.from({ length: 7 }, (_, i) =>
     Number((baseCapRate + (i - baseIdx) * 0.25).toFixed(2))
   );
   const optimizedNOI = fullCalcs?.stabilized?.noi || (startingNOI * 1.15);
 
-  // ── Yearly data — use projections[].cashFlowAfterFinancing (operating only, no sale) ──
+  // ── Yearly data ──
   const yearlyData = useMemo(() => {
     const holdYears = selectedHoldPeriod || 5;
     const count = Math.min(holdYears, projections.length, 10);
@@ -90,7 +146,6 @@ export default function CompressedTab({
       const cashFlow = p.cashFlowAfterFinancing || 0;
       const debtRow = debtTimeline[i];
       const principalPaydown = debtRow?.principalPaid || 0;
-      const increaseInValue = 0;
 
       data.push({
         year: yr,
@@ -102,8 +157,7 @@ export default function CompressedTab({
         loanBalance: p.loanBalance || 0,
         salePrice: p.grossSalesPrice || 0,
         netSaleProceeds: p.netSalesProceeds || 0,
-        increaseInValue,
-        netWorthIncrease: cashFlow + principalPaydown + increaseInValue,
+        netWorthIncrease: cashFlow + principalPaydown,
         cumulativeCashFlow: 0,
       });
     }
@@ -140,9 +194,8 @@ export default function CompressedTab({
   const netSalePrice = exitProj?.grossSalesPrice || selectedScenario.salePrice || 0;
   const loanBalAtExit = exitProj?.loanBalance || 0;
   const financedByDebt = loanAmount;
-  const initialInvestment = 0;
   const totalCashReceived = cumCashFlows + netSalePrice - Math.abs(loanBalAtExit);
-  const totalCashInvested = purchasePrice + closingCosts + initialInvestment - financedByDebt;
+  const totalCashInvested = purchasePrice + closingCosts - financedByDebt;
   const compTotalProfit = totalCashReceived - (totalCashInvested > 0 ? totalCashInvested : totalEquity);
 
   // Profitability rows
@@ -176,11 +229,38 @@ export default function CompressedTab({
     <span title={text} style={{ width: 15, height: 15, borderRadius: '50%', border: `1.5px solid ${B}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: LB, cursor: 'help', flexShrink: 0 }}>?</span>
   );
 
+  // Custom donut label renderer
+  const renderDonutLabel = ({ cx, cy, midAngle, outerRadius, name, pct: pctVal }) => {
+    const RADIAN = Math.PI / 180;
+    const radius = outerRadius + 28;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    return (
+      <text x={x} y={y} fill="#374151" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" style={{ fontSize: 10, fontWeight: 500 }}>
+        {name}: {pctVal}%
+      </text>
+    );
+  };
+
+  // ── Financial row helper ──
+  const FinRow = ({ label, monthly, yearly, color, bold, dot }) => (
+    <tr style={{ borderBottom: `1px solid #f3f4f6` }}>
+      <td style={{ padding: '10px 12px', fontSize: 13, fontWeight: bold ? 700 : 500, color: color || VL }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {dot && <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: dot, flexShrink: 0 }} />}
+          {label}
+        </span>
+      </td>
+      <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: bold ? 700 : 500, color: color || VL, fontSize: 13 }}>{fmt(monthly)}</td>
+      <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: bold ? 700 : 500, color: color || VL, fontSize: 13 }}>{fmt(yearly)}</td>
+    </tr>
+  );
+
   return (
     <div style={{ maxWidth: 1400, margin: '0 auto' }}>
 
       {/* ═══════════════════════════════════════════════════════════════
-          1. OVERVIEW
+          1. OVERVIEW — KPIs + Purchase Price
           ═══════════════════════════════════════════════════════════════ */}
       <div style={card}>
         <SectionHead title="Overview" color={AC} />
@@ -256,7 +336,201 @@ export default function CompressedTab({
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════
-          2. PROJECT VALUATION — Cap Rate Sensitivity
+          2. FINANCIALS + FINANCIAL BREAKDOWN (side by side)
+          ═══════════════════════════════════════════════════════════════ */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+
+        {/* Financials — Income & Expenses */}
+        <div style={card}>
+          <div style={{ marginBottom: 8 }}>
+            <h3 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: VL }}>Financials</h3>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: LB }}>Income & Expenses</p>
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
+            <thead>
+              <tr style={{ borderBottom: `2px solid ${B}` }}>
+                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 700, color: LB, fontSize: 12, textTransform: 'uppercase' }}>Description</th>
+                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: LB, fontSize: 12, textTransform: 'uppercase' }}>Month</th>
+                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: LB, fontSize: 12, textTransform: 'uppercase' }}>Year</th>
+              </tr>
+            </thead>
+            <tbody>
+              <FinRow label="Rental Income" monthly={rentalIncome / 12} yearly={rentalIncome} dot="#22c55e" />
+              <FinRow label="Other Income" monthly={otherIncome / 12} yearly={otherIncome} dot="#06b6d4" />
+              <FinRow label="Gross Operating Income (GOI)" monthly={grossOperatingIncome / 12} yearly={grossOperatingIncome} bold color={AC} dot={AC} />
+              <FinRow label="Capital Reserve" monthly={capitalReserve / 12} yearly={capitalReserve} dot="#8b5cf6" />
+              <FinRow label="Operating Expenses" monthly={totalOperatingExpenses / 12} yearly={totalOperatingExpenses} dot="#ef4444" />
+              <FinRow label="Capital Expenditure" monthly={capitalExpenditure / 12} yearly={capitalExpenditure} dot="#f97316" />
+              <tr style={{ borderTop: `2px solid ${B}` }}>
+                <td style={{ padding: '12px 12px', fontSize: 13, fontWeight: 800, color: '#16a34a' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#16a34a', flexShrink: 0 }} />
+                    Net Operating Income (NOI)
+                  </span>
+                </td>
+                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#16a34a', fontSize: 13 }}>{fmt(noiYear1 / 12)}</td>
+                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#16a34a', fontSize: 13 }}>{fmt(noiYear1)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Financial Breakdown — Donut Chart */}
+        <div style={card}>
+          <SectionHead title="Financial Breakdown" color={VL} />
+          {donutData.length > 0 ? (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <PieChart width={380} height={300}>
+                  <Pie
+                    data={donutData}
+                    cx={190}
+                    cy={140}
+                    innerRadius={60}
+                    outerRadius={105}
+                    paddingAngle={2}
+                    dataKey="value"
+                    label={renderDonutLabel}
+                    labelLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
+                  >
+                    {donutData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={DONUT_COLORS[index % DONUT_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v) => [fmt(v), 'Amount']} contentStyle={{ borderRadius: 8, border: `1px solid ${B}`, fontSize: 12 }} />
+                </PieChart>
+              </div>
+              {/* Summary cards below donut */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 8 }}>
+                {[
+                  { label: 'Rental Income', value: rentalIncome, color: '#22c55e' },
+                  { label: 'Other Income', value: otherIncome, color: '#06b6d4' },
+                  { label: 'Operating Expenses', value: totalOperatingExpenses, color: '#ef4444' },
+                ].map((c, i) => (
+                  <div key={i} style={{ background: '#f9fafb', borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid ${c.color}` }}>
+                    <div style={{ fontSize: 11, color: LB, fontWeight: 600, marginBottom: 4 }}>{c.label}:</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: c.color }}>{fmt(c.value)}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginTop: 10 }}>
+                {[
+                  { label: 'Capital Expenditure', value: capitalExpenditure, color: '#f97316' },
+                  { label: 'Capital Reserve', value: capitalReserve, color: '#8b5cf6' },
+                ].map((c, i) => (
+                  <div key={i} style={{ background: '#f9fafb', borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid ${c.color}` }}>
+                    <div style={{ fontSize: 11, color: LB, fontWeight: 600, marginBottom: 4 }}>{c.label}:</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: c.color }}>{fmt(c.value)}</div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div style={{ textAlign: 'center', padding: 40, color: LB }}>No expense data available</div>
+          )}
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          3. KEY OPERATING RATIOS + LOAN + MORTGAGE (3-column)
+          ═══════════════════════════════════════════════════════════════ */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24, marginBottom: 24 }}>
+
+        {/* Key Operating Ratios */}
+        <div style={card}>
+          <SectionHead title="Key Operating Ratios" color={VL} />
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <tbody>
+              {[
+                { label: 'Internal Rate Of Return (IRR)', value: `${irrVal.toFixed(2)}%`, icon: '→' },
+                { label: 'Equity Multiple (EM)', value: equityMultiple.toFixed(2), icon: '→' },
+                { label: 'Capitalization Rate (CAP)', value: `${capRateVal.toFixed(1)}%`, icon: '→' },
+                { label: 'Gross Rent Multiplier (GRM)', value: grm.toFixed(2), icon: '→' },
+                { label: 'Net Income Multiplier (NIM)', value: nim.toFixed(2), icon: '→' },
+                { label: 'Expense Ratio (ER)', value: `${expenseRatio.toFixed(0)}%`, icon: '→' },
+              ].map((r, i) => (
+                <tr key={i} style={{ borderBottom: `1px solid #f3f4f6` }}>
+                  <td style={{ padding: '10px 8px', fontSize: 12, fontWeight: 500, color: LB }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ color: AC, fontWeight: 700, fontSize: 13 }}>{r.icon}</span>
+                      {r.label}
+                    </span>
+                  </td>
+                  <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: VL, fontSize: 14 }}>{r.value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Loan */}
+        <div style={card}>
+          <SectionHead title="Loan" color={VL} />
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <tbody>
+              {[
+                { label: 'Loan', badge: `${ltvPct.toFixed(0)}% LTV`, value: loanAmount, badgeColor: AC },
+                { label: 'Down Pymt', badge: `${downPaymentPct.toFixed(0)}%`, value: downPayment, badgeColor: '#ef4444' },
+                { label: 'Closing Cost', badge: `${closingCostPct.toFixed(0)}%`, value: closingCosts, badgeColor: '#f97316' },
+                { label: 'Closing Reserve', value: 0 },
+                { label: 'Non-Financed CapEx', value: nonFinancedCapEx },
+                { label: 'Total Equity', value: totalEquity, bold: true },
+              ].map((r, i) => (
+                <tr key={i} style={{ borderBottom: i < 5 ? `1px solid #f3f4f6` : 'none' }}>
+                  <td style={{ padding: '10px 8px', fontSize: 12, fontWeight: r.bold ? 700 : 500, color: r.bold ? VL : LB }}>
+                    {r.label}
+                    {r.badge && (
+                      <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: r.badgeColor, padding: '2px 6px', background: `${r.badgeColor}10`, borderRadius: 4 }}>
+                        {r.badge}
+                      </span>
+                    )}
+                  </td>
+                  <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: VL, fontSize: 13 }}>{fmt(r.value)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mortgage */}
+        <div style={card}>
+          <SectionHead title="Mortgage" color={VL} />
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <tbody>
+              {[
+                { label: 'Avg Interest Rate', value: `${interestRate.toFixed(2)}%`, icon: '→' },
+                { label: 'Debt Cost (DC)', value: fmt(debtServiceYear1), icon: '→' },
+                { label: 'Payment (month)', value: fmt(monthlyPayment), icon: '→' },
+              ].map((r, i) => (
+                <tr key={i} style={{ borderBottom: `1px solid #f3f4f6` }}>
+                  <td style={{ padding: '12px 8px', fontSize: 12, fontWeight: 500, color: LB }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ color: AC, fontWeight: 700, fontSize: 13 }}>{r.icon}</span>
+                      {r.label}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700, color: VL, fontSize: 14 }}>{r.value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* DSCR & Cash Flow summary */}
+          <div style={{ marginTop: 16, background: '#f9fafb', borderRadius: 10, padding: '14px 16px', border: `1px solid ${B}` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: LB }}>DSCR</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: dscrVal >= 1.25 ? '#16a34a' : dscrVal >= 1.0 ? '#eab308' : '#ef4444' }}>{dscrVal.toFixed(2)}x</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: LB }}>Cash Flow After Debt</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: cashFlowYear1 >= 0 ? '#16a34a' : '#ef4444' }}>{fmt(cashFlowYear1)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          4. PROJECT VALUATION — Cap Rate Sensitivity
           ═══════════════════════════════════════════════════════════════ */}
       <div style={card}>
         <SectionHead title="Project Valuation" color={VL} />
@@ -306,7 +580,7 @@ export default function CompressedTab({
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════
-          3. YEARLY CASH FLOW CHART
+          5. YEARLY CASH FLOW CHART
           ═══════════════════════════════════════════════════════════════ */}
       <div style={card}>
         <SectionHead title="Yearly Cash Flow" color={VL}>
@@ -345,12 +619,11 @@ export default function CompressedTab({
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════
-          4. PROFITABILITY
+          6. PROFITABILITY
           ═══════════════════════════════════════════════════════════════ */}
       <div style={card}>
         <SectionHead title="Profitability" color={VL}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-            {/* Include Sale toggle */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 12, color: LB, fontWeight: 600 }}>Include Sale</span>
               <div
@@ -364,12 +637,10 @@ export default function CompressedTab({
                 <div style={{ width: 18, height: 18, backgroundColor: '#fff', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
               </div>
             </div>
-            {/* Monetary / Percentage */}
             <select value={displayMode} onChange={(e) => setDisplayMode(e.target.value)} style={{ fontSize: 12, padding: '5px 10px', border: `1px solid ${B}`, borderRadius: 6, color: VL, fontWeight: 600, cursor: 'pointer', background: '#fff' }}>
               <option value="monetary">Monetary</option>
               <option value="percentage">Percentage</option>
             </select>
-            {/* Table / Chart */}
             <div style={{ display: 'flex', border: `1px solid ${B}`, borderRadius: 6, overflow: 'hidden' }}>
               <button onClick={() => setProfitView('table')} style={{ padding: '5px 12px', fontSize: 13, fontWeight: 600, background: profitView === 'table' ? AC : '#fff', color: profitView === 'table' ? '#fff' : LB, border: 'none', cursor: 'pointer' }}>▦</button>
               <button onClick={() => setProfitView('chart')} style={{ padding: '5px 12px', fontSize: 13, fontWeight: 600, background: profitView === 'chart' ? AC : '#fff', color: profitView === 'chart' ? '#fff' : LB, border: 'none', cursor: 'pointer', borderLeft: `1px solid ${B}` }}>▤</button>
@@ -428,7 +699,7 @@ export default function CompressedTab({
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════
-          5. CAPITAL STRUCTURE + TOTAL INVESTMENT RETURN (side by side)
+          7. CAPITAL STRUCTURE + TOTAL INVESTMENT RETURN (side by side)
           ═══════════════════════════════════════════════════════════════ */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
 
@@ -481,12 +752,7 @@ export default function CompressedTab({
 
         {/* Total Investment Return */}
         <div style={card}>
-          <SectionHead title="Total Investment Return" color={VL}>
-            <div style={{ display: 'flex', border: `1px solid ${B}`, borderRadius: 6, overflow: 'hidden' }}>
-              <button style={{ padding: '5px 14px', fontSize: 12, fontWeight: 600, background: '#fff', color: VL, border: 'none', borderRight: `1px solid ${B}`, cursor: 'pointer' }}>$</button>
-              <button style={{ padding: '5px 14px', fontSize: 12, fontWeight: 600, background: '#f9fafb', color: LB, border: 'none', cursor: 'pointer' }}>$/sq. ft</button>
-            </div>
-          </SectionHead>
+          <SectionHead title="Total Investment Return" color={VL} />
 
           <div style={{ fontSize: 13, fontWeight: 700, color: VL, marginBottom: 14 }}>Profit Breakdown</div>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -518,7 +784,6 @@ export default function CompressedTab({
               {[
                 { label: 'Purchase Price', value: purchasePrice, negative: false },
                 { label: 'Closing Cost and Fees', value: closingCosts, tip: 'Estimated closing costs (legal, title, etc.)', negative: false },
-                { label: 'Initial Investment', value: initialInvestment, tip: 'Additional upfront capital investment', negative: false },
                 { label: 'Financed By Debt', value: financedByDebt, tip: 'Loan proceeds used to fund acquisition', negative: true, green: true },
               ].map((r, i) => (
                 <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>

@@ -111,13 +111,14 @@ function computeEGI({ potentialGrossIncome = 0, otherIncome = 0, vacancyLoss = 0
 
 // 3. Net Operating Income (NOI) = EGI – Operating Expenses
 function computeNOI({ egi = 0, operatingExpenses = 0, noiOverride = null }) {
-  // Prefer computed NOI when we have both EGI and expenses
-  if (egi > 0 && operatingExpenses > 0) {
-    return egi - operatingExpenses;
-  }
-  // Fall back to an override only when inputs are missing
+  // Always prefer the backend-parsed NOI when available — it is the most
+  // reliable value because the parser has the full OM context.
   if (noiOverride != null && noiOverride !== 0) {
     return noiOverride;
+  }
+  // Fall back to computed NOI from EGI - OpEx only when backend NOI is missing
+  if (egi > 0 && operatingExpenses > 0) {
+    return egi - operatingExpenses;
   }
   return 0;
 }
@@ -820,6 +821,7 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
     // Year 1 Metrics
     year1: {
       potentialGrossIncome: Math.round(potentialGrossIncome),
+      otherIncome: Math.round(otherIncome),
       vacancyLoss: Math.round(vacancyLoss),
       effectiveGrossIncome: Math.round(effectiveGrossIncome),
       totalOperatingExpenses: Math.round(totalOperatingExpenses),
@@ -830,7 +832,8 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
       dscr: dscr,
       debtYield: debtYield,
       cashOnCash: cashOnCash,
-      expenseRatio: expenseRatio
+      expenseRatio: expenseRatio,
+      expenseItems: expenseItems
     },
     
     // Acquisition
