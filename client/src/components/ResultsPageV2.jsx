@@ -1213,7 +1213,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
     { id: 'scenario-sheet', label: 'Scenario Sheet', icon: FileSpreadsheet },
     { id: 'cashflow', label: 'Cash Flow', icon: FileBarChart },
     { id: 'deal-structure', label: 'Deal Structure', icon: Layers },
-    { id: 'expenses-v2', label: 'Expenses V2', icon: FileText },
+    { id: 'expenses-v2', label: 'Expenses', icon: FileText },
     { id: 'value-add', label: 'Value-Add Strategy', icon: TrendingUp },
     { id: 'exit-strategy', label: 'Exit Strategy', icon: TrendingUp },
     
@@ -2371,7 +2371,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
         const currentCapRate = fullCalcs.year1?.capRate || 0;
         const currentDSCR = fullCalcs.year1?.dscr || 0;
         const valueAddTotalUnits = scenarioData.property?.units || 0;
-        const valueAddAnnualDebtService = scenarioData.pricing_financing?.annual_debt_service || fullCalcs.financing?.annualDebtService || 0;
+        const valueAddAnnualDebtService = fullCalcs?.financing?.annualDebtService || scenarioData.pricing_financing?.annual_debt_service || 0;
 
         // ── Rent data ──
         const valueAddUnitMix = scenarioData.unit_mix || [];
@@ -2643,7 +2643,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
                   </div>
                   {totalUtilityCost === 0 && (
                     <div style={{ marginTop: 8, padding: '8px 12px', background: '#fffbeb', borderRadius: 8, border: '1px solid #fde68a', fontSize: 11, color: '#92400e' }}>
-                      ⚠️ No utility costs found in parsed data. RUBS estimates will be $0. Enter utility costs in the Expenses V2 tab or manually adjust below.
+                      ⚠️ No utility costs found in parsed data. RUBS estimates will be $0. Enter utility costs in the Expenses tab or manually adjust below.
                     </div>
                   )}
                 </div>

@@ -634,7 +634,10 @@ function UnderwriteV2Page() {
       transformedData.pnl.operating_expenses = transformedData.pnl.operating_expenses_t12;
 
       transformedData.pnl.potential_gross_income = transformedData.pnl.gross_potential_rent || transformedData.pnl.potential_gross_income || 0;
-      transformedData.pnl.vacancy_rate = (transformedData.pnl.vacancy_rate || 0.05) * 100; // Convert to percentage
+      // Normalize vacancy_rate to whole-number percentage (e.g. 5 = 5%)
+      // Backend already normalizes to whole numbers; only convert if still a decimal
+      const rawVac = transformedData.pnl.vacancy_rate || 0.05;
+      transformedData.pnl.vacancy_rate = rawVac > 0 && rawVac < 1 ? rawVac * 100 : rawVac;
     }
     
     console.log('[WIZARD COMPLETE] Original Data:', verifiedData);

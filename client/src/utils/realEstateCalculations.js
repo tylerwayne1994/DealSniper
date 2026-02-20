@@ -245,9 +245,19 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   } else {
     // No price change — use original parsed values as-is
     loanAmount = parsedLoanAmount;
-    annualDebtService = parsedDebtService;
     downPayment = parsedDownPayment;
-    monthlyPayment = parsedMonthlyPayment;
+
+    // If debt service wasn't parsed but we have loan + rate + amort, compute it
+    if (parsedDebtService > 0) {
+      annualDebtService = parsedDebtService;
+      monthlyPayment = parsedMonthlyPayment || (annualDebtService / 12);
+    } else if (parsedLoanAmount > 0 && interestRate > 0 && amortYears > 0) {
+      monthlyPayment = calculateMortgagePayment(parsedLoanAmount, interestRate, amortYears);
+      annualDebtService = monthlyPayment * 12;
+    } else {
+      annualDebtService = 0;
+      monthlyPayment = parsedMonthlyPayment;
+    }
   }
   
   // For display only (percentage 0-100)
@@ -276,7 +286,9 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   const potentialGrossIncome = pnl.potential_gross_income || pnl.gross_potential_rent || 0;
   const otherIncome = pnl.other_income || 0;
   const vacancyLoss = pnl.vacancy_amount || 0;
-  const vacancyRate = pnl.vacancy_rate || 0;
+  const rawVacancyRate = pnl.vacancy_rate || 0;
+  // Normalize to fraction (0.05 = 5%) — guard against already-converted percentages
+  const vacancyRate = rawVacancyRate > 1 ? rawVacancyRate / 100 : rawVacancyRate;
 
   const effectiveGrossIncomeBackend = pnl.effective_gross_income || 0;
   const totalOperatingExpenses =

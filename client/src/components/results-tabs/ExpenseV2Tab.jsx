@@ -154,10 +154,12 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
   const avgRentPerUnit = units > 0 && gprUW > 0 ? gprUW / 12 / units : 0;
 
   // Vacancy & LTL
-  const vacUWpctRaw = expenses.vacancy_pct ?? pnl.vacancy_rate_current ?? 0;
-  const vacVApctRaw = optimized.vacancy_pct ?? pnl.vacancy_rate_stabilized ?? 0;
-  const vacUWpct = Number(vacUWpctRaw) * (expenses.vacancy_pct ? 1 : 100);
-  const vacVApct = Number(vacVApctRaw) * (optimized.vacancy_pct ? 1 : 100);
+  // Both expenses.vacancy_pct and pnl.vacancy_rate_current are whole-number
+  // percentages (e.g. 5 = 5%). Only convert if still a decimal (< 1).
+  const vacUWpctRaw = expenses.vacancy_pct ?? pnl.vacancy_rate_current ?? 5;
+  const vacVApctRaw = optimized.vacancy_pct ?? pnl.vacancy_rate_stabilized ?? 5;
+  const vacUWpct = Number(vacUWpctRaw) > 0 && Number(vacUWpctRaw) < 1 ? Number(vacUWpctRaw) * 100 : Number(vacUWpctRaw);
+  const vacVApct = Number(vacVApctRaw) > 0 && Number(vacVApctRaw) < 1 ? Number(vacVApctRaw) * 100 : Number(vacVApctRaw);
   const ltlUWpct = Number(expenses.loss_to_lease_pct || 0);
   const ltlVApct = Number(optimized.loss_to_lease_pct || 0);
   const vacUW = gprUW * vacUWpct / 100;

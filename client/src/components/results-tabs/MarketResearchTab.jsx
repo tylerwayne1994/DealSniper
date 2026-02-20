@@ -1155,7 +1155,7 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                 <HeatLayer points={heatPoints} heatMetric={heatMetric} />
               )}
 
-              {showZipMarkers && ['fmr','migration','income','vacancy','homeValue','density','renterPct'].includes(heatMetric) && Object.keys(zipCentroids).length > 0 && (
+              {showZipMarkers && Object.keys(zipCentroids).length > 0 && (
                 <ZipDataMarkers 
                   zipCentroids={zipCentroids}
                   fmrData={fmrData}

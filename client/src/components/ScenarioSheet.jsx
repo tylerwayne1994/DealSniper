@@ -146,10 +146,10 @@ export default function ScenarioSheet({ scenarioData, calculations }) {
     },
     {
       name: 'Less Vacancy',
-      proforma: pct((sd.pnl?.vacancy_rate_proforma ?? sd.pnl?.vacancy_rate_stabilized ?? sd.pnl?.vacancy_rate_current ?? 0) * 100),
-      t12: pct((sd.pnl?.vacancy_rate_t12 || 0) * 100),
+      proforma: pct(sd.pnl?.vacancy_rate_proforma ?? sd.pnl?.vacancy_rate_stabilized ?? sd.pnl?.vacancy_rate_current ?? 0),
+      t12: pct(sd.pnl?.vacancy_rate_t12 || 0),
       y1: currency0(full.year1?.vacancyLoss || 0),
-      y2: pct((sd.pnl?.vacancy_rate_stabilized || 0) * 100)
+      y2: pct(sd.pnl?.vacancy_rate_stabilized || 0)
     },
     {
       name: 'Gross Operating Income',
