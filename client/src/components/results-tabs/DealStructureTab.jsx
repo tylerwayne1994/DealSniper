@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import {
   DollarSign, Calculator,
   Target, Wallet, Plus, X, Trash2,
-  BarChart3, Activity, ArrowRight, Edit3
+  BarChart3, ArrowRight, Edit3
 } from 'lucide-react';
 
 const calcMonthlyPayment = (principal, annualRate, amortMonths) => {
@@ -27,7 +27,8 @@ const buildStructureFromLoans = (loans, pp, noi) => {
   });
   const ed = eq.map(l => {
     const pe=Number(l.loanDollar)||0, pr=(Number(l.rate)||8)/100, ap=pe*pr;
-    return {...l, partnerEquity:pe, annualPref:ap, monthlyPref:ap/12};
+    const bYrs=Number(l.balloonYrs)||5, bAmt=l.doubleInvestment?pe*2:pe;
+    return {...l, partnerEquity:pe, annualPref:ap, monthlyPref:ap/12, balloonYrs:bYrs, balloonAmt:bAmt};
   });
   const tla=ld.reduce((s,l)=>s+l.loanAmt,0), tmd=ld.reduce((s,l)=>s+l.monthlyPmt,0);
   const tf=ld.reduce((s,l)=>s+l.fees,0), te=ed.reduce((s,l)=>s+l.partnerEquity,0);
@@ -59,6 +60,18 @@ const IS={width:'100%',padding:'8px 10px',border:`1px solid ${B}`,borderRadius:6
 const SC={backgroundColor:'#fff',borderRadius:16,padding:'24px 28px',marginBottom:24,boxShadow:'0 1px 3px rgba(0,0,0,0.06)',border:`1px solid ${B}`};
 const loanColor=t=>({'Senior Loan':'#3b82f6','Mezzanine Loan':'#f97316','Seller Financing':'#a855f7','Second Debt':'#06b6d4','Equity Partner':'#22c55e'}[t]||'#6b7280');
 const loanIcon=t=>({'Senior Loan':'🏦','Mezzanine Loan':'🏛️','Seller Financing':'🤝','Second Debt':'📄','Equity Partner':'👥'}[t]||'💰');
+
+const Field=React.memo(({label,value,onChange,suffix,prefix,step,min})=>(
+  <div style={{marginBottom:12}}>
+    <label style={{display:'block',fontSize:11,fontWeight:600,color:LB,marginBottom:4,textTransform:'uppercase',letterSpacing:'0.04em'}}>{label}</label>
+    <div style={{position:'relative',display:'flex',alignItems:'center'}}>
+      {prefix&&<span style={{position:'absolute',left:10,fontSize:13,color:LB,pointerEvents:'none'}}>{prefix}</span>}
+      <input type="number" step={step||'any'} min={min??0} value={value} onChange={e=>onChange(Number(e.target.value))}
+        style={{...IS,paddingLeft:prefix?24:10,paddingRight:suffix?30:10}}/>
+      {suffix&&<span style={{position:'absolute',right:10,fontSize:12,color:LB,pointerEvents:'none'}}>{suffix}</span>}
+    </div>
+  </div>
+));
 
 export default function DealStructureTab({scenarioData,calculations,fullCalcs,marketCapRate,onFieldChange,onRecommendationChange,onSelectedStructureMetricsChange}){
   const pp=scenarioData?.pricing_financing?.price||scenarioData?.pricing_financing?.purchase_price||0;
@@ -107,12 +120,26 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
     if(sr){onFieldChange('financing.ltv',sr.ltv||0);onFieldChange('financing.interest_rate',sr.rate||0);onFieldChange('financing.loan_term_years',sr.term||0);onFieldChange('financing.amortization_years',sr.amort||0);onFieldChange('financing.io_years',sr.io||0);onFieldChange('financing.loan_fees_percent',sr.fees||0);}
   },[onFieldChange,pp]);
 
+  const saveTimerRef=useRef(null);
   const updateLoanField=useCallback((id,f,v)=>{
-    setLoans(p=>{const u=p.map(l=>l.id===id?{...l,[f]:v}:l);setTimeout(()=>saveToParent(u),0);return u;});
+    setLoans(p=>{
+      const u=p.map(l=>l.id===id?{...l,[f]:v}:l);
+      if(saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current=setTimeout(()=>saveToParent(u),500);
+      return u;
+    });
+  },[saveToParent]);
+  const updateLoanFields=useCallback((id,updates)=>{
+    setLoans(p=>{
+      const u=p.map(l=>l.id===id?{...l,...updates}:l);
+      if(saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current=setTimeout(()=>saveToParent(u),500);
+      return u;
+    });
   },[saveToParent]);
 
   const addLoan=useCallback((type)=>{
-    const defs={'Mezzanine Loan':{loanAmtMode:'dollar',ltv:0,loanDollar:0,rate:5.21,term:10,amort:25,io:0,fees:0},'Seller Financing':{loanAmtMode:'dollar',ltv:0,loanDollar:0,rate:8.5,term:15,amort:15,io:0,fees:0,startMonth:24,paymentFree:0},'Second Debt':{loanAmtMode:'dollar',ltv:0,loanDollar:0,rate:7.0,term:10,amort:25,io:0,fees:0},'Equity Partner':{loanAmtMode:'dollar',ltv:0,loanDollar:0,rate:8,term:0,amort:0,io:0,fees:0}};
+    const defs={'Mezzanine Loan':{loanAmtMode:'dollar',ltv:0,loanDollar:0,rate:9.5,term:5,amort:25,io:1,fees:1.5},'Seller Financing':{loanAmtMode:'dollar',ltv:0,loanDollar:0,rate:8.5,term:15,amort:15,io:0,fees:0,startMonth:24,paymentFree:0},'Second Debt':{loanAmtMode:'dollar',ltv:0,loanDollar:0,rate:7.0,term:10,amort:25,io:0,fees:0},'Equity Partner':{loanAmtMode:'dollar',ltv:0,loanDollar:0,rate:8,term:5,amort:0,io:0,fees:0,balloonYrs:5,doubleInvestment:false,equityBasis:'down_payment'}};
     const nl={id:`${type.replace(/\s/g,'_').toLowerCase()}_${Date.now()}`,type,enabled:true,...defs[type]};
     setLoans(p=>{const u=[...p,nl];setTimeout(()=>saveToParent(u),0);return u;});
     setShowAddMenu(false);setShowSellerModal(false);
@@ -128,6 +155,7 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
   const [showAddMenu,setShowAddMenu]=useState(false);
   const [showSellerModal,setShowSellerModal]=useState(false);
   const [sellerEditId,setSellerEditId]=useState(null);
+  const [analysisView,setAnalysisView]=useState('scenario');
 
   // Exit Details
   const [exit,setExit]=useState(()=>{
@@ -200,18 +228,6 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
     setShowSellerModal(false);
   };
 
-  const Field=({label,value,onChange,suffix,prefix,step,min})=>(
-    <div style={{marginBottom:12}}>
-      <label style={{display:'block',fontSize:11,fontWeight:600,color:LB,marginBottom:4,textTransform:'uppercase',letterSpacing:'0.04em'}}>{label}</label>
-      <div style={{position:'relative',display:'flex',alignItems:'center'}}>
-        {prefix&&<span style={{position:'absolute',left:10,fontSize:13,color:LB,pointerEvents:'none'}}>{prefix}</span>}
-        <input type="number" step={step||'any'} min={min??0} value={value} onChange={e=>onChange(Number(e.target.value))}
-          style={{...IS,paddingLeft:prefix?24:10,paddingRight:suffix?30:10}}/>
-        {suffix&&<span style={{position:'absolute',right:10,fontSize:12,color:LB,pointerEvents:'none'}}>{suffix}</span>}
-      </div>
-    </div>
-  );
-
   const existingTypes=loans.map(l=>l.type);
   const addableTypes=[
     {type:'Mezzanine Loan',icon:'🏛️',desc:'Secondary mezzanine debt'},
@@ -263,7 +279,33 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
           </div>
         )}
 
-        {isEq&&<Field label="Partner Equity" prefix="$" value={loan.loanDollar||0} onChange={v=>updateLoanField(loan.id,'loanDollar',v)} step={1000}/>}
+        {isEq&&(
+          <>
+            <div style={{marginBottom:14}}>
+              <label style={{display:'block',fontSize:11,fontWeight:600,color:LB,marginBottom:6,textTransform:'uppercase',letterSpacing:'0.04em'}}>Investment Basis</label>
+              <div style={{display:'flex',gap:8}}>
+                <button onClick={()=>{
+                  const others=loans.filter(l=>l.id!==loan.id&&l.type!=='Equity Partner'&&l.enabled!==false);
+                  const tl=others.reduce((s,l)=>{const a=(l.loanAmtMode==='ltv'||l.loanAmtMode==='ltc')?pp*(Number(l.ltv)||0)/100:Number(l.loanDollar)||0;return s+a;},0);
+                  updateLoanFields(loan.id,{loanDollar:Math.max(0,Math.round(pp-tl)),equityBasis:'down_payment'});
+                }}
+                  style={{flex:1,padding:'8px 12px',borderRadius:8,border:`2px solid ${(loan.equityBasis||'down_payment')==='down_payment'?AC:B}`,backgroundColor:(loan.equityBasis||'down_payment')==='down_payment'?`${AC}10`:'white',color:(loan.equityBasis||'down_payment')==='down_payment'?AC:LB,fontSize:12,fontWeight:600,cursor:'pointer'}}>
+                  💰 Down Payment Only
+                </button>
+                <button onClick={()=>{
+                  const others=loans.filter(l=>l.id!==loan.id&&l.type!=='Equity Partner'&&l.enabled!==false);
+                  const tl=others.reduce((s,l)=>{const a=(l.loanAmtMode==='ltv'||l.loanAmtMode==='ltc')?pp*(Number(l.ltv)||0)/100:Number(l.loanDollar)||0;return s+a;},0);
+                  const tf=others.reduce((s,l)=>{const a=(l.loanAmtMode==='ltv'||l.loanAmtMode==='ltc')?pp*(Number(l.ltv)||0)/100:Number(l.loanDollar)||0;return s+a*(Number(l.fees)||0)/100;},0);
+                  updateLoanFields(loan.id,{loanDollar:Math.max(0,Math.round(pp-tl+tf)),equityBasis:'down_plus_closing'});
+                }}
+                  style={{flex:1,padding:'8px 12px',borderRadius:8,border:`2px solid ${loan.equityBasis==='down_plus_closing'?'#f97316':B}`,backgroundColor:loan.equityBasis==='down_plus_closing'?'#f9731610':'white',color:loan.equityBasis==='down_plus_closing'?'#f97316':LB,fontSize:12,fontWeight:600,cursor:'pointer'}}>
+                  📋 Down + Closing Costs
+                </button>
+              </div>
+            </div>
+            <Field label="Partner Equity" prefix="$" value={loan.loanDollar||0} onChange={v=>updateLoanField(loan.id,'loanDollar',v)} step={1000}/>
+          </>
+        )}
 
         <Field label={isEq?'Preferred Return':'Interest Rate'} suffix="%" value={loan.rate||0} onChange={v=>updateLoanField(loan.id,'rate',v)} step={0.05}/>
 
@@ -286,12 +328,47 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
           </div>
         )}
 
+        {isEq&&(
+          <>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <Field label="Balloon Term (years)" value={loan.balloonYrs||5} onChange={v=>updateLoanField(loan.id,'balloonYrs',v)} step={1} min={1}/>
+              <Field label="Partnership Term (years)" value={loan.term||5} onChange={v=>updateLoanField(loan.id,'term',v)} step={1} min={1}/>
+            </div>
+            <div style={{marginBottom:12}}>
+              <label style={{display:'block',fontSize:11,fontWeight:600,color:LB,marginBottom:6,textTransform:'uppercase',letterSpacing:'0.04em'}}>Exit Payout to Partner</label>
+              <div style={{display:'flex',gap:8}}>
+                <button onClick={()=>updateLoanField(loan.id,'doubleInvestment',false)}
+                  style={{flex:1,padding:'8px 12px',borderRadius:8,border:`2px solid ${!loan.doubleInvestment?'#22c55e':B}`,backgroundColor:!loan.doubleInvestment?'#22c55e10':'white',color:!loan.doubleInvestment?'#22c55e':LB,fontSize:12,fontWeight:600,cursor:'pointer'}}>
+                  1× Return of Capital
+                </button>
+                <button onClick={()=>updateLoanField(loan.id,'doubleInvestment',true)}
+                  style={{flex:1,padding:'8px 12px',borderRadius:8,border:`2px solid ${loan.doubleInvestment?'#f97316':B}`,backgroundColor:loan.doubleInvestment?'#f9731610':'white',color:loan.doubleInvestment?'#f97316':LB,fontSize:12,fontWeight:600,cursor:'pointer'}}>
+                  2× Double Investment
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
         <div style={{marginTop:16,padding:'12px 14px',backgroundColor:`${color}10`,borderRadius:10,border:`1px solid ${color}30`}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
             <span style={{fontSize:11,fontWeight:600,color:LB,textTransform:'uppercase'}}>{isEq?'Monthly Pref Payment':'Monthly Payment'}</span>
             <span style={{fontSize:18,fontWeight:800,color}}>{fmt(mo)}</span>
           </div>
           {!isEq&&amt>0&&<div style={{fontSize:11,color:LB,marginTop:4,textAlign:'right'}}>Annual: {fmt(mo*12)} · Fees: {fmt(amt*(Number(loan.fees)||0)/100)}</div>}
+          {isEq&&(
+            <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${color}30`}}>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:LB,marginBottom:2}}>
+                <span>Annual Preferred Return</span><span style={{fontWeight:600,color:VL}}>{fmt(mo*12)}</span>
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:LB,marginBottom:2}}>
+                <span>Balloon Payout (Yr {loan.balloonYrs||5})</span><span style={{fontWeight:600,color:loan.doubleInvestment?'#f97316':'#22c55e'}}>{fmt(loan.doubleInvestment?(loan.loanDollar||0)*2:(loan.loanDollar||0))}</span>
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:11,marginTop:4,paddingTop:4,borderTop:`1px dashed ${color}30`}}>
+                <span style={{fontWeight:700,color:VL}}>Total Partner Cost</span><span style={{fontWeight:700,color}}>{fmt((mo*12*(loan.balloonYrs||5))+(loan.doubleInvestment?(loan.loanDollar||0)*2:(loan.loanDollar||0)))}</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -561,10 +638,10 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
                   ))}
                   {structure.equityDetails.map((l,i)=>(
                     <tr key={`e${i}`} style={{borderLeft:'3px solid #22c55e'}}>
-                      <td style={{padding:'10px 12px',borderBottom:`1px solid ${B}`}}><span style={{marginRight:6}}>👥</span><span style={{fontWeight:600,color:VL}}>Equity Partner</span></td>
+                      <td style={{padding:'10px 12px',borderBottom:`1px solid ${B}`}}><span style={{marginRight:6}}>👥</span><span style={{fontWeight:600,color:VL}}>Equity Partner</span>{l.doubleInvestment&&<span style={{marginLeft:6,fontSize:9,padding:'2px 5px',backgroundColor:'#f9731620',color:'#f97316',borderRadius:4,fontWeight:700}}>2×</span>}</td>
                       <td style={{padding:'10px 12px',textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:600,color:'#22c55e'}}>{fmt(l.partnerEquity)}</td>
                       <td style={{padding:'10px 12px',textAlign:'right',borderBottom:`1px solid ${B}`,color:LB}}>{pct(Number(l.rate))} pref</td>
-                      <td style={{padding:'10px 12px',textAlign:'right',borderBottom:`1px solid ${B}`,color:LB}}>-</td>
+                      <td style={{padding:'10px 12px',textAlign:'right',borderBottom:`1px solid ${B}`,color:LB}}>{l.balloonYrs||'-'}yr balloon</td>
                       <td style={{padding:'10px 12px',textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:600,color:'#f97316'}}>{fmt(l.monthlyPref)}</td>
                       <td style={{padding:'10px 12px',textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:600,color:'#f97316'}}>{fmt(l.annualPref)}</td>
                     </tr>
@@ -592,68 +669,84 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
 
 
 
-        {/* ═══ 6. SCENARIO COMPARISON ═══ */}
-        {structure&&Object.keys(alts).length>0&&(
-          <div style={SC}>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:20}}><Calculator size={20} color="#374151"/><h3 style={{margin:0,fontSize:16,fontWeight:700,color:VL,textTransform:'uppercase',letterSpacing:'0.04em'}}>Scenario Comparison</h3></div>
-            <div style={{overflowX:'auto'}}>
-              <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
-                <thead><tr style={{backgroundColor:'#f9fafb'}}>{['Structure','Loan Amt','Cash Req','Monthly','Annual CF','DSCR','CoC'].map((h,i)=><th key={i} style={{padding:12,textAlign:i===0?'left':'right',fontWeight:700,color:'#374151',borderBottom:`2px solid ${B}`}}>{h}</th>)}</tr></thead>
-                <tbody>
-                  <tr style={{backgroundColor:'#eff6ff',borderLeft:`4px solid ${AC}`}}>
-                    <td style={{padding:12,borderBottom:`1px solid ${B}`}}><div style={{fontWeight:700,color:VL}}>Your Structure</div><span style={{fontSize:10,color:AC,fontWeight:700}}>★ CURRENT</span></td>
-                    <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:600}}>{fmt(structure.totalLoanAmt)}</td>
-                    <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:600}}>{fmt(structure.cashOutOfPocket)}</td>
-                    <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:600}}>{fmt(structure.totalMonthlyPmt)}</td>
-                    <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:700,color:cfC(structure.cashflow)}}>{fmt(structure.cashflow)}</td>
-                    <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:600,color:dscrC(structure.dscr)}}>{structure.dscr.toFixed(2)}x</td>
-                    <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:600,color:cocC(structure.cashOnCash)}}>{pct(structure.cashOnCash)}</td>
-                  </tr>
-                  {Object.entries(alts).map(([k,s])=>(
-                    <tr key={k}>
-                      <td style={{padding:12,borderBottom:`1px solid ${B}`}}><div style={{fontWeight:600,color:VL}}>{s.name}</div><div style={{fontSize:10,color:'#9ca3af'}}>{s.desc}</div></td>
-                      <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:500}}>{fmt(s.totalLoanAmt)}</td>
-                      <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:500}}>{fmt(s.cashOutOfPocket)}</td>
-                      <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:500}}>{fmt(s.totalMonthlyPmt)}</td>
-                      <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:700,color:cfC(s.cashflow)}}>{fmt(s.cashflow)}</td>
-                      <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:600,color:dscrC(s.dscr)}}>{s.dscr.toFixed(2)}x</td>
-                      <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:600,color:cocC(s.cashOnCash)}}>{pct(s.cashOnCash)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* ═══ 7. DSCR SENSITIVITY ═══ */}
+        {/* ═══ 6. SCENARIO COMPARISON / DSCR SENSITIVITY TOGGLE ═══ */}
         {structure&&pp>0&&noi>0&&(
           <div style={SC}>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:20}}><Activity size={20} color="#374151"/><h3 style={{margin:0,fontSize:16,fontWeight:700,color:VL,textTransform:'uppercase',letterSpacing:'0.04em'}}>DSCR Sensitivity</h3></div>
-            {(()=>{
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                <Calculator size={20} color="#374151"/>
+                <h3 style={{margin:0,fontSize:16,fontWeight:700,color:VL,textTransform:'uppercase',letterSpacing:'0.04em'}}>
+                  {analysisView==='scenario'?'Scenario Comparison':'DSCR Sensitivity'}
+                </h3>
+              </div>
+              <div style={{display:'flex',borderRadius:8,overflow:'hidden',border:`1px solid ${B}`,width:'fit-content'}}>
+                <button onClick={()=>setAnalysisView('scenario')}
+                  style={{padding:'8px 18px',border:'none',cursor:'pointer',fontSize:12,fontWeight:600,backgroundColor:analysisView==='scenario'?AC:'white',color:analysisView==='scenario'?'white':LB,transition:'all 0.15s'}}>
+                  📊 Scenarios
+                </button>
+                <button onClick={()=>setAnalysisView('dscr')}
+                  style={{padding:'8px 18px',border:'none',cursor:'pointer',fontSize:12,fontWeight:600,backgroundColor:analysisView==='dscr'?AC:'white',color:analysisView==='dscr'?'white':LB,transition:'all 0.15s'}}>
+                  📈 DSCR Matrix
+                </button>
+              </div>
+            </div>
+
+            {analysisView==='scenario'&&Object.keys(alts).length>0&&(
+              <div style={{overflowX:'auto'}}>
+                <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
+                  <thead><tr style={{backgroundColor:'#f9fafb'}}>{['Structure','Loan Amt','Cash Req','Monthly','Annual CF','DSCR','CoC'].map((h,i)=><th key={i} style={{padding:12,textAlign:i===0?'left':'right',fontWeight:700,color:'#374151',borderBottom:`2px solid ${B}`}}>{h}</th>)}</tr></thead>
+                  <tbody>
+                    <tr style={{backgroundColor:'#eff6ff',borderLeft:`4px solid ${AC}`}}>
+                      <td style={{padding:12,borderBottom:`1px solid ${B}`}}><div style={{fontWeight:700,color:VL}}>Your Structure</div><span style={{fontSize:10,color:AC,fontWeight:700}}>★ CURRENT</span></td>
+                      <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:600}}>{fmt(structure.totalLoanAmt)}</td>
+                      <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:600}}>{fmt(structure.cashOutOfPocket)}</td>
+                      <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:600}}>{fmt(structure.totalMonthlyPmt)}</td>
+                      <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:700,color:cfC(structure.cashflow)}}>{fmt(structure.cashflow)}</td>
+                      <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:600,color:dscrC(structure.dscr)}}>{structure.dscr.toFixed(2)}x</td>
+                      <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:600,color:cocC(structure.cashOnCash)}}>{pct(structure.cashOnCash)}</td>
+                    </tr>
+                    {Object.entries(alts).map(([k,s])=>(
+                      <tr key={k}>
+                        <td style={{padding:12,borderBottom:`1px solid ${B}`}}><div style={{fontWeight:600,color:VL}}>{s.name}</div><div style={{fontSize:10,color:'#9ca3af'}}>{s.desc}</div></td>
+                        <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:500}}>{fmt(s.totalLoanAmt)}</td>
+                        <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:500}}>{fmt(s.cashOutOfPocket)}</td>
+                        <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:500}}>{fmt(s.totalMonthlyPmt)}</td>
+                        <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:700,color:cfC(s.cashflow)}}>{fmt(s.cashflow)}</td>
+                        <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:600,color:dscrC(s.dscr)}}>{s.dscr.toFixed(2)}x</td>
+                        <td style={{padding:12,textAlign:'right',borderBottom:`1px solid ${B}`,fontWeight:600,color:cocC(s.cashOnCash)}}>{pct(s.cashOnCash)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {analysisView==='dscr'&&(()=>{
               const br=Number(structure.loanDetails?.[0]?.rate||6.5);
               const rates=[br-1,br-0.5,br,br+0.5,br+1];
               const ltvs=[60,65,70,75,80,85];
               return (
-                <div style={{overflowX:'auto'}}>
-                  <table style={{width:'100%',borderCollapse:'collapse',fontSize:12,textAlign:'center'}}>
-                    <thead><tr style={{backgroundColor:'#f9fafb'}}><th style={{padding:10,borderBottom:`2px solid ${B}`,fontWeight:700,color:'#374151'}}>LTV ↓ / Rate →</th>
-                      {rates.map((r,i)=><th key={i} style={{padding:10,borderBottom:`2px solid ${B}`,fontWeight:700,color:Math.abs(r-br)<0.01?AC:'#374151',backgroundColor:Math.abs(r-br)<0.01?'#eff6ff':'#f9fafb'}}>{r.toFixed(2)}%{Math.abs(r-br)<0.01?' ★':''}</th>)}
-                    </tr></thead>
-                    <tbody>{ltvs.map(ltv=>(
-                      <tr key={ltv}><td style={{padding:10,borderBottom:`1px solid ${B}`,fontWeight:700,color:'#374151',backgroundColor:'#f9fafb'}}>{ltv}%</td>
-                        {rates.map((r,ri)=>{const lo=pp*ltv/100,mo=calcMonthlyPayment(lo,r,360),an=mo*12,d=an>0?noi/an:0,uc=Math.abs(r-br)<0.01&&Math.abs(ltv-structure.ltv)<1;
-                          return <td key={ri} style={{padding:10,borderBottom:`1px solid ${B}`,fontWeight:uc?800:600,color:dscrC(d),backgroundColor:uc?'#eff6ff':'white',border:uc?`2px solid ${AC}`:undefined}}>{d.toFixed(2)}x</td>;
-                        })}
-                      </tr>
-                    ))}</tbody>
-                  </table>
-                </div>
+                <>
+                  <div style={{overflowX:'auto'}}>
+                    <table style={{width:'100%',borderCollapse:'collapse',fontSize:12,textAlign:'center'}}>
+                      <thead><tr style={{backgroundColor:'#f9fafb'}}><th style={{padding:10,borderBottom:`2px solid ${B}`,fontWeight:700,color:'#374151'}}>LTV ↓ / Rate →</th>
+                        {rates.map((r,i)=><th key={i} style={{padding:10,borderBottom:`2px solid ${B}`,fontWeight:700,color:Math.abs(r-br)<0.01?AC:'#374151',backgroundColor:Math.abs(r-br)<0.01?'#eff6ff':'#f9fafb'}}>{r.toFixed(2)}%{Math.abs(r-br)<0.01?' ★':''}</th>)}
+                      </tr></thead>
+                      <tbody>{ltvs.map(ltv=>(
+                        <tr key={ltv}><td style={{padding:10,borderBottom:`1px solid ${B}`,fontWeight:700,color:'#374151',backgroundColor:'#f9fafb'}}>{ltv}%</td>
+                          {rates.map((r,ri)=>{const lo=pp*ltv/100,mo=calcMonthlyPayment(lo,r,360),an=mo*12,d=an>0?noi/an:0,uc=Math.abs(r-br)<0.01&&Math.abs(ltv-structure.ltv)<1;
+                            return <td key={ri} style={{padding:10,borderBottom:`1px solid ${B}`,fontWeight:uc?800:600,color:dscrC(d),backgroundColor:uc?'#eff6ff':'white',border:uc?`2px solid ${AC}`:undefined}}>{d.toFixed(2)}x</td>;
+                          })}
+                        </tr>
+                      ))}</tbody>
+                    </table>
+                  </div>
+                  <div style={{marginTop:12,padding:'10px 14px',backgroundColor:'#eff6ff',borderRadius:8,border:'1px dashed #3b82f6'}}>
+                    <div style={{fontSize:11,color:'#1e3a8a'}}><strong>★</strong> = Your position. <span style={{color:'#10b981',fontWeight:700}}>Green</span> ≥ 1.25x. <span style={{color:'#f59e0b',fontWeight:700}}>Yellow</span> 1.0–1.25x. <span style={{color:'#ef4444',fontWeight:700}}>Red</span> &lt; 1.0x.</div>
+                  </div>
+                </>
               );
             })()}
-            <div style={{marginTop:12,padding:'10px 14px',backgroundColor:'#eff6ff',borderRadius:8,border:'1px dashed #3b82f6'}}>
-              <div style={{fontSize:11,color:'#1e3a8a'}}><strong>★</strong> = Your position. <span style={{color:'#10b981',fontWeight:700}}>Green</span> ≥ 1.25x. <span style={{color:'#f59e0b',fontWeight:700}}>Yellow</span> 1.0–1.25x. <span style={{color:'#ef4444',fontWeight:700}}>Red</span> &lt; 1.0x.</div>
-            </div>
           </div>
         )}
 

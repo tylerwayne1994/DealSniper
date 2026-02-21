@@ -76,6 +76,14 @@ export default function CompressedTab({
   const debtServiceYear1 = fullCalcs?.financing?.annualDebtService || annualDebtService || 0;
   const cashFlowYear1 = fullCalcs?.year1?.cashFlow || 0;
 
+  // === Value-Add Pro Forma Adjustments (from Value-Add tab toggles) ===
+  const valueAdd = scenarioData?.value_add || {};
+  const vaRentUpside = valueAdd.apply_rent_upside ? (Number(valueAdd.annual_rent_upside) || 0) : 0;
+  const vaRubsRecovery = valueAdd.apply_rubs ? (Number(valueAdd.annual_rubs_recovery) || 0) : 0;
+  const vaTotalAdj = vaRentUpside + vaRubsRecovery;
+  const adjNOI = noiYear1 + vaTotalAdj;
+  const adjCashFlow = cashFlowYear1 + vaTotalAdj;
+
   // === Expense Items for donut chart ===
   const expenseItems = fullCalcs?.year1?.expenseItems || {};
   // Pretty labels for known keys; any unknown key gets a formatted fallback
@@ -377,27 +385,36 @@ export default function CompressedTab({
               <FinRow label="Capital Reserve" monthly={capitalReserve / 12} yearly={capitalReserve} dot="#8b5cf6" />
               <FinRow label="Operating Expenses" monthly={totalOperatingExpenses / 12} yearly={totalOperatingExpenses} dot="#ef4444" />
               <FinRow label="Capital Expenditure" monthly={capitalExpenditure / 12} yearly={capitalExpenditure} dot="#f97316" />
+              {vaRentUpside > 0 && <FinRow label="+ Rent Optimization (Value-Add)" monthly={vaRentUpside / 12} yearly={vaRentUpside} dot="#4f46e5" />}
+              {vaRubsRecovery > 0 && <FinRow label="+ RUBS Recovery (Value-Add)" monthly={vaRubsRecovery / 12} yearly={vaRubsRecovery} dot="#0ea5e9" />}
               <tr style={{ borderTop: `2px solid ${B}` }}>
                 <td style={{ padding: '12px 12px', fontSize: 13, fontWeight: 800, color: '#16a34a' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#16a34a', flexShrink: 0 }} />
-                    Net Operating Income (NOI)
+                    Net Operating Income (NOI){vaTotalAdj > 0 ? ' ★' : ''}
                   </span>
                 </td>
-                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#16a34a', fontSize: 13 }}>{fmt(noiYear1 / 12)}</td>
-                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#16a34a', fontSize: 13 }}>{fmt(noiYear1)}</td>
+                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#16a34a', fontSize: 13 }}>{fmt(adjNOI / 12)}</td>
+                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#16a34a', fontSize: 13 }}>{fmt(adjNOI)}</td>
               </tr>
               <FinRow label="Debt Service" monthly={debtServiceYear1 / 12} yearly={debtServiceYear1} dot="#dc2626" />
-              <tr style={{ borderTop: `2px solid ${B}`, backgroundColor: cashFlowYear1 >= 0 ? '#f0fdf4' : '#fef2f2' }}>
-                <td style={{ padding: '12px 12px', fontSize: 14, fontWeight: 800, color: cashFlowYear1 >= 0 ? '#16a34a' : '#ef4444' }}>
+              <tr style={{ borderTop: `2px solid ${B}`, backgroundColor: adjCashFlow >= 0 ? '#f0fdf4' : '#fef2f2' }}>
+                <td style={{ padding: '12px 12px', fontSize: 14, fontWeight: 800, color: adjCashFlow >= 0 ? '#16a34a' : '#ef4444' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: cashFlowYear1 >= 0 ? '#16a34a' : '#ef4444', flexShrink: 0 }} />
-                    Cash Flow (Bottom Line)
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: adjCashFlow >= 0 ? '#16a34a' : '#ef4444', flexShrink: 0 }} />
+                    Cash Flow (Bottom Line){vaTotalAdj > 0 ? ' ★' : ''}
                   </span>
                 </td>
-                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: cashFlowYear1 >= 0 ? '#16a34a' : '#ef4444', fontSize: 14 }}>{fmt(cashFlowYear1 / 12)}</td>
-                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: cashFlowYear1 >= 0 ? '#16a34a' : '#ef4444', fontSize: 14 }}>{fmt(cashFlowYear1)}</td>
+                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: adjCashFlow >= 0 ? '#16a34a' : '#ef4444', fontSize: 14 }}>{fmt(adjCashFlow / 12)}</td>
+                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: adjCashFlow >= 0 ? '#16a34a' : '#ef4444', fontSize: 14 }}>{fmt(adjCashFlow)}</td>
               </tr>
+              {vaTotalAdj > 0 && (
+                <tr>
+                  <td colSpan={3} style={{ padding: '8px 12px', fontSize: 10, color: '#4f46e5', fontStyle: 'italic' }}>
+                    ★ Includes value-add adjustments (+{fmt(vaTotalAdj)}/yr). Toggle in Value-Add tab.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -455,7 +472,7 @@ export default function CompressedTab({
               <div style={{ marginTop: 14, borderTop: `2px solid ${B}`, paddingTop: 14 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
                   {[
-                    { label: 'NOI', value: noiYear1, color: '#16a34a' },
+                    { label: 'NOI', value: adjNOI, color: '#16a34a' },
                     { label: 'Debt Service', value: debtServiceYear1, color: '#dc2626' },
                     { label: 'Cash Flow', value: cashFlowYear1, color: cashFlowYear1 >= 0 ? '#16a34a' : '#ef4444' },
                   ].map((c, i) => (

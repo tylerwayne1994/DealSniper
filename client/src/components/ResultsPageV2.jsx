@@ -68,7 +68,7 @@ const ResultsPageV2 = ({
   const [pipelineSuccess, setPipelineSuccess] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [amortSubTab, setAmortSubTab] = useState('schedule');
-  const [rubsEnabled, setRubsEnabled] = useState(false);
+  const [rubsEnabled, setRubsEnabled] = useState(scenarioData?.value_add?.rubs_enabled || false);
   const [marketData, setMarketData] = useState(null);
   const [marketDataLoading, setMarketDataLoading] = useState(false);
   const [documentAnalysis, setDocumentAnalysis] = useState(scenarioData?.document_analysis || null);
@@ -2526,7 +2526,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
                       <div style={{ fontSize: 11, color: vLB }}>Implement RUBS</div>
                       <div style={{ fontSize: 12, fontWeight: 700, color: rubsEnabled ? '#4f46e5' : vLB }}>{rubsEnabled ? 'ON' : 'OFF'}</div>
                     </div>
-                    <VToggle checked={rubsEnabled} onChange={(v) => setRubsEnabled(v)} />
+                    <VToggle checked={rubsEnabled} onChange={(v) => { setRubsEnabled(v); handleFieldChange('value_add.rubs_enabled', v); }} />
                   </div>
                 </div>
 
@@ -2794,6 +2794,55 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* ═══ 6. APPLY VALUE-ADD TO PRO FORMA ═══ */}
+              <div style={{...vSC, border: '2px solid #4f46e5', background: 'linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%)'}}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                  <span style={{ fontSize: 18 }}>⚡</span>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: vVL }}>Apply to Overview Pro Forma</h3>
+                    <p style={{ margin: '2px 0 0', fontSize: 12, color: vLB }}>Toggle switches to reflect value-add adjustments in Overview tab financials</p>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
+                  <div style={{ padding: 20, borderRadius: 12, border: `2px solid ${scenarioData?.value_add?.apply_rent_upside ? '#4f46e5' : vB}`, backgroundColor: scenarioData?.value_add?.apply_rent_upside ? '#eef2ff' : 'white' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: vVL }}>📈 Rent Optimization</div>
+                        <div style={{ fontSize: 12, color: vLB, marginTop: 4 }}>Higher rents from market adjustments</div>
+                        <div style={{ fontSize: 18, fontWeight: 800, color: totalAnnualRentUpside > 0 ? '#16a34a' : vLB, marginTop: 8 }}>+{vFmt(totalAnnualRentUpside)}<span style={{ fontSize: 11, fontWeight: 500, color: vLB }}>/yr</span></div>
+                      </div>
+                      <VToggle checked={scenarioData?.value_add?.apply_rent_upside || false} onChange={v => {
+                        handleFieldChange('value_add.apply_rent_upside', v);
+                        if (v) handleFieldChange('value_add.annual_rent_upside', totalAnnualRentUpside);
+                      }} />
+                    </div>
+                  </div>
+                  <div style={{ padding: 20, borderRadius: 12, border: `2px solid ${scenarioData?.value_add?.apply_rubs ? '#0ea5e9' : vB}`, backgroundColor: scenarioData?.value_add?.apply_rubs ? '#f0f9ff' : 'white' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: vVL }}>💧 RUBS Recovery</div>
+                        <div style={{ fontSize: 12, color: vLB, marginTop: 4 }}>Utility cost recovery from tenants</div>
+                        <div style={{ fontSize: 18, fontWeight: 800, color: totalRubsRecovery > 0 ? '#16a34a' : vLB, marginTop: 8 }}>+{vFmt(totalRubsRecovery)}<span style={{ fontSize: 11, fontWeight: 500, color: vLB }}>/yr</span></div>
+                      </div>
+                      <VToggle checked={scenarioData?.value_add?.apply_rubs || false} onChange={v => {
+                        handleFieldChange('value_add.apply_rubs', v);
+                        if (v) handleFieldChange('value_add.annual_rubs_recovery', totalRubsRecovery);
+                      }} />
+                    </div>
+                  </div>
+                </div>
+                {(scenarioData?.value_add?.apply_rent_upside || scenarioData?.value_add?.apply_rubs) && (
+                  <div style={{ marginTop: 16, padding: '14px 18px', backgroundColor: '#ecfdf5', borderRadius: 10, border: '1px solid #6ee7b7', display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ fontSize: 16 }}>✅</span>
+                    <div style={{ fontSize: 13, color: '#047857' }}>
+                      <strong>Adjusted NOI:</strong> {vFmt(currentNOI + (scenarioData?.value_add?.apply_rent_upside ? totalAnnualRentUpside : 0) + (scenarioData?.value_add?.apply_rubs ? totalRubsRecovery : 0))}
+                      <span style={{ color: vLB, marginLeft: 8 }}>(Base: {vFmt(currentNOI)})</span>
+                      <span style={{ color: '#16a34a', marginLeft: 8 }}>+{vFmt((scenarioData?.value_add?.apply_rent_upside ? totalAnnualRentUpside : 0) + (scenarioData?.value_add?.apply_rubs ? totalRubsRecovery : 0))}</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
             </div>
