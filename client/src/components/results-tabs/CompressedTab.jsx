@@ -387,6 +387,17 @@ export default function CompressedTab({
                 <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#16a34a', fontSize: 13 }}>{fmt(noiYear1 / 12)}</td>
                 <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#16a34a', fontSize: 13 }}>{fmt(noiYear1)}</td>
               </tr>
+              <FinRow label="Debt Service" monthly={debtServiceYear1 / 12} yearly={debtServiceYear1} dot="#dc2626" />
+              <tr style={{ borderTop: `2px solid ${B}`, backgroundColor: cashFlowYear1 >= 0 ? '#f0fdf4' : '#fef2f2' }}>
+                <td style={{ padding: '12px 12px', fontSize: 14, fontWeight: 800, color: cashFlowYear1 >= 0 ? '#16a34a' : '#ef4444' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: cashFlowYear1 >= 0 ? '#16a34a' : '#ef4444', flexShrink: 0 }} />
+                    Cash Flow (Bottom Line)
+                  </span>
+                </td>
+                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: cashFlowYear1 >= 0 ? '#16a34a' : '#ef4444', fontSize: 14 }}>{fmt(cashFlowYear1 / 12)}</td>
+                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: cashFlowYear1 >= 0 ? '#16a34a' : '#ef4444', fontSize: 14 }}>{fmt(cashFlowYear1)}</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -439,6 +450,21 @@ export default function CompressedTab({
                     <div style={{ fontSize: 16, fontWeight: 800, color: c.color }}>{fmt(c.value)}</div>
                   </div>
                 ))}
+              </div>
+              {/* NOI → Debt Service → Cash Flow bottom line */}
+              <div style={{ marginTop: 14, borderTop: `2px solid ${B}`, paddingTop: 14 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                  {[
+                    { label: 'NOI', value: noiYear1, color: '#16a34a' },
+                    { label: 'Debt Service', value: debtServiceYear1, color: '#dc2626' },
+                    { label: 'Cash Flow', value: cashFlowYear1, color: cashFlowYear1 >= 0 ? '#16a34a' : '#ef4444' },
+                  ].map((c, i) => (
+                    <div key={i} style={{ background: i === 2 ? (cashFlowYear1 >= 0 ? '#f0fdf4' : '#fef2f2') : '#f9fafb', borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid ${c.color}`, fontWeight: i === 2 ? 800 : 700 }}>
+                      <div style={{ fontSize: 11, color: LB, fontWeight: 600, marginBottom: 4 }}>{c.label}:</div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: c.color }}>{fmt(c.value)}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </>
           ) : (
@@ -550,11 +576,12 @@ export default function CompressedTab({
           ═══════════════════════════════════════════════════════════════ */}
       <div style={card}>
         <SectionHead title="Project Valuation" color={VL} />
+        <p style={{ margin: '-8px 0 12px', fontSize: 12, color: LB, fontStyle: 'italic' }}>Implied property value at each cap rate (Value = NOI ÷ Cap Rate)</p>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 700, color: LB, fontSize: 12, borderBottom: `2px solid ${B}` }}>Cap Rate</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 700, color: LB, fontSize: 12, borderBottom: `2px solid ${B}` }}>Cap Rate → Implied Value</th>
                 {capRates.map((cr, i) => (
                   <th key={i} style={{
                     padding: '12px 16px', textAlign: 'center', fontWeight: 700, fontSize: 12,
