@@ -2,13 +2,45 @@ import React, { useMemo } from 'react';
 import * as calc from '../../utils/propertySpreadsheetCalculations';
 import { mapParsedDataToSpreadsheet } from '../../utils/propertySpreadsheetMapper';
 
-export default function CashFlowTab({ scenarioData }) {
-  const data = useMemo(() => mapParsedDataToSpreadsheet(scenarioData || {}), [scenarioData]);
+export default function CashFlowTab({ scenarioData, fullCalcs }) {
+  const data = useMemo(() => {
+    const mapped = mapParsedDataToSpreadsheet(scenarioData || {});
+    // If fullCalcs is available, override Year 1 base values so the CashFlowTab
+    // projection starts from the SAME NOI/expenses as the Compressed/Expenses tabs.
+    if (fullCalcs?.year1 && mapped) {
+      const y1 = fullCalcs.year1;
+      // Seed NOI fields so downstream projections are consistent
+      if (y1.noi > 0) {
+        mapped.stabilizedNOI = y1.noi;
+        mapped.proFormaNOI = y1.noi;
+      }
+    }
+    return mapped;
+  }, [scenarioData, fullCalcs]);
 
   const revenueProjections = useMemo(() => calc.calculateRevenueProjections(data), [data]);
-  const expenseProjections = useMemo(() => calc.calculateExpenseProjections(data, revenueProjections), [data, revenueProjections]);
+  const expenseProjections = useMemo(() => {
+    const projections = calc.calculateExpenseProjections(data, revenueProjections);
+    // Override Year 1 total expenses with fullCalcs so it matches the Expenses tab exactly.
+    // The mapper/calculator might add management fee + reserves that aren't in the itemized
+    // expenses, causing a discrepancy. Use fullCalcs as the authoritative Year 1 source.
+    if (fullCalcs?.year1?.totalOperatingExpenses > 0 && projections.length > 0) {
+      projections[0].totalExpenses = fullCalcs.year1.totalOperatingExpenses;
+    }
+    return projections;
+  }, [data, revenueProjections, fullCalcs]);
   const otherIncomeAnnual = useMemo(() => calc.calculateTotalOtherIncome(data.otherIncome), [data]);
-  const noiProjections = useMemo(() => calc.calculateNOIProjections(revenueProjections, expenseProjections, data.units, otherIncomeAnnual), [revenueProjections, expenseProjections, data, otherIncomeAnnual]);
+  const noiProjections = useMemo(() => {
+    const projections = calc.calculateNOIProjections(revenueProjections, expenseProjections, data.units, otherIncomeAnnual);
+    // Override Year 1 NOI with fullCalcs so all tabs agree
+    if (fullCalcs?.year1?.noi > 0 && projections.length > 0) {
+      projections[0].noi = fullCalcs.year1.noi;
+      if (fullCalcs.year1.effectiveGrossIncome > 0) {
+        projections[0].effectiveGrossIncome = fullCalcs.year1.effectiveGrossIncome;
+      }
+    }
+    return projections;
+  }, [revenueProjections, expenseProjections, data, otherIncomeAnnual, fullCalcs]);
   const financingMetrics = useMemo(() => calc.calculateFinancingMetrics(data, noiProjections), [data, noiProjections]);
   const cashFlowProjections = useMemo(() => calc.calculateCashFlowProjections(noiProjections, financingMetrics, data), [noiProjections, financingMetrics, data]);
   const saleAnalysis = useMemo(() => calc.calculateSaleAnalysis(noiProjections, data, financingMetrics), [noiProjections, data, financingMetrics]);

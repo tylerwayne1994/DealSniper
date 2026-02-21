@@ -2264,6 +2264,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
         return (
           <CashFlowTab
             scenarioData={scenarioData}
+            fullCalcs={fullCalcs}
           />
         );
 
@@ -2286,8 +2287,8 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
         const vPct=(v)=>{if(v==null||isNaN(v))return'0.0%';return`${Number(v).toFixed(2)}%`;};
         const vINP={padding:'8px 12px',border:`1px solid ${vB}`,borderRadius:8,fontSize:13,fontWeight:600,outline:'none',textAlign:'right',background:'#fff',fontFamily:'inherit',boxSizing:'border-box'};
 
-        // ── Core Data ──
-        const currentNOI = noiT12;
+        // ── Core Data — ALL sourced from fullCalcs for consistency ──
+        const currentNOI = fullCalcs?.year1?.noi || noiT12;
         const currentPurchasePrice = scenarioData.pricing_financing?.purchase_price || 0;
         const currentCapRate = fullCalcs.year1?.capRate || 0;
         const currentDSCR = fullCalcs.year1?.dscr || 0;
@@ -2308,7 +2309,8 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
         const rentUpside = marketRent - currentRent;
         const totalAnnualRentUpside = rentUpside * 12;
 
-        // ── Expenses ──
+        // ── Expenses — use fullCalcs total (matches Compressed & Expenses tabs) ──
+        const totalCurrentExpenses = fullCalcs?.year1?.totalOperatingExpenses || 0;
         const currentExpenses = {
           taxes: scenarioData.expenses?.taxes || 0, insurance: scenarioData.expenses?.insurance || 0,
           utilities: scenarioData.expenses?.utilities || 0, repairs: scenarioData.expenses?.repairs_maintenance || 0,
@@ -2316,7 +2318,6 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
           admin: scenarioData.expenses?.admin || 0, marketing: scenarioData.expenses?.marketing || 0,
           other: scenarioData.expenses?.other || 0,
         };
-        const totalCurrentExpenses = Object.values(currentExpenses).reduce((a, b) => a + b, 0);
 
         // ═══════════════════════════════════════════════════════════
         // RUBS MODEL — Ratio Utility Billing System

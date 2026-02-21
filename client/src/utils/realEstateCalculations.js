@@ -298,10 +298,57 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   const vacancyRate = rawVacancyRate > 1 ? rawVacancyRate / 100 : rawVacancyRate;
 
   const effectiveGrossIncomeBackend = pnl.effective_gross_income || 0;
-  const totalOperatingExpenses =
-    pnl.operating_expenses_t12 != null
-      ? pnl.operating_expenses_t12
-      : (pnl.operating_expenses != null ? pnl.operating_expenses : 0);
+
+  // === OPERATING EXPENSES ===
+  // CRITICAL: Match ExpenseV2Tab logic exactly so all tabs show the same numbers.
+  // Separate non-utility items from utility items to avoid double-counting
+  // when both a 'utilities' lump sum and individual keys (water_sewer, electric, etc.) exist.
+  const skipExpenseKeys = new Set([
+    'total', 'utility_breakdown', 'utilities', 'utilities_other',
+    'water_sewer', 'electric', 'electrical', 'gas', 'trash',
+    'vacancy_pct', 'loss_to_lease_pct', 'capex_pct',
+    'management_pct', 'management_rate', 'vacancy_rate', 'capex_rate',
+    'electric_reimbursable', 'gas_submeter', 'trash_service_fee', 'water_sewer_revenue',
+  ]);
+
+  // 1) Sum non-utility expense line items (matches ExpenseV2Tab nonUtilTotalUW)
+  let nonUtilExpenseTotal = 0;
+  Object.entries(expenses).forEach(([key, val]) => {
+    if (skipExpenseKeys.has(key) || typeof val !== 'number') return;
+    nonUtilExpenseTotal += val;
+  });
+
+  // 2) Handle utilities: individual breakdown vs lump sum (matches ExpenseV2Tab utilTotalUW)
+  const utilBreakdown = expenses.utility_breakdown || {};
+  const utilLumpSum = Number(expenses.utilities) || 0;
+  const utilKeys = ['water_sewer', 'electric', 'electrical', 'gas', 'trash'];
+  let utilBreakdownTotal = 0;
+  const seenUtilLabels = new Set();
+  utilKeys.forEach(key => {
+    // Dedup electric/electrical (same as ExpenseV2Tab)
+    const canonical = key === 'electrical' ? 'electric' : key;
+    if (seenUtilLabels.has(canonical)) return;
+    const val = Number(utilBreakdown[key]) || Number(expenses[key]) || 0;
+    if (val > 0) seenUtilLabels.add(canonical);
+    utilBreakdownTotal += val;
+  });
+  // Use breakdown if available; fall back to lump sum. If lump sum exceeds
+  // breakdown total, include the difference as "Other Utilities" catch-all.
+  let utilTotal;
+  if (utilBreakdownTotal > 0) {
+    utilTotal = Math.max(utilBreakdownTotal, utilLumpSum);
+  } else {
+    utilTotal = utilLumpSum;
+  }
+
+  const itemizedExpenseTotal = nonUtilExpenseTotal + utilTotal;
+
+  // Use itemized sum when we have individual expense line items;
+  // fall back to pnl totals only when no itemized data exists
+  const totalOperatingExpenses = itemizedExpenseTotal > 0
+    ? itemizedExpenseTotal
+    : (pnl.operating_expenses_t12 != null ? pnl.operating_expenses_t12
+      : (pnl.operating_expenses != null ? pnl.operating_expenses : 0));
   
   const effectiveGrossIncome = computeEGI({
     potentialGrossIncome,
@@ -310,15 +357,19 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
     effectiveGrossIncome: effectiveGrossIncomeBackend
   });
 
-  const noiBackend =
-    pnl.noi_t12 != null
-      ? pnl.noi_t12
-      : (pnl.noi != null ? pnl.noi : 0);
-  const noi = computeNOI({
-    egi: effectiveGrossIncome,
-    operatingExpenses: totalOperatingExpenses,
-    noiOverride: noiBackend
-  });
+  // === NOI ===
+  // ALWAYS compute NOI = EGI - OpEx for consistency with the Expenses tab.
+  // Previously we used the backend noi_t12 override, but that created mismatches
+  // when the itemized expenses didn't sum to the same total the backend used.
+  // Only fall back to the backend NOI when we have no EGI or OpEx to compute from.
+  const noiBackend = pnl.noi_t12 != null ? pnl.noi_t12 : (pnl.noi != null ? pnl.noi : 0);
+  let noi;
+  if (effectiveGrossIncome > 0 && totalOperatingExpenses > 0) {
+    noi = effectiveGrossIncome - totalOperatingExpenses;
+  } else {
+    // No itemized data — use backend NOI as last resort
+    noi = noiBackend > 0 ? noiBackend : 0;
+  }
 
   if (debug) {
     debug.inputs.potentialGrossIncome = potentialGrossIncome;
