@@ -1171,6 +1171,61 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
     : (year1NOI - annualDebtService);
   const stabilizedValue = fullCalcs?.returns?.terminalValue || 0;
 
+  // ═══ VALUE-ADD ADJUSTMENTS — computed at component level for all tabs ═══
+  const vaUnitMix = scenarioData.unit_mix || [];
+  const vaTotalUnits = scenarioData.property?.units || vaUnitMix.reduce((s, u) => s + (u.units || 0), 0) || 0;
+  const vaCurrentMonthlyRent = vaUnitMix.reduce((s, u) => s + ((u.units || 0) * (u.rent_current || 0)), 0);
+  const vaMarketMonthlyRent = vaUnitMix.reduce((s, u) => {
+    const mr = u.rent_market && u.rent_market > 0 ? u.rent_market : u.rent_current || 0;
+    return s + ((u.units || 0) * mr);
+  }, 0);
+  const vaAnnualRentUpside = (vaMarketMonthlyRent - vaCurrentMonthlyRent) * 12;
+
+  // RUBS recovery — recompute from rubsConfig
+  const vaRubsConfig = scenarioData?.value_add?.rubs_config || {};
+  const vaTotalUtilityCost = scenarioData?.expenses?.utilities || 0;
+  const vaUtilityProportions = { water_sewer: 0.35, electric: 0.30, gas: 0.15, trash: 0.20 };
+  const vaDefaultRecovery = { water_sewer: 90, electric: 85, gas: 85, trash: 95 };
+  const vaTotalPropertySqft = vaUnitMix.reduce((s, u) => s + ((u.units || 0) * (u.sqft || u.avg_sqft || 800)), 0);
+  const vaAvgSqft = vaTotalUnits > 0 ? vaTotalPropertySqft / vaTotalUnits : 800;
+  const vaAnnualRubsRecovery = (() => {
+    if (!rubsEnabled) return 0;
+    let total = 0;
+    Object.entries(vaUtilityProportions).forEach(([key, pct]) => {
+      const customVal = vaRubsConfig[key]?.annual_cost;
+      const cost = customVal != null && customVal > 0 ? customVal : Math.round(vaTotalUtilityCost * pct);
+      const cfg = vaRubsConfig[key] || {};
+      if (cfg.enabled === false) return;
+      const recoveryPct = cfg.recovery_pct != null ? cfg.recovery_pct : (vaDefaultRecovery[key] || 90);
+      const recoverableAnnual = cost * (recoveryPct / 100);
+      const method = cfg.split_method || 'per_unit';
+      let monthlyPerUnit = 0;
+      if (vaTotalUnits > 0) {
+        if (method === 'per_unit') {
+          monthlyPerUnit = recoverableAnnual / 12 / vaTotalUnits;
+        } else if (method === 'by_sqft') {
+          monthlyPerUnit = (recoverableAnnual / 12 / (vaTotalPropertySqft || 1)) * vaAvgSqft;
+        } else if (method === 'by_occupancy') {
+          const occRate = 1 - ((scenarioData.expenses?.vacancy_pct || 5) / 100);
+          const occupied = Math.round(vaTotalUnits * occRate);
+          monthlyPerUnit = occupied > 0 ? recoverableAnnual / 12 / occupied : 0;
+        }
+      }
+      total += monthlyPerUnit * vaTotalUnits * 12;
+    });
+    return total;
+  })();
+
+  // Keep scenarioData.value_add synced with latest computed values
+  useEffect(() => {
+    if (scenarioData?.value_add?.apply_rent_upside && vaAnnualRentUpside !== (scenarioData?.value_add?.annual_rent_upside || 0)) {
+      handleFieldChange('value_add.annual_rent_upside', vaAnnualRentUpside);
+    }
+    if (scenarioData?.value_add?.apply_rubs && vaAnnualRubsRecovery !== (scenarioData?.value_add?.annual_rubs_recovery || 0)) {
+      handleFieldChange('value_add.annual_rubs_recovery', vaAnnualRubsRecovery);
+    }
+  }, [vaAnnualRentUpside, vaAnnualRubsRecovery, scenarioData?.value_add?.apply_rent_upside, scenarioData?.value_add?.apply_rubs]); // eslint-disable-line
+
   // Tabs with icons - EXPANDED
   const tabs = [
     { id: 'summary', label: 'Documents', icon: FileText, accent: '#6366f1' },
@@ -2815,7 +2870,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
                       </div>
                       <VToggle checked={scenarioData?.value_add?.apply_rent_upside || false} onChange={v => {
                         handleFieldChange('value_add.apply_rent_upside', v);
-                        if (v) handleFieldChange('value_add.annual_rent_upside', totalAnnualRentUpside);
+                        handleFieldChange('value_add.annual_rent_upside', totalAnnualRentUpside);
                       }} />
                     </div>
                   </div>
@@ -2828,7 +2883,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
                       </div>
                       <VToggle checked={scenarioData?.value_add?.apply_rubs || false} onChange={v => {
                         handleFieldChange('value_add.apply_rubs', v);
-                        if (v) handleFieldChange('value_add.annual_rubs_recovery', totalRubsRecovery);
+                        handleFieldChange('value_add.annual_rubs_recovery', totalRubsRecovery);
                       }} />
                     </div>
                   </div>
@@ -4094,6 +4149,8 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
             setSelectedHoldPeriod={setSelectedHoldPeriod}
             onFieldChange={handleFieldChange}
             onTabChange={setActiveTab}
+            vaRentUpside={scenarioData?.value_add?.apply_rent_upside ? vaAnnualRentUpside : 0}
+            vaRubsRecovery={scenarioData?.value_add?.apply_rubs ? vaAnnualRubsRecovery : 0}
           />
         );
 

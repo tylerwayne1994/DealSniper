@@ -16,6 +16,8 @@ export default function CompressedTab({
   setSelectedHoldPeriod,
   onFieldChange,
   onTabChange,
+  vaRentUpside = 0,
+  vaRubsRecovery = 0,
 }) {
   const navigate = useNavigate();
 
@@ -76,10 +78,7 @@ export default function CompressedTab({
   const debtServiceYear1 = fullCalcs?.financing?.annualDebtService || annualDebtService || 0;
   const cashFlowYear1 = fullCalcs?.year1?.cashFlow || 0;
 
-  // === Value-Add Pro Forma Adjustments (from Value-Add tab toggles) ===
-  const valueAdd = scenarioData?.value_add || {};
-  const vaRentUpside = valueAdd.apply_rent_upside ? (Number(valueAdd.annual_rent_upside) || 0) : 0;
-  const vaRubsRecovery = valueAdd.apply_rubs ? (Number(valueAdd.annual_rubs_recovery) || 0) : 0;
+  // === Value-Add Pro Forma Adjustments (passed from parent) ===
   const vaTotalAdj = vaRentUpside + vaRubsRecovery;
   const adjNOI = noiYear1 + vaTotalAdj;
   const adjCashFlow = cashFlowYear1 + vaTotalAdj;
@@ -141,7 +140,7 @@ export default function CompressedTab({
   // === Key Operating Ratios ===
   const capRateVal = fullCalcs?.year1?.capRate || capRate || 0;
   const grm = rentalIncome > 0 ? (purchasePrice / rentalIncome) : 0;
-  const nim = totalOperatingExpenses > 0 ? (noiYear1 / totalOperatingExpenses) : 0;
+  const nim = totalOperatingExpenses > 0 ? (adjNOI / totalOperatingExpenses) : 0;
   const expenseRatio = fullCalcs?.year1?.expenseRatio || 0;
 
   // Purchase price slider range — based on initial price so range stays stable
@@ -474,9 +473,9 @@ export default function CompressedTab({
                   {[
                     { label: 'NOI', value: adjNOI, color: '#16a34a' },
                     { label: 'Debt Service', value: debtServiceYear1, color: '#dc2626' },
-                    { label: 'Cash Flow', value: cashFlowYear1, color: cashFlowYear1 >= 0 ? '#16a34a' : '#ef4444' },
+                    { label: 'Cash Flow', value: adjCashFlow, color: adjCashFlow >= 0 ? '#16a34a' : '#ef4444' },
                   ].map((c, i) => (
-                    <div key={i} style={{ background: i === 2 ? (cashFlowYear1 >= 0 ? '#f0fdf4' : '#fef2f2') : '#f9fafb', borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid ${c.color}`, fontWeight: i === 2 ? 800 : 700 }}>
+                    <div key={i} style={{ background: i === 2 ? (adjCashFlow >= 0 ? '#f0fdf4' : '#fef2f2') : '#f9fafb', borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid ${c.color}`, fontWeight: i === 2 ? 800 : 700 }}>
                       <div style={{ fontSize: 11, color: LB, fontWeight: 600, marginBottom: 4 }}>{c.label}:</div>
                       <div style={{ fontSize: 16, fontWeight: 800, color: c.color }}>{fmt(c.value)}</div>
                     </div>
@@ -582,7 +581,7 @@ export default function CompressedTab({
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 12, fontWeight: 600, color: LB }}>Cash Flow After Debt</span>
-              <span style={{ fontSize: 14, fontWeight: 800, color: cashFlowYear1 >= 0 ? '#16a34a' : '#ef4444' }}>{fmt(cashFlowYear1)}</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: adjCashFlow >= 0 ? '#16a34a' : '#ef4444' }}>{fmt(adjCashFlow)}</span>
             </div>
           </div>
         </div>
