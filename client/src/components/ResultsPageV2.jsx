@@ -30,7 +30,6 @@ import { CostSegAnalysisView } from './CostSegAnalysis';
 import MarketResearchTab from './results-tabs/MarketResearchTab';
 import DocumentAnalysisTab from './results-tabs/DocumentAnalysisTab';
 import DealStructureTab from './results-tabs/DealStructureTab';
-import CashFlowTab from './results-tabs/CashFlowTab';
 import ExpenseV2Tab from './results-tabs/ExpenseV2Tab';
 import CompressedTab from './results-tabs/CompressedTab';
 import UnderwritingTablePage from '../pages/UnderwritingTablePage';
@@ -1174,21 +1173,17 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
 
   // Tabs with icons - EXPANDED
   const tabs = [
-    { id: 'summary', label: 'Documents Analysis', icon: FileText },
-    { id: 'scenario-sheet', label: 'Scenario Sheet', icon: FileSpreadsheet },
-    { id: 'cashflow', label: 'Cash Flow', icon: FileBarChart },
-    { id: 'deal-structure', label: 'Deal Structure', icon: Layers },
-    { id: 'expenses-v2', label: 'Expenses', icon: FileText },
-    { id: 'value-add', label: 'Value-Add Strategy', icon: TrendingUp },
-    { id: 'exit-strategy', label: 'Exit Strategy', icon: TrendingUp },
-    
-    { id: 'amortization', label: 'Amortization', icon: Calculator },
-    { id: 'rent-roll', label: 'Rent Roll', icon: Users },
-    
-    { id: 'compressed', label: 'Compressed', icon: LayoutDashboard },
-    { id: 'costseg', label: 'Cost Segregation', icon: Calculator },
-    { id: 'market-data', label: 'Market Data', icon: BarChart3 }
-    
+    { id: 'summary', label: 'Documents', icon: FileText, accent: '#6366f1' },
+    { id: 'scenario-sheet', label: 'Scenario Sheet', icon: FileSpreadsheet, accent: '#8b5cf6' },
+    { id: 'compressed', label: 'Overview', icon: LayoutDashboard, accent: '#3b82f6' },
+    { id: 'deal-structure', label: 'Deal Structure', icon: Layers, accent: '#0ea5e9' },
+    { id: 'expenses-v2', label: 'Expenses', icon: FileText, accent: '#14b8a6' },
+    { id: 'value-add', label: 'Value-Add', icon: TrendingUp, accent: '#10b981' },
+    { id: 'exit-strategy', label: 'Exit Strategy', icon: TrendingUp, accent: '#f59e0b' },
+    { id: 'amortization', label: 'Amortization', icon: Calculator, accent: '#f97316' },
+    { id: 'rent-roll', label: 'Rent Roll', icon: Users, accent: '#ef4444' },
+    { id: 'costseg', label: 'Cost Seg', icon: Calculator, accent: '#ec4899' },
+    { id: 'market-data', label: 'Market Data', icon: BarChart3, accent: '#a855f7' }
   ];
 
   // Row component
@@ -2258,14 +2253,6 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
               </div>
             </div>
           </div>
-        );
-
-      case 'cashflow':
-        return (
-          <CashFlowTab
-            scenarioData={scenarioData}
-            fullCalcs={fullCalcs}
-          />
         );
 
       case 'expenses-v2':
@@ -4219,40 +4206,67 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
                     </div>
                   </div>
 
-        {/* Tabs */}
+        {/* Tabs — pill-style with colored accents */}
         <div style={{ 
           display: 'flex',
-          gap: '4px',
-          padding: '0 16px',
+          gap: '6px',
+          padding: '8px 16px',
           borderBottom: '1px solid #e5e7eb',
-          backgroundColor: '#f9fafb',
+          backgroundColor: '#f8fafc',
           overflowX: 'auto',
-          flexWrap: 'nowrap'
+          flexWrap: 'nowrap',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
         }}>
           {tabs.map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
+            const accent = tab.accent || '#3b82f6';
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 style={{
-                  padding: '12px 16px',
-                  backgroundColor: isActive ? 'white' : 'transparent',
-                  color: isActive ? '#111827' : '#6b7280',
-                  border: 'none',
-                  borderBottom: isActive ? '2px solid #3b82f6' : '2px solid transparent',
-                  fontSize: '13px',
-                  fontWeight: isActive ? '600' : '500',
+                  padding: '8px 14px',
+                  backgroundColor: isActive ? accent : 'transparent',
+                  color: isActive ? '#ffffff' : '#4b5563',
+                  border: isActive ? 'none' : '1px solid transparent',
+                  borderRadius: '9999px',
+                  fontSize: '12.5px',
+                  fontWeight: isActive ? '700' : '500',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
                   whiteSpace: 'nowrap',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.25s cubic-bezier(.4,0,.2,1)',
+                  boxShadow: isActive
+                    ? `0 2px 8px ${accent}40, 0 0 0 2px ${accent}20`
+                    : 'none',
+                  transform: isActive ? 'scale(1.04)' : 'scale(1)',
+                  letterSpacing: isActive ? '0.01em' : '0',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  flexShrink: 0,
+                }}
+                onMouseEnter={e => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = `${accent}14`;
+                    e.currentTarget.style.color = accent;
+                    e.currentTarget.style.border = `1px solid ${accent}30`;
+                    e.currentTarget.style.transform = 'scale(1.02)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = '#4b5563';
+                    e.currentTarget.style.border = '1px solid transparent';
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }
                 }}
               >
-                <Icon size={16} color={isActive ? '#000000' : '#6b7280'} />
+                <Icon size={15} strokeWidth={isActive ? 2.5 : 2} />
                 {tab.label}
               </button>
             );
@@ -4437,7 +4451,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
       {/* Debug Panel */}
       <DebugPanel />
 
-      {/* Animation styles for Recalculate button */}
+      {/* Animation styles */}
       <style>{`
         @keyframes pulse-glow {
           0%, 100% {
@@ -4453,6 +4467,8 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
+        /* Hide scrollbar on tab strip */
+        div::-webkit-scrollbar { height: 0; width: 0; }
       `}</style>
 
     </div>
