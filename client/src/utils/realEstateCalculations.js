@@ -365,30 +365,49 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   }
   
   // === GROWTH RATES ===
-  const incomeGrowthRate = (underwriting?.income_growth_rate || 0.0) / 100;
-  const expenseGrowthRate = (underwriting?.expense_growth_rate || 3.0) / 100;
-  const taxGrowthRate = (underwriting?.tax_growth_rate || 3.0) / 100;
-  const capExGrowthRate = (underwriting?.capex_growth_rate || 0.0) / 100;
+  // Normalize rates that may arrive as percentage (3.0) or decimal (0.03)
+  const normalizeRate = (val, fallback) => {
+    if (val == null || val === 0) return fallback;
+    // If > 1, treat as percentage (e.g. 3.0 → 0.03)
+    // If <= 1, treat as already decimal (e.g. 0.03 → 0.03)
+    return val > 1 ? val / 100 : val;
+  };
+  const incomeGrowthRate = normalizeRate(underwriting?.income_growth_rate, 0.02); // default 2%
+  const expenseGrowthRate = normalizeRate(underwriting?.expense_growth_rate, 0.03); // default 3%
+  const taxGrowthRate = normalizeRate(underwriting?.tax_growth_rate, 0.03);
+  const capExGrowthRate = normalizeRate(underwriting?.capex_growth_rate, 0.0);
   
   // === CAPITAL EXPENDITURES ===
-  const tenantImprovementsPSF = income_details?.tenant_improvements_psf || 3.0;
-  const leasingCommissionsPct = (income_details?.leasing_commissions_pct || 0.0) / 100;
+  const tenantImprovementsPSF = income_details?.tenant_improvements_psf || 0; // default 0 unless specified
+  const leasingCommissionsPct = normalizeRate(income_details?.leasing_commissions_pct, 0.0);
   
   // === MULTI-YEAR PROJECTIONS ===
   // Use a single canonical holding period so all tabs match
   const holdingPeriod = underwriting?.holding_period || financing?.holding_period || 5;
   // Robust exit cap handling: avoid zero/insane values
+  // Normalize: could arrive as percentage (7.25) or decimal (0.0725)
   let rawExitCap =
     underwriting?.exit_cap_rate ??
     financing?.exit_cap_rate ??
-    7.25; // default visible base-case exit cap used across UI
+    null;
 
+  // Normalize: if <= 0.20, it's likely a decimal (e.g. 0.0725 = 7.25%)
+  if (rawExitCap != null && rawExitCap > 0 && rawExitCap <= 0.20) {
+    rawExitCap = rawExitCap * 100; // convert decimal to percentage
+  }
+  // Apply defaults and sanity bounds
   if (!rawExitCap || rawExitCap <= 0 || rawExitCap > 20) {
     rawExitCap = 7.25;
   }
 
   const exitCapRate = rawExitCap / 100;
-  const marketCapRateY1 = (underwriting?.market_cap_rate_y1 || rawExitCap) / 100;
+  
+  // Market cap rate: normalize similarly
+  let rawMarketCap = underwriting?.market_cap_rate_y1 || rawExitCap;
+  if (rawMarketCap > 0 && rawMarketCap <= 0.20) {
+    rawMarketCap = rawMarketCap * 100;
+  }
+  const marketCapRateY1 = rawMarketCap / 100;
 
   if (debug) {
     debug.inputs.holdingPeriod = holdingPeriod;
@@ -845,6 +864,7 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
       capRate: capRate,
       debtService: Math.round(annualDebtService),
       cashFlow: Math.round(cashFlowAfterDebt),
+      cashFlowAfterFinancing: projections[0] ? projections[0].cashFlowAfterFinancing : Math.round(cashFlowAfterDebt),
       dscr: dscr,
       debtYield: debtYield,
       cashOnCash: cashOnCash,

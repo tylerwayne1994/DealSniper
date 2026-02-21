@@ -208,12 +208,12 @@ export default function CompressedTab({
   // Total Investment Return
   const cumCashFlows = yearlyData.reduce((s, d) => s + d.cashFlow, 0);
   const exitProj = projections.find(p => p.year === selectedHoldPeriod);
-  const netSalePrice = exitProj?.grossSalesPrice || selectedScenario.salePrice || 0;
+  const netSalePrice = exitProj?.netSalesProceeds || selectedScenario.salePrice || 0;
   const loanBalAtExit = exitProj?.loanBalance || 0;
   const financedByDebt = loanAmount;
   const totalCashReceived = cumCashFlows + netSalePrice - Math.abs(loanBalAtExit);
-  const totalCashInvested = purchasePrice + closingCosts - financedByDebt;
-  const compTotalProfit = totalCashReceived - (totalCashInvested > 0 ? totalCashInvested : totalEquity);
+  const totalCashInvested = totalEquity; // equity already includes down payment + closing + capex
+  const compTotalProfit = totalCashReceived - totalCashInvested;
 
   // Profitability rows
   const profitRows = [
@@ -302,7 +302,10 @@ export default function CompressedTab({
 
         {/* Purchase Price slider */}
         <div style={{ background: '#f9fafb', borderRadius: 12, padding: '24px 28px', border: `1px solid ${B}` }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: VL, textAlign: 'center', marginBottom: 14 }}>Purchase Price</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 14 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: VL }}>Purchase Price</span>
+            <span style={{ fontSize: 10, fontWeight: 600, color: '#10b981', background: '#ecfdf5', padding: '2px 8px', borderRadius: 6, letterSpacing: '0.02em' }}>LIVE</span>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, justifyContent: 'center', marginBottom: 14 }}>
             <div style={{ position: 'relative' }}>
               <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 15, color: LB, fontWeight: 600 }}>$</span>
@@ -317,10 +320,6 @@ export default function CompressedTab({
                 style={{ width: 200, padding: '12px 14px 12px 32px', fontSize: 20, fontWeight: 700, border: `2px solid ${AC}`, borderRadius: 10, outline: 'none', textAlign: 'center', color: VL, background: '#fff' }}
               />
             </div>
-            <button
-              onClick={() => { handleChange('pricing_financing.purchase_price', purchasePrice); handleChange('pricing_financing.price', purchasePrice); }}
-              style={{ padding: '10px 24px', fontSize: 13, fontWeight: 700, color: AC, background: 'none', border: 'none', cursor: 'pointer' }}
-            >Save</button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <span style={{ fontSize: 12, color: LB, fontWeight: 600, minWidth: 85, textAlign: 'right' }}>{fmt(minPrice)}</span>
@@ -776,7 +775,7 @@ export default function CompressedTab({
             <tbody>
               {[
                 { label: 'Annual Cash Flows', value: cumCashFlows, tip: 'Sum of all annual cash flows over hold period', negative: false },
-                { label: 'Net Sale Price', value: netSalePrice, tip: 'Gross sale price at exit', negative: false },
+                { label: 'Net Sale Proceeds', value: netSalePrice, tip: 'Sale price minus selling costs at exit', negative: false },
                 { label: 'Loan Balance at Exit', value: loanBalAtExit, tip: 'Remaining loan balance paid off at sale', negative: true },
               ].map((r, i) => (
                 <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
@@ -799,10 +798,10 @@ export default function CompressedTab({
               <tr><td colSpan={2} style={{ height: 12 }}></td></tr>
 
               {[
-                { label: 'Purchase Price', value: purchasePrice, negative: false },
+                { label: 'Down Payment', value: downPayment, negative: false },
                 { label: 'Closing Cost and Fees', value: closingCosts, tip: 'Estimated closing costs (legal, title, etc.)', negative: false },
-                { label: 'Financed By Debt', value: financedByDebt, tip: 'Loan proceeds used to fund acquisition', negative: true, green: true },
-              ].map((r, i) => (
+                { label: 'CapEx / Renovation', value: capitalExpenditure, tip: 'Upfront capital improvements', negative: false },
+              ].filter(r => r.value > 0).map((r, i) => (
                 <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
                   <td style={{ padding: '10px 0', color: LB, fontWeight: 500 }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -817,7 +816,7 @@ export default function CompressedTab({
               ))}
               <tr style={{ borderTop: `2px solid ${B}` }}>
                 <td style={{ padding: '12px 0', fontWeight: 700, color: VL }}>Total Cash Invested</td>
-                <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 800, color: VL, fontSize: 14 }}>{fmt(totalCashInvested > 0 ? totalCashInvested : totalEquity)}</td>
+                <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 800, color: VL, fontSize: 14 }}>{fmt(totalCashInvested)}</td>
               </tr>
               <tr>
                 <td colSpan={2} style={{ paddingTop: 8 }}>

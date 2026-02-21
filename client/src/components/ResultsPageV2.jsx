@@ -187,47 +187,12 @@ const ResultsPageV2 = ({
     return paragraphs.join('\n\n');
   };
   
-  // Track if user has made changes that need recalculation
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [isRecalculating, setIsRecalculating] = useState(false);
-  const changeTimeoutRef = useRef(null);
-  
-  // Wrapper for onEditData that tracks changes with debounce to prevent flickering
+  // Wrapper for onEditData — calculations update live via useMemo in parent
   const handleFieldChange = (path, value) => {
     if (onEditData) {
       onEditData(path, value);
-      
-      // Clear previous timeout
-      if (changeTimeoutRef.current) {
-        clearTimeout(changeTimeoutRef.current);
-      }
-      
-      // Debounce to prevent rapid state changes
-      changeTimeoutRef.current = setTimeout(() => {
-        setHasUnsavedChanges(true);
-      }, 300);
     }
   };
-  
-  // Handle recalculation
-  const handleRecalculate = () => {
-    setIsRecalculating(true);
-    // The recalculation happens automatically via useMemo in parent
-    // This just provides visual feedback
-    setTimeout(() => {
-      setIsRecalculating(false);
-      setHasUnsavedChanges(false);
-    }, 500);
-  };
-  
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (changeTimeoutRef.current) {
-        clearTimeout(changeTimeoutRef.current);
-      }
-    };
-  }, []);
   
   // Chat position state for dragging
   const [chatPosition, setChatPosition] = useState({ x: window.innerWidth - 420, y: 100 });
@@ -1739,50 +1704,6 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
         
         return (
           <div style={{ backgroundColor: '#f9fafb', minHeight: '100vh', padding: '0 20px 40px' }}>
-            {/* Recalculate Button - Floating when changes detected */}
-            {hasUnsavedChanges && (
-              <div style={{
-                position: 'sticky',
-                top: '10px',
-                zIndex: 100,
-                display: 'flex',
-                justifyContent: 'center',
-                marginBottom: '10px'
-              }}>
-                <button
-                  onClick={handleRecalculate}
-                  disabled={isRecalculating}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '14px 28px',
-                    fontSize: '15px',
-                    fontWeight: '700',
-                    color: 'white',
-                    background: isRecalculating 
-                      ? 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)'
-                      : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                    border: 'none',
-                    borderRadius: '12px',
-                    cursor: isRecalculating ? 'not-allowed' : 'pointer',
-                    boxShadow: isRecalculating 
-                      ? '0 4px 15px rgba(0, 0, 0, 0.2)'
-                      : '0 4px 20px rgba(16, 185, 129, 0.4), 0 0 30px rgba(16, 185, 129, 0.3)',
-                    animation: isRecalculating ? 'none' : 'pulse-glow 2s ease-in-out infinite',
-                    transition: 'all 0.3s ease'
-                  }}
-                >
-                  <RefreshCw 
-                    size={20} 
-                    style={{ 
-                      animation: isRecalculating ? 'spin 1s linear infinite' : 'none' 
-                    }} 
-                  />
-                  {isRecalculating ? 'Recalculating...' : 'Recalculate All Tabs'}
-                </button>
-              </div>
-            )}
             {/* Investment Memorandum Header */}
             <div style={{ background: 'linear-gradient(135deg, #2d5a7b 0%, #1e3a5f 100%)', padding: '16px 24px', color: 'white', marginBottom: '20px', borderRadius: '0 0 8px 8px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
