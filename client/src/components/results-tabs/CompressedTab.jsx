@@ -64,8 +64,6 @@ export default function CompressedTab({
   const startingNOI = fullCalcs?.year1?.noi || noiT12 || 0;
   const closingCosts = fullCalcs?.acquisition?.closingCosts || (purchasePrice * 0.02) || 0;
   const acquisitionCost = fullCalcs?.acquisition?.totalAcquisitionCosts || (purchasePrice + closingCosts);
-  const dscrVal = fullCalcs?.year1?.dscr || dscr || projections[0]?.dscr || 0;
-  const safeDscr = isFinite(dscrVal) ? dscrVal : 0;
 
   // === Financials — Income & Expenses (from fullCalcs.year1) ===
   const rentalIncome = fullCalcs?.year1?.potentialGrossIncome || 0;
@@ -75,8 +73,22 @@ export default function CompressedTab({
   const capitalReserve = scenarioData?.expenses?.capital_reserve || scenarioData?.expenses?.reserves || 0;
   const capitalExpenditure = fullCalcs?.acquisition?.upfrontCapEx || 0;
   const noiYear1 = fullCalcs?.year1?.noi || noiT12 || 0;
-  const debtServiceYear1 = fullCalcs?.financing?.annualDebtService || annualDebtService || 0;
-  const cashFlowYear1 = fullCalcs?.year1?.cashFlow || 0;
+
+  // === Debt Service: prefer Deal Structure multi-loan total when configured ===
+  const hasMultiLoanStack = scenarioData.financing?.loans?.length > 0;
+  const debtServiceYear1 = (hasMultiLoanStack && annualDebtService > 0)
+    ? annualDebtService
+    : (fullCalcs?.financing?.annualDebtService || annualDebtService || 0);
+  // Recalculate cash flow with corrected debt service
+  const cashFlowYear1 = hasMultiLoanStack
+    ? (noiYear1 - debtServiceYear1)
+    : (fullCalcs?.year1?.cashFlow || 0);
+
+  // Recalculate DSCR with corrected debt service
+  const dscrVal = (hasMultiLoanStack && debtServiceYear1 > 0 && noiYear1 > 0)
+    ? (noiYear1 / debtServiceYear1)
+    : (fullCalcs?.year1?.dscr || dscr || projections[0]?.dscr || 0);
+  const safeDscr = isFinite(dscrVal) ? dscrVal : 0;
 
   // === Value-Add Pro Forma Adjustments (passed from parent) ===
   const vaTotalAdj = vaRentUpside + vaRubsRecovery;

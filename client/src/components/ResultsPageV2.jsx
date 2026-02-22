@@ -1154,21 +1154,28 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
 
   // Normalize Year 1 NOI to engine output when available
   const year1NOI = fullCalcs?.year1?.noi ?? noiT12;
-  // Annual debt service from engine
-  const annualDebtService = fullCalcs?.financing?.annualDebtService
-    ?? scenarioData.pricing_financing?.annual_debt_service
-    ?? 0;
+  // Annual debt service: prefer Deal Structure multi-loan total when configured
+  const hasMultiLoanStack = scenarioData.financing?.loans?.length > 0;
+  const annualDebtService = (hasMultiLoanStack && scenarioData.financing?.annual_debt_service > 0)
+    ? scenarioData.financing.annual_debt_service
+    : (fullCalcs?.financing?.annualDebtService ?? scenarioData.pricing_financing?.annual_debt_service ?? 0);
 
   const capRate = (fullCalcs?.year1?.capRate != null)
     ? fullCalcs.year1.capRate
     : (purchasePrice > 0 && year1NOI > 0 ? (year1NOI / purchasePrice) * 100 : 0);
   const cashOnCash = (fullCalcs?.year1?.cashOnCash != null) ? fullCalcs.year1.cashOnCash : 0;
-  const dscr = (fullCalcs?.year1?.dscr != null)
-    ? fullCalcs.year1.dscr
-    : (annualDebtService > 0 && year1NOI > 0 ? year1NOI / annualDebtService : 0);
-  const annualCashFlow = (fullCalcs?.year1?.cashFlowAfterFinancing != null)
-    ? fullCalcs.year1.cashFlowAfterFinancing
-    : (year1NOI - annualDebtService);
+  // Recalculate DSCR when multi-loan stack overrides engine debt service
+  const dscr = (hasMultiLoanStack && annualDebtService > 0 && year1NOI > 0)
+    ? year1NOI / annualDebtService
+    : ((fullCalcs?.year1?.dscr != null)
+        ? fullCalcs.year1.dscr
+        : (annualDebtService > 0 && year1NOI > 0 ? year1NOI / annualDebtService : 0));
+  // Recalculate cash flow when multi-loan stack overrides engine debt service
+  const annualCashFlow = hasMultiLoanStack
+    ? (year1NOI - annualDebtService)
+    : ((fullCalcs?.year1?.cashFlowAfterFinancing != null)
+        ? fullCalcs.year1.cashFlowAfterFinancing
+        : (year1NOI - annualDebtService));
   const stabilizedValue = fullCalcs?.returns?.terminalValue || 0;
 
   // ═══ VALUE-ADD ADJUSTMENTS — computed at component level for all tabs ═══
