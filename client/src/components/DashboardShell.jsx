@@ -270,7 +270,10 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
             </div>
           </div>
 
-          <div style={dashboardStyles.content}>
+          <div style={{
+            ...dashboardStyles.content,
+            ...(activeTab === 'home' ? { padding: 0, overflow: 'hidden' } : {})
+          }}>
             {children}
           </div>
         </div>

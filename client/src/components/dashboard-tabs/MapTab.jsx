@@ -1356,11 +1356,12 @@ function DashboardMapTab() {
   return (
     <div style={{ 
       display: 'flex',
-      minHeight: '100%',
+      height: '100%',
       backgroundColor: '#ffffff',
+      overflow: 'hidden'
     }}>
       {/* Main Map Area - Left Side */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
         
         {/* Secondary Row - Tab Buttons */}
         <div style={{ 
@@ -2084,7 +2085,7 @@ function DashboardMapTab() {
         </div>
 
         {/* Map Container */}
-        <div style={{ flex: 1, position: 'relative', minHeight: 'calc(100vh - 200px)' }}>
+        <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
           {/* MapLibre GL 3D Map */}
           {mapStyle === '3d' && (
             <div 
