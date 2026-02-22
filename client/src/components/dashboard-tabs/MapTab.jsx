@@ -1433,7 +1433,7 @@ function DashboardMapTab() {
       overflow: 'hidden'
     }}>
       {/* Main Map Area - Left Side */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'auto' }}>
         
         {/* Secondary Row - Tab Buttons */}
         <div style={{ 
@@ -2157,7 +2157,7 @@ function DashboardMapTab() {
         </div>
 
         {/* Map Container */}
-        <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
+        <div style={{ flex: 1, position: 'relative', minHeight: '600px' }}>
           {/* MapLibre GL 3D Map */}
           {mapStyle === '3d' && (
             <div 
