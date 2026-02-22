@@ -1356,7 +1356,7 @@ function DashboardMapTab() {
   return (
     <div style={{ 
       display: 'flex',
-      height: 'calc(100vh - 56px)',
+      height: '100%',
       backgroundColor: '#ffffff',
       overflow: 'hidden'
     }}>
