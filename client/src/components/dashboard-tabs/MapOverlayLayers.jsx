@@ -2,11 +2,13 @@
  * MapOverlayLayers.jsx
  *
  * Optional overlay layers for the Dashboard map:
- *   1. County Heat Map  — GeoJSON choropleth colored by a selectable metric
- *   2. ZIP Centroid Dots — CircleMarkers at ZCTA centroids
+ *   1. County Heat Map    — GeoJSON choropleth colored by a selectable metric
+ *   2. ZIP Centroid Dots  — CircleMarkers at ZCTA centroids
+ *   3. ZIP Heat Map       — ZCTA polygon choropleth via Census TIGERweb API
+ *                           with Demographics, Housing & Economy data layers
  *
- * Both layers fetch Census CSVs from /public on first enable and cache the
- * result. Click a county or ZIP dot to see a rich tooltip with ALL metrics.
+ * All layers fetch Census CSVs from /public on first enable and cache the
+ * result. Click a county, ZIP dot, or ZIP polygon to see a rich tooltip.
  *
  * This component must be rendered **inside** a <MapContainer>.
  */
@@ -154,6 +156,96 @@ const colorForZip = (val, metric) => {
 };
 
 // ────────────────────────────────────────────────────────
+// 2b. ZIP Heat Map — metric definitions + color scales
+// ────────────────────────────────────────────────────────
+const TIGERWEB_ZCTA_URL = 'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_ACS2023/MapServer/2/query';
+
+const ZIP_HEATMAP_METRICS = {
+  population:             { name: 'Population',     group: 'Demographics',       fmt: v => fmtNum(v) },
+  density_sqmi:           { name: 'Pop. Density',   group: 'Demographics',       fmt: v => v == null ? 'N/A' : `${v.toFixed(0)}/sq mi` },
+  medianHouseholdIncome:  { name: 'Median Income',  group: 'Demographics',       fmt: v => fmtDollar(v) },
+  medianHomeValue:        { name: 'Home Value',     group: 'Housing & Economy',  fmt: v => fmtDollar(v) },
+  medianGrossRent:        { name: 'Median Rent',    group: 'Housing & Economy',  fmt: v => fmtDollar(v) },
+  vacancyRate:            { name: 'Vacancy Rate',   group: 'Housing & Economy',  fmt: v => fmtPct(v) },
+  unemploymentRate:       { name: 'Unemployment',   group: 'Housing & Economy',  fmt: v => fmtPct(v) },
+  migrationRate:          { name: 'Net Migration',  group: 'Demographics',       fmt: v => v == null ? 'N/A' : `${v > 0 ? '+' : ''}${v.toFixed(1)}‰` },
+};
+
+const ZIP_HEATMAP_COLOR_SCALES = {
+  population: [
+    { min: -Infinity, max: 5000, color: '#eff6ff' }, { min: 5000, max: 15000, color: '#93c5fd' },
+    { min: 15000, max: 30000, color: '#3b82f6' }, { min: 30000, max: 60000, color: '#1d4ed8' },
+    { min: 60000, max: Infinity, color: '#1e3a5f' },
+  ],
+  density_sqmi: [
+    { min: -Infinity, max: 500, color: '#fff7bc' }, { min: 500, max: 1000, color: '#fec44f' },
+    { min: 1000, max: 3000, color: '#fe9929' }, { min: 3000, max: 8000, color: '#ec7014' },
+    { min: 8000, max: Infinity, color: '#993404' },
+  ],
+  medianHouseholdIncome: [
+    { min: -Infinity, max: 35000, color: '#dc2626' }, { min: 35000, max: 50000, color: '#f59e0b' },
+    { min: 50000, max: 75000, color: '#eab308' }, { min: 75000, max: 100000, color: '#84cc16' },
+    { min: 100000, max: Infinity, color: '#16a34a' },
+  ],
+  medianHomeValue: [
+    { min: -Infinity, max: 150000, color: '#dbeafe' }, { min: 150000, max: 300000, color: '#93c5fd' },
+    { min: 300000, max: 500000, color: '#3b82f6' }, { min: 500000, max: 800000, color: '#1d4ed8' },
+    { min: 800000, max: Infinity, color: '#581c87' },
+  ],
+  medianGrossRent: [
+    { min: -Infinity, max: 800, color: '#16a34a' }, { min: 800, max: 1200, color: '#84cc16' },
+    { min: 1200, max: 1600, color: '#eab308' }, { min: 1600, max: 2000, color: '#f59e0b' },
+    { min: 2000, max: Infinity, color: '#dc2626' },
+  ],
+  vacancyRate: [
+    { min: -Infinity, max: 3, color: '#166534' }, { min: 3, max: 6, color: '#22c55e' },
+    { min: 6, max: 10, color: '#eab308' }, { min: 10, max: 15, color: '#f59e0b' },
+    { min: 15, max: Infinity, color: '#dc2626' },
+  ],
+  unemploymentRate: [
+    { min: -Infinity, max: 3, color: '#16a34a' }, { min: 3, max: 5, color: '#84cc16' },
+    { min: 5, max: 7, color: '#eab308' }, { min: 7, max: 10, color: '#f59e0b' },
+    { min: 10, max: Infinity, color: '#dc2626' },
+  ],
+  migrationRate: [
+    { min: -Infinity, max: -10, color: '#7f1d1d' }, { min: -10, max: -5, color: '#dc2626' },
+    { min: -5, max: 0, color: '#f59e0b' }, { min: 0, max: 5, color: '#84cc16' },
+    { min: 5, max: 10, color: '#22c55e' }, { min: 10, max: Infinity, color: '#166534' },
+  ],
+};
+
+const colorForZipHeatmap = (val, metric) => {
+  if (!isNum(val)) return '#e5e7eb';
+  const scale = ZIP_HEATMAP_COLOR_SCALES[metric] || [];
+  for (const r of scale) { if (val >= r.min && val < r.max) return r.color; }
+  return scale.length ? scale[scale.length - 1].color : '#e5e7eb';
+};
+
+const buildZipHeatmapPopup = (zip, z, selectedMetric) => {
+  const metricRows = Object.entries(ZIP_HEATMAP_METRICS).map(([key, def]) => {
+    const val = z[key];
+    const isSel = key === selectedMetric;
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;
+        ${isSel ? 'background:#eff6ff;border-radius:6px;border:1px solid #bfdbfe;' : ''}">
+        <span style="font-size:12px;color:#6b7280;${isSel ? 'font-weight:700;color:#1e40af;' : ''}">${def.name}</span>
+        <span style="font-size:12px;font-weight:600;color:#111827">${def.fmt(val)}</span>
+      </div>`;
+  }).join('');
+
+  return `
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:white;border-radius:12px;box-shadow:0 10px 25px rgba(0,0,0,.12);border:1px solid #e5e7eb;min-width:260px;max-width:320px;">
+      <div style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:white;padding:12px 16px;border-radius:12px 12px 0 0">
+        <div style="font-weight:700;font-size:14px">ZIP ${zip}</div>
+        <div style="opacity:.9;font-size:11px;margin-top:2px">${z.countyName ? z.countyName + (z.stateName ? ', ' + z.stateName : '') : 'ZCTA ' + zip} · Pop: ${fmtNum(z.population)}</div>
+      </div>
+      <div style="padding:8px 10px;display:flex;flex-direction:column;gap:1px;">
+        ${metricRows}
+      </div>
+    </div>`;
+};
+
+// ────────────────────────────────────────────────────────
 // 3. Derived metrics helper
 // ────────────────────────────────────────────────────────
 const calcAppreciation = (c) => {
@@ -252,7 +344,7 @@ const buildZipPopup = (zip, z, selectedMetric) => {
 // ────────────────────────────────────────────────────────
 // 6. The overlay React component (runs inside <MapContainer>)
 // ────────────────────────────────────────────────────────
-export default function MapOverlayLayers({ countyEnabled, zipEnabled, countyMetric, zipMetric }) {
+export default function MapOverlayLayers({ countyEnabled, zipEnabled, countyMetric, zipMetric, zipHeatmapEnabled, zipHeatmapMetric }) {
   const map = useMap();
 
   // Data caches (persist across re-renders)
@@ -260,15 +352,20 @@ export default function MapOverlayLayers({ countyEnabled, zipEnabled, countyMetr
   const geoJsonRef = useRef(null);      // GeoJSON FeatureCollection
   const zipDataRef = useRef(null);      // { [zip5]: { ...metrics } }
   const zipCentroidsRef = useRef(null); // [ { zip, lat, lon } ]
+  const zipHeatmapDataRef = useRef(null);  // { [zip5]: { ...all metrics } }
+  const zipHeatmapGeoCache = useRef({});   // { [boundsKey]: GeoJSON features[] }
 
   // Layer refs
   const countyLayerRef = useRef(null);
   const zipLayerRef = useRef(null);
+  const zipHeatmapLayerRef = useRef(null);
 
   const [countyLoaded, setCountyLoaded] = useState(false);
   const [zipLoaded, setZipLoaded] = useState(false);
+  const [zipHeatmapLoaded, setZipHeatmapLoaded] = useState(false);
   const [loadingCounty, setLoadingCounty] = useState(false);
   const [loadingZip, setLoadingZip] = useState(false);
+  const [loadingZipHeatmap, setLoadingZipHeatmap] = useState(false);
 
   // ─── Remove helpers ───
   const removeCountyLayer = useCallback(() => {
@@ -283,6 +380,13 @@ export default function MapOverlayLayers({ countyEnabled, zipEnabled, countyMetr
       map.removeLayer(zipLayerRef.current);
     }
     zipLayerRef.current = null;
+  }, [map]);
+
+  const removeZipHeatmapLayer = useCallback(() => {
+    if (zipHeatmapLayerRef.current && map.hasLayer(zipHeatmapLayerRef.current)) {
+      map.removeLayer(zipHeatmapLayerRef.current);
+    }
+    zipHeatmapLayerRef.current = null;
   }, [map]);
 
   // ─── Load county data (once) ───
@@ -435,6 +539,201 @@ export default function MapOverlayLayers({ countyEnabled, zipEnabled, countyMetr
     }
   }, []);
 
+  // ─── Load ZIP heat map data (once) ───
+  const loadZipHeatmapData = useCallback(async () => {
+    if (zipHeatmapDataRef.current) { setZipHeatmapLoaded(true); return; }
+    setLoadingZipHeatmap(true);
+    try {
+      const [dp03Raw, dp04Raw, popRaw, densityRaw, migRaw, zhviRaw] = await Promise.all([
+        loadCSV('/ZIPACSDP5Y2023.DP03-Data.csv'),
+        loadCSV('/ZIPACSDP5Y2023.DP04-Data.csv'),
+        loadCSV('/ZIPACSDT5Y2023.B01003-Data.csv'),
+        loadCSV('/zcta_density.csv'),
+        loadCSV('/migration_with_clean_zipcodes.csv'),
+        loadCSV('/Zip_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv'),
+      ]);
+
+      const zips = {};
+
+      // DP03 — income + employment
+      dp03Raw.forEach(r => {
+        const zip = zeroZip(r.NAME ? r.NAME.replace('ZCTA5 ', '') : null);
+        if (!zip) return;
+        zips[zip] = zips[zip] || { zip };
+        zips[zip].medianHouseholdIncome = clean(r.DP03_0062E);
+        const empPct = clean(r.DP03_0002PE);
+        // Unemployment = 100 - employment% (approximate if no direct field)
+        if (isNum(empPct)) zips[zip].unemploymentRate = Math.max(0, 100 - empPct);
+      });
+
+      // DP04 — rent, vacancy, housing units
+      dp04Raw.forEach(r => {
+        const zip = zeroZip(r.NAME ? r.NAME.replace('ZCTA5 ', '') : null);
+        if (!zip) return;
+        zips[zip] = zips[zip] || { zip };
+        zips[zip].medianGrossRent = clean(r.DP04_0134E);
+        zips[zip].vacancyRate = clean(r.DP04_0003PE);
+        zips[zip].totalHousingUnits = clean(r.DP04_0001E);
+      });
+
+      // B01003 — population
+      popRaw.forEach(r => {
+        const zip = zeroZip(r.NAME ? r.NAME.replace('ZCTA5 ', '') : null);
+        if (!zip) return;
+        zips[zip] = zips[zip] || { zip };
+        const pop = clean(r.B01003_001E);
+        if (isNum(pop)) zips[zip].population = pop;
+      });
+
+      // Density
+      densityRaw.forEach(r => {
+        const zip = zeroZip(r.ZCTA);
+        if (!zip) return;
+        zips[zip] = zips[zip] || { zip };
+        if (!zips[zip].population) zips[zip].population = clean(r.population);
+        zips[zip].land_sqmi = clean(r.land_sqmi);
+        let d = clean(r.density_sqmi);
+        if (d == null && zips[zip].land_sqmi > 0 && zips[zip].population > 0)
+          d = zips[zip].population / zips[zip].land_sqmi;
+        if (d > 300000) d = null;
+        zips[zip].density_sqmi = d;
+      });
+
+      // Migration
+      migRaw.forEach(row => {
+        const zip = zeroZip(row.ZIP);
+        const rate = clean(row.n2_0_net_pc);
+        if (!zip || !isNum(rate)) return;
+        zips[zip] = zips[zip] || { zip };
+        zips[zip].migrationRate = Math.round(rate * 1000) / 10;
+        zips[zip].netMigration = clean(row.n2_0_net);
+        zips[zip].countyName = row.countyname;
+        zips[zip].stateName = row.state_name;
+      });
+
+      // Zillow ZHVI — latest month median home value
+      zhviRaw.forEach(row => {
+        const zip = zeroZip(row.RegionName);
+        if (!zip) return;
+        zips[zip] = zips[zip] || { zip };
+        // Get last non-empty monthly column value
+        const monthCols = Object.keys(row).filter(k => /^\d{2}-\d{2}-\d{2}$/.test(k));
+        for (let i = monthCols.length - 1; i >= 0; i--) {
+          const v = clean(row[monthCols[i]]);
+          if (isNum(v)) { zips[zip].medianHomeValue = Math.round(v); break; }
+        }
+        if (!zips[zip].countyName && row.CountyName) zips[zip].countyName = row.CountyName;
+        if (!zips[zip].stateName && row.StateName) zips[zip].stateName = row.StateName;
+      });
+
+      zipHeatmapDataRef.current = zips;
+      setZipHeatmapLoaded(true);
+      console.log('[Overlay] ZIP heat map data loaded:', Object.keys(zips).length, 'zips');
+    } catch (err) {
+      console.error('[Overlay] Failed to load ZIP heat map data', err);
+    } finally {
+      setLoadingZipHeatmap(false);
+    }
+  }, []);
+
+  // ─── Fetch ZCTA boundaries from TIGERweb for visible bounds ───
+  const fetchZctaBoundaries = useCallback(async (bounds) => {
+    const sw = bounds.getSouthWest();
+    const ne = bounds.getNorthEast();
+    const geom = `${sw.lng},${sw.lat},${ne.lng},${ne.lat}`;
+    const key = geom;
+
+    // Check cache
+    if (zipHeatmapGeoCache.current[key]) return zipHeatmapGeoCache.current[key];
+
+    const params = new URLSearchParams({
+      where: '1=1',
+      geometryType: 'esriGeometryEnvelope',
+      geometry: geom,
+      inSR: '4326',
+      outSR: '4326',
+      spatialRel: 'esriSpatialRelIntersects',
+      outFields: 'GEOID,BASENAME',
+      returnGeometry: 'true',
+      f: 'geojson',
+      resultRecordCount: '500',
+    });
+
+    try {
+      const res = await fetch(`${TIGERWEB_ZCTA_URL}?${params.toString()}`);
+      if (!res.ok) throw new Error(`TIGERweb HTTP ${res.status}`);
+      const geo = await res.json();
+      const features = geo.features || [];
+      zipHeatmapGeoCache.current[key] = features;
+      console.log(`[Overlay] TIGERweb ZCTA: ${features.length} polygons for bounds`);
+      return features;
+    } catch (err) {
+      console.error('[Overlay] TIGERweb fetch failed', err);
+      return [];
+    }
+  }, []);
+
+  // ─── Render ZIP heat map choropleth ───
+  const renderZipHeatmapLayer = useCallback(async () => {
+    removeZipHeatmapLayer();
+    const data = zipHeatmapDataRef.current;
+    if (!data) return;
+
+    const zoom = map.getZoom();
+    if (zoom < 7) {
+      // Too zoomed out — show a hint
+      if (!document.getElementById('zip-heatmap-zoom-hint')) {
+        const div = document.createElement('div');
+        div.id = 'zip-heatmap-zoom-hint';
+        div.style.cssText = 'position:absolute;bottom:40px;left:50%;transform:translateX(-50%);z-index:1000;background:rgba(0,0,0,0.75);color:white;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:500;pointer-events:none;';
+        div.textContent = 'Zoom in to see ZIP heat map (zoom 7+)';
+        map.getContainer().appendChild(div);
+        setTimeout(() => div.remove(), 3000);
+      }
+      return;
+    }
+
+    setLoadingZipHeatmap(true);
+    try {
+      const bounds = map.getBounds();
+      const features = await fetchZctaBoundaries(bounds);
+      if (!features.length) return;
+
+      const geoJson = { type: 'FeatureCollection', features };
+
+      const layer = L.geoJSON(geoJson, {
+        style: (feature) => {
+          const zip = zeroZip(feature.properties?.GEOID || feature.properties?.BASENAME);
+          const z = zip ? data[zip] : null;
+          const val = z ? z[zipHeatmapMetric] : null;
+          return {
+            fillColor: colorForZipHeatmap(val, zipHeatmapMetric),
+            fillOpacity: 0.55,
+            weight: 1,
+            color: '#94a3b8',
+            opacity: 0.6,
+          };
+        },
+        onEachFeature: (feature, ly) => {
+          const zip = zeroZip(feature.properties?.GEOID || feature.properties?.BASENAME);
+          const z = zip ? (data[zip] || { zip }) : { zip: '?' };
+          ly.bindPopup(buildZipHeatmapPopup(zip || '?', z, zipHeatmapMetric), {
+            maxWidth: 360, className: 'overlay-popup', closeButton: true,
+          });
+          ly.on('mouseover', function () { this.setStyle({ weight: 2.5, fillOpacity: 0.85 }); });
+          ly.on('mouseout', function () { this.setStyle({ weight: 1, fillOpacity: 0.55 }); });
+        },
+      });
+
+      layer.addTo(map);
+      zipHeatmapLayerRef.current = layer;
+    } catch (err) {
+      console.error('[Overlay] ZIP heat map render error', err);
+    } finally {
+      setLoadingZipHeatmap(false);
+    }
+  }, [map, zipHeatmapMetric, removeZipHeatmapLayer, fetchZctaBoundaries]);
+
   // ─── Render county choropleth ───
   const renderCountyLayer = useCallback(() => {
     removeCountyLayer();
@@ -543,10 +842,31 @@ export default function MapOverlayLayers({ countyEnabled, zipEnabled, countyMetr
     if (zipEnabled && zipLoaded) renderZipLayer();
   }, [zipEnabled, zipLoaded, zipMetric, renderZipLayer]);
 
+  // ─── ZIP Heat Map layer lifecycle ───
+  useEffect(() => {
+    if (zipHeatmapEnabled) {
+      if (!zipHeatmapLoaded && !loadingZipHeatmap) loadZipHeatmapData();
+    } else {
+      removeZipHeatmapLayer();
+    }
+  }, [zipHeatmapEnabled, zipHeatmapLoaded, loadingZipHeatmap, loadZipHeatmapData, removeZipHeatmapLayer]);
+
+  useEffect(() => {
+    if (zipHeatmapEnabled && zipHeatmapLoaded) renderZipHeatmapLayer();
+  }, [zipHeatmapEnabled, zipHeatmapLoaded, zipHeatmapMetric, renderZipHeatmapLayer]);
+
+  // Redraw ZIP heat map on map move
+  useEffect(() => {
+    if (!zipHeatmapEnabled || !zipHeatmapLoaded) return;
+    const handler = () => renderZipHeatmapLayer();
+    map.on('moveend', handler);
+    return () => { map.off('moveend', handler); };
+  }, [map, zipHeatmapEnabled, zipHeatmapLoaded, renderZipHeatmapLayer]);
+
   // ─── Cleanup on unmount ───
   useEffect(() => {
-    return () => { removeCountyLayer(); removeZipLayer(); };
-  }, [removeCountyLayer, removeZipLayer]);
+    return () => { removeCountyLayer(); removeZipLayer(); removeZipHeatmapLayer(); };
+  }, [removeCountyLayer, removeZipLayer, removeZipHeatmapLayer]);
 
   // Inject popup CSS once
   useEffect(() => {
@@ -567,7 +887,7 @@ export default function MapOverlayLayers({ countyEnabled, zipEnabled, countyMetr
   useEffect(() => {
     const id = 'overlay-loading-ctrl';
     const existing = document.getElementById(id);
-    const isLoading = loadingCounty || loadingZip;
+    const isLoading = loadingCounty || loadingZip || loadingZipHeatmap;
 
     if (isLoading && !existing) {
       const div = document.createElement('div');
@@ -589,7 +909,7 @@ export default function MapOverlayLayers({ countyEnabled, zipEnabled, countyMetr
     } else if (!isLoading && existing) {
       existing.remove();
     }
-  }, [loadingCounty, loadingZip, map]);
+  }, [loadingCounty, loadingZip, loadingZipHeatmap, map]);
 
   return null; // This component renders Leaflet layers directly, no React DOM
 }
@@ -607,10 +927,25 @@ export const ZIP_METRIC_OPTIONS = Object.entries(ZIP_METRICS).map(([key, def]) =
   label: def.name,
 }));
 
+// ZIP Heat Map options — grouped by category
+export const ZIP_HEATMAP_METRIC_OPTIONS = Object.entries(ZIP_HEATMAP_METRICS).map(([key, def]) => ({
+  value: key,
+  label: def.name,
+  group: def.group,
+}));
+
 // Legend component for the control panel
 export function OverlayLegend({ type, metric }) {
-  const scale = type === 'county' ? (COUNTY_COLOR_SCALES[metric] || []) : (ZIP_COLOR_SCALES[metric] || []);
-  const metricDef = type === 'county' ? COUNTY_METRICS[metric] : ZIP_METRICS[metric];
+  const scale = type === 'county'
+    ? (COUNTY_COLOR_SCALES[metric] || [])
+    : type === 'zipHeatmap'
+      ? (ZIP_HEATMAP_COLOR_SCALES[metric] || [])
+      : (ZIP_COLOR_SCALES[metric] || []);
+  const metricDef = type === 'county'
+    ? COUNTY_METRICS[metric]
+    : type === 'zipHeatmap'
+      ? ZIP_HEATMAP_METRICS[metric]
+      : ZIP_METRICS[metric];
   if (!scale.length) return null;
 
   return (

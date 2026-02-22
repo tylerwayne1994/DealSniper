@@ -8,7 +8,7 @@ import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
 import { loadPipelineDeals } from '../../lib/dealsService';
-import MapOverlayLayers, { COUNTY_METRIC_OPTIONS, ZIP_METRIC_OPTIONS, OverlayLegend } from './MapOverlayLayers';
+import MapOverlayLayers, { COUNTY_METRIC_OPTIONS, ZIP_METRIC_OPTIONS, ZIP_HEATMAP_METRIC_OPTIONS, OverlayLegend } from './MapOverlayLayers';
 import {
   MessageSquare,
   MapPin,
@@ -105,6 +105,8 @@ function DashboardMapTab() {
   const [zipOverlay, setZipOverlay] = useState(false);
   const [countyMetric, setCountyMetric] = useState('populationGrowth');
   const [zipMetric, setZipMetric] = useState('density_sqmi');
+  const [zipHeatmap, setZipHeatmap] = useState(false);
+  const [zipHeatmapMetric, setZipHeatmapMetric] = useState('medianHouseholdIncome');
 
   // Uploaded property sheets state
   const [uploadedSheets, setUploadedSheets] = useState([]); // Array of { id, name, properties: [...] }
@@ -2020,6 +2022,63 @@ function DashboardMapTab() {
                   </div>
                   {zipOverlay && <OverlayLegend type="zip" metric={zipMetric} />}
                 </div>
+
+                {/* ZIP Heat Map (TIGERweb ZCTA Polygons) */}
+                <div style={{
+                  backgroundColor: zipHeatmap ? '#f5f3ff' : '#f9fafb',
+                  border: `1px solid ${zipHeatmap ? '#c4b5fd' : '#e5e7eb'}`,
+                  borderRadius: '8px',
+                  padding: '10px 12px',
+                  transition: 'all 0.2s',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#374151' }}>
+                      <input
+                        type="checkbox"
+                        checked={zipHeatmap}
+                        onChange={(e) => setZipHeatmap(e.target.checked)}
+                        style={{ accentColor: '#7c3aed', width: '15px', height: '15px', cursor: 'pointer' }}
+                      />
+                      🗺️ ZIP Heat Map
+                    </label>
+                    {zipHeatmap && (
+                      <select
+                        value={zipHeatmapMetric}
+                        onChange={(e) => setZipHeatmapMetric(e.target.value)}
+                        style={{
+                          padding: '4px 8px',
+                          fontSize: '11px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '5px',
+                          backgroundColor: 'white',
+                          color: '#374151',
+                          fontWeight: '500',
+                        }}
+                      >
+                        {(() => {
+                          const groups = {};
+                          ZIP_HEATMAP_METRIC_OPTIONS.forEach(opt => {
+                            if (!groups[opt.group]) groups[opt.group] = [];
+                            groups[opt.group].push(opt);
+                          });
+                          return Object.entries(groups).map(([group, opts]) => (
+                            <optgroup key={group} label={group}>
+                              {opts.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                              ))}
+                            </optgroup>
+                          ));
+                        })()}
+                      </select>
+                    )}
+                  </div>
+                  {zipHeatmap && (
+                    <>
+                      <OverlayLegend type="zipHeatmap" metric={zipHeatmapMetric} />
+                      <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '4px' }}>Zoom 7+ · Census TIGERweb ZCTA boundaries</div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -2225,12 +2284,14 @@ function DashboardMapTab() {
               </Marker>
             ))}
 
-            {/* Data overlay layers (county heat map + ZIP centroids) */}
+            {/* Data overlay layers (county heat map + ZIP centroids + ZIP heat map) */}
             <MapOverlayLayers
               countyEnabled={countyOverlay}
               zipEnabled={zipOverlay}
               countyMetric={countyMetric}
               zipMetric={zipMetric}
+              zipHeatmapEnabled={zipHeatmap}
+              zipHeatmapMetric={zipHeatmapMetric}
             />
           </MapContainer>
           )}
