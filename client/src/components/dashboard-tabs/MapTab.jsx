@@ -1,6 +1,8 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { API_ENDPOINTS } from '../../config/api';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
@@ -113,6 +115,11 @@ function DashboardMapTab() {
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [selectedProperties, setSelectedProperties] = useState([]);  // Track selected property indices
   const [geocodingResults, setGeocodingResults] = useState({ results: [], failed: [] }); // Store geocoding results
+
+  // MapLibre 3D refs
+  const maplibreContainerRef = useRef(null);
+  const maplibreMapRef = useRef(null);
+  const maplibreMarkersRef = useRef([]);
 
   // Fetch current user on mount
   useEffect(() => {
@@ -231,6 +238,161 @@ function DashboardMapTab() {
 
   const baseMarkers = useMemo(() => ([]), []);
 
+  // ═══ MapLibre GL 3D Map Initialization ═══
+  useEffect(() => {
+    if (mapStyle !== '3d') {
+      // Cleanup MapLibre when not in 3D mode
+      if (maplibreMapRef.current) {
+        maplibreMapRef.current.remove();
+        maplibreMapRef.current = null;
+      }
+      maplibreMarkersRef.current.forEach(m => m.remove());
+      maplibreMarkersRef.current = [];
+      return;
+    }
+
+    // Wait for container to be rendered
+    if (!maplibreContainerRef.current) return;
+    // Don't re-initialize if already created
+    if (maplibreMapRef.current) return;
+
+    const map = new maplibregl.Map({
+      container: maplibreContainerRef.current,
+      style: {
+        version: 8,
+        sources: {
+          'satellite': {
+            type: 'raster',
+            tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+            tileSize: 256,
+            maxzoom: 19,
+            attribution: '© Esri, Maxar, Earthstar Geographics'
+          },
+          'terrain-dem': {
+            type: 'raster-dem',
+            tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            encoding: 'terrarium',
+            maxzoom: 15
+          }
+        },
+        layers: [
+          {
+            id: 'satellite-layer',
+            type: 'raster',
+            source: 'satellite',
+            minzoom: 0,
+            maxzoom: 22
+          }
+        ],
+        terrain: {
+          source: 'terrain-dem',
+          exaggeration: 1.5
+        }
+      },
+      center: [-98.5795, 39.8283],
+      zoom: 5,
+      pitch: 50,
+      bearing: -17.6,
+      maxPitch: 85,
+      antialias: true
+    });
+
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+    map.addControl(new maplibregl.ScaleControl(), 'bottom-right');
+
+    maplibreMapRef.current = map;
+
+    return () => {
+      map.remove();
+      maplibreMapRef.current = null;
+      maplibreMarkersRef.current.forEach(m => m.remove());
+      maplibreMarkersRef.current = [];
+    };
+  }, [mapStyle]);
+
+  // ═══ Sync markers onto the MapLibre 3D map ═══
+  useEffect(() => {
+    if (mapStyle !== '3d' || !maplibreMapRef.current) return;
+
+    // Clear existing markers
+    maplibreMarkersRef.current.forEach(m => m.remove());
+    maplibreMarkersRef.current = [];
+
+    const map = maplibreMapRef.current;
+
+    // Wait for map to be loaded
+    const addMarkers = () => {
+      const allPins = [
+        ...baseMarkers,
+        ...customPins.filter(p => {
+          if (mapFilter === 'all') return true;
+          if (mapFilter === 'pipeline') return p.category === 'pipeline';
+          if (mapFilter === 'rapidfire') return p.category === 'rapidfire';
+          if (mapFilter === 'prospects') return p.category === 'prospect';
+          return true;
+        })
+      ];
+
+      allPins.forEach(pin => {
+        let color = '#ef4444';
+        if (pin.category === 'pipeline') color = '#22c55e';
+        else if (pin.source === 'uploaded') color = '#3b82f6';
+        else if (pin.category === 'prospect') color = '#8b5cf6';
+
+        const el = document.createElement('div');
+        el.style.cursor = 'pointer';
+        el.style.width = '32px';
+        el.style.height = '42px';
+        el.innerHTML = `
+          <svg width="32" height="42" viewBox="0 0 32 42" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 0C9.4 0 4 5.4 4 12c0 8 12 30 12 30s12-22 12-30c0-6.6-5.4-12-12-12z" 
+                  fill="${color}" stroke="#fff" stroke-width="2"/>
+            <circle cx="16" cy="12" r="6" fill="#fff" opacity="0.9"/>
+          </svg>
+        `;
+
+        const categoryLabel = pin.category === 'pipeline' ? '📋 Pipeline' :
+          pin.source === 'uploaded' ? '📊 Uploaded' :
+          pin.category === 'rapidfire' ? '🔥 Rapid Fire' : '🏘️ Prospect';
+
+        const badgeBg = pin.category === 'pipeline' ? '#d1fae5' :
+          pin.source === 'uploaded' ? '#dbeafe' :
+          pin.category === 'rapidfire' ? '#fecaca' : '#faf5ff';
+
+        const badgeColor = pin.category === 'pipeline' ? '#065f46' :
+          pin.source === 'uploaded' ? '#1e40af' :
+          pin.category === 'rapidfire' ? '#991b1b' : '#5b21b6';
+
+        const popup = new maplibregl.Popup({ offset: 25, maxWidth: '300px' })
+          .setHTML(`
+            <div style="font-family: Inter, -apple-system, sans-serif; padding: 8px;">
+              <div style="font-weight: 700; font-size: 14px; color: #111827; margin-bottom: 6px;">
+                ${pin.name || 'Property'}
+              </div>
+              ${pin.insight ? `<div style="font-size: 12px; color: #374151; padding: 8px; background: #f3f4f6; border-radius: 6px; margin-bottom: 6px;">${pin.insight}</div>` : ''}
+              <div style="display: inline-flex; padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: ${badgeBg}; color: ${badgeColor};">
+                ${categoryLabel}
+              </div>
+            </div>
+          `);
+
+        const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+          .setLngLat([pin.position[1], pin.position[0]])
+          .setPopup(popup)
+          .addTo(map);
+
+        maplibreMarkersRef.current.push(marker);
+      });
+    };
+
+    if (map.loaded()) {
+      addMarkers();
+    } else {
+      map.on('load', addMarkers);
+    }
+  }, [mapStyle, customPins, baseMarkers, mapFilter]);
+
   const handleSubmitProperty = async (e) => {
     e.preventDefault();
     const name = (form.name || '').trim();
@@ -283,10 +445,6 @@ function DashboardMapTab() {
       url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
       attribution: '&copy; Esri, HERE, Garmin, USGS'
     },
-    clean: {
-      url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png',
-      attribution: '&copy; OpenStreetMap, &copy; CartoDB'
-    },
     satellite: {
       url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       attribution: '&copy; Esri, Maxar, Earthstar Geographics'
@@ -294,10 +452,6 @@ function DashboardMapTab() {
     streets: {
       url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       attribution: '&copy; OpenStreetMap contributors'
-    },
-    dark: {
-      url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-      attribution: '&copy; OpenStreetMap, &copy; CartoDB'
     }
   };
 
@@ -1730,21 +1884,6 @@ function DashboardMapTab() {
                     Modern
                   </button>
                   <button
-                    onClick={() => setMapStyle('clean')}
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: mapStyle === 'clean' ? '#3b82f6' : 'white',
-                      color: mapStyle === 'clean' ? 'white' : '#6b7280',
-                      border: mapStyle === 'clean' ? 'none' : '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Clean
-                  </button>
-                  <button
                     onClick={() => setMapStyle('satellite')}
                     style={{
                       padding: '6px 12px',
@@ -1775,19 +1914,19 @@ function DashboardMapTab() {
                     Streets
                   </button>
                   <button
-                    onClick={() => setMapStyle('dark')}
+                    onClick={() => setMapStyle('3d')}
                     style={{
                       padding: '6px 12px',
-                      backgroundColor: mapStyle === 'dark' ? '#3b82f6' : 'white',
-                      color: mapStyle === 'dark' ? 'white' : '#6b7280',
-                      border: mapStyle === 'dark' ? 'none' : '1px solid #d1d5db',
+                      color: mapStyle === '3d' ? 'white' : '#6b7280',
+                      border: mapStyle === '3d' ? 'none' : '1px solid #d1d5db',
                       borderRadius: '6px',
                       fontSize: '12px',
-                      fontWeight: '500',
-                      cursor: 'pointer'
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      background: mapStyle === '3d' ? 'linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)' : 'white'
                     }}
                   >
-                    Dark
+                    🌍 3D
                   </button>
                 </div>
               </div>
@@ -1888,6 +2027,16 @@ function DashboardMapTab() {
 
         {/* Map Container */}
         <div style={{ flex: 1, position: 'relative' }}>
+          {/* MapLibre GL 3D Map */}
+          {mapStyle === '3d' && (
+            <div 
+              ref={maplibreContainerRef} 
+              style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }} 
+            />
+          )}
+
+          {/* Leaflet 2D Map */}
+          {mapStyle !== '3d' && (
           <MapContainer center={defaultCenter} zoom={defaultZoom} style={{ width: '100%', height: '100%' }}>
             <TileLayer 
               url={tileUrl} 
@@ -2084,6 +2233,7 @@ function DashboardMapTab() {
               zipMetric={zipMetric}
             />
           </MapContainer>
+          )}
         </div>
 
       </div>

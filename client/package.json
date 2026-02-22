@@ -16,6 +16,7 @@
     "luckyexcel": "^1.0.1",
     "luckysheet": "^2.1.13",
     "mapbox-gl": "^3.17.0",
+    "maplibre-gl": "^5.18.0",
     "papaparse": "^5.5.3",
     "pdfjs-dist": "^3.11.174",
     "react": "^18.2.0",
