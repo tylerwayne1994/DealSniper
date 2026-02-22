@@ -2564,27 +2564,17 @@ async def get_rentcast_data(deal_id: str, request: Request):
         pass
     
     # Fall back to deal's stored property data if body didn't have address
-    address = body_address
-    city = body_city
-    state = body_state
-    zipcode = body_zipcode
-    
-    if not address:
-        deal = storage.get_deal(deal_id)
-        if not deal:
-            return JSONResponse({
-                "success": False,
-                "error": "Deal not found",
-                "address_searched": "N/A"
-            }, status_code=404)
-        
-        # Try scenario_json first (user edits), then parsed_json
+    # Also fill in missing city/state/zip from deal data
+    deal = storage.get_deal(deal_id)
+    deal_property = {}
+    if deal:
         scenario = deal.scenario_json or {}
-        property_data = scenario.get("property", {}) or deal.parsed_json.get("property", {})
-        address = property_data.get("address", "")
-        city = property_data.get("city", "")
-        state = property_data.get("state", "")
-        zipcode = property_data.get("zip", "") or property_data.get("zipcode", "")
+        deal_property = scenario.get("property", {}) or deal.parsed_json.get("property", {})
+    
+    address = body_address or deal_property.get("address", "")
+    city = body_city or deal_property.get("city", "")
+    state = body_state or deal_property.get("state", "")
+    zipcode = body_zipcode or deal_property.get("zip", "") or deal_property.get("zipcode", "")
     
     if not address:
         return JSONResponse({
@@ -2618,7 +2608,7 @@ async def get_rentcast_data(deal_id: str, request: Request):
             
             log.info(f"[V2] RentCast API call with params: {params}")
             
-            # Call RentCast Rent Estimate API
+            # Call RentCast Rent Estimate API — try with full params first
             response = await client.get(
                 "https://api.rentcast.io/v1/avm/rent/long-term",
                 params=params,
@@ -2626,26 +2616,56 @@ async def get_rentcast_data(deal_id: str, request: Request):
                 timeout=30.0
             )
             
+            # If first attempt fails (400/404), retry without propertyType
+            if response.status_code in (400, 404, 422):
+                log.warning(f"[V2] RentCast first attempt failed ({response.status_code}), retrying without propertyType")
+                retry_params = dict(params)
+                retry_params.pop("propertyType", None)
+                response = await client.get(
+                    "https://api.rentcast.io/v1/avm/rent/long-term",
+                    params=retry_params,
+                    headers=headers,
+                    timeout=30.0
+                )
+            
+            # If still failing and we have zip, try zip-only lookup
+            if response.status_code in (400, 404, 422) and zipcode:
+                log.warning(f"[V2] RentCast retry failed ({response.status_code}), trying zip-only")
+                response = await client.get(
+                    "https://api.rentcast.io/v1/avm/rent/long-term",
+                    params={"zipCode": zipcode},
+                    headers=headers,
+                    timeout=30.0
+                )
+            
             if response.status_code == 200:
                 rent_data = response.json()
                 log.info(f"[V2] RentCast success: {rent_data}")
                 
                 # Also try to get comparable rentals
+                comp_lat = rent_data.get("latitude") or deal_property.get("lat") or deal_property.get("latitude")
+                comp_lng = rent_data.get("longitude") or deal_property.get("lng") or deal_property.get("longitude")
                 try:
-                    comps_response = await client.get(
-                        "https://api.rentcast.io/v1/listings/rental/long-term",
-                        params={
-                            "latitude": rent_data.get("latitude"),
-                            "longitude": rent_data.get("longitude"),
-                            "radius": 1,  # 1 mile radius
-                            "limit": 10,
-                            "status": "Active"
-                        },
-                        headers=headers,
-                        timeout=30.0
-                    )
-                    if comps_response.status_code == 200:
-                        rent_data["comparables"] = comps_response.json()
+                    if comp_lat and comp_lng:
+                        comps_response = await client.get(
+                            "https://api.rentcast.io/v1/listings/rental/long-term",
+                            params={
+                                "latitude": comp_lat,
+                                "longitude": comp_lng,
+                                "radius": 2,  # 2 mile radius
+                                "limit": 15,
+                                "status": "Active"
+                            },
+                            headers=headers,
+                            timeout=30.0
+                        )
+                        if comps_response.status_code == 200:
+                            rent_data["comparables"] = comps_response.json()
+                        else:
+                            log.warning(f"[V2] Comps API returned {comps_response.status_code}")
+                            rent_data["comparables"] = []
+                    else:
+                        rent_data["comparables"] = []
                 except Exception as comp_err:
                     log.warning(f"[V2] Could not fetch comparables: {comp_err}")
                     rent_data["comparables"] = []
