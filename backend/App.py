@@ -59,6 +59,25 @@ import logging
 log = logging.getLogger("app")
 logging.basicConfig(level=logging.INFO)
 
+# ─── TIGERweb CORS Proxy ─────────────────────────────────────
+# Census TIGERweb API doesn't support CORS from custom domains.
+# This endpoint proxies ZCTA boundary requests.
+TIGERWEB_BASE = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_ACS2023/MapServer/2/query"
+
+@app.get("/api/tigerweb/zcta")
+async def tigerweb_zcta_proxy(request: Request):
+    """Proxy Census TIGERweb ZCTA boundary queries to avoid CORS."""
+    import httpx
+    params = dict(request.query_params)
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.get(TIGERWEB_BASE, params=params)
+            resp.raise_for_status()
+            return JSONResponse(content=resp.json(), status_code=200)
+    except Exception as e:
+        log.error(f"[TIGERweb proxy] Error: {e}")
+        raise HTTPException(status_code=502, detail=f"TIGERweb proxy error: {str(e)}")
+
 import stripe
 
 # Price IDs: prefer env vars, fallback to known test IDs

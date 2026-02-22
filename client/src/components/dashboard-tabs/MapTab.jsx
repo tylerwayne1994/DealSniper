@@ -1356,9 +1356,9 @@ function DashboardMapTab() {
   return (
     <div style={{ 
       display: 'flex',
-      height: 'calc(100vh - 56px)',
+      minHeight: 'calc(100vh - 56px)',
       backgroundColor: '#ffffff',
-      overflow: 'hidden'
+      overflow: 'auto'
     }}>
       {/* Main Map Area - Left Side */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -2085,7 +2085,7 @@ function DashboardMapTab() {
         </div>
 
         {/* Map Container */}
-        <div style={{ flex: 1, position: 'relative' }}>
+        <div style={{ flex: 1, position: 'relative', minHeight: '75vh' }}>
           {/* MapLibre GL 3D Map */}
           {mapStyle === '3d' && (
             <div 

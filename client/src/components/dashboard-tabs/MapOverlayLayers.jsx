@@ -158,7 +158,7 @@ const colorForZip = (val, metric) => {
 // ────────────────────────────────────────────────────────
 // 2b. ZIP Heat Map — metric definitions + color scales
 // ────────────────────────────────────────────────────────
-const TIGERWEB_ZCTA_URL = 'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_ACS2023/MapServer/2/query';
+const TIGERWEB_ZCTA_URL = (process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com') + '/api/tigerweb/zcta';
 
 const ZIP_HEATMAP_METRICS = {
   population:             { name: 'Population',     group: 'Demographics',       fmt: v => fmtNum(v) },
