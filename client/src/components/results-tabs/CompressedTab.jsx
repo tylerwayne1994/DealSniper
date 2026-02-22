@@ -51,9 +51,20 @@ export default function CompressedTab({
   const exitScenarios = fullCalcs?.returns?.exitScenarios || [];
   const selectedScenario = exitScenarios.find(s => s.exitYear === selectedHoldPeriod) || exitScenarios[0] || {};
 
-  // === ALL METRICS sourced from fullCalcs ===
-  const totalEquity = fullCalcs?.financing?.totalEquityRequired || 0;
-  const loanAmount = fullCalcs?.financing?.loanAmount || 0;
+  // === ALL METRICS sourced from fullCalcs, with Deal Structure overrides ===
+  const hasMultiLoanStack = scenarioData.financing?.loans?.length > 0;
+  // When Deal Structure is configured, use its total_loan_amount & down_payment
+  const loanAmount = (hasMultiLoanStack && scenarioData.financing?.total_loan_amount > 0)
+    ? scenarioData.financing.total_loan_amount
+    : (fullCalcs?.financing?.loanAmount || 0);
+  const closingCosts = fullCalcs?.acquisition?.closingCosts || (purchasePrice * 0.02) || 0;
+  const acquisitionCost = (hasMultiLoanStack && scenarioData.financing?.total_acquisition_cost > 0)
+    ? scenarioData.financing.total_acquisition_cost
+    : (fullCalcs?.acquisition?.totalAcquisitionCosts || (purchasePrice + closingCosts));
+  const dsDownPayment = hasMultiLoanStack ? (scenarioData.financing?.down_payment ?? 0) : null;
+  const totalEquity = (hasMultiLoanStack && dsDownPayment != null)
+    ? (dsDownPayment + closingCosts + (fullCalcs?.acquisition?.upfrontCapEx || 0))
+    : (fullCalcs?.financing?.totalEquityRequired || 0);
   const rawIRR = fullCalcs?.returns?.leveredIRR || 0;
   const irrVal = isFinite(rawIRR) ? rawIRR : 0;
   const rawEM = fullCalcs?.returns?.leveredEquityMultiple || selectedScenario.equityMultiple || 0;
@@ -62,8 +73,6 @@ export default function CompressedTab({
   const cocVal = isFinite(rawCoC) ? rawCoC : 0;
   const totalProfit = selectedScenario.totalProfit || 0;
   const startingNOI = fullCalcs?.year1?.noi || noiT12 || 0;
-  const closingCosts = fullCalcs?.acquisition?.closingCosts || (purchasePrice * 0.02) || 0;
-  const acquisitionCost = fullCalcs?.acquisition?.totalAcquisitionCosts || (purchasePrice + closingCosts);
 
   // === Financials — Income & Expenses (from fullCalcs.year1) ===
   const rentalIncome = fullCalcs?.year1?.potentialGrossIncome || 0;
@@ -75,7 +84,6 @@ export default function CompressedTab({
   const noiYear1 = fullCalcs?.year1?.noi || noiT12 || 0;
 
   // === Debt Service: prefer Deal Structure multi-loan total when configured ===
-  const hasMultiLoanStack = scenarioData.financing?.loans?.length > 0;
   const debtServiceYear1 = (hasMultiLoanStack && annualDebtService > 0)
     ? annualDebtService
     : (fullCalcs?.financing?.annualDebtService || annualDebtService || 0);
@@ -140,14 +148,30 @@ export default function CompressedTab({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expenseItems, totalOperatingExpenses]);
 
-  // === Loan / Mortgage data ===
-  const ltvPct = fullCalcs?.financing?.ltv || 0;
-  const interestRate = fullCalcs?.financing?.interestRate || 0;
-  const monthlyPayment = fullCalcs?.financing?.monthlyPayment || 0;
-  const downPayment = purchasePrice - loanAmount;
+  // === Loan / Mortgage data — prefer Deal Structure when configured ===
+  const ltvPct = hasMultiLoanStack
+    ? (purchasePrice > 0 ? (loanAmount / purchasePrice) * 100 : 0)
+    : (fullCalcs?.financing?.ltv || 0);
+  // Weighted-avg interest rate: use senior loan rate from Deal Structure, else calc engine
+  const seniorLoan = hasMultiLoanStack
+    ? (scenarioData.financing.loans.find(l => l.type === 'Senior Loan' && l.enabled !== false))
+    : null;
+  const interestRate = seniorLoan
+    ? (Number(seniorLoan.rate) || 0)
+    : (fullCalcs?.financing?.interestRate || 0);
+  const monthlyPayment = hasMultiLoanStack
+    ? (debtServiceYear1 / 12)
+    : (fullCalcs?.financing?.monthlyPayment || 0);
+  const downPayment = hasMultiLoanStack
+    ? (dsDownPayment ?? (purchasePrice - loanAmount))
+    : (purchasePrice - loanAmount);
   const downPaymentPct = purchasePrice > 0 ? ((downPayment / purchasePrice) * 100) : 0;
   const closingCostPct = purchasePrice > 0 ? ((closingCosts / purchasePrice) * 100) : 0;
   const nonFinancedCapEx = capitalExpenditure;
+  // Recalculate Cash-on-Cash with Deal Structure equity
+  const adjCocVal = (hasMultiLoanStack && totalEquity > 0)
+    ? ((cashFlowYear1 / totalEquity) * 100)
+    : cocVal;
 
   // === Key Operating Ratios ===
   const capRateVal = fullCalcs?.year1?.capRate || capRate || 0;
@@ -306,7 +330,7 @@ export default function CompressedTab({
           {[
             { label: 'IRR', value: `${irrVal.toFixed(1)}%`, tip: 'Internal Rate of Return — annualized return accounting for time value of money' },
             { label: 'Total Potential Profit', value: fmt(totalProfit), tip: 'Cumulative profit including cash flow, principal paydown, and sale proceeds' },
-            { label: 'Cash on Cash Return', value: `${cocVal.toFixed(1)}%`, tip: 'Year 1 cash flow divided by total equity invested' },
+            { label: 'Cash on Cash Return', value: `${(isFinite(adjCocVal) ? adjCocVal : cocVal).toFixed(1)}%`, tip: 'Year 1 cash flow divided by total equity invested' },
             { label: 'Equity Multiple', value: `${equityMultiple.toFixed(2)}x`, tip: 'Total cash returned divided by total equity invested' },
           ].map((m, i) => (
             <div key={i} style={{ padding: '16px 0' }}>
