@@ -210,57 +210,82 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   const parsedDownPayment = pricing_financing.down_payment || 0;
   const parsedMonthlyPayment = pricing_financing.monthly_payment || 0;
   const rawInterestRate = pricing_financing.interest_rate || 0;
-  const interestRate = rawInterestRate > 1 ? rawInterestRate / 100 : rawInterestRate;
-  const loanTermYears = pricing_financing.term_years || 10;
-  const amortYears = pricing_financing.amortization_years || 30;
+  let interestRate = rawInterestRate > 1 ? rawInterestRate / 100 : rawInterestRate;
+  let loanTermYears = pricing_financing.term_years || 10;
+  let amortYears = pricing_financing.amortization_years || 30;
 
-  // Derive the original purchase price the loan was underwritten against.
-  // If the user has changed the purchase price, we need to scale all
-  // financing fields proportionally so that every downstream metric
-  // (debt service, DSCR, cash-on-cash, IRR, equity multiple, etc.)
-  // recalculates when the price slider moves.
-  // _original_purchase_price is stamped on initial load. If absent, fall back
-  // to deriving from loan_amount + down_payment (the full capital stack).
-  const originalPrice = pricing_financing._original_purchase_price
-    || (parsedLoanAmount > 0 && parsedDownPayment > 0 ? parsedLoanAmount + parsedDownPayment : 0);
-  const priceHasChanged = originalPrice > 0 && purchasePrice > 0 && Math.abs(purchasePrice - originalPrice) > 1;
+  // ═══════════════════════════════════════════════════════════════════════
+  // DEAL STRUCTURE OVERRIDE — when the user has configured a multi-loan
+  // capital stack in the Deal Structure tab, those values live under
+  // scenarioData.financing.* (NOT pricing_financing.*).  We MUST use them
+  // so that every downstream metric (debt service, DSCR, cash-on-cash,
+  // IRR, equity multiple, projections, charts) reflects the user's edits.
+  // ═══════════════════════════════════════════════════════════════════════
+  const dealStructureLoans = financing?.loans;
+  const hasDealStructureStack = Array.isArray(dealStructureLoans) && dealStructureLoans.length > 0;
 
   let loanAmount, annualDebtService, downPayment, monthlyPayment;
 
-  if (priceHasChanged && parsedLoanAmount > 0 && originalPrice > 0) {
-    // Preserve the original LTV ratio across price changes
-    const ltv = parsedLoanAmount / originalPrice;
-    loanAmount = purchasePrice * ltv;
-    downPayment = purchasePrice - loanAmount;
+  if (hasDealStructureStack) {
+    // Use the pre-computed totals that DealStructureTab wrote via saveToParent()
+    loanAmount       = financing.total_loan_amount   || 0;
+    annualDebtService = financing.annual_debt_service || 0;
+    monthlyPayment   = annualDebtService / 12;
+    downPayment      = financing.down_payment != null ? financing.down_payment : Math.max(purchasePrice - loanAmount, 0);
 
-    // Recalculate debt service from the new loan amount
-    if (interestRate > 0 && amortYears > 0) {
-      monthlyPayment = calculateMortgagePayment(loanAmount, interestRate, amortYears);
-      annualDebtService = monthlyPayment * 12;
-    } else if (parsedDebtService > 0 && parsedLoanAmount > 0) {
-      // Fallback: scale debt service proportionally
-      const ratio = loanAmount / parsedLoanAmount;
-      annualDebtService = parsedDebtService * ratio;
-      monthlyPayment = annualDebtService / 12;
-    } else {
-      annualDebtService = parsedDebtService;
-      monthlyPayment = parsedMonthlyPayment;
+    // Override rate/term from Deal Structure senior loan for projection loan balance calcs
+    const seniorLoan = dealStructureLoans.find(l => l.type === 'Senior Loan' && l.enabled !== false);
+    if (seniorLoan) {
+      const dsRate = Number(seniorLoan.rate) || 0;
+      interestRate = dsRate > 1 ? dsRate / 100 : dsRate;
+      loanTermYears = Number(seniorLoan.term) || loanTermYears;
+      amortYears = Number(seniorLoan.amort) || amortYears;
+    } else if (financing.interest_rate) {
+      const dsRate = Number(financing.interest_rate) || 0;
+      interestRate = dsRate > 1 ? dsRate / 100 : dsRate;
+      loanTermYears = Number(financing.loan_term_years) || loanTermYears;
+      amortYears = Number(financing.amortization_years) || amortYears;
     }
   } else {
-    // No price change — use original parsed values as-is
-    loanAmount = parsedLoanAmount;
-    downPayment = parsedDownPayment;
+    // ── Original pricing_financing path (no Deal Structure edits) ──
+    // Derive the original purchase price the loan was underwritten against.
+    const originalPrice = pricing_financing._original_purchase_price
+      || (parsedLoanAmount > 0 && parsedDownPayment > 0 ? parsedLoanAmount + parsedDownPayment : 0);
+    const priceHasChanged = originalPrice > 0 && purchasePrice > 0 && Math.abs(purchasePrice - originalPrice) > 1;
 
-    // If debt service wasn't parsed but we have loan + rate + amort, compute it
-    if (parsedDebtService > 0) {
-      annualDebtService = parsedDebtService;
-      monthlyPayment = parsedMonthlyPayment || (annualDebtService / 12);
-    } else if (parsedLoanAmount > 0 && interestRate > 0 && amortYears > 0) {
-      monthlyPayment = calculateMortgagePayment(parsedLoanAmount, interestRate, amortYears);
-      annualDebtService = monthlyPayment * 12;
+    if (priceHasChanged && parsedLoanAmount > 0 && originalPrice > 0) {
+      // Preserve the original LTV ratio across price changes
+      const ltv = parsedLoanAmount / originalPrice;
+      loanAmount = purchasePrice * ltv;
+      downPayment = purchasePrice - loanAmount;
+
+      // Recalculate debt service from the new loan amount
+      if (interestRate > 0 && amortYears > 0) {
+        monthlyPayment = calculateMortgagePayment(loanAmount, interestRate, amortYears);
+        annualDebtService = monthlyPayment * 12;
+      } else if (parsedDebtService > 0 && parsedLoanAmount > 0) {
+        const ratio = loanAmount / parsedLoanAmount;
+        annualDebtService = parsedDebtService * ratio;
+        monthlyPayment = annualDebtService / 12;
+      } else {
+        annualDebtService = parsedDebtService;
+        monthlyPayment = parsedMonthlyPayment;
+      }
     } else {
-      annualDebtService = 0;
-      monthlyPayment = parsedMonthlyPayment;
+      // No price change — use original parsed values as-is
+      loanAmount = parsedLoanAmount;
+      downPayment = parsedDownPayment;
+
+      if (parsedDebtService > 0) {
+        annualDebtService = parsedDebtService;
+        monthlyPayment = parsedMonthlyPayment || (annualDebtService / 12);
+      } else if (parsedLoanAmount > 0 && interestRate > 0 && amortYears > 0) {
+        monthlyPayment = calculateMortgagePayment(parsedLoanAmount, interestRate, amortYears);
+        annualDebtService = monthlyPayment * 12;
+      } else {
+        annualDebtService = 0;
+        monthlyPayment = parsedMonthlyPayment;
+      }
     }
   }
   
