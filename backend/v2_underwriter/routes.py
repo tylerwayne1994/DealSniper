@@ -2534,6 +2534,7 @@ async def get_rentcast_data(deal_id: str, request: Request):
     """
     Fetch market rent data from RentCast API for the deal's address.
     User must explicitly request this - not automatic.
+    Accepts address/city/state/zip in POST body as primary source.
     """
     import httpx
     
@@ -2541,30 +2542,56 @@ async def get_rentcast_data(deal_id: str, request: Request):
     
     log.info(f"[V2] RentCast request for deal: {deal_id}")
     
-    deal = storage.get_deal(deal_id)
-    if not deal:
-        raise HTTPException(status_code=404, detail="Deal not found")
+    # Try to get address from request body first (frontend sends scenarioData)
+    body_address = ""
+    body_city = ""
+    body_state = ""
+    body_zipcode = ""
+    bedrooms = None
+    bathrooms = None
+    property_type = "Apartment"
     
-    # Get address from deal
-    property_data = deal.parsed_json.get("property", {})
-    address = property_data.get("address", "")
-    city = property_data.get("city", "")
-    state = property_data.get("state", "")
-    zipcode = property_data.get("zip", "") or property_data.get("zipcode", "")
-    
-    if not address:
-        raise HTTPException(status_code=400, detail="No address found for this deal")
-    
-    # Try to get optional parameters from request body
     try:
         body = await request.json()
+        body_address = body.get("address", "")
+        body_city = body.get("city", "")
+        body_state = body.get("state", "")
+        body_zipcode = body.get("zip", "") or body.get("zipcode", "")
         bedrooms = body.get("bedrooms")
         bathrooms = body.get("bathrooms")
         property_type = body.get("property_type", "Apartment")
     except:
-        bedrooms = None
-        bathrooms = None
-        property_type = "Apartment"
+        pass
+    
+    # Fall back to deal's stored property data if body didn't have address
+    address = body_address
+    city = body_city
+    state = body_state
+    zipcode = body_zipcode
+    
+    if not address:
+        deal = storage.get_deal(deal_id)
+        if not deal:
+            return JSONResponse({
+                "success": False,
+                "error": "Deal not found",
+                "address_searched": "N/A"
+            }, status_code=404)
+        
+        # Try scenario_json first (user edits), then parsed_json
+        scenario = deal.scenario_json or {}
+        property_data = scenario.get("property", {}) or deal.parsed_json.get("property", {})
+        address = property_data.get("address", "")
+        city = property_data.get("city", "")
+        state = property_data.get("state", "")
+        zipcode = property_data.get("zip", "") or property_data.get("zipcode", "")
+    
+    if not address:
+        return JSONResponse({
+            "success": False,
+            "error": "No address found for this deal. Please add an address in the property details.",
+            "address_searched": "N/A"
+        }, status_code=200)
     
     try:
         async with httpx.AsyncClient() as client:
@@ -2633,21 +2660,28 @@ async def get_rentcast_data(deal_id: str, request: Request):
                     "success": False,
                     "error": "No rent data found for this address",
                     "address_searched": address
-                }, status_code=404)
+                }, status_code=200)
             else:
                 log.error(f"[V2] RentCast API error: {response.status_code} - {response.text}")
-                raise HTTPException(
-                    status_code=response.status_code, 
-                    detail=f"RentCast API error: {response.text}"
-                )
+                return JSONResponse({
+                    "success": False,
+                    "error": f"RentCast API returned {response.status_code}: {response.text[:200]}",
+                    "address_searched": address
+                }, status_code=200)
                 
     except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="RentCast API timeout")
-    except HTTPException:
-        raise
+        return JSONResponse({
+            "success": False,
+            "error": "RentCast API timeout - try again",
+            "address_searched": address
+        }, status_code=200)
     except Exception as e:
         log.exception(f"[V2] RentCast request failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch rent data: {str(e)}")
+        return JSONResponse({
+            "success": False,
+            "error": f"Failed to fetch rent data: {str(e)}",
+            "address_searched": address
+        }, status_code=200)
 
 
 # =============================================================================

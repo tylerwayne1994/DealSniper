@@ -1,39 +1,26 @@
-import React, { useRef, useState, useMemo } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Tooltip as LeafletTooltip, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-
-// Fix default marker icon
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-});
+import React, { useRef, useState, useMemo, useCallback, useEffect } from 'react';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
-
-// Auto-fit map bounds when comps arrive
-function FitBounds({ bounds }) {
-  const map = useMap();
-  React.useEffect(() => {
-    if (bounds && bounds.length > 0) {
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
-    }
-  }, [bounds, map]);
-  return null;
-}
+const GOOGLE_MAPS_KEY = 'AIzaSyB2jVgoUaR5QYk7WnmaXit1pLDK1PQgFiQ';
 
 export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
   const unitMixData = scenarioData?.unit_mix || [];
   const [rentcastLoading, setRentcastLoading] = useState(false);
   const [rentcastData, setRentcastData] = useState(null);
   const [hoveredComp, setHoveredComp] = useState(null);
+  const [selectedComp, setSelectedComp] = useState(null);
+  const mapRef = useRef(null);
 
-  // Property location from scenarioData
+  const { isLoaded } = useJsApiLoader({ googleMapsApiKey: GOOGLE_MAPS_KEY });
+
+  // Property info from scenarioData
   const propertyLat = scenarioData?.property?.lat ?? scenarioData?.property?.latitude ?? scenarioData?.lat ?? scenarioData?.latitude;
   const propertyLng = scenarioData?.property?.lng ?? scenarioData?.property?.longitude ?? scenarioData?.lng ?? scenarioData?.longitude;
   const propertyAddress = scenarioData?.property?.address || scenarioData?.address || 'Subject Property';
+  const propertyCity = scenarioData?.property?.city || scenarioData?.city || '';
+  const propertyState = scenarioData?.property?.state || scenarioData?.state || '';
+  const propertyZip = scenarioData?.property?.zip || scenarioData?.property?.zipcode || scenarioData?.zip || '';
 
   // Column sizing state
   const initialColumns = [
@@ -76,12 +63,19 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
       const response = await fetch(`${API_BASE}/v2/deals/${dealId}/rentcast`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address: propertyAddress,
+          city: propertyCity,
+          state: propertyState,
+          zip: propertyZip,
+          property_type: 'Apartment',
+        }),
       });
       const data = await response.json();
       if (data.success) {
         setRentcastData(data.data);
       } else {
-        alert(`RentCast error: ${data.error || 'Unknown error'}\nAddress searched: ${data.address_searched || 'N/A'}`);
+        alert(`RentCast error: ${data.error || 'Unknown error'}\nAddress searched: ${data.address_searched || propertyAddress || 'N/A'}`);
       }
     } catch (error) {
       console.error('RentCast API error:', error);
@@ -91,15 +85,15 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
     }
   };
 
-  // Build map center and bounds from property + comps
+  // Build map center from property + rentcast data
   const mapCenter = useMemo(() => {
     if (rentcastData?.latitude && rentcastData?.longitude) {
-      return [Number(rentcastData.latitude), Number(rentcastData.longitude)];
+      return { lat: Number(rentcastData.latitude), lng: Number(rentcastData.longitude) };
     }
     if (propertyLat != null && propertyLng != null) {
-      return [Number(propertyLat), Number(propertyLng)];
+      return { lat: Number(propertyLat), lng: Number(propertyLng) };
     }
-    return [39.8283, -98.5795]; // US center fallback
+    return { lat: 39.8283, lng: -98.5795 }; // US center fallback
   }, [rentcastData, propertyLat, propertyLng]);
 
   const comps = useMemo(() => {
@@ -110,16 +104,20 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
     return list.filter(c => c.latitude && c.longitude);
   }, [rentcastData]);
 
-  const mapBounds = useMemo(() => {
-    const points = [];
-    if (mapCenter[0] !== 39.8283) points.push(mapCenter);
-    comps.forEach(c => {
-      if (c.latitude && c.longitude) points.push([Number(c.latitude), Number(c.longitude)]);
-    });
-    return points.length > 0 ? points : null;
-  }, [mapCenter, comps]);
-
   const hasMapData = (propertyLat != null && propertyLng != null) || (rentcastData?.latitude && rentcastData?.longitude);
+
+  // Auto-fit bounds when map loads or comps change
+  const onMapLoad = useCallback((map) => {
+    mapRef.current = map;
+  }, []);
+
+  useEffect(() => {
+    if (!mapRef.current || !comps.length) return;
+    const bounds = new window.google.maps.LatLngBounds();
+    bounds.extend(mapCenter);
+    comps.forEach(c => bounds.extend({ lat: Number(c.latitude), lng: Number(c.longitude) }));
+    mapRef.current.fitBounds(bounds, 60);
+  }, [comps, mapCenter]);
 
   // Column resize handlers
   const onResizerMouseDown = (index, e) => {
@@ -360,72 +358,92 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
                   </div>
                 </div>
                 <div style={{ height: 480 }}>
-                  {(hasMapData || comps.length > 0) ? (
-                    <MapContainer
+                  {isLoaded && (hasMapData || comps.length > 0) ? (
+                    <GoogleMap
+                      mapContainerStyle={{ height: '100%', width: '100%' }}
                       center={mapCenter}
                       zoom={13}
-                      style={{ height: '100%', width: '100%' }}
-                      scrollWheelZoom={true}
+                      onLoad={onMapLoad}
+                      options={{
+                        streetViewControl: false,
+                        mapTypeControl: false,
+                        fullscreenControl: true,
+                        styles: [
+                          { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+                        ],
+                      }}
                     >
-                      <TileLayer
-                        attribution='&copy; <a href="https://www.openstreetmap.org/">OSM</a>'
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      {/* Subject property marker — red */}
+                      <Marker
+                        position={mapCenter}
+                        icon={{
+                          path: window.google.maps.SymbolPath.CIRCLE,
+                          scale: 14,
+                          fillColor: '#ef4444',
+                          fillOpacity: 1,
+                          strokeColor: '#fff',
+                          strokeWeight: 3,
+                        }}
+                        zIndex={1000}
+                        onClick={() => setSelectedComp('subject')}
                       />
-                      {mapBounds && <FitBounds bounds={mapBounds} />}
+                      {selectedComp === 'subject' && (
+                        <InfoWindow position={mapCenter} onCloseClick={() => setSelectedComp(null)}>
+                          <div style={{ padding: 4 }}>
+                            <div style={{ fontWeight: 700, fontSize: 13 }}>📍 {propertyAddress}</div>
+                            {rentcastData?.rent && <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, marginTop: 4 }}>Est: ${rentcastData.rent.toLocaleString()}/mo</div>}
+                          </div>
+                        </InfoWindow>
+                      )}
 
-                      {/* Subject property — big red dot */}
-                      <CircleMarker
-                        center={mapCenter}
-                        radius={12}
-                        pathOptions={{ fillColor: '#ef4444', color: '#fff', weight: 3, fillOpacity: 1 }}
-                      >
-                        <LeafletTooltip direction="top" offset={[0, -12]} opacity={0.95} permanent>
-                          <div style={{ fontWeight: 700, fontSize: 12 }}>📍 {propertyAddress}</div>
-                          {rentcastData.rent && <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 600 }}>Est: ${rentcastData.rent.toLocaleString()}/mo</div>}
-                        </LeafletTooltip>
-                      </CircleMarker>
-
-                      {/* Comp markers */}
+                      {/* Comp markers — purple/gold */}
                       {comps.map((comp, idx) => {
                         const isHovered = hoveredComp === idx;
                         return (
-                          <CircleMarker
-                            key={idx}
-                            center={[Number(comp.latitude), Number(comp.longitude)]}
-                            radius={isHovered ? 10 : 7}
-                            pathOptions={{
-                              fillColor: isHovered ? '#f59e0b' : AC,
-                              color: '#fff', weight: 2,
-                              fillOpacity: isHovered ? 1 : 0.85,
-                            }}
-                            eventHandlers={{
-                              mouseover: () => setHoveredComp(idx),
-                              mouseout: () => setHoveredComp(null),
-                            }}
-                          >
-                            <LeafletTooltip direction="top" offset={[0, -8]} opacity={0.95}>
-                              <div style={{ minWidth: 160 }}>
-                                <div style={{ fontWeight: 700, fontSize: 13, color: '#111' }}>
-                                  ${comp.price?.toLocaleString() || 'N/A'}/mo
-                                </div>
-                                <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>
-                                  {comp.bedrooms || '?'} bed • {comp.bathrooms || '?'} bath
-                                  {comp.squareFootage ? ` • ${comp.squareFootage.toLocaleString()} sf` : ''}
-                                </div>
-                                <div style={{ fontSize: 10, color: '#888', marginTop: 2 }}>
-                                  {comp.formattedAddress || comp.addressLine1 || ''}
-                                </div>
-                                {comp.distance != null && (
-                                  <div style={{ fontSize: 10, color: '#999', marginTop: 1 }}>
-                                    {comp.distance.toFixed(2)} mi away
+                          <React.Fragment key={idx}>
+                            <Marker
+                              position={{ lat: Number(comp.latitude), lng: Number(comp.longitude) }}
+                              icon={{
+                                path: window.google.maps.SymbolPath.CIRCLE,
+                                scale: isHovered ? 12 : 8,
+                                fillColor: isHovered ? '#f59e0b' : AC,
+                                fillOpacity: isHovered ? 1 : 0.85,
+                                strokeColor: '#fff',
+                                strokeWeight: 2,
+                              }}
+                              zIndex={isHovered ? 999 : idx}
+                              onMouseOver={() => setHoveredComp(idx)}
+                              onMouseOut={() => setHoveredComp(null)}
+                              onClick={() => setSelectedComp(idx)}
+                            />
+                            {selectedComp === idx && (
+                              <InfoWindow
+                                position={{ lat: Number(comp.latitude), lng: Number(comp.longitude) }}
+                                onCloseClick={() => setSelectedComp(null)}
+                              >
+                                <div style={{ minWidth: 180, padding: 4 }}>
+                                  <div style={{ fontWeight: 700, fontSize: 14, color: '#111' }}>
+                                    ${comp.price?.toLocaleString() || 'N/A'}/mo
                                   </div>
-                                )}
-                              </div>
-                            </LeafletTooltip>
-                          </CircleMarker>
+                                  <div style={{ fontSize: 12, color: '#555', marginTop: 3 }}>
+                                    {comp.bedrooms || '?'} bed • {comp.bathrooms || '?'} bath
+                                    {comp.squareFootage ? ` • ${comp.squareFootage.toLocaleString()} sf` : ''}
+                                  </div>
+                                  <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
+                                    {comp.formattedAddress || comp.addressLine1 || ''}
+                                  </div>
+                                  {comp.distance != null && (
+                                    <div style={{ fontSize: 11, color: '#10b981', fontWeight: 600, marginTop: 3 }}>
+                                      {comp.distance.toFixed(2)} mi away
+                                    </div>
+                                  )}
+                                </div>
+                              </InfoWindow>
+                            )}
+                          </React.Fragment>
                         );
                       })}
-                    </MapContainer>
+                    </GoogleMap>
                   ) : (
                     <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', flexDirection: 'column', gap: 8 }}>
                       <span style={{ fontSize: 40 }}>🗺️</span>
