@@ -1,7 +1,9 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
          ResponsiveContainer, Area, AreaChart, PieChart, Pie, Cell } from 'recharts';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import L from 'leaflet';
 
 export default function CompressedTab({
   scenarioData,
@@ -316,42 +318,82 @@ export default function CompressedTab({
     </tr>
   );
 
+  // ── Property data for Deal Overview ──
+  const property = scenarioData?.property || {};
+  const propertyName = property?.property_name || property?.name || '';
+  const propertyAddress = property?.address || scenarioData?.address || '';
+  const propertyCity = property?.city || scenarioData?.city || '';
+  const propertyState = property?.state || scenarioData?.state || '';
+  const propertyZip = property?.zip || scenarioData?.zip || '';
+  const fullAddress = [propertyAddress, propertyCity && propertyState ? `${propertyCity}, ${propertyState}` : (propertyCity || propertyState), propertyZip].filter(Boolean).join(' ');
+  const assetType = property?.property_type || property?.asset_type || 'multifamily';
+  const yearBuilt = property?.year_built || '';
+  const totalUnits = property?.total_units || property?.units || 0;
+  const netRentableSF = property?.total_sq_ft || property?.rba_sqft || property?.net_rentable_sf || 0;
+  const occupancyRate = property?.occupancy_rate || (fullCalcs?.year1?.occupancyRate) || 0;
+  const holdingPeriod = selectedHoldPeriod || scenarioData?.exit?.holding_period || 5;
+  const pricePerSF = netRentableSF > 0 ? purchasePrice / netRentableSF : 0;
+  const pricePerUnit = totalUnits > 0 ? purchasePrice / totalUnits : 0;
+  const capitalImprovements = fullCalcs?.acquisition?.upfrontCapEx || 0;
+  const acquisitionFee = purchasePrice * 0.01;
+  const loanFees = loanAmount * 0.01;
+  const financingFees = loanAmount * 0.005;
+  const totalInterest = debtServiceYear1 * holdingPeriod - (loanAmount - (exitProj?.loanBalance || loanAmount * 0.9));
+  const totalProjectCost = purchasePrice + closingCosts + capitalImprovements + acquisitionFee + loanFees + financingFees;
+  const loanTermYears = seniorLoan?.term || scenarioData?.pricing_financing?.term_years || 30;
+  const amortYears = seniorLoan?.amort || scenarioData?.pricing_financing?.amortization_years || 30;
+  const exitCapRate = fullCalcs?.returns?.exitCapRate || selectedScenario?.exitCapRate || (capRateVal + 0.5);
+  const noiAtSale = exitProj?.noi || (startingNOI * Math.pow(1.03, holdingPeriod));
+
+  // Property coordinates for satellite map
+  const propLat = property?.lat ?? property?.latitude ?? scenarioData?.lat ?? scenarioData?.latitude;
+  const propLng = property?.lng ?? property?.longitude ?? scenarioData?.lng ?? scenarioData?.longitude;
+  const hasCoords = propLat != null && propLng != null && !isNaN(Number(propLat)) && !isNaN(Number(propLng));
+
+  // Custom star marker for satellite map
+  const starIcon = useMemo(() => L.divIcon({
+    className: 'custom-star-icon',
+    html: `<div style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="#4f46e5" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="#fff" stroke-width="1.5"/></svg></div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+  }), []);
+
   return (
     <div style={{ maxWidth: 1400, margin: '0 auto' }}>
 
       {/* ═══════════════════════════════════════════════════════════════
-          1. OVERVIEW — KPIs + Purchase Price
+          1. OVERVIEW — Compact KPIs + Purchase Price
           ═══════════════════════════════════════════════════════════════ */}
       <div style={card}>
         <SectionHead title="Overview" color={AC} />
 
-        {/* KPI row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 28 }}>
+        {/* KPI row — compact */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 20 }}>
           {[
             { label: 'IRR', value: `${irrVal.toFixed(1)}%`, tip: 'Internal Rate of Return — annualized return accounting for time value of money' },
             { label: 'Total Potential Profit', value: fmt(totalProfit), tip: 'Cumulative profit including cash flow, principal paydown, and sale proceeds' },
             { label: 'Cash on Cash Return', value: `${(isFinite(adjCocVal) ? adjCocVal : cocVal).toFixed(1)}%`, tip: 'Year 1 cash flow divided by total equity invested' },
             { label: 'Equity Multiple', value: `${equityMultiple.toFixed(2)}x`, tip: 'Total cash returned divided by total equity invested' },
           ].map((m, i) => (
-            <div key={i} style={{ padding: '16px 0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                <span style={{ fontSize: 12, color: LB, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{m.label}</span>
+            <div key={i} style={{ padding: '10px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <span style={{ fontSize: 11, color: LB, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{m.label}</span>
                 <Tip text={m.tip} />
               </div>
-              <div style={{ fontSize: 32, fontWeight: 800, color: VL, letterSpacing: '-0.02em' }}>{m.value}</div>
+              <div style={{ fontSize: 26, fontWeight: 800, color: VL, letterSpacing: '-0.02em' }}>{m.value}</div>
             </div>
           ))}
         </div>
 
-        {/* Purchase Price slider */}
-        <div style={{ background: '#f9fafb', borderRadius: 12, padding: '24px 28px', border: `1px solid ${B}` }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 14 }}>
+        {/* Purchase Price slider — compact */}
+        <div style={{ background: '#f9fafb', borderRadius: 10, padding: '16px 20px', border: `1px solid ${B}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 10 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: VL }}>Purchase Price</span>
             <span style={{ fontSize: 10, fontWeight: 600, color: '#10b981', background: '#ecfdf5', padding: '2px 8px', borderRadius: 6, letterSpacing: '0.02em' }}>LIVE</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, justifyContent: 'center', marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center', marginBottom: 10 }}>
             <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 15, color: LB, fontWeight: 600 }}>$</span>
+              <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: LB, fontWeight: 600 }}>$</span>
               <input
                 type="text"
                 value={purchasePrice.toLocaleString()}
@@ -360,12 +402,12 @@ export default function CompressedTab({
                   handleChange('pricing_financing.purchase_price', v);
                   handleChange('pricing_financing.price', v);
                 }}
-                style={{ width: 200, padding: '12px 14px 12px 32px', fontSize: 20, fontWeight: 700, border: `2px solid ${AC}`, borderRadius: 10, outline: 'none', textAlign: 'center', color: VL, background: '#fff' }}
+                style={{ width: 180, padding: '10px 12px 10px 28px', fontSize: 18, fontWeight: 700, border: `2px solid ${AC}`, borderRadius: 8, outline: 'none', textAlign: 'center', color: VL, background: '#fff' }}
               />
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span style={{ fontSize: 12, color: LB, fontWeight: 600, minWidth: 85, textAlign: 'right' }}>{fmt(minPrice)}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 11, color: LB, fontWeight: 600, minWidth: 75, textAlign: 'right' }}>{fmt(minPrice)}</span>
             <input
               type="range"
               min={minPrice}
@@ -377,19 +419,176 @@ export default function CompressedTab({
                 handleChange('pricing_financing.purchase_price', v);
                 handleChange('pricing_financing.price', v);
               }}
-              style={{ flex: 1, accentColor: AC, height: 6 }}
+              style={{ flex: 1, accentColor: AC, height: 5 }}
             />
-            <span style={{ fontSize: 12, color: LB, fontWeight: 600, minWidth: 85 }}>{fmt(maxPrice)}</span>
+            <span style={{ fontSize: 11, color: LB, fontWeight: 600, minWidth: 75 }}>{fmt(maxPrice)}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 14 }}>
             {[
               { label: '+ Create new LOI', action: () => navigate('/loi-generator') },
               { label: '+ Include Refinancing', action: () => { if (onTabChange) onTabChange('exit-strategy'); } },
             ].map((btn, i) => (
-              <button key={i} onClick={btn.action} style={{ padding: '10px 22px', fontSize: 12, fontWeight: 600, color: VL, background: '#fff', border: `1px solid ${B}`, borderRadius: 8, cursor: 'pointer' }}>
+              <button key={i} onClick={btn.action} style={{ padding: '8px 18px', fontSize: 11, fontWeight: 600, color: VL, background: '#fff', border: `1px solid ${B}`, borderRadius: 6, cursor: 'pointer' }}>
                 {btn.label}
               </button>
             ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          1b. LOCATION & MARKET ANALYSIS — Satellite Map
+          ═══════════════════════════════════════════════════════════════ */}
+      {hasCoords && (
+        <div style={card}>
+          <div style={{ marginBottom: 10 }}>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: VL, textTransform: 'uppercase', letterSpacing: '0.5px' }}>LOCATION & MARKET ANALYSIS</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <span style={{ fontSize: 12, color: LB }}>📍</span>
+              <span style={{ fontSize: 12, color: LB, fontWeight: 500 }}>{fullAddress}</span>
+            </div>
+          </div>
+          <div style={{ borderRadius: 10, overflow: 'hidden', border: `1px solid ${B}`, height: 260 }}>
+            <MapContainer 
+              center={[Number(propLat), Number(propLng)]} 
+              zoom={14} 
+              style={{ width: '100%', height: '100%' }}
+              scrollWheelZoom={false}
+              zoomControl={true}
+            >
+              <TileLayer 
+                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                attribution="© Esri, Maxar, Earthstar Geographics" 
+              />
+              <Marker position={[Number(propLat), Number(propLng)]} icon={starIcon} />
+            </MapContainer>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════
+          1c. DEAL OVERVIEW & FINANCIALS
+          ═══════════════════════════════════════════════════════════════ */}
+      <div style={card}>
+        <h3 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 800, color: VL, textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>DEAL OVERVIEW & FINANCIALS</h3>
+        
+        {/* Property Details + Transaction Details — side by side */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 16 }}>
+          {/* Property Details */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, paddingBottom: 6, borderBottom: `2px solid ${B}` }}>
+              <span style={{ fontSize: 13 }}>🏢</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: VL, textTransform: 'uppercase', letterSpacing: '0.5px' }}>PROPERTY DETAILS</span>
+              <span style={{ marginLeft: 'auto', fontSize: 10, color: LB, fontStyle: 'italic' }}>✏ to edit</span>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>
+                {[
+                  { label: 'PROPERTY NAME', value: propertyName || '—' },
+                  { label: 'ADDRESS', value: fullAddress || '—' },
+                  { label: 'ASSET TYPE', value: assetType },
+                  { label: 'YEAR BUILT', value: yearBuilt || '—' },
+                  { label: 'TOTAL UNITS', value: totalUnits || '—' },
+                  { label: 'NET RENTABLE SF', value: netRentableSF ? netRentableSF.toLocaleString() : '—' },
+                  { label: 'OCCUPANCY RATE', value: occupancyRate ? `${(occupancyRate * (occupancyRate < 1 ? 100 : 1)).toFixed(1)}%` : '—' },
+                  { label: 'HOLDING PERIOD', value: `${holdingPeriod} Years` },
+                ].map((r, i) => (
+                  <tr key={i} style={{ borderBottom: `1px solid #f3f4f6` }}>
+                    <td style={{ padding: '7px 0', fontSize: 11, fontWeight: 600, color: LB, textTransform: 'uppercase' }}>{r.label}</td>
+                    <td style={{ padding: '7px 0', fontSize: 12, fontWeight: 600, color: VL, textAlign: 'right' }}>{r.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Transaction Details */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, paddingBottom: 6, borderBottom: `2px solid ${B}` }}>
+              <span style={{ fontSize: 13 }}>💰</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: VL, textTransform: 'uppercase', letterSpacing: '0.5px' }}>TRANSACTION DETAILS</span>
+              <span style={{ marginLeft: 'auto', fontSize: 10, color: LB, fontStyle: 'italic' }}>✏ to edit</span>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>
+                {[
+                  { label: 'PURCHASE PRICE', value: fmt(purchasePrice), bold: false },
+                  { label: 'PRICE PER SF', value: pricePerSF > 0 ? `$${Math.round(pricePerSF).toLocaleString()}` : '—', indent: true },
+                  { label: 'PRICE PER UNIT', value: pricePerUnit > 0 ? `$${Math.round(pricePerUnit).toLocaleString()}` : '—', indent: true },
+                  { label: 'CAPITAL IMPROVEMENTS', value: capitalImprovements > 0 ? fmt(capitalImprovements) : '—' },
+                  { label: 'CLOSING COSTS', value: fmt(closingCosts) },
+                  { label: 'ACQUISITION FEE', value: fmt(Math.round(acquisitionFee)) },
+                  { label: 'LOAN FEES', value: fmt(Math.round(loanFees)) },
+                  { label: 'FINANCING FEES', value: fmt(Math.round(financingFees)) },
+                  { label: 'TOTAL INTEREST', value: fmt(Math.round(totalInterest > 0 ? totalInterest : 0)) },
+                  { label: 'TOTAL PROJECT COST', value: fmt(Math.round(totalProjectCost)), highlight: true },
+                ].map((r, i) => (
+                  <tr key={i} style={{ borderBottom: `1px solid #f3f4f6` }}>
+                    <td style={{ padding: '7px 0', paddingLeft: r.indent ? 12 : 0, fontSize: 11, fontWeight: 600, color: r.highlight ? '#dc2626' : LB, textTransform: 'uppercase' }}>{r.label}</td>
+                    <td style={{ padding: '7px 0', fontSize: 12, fontWeight: r.highlight ? 800 : 600, color: r.highlight ? '#dc2626' : VL, textAlign: 'right' }}>{r.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div style={{ borderTop: `1px solid ${B}`, margin: '4px 0 16px' }} />
+
+        {/* Financing + Returns — side by side */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+          {/* Financing */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, paddingBottom: 6, borderBottom: `2px solid ${B}` }}>
+              <span style={{ fontSize: 13 }}>🏦</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: VL, textTransform: 'uppercase', letterSpacing: '0.5px' }}>FINANCING</span>
+              <span style={{ marginLeft: 'auto', fontSize: 10, color: LB, fontStyle: 'italic' }}>✏ to edit</span>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>
+                {[
+                  { label: 'LOAN AMOUNT', value: fmt(loanAmount) },
+                  { label: 'TOTAL EQUITY', value: fmt(totalEquity) },
+                  { label: 'LOAN TO VALUE', value: `${ltvPct.toFixed(2)}%` },
+                  { label: 'INTEREST RATE', value: `${interestRate.toFixed(2)}%` },
+                  { label: 'LOAN TERM', value: `${loanTermYears} Years` },
+                  { label: 'AMORTIZATION', value: `${amortYears} Years` },
+                ].map((r, i) => (
+                  <tr key={i} style={{ borderBottom: `1px solid #f3f4f6` }}>
+                    <td style={{ padding: '7px 0', fontSize: 11, fontWeight: 600, color: LB, textTransform: 'uppercase' }}>{r.label}</td>
+                    <td style={{ padding: '7px 0', fontSize: 12, fontWeight: 600, color: VL, textAlign: 'right' }}>{r.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Returns */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, paddingBottom: 6, borderBottom: `2px solid ${B}` }}>
+              <span style={{ fontSize: 13 }}>📈</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: VL, textTransform: 'uppercase', letterSpacing: '0.5px' }}>RETURNS</span>
+              <span style={{ marginLeft: 'auto', fontSize: 10, color: LB, fontStyle: 'italic' }}>✏ to edit</span>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>
+                {[
+                  { label: 'PROJECT LEVEL LEVERED IRR', value: `${irrVal.toFixed(2)}%` },
+                  { label: 'IN-PLACE CAP RATE', value: `${capRateVal.toFixed(2)}%` },
+                  { label: 'EXIT CAP RATE', value: `${Number(exitCapRate).toFixed(2)}%` },
+                  { label: 'DEBT COVERAGE RATIO', value: `${safeDscr.toFixed(2)}x` },
+                  { label: 'NOI YEAR 1', value: fmt(startingNOI) },
+                  { label: 'NOI AT SALE', value: fmt(Math.round(noiAtSale)) },
+                  { label: 'LEVERED EQUITY MULTIPLE', value: `${equityMultiple.toFixed(2)}x` },
+                ].map((r, i) => (
+                  <tr key={i} style={{ borderBottom: `1px solid #f3f4f6` }}>
+                    <td style={{ padding: '7px 0', fontSize: 11, fontWeight: 600, color: LB, textTransform: 'uppercase' }}>{r.label}</td>
+                    <td style={{ padding: '7px 0', fontSize: 12, fontWeight: 600, color: VL, textAlign: 'right' }}>{r.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
