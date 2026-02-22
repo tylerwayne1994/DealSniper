@@ -4,10 +4,17 @@ import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-map
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
 const GOOGLE_MAPS_KEY = 'AIzaSyB2jVgoUaR5QYk7WnmaXit1pLDK1PQgFiQ';
 
-export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
+export default function RentRollTab({ scenarioData, dealId, onUnitMixChange, initialRentcastData, onRentcastFetch }) {
   const unitMixData = scenarioData?.unit_mix || [];
   const [rentcastLoading, setRentcastLoading] = useState(false);
-  const [rentcastData, setRentcastData] = useState(null);
+  const [rentcastData, setRentcastData] = useState(initialRentcastData || null);
+
+  // Sync if parent passes cached data after initial render
+  useEffect(() => {
+    if (initialRentcastData && !rentcastData) {
+      setRentcastData(initialRentcastData);
+    }
+  }, [initialRentcastData]); // eslint-disable-line react-hooks/exhaustive-deps
   const [hoveredComp, setHoveredComp] = useState(null);
   const [selectedComp, setSelectedComp] = useState(null);
   const mapRef = useRef(null);
@@ -74,6 +81,8 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange }) {
       const data = await response.json();
       if (data.success) {
         setRentcastData(data.data);
+        // Notify parent so it can cache this for pipeline save
+        if (onRentcastFetch) onRentcastFetch(data.data);
       } else {
         alert(`RentCast error: ${data.error || 'Unknown error'}\nAddress searched: ${data.address_searched || propertyAddress || 'N/A'}`);
       }

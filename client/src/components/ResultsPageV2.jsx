@@ -39,6 +39,7 @@ import ScenarioSheet from './ScenarioSheet';
 const ResultsPageV2 = ({ 
   dealId,
   scenarioData, 
+  savedRentcastData,
   underwritingResult,
   setUnderwritingResult,
   calculations,
@@ -200,7 +201,7 @@ const ResultsPageV2 = ({
   
   // RentCast API state
   const [rentcastLoading, setRentcastLoading] = useState(false);
-  const [rentcastData, setRentcastData] = useState(null);
+  const [rentcastData, setRentcastData] = useState(savedRentcastData || null);
   
   // Exit Strategy state
   const [selectedHoldPeriod, setSelectedHoldPeriod] = useState(5);
@@ -499,6 +500,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
           }
         },
         marketCapRate: marketCapRate,
+        rentcastData: rentcastData || null,
         images: scenarioData?.images || [],
         brokerName,
         brokerPhone,
@@ -3717,6 +3719,8 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
                   scenarioData={scenarioData}
                   dealId={dealId}
                   onUnitMixChange={(updated) => handleFieldChange('unit_mix', updated)}
+                  initialRentcastData={rentcastData}
+                  onRentcastFetch={(data) => setRentcastData(data)}
                 />
               </div>
 

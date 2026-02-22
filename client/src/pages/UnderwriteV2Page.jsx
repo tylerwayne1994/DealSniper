@@ -180,6 +180,7 @@ function UnderwriteV2Page() {
   
   // Results page state (live scenario modeling)
   const [scenarioData, setScenarioData] = useState(null);
+  const [savedRentcastData, setSavedRentcastData] = useState(null);
   const [modifiedFields, setModifiedFields] = useState({});
   
   // AI Underwriting result
@@ -241,6 +242,11 @@ function UnderwriteV2Page() {
         setVerifiedData(dealData);
         setModifiedFields({});
         setStep('results');
+
+        // Load cached RentCast data if saved with the deal
+        if (saved.rentcastData) {
+          setSavedRentcastData(saved.rentcastData);
+        }
 
         setMessages([{
           role: 'assistant',
@@ -1254,6 +1260,7 @@ function UnderwriteV2Page() {
       <ResultsPageV2
         dealId={dealId}
         scenarioData={scenarioData}
+        savedRentcastData={savedRentcastData}
         modifiedFields={modifiedFields}
         calculations={calculations}
         underwritingResult={underwritingResult}
