@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import maplibregl from 'maplibre-gl';
@@ -79,6 +79,78 @@ function createPinIcon(color = '#ef4444', label = '') {
     iconAnchor: [16, 42],
     popupAnchor: [0, -42]
   });
+}
+
+// ─── Flood Zone Card (renders inside popups) ────────────────
+function FloodZoneCard({ lat, lng }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!lat || !lng) { setLoading(false); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const url = `${API_ENDPOINTS.floodZone}?lat=${lat}&lng=${lng}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Failed');
+        const json = await res.json();
+        if (!cancelled) setData(json);
+      } catch (e) {
+        if (!cancelled) setError('Lookup failed');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [lat, lng]);
+
+  if (loading) {
+    return (
+      <div style={{ borderRadius: '10px', padding: '10px 12px', backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', fontSize: '12px', color: '#0369a1' }}>
+        🌊 Loading flood zone data...
+      </div>
+    );
+  }
+  if (error || !data || data.status === 'no_data' || data.status === 'no_geocode') {
+    return (
+      <div style={{ borderRadius: '10px', padding: '10px 12px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', fontSize: '12px', color: '#6b7280' }}>
+        🌊 No flood data available
+      </div>
+    );
+  }
+
+  const risk = data.risk;
+  const bgColor = risk === 'high-coastal' ? '#fef2f2' : risk === 'high' ? '#fffbeb' : '#f0fdf4';
+  const borderColor = risk === 'high-coastal' ? '#fca5a5' : risk === 'high' ? '#fcd34d' : '#86efac';
+  const badgeColor = risk === 'high-coastal' ? '#dc2626' : risk === 'high' ? '#d97706' : '#16a34a';
+  const badgeBg = risk === 'high-coastal' ? '#fee2e2' : risk === 'high' ? '#fef3c7' : '#dcfce7';
+  const riskLabel = risk === 'high-coastal' ? 'COASTAL HIGH RISK' : risk === 'high' ? 'HIGH RISK' : 'MINIMAL RISK';
+  const bfe = data.base_flood_elevation != null ? `${data.base_flood_elevation} ft` : 'N/A';
+
+  return (
+    <div style={{ borderRadius: '10px', padding: '12px', backgroundColor: bgColor, border: `1px solid ${borderColor}`, fontSize: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+        <span style={{ fontWeight: '700', color: '#111827', fontSize: '13px' }}>🌊 Flood Zone</span>
+        <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: '700', backgroundColor: badgeBg, color: badgeColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{riskLabel}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: '#6b7280', fontWeight: '600' }}>Zone Code</span>
+          <span style={{ color: '#111827', fontWeight: '700' }}>{data.zone}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: '#6b7280', fontWeight: '600' }}>Description</span>
+          <span style={{ color: '#111827', fontWeight: '500', textAlign: 'right', maxWidth: '60%', fontSize: '11px' }}>{data.zone_description}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: '#6b7280', fontWeight: '600' }}>Base Flood Elev.</span>
+          <span style={{ color: '#111827', fontWeight: '700' }}>{bfe}</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function DashboardMapTab() {
@@ -2206,6 +2278,9 @@ function DashboardMapTab() {
                       </div>
                     )}
 
+                    {/* Flood Zone */}
+                    <FloodZoneCard lat={p.position[0]} lng={p.position[1]} />
+
                     {/* Property Data Table */}
                     {p.source === 'uploaded' && p.propertyData && (
                       <div style={{
@@ -2304,6 +2379,7 @@ function DashboardMapTab() {
         width: isChatMinimized ? 40 : 420,
         minWidth: isChatMinimized ? 40 : 420,
         maxWidth: isChatMinimized ? 40 : 420,
+        height: '100%',
         flexShrink: 0,
         borderLeft: '1px solid #e5e7eb',
         display: 'flex',

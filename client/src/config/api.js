@@ -54,6 +54,9 @@ export const API_ENDPOINTS = {
   spreadsheetTemplate: `${API_BASE_URL}/api/spreadsheet/get-template`,
   spreadsheetApi: `${API_BASE_URL}/api`,
   
+  // Flood Zone
+  floodZone: `${API_BASE_URL}/api/flood-zone`,
+
   // Health
   health: `${API_BASE_URL}/health`,
 };

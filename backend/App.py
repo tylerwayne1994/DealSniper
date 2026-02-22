@@ -78,6 +78,90 @@ async def tigerweb_zcta_proxy(request: Request):
         log.error(f"[TIGERweb proxy] Error: {e}")
         raise HTTPException(status_code=502, detail=f"TIGERweb proxy error: {str(e)}")
 
+# ─── Flood Zone Lookup ────────────────────────────────────────
+FEMA_NFHL_URL = "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query"
+CENSUS_GEOCODER_URL = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
+
+@app.get("/api/flood-zone")
+async def flood_zone_lookup(lat: float = None, lng: float = None, address: str = None):
+    """
+    Look up FEMA flood zone for a location.
+    Accepts either lat/lng coordinates directly, or an address string
+    (which will be geocoded first via Census Geocoder).
+    """
+    import httpx
+
+    try:
+        # If no coordinates provided, geocode the address
+        if lat is None or lng is None:
+            if not address:
+                raise HTTPException(status_code=400, detail="Provide lat/lng or address")
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                geo_resp = await client.get(CENSUS_GEOCODER_URL, params={
+                    "address": address,
+                    "benchmark": "2020",
+                    "format": "json"
+                })
+                geo_data = geo_resp.json()
+                matches = geo_data.get("result", {}).get("addressMatches", [])
+                if not matches:
+                    return JSONResponse(content={
+                        "status": "no_geocode",
+                        "message": "Could not geocode address"
+                    })
+                coords = matches[0]["coordinates"]
+                lng = coords["x"]
+                lat = coords["y"]
+
+        # Query FEMA NFHL with the coordinates
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            fema_resp = await client.get(FEMA_NFHL_URL, params={
+                "geometry": f"{lng},{lat}",
+                "geometryType": "esriGeometryPoint",
+                "inSR": "4326",
+                "spatialRel": "esriSpatialRelIntersects",
+                "outFields": "FLD_ZONE,ZONE_SUBTY,STATIC_BFE",
+                "f": "json"
+            })
+            fema_data = fema_resp.json()
+            features = fema_data.get("features", [])
+            if not features:
+                return JSONResponse(content={
+                    "status": "no_data",
+                    "message": "No flood data available for this location",
+                    "lat": lat,
+                    "lng": lng
+                })
+
+            attrs = features[0].get("attributes", {})
+            zone = attrs.get("FLD_ZONE", "Unknown")
+            subtype = attrs.get("ZONE_SUBTY", "")
+            bfe = attrs.get("STATIC_BFE", -9999)
+
+            # Determine risk level
+            if zone and zone.upper().startswith("V"):
+                risk = "high-coastal"
+            elif zone and zone.upper().startswith("A"):
+                risk = "high"
+            else:
+                risk = "minimal"
+
+            return JSONResponse(content={
+                "status": "ok",
+                "zone": zone,
+                "zone_description": subtype or "N/A",
+                "base_flood_elevation": bfe if bfe != -9999 else None,
+                "risk": risk,
+                "lat": lat,
+                "lng": lng
+            })
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(f"[Flood Zone] Error: {e}")
+        raise HTTPException(status_code=502, detail=f"Flood zone lookup error: {str(e)}")
+
 import stripe
 
 # Price IDs: prefer env vars, fallback to known test IDs
