@@ -26,6 +26,9 @@ ABSTRACT_API_KEY = "da7556aa39cc4a3c85673d39e0bfda42"
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 PUBLIC_DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'client', 'public')
 
+# US Census Bureau API key
+CENSUS_API_KEY = os.environ.get('CENSUS_API_KEY', 'a58ee4f1fa1db660eb306d9eb39390aa1ae6c6c8')
+
 # LLM clients for fallback (injected from App.py)
 ANTHROPIC_CLIENT = None
 MISTRAL_CLIENT = None
@@ -40,6 +43,222 @@ logger.info(f"[MARKET ANALYSIS INIT] PUBLIC_DATA_DIR exists: {os.path.exists(PUB
 if os.path.exists(DATA_DIR):
     logger.info(f"[MARKET ANALYSIS INIT] Files in DATA_DIR: {os.listdir(DATA_DIR)[:10]}")
 sys.stdout.flush()
+
+
+def fetch_census_data_from_api(county_fips: str) -> Dict:
+    """
+    Fetch ACS 5-Year census data from the US Census Bureau API.
+    county_fips: 5-digit FIPS code (e.g. '06037' for Los Angeles County, CA)
+    Returns dict matching the same keys as load_census_data_by_county_fips().
+    """
+    if not county_fips or len(county_fips) < 5:
+        logger.warning(f"[CENSUS API] Invalid county FIPS: {county_fips}")
+        return {}
+
+    state_code = county_fips[:2]
+    county_code = county_fips[2:]
+
+    def safe_int(val, default=0):
+        if val is None or str(val).strip() in ('', 'null', 'None', '-', '(X)', '*****', 'N', '**', '(D)', '(S)'):
+            return default
+        try:
+            return int(float(str(val).replace(',', '').replace('+', '').replace('$', '')))
+        except (ValueError, AttributeError):
+            return default
+
+    def safe_float(val, default=0.0):
+        if val is None or str(val).strip() in ('', 'null', 'None', '-', '(X)', '*****', 'N', '**', '(D)', '(S)'):
+            return default
+        try:
+            return float(str(val).replace(',', '').replace('%', '').replace('+', ''))
+        except (ValueError, AttributeError):
+            return default
+
+    try:
+        # --- Fetch DP03 (Economic) variables ---
+        dp03_vars = [
+            'DP03_0062E', 'DP03_0063E', 'DP03_0005PE', 'DP03_0002PE',
+            'DP03_0119PE', 'DP03_0003PE', 'DP03_0004E', 'NAME'
+        ]
+        dp03_url = (
+            f"https://api.census.gov/data/2023/acs/acs5/profile"
+            f"?get={','.join(dp03_vars)}"
+            f"&for=county:{county_code}&in=state:{state_code}"
+            f"&key={CENSUS_API_KEY}"
+        )
+        logger.info(f"[CENSUS API] Fetching DP03: state={state_code} county={county_code}")
+        dp03_resp = requests.get(dp03_url, timeout=15)
+        dp03_resp.raise_for_status()
+        dp03_json = dp03_resp.json()
+        # Census API returns [[headers], [values]]
+        dp03_headers = dp03_json[0]
+        dp03_values = dp03_json[1] if len(dp03_json) > 1 else []
+        dp03 = dict(zip(dp03_headers, dp03_values)) if dp03_values else {}
+        county_name = dp03.get('NAME', '')
+        logger.info(f"[CENSUS API] DP03 fetched for: {county_name}")
+
+        # --- Fetch DP04 (Housing) variables ---
+        dp04_vars = [
+            'DP04_0089E', 'DP04_0134E', 'DP04_0046PE', 'DP04_0001E',
+            'DP04_0002E', 'DP04_0003E', 'DP04_0003PE', 'DP04_0046E',
+            'DP04_0047E', 'DP04_0047PE', 'DP04_0101E', 'DP04_0101PE',
+            'DP04_0142PE', 'DP04_0007E', 'DP04_0008E', 'DP04_0009E',
+            'DP04_0010E', 'DP04_0011E', 'DP04_0012E', 'DP04_0013E',
+            'DP04_0014E', 'DP04_0017E', 'NAME'
+        ]
+        dp04_url = (
+            f"https://api.census.gov/data/2023/acs/acs5/profile"
+            f"?get={','.join(dp04_vars)}"
+            f"&for=county:{county_code}&in=state:{state_code}"
+            f"&key={CENSUS_API_KEY}"
+        )
+        logger.info(f"[CENSUS API] Fetching DP04...")
+        dp04_resp = requests.get(dp04_url, timeout=15)
+        dp04_resp.raise_for_status()
+        dp04_json = dp04_resp.json()
+        dp04_headers = dp04_json[0]
+        dp04_values = dp04_json[1] if len(dp04_json) > 1 else []
+        dp04 = dict(zip(dp04_headers, dp04_values)) if dp04_values else {}
+
+        # --- Fetch B01003 (Population) ---
+        b01003_url = (
+            f"https://api.census.gov/data/2023/acs/acs5"
+            f"?get=B01003_001E,NAME"
+            f"&for=county:{county_code}&in=state:{state_code}"
+            f"&key={CENSUS_API_KEY}"
+        )
+        logger.info(f"[CENSUS API] Fetching B01003 (population)...")
+        pop_resp = requests.get(b01003_url, timeout=15)
+        pop_resp.raise_for_status()
+        pop_json = pop_resp.json()
+        pop_headers = pop_json[0]
+        pop_values = pop_json[1] if len(pop_json) > 1 else []
+        pop_data = dict(zip(pop_headers, pop_values)) if pop_values else {}
+
+        # --- Fetch state-level income for comparisons ---
+        state_income = None
+        try:
+            state_url = (
+                f"https://api.census.gov/data/2023/acs/acs5/profile"
+                f"?get=DP03_0062E,NAME"
+                f"&for=state:{state_code}"
+                f"&key={CENSUS_API_KEY}"
+            )
+            state_resp = requests.get(state_url, timeout=10)
+            state_resp.raise_for_status()
+            state_json = state_resp.json()
+            if len(state_json) > 1:
+                state_dict = dict(zip(state_json[0], state_json[1]))
+                state_income = safe_int(state_dict.get('DP03_0062E'))
+        except Exception as e:
+            logger.warning(f"[CENSUS API] State income fetch failed: {e}")
+
+        # --- Build result dict (same keys as CSV version) ---
+        pop = safe_int(pop_data.get('B01003_001E'))
+        median_income_val = safe_int(dp03.get('DP03_0062E'))
+        mean_income_val = safe_int(dp03.get('DP03_0063E'))
+        unemployment = safe_float(dp03.get('DP03_0005PE'))
+        labor_force = safe_float(dp03.get('DP03_0002PE'))
+        poverty = safe_float(dp03.get('DP03_0119PE'))
+        emp_pop = safe_float(dp03.get('DP03_0003PE'))
+        total_civ_employed = safe_int(dp03.get('DP03_0004E'))
+
+        median_home_val = safe_int(dp04.get('DP04_0089E'))
+        med_rent = safe_int(dp04.get('DP04_0134E'))
+        owner_occ_rate = safe_float(dp04.get('DP04_0046PE'))
+        total_hu = safe_int(dp04.get('DP04_0001E'))
+        occ_units = safe_int(dp04.get('DP04_0002E'))
+        vac_units = safe_int(dp04.get('DP04_0003E'))
+        vac_rate = safe_float(dp04.get('DP04_0003PE'))
+        owner_occ = safe_int(dp04.get('DP04_0046E'))
+        renter_occ = safe_int(dp04.get('DP04_0047E'))
+        renter_occ_pct = safe_float(dp04.get('DP04_0047PE'))
+        median_owner_costs_val = safe_int(dp04.get('DP04_0101E'))
+        median_owner_costs_pct_val = safe_float(dp04.get('DP04_0101PE'))
+        median_rent_pct_income = safe_float(dp04.get('DP04_0142PE'))
+
+        sf_detached = safe_int(dp04.get('DP04_0007E'))
+        sf_attached = safe_int(dp04.get('DP04_0008E'))
+        u2 = safe_int(dp04.get('DP04_0009E'))
+        u3_4 = safe_int(dp04.get('DP04_0010E'))
+        u5_9 = safe_int(dp04.get('DP04_0011E'))
+        u10_19 = safe_int(dp04.get('DP04_0012E'))
+        u20_plus = safe_int(dp04.get('DP04_0013E'))
+        mobile = safe_int(dp04.get('DP04_0014E'))
+        median_yr_built = safe_int(dp04.get('DP04_0017E'))
+
+        homeownership_rate = (owner_occ / occ_units * 100) if occ_units > 0 else 0.0
+        renter_pct = (renter_occ / occ_units * 100) if occ_units > 0 else 0.0
+        mf_stock = u5_9 + u10_19 + u20_plus
+        mf_share = (mf_stock / total_hu * 100) if total_hu > 0 else 0.0
+        single_family_total = sf_detached + sf_attached
+        rent_to_price_ratio = (med_rent * 12 / median_home_val * 100) if median_home_val > 0 else 0.0
+
+        result = {
+            'population': pop,
+            'median_household_income': median_income_val,
+            'mean_household_income': mean_income_val,
+            'unemployment_rate': unemployment,
+            'labor_force_participation': labor_force,
+            'poverty_rate': poverty,
+            'employment_pop_ratio': emp_pop,
+            'total_civilian_employed': total_civ_employed,
+            'median_home_value': median_home_val,
+            'median_rent': med_rent,
+            'owner_occupied_rate': owner_occ_rate,
+            'total_housing_units': total_hu,
+            'occupied_units': occ_units,
+            'vacant_units': vac_units,
+            'vacancy_rate': vac_rate,
+            'owner_occupied_units': owner_occ,
+            'renter_occupied_units': renter_occ,
+            'renter_occupied_pct': renter_occ_pct,
+            'homeownership_rate': round(homeownership_rate, 1),
+            'renter_percentage': round(renter_pct, 1),
+            'median_owner_costs': median_owner_costs_val,
+            'median_owner_costs_pct': median_owner_costs_pct_val,
+            'median_rent_pct_income': median_rent_pct_income,
+            'single_family_total': single_family_total,
+            'multifamily_stock': mf_stock,
+            'multifamily_share': round(mf_share, 1),
+            'mobile_homes': mobile,
+            'median_year_built': median_yr_built,
+            'rent_to_price_ratio': round(rent_to_price_ratio, 2),
+            'county_name': county_name,
+            'state_median_income': state_income,
+            'data_source': 'census_api'
+        }
+
+        logger.info(f"[CENSUS API] SUCCESS: pop={pop}, income=${median_income_val}, rent=${med_rent}, "
+                     f"home_value=${median_home_val}, unemployment={unemployment}%")
+        return result
+
+    except requests.exceptions.HTTPError as e:
+        logger.error(f"[CENSUS API] HTTP error: {e} - Response: {e.response.text if e.response else 'N/A'}")
+        return {}
+    except Exception as e:
+        logger.error(f"[CENSUS API] Error fetching census data: {e}")
+        return {}
+
+
+def get_county_fips_from_coordinates(lat: float, lng: float) -> Optional[str]:
+    """
+    Get county FIPS code from lat/lng using the FCC Census Block API.
+    Fallback when fmr_by_zip_clean.csv is unavailable.
+    """
+    try:
+        url = f"https://geo.fcc.gov/api/census/block/find?latitude={lat}&longitude={lng}&format=json"
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        county_fips = data.get('County', {}).get('FIPS')
+        if county_fips:
+            logger.info(f"[FCC API] Got county FIPS {county_fips} for ({lat}, {lng})")
+            return county_fips
+        return None
+    except Exception as e:
+        logger.warning(f"[FCC API] Failed to get county FIPS from coordinates: {e}")
+        return None
 
 
 def generate_market_data_with_llm(address: str, city: str, state: str, zip_code: str, lng: float, lat: float) -> Dict:
@@ -205,7 +424,14 @@ def load_migration_data_by_zip(zip_code: str) -> Dict:
 
 
 def load_census_data_by_county_fips(county_fips: str) -> Dict:
-    """Load ACS demographic data for county using GEO_ID (0500000US + FIPS)"""
+    """Load ACS demographic data for county - tries Census API first, then CSV fallback."""
+    # --- Try Census API first (works on Render without CSV files) ---
+    api_data = fetch_census_data_from_api(county_fips)
+    if api_data:
+        logger.info(f"[CENSUS] Using Census API data for FIPS {county_fips}")
+        return api_data
+
+    logger.info(f"[CENSUS] Census API failed, trying CSV fallback for FIPS {county_fips}")
     try:
         geo_id = f"0500000US{county_fips}"
         
@@ -699,12 +925,18 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
         if not isochrone_geojson:
             logger.warning("[MARKET ANALYSIS] Isochrone generation failed, will use fallback isochrone")
         
-        # Step 3: Try to get census/migration data from CSVs
+        # Step 3: Get county FIPS and census data (API-first with fallbacks)
         county_fips = get_county_fips_from_zip(zip_code)
+        # Fallback: if CSV-based FIPS lookup fails, use FCC API with geocoded coordinates
+        if not county_fips and coords:
+            logger.info(f"[MARKET ANALYSIS] CSV FIPS lookup failed, trying FCC API for ({lat}, {lng})")
+            county_fips = get_county_fips_from_coordinates(lat, lng)
         logger.info(f"[MARKET ANALYSIS] County FIPS for ZIP {zip_code}: {county_fips}")
+        
         migration_data = load_migration_data_by_zip(zip_code) if county_fips else {}
+        # load_census_data_by_county_fips now tries Census API first, then CSV fallback
         census_data = load_census_data_by_county_fips(county_fips) if county_fips else {}
-        logger.info(f"[MARKET ANALYSIS] Census data: {census_data}")
+        logger.info(f"[MARKET ANALYSIS] Census data source: {census_data.get('data_source', 'csv')}, keys: {len(census_data)}")
         logger.info(f"[MARKET ANALYSIS] Migration data keys: {list(migration_data.keys()) if migration_data else 'EMPTY'}")
         
         # Decide whether to use LLM fallback — only if census data is missing
@@ -814,9 +1046,9 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
             logger.info("[MARKET ANALYSIS] Returning LLM-generated data")
             return response
         
-        # Continue with CSV-based analysis
+        # Continue with real census data analysis
         # Step 6: Load MSA construction data
-        county_name = migration_data.get('county_name', '')
+        county_name = migration_data.get('county_name', '') or census_data.get('county_name', f'{city} County')
         msa_data = get_msa_data(county_name, state)
         
         # Step 7: Calculate affordability metrics
@@ -913,14 +1145,14 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
                 'median_owner_costs': census_data.get('median_owner_costs', 0),
                 'total_civilian_employed': census_data.get('total_civilian_employed', 0),
                 'median_year_built': census_data.get('median_year_built', 0),
-                'comparisons': llm_supplement.get('comparisons', {
-                    'income_city': None,
-                    'income_state': None,
+                'comparisons': {
+                    'income_city': median_income,
+                    'income_state': census_data.get('state_median_income') or llm_supplement.get('comparisons', {}).get('income_state'),
                     'income_usa': 75149,
-                    'pop_growth_city': None,
-                    'pop_growth_state': None,
+                    'pop_growth_city': llm_supplement.get('comparisons', {}).get('pop_growth_city'),
+                    'pop_growth_state': llm_supplement.get('comparisons', {}).get('pop_growth_state'),
                     'pop_growth_usa': 0.5
-                })
+                }
             },
             'city': {
                 'name': city,
