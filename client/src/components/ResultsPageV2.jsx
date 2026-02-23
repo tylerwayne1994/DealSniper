@@ -33,7 +33,7 @@ import DealStructureTab from './results-tabs/DealStructureTab';
 import ExpenseV2Tab from './results-tabs/ExpenseV2Tab';
 import CompressedTab from './results-tabs/CompressedTab';
 import UnderwritingTablePage from '../pages/UnderwritingTablePage';
-import { saveDeal } from '../lib/dealsService';
+import { saveDeal, updateDeal, loadDeal } from '../lib/dealsService';
 import ScenarioSheet from './ScenarioSheet';
 
 const ResultsPageV2 = ({ 
@@ -75,6 +75,53 @@ const ResultsPageV2 = ({
   const [documentAnalysis, setDocumentAnalysis] = useState(scenarioData?.document_analysis || null);
   // Track which expense fields user is entering as monthly (key -> true means monthly input mode)
   const [expenseMonthlyMode, setExpenseMonthlyMode] = useState({});
+
+  // ═══ Auto-save: track if deal is in pipeline, debounce saves ═══
+  const [isInPipeline, setIsInPipeline] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState(null); // null | 'saving' | 'saved' | 'error'
+  const autoSaveTimerRef = useRef(null);
+  const scenarioSnapshotRef = useRef(null);
+
+  // Check if deal is already in pipeline on mount
+  useEffect(() => {
+    if (!dealId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const existing = await loadDeal(dealId);
+        if (!cancelled && existing) setIsInPipeline(true);
+      } catch (e) { /* not in pipeline yet */ }
+    })();
+    return () => { cancelled = true; };
+  }, [dealId]);
+
+  // Auto-save scenarioData to pipeline when changes are made (debounced 2s)
+  useEffect(() => {
+    if (!isInPipeline || !dealId || !scenarioData) return;
+    const snap = JSON.stringify(scenarioData);
+    if (scenarioSnapshotRef.current === snap) return; // no change
+    scenarioSnapshotRef.current = snap;
+
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(async () => {
+      try {
+        setAutoSaveStatus('saving');
+        await updateDeal(dealId, {
+          parsed_data: scenarioData,
+          scenario_data: scenarioData,
+        });
+        window.dispatchEvent(new Event('pipelineDealsUpdated'));
+        setAutoSaveStatus('saved');
+        setTimeout(() => setAutoSaveStatus(null), 2000);
+      } catch (e) {
+        console.error('[AutoSave] Failed:', e);
+        setAutoSaveStatus('error');
+        setTimeout(() => setAutoSaveStatus(null), 3000);
+      }
+    }, 2000);
+
+    return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
+  }, [scenarioData, isInPipeline, dealId]);
 
   const propertyLocation = useMemo(() => {
     const lat = scenarioData?.property?.lat ?? scenarioData?.property?.latitude ?? scenarioData?.lat ?? scenarioData?.latitude;
@@ -511,6 +558,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
       // Notify other components that pipeline has changed
       window.dispatchEvent(new Event('pipelineDealsUpdated'));
 
+      setIsInPipeline(true); // Enable auto-save for future edits
       setPipelineSuccess(true);
       setTimeout(() => setPipelineSuccess(false), 3000);
     } catch (error) {
@@ -4282,8 +4330,17 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
               }}
             >
               <Rocket size={14} />
-              {pipelineSuccess ? 'Added to Pipeline' : (isPushingToPipeline ? 'Pushing...' : 'Push to Pipeline')}
+              {pipelineSuccess ? 'Added to Pipeline' : (isPushingToPipeline ? 'Pushing...' : (isInPipeline ? 'Update Pipeline' : 'Push to Pipeline'))}
             </button>
+            {autoSaveStatus && (
+              <span style={{
+                fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 6,
+                backgroundColor: autoSaveStatus === 'saving' ? '#fef3c7' : autoSaveStatus === 'saved' ? '#d1fae5' : '#fee2e2',
+                color: autoSaveStatus === 'saving' ? '#92400e' : autoSaveStatus === 'saved' ? '#065f46' : '#991b1b',
+              }}>
+                {autoSaveStatus === 'saving' ? '⏳ Saving...' : autoSaveStatus === 'saved' ? '✓ Auto-saved' : '✗ Save failed'}
+              </span>
+            )}
             <button
               onClick={() => navigate('/dashboard')}
               style={{

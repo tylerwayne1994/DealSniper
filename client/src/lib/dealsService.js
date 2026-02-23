@@ -533,13 +533,16 @@ export async function updateDealStatus(dealId, status) {
  * @param {Object} updates - Object with fields to update
  */
 export async function updateDeal(dealId, updates) {
-  const { error } = await supabase
+  const userId = await getCurrentUserId();
+  let query = supabase
     .from('deals')
     .update({ 
       ...updates,
       updated_at: new Date().toISOString()
     })
     .eq('deal_id', dealId);
+  if (userId) query = query.eq('user_id', userId);
+  const { error } = await query;
 
   if (error) throw error;
 }

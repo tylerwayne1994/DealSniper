@@ -261,6 +261,70 @@ export default function CompressedTab({
   const totalCashInvested = totalEquity; // equity already includes down payment + closing + capex
   const compTotalProfit = totalCashReceived - totalCashInvested;
 
+  // ═══ Equity Partner Detection & GP/LP Returns Calculation ═══
+  const epLoan = useMemo(() => {
+    const loans = scenarioData?.financing?.loans || [];
+    return loans.find(l => l.type === 'Equity Partner' && l.enabled !== false) || null;
+  }, [scenarioData?.financing?.loans]);
+  const hasEquityPartner = !!epLoan;
+
+  const partnershipReturns = useMemo(() => {
+    if (!epLoan) return null;
+    const partnerEquity = Number(epLoan.loanDollar) || 0;
+    const prefReturnRate = (Number(epLoan.rate) || 8) / 100;
+    const balloonYrs = Number(epLoan.balloonYrs) || 5;
+    const holdYrs = selectedHoldPeriod || 5;
+    const isDoubleInvestment = !!epLoan.doubleInvestment;
+
+    // GP equity = your down payment (total equity minus partner equity)
+    const gpEquity = Math.max(0, downPayment);
+    const lpEquity = partnerEquity;
+    const totalEquityPool = gpEquity + lpEquity;
+    if (totalEquityPool <= 0) return null;
+
+    const gpPctOwnership = gpEquity / totalEquityPool;
+    const lpPctOwnership = lpEquity / totalEquityPool;
+
+    // Annual preferred payment to LP
+    const annualPref = lpEquity * prefReturnRate;
+    const totalPrefPaid = annualPref * Math.min(holdYrs, balloonYrs);
+
+    // Balloon payout to LP
+    const balloonPayout = isDoubleInvestment ? lpEquity * 2 : lpEquity;
+
+    // Total cost to GP for the partner
+    const totalPartnerCost = totalPrefPaid + balloonPayout;
+
+    // Use compTotalProfit if available, else totalProfit
+    const dealProfit = compTotalProfit > 0 ? compTotalProfit : totalProfit;
+
+    // GP distributions = total cash - LP distributions
+    // LP gets: preferred returns + return of capital (balloon)
+    const lpDistributions = totalPrefPaid + balloonPayout;
+    const lpProfit = lpDistributions - lpEquity;
+
+    // GP gets: everything else
+    const gpDistributions = cumCashFlows + (netSalePrice - Math.abs(loanBalAtExit)) - lpDistributions;
+    const gpProfit = gpDistributions - gpEquity;
+
+    // IRR approximation
+    const gpIRR = gpEquity > 0 && holdYrs > 0 ? ((Math.pow(Math.max(0, gpDistributions) / gpEquity, 1 / holdYrs) - 1) * 100) : 0;
+    const lpIRR = lpEquity > 0 && holdYrs > 0 ? ((Math.pow(Math.max(0, lpDistributions) / lpEquity, 1 / holdYrs) - 1) * 100) : 0;
+
+    // Equity multiples
+    const gpEM = gpEquity > 0 ? gpDistributions / gpEquity : 0;
+    const lpEM = lpEquity > 0 ? lpDistributions / lpEquity : 0;
+
+    return {
+      gpEquity, lpEquity, gpPctOwnership, lpPctOwnership,
+      prefReturnRate, annualPref, totalPrefPaid, balloonYrs, balloonPayout, isDoubleInvestment,
+      gpDistributions, lpDistributions,
+      gpProfit, lpProfit,
+      gpIRR, lpIRR, gpEM, lpEM,
+      holdYrs, totalPartnerCost,
+    };
+  }, [epLoan, downPayment, compTotalProfit, totalProfit, selectedHoldPeriod, cumCashFlows, netSalePrice, loanBalAtExit]);
+
   // Profitability rows
   const profitRows = [
     { label: 'Cash Flow', avg: avgCashFlow, values: yearlyData.map(d => d.cashFlow) },
@@ -635,24 +699,20 @@ export default function CompressedTab({
         {/* Divider */}
         <div style={{ borderTop: `1px solid ${B}`, margin: '4px 0 16px' }} />
 
-        {/* Financing + Returns — side by side */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-          {/* Financing */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, paddingBottom: 6, borderBottom: `2px solid ${B}` }}>
-              <span style={{ fontSize: 13 }}>🏦</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: VL, textTransform: 'uppercase', letterSpacing: '0.5px' }}>FINANCING</span>
-              <span style={{ marginLeft: 'auto', fontSize: 10, color: LB, fontStyle: 'italic' }}>✏ to edit</span>
-            </div>
+        {/* Returns — full width */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, paddingBottom: 6, borderBottom: `2px solid ${B}` }}>
+            <span style={{ fontSize: 13 }}>📈</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: VL, textTransform: 'uppercase', letterSpacing: '0.5px' }}>RETURNS</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
                 {[
-                  { label: 'LOAN AMOUNT', value: fmt(loanAmount) },
-                  { label: 'TOTAL EQUITY', value: fmt(totalEquity) },
-                  { label: 'LOAN TO VALUE', value: `${ltvPct.toFixed(2)}%` },
-                  { label: 'INTEREST RATE', value: `${interestRate.toFixed(2)}%` },
-                  { label: 'LOAN TERM', value: `${loanTermYears} Years` },
-                  { label: 'AMORTIZATION', value: `${amortYears} Years` },
+                  { label: 'PROJECT LEVEL LEVERED IRR', value: `${irrVal.toFixed(2)}%` },
+                  { label: 'IN-PLACE CAP RATE', value: `${capRateVal.toFixed(2)}%` },
+                  { label: 'EXIT CAP RATE', value: `${Number(exitCapRate).toFixed(2)}%` },
+                  { label: 'DEBT COVERAGE RATIO', value: `${safeDscr.toFixed(2)}x` },
                 ].map((r, i) => (
                   <tr key={i} style={{ borderBottom: `1px solid #f3f4f6` }}>
                     <td style={{ padding: '7px 0', fontSize: 11, fontWeight: 600, color: LB, textTransform: 'uppercase' }}>{r.label}</td>
@@ -661,22 +721,9 @@ export default function CompressedTab({
                 ))}
               </tbody>
             </table>
-          </div>
-
-          {/* Returns */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, paddingBottom: 6, borderBottom: `2px solid ${B}` }}>
-              <span style={{ fontSize: 13 }}>📈</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: VL, textTransform: 'uppercase', letterSpacing: '0.5px' }}>RETURNS</span>
-              <span style={{ marginLeft: 'auto', fontSize: 10, color: LB, fontStyle: 'italic' }}>✏ to edit</span>
-            </div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
                 {[
-                  { label: 'PROJECT LEVEL LEVERED IRR', value: `${irrVal.toFixed(2)}%` },
-                  { label: 'IN-PLACE CAP RATE', value: `${capRateVal.toFixed(2)}%` },
-                  { label: 'EXIT CAP RATE', value: `${Number(exitCapRate).toFixed(2)}%` },
-                  { label: 'DEBT COVERAGE RATIO', value: `${safeDscr.toFixed(2)}x` },
                   { label: 'NOI YEAR 1', value: fmt(startingNOI) },
                   { label: 'NOI AT SALE', value: fmt(Math.round(noiAtSale)) },
                   { label: 'LEVERED EQUITY MULTIPLE', value: `${equityMultiple.toFixed(2)}x` },
@@ -1209,6 +1256,104 @@ export default function CompressedTab({
           </table>
         </div>
       </div>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          8. GP / LP PARTNERSHIP RETURNS — Only shown when Equity Partner is active
+          ═══════════════════════════════════════════════════════════════ */}
+      {hasEquityPartner && partnershipReturns && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+
+          {/* GP Partnership Returns */}
+          <div style={card}>
+            <div style={{ background: '#3b5bdb', borderRadius: '12px 12px 0 0', margin: '-24px -28px 20px', padding: '14px 20px' }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>GP Partnership Returns</div>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>
+                {[
+                  { label: 'IRR', value: `${partnershipReturns.gpIRR.toFixed(2)}%` },
+                  { label: 'Equity Multiple', value: `${partnershipReturns.gpEM.toFixed(2)}x` },
+                  { label: 'Total Profit', value: fmt(partnershipReturns.gpProfit) },
+                  { label: 'Distributions', value: fmt(partnershipReturns.gpDistributions) },
+                  { label: 'Contributions', value: fmt(partnershipReturns.gpEquity) },
+                ].map((r, i) => (
+                  <tr key={i} style={{ borderBottom: `1px solid #f3f4f6` }}>
+                    <td style={{ padding: '10px 8px', fontSize: 12, fontWeight: 500, color: LB }}>{r.label}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: VL, fontSize: 14 }}>{r.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* LP Partnership Returns */}
+          <div style={card}>
+            <div style={{ background: '#3b5bdb', borderRadius: '12px 12px 0 0', margin: '-24px -28px 20px', padding: '14px 20px' }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>LP Partnership Returns</div>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>
+                {[
+                  { label: 'IRR', value: `${partnershipReturns.lpIRR.toFixed(2)}%` },
+                  { label: 'Equity Multiple', value: `${partnershipReturns.lpEM.toFixed(2)}x` },
+                  { label: 'Total Profit', value: fmt(partnershipReturns.lpProfit) },
+                  { label: 'Distributions', value: fmt(partnershipReturns.lpDistributions) },
+                  { label: 'Contributions', value: fmt(partnershipReturns.lpEquity) },
+                ].map((r, i) => (
+                  <tr key={i} style={{ borderBottom: `1px solid #f3f4f6` }}>
+                    <td style={{ padding: '10px 8px', fontSize: 12, fontWeight: 500, color: LB }}>{r.label}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: VL, fontSize: 14 }}>{r.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════
+          8b. EQUITY PARTNER STRUCTURE SUMMARY — Payout details
+          ═══════════════════════════════════════════════════════════════ */}
+      {hasEquityPartner && partnershipReturns && (
+        <div style={card}>
+          <SectionHead title="Equity Partner Structure" color={VL} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 16 }}>
+            <div style={{ textAlign: 'center', padding: 14, background: '#f9fafb', borderRadius: 10 }}>
+              <div style={{ fontSize: 10, color: LB, fontWeight: 600, textTransform: 'uppercase', marginBottom: 4 }}>Partner Equity</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#22c55e' }}>{fmt(partnershipReturns.lpEquity)}</div>
+              <div style={{ fontSize: 10, color: LB, marginTop: 2 }}>{(partnershipReturns.lpPctOwnership * 100).toFixed(0)}% of equity</div>
+            </div>
+            <div style={{ textAlign: 'center', padding: 14, background: '#f9fafb', borderRadius: 10 }}>
+              <div style={{ fontSize: 10, color: LB, fontWeight: 600, textTransform: 'uppercase', marginBottom: 4 }}>Preferred Return</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: AC }}>{(partnershipReturns.prefReturnRate * 100).toFixed(1)}%</div>
+              <div style={{ fontSize: 10, color: LB, marginTop: 2 }}>{fmt(partnershipReturns.annualPref)}/yr</div>
+            </div>
+            <div style={{ textAlign: 'center', padding: 14, background: '#f9fafb', borderRadius: 10 }}>
+              <div style={{ fontSize: 10, color: LB, fontWeight: 600, textTransform: 'uppercase', marginBottom: 4 }}>Balloon Payout</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: partnershipReturns.isDoubleInvestment ? '#f97316' : '#22c55e' }}>{fmt(partnershipReturns.balloonPayout)}</div>
+              <div style={{ fontSize: 10, color: LB, marginTop: 2 }}>Year {partnershipReturns.balloonYrs} · {partnershipReturns.isDoubleInvestment ? '2× Return' : '1× Return'}</div>
+            </div>
+            <div style={{ textAlign: 'center', padding: 14, background: '#fef2f2', borderRadius: 10 }}>
+              <div style={{ fontSize: 10, color: LB, fontWeight: 600, textTransform: 'uppercase', marginBottom: 4 }}>Total Partner Cost</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#ef4444' }}>{fmt(partnershipReturns.totalPartnerCost)}</div>
+              <div style={{ fontSize: 10, color: LB, marginTop: 2 }}>Pref + Balloon</div>
+            </div>
+          </div>
+
+          {/* Ownership split bar */}
+          <div style={{ marginTop: 8 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: LB, textTransform: 'uppercase', marginBottom: 6 }}>Ownership Split</div>
+            <div style={{ display: 'flex', height: 28, borderRadius: 8, overflow: 'hidden', border: `1px solid ${B}` }}>
+              <div style={{ width: `${partnershipReturns.gpPctOwnership * 100}%`, background: '#3b5bdb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 700 }}>
+                {(partnershipReturns.gpPctOwnership * 100).toFixed(0)}% GP
+              </div>
+              <div style={{ width: `${partnershipReturns.lpPctOwnership * 100}%`, background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 700 }}>
+                {(partnershipReturns.lpPctOwnership * 100).toFixed(0)}% LP
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
