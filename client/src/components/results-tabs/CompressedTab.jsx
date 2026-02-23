@@ -479,7 +479,7 @@ export default function CompressedTab({
       {/* ═══════════════════════════════════════════════════════════════
           1b. LOCATION & MARKET ANALYSIS — Satellite Map + Flood Zone
           ═══════════════════════════════════════════════════════════════ */}
-      {(hasCoords || (!geocodeAttempted && fullAddress)) && (
+      {fullAddress && (
         <div style={card}>
           <div style={{ marginBottom: 10 }}>
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: VL, textTransform: 'uppercase', letterSpacing: '0.5px' }}>LOCATION & MARKET ANALYSIS</h3>
@@ -488,72 +488,80 @@ export default function CompressedTab({
               <span style={{ fontSize: 12, color: LB, fontWeight: 500 }}>{fullAddress}</span>
             </div>
           </div>
-          {hasCoords ? (
-            <>
-              <div style={{ borderRadius: 10, overflow: 'hidden', border: `1px solid ${B}`, height: 400 }}>
-                <MapContainer 
-                  center={[propLat, propLng]} 
-                  zoom={15} 
-                  style={{ width: '100%', height: '100%' }}
-                  scrollWheelZoom={false}
-                  zoomControl={true}
-                >
-                  <TileLayer 
-                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                    attribution="© Esri, Maxar, Earthstar Geographics" 
-                  />
-                  <Marker position={[propLat, propLng]} icon={starIcon} />
-                </MapContainer>
-              </div>
 
-              {/* Flood Zone Card */}
-              <div style={{ marginTop: 16 }}>
-                {floodLoading ? (
-                  <div style={{ borderRadius: 10, padding: '12px 16px', backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', fontSize: 13, color: '#0369a1', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    🌊 Loading flood zone data...
-                  </div>
-                ) : floodData && floodData.status === 'ok' ? (() => {
-                  const risk = floodData.risk;
-                  const bgColor = risk === 'high-coastal' ? '#fef2f2' : risk === 'high' ? '#fffbeb' : '#f0fdf4';
-                  const borderColor = risk === 'high-coastal' ? '#fca5a5' : risk === 'high' ? '#fcd34d' : '#86efac';
-                  const badgeColor = risk === 'high-coastal' ? '#dc2626' : risk === 'high' ? '#d97706' : '#16a34a';
-                  const badgeBg = risk === 'high-coastal' ? '#fee2e2' : risk === 'high' ? '#fef3c7' : '#dcfce7';
-                  const riskLabel = risk === 'high-coastal' ? 'COASTAL HIGH RISK' : risk === 'high' ? 'HIGH RISK' : 'MINIMAL RISK';
-                  const bfe = floodData.base_flood_elevation != null ? `${floodData.base_flood_elevation} ft` : 'N/A';
-                  return (
-                    <div style={{ borderRadius: 10, padding: '16px 20px', backgroundColor: bgColor, border: `1px solid ${borderColor}` }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                        <span style={{ fontWeight: 800, color: '#111827', fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.5px' }}>🌊 Flood Zone</span>
-                        <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, backgroundColor: badgeBg, color: badgeColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{riskLabel}</span>
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-                        <div style={{ padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 8, border: '1px solid rgba(0,0,0,0.06)' }}>
-                          <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginBottom: 4 }}>ZONE CODE</div>
-                          <div style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>{floodData.zone}</div>
-                        </div>
-                        <div style={{ padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 8, border: '1px solid rgba(0,0,0,0.06)' }}>
-                          <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginBottom: 4 }}>DESCRIPTION</div>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: '#111827', lineHeight: 1.4 }}>{floodData.zone_description || 'N/A'}</div>
-                        </div>
-                        <div style={{ padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 8, border: '1px solid rgba(0,0,0,0.06)' }}>
-                          <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginBottom: 4 }}>BASE FLOOD ELEV.</div>
-                          <div style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>{bfe}</div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })() : (
-                  <div style={{ borderRadius: 10, padding: '12px 16px', backgroundColor: '#f9fafb', border: `1px solid ${B}`, fontSize: 13, color: LB, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    🌊 No flood data available for this location
-                  </div>
-                )}
-              </div>
-            </>
+          {/* Satellite Map — Leaflet if coords available, Google Maps embed as fallback */}
+          {hasCoords ? (
+            <div style={{ borderRadius: 10, overflow: 'hidden', border: `1px solid ${B}`, height: 400 }}>
+              <MapContainer 
+                center={[propLat, propLng]} 
+                zoom={15} 
+                style={{ width: '100%', height: '100%' }}
+                scrollWheelZoom={false}
+                zoomControl={true}
+              >
+                <TileLayer 
+                  url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                  attribution="© Esri, Maxar, Earthstar Geographics" 
+                />
+                <Marker position={[propLat, propLng]} icon={starIcon} />
+              </MapContainer>
+            </div>
           ) : (
-            <div style={{ borderRadius: 10, height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb', border: `1px solid ${B}`, color: LB, fontSize: 13 }}>
-              Locating property...
+            <div style={{ borderRadius: 10, overflow: 'hidden', border: `1px solid ${B}`, height: 400 }}>
+              <iframe
+                title="Property Location"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(fullAddress)}&maptype=satellite&zoom=15`}
+              />
             </div>
           )}
+
+          {/* Flood Zone Card */}
+          <div style={{ marginTop: 16 }}>
+            {floodLoading ? (
+              <div style={{ borderRadius: 10, padding: '12px 16px', backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', fontSize: 13, color: '#0369a1', display: 'flex', alignItems: 'center', gap: 8 }}>
+                🌊 Loading flood zone data...
+              </div>
+            ) : floodData && floodData.status === 'ok' ? (() => {
+              const risk = floodData.risk;
+              const bgColor = risk === 'high-coastal' ? '#fef2f2' : risk === 'high' ? '#fffbeb' : '#f0fdf4';
+              const borderColor = risk === 'high-coastal' ? '#fca5a5' : risk === 'high' ? '#fcd34d' : '#86efac';
+              const badgeColor = risk === 'high-coastal' ? '#dc2626' : risk === 'high' ? '#d97706' : '#16a34a';
+              const badgeBg = risk === 'high-coastal' ? '#fee2e2' : risk === 'high' ? '#fef3c7' : '#dcfce7';
+              const riskLabel = risk === 'high-coastal' ? 'COASTAL HIGH RISK' : risk === 'high' ? 'HIGH RISK' : 'MINIMAL RISK';
+              const bfe = floodData.base_flood_elevation != null ? `${floodData.base_flood_elevation} ft` : 'N/A';
+              return (
+                <div style={{ borderRadius: 10, padding: '16px 20px', backgroundColor: bgColor, border: `1px solid ${borderColor}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <span style={{ fontWeight: 800, color: '#111827', fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.5px' }}>🌊 Flood Zone</span>
+                    <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, backgroundColor: badgeBg, color: badgeColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{riskLabel}</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                    <div style={{ padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 8, border: '1px solid rgba(0,0,0,0.06)' }}>
+                      <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginBottom: 4 }}>ZONE CODE</div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>{floodData.zone}</div>
+                    </div>
+                    <div style={{ padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 8, border: '1px solid rgba(0,0,0,0.06)' }}>
+                      <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginBottom: 4 }}>DESCRIPTION</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#111827', lineHeight: 1.4 }}>{floodData.zone_description || 'N/A'}</div>
+                    </div>
+                    <div style={{ padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 8, border: '1px solid rgba(0,0,0,0.06)' }}>
+                      <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginBottom: 4 }}>BASE FLOOD ELEV.</div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>{bfe}</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })() : (
+              <div style={{ borderRadius: 10, padding: '12px 16px', backgroundColor: '#f9fafb', border: `1px solid ${B}`, fontSize: 13, color: LB, display: 'flex', alignItems: 'center', gap: 8 }}>
+                🌊 {hasCoords ? 'No flood data available for this location' : 'Flood zone data requires coordinates'}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
