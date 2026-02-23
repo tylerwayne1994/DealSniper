@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
          ResponsiveContainer, Area, AreaChart, PieChart, Pie, Cell } from 'recharts';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
+import { API_ENDPOINTS } from '../../config/api';
 
 export default function CompressedTab({
   scenarioData,
@@ -346,9 +347,48 @@ export default function CompressedTab({
   const noiAtSale = exitProj?.noi || (startingNOI * Math.pow(1.03, holdingPeriod));
 
   // Property coordinates for satellite map
-  const propLat = property?.lat ?? property?.latitude ?? scenarioData?.lat ?? scenarioData?.latitude;
-  const propLng = property?.lng ?? property?.longitude ?? scenarioData?.lng ?? scenarioData?.longitude;
-  const hasCoords = propLat != null && propLng != null && !isNaN(Number(propLat)) && !isNaN(Number(propLng));
+  const rawLat = property?.lat ?? property?.latitude ?? scenarioData?.lat ?? scenarioData?.latitude;
+  const rawLng = property?.lng ?? property?.longitude ?? scenarioData?.lng ?? scenarioData?.longitude;
+  const hasRawCoords = rawLat != null && rawLng != null && !isNaN(Number(rawLat)) && !isNaN(Number(rawLng));
+
+  // Geocode address if no coordinates available
+  const [geocodedCoords, setGeocodedCoords] = useState(null);
+  const [geocodeAttempted, setGeocodeAttempted] = useState(false);
+  useEffect(() => {
+    if (hasRawCoords || geocodeAttempted || !fullAddress) return;
+    setGeocodeAttempted(true);
+    (async () => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(fullAddress)}&limit=1`);
+        const data = await res.json();
+        if (data?.[0]) {
+          setGeocodedCoords({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) });
+        }
+      } catch (e) { /* silent fail */ }
+    })();
+  }, [hasRawCoords, geocodeAttempted, fullAddress]);
+
+  const propLat = hasRawCoords ? Number(rawLat) : geocodedCoords?.lat;
+  const propLng = hasRawCoords ? Number(rawLng) : geocodedCoords?.lng;
+  const hasCoords = propLat != null && propLng != null && !isNaN(propLat) && !isNaN(propLng);
+
+  // Flood zone data
+  const [floodData, setFloodData] = useState(null);
+  const [floodLoading, setFloodLoading] = useState(false);
+  useEffect(() => {
+    if (!hasCoords) return;
+    setFloodLoading(true);
+    (async () => {
+      try {
+        const res = await fetch(`${API_ENDPOINTS.floodZone}?lat=${propLat}&lng=${propLng}`);
+        if (res.ok) {
+          const data = await res.json();
+          setFloodData(data);
+        }
+      } catch (e) { /* silent fail */ }
+      setFloodLoading(false);
+    })();
+  }, [hasCoords, propLat, propLng]);
 
   // Custom star marker for satellite map
   const starIcon = useMemo(() => L.divIcon({
@@ -437,9 +477,9 @@ export default function CompressedTab({
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════
-          1b. LOCATION & MARKET ANALYSIS — Satellite Map
+          1b. LOCATION & MARKET ANALYSIS — Satellite Map + Flood Zone
           ═══════════════════════════════════════════════════════════════ */}
-      {hasCoords && (
+      {(hasCoords || (!geocodeAttempted && fullAddress)) && (
         <div style={card}>
           <div style={{ marginBottom: 10 }}>
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: VL, textTransform: 'uppercase', letterSpacing: '0.5px' }}>LOCATION & MARKET ANALYSIS</h3>
@@ -448,21 +488,72 @@ export default function CompressedTab({
               <span style={{ fontSize: 12, color: LB, fontWeight: 500 }}>{fullAddress}</span>
             </div>
           </div>
-          <div style={{ borderRadius: 10, overflow: 'hidden', border: `1px solid ${B}`, height: 260 }}>
-            <MapContainer 
-              center={[Number(propLat), Number(propLng)]} 
-              zoom={14} 
-              style={{ width: '100%', height: '100%' }}
-              scrollWheelZoom={false}
-              zoomControl={true}
-            >
-              <TileLayer 
-                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                attribution="© Esri, Maxar, Earthstar Geographics" 
-              />
-              <Marker position={[Number(propLat), Number(propLng)]} icon={starIcon} />
-            </MapContainer>
-          </div>
+          {hasCoords ? (
+            <>
+              <div style={{ borderRadius: 10, overflow: 'hidden', border: `1px solid ${B}`, height: 400 }}>
+                <MapContainer 
+                  center={[propLat, propLng]} 
+                  zoom={15} 
+                  style={{ width: '100%', height: '100%' }}
+                  scrollWheelZoom={false}
+                  zoomControl={true}
+                >
+                  <TileLayer 
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                    attribution="© Esri, Maxar, Earthstar Geographics" 
+                  />
+                  <Marker position={[propLat, propLng]} icon={starIcon} />
+                </MapContainer>
+              </div>
+
+              {/* Flood Zone Card */}
+              <div style={{ marginTop: 16 }}>
+                {floodLoading ? (
+                  <div style={{ borderRadius: 10, padding: '12px 16px', backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', fontSize: 13, color: '#0369a1', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    🌊 Loading flood zone data...
+                  </div>
+                ) : floodData && floodData.status === 'ok' ? (() => {
+                  const risk = floodData.risk;
+                  const bgColor = risk === 'high-coastal' ? '#fef2f2' : risk === 'high' ? '#fffbeb' : '#f0fdf4';
+                  const borderColor = risk === 'high-coastal' ? '#fca5a5' : risk === 'high' ? '#fcd34d' : '#86efac';
+                  const badgeColor = risk === 'high-coastal' ? '#dc2626' : risk === 'high' ? '#d97706' : '#16a34a';
+                  const badgeBg = risk === 'high-coastal' ? '#fee2e2' : risk === 'high' ? '#fef3c7' : '#dcfce7';
+                  const riskLabel = risk === 'high-coastal' ? 'COASTAL HIGH RISK' : risk === 'high' ? 'HIGH RISK' : 'MINIMAL RISK';
+                  const bfe = floodData.base_flood_elevation != null ? `${floodData.base_flood_elevation} ft` : 'N/A';
+                  return (
+                    <div style={{ borderRadius: 10, padding: '16px 20px', backgroundColor: bgColor, border: `1px solid ${borderColor}` }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <span style={{ fontWeight: 800, color: '#111827', fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.5px' }}>🌊 Flood Zone</span>
+                        <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, backgroundColor: badgeBg, color: badgeColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{riskLabel}</span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                        <div style={{ padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 8, border: '1px solid rgba(0,0,0,0.06)' }}>
+                          <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginBottom: 4 }}>ZONE CODE</div>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>{floodData.zone}</div>
+                        </div>
+                        <div style={{ padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 8, border: '1px solid rgba(0,0,0,0.06)' }}>
+                          <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginBottom: 4 }}>DESCRIPTION</div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: '#111827', lineHeight: 1.4 }}>{floodData.zone_description || 'N/A'}</div>
+                        </div>
+                        <div style={{ padding: '10px 12px', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 8, border: '1px solid rgba(0,0,0,0.06)' }}>
+                          <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginBottom: 4 }}>BASE FLOOD ELEV.</div>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>{bfe}</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })() : (
+                  <div style={{ borderRadius: 10, padding: '12px 16px', backgroundColor: '#f9fafb', border: `1px solid ${B}`, fontSize: 13, color: LB, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    🌊 No flood data available for this location
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div style={{ borderRadius: 10, height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb', border: `1px solid ${B}`, color: LB, fontSize: 13 }}>
+              Locating property...
+            </div>
+          )}
         </div>
       )}
 
