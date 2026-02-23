@@ -87,6 +87,14 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
     return [{id:'senior',type:'Senior Loan',enabled:true,loanAmtMode:'ltv',ltv:Number(financing.ltv)||70,loanDollar:0,rate:Number(financing.interest_rate)||5.96,term:Number(financing.loan_term_years)||10,amort:Number(financing.amortization_years)||30,io:Number(financing.io_years)||0,fees:Number(financing.loan_fees_percent)||1.5}];
   });
 
+  // On mount: if we created default loans (financing.loans was empty),
+  // immediately sync to parent so the calculation engine sees debt service
+  useEffect(()=>{
+    if(loans.length>0 && !(financing.loans?.length>0)){
+      saveToParent(loans);
+    }
+  },[]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const prevRef=useRef(null);
   useEffect(()=>{
     const inc=financing.loans;

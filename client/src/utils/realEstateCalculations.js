@@ -282,6 +282,22 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
       } else if (parsedLoanAmount > 0 && interestRate > 0 && amortYears > 0) {
         monthlyPayment = calculateMortgagePayment(parsedLoanAmount, interestRate, amortYears);
         annualDebtService = monthlyPayment * 12;
+      } else if (financing?.ltv > 0 && purchasePrice > 0) {
+        // Fallback: use financing.ltv / interest_rate from wizard defaults
+        // (Deal Structure tab may not have mounted yet to save loans array)
+        const fallbackLtv = (Number(financing.ltv) || 0) / 100;
+        loanAmount = purchasePrice * fallbackLtv;
+        const fallbackRate = Number(financing.interest_rate) || 0;
+        interestRate = fallbackRate > 1 ? fallbackRate / 100 : fallbackRate;
+        amortYears = Number(financing.amortization_years) || 30;
+        downPayment = Math.max(purchasePrice - loanAmount, 0);
+        if (loanAmount > 0 && interestRate > 0 && amortYears > 0) {
+          monthlyPayment = calculateMortgagePayment(loanAmount, interestRate, amortYears);
+          annualDebtService = monthlyPayment * 12;
+        } else {
+          annualDebtService = 0;
+          monthlyPayment = 0;
+        }
       } else {
         annualDebtService = 0;
         monthlyPayment = parsedMonthlyPayment;
