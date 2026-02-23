@@ -1,8 +1,9 @@
-import React, { useRef, useState, useMemo, useCallback, useEffect } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
-const GOOGLE_MAPS_KEY = 'AIzaSyB2jVgoUaR5QYk7WnmaXit1pLDK1PQgFiQ';
 
 export default function RentRollTab({ scenarioData, dealId, onUnitMixChange, initialRentcastData, onRentcastFetch }) {
   const unitMixData = scenarioData?.unit_mix || [];
@@ -18,8 +19,6 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange, ini
   const [hoveredComp, setHoveredComp] = useState(null);
   const [selectedComp, setSelectedComp] = useState(null);
   const mapRef = useRef(null);
-
-  const { isLoaded } = useJsApiLoader({ googleMapsApiKey: GOOGLE_MAPS_KEY });
 
   // Property info from scenarioData
   const propertyLat = scenarioData?.property?.lat ?? scenarioData?.property?.latitude ?? scenarioData?.lat ?? scenarioData?.latitude;
@@ -115,18 +114,17 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange, ini
 
   const hasMapData = (propertyLat != null && propertyLng != null) || (rentcastData?.latitude && rentcastData?.longitude);
 
-  // Auto-fit bounds when map loads or comps change
-  const onMapLoad = useCallback((map) => {
-    mapRef.current = map;
-  }, []);
-
-  useEffect(() => {
-    if (!mapRef.current || !comps.length) return;
-    const bounds = new window.google.maps.LatLngBounds();
-    bounds.extend(mapCenter);
-    comps.forEach(c => bounds.extend({ lat: Number(c.latitude), lng: Number(c.longitude) }));
-    mapRef.current.fitBounds(bounds, 60);
-  }, [comps, mapCenter]);
+  // Leaflet helper component to auto-fit bounds when comps change
+  function FitBounds({ center, comps }) {
+    const map = useMap();
+    useEffect(() => {
+      if (!comps.length) return;
+      const points = [[center.lat, center.lng], ...comps.map(c => [Number(c.latitude), Number(c.longitude)])];
+      const bounds = L.latLngBounds(points);
+      map.fitBounds(bounds, { padding: [40, 40] });
+    }, [map, center, comps]);
+    return null;
+  }
 
   // Column resize handlers
   const onResizerMouseDown = (index, e) => {
@@ -367,69 +365,63 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange, ini
                   </div>
                 </div>
                 <div style={{ height: 480 }}>
-                  {isLoaded && (hasMapData || comps.length > 0) ? (
-                    <GoogleMap
-                      mapContainerStyle={{ height: '100%', width: '100%' }}
-                      center={mapCenter}
+                  {(hasMapData || comps.length > 0) ? (
+                    <MapContainer
+                      center={[mapCenter.lat, mapCenter.lng]}
                       zoom={13}
-                      onLoad={onMapLoad}
-                      options={{
-                        streetViewControl: false,
-                        mapTypeControl: false,
-                        fullscreenControl: true,
-                        styles: [
-                          { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-                        ],
-                      }}
+                      style={{ height: '100%', width: '100%' }}
+                      scrollWheelZoom={true}
+                      ref={mapRef}
                     >
-                      {/* Subject property marker — red */}
-                      <Marker
-                        position={mapCenter}
-                        icon={{
-                          path: window.google.maps.SymbolPath.CIRCLE,
-                          scale: 14,
-                          fillColor: '#ef4444',
-                          fillOpacity: 1,
-                          strokeColor: '#fff',
-                          strokeWeight: 3,
-                        }}
-                        zIndex={1000}
-                        onClick={() => setSelectedComp('subject')}
+                      <TileLayer
+                        url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                        attribution='&copy; Esri'
                       />
-                      {selectedComp === 'subject' && (
-                        <InfoWindow position={mapCenter} onCloseClick={() => setSelectedComp(null)}>
-                          <div style={{ padding: 4 }}>
-                            <div style={{ fontWeight: 700, fontSize: 13 }}>📍 {propertyAddress}</div>
-                            {rentcastData?.rent && <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, marginTop: 4 }}>Est: ${rentcastData.rent.toLocaleString()}/mo</div>}
-                          </div>
-                        </InfoWindow>
-                      )}
+                      <TileLayer
+                        url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+                        attribution=''
+                      />
+                      <FitBounds center={mapCenter} comps={comps} />
+
+                      {/* Subject property marker — red */}
+                      <CircleMarker
+                        center={[mapCenter.lat, mapCenter.lng]}
+                        radius={14}
+                        pathOptions={{ fillColor: '#ef4444', fillOpacity: 1, color: '#fff', weight: 3 }}
+                        eventHandlers={{ click: () => setSelectedComp(selectedComp === 'subject' ? null : 'subject') }}
+                      >
+                        {selectedComp === 'subject' && (
+                          <Popup>
+                            <div style={{ padding: 4 }}>
+                              <div style={{ fontWeight: 700, fontSize: 13 }}>📍 {propertyAddress}</div>
+                              {rentcastData?.rent && <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, marginTop: 4 }}>Est: ${rentcastData.rent.toLocaleString()}/mo</div>}
+                            </div>
+                          </Popup>
+                        )}
+                      </CircleMarker>
 
                       {/* Comp markers — purple/gold */}
                       {comps.map((comp, idx) => {
                         const isHovered = hoveredComp === idx;
                         return (
-                          <React.Fragment key={idx}>
-                            <Marker
-                              position={{ lat: Number(comp.latitude), lng: Number(comp.longitude) }}
-                              icon={{
-                                path: window.google.maps.SymbolPath.CIRCLE,
-                                scale: isHovered ? 12 : 8,
-                                fillColor: isHovered ? '#f59e0b' : AC,
-                                fillOpacity: isHovered ? 1 : 0.85,
-                                strokeColor: '#fff',
-                                strokeWeight: 2,
-                              }}
-                              zIndex={isHovered ? 999 : idx}
-                              onMouseOver={() => setHoveredComp(idx)}
-                              onMouseOut={() => setHoveredComp(null)}
-                              onClick={() => setSelectedComp(idx)}
-                            />
+                          <CircleMarker
+                            key={idx}
+                            center={[Number(comp.latitude), Number(comp.longitude)]}
+                            radius={isHovered ? 12 : 8}
+                            pathOptions={{
+                              fillColor: isHovered ? '#f59e0b' : AC,
+                              fillOpacity: isHovered ? 1 : 0.85,
+                              color: '#fff',
+                              weight: 2,
+                            }}
+                            eventHandlers={{
+                              mouseover: () => setHoveredComp(idx),
+                              mouseout: () => setHoveredComp(null),
+                              click: () => setSelectedComp(selectedComp === idx ? null : idx),
+                            }}
+                          >
                             {selectedComp === idx && (
-                              <InfoWindow
-                                position={{ lat: Number(comp.latitude), lng: Number(comp.longitude) }}
-                                onCloseClick={() => setSelectedComp(null)}
-                              >
+                              <Popup>
                                 <div style={{ minWidth: 180, padding: 4 }}>
                                   <div style={{ fontWeight: 700, fontSize: 14, color: '#111' }}>
                                     ${comp.price?.toLocaleString() || 'N/A'}/mo
@@ -447,12 +439,12 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange, ini
                                     </div>
                                   )}
                                 </div>
-                              </InfoWindow>
+                              </Popup>
                             )}
-                          </React.Fragment>
+                          </CircleMarker>
                         );
                       })}
-                    </GoogleMap>
+                    </MapContainer>
                   ) : (
                     <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', flexDirection: 'column', gap: 8 }}>
                       <span style={{ fontSize: 40 }}>🗺️</span>
