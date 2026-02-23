@@ -18,6 +18,7 @@ import SignupCompletePage from './pages/SignupCompletePage'; // Signup Complete
 import LoginPage from './pages/LoginPage'; // Login
 import ManualEntryPage from './pages/ManualEntryPage'; // Manual Entry
 import PitchDeckPage from './pages/PitchDeckPage'; // Pitch Deck Generator
+import ContractPage from './pages/ContractPage'; // Contract Generator
 import MapViewPage from './pages/MapViewPage'; // Map View
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/manual-entry" element={<ManualEntryPage />} />
         <Route path="/pitch-deck" element={<PitchDeckPage />} />
+        <Route path="/contract" element={<ContractPage />} />
         <Route path="/upload" element={<Uploadpage />} />
         <Route path="/pipeline" element={<PipelinePage />} />
         <Route path="/loi" element={<LOIPage />} />

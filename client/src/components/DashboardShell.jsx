@@ -10,6 +10,7 @@ import {
   Home,
   Bell,
   MapPin,
+  Shield,
 } from 'lucide-react';
 
 const SIDEBAR_WIDTH = 200;
@@ -171,6 +172,7 @@ const tabs = [
   { id: 'rapid-fire', label: 'Rapid Fire', icon: Zap, section: 'deals' },
   { id: 'market', label: 'Market Research', icon: BarChart3, section: 'analysis' },
   { id: 'pitch-deck', label: 'Pitch Deck', icon: Presentation, section: 'analysis' },
+  { id: 'contract', label: 'Contracts', icon: Shield, section: 'analysis' },
 ];
 
 function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }) {
@@ -187,6 +189,8 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
       navigate('/market-research');
     } else if (tabId === 'pitch-deck') {
       navigate('/pitch-deck');
+    } else if (tabId === 'contract') {
+      navigate('/contract');
     } else if (tabId === 'home') {
       // Home tab shows the map view
       navigate('/dashboard');

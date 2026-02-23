@@ -39,6 +39,9 @@ export const API_ENDPOINTS = {
   // LOI
   generateLoi: `${API_BASE_URL}/v2/generate-loi`,
   
+  // Contracts
+  generateContract: `${API_BASE_URL}/v2/generate-contract`,
+  
   // Email Deals
   emailDealsStatus: `${API_BASE_URL}/api/email-deals/status`,
   emailDealsList: (scoreFilter) => scoreFilter 

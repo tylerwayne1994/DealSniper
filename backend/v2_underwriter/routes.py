@@ -4619,3 +4619,234 @@ async def generate_document_analysis(deal_id: str, request: Request):
         "market_research_included": include_market_research and market_research_str != NO_MARKET_RESEARCH_PLACEHOLDER,
         "generated_at": datetime.now().isoformat()
     })
+
+
+# =============================================================================
+# CONTRACT GENERATION ENDPOINT
+# =============================================================================
+
+from .contract_prompts import CONTRACT_PACKAGE_1_SYSTEM, CONTRACT_PACKAGE_2_SYSTEM
+
+
+@router.post("/generate-contract")
+async def generate_contract(request: Request):
+    """
+    Generate a contract package using Claude AI.
+    REQUIRES 1 TOKEN.
+
+    Request body:
+    {
+        "contractPackage": "package1" | "package2",
+        "deal": { address, units, purchasePrice, dealStructure, ... },
+        "entity": { name, stateOfFormation, effectiveDate, address },
+        "operatingPartner": { fullName, address, title },
+        "equityPartner": { fullName, address, title },
+        "financialTerms": { opCapital, epCapital, opOwnershipPct, epOwnershipPct,
+                            preferredReturnPct, accrualMethod, paymentSchedule,
+                            assetMgmtFeePct, majorDecisionThreshold, minimumInvestment,
+                            offeringExemption },
+        "timelineTerms": { disabilityDays, curePeriodDays, deadlockDays, rofoDays,
+                           closingDays, ndaTermYears, buybackDeadlineMonths,
+                           buybackFailurePenaltyPct, offeringPeriodMonths },
+        "additionalTerms": ""
+    }
+    """
+    from anthropic import Anthropic
+
+    log.info("[V2] Contract generation request received")
+
+    # ----- Token check -----
+    profile = None
+    profile_id = None
+    try:
+        import sys, os
+        sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+        from token_manager import get_current_profile_id, get_profile, reset_tokens_if_needed, TOKEN_COSTS
+
+        profile_id = get_current_profile_id(request)
+        profile = get_profile(profile_id)
+        profile = reset_tokens_if_needed(profile)
+
+        tokens_required = TOKEN_COSTS.get("contract_generation", 1)
+
+        if profile["token_balance"] < tokens_required:
+            raise HTTPException(
+                status_code=402,
+                detail=f"Insufficient tokens. You need {tokens_required} token(s) but have {profile['token_balance']}. Upgrade your plan to continue."
+            )
+    except HTTPException as he:
+        if he.status_code == 402:
+            raise
+        log.warning(f"Token check failed: {he.detail}. Allowing request for backward compatibility.")
+
+    # ----- Parse body -----
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+    contract_package = body.get("contractPackage", "package1")
+    deal = body.get("deal", {})
+    entity = body.get("entity", {})
+    op = body.get("operatingPartner", {})
+    ep = body.get("equityPartner", {})
+    fin = body.get("financialTerms", {})
+    timeline = body.get("timelineTerms", {})
+    additional = body.get("additionalTerms", "")
+
+    if not deal.get("address"):
+        raise HTTPException(status_code=400, detail="Property address required")
+    if not entity.get("name"):
+        raise HTTPException(status_code=400, detail="Entity name required")
+
+    def fmt(val):
+        if not val:
+            return "TBD"
+        try:
+            return f"${float(val):,.0f}"
+        except (ValueError, TypeError):
+            return str(val)
+
+    # Build user message with all deal data
+    user_message = f"""Generate the complete contract package with the following information. Replace ALL placeholders.
+
+ENTITY INFORMATION:
+- Entity Name: {entity.get('name', 'TBD')}
+- State of Formation: {entity.get('stateOfFormation', 'TBD')}
+- Principal Office Address: {entity.get('address', 'TBD')}
+- Effective Date: {entity.get('effectiveDate', datetime.now().strftime('%m/%d/%Y'))}
+
+PROPERTY DETAILS:
+- Property Address: {deal.get('address', 'TBD')}
+- Number of Units: {deal.get('units', 'TBD')}
+- Purchase Price: {fmt(deal.get('purchasePrice'))}
+- Deal Structure: {deal.get('dealStructure', 'Equity Partner')}
+
+OPERATING PARTNER:
+- Full Legal Name: {op.get('fullName', 'TBD')}
+- Address: {op.get('address', 'TBD')}
+- Title: {op.get('title', 'Managing Member')}
+
+EQUITY PARTNER:
+- Full Legal Name: {ep.get('fullName', 'TBD')}
+- Address: {ep.get('address', 'TBD')}
+- Title: {ep.get('title', 'Member')}
+
+CAPITAL STRUCTURE:
+- Operating Partner Capital Contribution: {fmt(fin.get('opCapital'))}
+- Equity Partner Capital Contribution: {fmt(fin.get('epCapital'))}
+- Total Capitalization: {fmt((float(fin.get('opCapital', 0) or 0) + float(fin.get('epCapital', 0) or 0)))}
+- Operating Partner Ownership: {fin.get('opOwnershipPct', 'TBD')}%
+- Equity Partner Ownership: {fin.get('epOwnershipPct', 'TBD')}%
+
+FINANCIAL TERMS:
+- Preferred Return: {fin.get('preferredReturnPct', 8)}% per annum
+- Accrual Method: {fin.get('accrualMethod', 'Monthly')}
+- Payment Schedule: {fin.get('paymentSchedule', 'Quarterly')}
+- Asset Management Fee: {fin.get('assetMgmtFeePct', 2)}% of gross revenue
+- Major Decision Threshold: {fmt(fin.get('majorDecisionThreshold', 25000))}
+- Minimum Investment (PPM): {fmt(fin.get('minimumInvestment', 50000))}
+- Offering Exemption: Regulation D, Rule {fin.get('offeringExemption', '506(b)')}
+
+TIMELINE TERMS:
+- Disability Trigger Period: {timeline.get('disabilityDays', 180)} days
+- Cure Period for Defaults: {timeline.get('curePeriodDays', 30)} days
+- Deadlock Resolution Period: {timeline.get('deadlockDays', 60)} days
+- Right of First Offer Response Period: {timeline.get('rofoDays', 30)} days
+- Closing Period After Acceptance: {timeline.get('closingDays', 60)} days
+- NDA Term: {timeline.get('ndaTermYears', 3)} years
+- Buyback Option Deadline: {timeline.get('buybackDeadlineMonths', 36)} months from closing
+- Buyback Failure Penalty: {timeline.get('buybackFailurePenaltyPct', 2)}% increase to preferred return
+- Offering Period: {timeline.get('offeringPeriodMonths', 6)} months
+
+ADDITIONAL TERMS / NOTES:
+{additional or 'None specified'}
+
+Today's Date: {datetime.now().strftime('%B %d, %Y')}
+
+Generate the COMPLETE contract package with ALL sections fully written out. Every placeholder must be replaced with the data above. The output must be professional, comprehensive, and ready for legal review."""
+
+    log.info(f"[V2] Generating contract {contract_package} for {deal.get('address')}")
+
+    # ----- Call Claude -----
+    ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
+    if not ANTHROPIC_API_KEY:
+        raise HTTPException(status_code=503, detail="Claude/Anthropic API key not configured")
+
+    system_prompt = CONTRACT_PACKAGE_1_SYSTEM if contract_package == "package1" else CONTRACT_PACKAGE_2_SYSTEM
+
+    try:
+        anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
+
+        response = anthropic_client.messages.create(
+            model="claude-sonnet-4-5-20250929",
+            max_tokens=8000,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_message}]
+        )
+
+        prompt_tokens = None
+        completion_tokens = None
+        total_tokens = None
+        try:
+            usage = getattr(response, 'usage', None)
+            if usage:
+                prompt_tokens = getattr(usage, 'input_tokens', None)
+                completion_tokens = getattr(usage, 'output_tokens', None)
+                total_tokens = (prompt_tokens or 0) + (completion_tokens or 0)
+        except Exception:
+            pass
+
+        contract_text = response.content[0].text.strip()
+        log.info(f"[V2] Contract generated successfully, length: {len(contract_text)} chars")
+
+        # ----- Deduct token -----
+        if profile_id and profile:
+            try:
+                from token_manager import get_supabase as get_token_supabase
+                sb = get_token_supabase()
+                tokens_required = TOKEN_COSTS.get("contract_generation", 1)
+                new_balance = profile["token_balance"] - tokens_required
+                sb.table("profiles").update({"token_balance": new_balance}).eq("id", profile_id).execute()
+                sb.table("token_usage").insert({
+                    "profile_id": profile_id,
+                    "operation_type": "contract_generation",
+                    "tokens_used": tokens_required,
+                    "deal_id": None,
+                    "deal_name": deal.get('address'),
+                    "location": deal.get('address')
+                }).execute()
+                log.info(f"[V2] Deducted {tokens_required} token for contract, new balance: {new_balance}")
+            except Exception as e:
+                log.error(f"[V2] Failed to deduct token for contract: {e}")
+
+        # ----- Log usage -----
+        try:
+            user_id = request.headers.get("X-User-ID") or request.cookies.get("user_id")
+        except Exception:
+            user_id = None
+        try:
+            from . import llm_usage
+            llm_usage.log_usage(
+                user_id=user_id,
+                action="contract_generation",
+                model="claude-sonnet-4-5-20250929",
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+                deduct_from_balance=False,
+            )
+        except Exception:
+            pass
+
+        return JSONResponse({
+            "success": True,
+            "contract": contract_text,
+            "contract_package": contract_package,
+            "deal_address": deal.get('address'),
+            "generated_at": datetime.now().isoformat()
+        })
+
+    except Exception as e:
+        log.exception(f"[V2] Contract generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Contract generation failed: {str(e)}")
