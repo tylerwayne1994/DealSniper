@@ -1443,7 +1443,11 @@ function DashboardMapTab() {
           borderBottom: '1px solid #e5e7eb',
           backgroundColor: '#f9fafb',
           overflowX: 'auto',
-          flexWrap: 'nowrap'
+          flexWrap: 'nowrap',
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+          flexShrink: 0
         }}>
           <button
             onClick={() => setActiveTab('add')}
