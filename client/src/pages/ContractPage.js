@@ -23,6 +23,7 @@ import {
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { loadDeal } from '../lib/dealsService';
+import { supabase } from '../lib/supabase';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
 
@@ -195,6 +196,7 @@ function ContractPage() {
   const [signedDate, setSignedDate] = useState(null);
   const [referenceNumber, setReferenceNumber] = useState('');
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [profileId, setProfileId] = useState('');
 
   // Package selector
   const [selectedPackage, setSelectedPackage] = useState('package1');
@@ -224,8 +226,6 @@ function ContractPage() {
     paymentSchedule: 'Quarterly',
     assetMgmtFeePct: 2,
     majorDecisionThreshold: 25000,
-    minimumInvestment: 50000,
-    offeringExemption: '506(b)',
     // Timeline
     disabilityDays: 180,
     curePeriodDays: 30,
@@ -235,7 +235,6 @@ function ContractPage() {
     ndaTermYears: 3,
     buybackDeadlineMonths: 36,
     buybackFailurePenaltyPct: 2,
-    offeringPeriodMonths: 6,
     // Additional
     additionalTerms: '',
   });
@@ -245,6 +244,17 @@ function ContractPage() {
     const ts = Date.now().toString(36).toUpperCase();
     const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
     setReferenceNumber(`DS-CTR-${ts}-${rand}`);
+  }, []);
+
+  // Load auth user id for token endpoints
+  useEffect(() => {
+    (async () => {
+      try {
+        const userRes = await supabase.auth.getUser();
+        const uid = userRes?.data?.user?.id;
+        if (uid) setProfileId(uid);
+      } catch {}
+    })();
   }, []);
 
   // Load deal
@@ -322,10 +332,14 @@ function ContractPage() {
     if (!deal) return;
 
     // Token check
+    if (!profileId) {
+      setError('Unable to verify your account. Please refresh the page and try again.');
+      return;
+    }
     try {
       const tokenCheck = await fetch(`${API_BASE}/api/tokens/check`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Profile-ID': profileId },
         body: JSON.stringify({ operation_type: 'contract_generation' }),
       });
       const tokenData = await tokenCheck.json();
@@ -355,7 +369,7 @@ function ContractPage() {
     try {
       const response = await fetch(`${API_BASE}/v2/generate-contract`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Profile-ID': profileId },
         body: JSON.stringify({
           contractPackage: selectedPackage,
           deal: {
@@ -392,8 +406,6 @@ function ContractPage() {
             paymentSchedule: formData.paymentSchedule,
             assetMgmtFeePct: formData.assetMgmtFeePct,
             majorDecisionThreshold: formData.majorDecisionThreshold,
-            minimumInvestment: formData.minimumInvestment,
-            offeringExemption: formData.offeringExemption,
           },
           timelineTerms: {
             disabilityDays: formData.disabilityDays,
@@ -404,7 +416,6 @@ function ContractPage() {
             ndaTermYears: formData.ndaTermYears,
             buybackDeadlineMonths: formData.buybackDeadlineMonths,
             buybackFailurePenaltyPct: formData.buybackFailurePenaltyPct,
-            offeringPeriodMonths: formData.offeringPeriodMonths,
           },
           additionalTerms: formData.additionalTerms,
         }),
@@ -504,8 +515,8 @@ function ContractPage() {
   // ---- Package descriptions ----
   const packageInfo = {
     package1: {
-      label: 'Package I — Formation & Offering',
-      docs: ['LLC Operating Agreement', 'Private Placement Memorandum', 'Subscription Agreement', 'Capital Contribution Agreement'],
+      label: 'Package I — Formation & Capital',
+      docs: ['LLC Operating Agreement', 'Capital Contribution Agreement'],
     },
     package2: {
       label: 'Package II — Protection & Exit',
@@ -738,22 +749,9 @@ function ContractPage() {
                     </select>
                   </div>
                 </div>
-                <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px' }}>
-                  <div>
-                    <label style={labelStyle}>Major Decision Threshold ($)</label>
-                    <input type="number" name="majorDecisionThreshold" value={formData.majorDecisionThreshold} onChange={handleInputChange} style={inputStyle} />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Min Investment ($) (PPM)</label>
-                    <input type="number" name="minimumInvestment" value={formData.minimumInvestment} onChange={handleInputChange} style={inputStyle} />
-                  </div>
-                </div>
                 <div>
-                  <label style={labelStyle}>Offering Exemption</label>
-                  <select name="offeringExemption" value={formData.offeringExemption} onChange={handleInputChange} style={selectStyle}>
-                    <option value="506(b)">Regulation D, Rule 506(b)</option>
-                    <option value="506(c)">Regulation D, Rule 506(c)</option>
-                  </select>
+                  <label style={labelStyle}>Major Decision Threshold ($)</label>
+                  <input type="number" name="majorDecisionThreshold" value={formData.majorDecisionThreshold} onChange={handleInputChange} style={inputStyle} />
                 </div>
               </div>
             </div>
@@ -792,7 +790,7 @@ function ContractPage() {
                     <input type="number" name="ndaTermYears" value={formData.ndaTermYears} onChange={handleInputChange} style={inputStyle} />
                   </div>
                 </div>
-                <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'12px' }}>
+                <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px' }}>
                   <div>
                     <label style={labelStyle}>Buyback (months)</label>
                     <input type="number" name="buybackDeadlineMonths" value={formData.buybackDeadlineMonths} onChange={handleInputChange} style={inputStyle} />
@@ -800,10 +798,6 @@ function ContractPage() {
                   <div>
                     <label style={labelStyle}>Buyback Penalty %</label>
                     <input type="number" name="buybackFailurePenaltyPct" value={formData.buybackFailurePenaltyPct} onChange={handleInputChange} style={inputStyle} />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Offering (months)</label>
-                    <input type="number" name="offeringPeriodMonths" value={formData.offeringPeriodMonths} onChange={handleInputChange} style={inputStyle} />
                   </div>
                 </div>
               </div>

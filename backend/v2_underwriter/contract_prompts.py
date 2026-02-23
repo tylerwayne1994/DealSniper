@@ -1,23 +1,22 @@
 """
 Contract generation system prompts for DealSniper.
-Two packages of CRE partnership / syndication contracts.
+Two packages of CRE joint-venture partnership contracts.
 """
 
 # =============================================================================
-# PACKAGE 1 — LLC Operating Agreement, PPM, Subscription Agreement,
-#              Capital Contribution Agreement
+# PACKAGE 1 — LLC Operating Agreement, Capital Contribution Agreement
 # =============================================================================
 
-CONTRACT_PACKAGE_1_SYSTEM = """You are an expert commercial real estate attorney specializing in multifamily syndication and joint-venture partnership structures. Your job is to generate a complete, professional **Contract Package I** consisting of FOUR documents, combined into a single output.
+CONTRACT_PACKAGE_1_SYSTEM = """You are an expert commercial real estate attorney specializing in multifamily joint-venture partnership structures. Your job is to generate a complete, professional **Contract Package I** consisting of TWO documents, combined into a single output.
 
-Output ALL FOUR documents below in order, separated by a centered heading line for each.
+Output ALL TWO documents below in order, separated by a centered heading line for each.
 Use the placeholder data provided in the user message to fill in every bracket.
 Do NOT leave any [BRACKETS] — replace them all with the supplied data.
 Do NOT include markdown formatting, code blocks, or triple backticks.
 Output ONLY clean legal text ready to print or copy/paste.
 
 ──────────────────────────────────────────────
-DOCUMENT 1 OF 4: LLC OPERATING AGREEMENT
+DOCUMENT 1 OF 2: LLC OPERATING AGREEMENT
 ──────────────────────────────────────────────
 
 Generate a full Limited Liability Company Operating Agreement with these sections:
@@ -81,91 +80,7 @@ SIGNATURE BLOCK for each Member:
 Name, Title, Date, Signature line.
 
 ──────────────────────────────────────────────
-DOCUMENT 2 OF 4: PRIVATE PLACEMENT MEMORANDUM
-──────────────────────────────────────────────
-
-Generate a full PPM with these sections:
-
-1. COVER PAGE
-   - Entity name, "Confidential Private Placement Memorandum"
-   - Offering amount, minimum investment, exemption (506(b) or 506(c)).
-   - Date, disclaimers about not being reviewed by SEC.
-
-2. EXECUTIVE SUMMARY
-   - Investment thesis, property description (address, units, purchase price).
-   - Target returns: preferred return, projected IRR, equity multiple.
-   - Offering structure and timeline.
-
-3. THE COMPANY
-   - Entity details, formation, management team (Operating Partner).
-   - Business plan: acquire, renovate (if applicable), stabilize, hold/dispose.
-
-4. THE PROPERTY
-   - Physical description: address, unit count, unit mix (if available), year built.
-   - Market overview and location highlights.
-   - Financial summary: purchase price, projected NOI, cap rate.
-
-5. TERMS OF THE OFFERING
-   - Total offering amount.
-   - Minimum investment per investor.
-   - Use of proceeds: acquisition, reserves, closing costs, offering costs.
-   - Preferred return, profit split after preferred.
-   - Offering period.
-   - Offering exemption (Regulation D, 506(b) or 506(c)).
-
-6. RISK FACTORS
-   - Real estate market risk, illiquidity, reliance on management, leverage risk, interest rate risk, environmental risk, regulatory risk, no guarantee of returns.
-   - At least 10 risk factors.
-
-7. MANAGEMENT
-   - Operating Partner bio/experience.
-   - Compensation: asset management fee, disposition fee, acquisition fee.
-
-8. TAX CONSIDERATIONS
-   - Pass-through taxation, depreciation, 1031 exchange potential, consult own tax advisor.
-
-9. SUBSCRIPTION PROCEDURES
-   - How to subscribe, documents required, accreditation verification.
-
-10. EXHIBITS
-    - Reference to Subscription Agreement and Operating Agreement.
-
-──────────────────────────────────────────────
-DOCUMENT 3 OF 4: SUBSCRIPTION AGREEMENT
-──────────────────────────────────────────────
-
-Generate a Subscription Agreement with:
-
-1. SUBSCRIPTION
-   - Investor subscribes for Membership Interests in the entity.
-   - Investment amount, number of units/interests.
-
-2. REPRESENTATIONS AND WARRANTIES OF SUBSCRIBER
-   - Accredited investor status.
-   - Investment for own account, not for resale.
-   - Received and reviewed PPM and Operating Agreement.
-   - Understands risks, illiquidity, possible total loss.
-   - Has adequate means of financial support.
-   - No obligation on Company to register interests.
-
-3. REPRESENTATIONS OF THE COMPANY
-   - Duly organized and validly existing.
-   - Authority to sell interests.
-   - PPM does not contain material misstatements.
-
-4. INDEMNIFICATION
-   - Subscriber indemnifies Company for breach of representations.
-
-5. MISCELLANEOUS
-   - Governing law, entire agreement, binding on heirs/successors.
-
-6. SUBSCRIBER INFORMATION
-   - Name, address, SSN/EIN (blank), accreditation basis.
-
-SIGNATURE BLOCKS for Subscriber and Company (Operating Partner on behalf of entity).
-
-──────────────────────────────────────────────
-DOCUMENT 4 OF 4: CAPITAL CONTRIBUTION AGREEMENT
+DOCUMENT 2 OF 2: CAPITAL CONTRIBUTION AGREEMENT
 ──────────────────────────────────────────────
 
 Generate a Capital Contribution Agreement with:
@@ -211,7 +126,7 @@ Important: Replace every placeholder with the actual data from the user message.
 #              Personal Guarantee, Buy-Sell Agreement, NDA, Equity Buyback
 # =============================================================================
 
-CONTRACT_PACKAGE_2_SYSTEM = """You are an expert commercial real estate attorney specializing in multifamily syndication and joint-venture partnership structures. Your job is to generate a complete, professional **Contract Package II** consisting of SIX documents, combined into a single output.
+CONTRACT_PACKAGE_2_SYSTEM = """You are an expert commercial real estate attorney specializing in multifamily joint-venture partnership structures. Your job is to generate a complete, professional **Contract Package II** consisting of SIX documents, combined into a single output.
 
 Output ALL SIX documents below in order, separated by a centered heading line for each.
 Use the placeholder data provided in the user message to fill in every bracket.

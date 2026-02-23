@@ -4643,11 +4643,10 @@ async def generate_contract(request: Request):
         "equityPartner": { fullName, address, title },
         "financialTerms": { opCapital, epCapital, opOwnershipPct, epOwnershipPct,
                             preferredReturnPct, accrualMethod, paymentSchedule,
-                            assetMgmtFeePct, majorDecisionThreshold, minimumInvestment,
-                            offeringExemption },
+                            assetMgmtFeePct, majorDecisionThreshold },
         "timelineTerms": { disabilityDays, curePeriodDays, deadlockDays, rofoDays,
                            closingDays, ndaTermYears, buybackDeadlineMonths,
-                           buybackFailurePenaltyPct, offeringPeriodMonths },
+                           buybackFailurePenaltyPct },
         "additionalTerms": ""
     }
     """
@@ -4745,8 +4744,6 @@ FINANCIAL TERMS:
 - Payment Schedule: {fin.get('paymentSchedule', 'Quarterly')}
 - Asset Management Fee: {fin.get('assetMgmtFeePct', 2)}% of gross revenue
 - Major Decision Threshold: {fmt(fin.get('majorDecisionThreshold', 25000))}
-- Minimum Investment (PPM): {fmt(fin.get('minimumInvestment', 50000))}
-- Offering Exemption: Regulation D, Rule {fin.get('offeringExemption', '506(b)')}
 
 TIMELINE TERMS:
 - Disability Trigger Period: {timeline.get('disabilityDays', 180)} days
@@ -4757,7 +4754,6 @@ TIMELINE TERMS:
 - NDA Term: {timeline.get('ndaTermYears', 3)} years
 - Buyback Option Deadline: {timeline.get('buybackDeadlineMonths', 36)} months from closing
 - Buyback Failure Penalty: {timeline.get('buybackFailurePenaltyPct', 2)}% increase to preferred return
-- Offering Period: {timeline.get('offeringPeriodMonths', 6)} months
 
 ADDITIONAL TERMS / NOTES:
 {additional or 'None specified'}
