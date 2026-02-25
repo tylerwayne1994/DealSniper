@@ -26,6 +26,133 @@ import {
   Layers
 } from 'lucide-react';
 
+// ─── Zone color by prefix ────────────────
+const ZONE_PREFIX_COLORS = {
+  R: '#a8d8a8', // Residential — green
+  C: '#f9d57a', // Commercial — gold
+  I: '#c8a8d8', // Industrial — purple
+  A: '#d4e8a0', // Agricultural — lime
+  M: '#d4a8a8', // Mixed — rose
+  O: '#a8c8e8', // Office — blue
+};
+const DEFAULT_ZONE_COLOR = '#cccccc';
+
+function zoneColor(zoneCode) {
+  if (!zoneCode) return DEFAULT_ZONE_COLOR;
+  const prefix = String(zoneCode).charAt(0).toUpperCase();
+  return ZONE_PREFIX_COLORS[prefix] || DEFAULT_ZONE_COLOR;
+}
+
+// ─── ZoningOverlayLayer (child of MapContainer, uses useMap) ─────────
+function ZoningOverlayLayer({ serviceKey, enabled, zoneFilter }) {
+  const map = useMap();
+  const layerRef = useRef(null);
+  const debounceRef = useRef(null);
+  const initialFitDone = useRef(false);
+  const prevServiceKey = useRef(null);
+
+  const fetchAndRender = useCallback(async (fitBounds = false) => {
+    if (!map || !serviceKey) return;
+    const bounds = map.getBounds();
+    const bbox = `${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}`;
+    try {
+      const url = `${API_ENDPOINTS.zoningData(serviceKey)}?bbox=${bbox}`;
+      const res = await fetch(url);
+      if (!res.ok) { console.error('[Zoning] fetch error', res.status); return; }
+      const geojson = await res.json();
+      const config = geojson._zoning_config || {};
+      const zoneField = config.zone_field || 'ZONE_CODE';
+
+      // Remove previous layer
+      if (layerRef.current) { map.removeLayer(layerRef.current); layerRef.current = null; }
+
+      const layer = L.geoJSON(geojson, {
+        filter: (feature) => {
+          if (!zoneFilter) return true;
+          const code = String(feature.properties?.[zoneField] || '').toLowerCase();
+          return code.includes(zoneFilter.toLowerCase());
+        },
+        style: (feature) => {
+          const code = feature.properties?.[zoneField] || '';
+          return {
+            fillColor: zoneColor(code),
+            fillOpacity: 0.45,
+            color: '#555',
+            weight: 1.2,
+          };
+        },
+        onEachFeature: (feature, lyr) => {
+          const props = feature.properties || {};
+          // Popup with all properties
+          const rows = Object.entries(props)
+            .filter(([k]) => !k.startsWith('Shape') && k !== 'OBJECTID')
+            .map(([k, v]) => `<tr><td style="font-weight:600;color:#6b7280;padding:3px 8px 3px 0;font-size:11px;white-space:nowrap">${k}</td><td style="color:#111827;padding:3px 0;font-size:11px">${v ?? 'N/A'}</td></tr>`)
+            .join('');
+          lyr.bindPopup(
+            `<div style="max-height:260px;overflow-y:auto;font-family:Inter,sans-serif"><table>${rows}</table></div>`,
+            { maxWidth: 320 }
+          );
+
+          // Highlight on hover
+          lyr.on('mouseover', () => {
+            lyr.setStyle({ weight: 3, color: '#1d4ed8', fillOpacity: 0.7 });
+            lyr.bringToFront();
+          });
+          lyr.on('mouseout', () => {
+            layer.resetStyle(lyr);
+          });
+        },
+      });
+
+      layer.addTo(map);
+      layerRef.current = layer;
+
+      if (fitBounds && geojson.features?.length > 0) {
+        const b = layer.getBounds();
+        if (b.isValid()) map.fitBounds(b, { padding: [40, 40] });
+      }
+    } catch (err) {
+      console.error('[Zoning] Error fetching zoning data:', err);
+    }
+  }, [map, serviceKey, zoneFilter]);
+
+  // Fetch on mount or when service changes, and auto-refetch on pan/zoom with debounce
+  useEffect(() => {
+    if (!enabled || !serviceKey) {
+      if (layerRef.current) { map.removeLayer(layerRef.current); layerRef.current = null; }
+      return;
+    }
+
+    const isNewService = prevServiceKey.current !== serviceKey;
+    prevServiceKey.current = serviceKey;
+
+    // Fetch immediately, fit bounds only on first load of a new service
+    if (isNewService) { initialFitDone.current = false; }
+    fetchAndRender(!initialFitDone.current);
+    initialFitDone.current = true;
+
+    const onMoveEnd = () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => fetchAndRender(false), 500);
+    };
+    map.on('moveend', onMoveEnd);
+
+    return () => {
+      map.off('moveend', onMoveEnd);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (layerRef.current) { map.removeLayer(layerRef.current); layerRef.current = null; }
+    };
+  }, [enabled, serviceKey, fetchAndRender, map]);
+
+  // Re-render when filter text changes (client-side filter only)
+  useEffect(() => {
+    if (!enabled || !serviceKey) return;
+    fetchAndRender(false);
+  }, [zoneFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return null; // Imperative-only; no JSX rendered
+}
+
 // Helper to create Tailwind-styled divIcon
 function createDivIcon({ bgClass, borderClass = 'border-white/60', icon: Icon, iconColor = '#fff', size = 'normal' }) {
   const sizeClasses = size === 'small' ? 'w-7 h-7' : 'w-9 h-9';
@@ -185,6 +312,13 @@ function DashboardMapTab() {
   const [devPipelineData, setDevPipelineData] = useState([]);
   const [devPipelineFilter, setDevPipelineFilter] = useState('all'); // 'all' | status filter
 
+  // Zoning overlay state
+  const [zoningEnabled, setZoningEnabled] = useState(false);
+  const [zoningServices, setZoningServices] = useState({}); // { key: { label } }
+  const [zoningServiceKey, setZoningServiceKey] = useState('');
+  const [zoningFilter, setZoningFilter] = useState(''); // text filter by zone code
+  const [zoningLoading, setZoningLoading] = useState(false);
+
   // Uploaded property sheets state
   const [uploadedSheets, setUploadedSheets] = useState([]); // Array of { id, name, properties: [...] }
   const [sheetPreview, setSheetPreview] = useState(null); // Current sheet being previewed
@@ -210,6 +344,28 @@ function DashboardMapTab() {
       error: (err) => console.error('[DevPipeline] CSV parse error:', err)
     });
   }, [devPipelineEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load available zoning services when zoning overlay is first enabled
+  useEffect(() => {
+    if (!zoningEnabled || Object.keys(zoningServices).length > 0) return;
+    (async () => {
+      try {
+        setZoningLoading(true);
+        const res = await fetch(API_ENDPOINTS.zoningServices);
+        if (res.ok) {
+          const data = await res.json();
+          setZoningServices(data);
+          // Auto-select first service if nothing selected
+          const keys = Object.keys(data);
+          if (keys.length > 0 && !zoningServiceKey) setZoningServiceKey(keys[0]);
+        }
+      } catch (err) {
+        console.error('[Zoning] Failed to load services:', err);
+      } finally {
+        setZoningLoading(false);
+      }
+    })();
+  }, [zoningEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Filtered pipeline projects
   const filteredPipeline = useMemo(() => {
@@ -2205,6 +2361,111 @@ function DashboardMapTab() {
                     </>
                   )}
                 </div>
+
+                {/* ═══ Zoning Overlay Layer ═══ */}
+                <div style={{
+                  backgroundColor: zoningEnabled ? '#eff6ff' : '#f9fafb',
+                  border: `1px solid ${zoningEnabled ? '#93c5fd' : '#e5e7eb'}`,
+                  borderRadius: '8px',
+                  padding: '10px 12px',
+                  marginTop: '8px',
+                  transition: 'all 0.2s',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#374151' }}>
+                      <input
+                        type="checkbox"
+                        checked={zoningEnabled}
+                        onChange={(e) => {
+                          setZoningEnabled(e.target.checked);
+                          if (!e.target.checked) {
+                            setZoningServiceKey('');
+                            setZoningFilter('');
+                          }
+                        }}
+                        style={{ accentColor: '#3b82f6', width: '15px', height: '15px', cursor: 'pointer' }}
+                      />
+                      🏛️ Zoning Overlay
+                    </label>
+                  </div>
+
+                  {zoningEnabled && (
+                    <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {/* Service dropdown */}
+                      {zoningLoading ? (
+                        <div style={{ fontSize: '12px', color: '#6b7280' }}>Loading services…</div>
+                      ) : (
+                        <select
+                          value={zoningServiceKey}
+                          onChange={(e) => { setZoningServiceKey(e.target.value); setZoningFilter(''); }}
+                          style={{
+                            padding: '6px 8px',
+                            fontSize: '12px',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '6px',
+                            backgroundColor: 'white',
+                            color: '#374151',
+                            fontWeight: '500',
+                          }}
+                        >
+                          <option value="">— Select zoning layer —</option>
+                          {Object.entries(zoningServices).map(([key, svc]) => (
+                            <option key={key} value={key}>{svc.label}</option>
+                          ))}
+                        </select>
+                      )}
+
+                      {/* Zone code filter */}
+                      {zoningServiceKey && (
+                        <input
+                          type="text"
+                          placeholder="Filter by zone code…"
+                          value={zoningFilter}
+                          onChange={(e) => setZoningFilter(e.target.value)}
+                          style={{
+                            padding: '6px 8px',
+                            fontSize: '12px',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '6px',
+                            backgroundColor: 'white',
+                            color: '#374151',
+                          }}
+                        />
+                      )}
+
+                      {/* Remove button */}
+                      {zoningServiceKey && (
+                        <button
+                          onClick={() => { setZoningEnabled(false); setZoningServiceKey(''); setZoningFilter(''); }}
+                          style={{
+                            padding: '5px 10px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            color: '#dc2626',
+                            backgroundColor: '#fee2e2',
+                            border: '1px solid #fca5a5',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          ✕ Remove Zoning Layer
+                        </button>
+                      )}
+
+                      {/* Legend */}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '2px', fontSize: '10px', color: '#6b7280' }}>
+                        {Object.entries(ZONE_PREFIX_COLORS).map(([prefix, color]) => (
+                          <span key={prefix} style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                            <span style={{ width: 10, height: 10, borderRadius: 2, background: color, display: 'inline-block', border: '1px solid #ccc' }} />
+                            {prefix}
+                          </span>
+                        ))}
+                      </div>
+                      <div style={{ fontSize: '10px', color: '#9ca3af' }}>Auto-refreshes on pan/zoom · ArcGIS data</div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -2532,6 +2793,13 @@ function DashboardMapTab() {
               zipMetric={zipMetric}
               zipHeatmapEnabled={zipHeatmap}
               zipHeatmapMetric={zipHeatmapMetric}
+            />
+
+            {/* Zoning overlay layer */}
+            <ZoningOverlayLayer
+              enabled={zoningEnabled && !!zoningServiceKey}
+              serviceKey={zoningServiceKey}
+              zoneFilter={zoningFilter}
             />
           </MapContainer>
           )}

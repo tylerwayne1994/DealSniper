@@ -60,6 +60,11 @@ export const API_ENDPOINTS = {
   // Flood Zone
   floodZone: `${API_BASE_URL}/api/flood-zone`,
 
+  // Zoning Overlay
+  zoningServices: `${API_BASE_URL}/api/zoning/services`,
+  zoningData: (serviceKey) => `${API_BASE_URL}/api/zoning/${serviceKey}`,
+  zoningFields: (serviceKey) => `${API_BASE_URL}/api/zoning/${serviceKey}/fields`,
+
   // Health
   health: `${API_BASE_URL}/health`,
 };

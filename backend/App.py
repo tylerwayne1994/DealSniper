@@ -194,6 +194,10 @@ app.include_router(google_auth_router)
 from token_manager import router as token_router
 app.include_router(token_router)
 
+# Zoning Overlay: ArcGIS zoning proxy
+from zoning_router import router as zoning_router
+app.include_router(zoning_router)
+
 # Stripe Webhook: Handle subscription updates
 from stripe_webhook_handler import router as stripe_webhook_router
 app.include_router(stripe_webhook_router)
