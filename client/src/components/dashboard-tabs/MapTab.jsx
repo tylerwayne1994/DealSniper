@@ -1593,12 +1593,14 @@ function DashboardMapTab() {
           </button>
         </div>
 
-        {/* Tab Content Area */}
+        {/* Tab Content Area — scrollable, capped height so map dominates */}
         <div style={{ 
-          padding: '16px',
+          padding: '12px 16px',
           backgroundColor: '#f9fafb',
           borderBottom: '1px solid #e5e7eb',
-          overflowY: 'visible'
+          overflowY: 'auto',
+          maxHeight: '240px',
+          flexShrink: 0,
         }}>
           {activeTab === 'add' && (
             <form onSubmit={handleSubmitProperty} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -2006,88 +2008,6 @@ function DashboardMapTab() {
                 </span>
               </div>
               
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MapPin size={14} style={{ color: '#6b7280' }} />
-                <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>Map Style:</label>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => setMapStyle('voyager')}
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: mapStyle === 'voyager' ? '#3b82f6' : 'white',
-                      color: mapStyle === 'voyager' ? 'white' : '#6b7280',
-                      border: mapStyle === 'voyager' ? 'none' : '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Voyager
-                  </button>
-                  <button
-                    onClick={() => setMapStyle('modern')}
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: mapStyle === 'modern' ? '#3b82f6' : 'white',
-                      color: mapStyle === 'modern' ? 'white' : '#6b7280',
-                      border: mapStyle === 'modern' ? 'none' : '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Modern
-                  </button>
-                  <button
-                    onClick={() => setMapStyle('satellite')}
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: mapStyle === 'satellite' ? '#3b82f6' : 'white',
-                      color: mapStyle === 'satellite' ? 'white' : '#6b7280',
-                      border: mapStyle === 'satellite' ? 'none' : '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Satellite
-                  </button>
-                  <button
-                    onClick={() => setMapStyle('streets')}
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: mapStyle === 'streets' ? '#3b82f6' : 'white',
-                      color: mapStyle === 'streets' ? 'white' : '#6b7280',
-                      border: mapStyle === 'streets' ? 'none' : '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Streets
-                  </button>
-                  <button
-                    onClick={() => setMapStyle('3d')}
-                    style={{
-                      padding: '6px 12px',
-                      color: mapStyle === '3d' ? 'white' : '#6b7280',
-                      border: mapStyle === '3d' ? 'none' : '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      background: mapStyle === '3d' ? 'linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)' : 'white'
-                    }}
-                  >
-                    🌍 3D
-                  </button>
-                </div>
-              </div>
-
               {/* ═══ Data Overlay Layers ═══ */}
               <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '12px', marginTop: '4px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
@@ -2292,6 +2212,48 @@ function DashboardMapTab() {
 
         {/* Map Container */}
         <div style={{ flex: 1, position: 'relative', minHeight: '600px' }}>
+          {/* ═══ Floating Map Style Switcher (top-right overlay) ═══ */}
+          <div style={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            zIndex: 1000,
+            display: 'flex',
+            borderRadius: 8,
+            overflow: 'hidden',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+            border: '1px solid rgba(255,255,255,0.6)',
+          }}>
+            {[
+              { key: 'voyager', label: 'Base' },
+              { key: 'satellite', label: 'Satellite' },
+              { key: 'streets', label: 'Hybrid' },
+              { key: '3d', label: '3D' },
+            ].map(({ key, label }, i) => (
+              <button
+                key={key}
+                onClick={() => setMapStyle(key)}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: 12,
+                  fontWeight: mapStyle === key ? 700 : 500,
+                  cursor: 'pointer',
+                  border: 'none',
+                  borderLeft: i > 0 ? '1px solid rgba(0,0,0,0.08)' : 'none',
+                  color: mapStyle === key ? '#fff' : '#374151',
+                  background: mapStyle === key
+                    ? (key === '3d' ? 'linear-gradient(135deg,#7c3aed,#2563eb)' : '#3b82f6')
+                    : 'rgba(255,255,255,0.92)',
+                  backdropFilter: 'blur(8px)',
+                  transition: 'all 0.15s',
+                  letterSpacing: key === '3d' ? 1 : 0,
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           {/* MapLibre GL 3D Map */}
           {mapStyle === '3d' && (
             <div 
