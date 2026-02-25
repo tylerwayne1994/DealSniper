@@ -3710,6 +3710,13 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
             console.log('RentCast response:', data);
             if (data.success) {
               setRentcastData(data.data);
+              // Auto-save RentCast data to deal so it persists on return
+              try {
+                await updateDeal(dealId, { rentcast_data: data.data });
+                console.log('[RentCast] Auto-saved rentcast data to deal');
+              } catch (saveErr) {
+                console.warn('[RentCast] Could not auto-save rentcast data:', saveErr);
+              }
             } else {
               alert(`RentCast error: ${data.error || 'Unknown error'}\nAddress searched: ${data.address_searched || 'N/A'}`);
             }

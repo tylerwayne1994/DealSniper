@@ -4,6 +4,8 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { FileText, AlertTriangle, TrendingUp, Search, Shield, HelpCircle, BarChart3, Loader2, RefreshCw, ChevronDown, ChevronUp, Download } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { updateDeal } from '../../lib/dealsService';
 
 // Section icon/color mapping
 const SECTION_META = {
@@ -358,6 +360,18 @@ export default function DocumentAnalysisTab({
   const [generationProgress, setGenerationProgress] = useState('');
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const contentRef = useRef(null);
+  const [profileId, setProfileId] = useState(null);
+  
+  // Load auth user id for token deduction
+  useEffect(() => {
+    (async () => {
+      try {
+        const userRes = await supabase.auth.getUser();
+        const uid = userRes?.data?.user?.id;
+        if (uid) setProfileId(uid);
+      } catch {}
+    })();
+  }, []);
   
   // Property info for header — must be before callbacks that reference it
   const property = scenarioData?.property || {};
@@ -399,7 +413,10 @@ export default function DocumentAnalysisTab({
       
       const response = await fetch(`${API_BASE}/v2/deals/${dealId}/document-analysis`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(profileId ? { 'X-Profile-ID': profileId } : {})
+        },
         body: JSON.stringify({
           include_market_research: includeMarketResearch,
           scenario_data: scenarioData
@@ -412,6 +429,9 @@ export default function DocumentAnalysisTab({
       
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
+        if (response.status === 402) {
+          throw new Error(errData.detail || 'Insufficient tokens. Please purchase more tokens to continue.');
+        }
         throw new Error(errData.detail || `Analysis failed: ${response.statusText}`);
       }
       
@@ -423,7 +443,24 @@ export default function DocumentAnalysisTab({
         if (onAnalysisGenerated) {
           onAnalysisGenerated(data.analysis);
         }
-        // Save analysis to backend deal storage for persistence
+        // Auto-save analysis to deal storage so it persists on return
+        try {
+          await updateDeal(dealId, {
+            due_diligence_data: data.analysis,
+            scenario_data: {
+              ...scenarioData,
+              document_analysis: data.analysis
+            },
+            parsed_data: {
+              ...scenarioData,
+              document_analysis: data.analysis
+            }
+          });
+          console.log('[DocumentAnalysis] Auto-saved analysis to deal');
+        } catch (saveErr) {
+          console.warn('[DocumentAnalysis] Could not auto-save analysis to deal:', saveErr);
+        }
+        // Also save to backend scenario endpoint (legacy)
         try {
           await fetch(`${API_BASE}/v2/deals/${dealId}/save-scenario`, {
             method: 'POST',
@@ -447,7 +484,7 @@ export default function DocumentAnalysisTab({
       setIsGenerating(false);
       setGenerationProgress('');
     }
-  }, [dealId, scenarioData, includeMarketResearch, onAnalysisGenerated]);
+  }, [dealId, scenarioData, includeMarketResearch, onAnalysisGenerated, profileId]);
   
   // PDF Export
   const handleExportPDF = useCallback(async () => {
