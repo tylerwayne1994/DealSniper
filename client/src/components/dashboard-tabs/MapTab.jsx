@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle, CircleMarker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -180,6 +180,11 @@ function DashboardMapTab() {
   const [zipHeatmap, setZipHeatmap] = useState(false);
   const [zipHeatmapMetric, setZipHeatmapMetric] = useState('medianHouseholdIncome');
 
+  // Development pipeline overlay
+  const [devPipelineEnabled, setDevPipelineEnabled] = useState(false);
+  const [devPipelineData, setDevPipelineData] = useState([]);
+  const [devPipelineFilter, setDevPipelineFilter] = useState('all'); // 'all' | status filter
+
   // Uploaded property sheets state
   const [uploadedSheets, setUploadedSheets] = useState([]); // Array of { id, name, properties: [...] }
   const [sheetPreview, setSheetPreview] = useState(null); // Current sheet being previewed
@@ -189,6 +194,44 @@ function DashboardMapTab() {
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [selectedProperties, setSelectedProperties] = useState([]);  // Track selected property indices
   const [geocodingResults, setGeocodingResults] = useState({ results: [], failed: [] }); // Store geocoding results
+
+  // Load development pipeline CSV when first enabled
+  useEffect(() => {
+    if (!devPipelineEnabled || devPipelineData.length > 0) return;
+    Papa.parse('/development_pipeline.csv', {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const valid = results.data.filter(r => r.latitude && r.longitude && !isNaN(Number(r.latitude)));
+        setDevPipelineData(valid);
+        console.log(`[DevPipeline] Loaded ${valid.length} projects`);
+      },
+      error: (err) => console.error('[DevPipeline] CSV parse error:', err)
+    });
+  }, [devPipelineEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Filtered pipeline projects
+  const filteredPipeline = useMemo(() => {
+    if (!devPipelineEnabled) return [];
+    if (devPipelineFilter === 'all') return devPipelineData;
+    return devPipelineData.filter(p => p.status === devPipelineFilter);
+  }, [devPipelineEnabled, devPipelineData, devPipelineFilter]);
+
+  // Unique statuses for the filter dropdown
+  const pipelineStatuses = useMemo(() => {
+    const s = new Set(devPipelineData.map(p => p.status).filter(Boolean));
+    return ['all', ...Array.from(s).sort()];
+  }, [devPipelineData]);
+
+  // Color by status
+  const devPinColor = (status) => {
+    const s = (status || '').toLowerCase();
+    if (s.includes('completed')) return '#22c55e';
+    if (s.includes('under construction')) return '#f59e0b';
+    if (s.includes('proposed') || s.includes('planning') || s.includes('approved') || s.includes('announced')) return '#8b5cf6';
+    return '#6b7280';
+  };
 
   // MapLibre 3D refs
   const maplibreContainerRef = useRef(null);
@@ -408,6 +451,42 @@ function DashboardMapTab() {
         })
       ];
 
+      // Dev Pipeline markers on 3D map
+      if (devPipelineEnabled) {
+        filteredPipeline.forEach(proj => {
+          const lat = Number(proj.latitude), lng = Number(proj.longitude);
+          if (!lat || !lng) return;
+          const color = devPinColor(proj.status);
+          const el = document.createElement('div');
+          el.style.cursor = 'pointer';
+          el.style.width = '18px';
+          el.style.height = '18px';
+          el.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`;
+          const popup = new maplibregl.Popup({ offset: 12, maxWidth: '320px' })
+            .setHTML(`
+              <div style="font-family:Inter,-apple-system,sans-serif;padding:8px;">
+                <div style="font-weight:700;font-size:14px;color:#111827;margin-bottom:4px;">${proj.project_name || 'Unknown'}</div>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">${proj.address || ''}, ${proj.city || ''}</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+                  <span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${color}22;color:${color};">${proj.status || 'Unknown'}</span>
+                  ${proj.class_type ? `<span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#e0e7ff;color:#3730a3;">${proj.class_type}</span>` : ''}
+                </div>
+                <div style="font-size:12px;color:#374151;">
+                  ${proj.units ? `<div><strong>Units:</strong> ${Number(proj.units).toLocaleString()}</div>` : ''}
+                  ${proj.developer && proj.developer !== 'Unknown' ? `<div><strong>Developer:</strong> ${proj.developer}</div>` : ''}
+                  ${proj.completion_date ? `<div><strong>Completion:</strong> ${proj.completion_date}</div>` : ''}
+                </div>
+                ${proj.source_url ? `<a href="${proj.source_url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6;margin-top:4px;display:block;">View Source →</a>` : ''}
+              </div>
+            `);
+          const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+            .setLngLat([lng, lat])
+            .setPopup(popup)
+            .addTo(map);
+          maplibreMarkersRef.current.push(marker);
+        });
+      }
+
       allPins.forEach(pin => {
         let color = '#ef4444';
         if (pin.category === 'pipeline') color = '#22c55e';
@@ -465,7 +544,7 @@ function DashboardMapTab() {
     } else {
       map.on('load', addMarkers);
     }
-  }, [mapStyle, customPins, baseMarkers, mapFilter]);
+  }, [mapStyle, customPins, baseMarkers, mapFilter, devPipelineEnabled, filteredPipeline]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmitProperty = async (e) => {
     e.preventDefault();
@@ -2155,6 +2234,57 @@ function DashboardMapTab() {
                     </>
                   )}
                 </div>
+
+                {/* ═══ Development Pipeline Layer ═══ */}
+                <div style={{
+                  backgroundColor: devPipelineEnabled ? '#fefce8' : '#f9fafb',
+                  border: `1px solid ${devPipelineEnabled ? '#fde68a' : '#e5e7eb'}`,
+                  borderRadius: '8px',
+                  padding: '10px 12px',
+                  marginTop: '8px',
+                  transition: 'all 0.2s',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#374151' }}>
+                      <input
+                        type="checkbox"
+                        checked={devPipelineEnabled}
+                        onChange={(e) => setDevPipelineEnabled(e.target.checked)}
+                        style={{ accentColor: '#f59e0b', width: '15px', height: '15px', cursor: 'pointer' }}
+                      />
+                      🏗️ Development Pipeline
+                    </label>
+                    {devPipelineEnabled && (
+                      <select
+                        value={devPipelineFilter}
+                        onChange={(e) => setDevPipelineFilter(e.target.value)}
+                        style={{
+                          padding: '4px 8px',
+                          fontSize: '11px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '5px',
+                          backgroundColor: 'white',
+                          color: '#374151',
+                          fontWeight: '500',
+                        }}
+                      >
+                        {pipelineStatuses.map(s => (
+                          <option key={s} value={s}>{s === 'all' ? 'All Statuses' : s}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                  {devPipelineEnabled && (
+                    <>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px', fontSize: '11px' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }}/> Under Construction</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#8b5cf6', display: 'inline-block' }}/> Proposed/Planning</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#22c55e', display: 'inline-block' }}/> Completed</span>
+                      </div>
+                      <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '6px' }}>{filteredPipeline.length} projects · 252 nationwide</div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -2362,6 +2492,75 @@ function DashboardMapTab() {
                 </Popup>
               </Marker>
             ))}
+
+            {/* Development Pipeline markers */}
+            {devPipelineEnabled && filteredPipeline.map((proj, idx) => {
+              const lat = Number(proj.latitude), lng = Number(proj.longitude);
+              if (!lat || !lng) return null;
+              const color = devPinColor(proj.status);
+              return (
+                <CircleMarker
+                  key={`dev-${idx}`}
+                  center={[lat, lng]}
+                  radius={7}
+                  pathOptions={{ fillColor: color, fillOpacity: 0.85, color: '#fff', weight: 2 }}
+                >
+                  <Popup maxWidth={340}>
+                    <div style={{ fontFamily: 'Inter, -apple-system, sans-serif', minWidth: 260, padding: 4 }}>
+                      {/* Header */}
+                      <div style={{ fontWeight: 700, fontSize: 15, color: '#111827', marginBottom: 2 }}>
+                        {proj.project_name || 'Unknown Project'}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
+                        {proj.address || ''}{proj.address && proj.city ? ', ' : ''}{proj.city || ''}
+                      </div>
+
+                      {/* Status + Class badges */}
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                        <span style={{
+                          padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600,
+                          background: `${color}20`, color: color, border: `1px solid ${color}40`
+                        }}>{proj.status || 'Unknown'}</span>
+                        {proj.class_type && (
+                          <span style={{
+                            padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600,
+                            background: '#e0e7ff', color: '#3730a3', border: '1px solid #c7d2fe'
+                          }}>{proj.class_type}</span>
+                        )}
+                      </div>
+
+                      {/* Details grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: 12 }}>
+                        {proj.units && (
+                          <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>UNITS</span><br/>
+                            <span style={{ fontWeight: 700, color: '#111827' }}>{Number(proj.units).toLocaleString()}</span></div>
+                        )}
+                        {proj.developer && proj.developer !== 'Unknown' && (
+                          <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>DEVELOPER</span><br/>
+                            <span style={{ fontWeight: 600, color: '#374151' }}>{proj.developer}</span></div>
+                        )}
+                        {proj.permit_date && (
+                          <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>PERMIT DATE</span><br/>
+                            <span style={{ color: '#374151' }}>{proj.permit_date}</span></div>
+                        )}
+                        {proj.completion_date && (
+                          <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>COMPLETION</span><br/>
+                            <span style={{ color: '#374151' }}>{proj.completion_date}</span></div>
+                        )}
+                      </div>
+
+                      {/* Source link */}
+                      {proj.source_url && (
+                        <a href={proj.source_url} target="_blank" rel="noopener noreferrer" style={{
+                          display: 'block', marginTop: 10, fontSize: 11, color: '#3b82f6',
+                          fontWeight: 600, textDecoration: 'none'
+                        }}>View Source →</a>
+                      )}
+                    </div>
+                  </Popup>
+                </CircleMarker>
+              );
+            })}
 
             {/* Data overlay layers (county heat map + ZIP centroids + ZIP heat map) */}
             <MapOverlayLayers
