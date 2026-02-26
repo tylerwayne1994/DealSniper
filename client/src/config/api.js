@@ -49,6 +49,7 @@ export const API_ENDPOINTS = {
     : `${API_BASE_URL}/api/email-deals/list`,
   emailDealsBuyBox: `${API_BASE_URL}/api/email-deals/buy-box`,
   emailDealsSync: `${API_BASE_URL}/api/email-deals/sync`,
+  emailDealsSyncInbound: `${API_BASE_URL}/api/email-deals/sync-inbound`,
   emailDealsDisconnect: `${API_BASE_URL}/api/email-deals/disconnect`,
   
   // Due Diligence

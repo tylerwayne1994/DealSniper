@@ -919,3 +919,169 @@ async def disconnect_gmail(request: Request):
     }).eq('user_id', user_id).eq('provider', 'gmail').execute()
     
     return {"success": True, "message": "Gmail disconnected"}
+
+
+# ============================================================================
+# System-level Inbound Inbox Sync
+# ============================================================================
+
+# The inbound email address users forward OMs to.
+INBOUND_EMAIL = os.getenv("INBOUND_EMAIL", "dealsniperinbound@gmail.com")
+
+
+def get_system_gmail_credentials():
+    """Get Gmail credentials for the system inbound inbox.
+
+    We look for the first *active* Gmail integration in the database
+    regardless of which admin connected it.
+    """
+    supabase = get_supabase()
+    result = (
+        supabase.table("email_integrations")
+        .select("*")
+        .eq("provider", "gmail")
+        .eq("status", "active")
+        .limit(1)
+        .execute()
+    )
+
+    if not result.data:
+        return None, None
+
+    integration = result.data[0]
+    admin_user_id = integration["user_id"]
+
+    creds = Credentials(
+        token=integration["access_token"],
+        refresh_token=integration["refresh_token"],
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=GOOGLE_CLIENT_ID,
+        client_secret=GOOGLE_CLIENT_SECRET,
+        scopes=GMAIL_SCOPES,
+    )
+
+    # Refresh if expired
+    if creds.expired and creds.refresh_token:
+        try:
+            creds.refresh(GoogleRequest())
+            supabase.table("email_integrations").update({
+                "access_token": creds.token,
+                "expires_at": creds.expiry.isoformat() if creds.expiry else None,
+                "updated_at": datetime.utcnow().isoformat(),
+            }).eq("user_id", admin_user_id).eq("provider", "gmail").execute()
+        except Exception as e:
+            log.error("[EmailDeals] Failed to refresh system Gmail credentials: %s", e)
+            return None, None
+
+    return creds, admin_user_id
+
+
+@router.get("/sync-inbound")
+async def sync_inbound_inbox():
+    """Sync the shared system inbound inbox.
+
+    No user auth required — this uses the system-level Gmail credentials.
+    It reads ALL recent emails, matches senders to user profiles, and
+    creates email_underwrite_jobs under the matched user's account.
+    """
+    creds, admin_user_id = get_system_gmail_credentials()
+    if not creds:
+        raise HTTPException(status_code=500, detail="System Gmail inbox not connected. An admin must connect it first.")
+
+    try:
+        service = build("gmail", "v1", credentials=creds)
+
+        results = service.users().messages().list(
+            userId="me",
+            q="newer_than:7d",
+            maxResults=50,
+        ).execute()
+
+        messages = results.get("messages", [])
+        supabase = get_supabase()
+        synced = 0
+        already_known = 0
+
+        for msg_stub in messages:
+            msg_id = msg_stub["id"]
+
+            # Deduplicate
+            existing = supabase.table("raw_emails").select("id").eq("provider_message_id", msg_id).execute()
+            if existing.data:
+                already_known += 1
+                continue
+
+            msg = service.users().messages().get(userId="me", id=msg_id, format="full").execute()
+            headers = {h["name"].lower(): h["value"] for h in msg.get("payload", {}).get("headers", [])}
+
+            internal_date = msg.get("internalDate")
+            received_at = datetime.fromtimestamp(int(internal_date) / 1000).isoformat() if internal_date else None
+
+            from_address_raw = headers.get("from", "")
+
+            # Match sender to a registered user
+            email_match = re.search(r"<([^>]+)>", from_address_raw)
+            sender_email = (email_match.group(1) if email_match else from_address_raw).strip().lower()
+
+            matched_user_id = None
+            try:
+                profile_result = supabase.table("profiles").select("id").eq("email", sender_email).execute()
+                if profile_result.data and len(profile_result.data) > 0:
+                    matched_user_id = profile_result.data[0]["id"]
+            except Exception as lookup_err:
+                log.warning("[EmailDeals] Profile lookup failed for %s: %s", sender_email, lookup_err)
+
+            owner_user_id = matched_user_id or admin_user_id
+
+            # Store raw email
+            email_data = {
+                "user_id": admin_user_id,
+                "provider_message_id": msg_id,
+                "thread_id": msg.get("threadId"),
+                "from_address": from_address_raw,
+                "subject": headers.get("subject", ""),
+                "snippet": msg.get("snippet", ""),
+                "received_at": received_at,
+                "raw_payload": msg.get("payload"),
+                "processed": False,
+            }
+
+            insert_result = supabase.table("raw_emails").insert(email_data).execute()
+            raw_email_row = (insert_result.data or [{}])[0]
+            raw_email_id = raw_email_row.get("id")
+
+            # Create underwrite job under matched user
+            try:
+                job_record = {
+                    "user_id": owner_user_id,
+                    "raw_email_id": raw_email_id,
+                    "from_address": from_address_raw,
+                    "to_address": None,
+                    "subject": email_data["subject"],
+                    "thread_id": email_data["thread_id"],
+                    "provider_message_id": email_data["provider_message_id"],
+                    "attachments": [],
+                    "status": "pending",
+                }
+                supabase.table("email_underwrite_jobs").insert(job_record).execute()
+            except Exception as job_err:
+                log.warning("[EmailDeals] Failed to create job for msg %s: %s", msg_id, job_err)
+
+            synced += 1
+
+        # Update last sync timestamp
+        if admin_user_id:
+            supabase.table("email_integrations").update({
+                "last_sync_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.utcnow().isoformat(),
+            }).eq("user_id", admin_user_id).eq("provider", "gmail").execute()
+
+        return {
+            "success": True,
+            "synced": synced,
+            "already_known": already_known,
+            "message": f"Synced {synced} new emails from inbound inbox.",
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error syncing inbound inbox: {str(e)}")

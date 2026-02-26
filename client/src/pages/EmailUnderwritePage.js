@@ -7,8 +7,10 @@ import {
   DollarSign,
   TrendingUp,
   Clock,
+  RefreshCw,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { API_BASE_URL } from '../config/api';
 import DashboardShell from '../components/DashboardShell';
 
 function EmailUnderwritePage() {
@@ -17,6 +19,36 @@ function EmailUnderwritePage() {
   const [dealsById, setDealsById] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState('');
+
+  const handleSyncAndProcess = async () => {
+    setSyncing(true);
+    setSyncMessage('');
+    try {
+      // Step 1: Sync inbound inbox
+      const syncRes = await fetch(`${API_BASE_URL}/api/email-deals/sync-inbound`);
+      const syncData = await syncRes.json();
+      if (!syncRes.ok) throw new Error(syncData.detail || 'Sync failed');
+
+      // Step 2: Process pending jobs into deals
+      const processRes = await fetch(`${API_BASE_URL}/api/email-underwrite/process-pending`, {
+        method: 'POST',
+      });
+      const processData = await processRes.json();
+
+      setSyncMessage(`Synced ${syncData.synced || 0} emails, processed ${processData.processed || 0} deals.`);
+
+      // Reload data
+      window.location.reload();
+    } catch (err) {
+      console.error('Sync error:', err);
+      setSyncMessage('Error: ' + err.message);
+    } finally {
+      setSyncing(false);
+      setTimeout(() => setSyncMessage(''), 8000);
+    }
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -260,17 +292,45 @@ function EmailUnderwritePage() {
             <div style={{ marginTop: '8px', fontSize: '13px', color: '#4b5563', lineHeight: 1.6 }}>
               <ol style={{ paddingLeft: '18px', margin: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <li>
-                  Go to the <strong>Email Deals</strong> page to connect Gmail and see your unique forwarding address.
+                  Forward your broker emails with OMs, T12s, and rent rolls to:
+                  <br />
+                  <strong style={{ color: '#0f172a', fontSize: '14px' }}>dealsniperinbound@gmail.com</strong>
                 </li>
                 <li>
-                  Forward broker emails with OMs, T12s, and rent rolls from that inbox 
-                  using your DealSniper email address.
+                  Send from the <strong>same email you signed up with</strong> so we can match it to your account.
                 </li>
                 <li>
-                  We parse the attachments, run the underwriter, push the deal into your pipeline, 
-                  and list it here once complete.
+                  We automatically parse the attachments, run the underwriter, and push the deal into your pipeline.
                 </li>
               </ol>
+
+              <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button
+                  onClick={handleSyncAndProcess}
+                  disabled={syncing}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 16px',
+                    backgroundColor: syncing ? '#94a3b8' : '#0d9488',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: syncing ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
+                  {syncing ? 'Syncing...' : 'Sync & Process'}
+                </button>
+                {syncMessage && (
+                  <span style={{ fontSize: '12px', color: syncMessage.startsWith('Error') ? '#b91c1c' : '#15803d' }}>
+                    {syncMessage}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 

@@ -25,7 +25,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from googleapiclient.discovery import build
 
-from email_deals import get_supabase, get_gmail_credentials  # reuse existing helpers
+from email_deals import get_supabase, get_gmail_credentials, get_system_gmail_credentials  # reuse existing helpers
 from parser_v4 import RealEstateParser
 from v2_underwriter import storage
 
@@ -111,11 +111,15 @@ async def intake_test(payload: IntakeTestPayload):
     return {"job_id": job_id}
 
 
-def _build_gmail_service(user_id: str):
-    """Build an authenticated Gmail API client for a given user_id."""
-    creds = get_gmail_credentials(user_id)
+def _build_gmail_service(user_id: str = None):
+    """Build an authenticated Gmail API client.
+
+    Uses the system-level inbound inbox credentials (not per-user).
+    The user_id parameter is kept for signature compat but ignored.
+    """
+    creds, _ = get_system_gmail_credentials()
     if not creds:
-        raise HTTPException(status_code=401, detail="Gmail not connected for this user")
+        raise HTTPException(status_code=401, detail="System Gmail inbox not connected")
     return build("gmail", "v1", credentials=creds)
 
 
@@ -197,7 +201,8 @@ async def process_pending_jobs(request: Request, limit: int = 5):
 
     processed = 0
     parser = RealEstateParser()
-    gmail_services: dict[str, object] = {}
+    # Single system-level Gmail client for the inbound inbox
+    system_gmail = _build_gmail_service()
 
     for job in jobs:
         job_id = job["id"]
@@ -210,10 +215,7 @@ async def process_pending_jobs(request: Request, limit: int = 5):
             if not msg_id:
                 raise RuntimeError("Missing provider_message_id on job")
 
-            # Build/reuse Gmail client for this user
-            if user_id not in gmail_services:
-                gmail_services[user_id] = _build_gmail_service(user_id)
-            service = gmail_services[user_id]
+            service = system_gmail
 
             # Download first OM-style attachment
             content, filename = _download_first_document_attachment(service, msg_id)
