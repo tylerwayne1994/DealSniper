@@ -20,7 +20,7 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: GOOGLE_REDIRECT_URI
-        value: https://dealsniper-backend.onrender.com/auth/google/callback
+        value: https://dealsniper-oh9v.onrender.com/auth/google/callback
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_KEY
