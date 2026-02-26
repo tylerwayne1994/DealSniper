@@ -431,8 +431,30 @@ async def sync_email_deals(request: Request):
                 'raw_payload': msg.get('payload'),
                 'processed': False
             }
-            
-            supabase.table('raw_emails').insert(email_data).execute()
+
+            insert_result = supabase.table('raw_emails').insert(email_data).select('id').single().execute()
+            raw_email_row = insert_result.data or {}
+            raw_email_id = raw_email_row.get('id')
+
+            # Also create an email_underwrite_jobs entry tied to this email so the
+            # Email Underwrite dashboard can show it.
+            try:
+                job_record = {
+                    'user_id': user_id,
+                    'raw_email_id': raw_email_id,
+                    'from_address': email_data['from_address'],
+                    'to_address': None,
+                    'subject': email_data['subject'],
+                    'thread_id': email_data['thread_id'],
+                    'provider_message_id': email_data['provider_message_id'],
+                    'attachments': [],
+                    'status': 'pending'
+                }
+                supabase.table('email_underwrite_jobs').insert(job_record).execute()
+            except Exception as job_err:
+                # Don't break sync if job creation fails; just log in backend.
+                log.warning(f"[EmailDeals] Failed to create email_underwrite_job for msg %s: %s", msg_id, job_err)
+
             synced += 1
         
         # Update last sync time

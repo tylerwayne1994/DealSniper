@@ -13,6 +13,7 @@ import MaxAIUnderwritePage from './pages/MaxAIUnderwritePage'; // MAX AI Underwr
 import MarketResearchPage from './pages/MarketResearchPage'; // Market Discovery AI
 import DueDiligencePage from './pages/DueDiligencePage'; // Due Diligence Checklist
 import EmailDealsPage from './pages/EmailDealsPage'; // Email Deal Screener
+import EmailUnderwritePage from './pages/EmailUnderwritePage'; // Email Underwrite Pipeline
 import SignUpPage from './pages/SignUpPage'; // Sign Up
 import SignupCompletePage from './pages/SignupCompletePage'; // Signup Complete
 import LoginPage from './pages/LoginPage'; // Login
@@ -45,6 +46,7 @@ function App() {
         <Route path="/market-research" element={<MarketResearchPage />} /> {/* Market Discovery */}
         <Route path="/due-diligence" element={<DueDiligencePage />} /> {/* Due Diligence Checklist */}
         <Route path="/email-deals" element={<EmailDealsPage />} /> {/* Email Deal Screener */}
+        <Route path="/email-underwrite" element={<EmailUnderwritePage />} /> {/* Email Underwrite Pipeline */}
       </Routes>
     </Router>
   );

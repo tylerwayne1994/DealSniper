@@ -11,6 +11,7 @@ import {
   Bell,
   MapPin,
   Shield,
+  Mail,
 } from 'lucide-react';
 
 const SIDEBAR_WIDTH = 200;
@@ -170,6 +171,7 @@ const tabs = [
   { id: 'pipeline', label: 'Pipeline', icon: Layers, section: 'deals' },
   { id: 'underwrite', label: 'Underwrite', icon: FileSpreadsheet, section: 'deals' },
   { id: 'rapid-fire', label: 'Rapid Fire', icon: Zap, section: 'deals' },
+  { id: 'email-underwrite', label: 'Email Underwrite', icon: Mail, section: 'deals' },
   { id: 'market', label: 'Market Research', icon: BarChart3, section: 'analysis' },
   { id: 'pitch-deck', label: 'Pitch Deck', icon: Presentation, section: 'analysis' },
   { id: 'contract', label: 'Contracts', icon: Shield, section: 'analysis' },
@@ -185,6 +187,8 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
       navigate('/underwrite');
     } else if (tabId === 'email-deals') {
       navigate('/email-deals');
+    } else if (tabId === 'email-underwrite') {
+      navigate('/email-underwrite');
     } else if (tabId === 'market') {
       navigate('/market-research');
     } else if (tabId === 'pitch-deck') {
