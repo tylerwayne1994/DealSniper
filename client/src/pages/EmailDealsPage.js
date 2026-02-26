@@ -20,6 +20,7 @@ import {
   Loader2
 } from 'lucide-react';
 import DashboardShell from '../components/DashboardShell';
+import { API_ENDPOINTS } from '../config/api';
 
 // ============================================================================
 // Email Deals Page - Auto-Screen Broker Emails
@@ -155,7 +156,7 @@ function EmailDealsPage() {
     const top = window.screenY + (window.outerHeight - height) / 2;
     
     const popup = window.open(
-      'http://localhost:8010/auth/google',
+      API_ENDPOINTS.authGoogle,
       'gmail_oauth',
       `width=${width},height=${height},left=${left},top=${top}`
     );
