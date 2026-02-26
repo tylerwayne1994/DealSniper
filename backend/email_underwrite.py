@@ -17,15 +17,15 @@ import logging
 import os
 import tempfile
 import uuid
+import email as email_mod
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
-from googleapiclient.discovery import build
 
-from email_deals import get_supabase, get_gmail_credentials, get_system_gmail_credentials  # reuse existing helpers
+from email_deals import get_supabase, get_imap_connection  # IMAP-based helpers
 from parser_v4 import RealEstateParser
 from v2_underwriter import storage
 
@@ -111,66 +111,63 @@ async def intake_test(payload: IntakeTestPayload):
     return {"job_id": job_id}
 
 
-def _build_gmail_service(user_id: str = None):
-    """Build an authenticated Gmail API client.
+def _download_attachment_via_imap(uid_str: str) -> tuple[Optional[bytes], Optional[str]]:
+    """Download the first PDF/Excel/CSV attachment from the inbound inbox via IMAP.
 
-    Uses the system-level inbound inbox credentials (not per-user).
-    The user_id parameter is kept for signature compat but ignored.
+    Uses the system-level IMAP connection (env vars, no OAuth).
+    Returns (file_bytes, filename) or (None, None).
     """
-    creds, _ = get_system_gmail_credentials()
-    if not creds:
-        raise HTTPException(status_code=401, detail="System Gmail inbox not connected")
-    return build("gmail", "v1", credentials=creds)
+    mail = get_imap_connection()
+    if not mail:
+        log.error("[EmailUnderwrite] IMAP connection failed — check env vars")
+        return None, None
 
+    try:
+        mail.select("INBOX")
+        st, msg_data = mail.uid("fetch", uid_str.encode(), "(RFC822)")
 
-def _download_first_document_attachment(service, message_id: str) -> tuple[Optional[bytes], Optional[str]]:
-    """Download the first PDF/Excel/CSV attachment from a Gmail message.
+        if st != "OK" or not msg_data or not msg_data[0]:
+            log.warning("[EmailUnderwrite] IMAP fetch failed for UID %s", uid_str)
+            return None, None
 
-    Returns (bytes, filename) or (None, None) if none found.
-    """
-    msg = service.users().messages().get(userId="me", id=message_id, format="full").execute()
-    payload = msg.get("payload", {})
+        raw_bytes = msg_data[0][1] if isinstance(msg_data[0], tuple) else msg_data[0]
+        msg = email_mod.message_from_bytes(raw_bytes)
 
-    allowed_exts = (".pdf", ".xlsx", ".xls", ".csv")
+        allowed_exts = (".pdf", ".xlsx", ".xls", ".csv")
 
-    def iter_parts(part):
-        yield part
-        for p in part.get("parts", []) or []:
-            yield from iter_parts(p)
-
-    for part in iter_parts(payload):
-        filename = part.get("filename") or ""
-        if not filename:
-            continue
-        ext = Path(filename).suffix.lower()
-        if ext not in allowed_exts:
-            continue
-
-        body = part.get("body", {})
-        data = body.get("data")
-        attachment_id = body.get("attachmentId")
-
-        if data:
-            try:
-                content = base64.urlsafe_b64decode(data.encode("utf-8"))
-                return content, filename
-            except Exception:
+        for part in msg.walk():
+            if part.get_content_maintype() == "multipart":
                 continue
 
-        if attachment_id:
-            attach = (
-                service.users()
-                .messages()
-                .attachments()
-                .get(userId="me", messageId=message_id, id=attachment_id)
-                .execute()
-            )
-            data = attach.get("data")
-            if data:
-                content = base64.urlsafe_b64decode(data.encode("utf-8"))
-                return content, filename
+            filename = part.get_filename()
+            if not filename:
+                continue
 
-    return None, None
+            # Decode RFC-2047 filename if needed
+            from email.header import decode_header
+            decoded_parts = decode_header(filename)
+            decoded_name = ""
+            for data, charset in decoded_parts:
+                if isinstance(data, bytes):
+                    decoded_name += data.decode(charset or "utf-8", errors="replace")
+                else:
+                    decoded_name += data
+            filename = decoded_name
+
+            ext = Path(filename).suffix.lower()
+            if ext not in allowed_exts:
+                continue
+
+            payload = part.get_payload(decode=True)
+            if payload:
+                return payload, filename
+
+        return None, None
+    finally:
+        try:
+            mail.logout()
+        except Exception:
+            pass
 
 
 @router.post("/process-pending")
@@ -201,8 +198,6 @@ async def process_pending_jobs(request: Request, limit: int = 5):
 
     processed = 0
     parser = RealEstateParser()
-    # Single system-level Gmail client for the inbound inbox
-    system_gmail = _build_gmail_service()
 
     for job in jobs:
         job_id = job["id"]
@@ -215,10 +210,8 @@ async def process_pending_jobs(request: Request, limit: int = 5):
             if not msg_id:
                 raise RuntimeError("Missing provider_message_id on job")
 
-            service = system_gmail
-
-            # Download first OM-style attachment
-            content, filename = _download_first_document_attachment(service, msg_id)
+            # Download first OM-style attachment via IMAP
+            content, filename = _download_attachment_via_imap(msg_id)
             if not content or not filename:
                 raise RuntimeError("No PDF/Excel/CSV attachment found on email")
 
