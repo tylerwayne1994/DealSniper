@@ -171,6 +171,7 @@ const tabs = [
   { id: 'pipeline', label: 'Pipeline', icon: Layers, section: 'deals' },
   { id: 'underwrite', label: 'Underwrite', icon: FileSpreadsheet, section: 'deals' },
   { id: 'rapid-fire', label: 'Rapid Fire', icon: Zap, section: 'deals' },
+  { id: 'email-deals', label: 'Email Deals', icon: Mail, section: 'deals' },
   { id: 'email-underwrite', label: 'Email Underwrite', icon: Mail, section: 'deals' },
   { id: 'market', label: 'Market Research', icon: BarChart3, section: 'analysis' },
   { id: 'pitch-deck', label: 'Pitch Deck', icon: Presentation, section: 'analysis' },
