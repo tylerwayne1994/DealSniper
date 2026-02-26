@@ -202,6 +202,10 @@ app.include_router(token_router)
 from zoning_router import router as zoning_router
 app.include_router(zoning_router)
 
+# Parcel Overlay: serve parcel boundaries from NDJSON GeoJSON files
+from parcel_api import router as parcel_router
+app.include_router(parcel_router)
+
 # Stripe Webhook: Handle subscription updates
 from stripe_webhook_handler import router as stripe_webhook_router
 app.include_router(stripe_webhook_router)

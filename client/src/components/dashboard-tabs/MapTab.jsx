@@ -153,6 +153,105 @@ function ZoningOverlayLayer({ serviceKey, enabled, zoneFilter }) {
   return null; // Imperative-only; no JSX rendered
 }
 
+// ─── ParcelOverlayLayer (child of MapContainer, uses useMap) ─────────
+function ParcelOverlayLayer({ enabled }) {
+  const map = useMap();
+  const layerRef = useRef(null);
+  const debounceRef = useRef(null);
+  const abortRef = useRef(null);
+
+  const fetchAndRender = useCallback(async () => {
+    if (!map || !enabled) return;
+
+    const zoom = map.getZoom();
+    // Clean up previous
+    if (layerRef.current) { map.removeLayer(layerRef.current); layerRef.current = null; }
+
+    if (zoom < 14) return; // Don't fetch below zoom 14
+
+    // Abort any in-flight request
+    if (abortRef.current) abortRef.current.abort();
+    abortRef.current = new AbortController();
+
+    const bounds = map.getBounds();
+    const params = new URLSearchParams({
+      west: bounds.getWest(),
+      south: bounds.getSouth(),
+      east: bounds.getEast(),
+      north: bounds.getNorth(),
+      zoom,
+      limit: 3000,
+    });
+
+    try {
+      const res = await fetch(`${API_ENDPOINTS.parcels}?${params}`, {
+        signal: abortRef.current.signal,
+      });
+      if (!res.ok) { console.error('[Parcels] fetch error', res.status); return; }
+      const geojson = await res.json();
+
+      if (!geojson.features?.length) return;
+
+      const layer = L.geoJSON(geojson, {
+        style: () => ({
+          fillColor: '#6366f1',
+          fillOpacity: 0.12,
+          color: '#4f46e5',
+          weight: 1.5,
+        }),
+        onEachFeature: (feature, lyr) => {
+          const props = feature.properties || {};
+          const pid = props.pid || props.id || 'N/A';
+          const rows = Object.entries(props)
+            .filter(([, v]) => v !== '' && v !== null && v !== undefined)
+            .map(([k, v]) => `<tr><td style="font-weight:600;color:#6b7280;padding:2px 8px 2px 0;font-size:11px;white-space:nowrap">${k}</td><td style="color:#111827;padding:2px 0;font-size:11px">${v}</td></tr>`)
+            .join('');
+          lyr.bindPopup(
+            `<div style="font-family:Inter,sans-serif"><div style="font-weight:700;font-size:13px;margin-bottom:6px;color:#4f46e5">Parcel ${pid}</div><table>${rows}</table></div>`,
+            { maxWidth: 300 }
+          );
+          lyr.on('mouseover', () => {
+            lyr.setStyle({ weight: 2.5, color: '#4338ca', fillOpacity: 0.3 });
+            lyr.bringToFront();
+          });
+          lyr.on('mouseout', () => { layer.resetStyle(lyr); });
+        },
+      });
+
+      layer.addTo(map);
+      layerRef.current = layer;
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('[Parcels] Error fetching parcel data:', err);
+      }
+    }
+  }, [map, enabled]);
+
+  useEffect(() => {
+    if (!enabled) {
+      if (layerRef.current) { map.removeLayer(layerRef.current); layerRef.current = null; }
+      return;
+    }
+
+    fetchAndRender();
+
+    const onMoveEnd = () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => fetchAndRender(), 600);
+    };
+    map.on('moveend', onMoveEnd);
+
+    return () => {
+      map.off('moveend', onMoveEnd);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (abortRef.current) abortRef.current.abort();
+      if (layerRef.current) { map.removeLayer(layerRef.current); layerRef.current = null; }
+    };
+  }, [enabled, fetchAndRender, map]);
+
+  return null;
+}
+
 // Helper to create Tailwind-styled divIcon
 function createDivIcon({ bgClass, borderClass = 'border-white/60', icon: Icon, iconColor = '#fff', size = 'normal' }) {
   const sizeClasses = size === 'small' ? 'w-7 h-7' : 'w-9 h-9';
@@ -318,6 +417,9 @@ function DashboardMapTab() {
   const [zoningServiceKey, setZoningServiceKey] = useState('');
   const [zoningFilter, setZoningFilter] = useState(''); // text filter by zone code
   const [zoningLoading, setZoningLoading] = useState(false);
+
+  // Parcel overlay state
+  const [parcelOverlay, setParcelOverlay] = useState(false);
 
   // Uploaded property sheets state
   const [uploadedSheets, setUploadedSheets] = useState([]); // Array of { id, name, properties: [...] }
@@ -2466,6 +2568,37 @@ function DashboardMapTab() {
                     </div>
                   )}
                 </div>
+
+                {/* ═══ Parcel Overlay Layer ═══ */}
+                <div style={{
+                  backgroundColor: parcelOverlay ? '#f5f3ff' : '#f9fafb',
+                  border: `1px solid ${parcelOverlay ? '#c4b5fd' : '#e5e7eb'}`,
+                  borderRadius: '8px',
+                  padding: '10px 12px',
+                  marginTop: '8px',
+                  transition: 'all 0.2s',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#374151' }}>
+                      <input
+                        type="checkbox"
+                        checked={parcelOverlay}
+                        onChange={(e) => setParcelOverlay(e.target.checked)}
+                        style={{ accentColor: '#7c3aed', width: '15px', height: '15px', cursor: 'pointer' }}
+                      />
+                      📐 Parcel Boundaries
+                    </label>
+                  </div>
+                  {parcelOverlay && (
+                    <div style={{ marginTop: '8px', fontSize: '11px', color: '#6b7280' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                        <span style={{ width: 14, height: 14, borderRadius: 3, background: 'rgba(99,102,241,0.15)', border: '2px solid #4f46e5', display: 'inline-block' }} />
+                        <span>Parcel outlines</span>
+                      </div>
+                      <div style={{ fontSize: '10px', color: '#9ca3af' }}>Zoom to level 14+ to view · Auto-refreshes on pan/zoom</div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -2801,6 +2934,9 @@ function DashboardMapTab() {
               serviceKey={zoningServiceKey}
               zoneFilter={zoningFilter}
             />
+
+            {/* Parcel boundary overlay layer */}
+            <ParcelOverlayLayer enabled={parcelOverlay} />
           </MapContainer>
           )}
         </div>
