@@ -272,23 +272,39 @@ async def google_auth_callback(code: str, state: str = None, error: str = None):
     user_id = state or "dev_user_1"
     
     try:
-        # Create flow and exchange code for tokens
-        flow = Flow.from_client_config(
-            {
-                "web": {
-                    "client_id": GOOGLE_CLIENT_ID,
-                    "client_secret": GOOGLE_CLIENT_SECRET,
-                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                    "token_uri": "https://oauth2.googleapis.com/token",
-                    "redirect_uris": [GOOGLE_REDIRECT_URI]
-                }
+        # Exchange the authorization code for tokens manually to avoid
+        # scope-change errors when Google returns extra scopes from the account.
+        import google.auth.transport.requests as g_requests
+        from google.oauth2 import id_token
+        import requests as http_requests
+
+        token_response = http_requests.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "code": code,
+                "client_id": GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
+                "redirect_uri": GOOGLE_REDIRECT_URI,
+                "grant_type": "authorization_code",
             },
-            scopes=GMAIL_SCOPES,
-            redirect_uri=GOOGLE_REDIRECT_URI
         )
-        
-        flow.fetch_token(code=code)
-        creds = flow.credentials
+        token_data = token_response.json()
+
+        if "error" in token_data:
+            raise Exception(f"Token exchange failed: {token_data.get('error_description', token_data['error'])}")
+
+        creds = Credentials(
+            token=token_data["access_token"],
+            refresh_token=token_data.get("refresh_token"),
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id=GOOGLE_CLIENT_ID,
+            client_secret=GOOGLE_CLIENT_SECRET,
+            scopes=GMAIL_SCOPES,
+        )
+        # Set expiry if provided
+        if "expires_in" in token_data:
+            from datetime import timezone
+            creds.expiry = datetime.now(timezone.utc) + timedelta(seconds=int(token_data["expires_in"]))
         
         # Save credentials to Supabase
         save_gmail_credentials(user_id, creds)
