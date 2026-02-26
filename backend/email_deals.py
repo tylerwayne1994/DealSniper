@@ -390,11 +390,17 @@ class SyncResponse(BaseModel):
 
 @router.get("/sync", response_model=SyncResponse)
 async def sync_email_deals(request: Request):
-    """Sync deal emails from Gmail."""
-    user_id = get_current_user_id(request)
+    """Sync deal emails from Gmail.
     
-    # Get Gmail credentials
-    creds = get_gmail_credentials(user_id)
+    The connected Gmail account is a shared inbound inbox
+    (e.g. dealsniperinbound@gmail.com).  Multiple users send OMs there.
+    We match each sender to a registered user in the ``profiles`` table
+    and create the underwrite job under *that* user's account.
+    """
+    admin_user_id = get_current_user_id(request)
+    
+    # Get Gmail credentials (stored under the admin who connected)
+    creds = get_gmail_credentials(admin_user_id)
     if not creds:
         raise HTTPException(status_code=401, detail="Gmail not connected. Please connect your Gmail account first.")
     
@@ -402,10 +408,10 @@ async def sync_email_deals(request: Request):
         # Build Gmail service
         service = build('gmail', 'v1', credentials=creds)
         
-        # Search for broker emails
+        # Fetch ALL recent emails with attachments from the inbound inbox
         results = service.users().messages().list(
             userId='me',
-            q=BROKER_EMAIL_QUERY,
+            q='newer_than:7d',
             maxResults=50
         ).execute()
         
@@ -418,8 +424,8 @@ async def sync_email_deals(request: Request):
         for msg_stub in messages:
             msg_id = msg_stub['id']
             
-            # Check if we already have this message
-            existing = supabase.table('raw_emails').select('id').eq('user_id', user_id).eq('provider_message_id', msg_id).execute()
+            # Check if we already have this message (keyed by admin who owns the inbox)
+            existing = supabase.table('raw_emails').select('id').eq('user_id', admin_user_id).eq('provider_message_id', msg_id).execute()
             
             if existing.data:
                 already_known += 1
@@ -435,12 +441,31 @@ async def sync_email_deals(request: Request):
             internal_date = msg.get('internalDate')
             received_at = datetime.fromtimestamp(int(internal_date) / 1000).isoformat() if internal_date else None
             
+            from_address_raw = headers.get('from', '')
+
+            # ----- Match sender to a registered user -----
+            # Extract bare email from "Display Name <email>" format
+            email_match = re.search(r'<([^>]+)>', from_address_raw)
+            sender_email = (email_match.group(1) if email_match else from_address_raw).strip().lower()
+
+            # Look up sender in profiles table
+            matched_user_id = None
+            try:
+                profile_result = supabase.table('profiles').select('id').eq('email', sender_email).execute()
+                if profile_result.data and len(profile_result.data) > 0:
+                    matched_user_id = profile_result.data[0]['id']
+            except Exception as lookup_err:
+                log.warning(f"[EmailDeals] Profile lookup failed for {sender_email}: {lookup_err}")
+
+            # If no profile match, fall back to admin (so emails still get stored)
+            owner_user_id = matched_user_id or admin_user_id
+            
             # Store raw email
             email_data = {
-                'user_id': user_id,
+                'user_id': admin_user_id,   # raw email stored under inbox owner
                 'provider_message_id': msg_id,
                 'thread_id': msg.get('threadId'),
-                'from_address': headers.get('from', ''),
+                'from_address': from_address_raw,
                 'subject': headers.get('subject', ''),
                 'snippet': msg.get('snippet', ''),
                 'received_at': received_at,
@@ -452,13 +477,12 @@ async def sync_email_deals(request: Request):
             raw_email_row = (insert_result.data or [{}])[0]
             raw_email_id = raw_email_row.get('id')
 
-            # Also create an email_underwrite_jobs entry tied to this email so the
-            # Email Underwrite dashboard can show it.
+            # Create email_underwrite_jobs entry under the MATCHED user's account
             try:
                 job_record = {
-                    'user_id': user_id,
+                    'user_id': owner_user_id,
                     'raw_email_id': raw_email_id,
-                    'from_address': email_data['from_address'],
+                    'from_address': from_address_raw,
                     'to_address': None,
                     'subject': email_data['subject'],
                     'thread_id': email_data['thread_id'],
@@ -468,7 +492,6 @@ async def sync_email_deals(request: Request):
                 }
                 supabase.table('email_underwrite_jobs').insert(job_record).execute()
             except Exception as job_err:
-                # Don't break sync if job creation fails; just log in backend.
                 log.warning(f"[EmailDeals] Failed to create email_underwrite_job for msg %s: %s", msg_id, job_err)
 
             synced += 1
