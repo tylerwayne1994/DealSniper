@@ -190,6 +190,10 @@ from email_deals import router as email_deals_router, auth_router as google_auth
 app.include_router(email_deals_router)
 app.include_router(google_auth_router)
 
+# Email → Auto-underwrite: email_underwrite_jobs pipeline
+from email_underwrite import router as email_underwrite_router
+app.include_router(email_underwrite_router)
+
 # Token Management: AI operation billing
 from token_manager import router as token_router
 app.include_router(token_router)
