@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import DashboardShell from '../components/DashboardShell';
 import { API_ENDPOINTS } from '../config/api';
+import { supabase } from '../lib/supabase';
 
 // ============================================================================
 // Email Deals Page - Auto-Screen Broker Emails
@@ -36,6 +37,7 @@ function EmailDealsPage() {
   const [emailCount, setEmailCount] = useState(0);
   const [dealsCount, setDealsCount] = useState(0);
   const [emailAddress, setEmailAddress] = useState('');
+  const [userId, setUserId] = useState(null);
   
   // Deals list
   const [deals, setDeals] = useState([]);
@@ -68,8 +70,13 @@ function EmailDealsPage() {
   // ============================================================================
   
   const checkStatus = useCallback(async () => {
+    if (!userId) return;
     try {
-      const response = await fetch('http://localhost:8010/api/email-deals/status');
+      const response = await fetch(API_ENDPOINTS.emailDealsStatus, {
+        headers: {
+          'X-User-ID': userId,
+        },
+      });
       const data = await response.json();
       
       setGmailConnected(data.connected);
@@ -82,16 +89,18 @@ function EmailDealsPage() {
       console.error('Error checking status:', error);
       setConnectionStatus('error');
     }
-  }, []);
+  }, [userId]);
 
   const fetchDeals = useCallback(async () => {
+    if (!userId) return;
     try {
       setLoading(true);
-      const url = scoreFilter === 'all' 
-        ? 'http://localhost:8010/api/email-deals/list' 
-        : `http://localhost:8010/api/email-deals/list?score_filter=${scoreFilter}`;
-      
-      const response = await fetch(url);
+      const url = API_ENDPOINTS.emailDealsList(scoreFilter);
+      const response = await fetch(url, {
+        headers: {
+          'X-User-ID': userId,
+        },
+      });
       const data = await response.json();
       
       setDeals(data.deals || []);
@@ -100,11 +109,16 @@ function EmailDealsPage() {
     } finally {
       setLoading(false);
     }
-  }, [scoreFilter]);
+  }, [scoreFilter, userId]);
 
   const fetchBuyBox = useCallback(async () => {
+    if (!userId) return;
     try {
-      const response = await fetch('http://localhost:8010/api/email-deals/buy-box');
+      const response = await fetch(API_ENDPOINTS.emailDealsBuyBox, {
+        headers: {
+          'X-User-ID': userId,
+        },
+      });
       const data = await response.json();
       setBuyBox({
         min_price: data.min_price || '',
@@ -122,14 +136,21 @@ function EmailDealsPage() {
     } catch (error) {
       console.error('Error fetching buy box:', error);
     }
-  }, []);
+  }, [userId]);
 
   const handleSync = async () => {
     setSyncing(true);
     setSyncMessage('');
     
     try {
-      const response = await fetch('http://localhost:8010/api/email-deals/sync');
+      if (!userId) {
+        throw new Error('User not logged in');
+      }
+      const response = await fetch(API_ENDPOINTS.emailDealsSync, {
+        headers: {
+          'X-User-ID': userId,
+        },
+      });
       const data = await response.json();
       
       if (data.success) {
@@ -149,14 +170,19 @@ function EmailDealsPage() {
   };
 
   const handleConnectGmail = () => {
+    if (!userId) {
+      alert('You must be logged in to connect Gmail.');
+      return;
+    }
     // Open OAuth in new window
     const width = 600;
     const height = 700;
     const left = window.screenX + (window.outerWidth - width) / 2;
     const top = window.screenY + (window.outerHeight - height) / 2;
     
+    const authUrl = `${API_ENDPOINTS.authGoogle}?user_id=${encodeURIComponent(userId)}`;
     const popup = window.open(
-      API_ENDPOINTS.authGoogle,
+      authUrl,
       'gmail_oauth',
       `width=${width},height=${height},left=${left},top=${top}`
     );
@@ -174,7 +200,15 @@ function EmailDealsPage() {
     if (!window.confirm('Are you sure you want to disconnect Gmail?')) return;
     
     try {
-      await fetch('/api/email-deals/disconnect', { method: 'DELETE' });
+      if (!userId) {
+        throw new Error('User not logged in');
+      }
+      await fetch(API_ENDPOINTS.emailDealsDisconnect, {
+        method: 'DELETE',
+        headers: {
+          'X-User-ID': userId,
+        },
+      });
       await checkStatus();
       setDeals([]);
     } catch (error) {
@@ -200,9 +234,15 @@ function EmailDealsPage() {
         assumed_interest_rate: buyBox.assumed_interest_rate
       };
       
-      await fetch('/api/email-deals/buy-box', {
+      if (!userId) {
+        throw new Error('User not logged in');
+      }
+      await fetch(API_ENDPOINTS.emailDealsBuyBox, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-User-ID': userId,
+        },
         body: JSON.stringify(payload)
       });
       
@@ -219,9 +259,29 @@ function EmailDealsPage() {
   // ============================================================================
   
   useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError) throw userError;
+        const uid = userData?.user?.id || null;
+        setUserId(uid);
+        if (!uid) {
+          setConnectionStatus('disconnected');
+        }
+      } catch (error) {
+        console.error('Error loading user for EmailDealsPage:', error);
+        setConnectionStatus('error');
+      }
+    };
+
+    loadUser();
+  }, []);
+
+  useEffect(() => {
+    if (!userId) return;
     checkStatus();
     fetchBuyBox();
-  }, [checkStatus, fetchBuyBox]);
+  }, [userId, checkStatus, fetchBuyBox]);
 
   useEffect(() => {
     if (gmailConnected) {
