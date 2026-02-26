@@ -448,8 +448,8 @@ async def sync_email_deals(request: Request):
                 'processed': False
             }
 
-            insert_result = supabase.table('raw_emails').insert(email_data).select('id').single().execute()
-            raw_email_row = insert_result.data or {}
+            insert_result = supabase.table('raw_emails').insert(email_data).execute()
+            raw_email_row = (insert_result.data or [{}])[0]
             raw_email_id = raw_email_row.get('id')
 
             # Also create an email_underwrite_jobs entry tied to this email so the
