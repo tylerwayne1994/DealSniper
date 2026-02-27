@@ -1,4 +1,6 @@
 # zoning_router.py — ArcGIS zoning overlay proxy
+import json
+import os
 import re
 import httpx
 from fastapi import APIRouter, HTTPException, Query
@@ -793,6 +795,51 @@ STATE_NAMES = {"AZ": "Arizona", "CA": "California", "NC": "North Carolina", "SC"
 ARCGIS_TIMEOUT = 30
 MAX_RECORD_COUNT = 2000
 
+# ---------------------------------------------------------------------------
+# Load zoning legend data — maps zone codes → full_name + category
+# ---------------------------------------------------------------------------
+_LEGEND_PATH = os.path.join(os.path.dirname(__file__), "data", "ZONING_LEGEND_LOOKUP.json")
+
+def _build_legend_lookup() -> dict[str, dict[str, dict]]:
+    """Build service_key → { CODE_UPPER: {full_name, category} } by matching URLs."""
+    try:
+        with open(_LEGEND_PATH, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError) as exc:
+        print(f"[Zoning] Warning: could not load legend: {exc}")
+        return {}
+
+    # Index legend entries by their endpoint URL for matching
+    legend_by_url: dict[str, dict] = {}
+    for _jur_name, jur in raw.items():
+        url = jur.get("endpoint_url", "")
+        if url:
+            legend_by_url[url] = jur
+
+    result: dict[str, dict[str, dict]] = {}
+    for svc_key, svc in ZONING_SERVICES.items():
+        base = svc["base_url"]
+        matched_jur = None
+        for legend_url, jur in legend_by_url.items():
+            if base in legend_url or legend_url in base:
+                matched_jur = jur
+                break
+        if matched_jur:
+            codes_map: dict[str, dict] = {}
+            for c in matched_jur.get("codes", []):
+                code_key = str(c["code"]).strip().upper()
+                codes_map[code_key] = {
+                    "full_name": c.get("full_name", c["code"]),
+                    "category": c.get("category", "Unknown"),
+                }
+            result[svc_key] = codes_map
+
+    print(f"[Zoning] Legend loaded: {len(result)} services matched, "
+          f"{sum(len(v) for v in result.values())} total codes")
+    return result
+
+LEGEND_LOOKUP: dict[str, dict[str, dict]] = _build_legend_lookup()
+
 
 @router.get("/api/zoning/services")
 async def list_services():
@@ -804,6 +851,20 @@ async def list_services():
             "region": val.get("region", "SW"),
         }
         for key, val in ZONING_SERVICES.items()
+    }
+
+
+@router.get("/api/zoning/{service_key}/legend")
+async def get_service_legend(service_key: str):
+    """Return the zoning code legend (code → full_name + category) for a service."""
+    if service_key not in ZONING_SERVICES:
+        raise HTTPException(status_code=404, detail=f"Service '{service_key}' not found.")
+    codes = LEGEND_LOOKUP.get(service_key, {})
+    return {
+        "service_key": service_key,
+        "label": ZONING_SERVICES[service_key]["label"],
+        "total_codes": len(codes),
+        "codes": codes,   # { "CODE_UPPER": { full_name, category } }
     }
 
 
@@ -868,6 +929,7 @@ async def get_zoning(
         "label": config["label"],
         "zone_field": config["zone_field"],
         "label_field": config["label_field"],
+        "legend": LEGEND_LOOKUP.get(service_key, {}),  # code→{full_name, category}
     }
     return JSONResponse(content=data)
 

@@ -27,18 +27,40 @@ import {
 } from 'lucide-react';
 
 // ─── Zone color by prefix ────────────────
-const ZONE_PREFIX_COLORS = {
-  R: '#a8d8a8', // Residential — green
-  C: '#f9d57a', // Commercial — gold
-  I: '#c8a8d8', // Industrial — purple
-  A: '#d4e8a0', // Agricultural — lime
-  M: '#d4a8a8', // Mixed — rose
-  O: '#a8c8e8', // Office — blue
+// ─── Zoning Category Colors (legend-driven) ─────────────────────────────────
+const CATEGORY_COLORS = {
+  'Residential':               '#a8d8a8', // green
+  'Commercial':                '#f9d57a', // gold
+  'Industrial':                '#c8a8d8', // purple
+  'Agricultural':              '#d4e8a0', // lime
+  'Mixed Use':                 '#e8b4a0', // warm salmon
+  'Institutional / Public':    '#a8c8e8', // sky blue
+  'Open Space / Parks':        '#6dcf6d', // bright green
+  'Overlay / Special District':'#e0c8f0', // lavender
+  'Planned Development':       '#f0c8a0', // peach
+  'Transportation':            '#b0b0b0', // grey
+  'Right-of-Way':              '#c0c0c0', // light grey
+  'Timberland Production Zone':'#8fbc8f', // dark sea green
+  'Town Specific':             '#dcc8a0', // tan
+  'RPD':                       '#b8d8b8', // pale green
+  'Jurisdictional':            '#a0a0d0', // slate blue
+  'Unknown':                   '#cccccc', // default grey
 };
 const DEFAULT_ZONE_COLOR = '#cccccc';
 
-function zoneColor(zoneCode) {
+// Fallback: first-character prefix guess (used when legend has no match)
+const ZONE_PREFIX_COLORS = {
+  R: '#a8d8a8', C: '#f9d57a', I: '#c8a8d8', A: '#d4e8a0', M: '#e8b4a0', O: '#a8c8e8',
+};
+
+function zoneColor(zoneCode, legend) {
   if (!zoneCode) return DEFAULT_ZONE_COLOR;
+  // Try legend lookup first (keys are UPPER-CASED)
+  if (legend) {
+    const entry = legend[String(zoneCode).trim().toUpperCase()];
+    if (entry?.category) return CATEGORY_COLORS[entry.category] || DEFAULT_ZONE_COLOR;
+  }
+  // Fallback to prefix guess
   const prefix = String(zoneCode).charAt(0).toUpperCase();
   return ZONE_PREFIX_COLORS[prefix] || DEFAULT_ZONE_COLOR;
 }
@@ -62,6 +84,7 @@ function ZoningOverlayLayer({ serviceKey, enabled, zoneFilter }) {
       const geojson = await res.json();
       const config = geojson._zoning_config || {};
       const zoneField = config.zone_field || 'ZONE_CODE';
+      const legend = config.legend || {};  // { CODE_UPPER: { full_name, category } }
 
       // Remove previous layer
       if (layerRef.current) { map.removeLayer(layerRef.current); layerRef.current = null; }
@@ -75,7 +98,7 @@ function ZoningOverlayLayer({ serviceKey, enabled, zoneFilter }) {
         style: (feature) => {
           const code = feature.properties?.[zoneField] || '';
           return {
-            fillColor: zoneColor(code),
+            fillColor: zoneColor(code, legend),
             fillOpacity: 0.45,
             color: '#555',
             weight: 1.2,
@@ -87,6 +110,13 @@ function ZoningOverlayLayer({ serviceKey, enabled, zoneFilter }) {
           const zoneVal = props[zoneField] || 'Unknown';
           const labelVal = config.label_field && props[config.label_field] && props[config.label_field] !== zoneVal
             ? props[config.label_field] : '';
+
+          // Look up legend entry for this zone code
+          const legendEntry = legend[String(zoneVal).trim().toUpperCase()] || null;
+          const fullName = legendEntry?.full_name && legendEntry.full_name !== zoneVal
+            ? legendEntry.full_name : '';
+          const category = legendEntry?.category || '';
+          const catColor = CATEGORY_COLORS[category] || '';
 
           // Fields to always skip (metadata/audit/shape junk)
           const SKIP = new Set([
@@ -116,9 +146,16 @@ function ZoningOverlayLayer({ serviceKey, enabled, zoneFilter }) {
             })
             .join('');
 
+          // Category badge
+          const categoryBadge = category
+            ? `<span style="display:inline-block;padding:1px 8px;border-radius:9999px;font-size:10px;font-weight:600;color:#1f2937;background:${catColor};border:1px solid rgba(0,0,0,0.1);margin-top:3px">${category}</span>`
+            : '';
+
           const header = `<div style="padding:6px 0 4px;border-bottom:1px solid #e5e7eb;margin-bottom:4px">`
             + `<div style="font-weight:700;font-size:14px;color:#1d4ed8">${zoneVal}</div>`
-            + (labelVal ? `<div style="font-size:11px;color:#6b7280;margin-top:1px">${labelVal}</div>` : '')
+            + (fullName ? `<div style="font-size:11px;color:#374151;margin-top:1px">${fullName}</div>` : '')
+            + (labelVal && labelVal !== fullName ? `<div style="font-size:11px;color:#6b7280;margin-top:1px">${labelVal}</div>` : '')
+            + categoryBadge
             + `<div style="font-size:9px;color:#9ca3af;margin-top:2px">${config.label || 'Zoning'}</div>`
             + `</div>`;
 

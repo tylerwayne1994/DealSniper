@@ -65,6 +65,7 @@ export const API_ENDPOINTS = {
   // Zoning Overlay
   zoningServices: `${API_BASE_URL}/api/zoning/services`,
   zoningData: (serviceKey) => `${API_BASE_URL}/api/zoning/${serviceKey}`,
+  zoningLegend: (serviceKey) => `${API_BASE_URL}/api/zoning/${serviceKey}/legend`,
   zoningFields: (serviceKey) => `${API_BASE_URL}/api/zoning/${serviceKey}/fields`,
 
   // Parcel Overlay
