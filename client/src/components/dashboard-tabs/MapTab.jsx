@@ -83,13 +83,47 @@ function ZoningOverlayLayer({ serviceKey, enabled, zoneFilter }) {
         },
         onEachFeature: (feature, lyr) => {
           const props = feature.properties || {};
-          // Popup with all properties
+          // ── Build clean zoning popup ──
+          const zoneVal = props[zoneField] || 'Unknown';
+          const labelVal = config.label_field && props[config.label_field] && props[config.label_field] !== zoneVal
+            ? props[config.label_field] : '';
+
+          // Fields to always skip (metadata/audit/shape junk)
+          const SKIP = new Set([
+            'OBJECTID', 'FID', 'GlobalID', 'Shape', 'Shape_Length', 'Shape_Area',
+            'Shape.STArea()', 'Shape.STLength()', 'Shape__Area', 'Shape__Length',
+            'CREATED', 'EDITED', 'CREATOR', 'EDITOR', 'created_user', 'created_date',
+            'last_edited_user', 'last_edited_date', 'EditDate', 'CreateDate',
+            'Shape.area', 'Shape.len', 'SHAPE.AREA', 'SHAPE.LEN', 'SHAPE.STArea()',
+            'SHAPE.STLength()', 'SE_ANNO_CAD_DATA',
+            zoneField, // shown in header already
+          ]);
+          if (config.label_field) SKIP.add(config.label_field);
+
+          // Only show fields with real values
           const rows = Object.entries(props)
-            .filter(([k]) => !k.startsWith('Shape') && k !== 'OBJECTID')
-            .map(([k, v]) => `<tr><td style="font-weight:600;color:#6b7280;padding:3px 8px 3px 0;font-size:11px;white-space:nowrap">${k}</td><td style="color:#111827;padding:3px 0;font-size:11px">${v ?? 'N/A'}</td></tr>`)
+            .filter(([k, v]) => {
+              if (SKIP.has(k)) return false;
+              if (k.startsWith('Shape') || k.startsWith('SHAPE')) return false;
+              if (v === null || v === undefined || v === '' || v === ' ' || v === '-' || v === 'N/A') return false;
+              if (typeof v === 'number' && (String(v).length > 12)) return false; // skip epoch timestamps
+              return true;
+            })
+            .map(([k, v]) => {
+              // Clean up field name: replace underscores, title-case
+              const clean = k.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
+              return `<tr><td style="font-weight:600;color:#6b7280;padding:2px 8px 2px 0;font-size:11px;white-space:nowrap">${clean}</td><td style="color:#111827;padding:2px 0;font-size:11px">${v}</td></tr>`;
+            })
             .join('');
+
+          const header = `<div style="padding:6px 0 4px;border-bottom:1px solid #e5e7eb;margin-bottom:4px">`
+            + `<div style="font-weight:700;font-size:14px;color:#1d4ed8">${zoneVal}</div>`
+            + (labelVal ? `<div style="font-size:11px;color:#6b7280;margin-top:1px">${labelVal}</div>` : '')
+            + `<div style="font-size:9px;color:#9ca3af;margin-top:2px">${config.label || 'Zoning'}</div>`
+            + `</div>`;
+
           lyr.bindPopup(
-            `<div style="max-height:260px;overflow-y:auto;font-family:Inter,sans-serif"><table>${rows}</table></div>`,
+            `<div style="max-height:280px;overflow-y:auto;font-family:Inter,sans-serif">${header}<table>${rows}</table></div>`,
             { maxWidth: 320 }
           );
 
@@ -2325,18 +2359,32 @@ function DashboardMapTab() {
                           {(() => {
                             const groups = {};
                             Object.entries(zoningServices).forEach(([key, svc]) => {
-                              const st = svc.state || 'Other';
-                              if (!groups[st]) groups[st] = [];
-                              groups[st].push({ key, label: svc.label });
+                              const region = svc.region || 'SW';
+                              if (!groups[region]) groups[region] = [];
+                              groups[region].push({ key, label: svc.label, state: svc.state });
                             });
-                            const stateNames = { AZ: 'Arizona', CA: 'California', NC: 'North Carolina', SC: 'South Carolina' };
-                            return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b)).map(([st, items]) => (
-                              <optgroup key={st} label={`${stateNames[st] || st} (${items.length})`}>
-                                {items.sort((a, b) => a.label.localeCompare(b.label)).map(({ key, label }) => (
-                                  <option key={key} value={key}>{label}</option>
-                                ))}
-                              </optgroup>
-                            ));
+                            const regionNames = { SW: 'Southwest', NW: 'Northwest', SE: 'Southeast', NE: 'Northeast' };
+                            const regionOrder = ['SW', 'SE', 'NW', 'NE'];
+                            return regionOrder.filter(r => groups[r]).map(region => {
+                              const items = groups[region];
+                              // Sub-group by state within each region
+                              const byState = {};
+                              items.forEach(item => {
+                                const st = item.state || '??';
+                                if (!byState[st]) byState[st] = [];
+                                byState[st].push(item);
+                              });
+                              const stateLabels = { AZ: 'AZ', CA: 'CA', NC: 'NC', SC: 'SC' };
+                              return (
+                                <optgroup key={region} label={`── ${regionNames[region] || region} (${items.length}) ──`}>
+                                  {Object.entries(byState).sort(([a],[b]) => a.localeCompare(b)).flatMap(([st, stItems]) =>
+                                    stItems.sort((a,b) => a.label.localeCompare(b.label)).map(({ key, label }) => (
+                                      <option key={key} value={key}>{label}, {stateLabels[st] || st}</option>
+                                    ))
+                                  )}
+                                </optgroup>
+                              );
+                            });
                           })()}
                         </select>
                       )}

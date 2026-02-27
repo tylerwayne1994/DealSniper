@@ -17,6 +17,7 @@ ZONING_SERVICES: dict[str, dict] = {
     # ── Arizona (13 + 4 legacy Mohave) ─────────────────────────────────────
     "mohave_bhc": {
         "label": "Bullhead City (Mohave)",
+        "region": "SW",
         "state": "AZ",
         "base_url": "https://mcgis2.mohavecounty.us/arcgis/rest/services/BHC_Zoning_Parcels/MapServer",
         "default_layer_id": 0,
@@ -25,6 +26,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "mohave_kingman": {
         "label": "Kingman (Mohave)",
+        "region": "SW",
         "state": "AZ",
         "base_url": "https://mcgis2.mohavecounty.us/arcgis/rest/services/CoKgm_Zoning/MapServer",
         "default_layer_id": 0,
@@ -33,6 +35,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "mohave_lhc": {
         "label": "Lake Havasu City (Mohave)",
+        "region": "SW",
         "state": "AZ",
         "base_url": "https://mcgis2.mohavecounty.us/arcgis/rest/services/LHC_Zoning/MapServer",
         "default_layer_id": 0,
@@ -41,6 +44,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "mohave_general_plan": {
         "label": "Mohave County General Plan",
+        "region": "SW",
         "state": "AZ",
         "base_url": "https://mcgis2.mohavecounty.us/arcgis/rest/services/PZ_GeneralPlan/MapServer",
         "default_layer_id": 0,
@@ -49,6 +53,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "az_avondale": {
         "label": "City of Avondale",
+        "region": "SW",
         "state": "AZ",
         "base_url": "https://gisweb.avondaleaz.gov/server/rest/services/Planning/Zoning/MapServer",
         "default_layer_id": 6,
@@ -57,6 +62,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "az_buckeye": {
         "label": "City of Buckeye",
+        "region": "SW",
         "state": "AZ",
         "base_url": "https://maps.buckeyeaz.gov/server/rest/services/GeneralPlanLandUse/MapServer",
         "default_layer_id": 0,
@@ -65,6 +71,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "az_casa_grande": {
         "label": "City of Casa Grande",
+        "region": "SW",
         "state": "AZ",
         "base_url": "https://services8.arcgis.com/fqW4OZOL16y7Kl3a/ArcGIS/rest/services/Zoning_2010/FeatureServer",
         "default_layer_id": 1,
@@ -73,6 +80,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "az_flagstaff": {
         "label": "City of Flagstaff",
+        "region": "SW",
         "state": "AZ",
         "base_url": "https://services8.arcgis.com/KyZIQDOsXnGaTxj2/ArcGIS/rest/services/ZONING/FeatureServer",
         "default_layer_id": 0,
@@ -81,6 +89,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "az_kingman_city": {
         "label": "City of Kingman",
+        "region": "SW",
         "state": "AZ",
         "base_url": "https://services.arcgis.com/lQySeXwbBg53XWDi/ArcGIS/rest/services/zoning_districts/FeatureServer",
         "default_layer_id": 1,
@@ -89,6 +98,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "az_phoenix": {
         "label": "City of Phoenix",
+        "region": "SW",
         "state": "AZ",
         "base_url": "https://maps.phoenix.gov/pub/rest/services/Public/Zoning/MapServer",
         "default_layer_id": 0,
@@ -97,6 +107,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "az_prescott": {
         "label": "City of Prescott",
+        "region": "SW",
         "state": "AZ",
         "base_url": "https://web-map.prescott-az.gov/arcgis/rest/services/Basemaps/AddressInfo/MapServer",
         "default_layer_id": 5,
@@ -105,6 +116,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "az_sierra_vista": {
         "label": "City of Sierra Vista",
+        "region": "SW",
         "state": "AZ",
         "base_url": "https://services6.arcgis.com/qsfT0E2It2u5vqBg/arcgis/rest/services/Zoning_Sierra_Vista_Test/FeatureServer",
         "default_layer_id": 0,
@@ -113,6 +125,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "az_tempe": {
         "label": "City of Tempe",
+        "region": "SW",
         "state": "AZ",
         "base_url": "https://gis.tempe.gov/arcgis/rest/services/Open_Data/Zoning_Districts/FeatureServer",
         "default_layer_id": 0,
@@ -121,6 +134,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "az_tucson": {
         "label": "City of Tucson",
+        "region": "SW",
         "state": "AZ",
         "base_url": "https://gis.tucsonaz.gov/arcgis/rest/services/PublicMaps/Zoning/MapServer",
         "default_layer_id": 31,
@@ -129,6 +143,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "az_yuma": {
         "label": "City of Yuma",
+        "region": "SW",
         "state": "AZ",
         "base_url": "https://gis.ci.yuma.az.us/server/rest/services/pan/Zoning/MapServer",
         "default_layer_id": 8,
@@ -137,6 +152,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "az_cochise": {
         "label": "Cochise County",
+        "region": "SW",
         "state": "AZ",
         "base_url": "https://services6.arcgis.com/Yxem0VOcqSy8T6TE/arcgis/rest/services/Dev_Zoning/FeatureServer",
         "default_layer_id": 0,
@@ -145,6 +161,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "az_yavapai": {
         "label": "Yavapai County",
+        "region": "SW",
         "state": "AZ",
         "base_url": "https://gis.yavapaiaz.gov/ArcGIS/rest/services/Zoning/MapServer",
         "default_layer_id": 9,
@@ -155,6 +172,7 @@ ZONING_SERVICES: dict[str, dict] = {
     # ── California (42) ───────────────────────────────────────────────────
     "ca_alameda_county": {
         "label": "Alameda County",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://services7.arcgis.com/6Yz0DcWQc1LtdRPC/arcgis/rest/services/Alameda_County_Public_Access_Map_WFL1/FeatureServer",
         "default_layer_id": 20,
@@ -163,6 +181,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_anaheim": {
         "label": "City of Anaheim",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://gis.anaheim.net/server/rest/services/GIS/Zoning/MapServer",
         "default_layer_id": 0,
@@ -171,6 +190,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_bakersfield": {
         "label": "City of Bakersfield",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://gis.bakersfieldcity.us/webmaps/rest/services/General/LandUse/FeatureServer",
         "default_layer_id": 7,
@@ -179,6 +199,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_chula_vista": {
         "label": "City of Chula Vista",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://services2.arcgis.com/2nV1ORz8qFa0iiF2/arcgis/rest/services/Chula_Vista_Districts_and_Zones/FeatureServer",
         "default_layer_id": 1,
@@ -187,6 +208,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_escondido": {
         "label": "City of Escondido",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://services.arcgis.com/uEH09Hfm70zI2ZxR/arcgis/rest/services/Escondido/FeatureServer",
         "default_layer_id": 0,
@@ -195,6 +217,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_hayward": {
         "label": "City of Hayward",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://maps.hayward-ca.gov/arcgis/rest/services/OpenData/COH_Zoning/MapServer",
         "default_layer_id": 0,
@@ -203,6 +226,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_irvine": {
         "label": "City of Irvine",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://gis.cityofirvine.org/arcgis/rest/services/OnlineParcel/MapServer",
         "default_layer_id": 7,
@@ -211,6 +235,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_long_beach": {
         "label": "City of Long Beach",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://services6.arcgis.com/yCArG7wGXGyWLqav/arcgis/rest/services/Zoning/FeatureServer",
         "default_layer_id": 0,
@@ -219,6 +244,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_los_angeles": {
         "label": "City of Los Angeles",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://maps.lacity.org/arcgis/rest/services/Mapping/NavigateLA/MapServer",
         "default_layer_id": 71,
@@ -227,6 +253,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_oakland": {
         "label": "City of Oakland",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://gismaps.oaklandca.gov/server/rest/services/Planning_and_Zoning_Controls/FeatureServer",
         "default_layer_id": 1,
@@ -235,6 +262,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_ontario": {
         "label": "City of Ontario",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://services5.arcgis.com/74bZbbuf05Ctvbzv/arcgis/rest/services/City_of_Ontario_Zoning/FeatureServer",
         "default_layer_id": 0,
@@ -243,6 +271,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_oxnard": {
         "label": "City of Oxnard",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://maps.oxnard.org/arcgis/rest/services/PlanningLayers/MapServer",
         "default_layer_id": 5,
@@ -251,6 +280,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_pasadena": {
         "label": "City of Pasadena",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://services2.arcgis.com/zNjnZafDYCAJAbN0/ArcGIS/rest/services/Pasadena_Database_View/FeatureServer",
         "default_layer_id": 1,
@@ -259,6 +289,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_riverside_city": {
         "label": "City of Riverside",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://mapriverside.riversideca.gov/server/rest/services/Planning/Zoning_Official/MapServer",
         "default_layer_id": 14,
@@ -267,6 +298,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_sacramento_city": {
         "label": "City of Sacramento",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://mapservices.gis.saccounty.net/arcgis/rest/services/CITY_of_SACRAMENTO/MapServer",
         "default_layer_id": 3,
@@ -275,6 +307,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_san_bernardino": {
         "label": "City of San Bernardino",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://gisweb.sbcity.org/arcgis/rest/services/Zoning/Zoning_2023/MapServer",
         "default_layer_id": 1,
@@ -283,6 +316,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_san_francisco": {
         "label": "City of San Francisco",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://sfplanninggis.org/arcgiswa/rest/services/ImpactFees/MapServer",
         "default_layer_id": 8,
@@ -291,6 +325,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_san_luis_obispo": {
         "label": "City of San Luis Obispo",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://maps.slocity.org/hosting/rest/services/slogisLayers/MapServer",
         "default_layer_id": 5,
@@ -299,6 +334,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_santa_barbara_city": {
         "label": "City of Santa Barbara",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://gisportal.santabarbaraca.gov/server1/rest/services/CitySantaBarbara/MapServer",
         "default_layer_id": 256,
@@ -307,6 +343,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_santa_rosa": {
         "label": "City of Santa Rosa",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://socogis.sonomacounty.ca.gov/map/rest/services/OWTSPublic/Land_Use_City_Santa_Rosa/FeatureServer",
         "default_layer_id": 0,
@@ -315,6 +352,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_stockton": {
         "label": "City of Stockton",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://services7.arcgis.com/7WRZWVaTK828hbiZ/arcgis/rest/services/Zoning_Final/FeatureServer",
         "default_layer_id": 3,
@@ -323,6 +361,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_sunnyvale": {
         "label": "City of Sunnyvale",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://services5.arcgis.com/ecWT8iam2AWjfm3E/arcgis/rest/services/Sunnyvale_Base_Map/FeatureServer",
         "default_layer_id": 16,
@@ -331,6 +370,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_torrance": {
         "label": "City of Torrance",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://services.arcgis.com/CWv1abTnC3urn4bV/ArcGIS/rest/services/IDO_Zoning_Conversion/FeatureServer",
         "default_layer_id": 1,
@@ -339,6 +379,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_contra_costa": {
         "label": "Contra Costa County",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://services.arcgis.com/jDGuO8tYggdCCnUJ/arcgis/rest/services/ContraCostaCountyPlanningLayers/FeatureServer",
         "default_layer_id": 0,
@@ -347,6 +388,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_el_dorado": {
         "label": "El Dorado County",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://services.arcgis.com/UHg8l1wC48WQyDSO/arcgis/rest/services/Zoning2/FeatureServer",
         "default_layer_id": 0,
@@ -355,6 +397,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_fresno_county": {
         "label": "Fresno County",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://services3.arcgis.com/ivgOteCWSY7ZTRyd/arcgis/rest/services/Fresno_County_Zoning/FeatureServer",
         "default_layer_id": 0,
@@ -363,6 +406,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_kern": {
         "label": "Kern County",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://services5.arcgis.com/Y8jwjGUWbRjuqpG5/arcgis/rest/services/Kern_County_Zoning/FeatureServer",
         "default_layer_id": 0,
@@ -371,6 +415,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_la_county": {
         "label": "Los Angeles County",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://arcgis.gis.lacounty.gov/arcgis/rest/services/DRP/GISNET_Public/MapServer",
         "default_layer_id": 346,
@@ -379,6 +424,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_napa": {
         "label": "Napa County",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://gis.napacounty.gov/arcgis/rest/services/Hosted/Zoning/FeatureServer",
         "default_layer_id": 0,
@@ -387,6 +433,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_orange_county": {
         "label": "Orange County",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://services.arcgis.com/UXmFoWC7yDHcDN5Q/arcgis/rest/services/OCZoning_P/FeatureServer",
         "default_layer_id": 0,
@@ -395,6 +442,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_riverside_county": {
         "label": "Riverside County",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://mapriverside.riversideca.gov/server/rest/services/Planning/Planning/MapServer",
         "default_layer_id": 23,
@@ -403,6 +451,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_sacramento_county": {
         "label": "Sacramento County",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://mapservices.gis.saccounty.net/arcgis/rest/services/PLANNING/MapServer",
         "default_layer_id": 16,
@@ -411,6 +460,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_san_diego_county": {
         "label": "San Diego County",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://gis-public.sandiegocounty.gov/arcgis/rest/services/PDS/PDS_Layers/MapServer",
         "default_layer_id": 3,
@@ -419,6 +469,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_san_joaquin": {
         "label": "San Joaquin County",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://services9.arcgis.com/mt4kvYhNXSa5AqLG/ArcGIS/rest/services/Parcels_Zoning_SJV_CRC_2019/FeatureServer",
         "default_layer_id": 0,
@@ -427,6 +478,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_san_mateo": {
         "label": "San Mateo County",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://services.arcgis.com/yq3FgOI44hYHAFVZ/arcgis/rest/services/GIS_Data/FeatureServer",
         "default_layer_id": 9,
@@ -435,6 +487,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_santa_barbara_county": {
         "label": "Santa Barbara County",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://services.arcgis.com/KkJhFbLnXVqahKz2/arcgis/rest/services/LandUseDesignations/FeatureServer",
         "default_layer_id": 235,
@@ -443,6 +496,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_santa_clara": {
         "label": "Santa Clara County",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://services2.arcgis.com/tcv2cMrq63AgvbHF/arcgis/rest/services/Zoning/FeatureServer",
         "default_layer_id": 0,
@@ -451,6 +505,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_shasta": {
         "label": "Shasta County",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://gis.shastacounty.gov/arcgis/rest/services/OpenData/ZoningLinks/MapServer",
         "default_layer_id": 0,
@@ -459,6 +514,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_solano": {
         "label": "Solano County",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://solanocountygis.com/server/rest/services/Aumentum/AumentumInternal/MapServer",
         "default_layer_id": 17,
@@ -467,6 +523,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_sonoma": {
         "label": "Sonoma County",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://socogis.sonomacounty.ca.gov/map/rest/services/PictometrySecure/Sonoma_County_Pictometry/FeatureServer",
         "default_layer_id": 3,
@@ -475,6 +532,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_stanislaus": {
         "label": "Stanislaus County",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://services.arcgis.com/EeYBJFxLdUojipYa/arcgis/rest/services/Zoning_AGOL/FeatureServer",
         "default_layer_id": 0,
@@ -483,6 +541,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "ca_tulare": {
         "label": "Tulare County",
+        "region": "SW",
         "state": "CA",
         "base_url": "https://ihost.tularecounty.ca.gov/ihost/rest/services/PublicZoning/MapServer",
         "default_layer_id": 0,
@@ -493,6 +552,7 @@ ZONING_SERVICES: dict[str, dict] = {
     # ── North Carolina (22) ───────────────────────────────────────────────
     "nc_cabarrus": {
         "label": "Cabarrus County",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://location.cabarruscounty.us/arcgisservices/rest/services/Zoning/MapServer",
         "default_layer_id": 7,
@@ -501,6 +561,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_catawba": {
         "label": "Catawba County (Van Wyck)",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://services8.arcgis.com/h9JHFVWvWofKfQhH/arcgis/rest/services/Van_Wyck_Zoning/FeatureServer",
         "default_layer_id": 0,
@@ -509,6 +570,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_chatham": {
         "label": "Chatham County",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://gisservices.chathamcountync.gov/opendataagol/rest/services/LandUsePlanning/Chatham_CountyZoning/MapServer",
         "default_layer_id": 0,
@@ -517,6 +579,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_asheville": {
         "label": "City of Asheville",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://gis.ashevillenc.gov/server/rest/services/Districts/ZoningDistricts/MapServer",
         "default_layer_id": 11,
@@ -525,6 +588,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_cary": {
         "label": "City of Cary",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://maps-apis.carync.gov/server/rest/services/LandUse/Zoning/MapServer",
         "default_layer_id": 11,
@@ -533,6 +597,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_chapel_hill": {
         "label": "City of Chapel Hill",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://gis-portal.townofchapelhill.org/server/rest/services/OpenData/Overlay_Zoning_Districts/FeatureServer",
         "default_layer_id": 0,
@@ -541,6 +606,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_concord": {
         "label": "City of Concord",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://gis.cityofconcord.org/gsrv1/rest/services/PublicGIS/MapServer",
         "default_layer_id": 3,
@@ -549,6 +615,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_gastonia": {
         "label": "City of Gastonia",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://cogserver.gastonianc.gov/serverweb/rest/services/Planning/Zoning_UDO/MapServer",
         "default_layer_id": 0,
@@ -557,6 +624,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_greensboro": {
         "label": "City of Greensboro",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://gis.greensboro-nc.gov/arcgis/rest/services/Planning/DevelopmentServices_MS/MapServer",
         "default_layer_id": 35,
@@ -565,6 +633,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_greenville": {
         "label": "City of Greenville",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://arcgis.townofgreenville.com/server/rest/services/CED/Zoning/FeatureServer",
         "default_layer_id": 1,
@@ -573,6 +642,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_high_point": {
         "label": "City of High Point",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://gisentapp01.highpointnc.gov/server/rest/services/Zoning/MapServer",
         "default_layer_id": 0,
@@ -581,6 +651,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_kannapolis": {
         "label": "City of Kannapolis",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://location.cabarruscounty.us/arcgisservices/rest/services/opendata/MapServer",
         "default_layer_id": 38,
@@ -589,6 +660,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_wilson": {
         "label": "City of Wilson",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://gis.wilsonnc.org/services/rest/services/publiclayers/Zoning/FeatureServer",
         "default_layer_id": 1,
@@ -597,6 +669,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_winston_salem": {
         "label": "City of Winston-Salem",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://maps.co.forsyth.nc.us/arcgis/rest/services/MapMetrics/Boundaries/FeatureServer",
         "default_layer_id": 26,
@@ -605,6 +678,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_forsyth": {
         "label": "Forsyth County",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://maps.co.forsyth.nc.us/arcgis/rest/services/MapMetrics/terra/FeatureServer",
         "default_layer_id": 1,
@@ -613,6 +687,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_gaston": {
         "label": "Gaston County",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://gis.gastoncountync.gov/publicgis/rest/services/PublicGIS/Zoning/MapServer",
         "default_layer_id": 1,
@@ -621,6 +696,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_guilford": {
         "label": "Guilford County",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://gcgis.guilfordcountync.gov/arcgis/rest/services/GISDV/Zoning/FeatureServer",
         "default_layer_id": 0,
@@ -629,6 +705,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_iredell": {
         "label": "Iredell County",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://maps.iredellcountync.gov/server/rest/services/Data/Zoning/MapServer",
         "default_layer_id": 0,
@@ -637,6 +714,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_mecklenburg": {
         "label": "Mecklenburg County (Charlotte)",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://gis.charlottenc.gov/arcgis/rest/services/PLN/Zoning/MapServer",
         "default_layer_id": 0,
@@ -645,6 +723,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_new_hanover": {
         "label": "New Hanover County",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://gis.nhcgov.com/server/rest/services/Layers/Zoning/MapServer",
         "default_layer_id": 3,
@@ -653,6 +732,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_pitt": {
         "label": "Pitt County",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://gis.pittcountync.gov/gis/rest/services/OPIS/FunctionalLayers/MapServer",
         "default_layer_id": 59,
@@ -661,6 +741,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "nc_wake": {
         "label": "Wake County (Wake Forest)",
+        "region": "SE",
         "state": "NC",
         "base_url": "https://twfgis.wakeforestnc.gov/server/rest/services/Zoning/MapServer",
         "default_layer_id": 0,
@@ -671,6 +752,7 @@ ZONING_SERVICES: dict[str, dict] = {
     # ── South Carolina (4) ────────────────────────────────────────────────
     "sc_beaufort": {
         "label": "Beaufort County",
+        "region": "SE",
         "state": "SC",
         "base_url": "https://gis.beaufortcountysc.gov/server/rest/services/Zoning/MapServer",
         "default_layer_id": 9,
@@ -679,6 +761,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "sc_sumter": {
         "label": "City of Sumter",
+        "region": "SE",
         "state": "SC",
         "base_url": "https://gis.sumter-sc.com/server/rest/services/Planning/Zoning/FeatureServer",
         "default_layer_id": 0,
@@ -687,6 +770,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "sc_greenville": {
         "label": "Greenville County",
+        "region": "SE",
         "state": "SC",
         "base_url": "https://services1.arcgis.com/x5wCko8UnSi4h0CB/arcgis/rest/services/GreenvilleCountyZoning/FeatureServer",
         "default_layer_id": 0,
@@ -695,6 +779,7 @@ ZONING_SERVICES: dict[str, dict] = {
     },
     "sc_york": {
         "label": "York County",
+        "region": "SE",
         "state": "SC",
         "base_url": "https://services1.arcgis.com/2AGLxyiJoNiVHKwq/arcgis/rest/services/York County Zoning (regions)/FeatureServer",
         "default_layer_id": 0,
@@ -711,9 +796,13 @@ MAX_RECORD_COUNT = 2000
 
 @router.get("/api/zoning/services")
 async def list_services():
-    """List all available zoning overlay services, grouped by state."""
+    """List all available zoning overlay services, grouped by region."""
     return {
-        key: {"label": val["label"], "state": val.get("state", "AZ")}
+        key: {
+            "label": val["label"],
+            "state": val.get("state", "AZ"),
+            "region": val.get("region", "SW"),
+        }
         for key, val in ZONING_SERVICES.items()
     }
 
