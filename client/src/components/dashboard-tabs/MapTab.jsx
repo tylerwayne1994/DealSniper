@@ -467,9 +467,7 @@ function DashboardMapTab() {
         if (res.ok) {
           const data = await res.json();
           setZoningServices(data);
-          // Auto-select first service if nothing selected
-          const keys = Object.keys(data);
-          if (keys.length > 0 && !zoningServiceKey) setZoningServiceKey(keys[0]);
+          // Don't auto-select — let user pick from 85 services
         }
       } catch (err) {
         console.error('[Zoning] Failed to load services:', err);
@@ -2324,7 +2322,22 @@ function DashboardMapTab() {
                         <select value={zoningServiceKey} onChange={(e) => { setZoningServiceKey(e.target.value); setZoningFilter(''); }}
                           style={{ padding: '3px 6px', fontSize: '10px', border: '1px solid #e5e7eb', borderRadius: '5px', backgroundColor: 'white', color: '#374151' }}>
                           <option value="">Select zoning layer</option>
-                          {Object.entries(zoningServices).map(([key, svc]) => <option key={key} value={key}>{svc.label}</option>)}
+                          {(() => {
+                            const groups = {};
+                            Object.entries(zoningServices).forEach(([key, svc]) => {
+                              const st = svc.state || 'Other';
+                              if (!groups[st]) groups[st] = [];
+                              groups[st].push({ key, label: svc.label });
+                            });
+                            const stateNames = { AZ: 'Arizona', CA: 'California', NC: 'North Carolina', SC: 'South Carolina' };
+                            return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b)).map(([st, items]) => (
+                              <optgroup key={st} label={`${stateNames[st] || st} (${items.length})`}>
+                                {items.sort((a, b) => a.label.localeCompare(b.label)).map(({ key, label }) => (
+                                  <option key={key} value={key}>{label}</option>
+                                ))}
+                              </optgroup>
+                            ));
+                          })()}
                         </select>
                       )}
                       {zoningServiceKey && <input type="text" placeholder="Filter zone code…" value={zoningFilter} onChange={(e) => setZoningFilter(e.target.value)}
