@@ -194,10 +194,11 @@ function ParcelOverlayLayer({ enabled }) {
 
       const layer = L.geoJSON(geojson, {
         style: () => ({
-          fillColor: '#6366f1',
-          fillOpacity: 0.12,
-          color: '#4f46e5',
-          weight: 1.5,
+          fillColor: '#7c3aed',
+          fillOpacity: 0.03,
+          color: '#e11d48',
+          weight: 2,
+          dashArray: null,
         }),
         onEachFeature: (feature, lyr) => {
           const props = feature.properties || {};
@@ -207,11 +208,11 @@ function ParcelOverlayLayer({ enabled }) {
             .map(([k, v]) => `<tr><td style="font-weight:600;color:#6b7280;padding:2px 8px 2px 0;font-size:11px;white-space:nowrap">${k}</td><td style="color:#111827;padding:2px 0;font-size:11px">${v}</td></tr>`)
             .join('');
           lyr.bindPopup(
-            `<div style="font-family:Inter,sans-serif"><div style="font-weight:700;font-size:13px;margin-bottom:6px;color:#4f46e5">Parcel ${pid}</div><table>${rows}</table></div>`,
+            `<div style="font-family:Inter,sans-serif"><div style="font-weight:700;font-size:13px;margin-bottom:6px;color:#e11d48">📐 Parcel ${pid}</div><table>${rows}</table></div>`,
             { maxWidth: 300 }
           );
           lyr.on('mouseover', () => {
-            lyr.setStyle({ weight: 2.5, color: '#4338ca', fillOpacity: 0.3 });
+            lyr.setStyle({ weight: 3.5, color: '#be123c', fillOpacity: 0.15 });
             lyr.bringToFront();
           });
           lyr.on('mouseout', () => { layer.resetStyle(lyr); });
@@ -2571,8 +2572,8 @@ function DashboardMapTab() {
 
                 {/* ═══ Parcel Overlay Layer ═══ */}
                 <div style={{
-                  backgroundColor: parcelOverlay ? '#f5f3ff' : '#f9fafb',
-                  border: `1px solid ${parcelOverlay ? '#c4b5fd' : '#e5e7eb'}`,
+                  backgroundColor: parcelOverlay ? '#fff1f2' : '#f9fafb',
+                  border: `1px solid ${parcelOverlay ? '#fda4af' : '#e5e7eb'}`,
                   borderRadius: '8px',
                   padding: '10px 12px',
                   marginTop: '8px',
@@ -2584,7 +2585,7 @@ function DashboardMapTab() {
                         type="checkbox"
                         checked={parcelOverlay}
                         onChange={(e) => setParcelOverlay(e.target.checked)}
-                        style={{ accentColor: '#7c3aed', width: '15px', height: '15px', cursor: 'pointer' }}
+                        style={{ accentColor: '#e11d48', width: '15px', height: '15px', cursor: 'pointer' }}
                       />
                       📐 Parcel Boundaries
                     </label>
@@ -2592,10 +2593,10 @@ function DashboardMapTab() {
                   {parcelOverlay && (
                     <div style={{ marginTop: '8px', fontSize: '11px', color: '#6b7280' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 3, background: 'rgba(99,102,241,0.15)', border: '2px solid #4f46e5', display: 'inline-block' }} />
-                        <span>Parcel outlines</span>
+                        <span style={{ width: 14, height: 14, borderRadius: 3, background: 'rgba(225,29,72,0.08)', border: '2px solid #e11d48', display: 'inline-block' }} />
+                        <span>Property lot lines</span>
                       </div>
-                      <div style={{ fontSize: '10px', color: '#9ca3af' }}>Zoom to level 14+ to view · Auto-refreshes on pan/zoom</div>
+                      <div style={{ fontSize: '10px', color: '#9ca3af' }}>Zoom to level 14+ to view · Auto-refreshes on pan/zoom · 13 western states</div>
                     </div>
                   )}
                 </div>
