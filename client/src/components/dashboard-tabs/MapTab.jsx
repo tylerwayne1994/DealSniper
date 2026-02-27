@@ -161,13 +161,16 @@ function ParcelOverlayLayer({ enabled }) {
   const abortRef = useRef(null);
 
   const fetchAndRender = useCallback(async () => {
-    if (!map || !enabled) return;
+    if (!map || !enabled) { console.log('[Parcels] skip: map=', !!map, 'enabled=', enabled); return; }
 
     const zoom = map.getZoom();
+    const center = map.getCenter();
+    console.log('[Parcels] fetchAndRender called — zoom:', zoom, 'center:', center.lat.toFixed(4), center.lng.toFixed(4));
+
     // Clean up previous
     if (layerRef.current) { map.removeLayer(layerRef.current); layerRef.current = null; }
 
-    if (zoom < 14) return; // Don't fetch below zoom 14
+    if (zoom < 14) { console.log('[Parcels] zoom too low (' + zoom + ' < 14), skipping'); return; }
 
     // Abort any in-flight request
     if (abortRef.current) abortRef.current.abort();
@@ -183,14 +186,17 @@ function ParcelOverlayLayer({ enabled }) {
       limit: 3000,
     });
 
-    try {
-      const res = await fetch(`${API_ENDPOINTS.parcels}?${params}`, {
-        signal: abortRef.current.signal,
-      });
-      if (!res.ok) { console.error('[Parcels] fetch error', res.status); return; }
-      const geojson = await res.json();
+    const url = `${API_ENDPOINTS.parcels}?${params}`;
+    console.log('[Parcels] fetching:', url);
 
-      if (!geojson.features?.length) return;
+    try {
+      const res = await fetch(url, { signal: abortRef.current.signal });
+      console.log('[Parcels] response status:', res.status);
+      if (!res.ok) { console.error('[Parcels] fetch error', res.status, await res.text()); return; }
+      const geojson = await res.json();
+      console.log('[Parcels] received:', geojson.features?.length, 'features, meta:', geojson._parcel_meta);
+
+      if (!geojson.features?.length) { console.log('[Parcels] no features returned'); return; }
 
       const layer = L.geoJSON(geojson, {
         style: () => ({
@@ -221,9 +227,12 @@ function ParcelOverlayLayer({ enabled }) {
 
       layer.addTo(map);
       layerRef.current = layer;
+      console.log('[Parcels] ✅ layer added to map with', geojson.features.length, 'features');
     } catch (err) {
       if (err.name !== 'AbortError') {
-        console.error('[Parcels] Error fetching parcel data:', err);
+        console.error('[Parcels] ❌ Error fetching parcel data:', err);
+      } else {
+        console.log('[Parcels] fetch aborted (superseded)');
       }
     }
   }, [map, enabled]);
@@ -1854,11 +1863,11 @@ function DashboardMapTab() {
 
         {/* Tab Content Area — scrollable, capped height so map dominates */}
         <div style={{ 
-          padding: '12px 16px',
+          padding: '8px 12px',
           backgroundColor: '#f9fafb',
           borderBottom: '1px solid #e5e7eb',
           overflowY: 'auto',
-          maxHeight: '320px',
+          maxHeight: '180px',
           flexShrink: 0,
         }}>
           {activeTab === 'add' && (
@@ -2235,346 +2244,93 @@ function DashboardMapTab() {
           )}
 
           {activeTab === 'tools' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
 
-              {/* ─── Pin Filter ─── */}
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '8px 12px',
-                backgroundColor: 'white',
-                borderRadius: '10px',
-                border: '1px solid #e5e7eb',
-              }}>
-                <Filter size={13} style={{ color: '#9ca3af', flexShrink: 0 }} />
-                <select 
-                  value={mapFilter} 
-                  onChange={(e) => setMapFilter(e.target.value)}
-                  style={{
-                    flex: 1, padding: '4px 6px', fontSize: '12px',
-                    border: 'none', backgroundColor: 'transparent',
-                    color: '#374151', fontWeight: '500', outline: 'none', cursor: 'pointer',
-                  }}
-                >
+              {/* ─── Pin Filter (inline) ─── */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Filter size={12} style={{ color: '#9ca3af', flexShrink: 0 }} />
+                <select value={mapFilter} onChange={(e) => setMapFilter(e.target.value)}
+                  style={{ flex: 1, padding: '3px 6px', fontSize: '11px', border: '1px solid #e5e7eb', borderRadius: '5px', backgroundColor: 'white', color: '#374151', fontWeight: '500' }}>
                   <option value="all">All Pins</option>
-                  <option value="pipeline">📋 Pipeline Only</option>
-                  <option value="rapidfire">🔥 Rapid Fire Only</option>
-                  <option value="prospects">🏘️ Prospect Cities Only</option>
+                  <option value="pipeline">Pipeline Only</option>
+                  <option value="rapidfire">Rapid Fire Only</option>
+                  <option value="prospects">Prospect Cities</option>
                 </select>
-                <span style={{ fontSize: '10px', color: '#9ca3af', whiteSpace: 'nowrap' }}>
-                  {customPins.filter(p => {
-                    if (mapFilter === 'all') return true;
-                    if (mapFilter === 'pipeline') return p.category === 'pipeline';
-                    if (mapFilter === 'rapidfire') return p.category === 'rapidfire';
-                    if (mapFilter === 'prospects') return p.category === 'prospect';
-                    return true;
-                  }).length} pins
+                <span style={{ fontSize: '10px', color: '#9ca3af' }}>
+                  {customPins.filter(p => { if (mapFilter === 'all') return true; if (mapFilter === 'pipeline') return p.category === 'pipeline'; if (mapFilter === 'rapidfire') return p.category === 'rapidfire'; if (mapFilter === 'prospects') return p.category === 'prospect'; return true; }).length}
                 </span>
               </div>
 
-              {/* ─── Layers Grid ─── */}
-              <div style={{
-                backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e5e7eb',
-                overflow: 'hidden',
-              }}>
-                <div style={{
-                  padding: '8px 12px', borderBottom: '1px solid #f3f4f6',
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                }}>
-                  <Layers size={13} style={{ color: '#6366f1' }} />
-                  <span style={{ fontSize: '11px', fontWeight: '700', color: '#374151', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Data Layers</span>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', backgroundColor: '#f3f4f6' }}>
-                  {/* County Heat Map */}
-                  {(() => {
-                    const active = countyOverlay;
-                    return (
-                      <div
-                        onClick={() => setCountyOverlay(!active)}
-                        style={{
-                          padding: '10px 10px 8px', cursor: 'pointer', backgroundColor: active ? '#eef2ff' : 'white',
-                          transition: 'all 0.15s', display: 'flex', flexDirection: 'column', gap: '4px',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: '18px' }}>🗺️</span>
-                          <div style={{
-                            width: 28, height: 16, borderRadius: 8,
-                            backgroundColor: active ? '#6366f1' : '#d1d5db',
-                            position: 'relative', transition: 'background 0.2s',
-                          }}>
-                            <div style={{
-                              width: 12, height: 12, borderRadius: '50%', backgroundColor: 'white',
-                              position: 'absolute', top: 2, left: active ? 14 : 2, transition: 'left 0.2s',
-                              boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                            }} />
-                          </div>
-                        </div>
-                        <span style={{ fontSize: '11px', fontWeight: '600', color: active ? '#4338ca' : '#374151', lineHeight: '1.2' }}>County</span>
-                        <span style={{ fontSize: '9px', color: '#9ca3af', lineHeight: '1.2' }}>Heat map</span>
-                      </div>
-                    );
-                  })()}
-
-                  {/* ZIP Points */}
-                  {(() => {
-                    const active = zipOverlay;
-                    return (
-                      <div
-                        onClick={() => setZipOverlay(!active)}
-                        style={{
-                          padding: '10px 10px 8px', cursor: 'pointer', backgroundColor: active ? '#ecfdf5' : 'white',
-                          transition: 'all 0.15s', display: 'flex', flexDirection: 'column', gap: '4px',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: '18px' }}>📍</span>
-                          <div style={{
-                            width: 28, height: 16, borderRadius: 8,
-                            backgroundColor: active ? '#10b981' : '#d1d5db',
-                            position: 'relative', transition: 'background 0.2s',
-                          }}>
-                            <div style={{
-                              width: 12, height: 12, borderRadius: '50%', backgroundColor: 'white',
-                              position: 'absolute', top: 2, left: active ? 14 : 2, transition: 'left 0.2s',
-                              boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                            }} />
-                          </div>
-                        </div>
-                        <span style={{ fontSize: '11px', fontWeight: '600', color: active ? '#047857' : '#374151', lineHeight: '1.2' }}>ZIP Points</span>
-                        <span style={{ fontSize: '9px', color: '#9ca3af', lineHeight: '1.2' }}>Centroids</span>
-                      </div>
-                    );
-                  })()}
-
-                  {/* ZIP Heat Map */}
-                  {(() => {
-                    const active = zipHeatmap;
-                    return (
-                      <div
-                        onClick={() => setZipHeatmap(!active)}
-                        style={{
-                          padding: '10px 10px 8px', cursor: 'pointer', backgroundColor: active ? '#f5f3ff' : 'white',
-                          transition: 'all 0.15s', display: 'flex', flexDirection: 'column', gap: '4px',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: '18px' }}>🌡️</span>
-                          <div style={{
-                            width: 28, height: 16, borderRadius: 8,
-                            backgroundColor: active ? '#7c3aed' : '#d1d5db',
-                            position: 'relative', transition: 'background 0.2s',
-                          }}>
-                            <div style={{
-                              width: 12, height: 12, borderRadius: '50%', backgroundColor: 'white',
-                              position: 'absolute', top: 2, left: active ? 14 : 2, transition: 'left 0.2s',
-                              boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                            }} />
-                          </div>
-                        </div>
-                        <span style={{ fontSize: '11px', fontWeight: '600', color: active ? '#6d28d9' : '#374151', lineHeight: '1.2' }}>ZIP Heat</span>
-                        <span style={{ fontSize: '9px', color: '#9ca3af', lineHeight: '1.2' }}>ZCTA polygons</span>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Dev Pipeline */}
-                  {(() => {
-                    const active = devPipelineEnabled;
-                    return (
-                      <div
-                        onClick={() => setDevPipelineEnabled(!active)}
-                        style={{
-                          padding: '10px 10px 8px', cursor: 'pointer', backgroundColor: active ? '#fefce8' : 'white',
-                          transition: 'all 0.15s', display: 'flex', flexDirection: 'column', gap: '4px',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: '18px' }}>🏗️</span>
-                          <div style={{
-                            width: 28, height: 16, borderRadius: 8,
-                            backgroundColor: active ? '#f59e0b' : '#d1d5db',
-                            position: 'relative', transition: 'background 0.2s',
-                          }}>
-                            <div style={{
-                              width: 12, height: 12, borderRadius: '50%', backgroundColor: 'white',
-                              position: 'absolute', top: 2, left: active ? 14 : 2, transition: 'left 0.2s',
-                              boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                            }} />
-                          </div>
-                        </div>
-                        <span style={{ fontSize: '11px', fontWeight: '600', color: active ? '#b45309' : '#374151', lineHeight: '1.2' }}>Pipeline</span>
-                        <span style={{ fontSize: '9px', color: '#9ca3af', lineHeight: '1.2' }}>252 projects</span>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Zoning */}
-                  {(() => {
-                    const active = zoningEnabled;
-                    return (
-                      <div
-                        onClick={() => {
-                          const next = !active;
-                          setZoningEnabled(next);
-                          if (!next) { setZoningServiceKey(''); setZoningFilter(''); }
-                        }}
-                        style={{
-                          padding: '10px 10px 8px', cursor: 'pointer', backgroundColor: active ? '#eff6ff' : 'white',
-                          transition: 'all 0.15s', display: 'flex', flexDirection: 'column', gap: '4px',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: '18px' }}>🏛️</span>
-                          <div style={{
-                            width: 28, height: 16, borderRadius: 8,
-                            backgroundColor: active ? '#3b82f6' : '#d1d5db',
-                            position: 'relative', transition: 'background 0.2s',
-                          }}>
-                            <div style={{
-                              width: 12, height: 12, borderRadius: '50%', backgroundColor: 'white',
-                              position: 'absolute', top: 2, left: active ? 14 : 2, transition: 'left 0.2s',
-                              boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                            }} />
-                          </div>
-                        </div>
-                        <span style={{ fontSize: '11px', fontWeight: '600', color: active ? '#1d4ed8' : '#374151', lineHeight: '1.2' }}>Zoning</span>
-                        <span style={{ fontSize: '9px', color: '#9ca3af', lineHeight: '1.2' }}>ArcGIS data</span>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Parcels */}
-                  {(() => {
-                    const active = parcelOverlay;
-                    return (
-                      <div
-                        onClick={() => setParcelOverlay(!active)}
-                        style={{
-                          padding: '10px 10px 8px', cursor: 'pointer', backgroundColor: active ? '#fff1f2' : 'white',
-                          transition: 'all 0.15s', display: 'flex', flexDirection: 'column', gap: '4px',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: '18px' }}>📐</span>
-                          <div style={{
-                            width: 28, height: 16, borderRadius: 8,
-                            backgroundColor: active ? '#e11d48' : '#d1d5db',
-                            position: 'relative', transition: 'background 0.2s',
-                          }}>
-                            <div style={{
-                              width: 12, height: 12, borderRadius: '50%', backgroundColor: 'white',
-                              position: 'absolute', top: 2, left: active ? 14 : 2, transition: 'left 0.2s',
-                              boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                            }} />
-                          </div>
-                        </div>
-                        <span style={{ fontSize: '11px', fontWeight: '600', color: active ? '#be123c' : '#374151', lineHeight: '1.2' }}>Parcels</span>
-                        <span style={{ fontSize: '9px', color: '#9ca3af', lineHeight: '1.2' }}>Lot lines</span>
-                      </div>
-                    );
-                  })()}
-                </div>
+              {/* ─── Layer Toggles (compact 3-col grid) ─── */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px' }}>
+                {[
+                  { label: 'County', active: countyOverlay, color: '#6366f1', toggle: () => setCountyOverlay(v => !v) },
+                  { label: 'ZIP Pts', active: zipOverlay, color: '#10b981', toggle: () => setZipOverlay(v => !v) },
+                  { label: 'ZIP Heat', active: zipHeatmap, color: '#7c3aed', toggle: () => setZipHeatmap(v => !v) },
+                  { label: 'Pipeline', active: devPipelineEnabled, color: '#f59e0b', toggle: () => setDevPipelineEnabled(v => !v) },
+                  { label: 'Zoning', active: zoningEnabled, color: '#3b82f6', toggle: () => { setZoningEnabled(v => { if (v) { setZoningServiceKey(''); setZoningFilter(''); } return !v; }); } },
+                  { label: 'Parcels', active: parcelOverlay, color: '#e11d48', toggle: () => setParcelOverlay(v => !v) },
+                ].map(({ label, active, color, toggle }) => (
+                  <button key={label} onClick={toggle}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '5px',
+                      padding: '5px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                      fontSize: '11px', fontWeight: active ? '600' : '500',
+                      color: active ? color : '#6b7280',
+                      backgroundColor: active ? `${color}12` : '#f3f4f6',
+                      transition: 'all 0.15s',
+                    }}>
+                    <span style={{
+                      width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+                      backgroundColor: active ? color : '#d1d5db',
+                      boxShadow: active ? `0 0 4px ${color}60` : 'none',
+                      transition: 'all 0.15s',
+                    }} />
+                    {label}
+                  </button>
+                ))}
               </div>
 
-              {/* ─── Active Layer Settings (expanded below grid) ─── */}
-              {(countyOverlay || zipOverlay || zipHeatmap || devPipelineEnabled || zoningEnabled || parcelOverlay) && (
-                <div style={{
-                  backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e5e7eb',
-                  overflow: 'hidden',
-                }}>
-                  <div style={{
-                    padding: '6px 12px', borderBottom: '1px solid #f3f4f6',
-                    fontSize: '10px', fontWeight: '700', color: '#6b7280', letterSpacing: '0.05em', textTransform: 'uppercase',
-                  }}>
-                    Active Layer Settings
-                  </div>
-                  <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-
-                    {/* County metric */}
-                    {countyOverlay && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '13px' }}>🗺️</span>
-                        <select value={countyMetric} onChange={(e) => setCountyMetric(e.target.value)}
-                          style={{ flex: 1, padding: '5px 8px', fontSize: '11px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: '#f9fafb', color: '#374151', fontWeight: '500' }}>
-                          {COUNTY_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              {/* ─── Settings for active layers (only if any on) ─── */}
+              {(countyOverlay || zipOverlay || zipHeatmap || devPipelineEnabled || zoningEnabled) && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {countyOverlay && (
+                    <select value={countyMetric} onChange={(e) => setCountyMetric(e.target.value)}
+                      style={{ padding: '3px 6px', fontSize: '10px', border: '1px solid #e5e7eb', borderRadius: '5px', backgroundColor: 'white', color: '#374151' }}>
+                      {COUNTY_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                    </select>
+                  )}
+                  {zipOverlay && (
+                    <select value={zipMetric} onChange={(e) => setZipMetric(e.target.value)}
+                      style={{ padding: '3px 6px', fontSize: '10px', border: '1px solid #e5e7eb', borderRadius: '5px', backgroundColor: 'white', color: '#374151' }}>
+                      {ZIP_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                    </select>
+                  )}
+                  {zipHeatmap && (
+                    <select value={zipHeatmapMetric} onChange={(e) => setZipHeatmapMetric(e.target.value)}
+                      style={{ padding: '3px 6px', fontSize: '10px', border: '1px solid #e5e7eb', borderRadius: '5px', backgroundColor: 'white', color: '#374151' }}>
+                      {(() => { const g = {}; ZIP_HEATMAP_METRIC_OPTIONS.forEach(o => { if (!g[o.group]) g[o.group] = []; g[o.group].push(o); }); return Object.entries(g).map(([gr, os]) => <optgroup key={gr} label={gr}>{os.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</optgroup>); })()}
+                    </select>
+                  )}
+                  {devPipelineEnabled && (
+                    <select value={devPipelineFilter} onChange={(e) => setDevPipelineFilter(e.target.value)}
+                      style={{ padding: '3px 6px', fontSize: '10px', border: '1px solid #e5e7eb', borderRadius: '5px', backgroundColor: 'white', color: '#374151' }}>
+                      {pipelineStatuses.map(s => <option key={s} value={s}>{s === 'all' ? 'All Statuses' : s}</option>)}
+                    </select>
+                  )}
+                  {zoningEnabled && (
+                    <>
+                      {zoningLoading ? <span style={{ fontSize: '10px', color: '#9ca3af' }}>Loading…</span> : (
+                        <select value={zoningServiceKey} onChange={(e) => { setZoningServiceKey(e.target.value); setZoningFilter(''); }}
+                          style={{ padding: '3px 6px', fontSize: '10px', border: '1px solid #e5e7eb', borderRadius: '5px', backgroundColor: 'white', color: '#374151' }}>
+                          <option value="">Select zoning layer</option>
+                          {Object.entries(zoningServices).map(([key, svc]) => <option key={key} value={key}>{svc.label}</option>)}
                         </select>
-                      </div>
-                    )}
-
-                    {/* ZIP metric */}
-                    {zipOverlay && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '13px' }}>📍</span>
-                        <select value={zipMetric} onChange={(e) => setZipMetric(e.target.value)}
-                          style={{ flex: 1, padding: '5px 8px', fontSize: '11px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: '#f9fafb', color: '#374151', fontWeight: '500' }}>
-                          {ZIP_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                        </select>
-                      </div>
-                    )}
-
-                    {/* ZIP Heat metric */}
-                    {zipHeatmap && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '13px' }}>🌡️</span>
-                        <select value={zipHeatmapMetric} onChange={(e) => setZipHeatmapMetric(e.target.value)}
-                          style={{ flex: 1, padding: '5px 8px', fontSize: '11px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: '#f9fafb', color: '#374151', fontWeight: '500' }}>
-                          {(() => {
-                            const groups = {};
-                            ZIP_HEATMAP_METRIC_OPTIONS.forEach(opt => { if (!groups[opt.group]) groups[opt.group] = []; groups[opt.group].push(opt); });
-                            return Object.entries(groups).map(([group, opts]) => (
-                              <optgroup key={group} label={group}>
-                                {opts.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                              </optgroup>
-                            ));
-                          })()}
-                        </select>
-                      </div>
-                    )}
-
-                    {/* Dev Pipeline filter */}
-                    {devPipelineEnabled && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '13px' }}>🏗️</span>
-                        <select value={devPipelineFilter} onChange={(e) => setDevPipelineFilter(e.target.value)}
-                          style={{ flex: 1, padding: '5px 8px', fontSize: '11px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: '#f9fafb', color: '#374151', fontWeight: '500' }}>
-                          {pipelineStatuses.map(s => <option key={s} value={s}>{s === 'all' ? 'All Statuses' : s}</option>)}
-                        </select>
-                        <span style={{ fontSize: '10px', color: '#9ca3af', whiteSpace: 'nowrap' }}>{filteredPipeline.length}</span>
-                      </div>
-                    )}
-
-                    {/* Zoning service & filter */}
-                    {zoningEnabled && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '13px' }}>🏛️</span>
-                          {zoningLoading ? (
-                            <span style={{ fontSize: '11px', color: '#9ca3af' }}>Loading…</span>
-                          ) : (
-                            <select value={zoningServiceKey} onChange={(e) => { setZoningServiceKey(e.target.value); setZoningFilter(''); }}
-                              style={{ flex: 1, padding: '5px 8px', fontSize: '11px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: '#f9fafb', color: '#374151', fontWeight: '500' }}>
-                              <option value="">— Select layer —</option>
-                              {Object.entries(zoningServices).map(([key, svc]) => <option key={key} value={key}>{svc.label}</option>)}
-                            </select>
-                          )}
-                        </div>
-                        {zoningServiceKey && (
-                          <input type="text" placeholder="Filter zone code…" value={zoningFilter}
-                            onChange={(e) => setZoningFilter(e.target.value)}
-                            style={{ padding: '5px 8px', fontSize: '11px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: '#f9fafb', color: '#374151', marginLeft: '26px' }} />
-                        )}
-                      </div>
-                    )}
-
-                    {/* Parcels info */}
-                    {parcelOverlay && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '13px' }}>📐</span>
-                        <span style={{ fontSize: '10px', color: '#9ca3af' }}>Zoom 14+ · 13 western states</span>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                      {zoningServiceKey && <input type="text" placeholder="Filter zone code…" value={zoningFilter} onChange={(e) => setZoningFilter(e.target.value)}
+                        style={{ padding: '3px 6px', fontSize: '10px', border: '1px solid #e5e7eb', borderRadius: '5px', backgroundColor: 'white', color: '#374151' }} />}
+                    </>
+                  )}
                 </div>
               )}
             </div>
