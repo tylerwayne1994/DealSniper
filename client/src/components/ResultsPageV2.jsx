@@ -433,8 +433,8 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
   // Use fullAnalysis if available, otherwise fall back to calculations object
   const fullCalcs = calculations.fullAnalysis || calculations;
   
-  // Destructure scenario data
-  const { property, pricing_financing, unit_mix, underwriting } = scenarioData;
+  // Destructure scenario data with safe defaults
+  const { property = {}, pricing_financing = {}, unit_mix = [], underwriting = {} } = scenarioData || {};
 
   // Header-level Push to Pipeline handler (mirrors DealOrNoDealTab behavior)
   const handlePushToPipeline = async () => {

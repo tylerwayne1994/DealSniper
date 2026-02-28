@@ -29,6 +29,7 @@ function EmailUnderwritePage() {
   const [primaryEmail, setPrimaryEmail] = useState('');
   const [newAlias, setNewAlias] = useState('');
   const [aliasLoading, setAliasLoading] = useState(false);
+  const [parsingJobId, setParsingJobId] = useState(null);
 
   const handleSyncAndProcess = async () => {
     setSyncing(true);
@@ -240,7 +241,8 @@ function EmailUnderwritePage() {
               pipeline_status,
               created_at,
               market_cap_rate,
-              scenario_data
+              scenario_data,
+              parsed_data
             `)
             .in('deal_id', dealIds);
 
@@ -349,8 +351,34 @@ function EmailUnderwritePage() {
       dayOneCashFlow: scenarioCalculations.dayOneCashFlow || null,
       stabilizedCashFlow: scenarioCalculations.stabilizedCashFlow || null,
       refiValue: scenarioCalculations.refiValue || null,
+      needsParse: deal?.parsed_data?.status === 'awaiting_parse',
     };
   });
+
+  const handleViewUnderwrite = async (jobId, dealId, needsParse) => {
+    if (!needsParse) {
+      navigate(`/underwrite?viewDeal=${dealId}`);
+      return;
+    }
+
+    // Need to parse the OM attachment first
+    setParsingJobId(jobId);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/email-underwrite/parse-om/${jobId}`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Parse failed');
+
+      console.log('[PARSE-OM] Result:', data);
+      navigate(`/underwrite?viewDeal=${dealId}`);
+    } catch (err) {
+      console.error('Parse OM error:', err);
+      alert('Failed to parse OM: ' + err.message);
+    } finally {
+      setParsingJobId(null);
+    }
+  };
 
   const formatCurrency = (val) => {
     if (val === null || val === undefined || isNaN(val)) return '-';
@@ -675,20 +703,21 @@ function EmailUnderwritePage() {
                       <div style={{ fontWeight: 600, color: '#111827', fontSize: '12px' }}>{row.address}</div>
                       {row.dealId && (
                         <button
-                          onClick={() => navigate(`/underwrite?viewDeal=${row.dealId}`)}
+                          onClick={() => handleViewUnderwrite(row.id, row.dealId, row.needsParse)}
+                          disabled={parsingJobId === row.id}
                           style={{
                             marginTop: 4,
                             padding: '4px 8px',
                             borderRadius: '999px',
                             border: '1px solid #e5e7eb',
-                            backgroundColor: 'white',
+                            backgroundColor: parsingJobId === row.id ? '#f3f4f6' : 'white',
                             fontSize: '10px',
                             fontWeight: 600,
-                            color: '#2563eb',
-                            cursor: 'pointer',
+                            color: parsingJobId === row.id ? '#9ca3af' : '#2563eb',
+                            cursor: parsingJobId === row.id ? 'wait' : 'pointer',
                           }}
                         >
-                          View Underwrite
+                          {parsingJobId === row.id ? '⏳ Parsing OM...' : row.needsParse ? 'Parse & View' : 'View Underwrite'}
                         </button>
                       )}
                     </td>

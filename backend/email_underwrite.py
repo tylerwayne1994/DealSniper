@@ -484,3 +484,117 @@ async def process_pending_jobs(request: Request, limit: int = 5):
         "errors": errors,
         "debug": f"Attempted {len(jobs)} jobs, processed {processed}",
     }
+
+
+@router.post("/parse-om/{job_id}")
+async def parse_email_om(job_id: str):
+    """Download the email attachment and parse the OM for a single job.
+
+    This creates full parsed_data / scenario_data in the Supabase deals row,
+    allowing the frontend ResultsPageV2 to render the deal with real data.
+    """
+    import tempfile
+
+    sb = get_supabase()
+
+    # 1. Get the job
+    job_result = (
+        sb.table("email_underwrite_jobs")
+        .select("*")
+        .eq("id", job_id)
+        .single()
+        .execute()
+    )
+    job = getattr(job_result, "data", None)
+    if not job:
+        raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+
+    deal_id = job.get("deal_id")
+    if not deal_id:
+        raise HTTPException(status_code=400, detail="Job has no deal_id — run process-pending first")
+
+    msg_id = job.get("provider_message_id")
+    if not msg_id:
+        raise HTTPException(status_code=400, detail="Job has no provider_message_id — cannot download email")
+
+    print(f"[DEBUG] parse-om: job={job_id} deal={deal_id} msg_id={msg_id}")
+
+    # 2. Download attachment via IMAP
+    file_bytes, filename = _download_attachment_via_imap(msg_id)
+    if not file_bytes:
+        raise HTTPException(
+            status_code=400,
+            detail="No PDF/Excel/CSV attachment found in the email. Make sure the forwarded email has an OM attachment.",
+        )
+
+    print(f"[DEBUG] parse-om: downloaded {filename} ({len(file_bytes)} bytes)")
+
+    # 3. Save to temp file and parse with parser_v4
+    ext = os.path.splitext(filename)[1] if filename else ".pdf"
+    tmp = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
+    tmp.write(file_bytes)
+    tmp.close()
+    temp_path = tmp.name
+
+    try:
+        from parser_v4 import RealEstateParser
+
+        parser = RealEstateParser()
+        result = parser.parse_document(temp_path)
+    finally:
+        try:
+            os.unlink(temp_path)
+        except OSError:
+            pass
+
+    if not result.get("success"):
+        raise HTTPException(
+            status_code=500,
+            detail=f"Parsing failed: {result.get('error', 'unknown error')}",
+        )
+
+    parsed_data = result["data"]
+    print(f"[DEBUG] parse-om: parsed successfully, keys={list(parsed_data.keys())}")
+
+    # 4. Run post-processing to bridge expense/NOI fields (same as v2 parse)
+    try:
+        from v2_underwriter.routes import _post_process_parsed_data
+
+        parsed_data = _post_process_parsed_data(parsed_data)
+    except Exception as e:
+        log.warning("[EmailUnderwrite] Post-process failed (non-fatal): %s", e)
+
+    # 5. Update the Supabase deal with parsed data
+    now = datetime.utcnow().isoformat()
+    prop = parsed_data.get("property", {})
+    pricing = parsed_data.get("pricing_financing", {})
+    broker = parsed_data.get("broker_info", {})
+
+    address = (
+        prop.get("address")
+        or ", ".join(filter(None, [prop.get("city"), prop.get("state")])) 
+        or "Email OM"
+    )
+
+    update_payload = {
+        "parsed_data": parsed_data,
+        "scenario_data": parsed_data,
+        "address": address,
+        "units": prop.get("units"),
+        "purchase_price": pricing.get("price"),
+        "broker_name": broker.get("broker_name"),
+        "broker_phone": broker.get("broker_phone"),
+        "broker_email": broker.get("broker_email"),
+        "updated_at": now,
+    }
+
+    sb.table("deals").update(update_payload).eq("deal_id", deal_id).execute()
+    print(f"[DEBUG] parse-om: updated deal {deal_id} with parsed data")
+
+    return {
+        "success": True,
+        "deal_id": deal_id,
+        "address": address,
+        "units": prop.get("units"),
+        "price": pricing.get("price"),
+    }
