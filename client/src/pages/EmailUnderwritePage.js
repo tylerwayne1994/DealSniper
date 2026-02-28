@@ -8,6 +8,8 @@ import {
   TrendingUp,
   Clock,
   RefreshCw,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { API_BASE_URL } from '../config/api';
@@ -21,6 +23,8 @@ function EmailUnderwritePage() {
   const [error, setError] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
+  const [userId, setUserId] = useState(null);
+  const [deleting, setDeleting] = useState(null); // job id being deleted, or 'all'
 
   const handleSyncAndProcess = async () => {
     setSyncing(true);
@@ -31,22 +35,75 @@ function EmailUnderwritePage() {
       const syncData = await syncRes.json();
       if (!syncRes.ok) throw new Error(syncData.detail || 'Sync failed');
 
+      const parts = [];
+      if (syncData.synced > 0) parts.push(`${syncData.synced} new emails synced`);
+      if (syncData.already_known > 0) parts.push(`${syncData.already_known} already synced`);
+      if (syncData.skipped_no_user > 0) parts.push(`${syncData.skipped_no_user} skipped (sender not matched)`);
+
       // Step 2: Process pending jobs into deals
       const processRes = await fetch(`${API_BASE_URL}/api/email-underwrite/process-pending`, {
         method: 'POST',
       });
       const processData = await processRes.json();
+      if (processData.processed > 0) parts.push(`${processData.processed} deals processed`);
 
-      setSyncMessage(`Synced ${syncData.synced || 0} emails, processed ${processData.processed || 0} deals.`);
+      setSyncMessage(parts.length > 0 ? parts.join(' · ') : 'Inbox checked — no new emails found.');
 
-      // Reload data
-      window.location.reload();
+      // Reload data (only if something changed)
+      if (syncData.synced > 0 || processData.processed > 0) {
+        window.location.reload();
+      }
     } catch (err) {
       console.error('Sync error:', err);
       setSyncMessage('Error: ' + err.message);
     } finally {
       setSyncing(false);
-      setTimeout(() => setSyncMessage(''), 8000);
+      setTimeout(() => setSyncMessage(''), 12000);
+    }
+  };
+
+  const handleDeleteJob = async (jobId) => {
+    if (!userId) return;
+    if (!window.confirm('Delete this email job?')) return;
+    setDeleting(jobId);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/email-underwrite/jobs/${jobId}`, {
+        method: 'DELETE',
+        headers: { 'X-User-ID': userId },
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.detail || 'Delete failed');
+      }
+      setJobs(prev => prev.filter(j => j.id !== jobId));
+    } catch (err) {
+      console.error('Delete error:', err);
+      alert('Failed to delete: ' + err.message);
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (!userId) return;
+    if (!window.confirm(`Delete all ${jobs.length} email jobs? This cannot be undone.`)) return;
+    setDeleting('all');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/email-underwrite/jobs`, {
+        method: 'DELETE',
+        headers: { 'X-User-ID': userId },
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.detail || 'Delete failed');
+      }
+      setJobs([]);
+      setDealsById({});
+    } catch (err) {
+      console.error('Delete all error:', err);
+      alert('Failed to delete: ' + err.message);
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -58,16 +115,17 @@ function EmailUnderwritePage() {
 
         const { data: userData, error: userError } = await supabase.auth.getUser();
         if (userError) throw userError;
-        const userId = userData?.user?.id;
-        if (!userId) {
+        const uid = userData?.user?.id;
+        if (!uid) {
           setJobs([]);
           return;
         }
+        setUserId(uid);
 
         const { data: jobRows, error: jobsError } = await supabase
           .from('email_underwrite_jobs')
           .select('*')
-          .eq('user_id', userId)
+          .eq('user_id', uid)
           .order('created_at', { ascending: false });
 
         if (jobsError) throw jobsError;
@@ -190,6 +248,7 @@ function EmailUnderwritePage() {
       from: job.from_address,
       createdAt: job.created_at,
       dealId: job.deal_id,
+      errorMessage: job.error_message || null,
       address: deal?.address || 'Pending underwriting',
       units: deal?.units || null,
       purchasePrice: deal?.purchase_price || null,
@@ -375,6 +434,28 @@ function EmailUnderwritePage() {
                 <span style={{ fontSize: '12px', color: '#b91c1c' }}>Error: {error}</span>
               )}
             </div>
+            {jobs.length > 0 && (
+              <button
+                onClick={handleDeleteAll}
+                disabled={deleting === 'all'}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 14px',
+                  backgroundColor: deleting === 'all' ? '#94a3b8' : '#fee2e2',
+                  color: '#b91c1c',
+                  border: '1px solid #fecaca',
+                  borderRadius: '8px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: deleting === 'all' ? 'not-allowed' : 'pointer',
+                }}
+              >
+                <Trash2 size={13} />
+                {deleting === 'all' ? 'Deleting…' : 'Clear All'}
+              </button>
+            )}
           </div>
 
           <div style={{ overflowX: 'auto' }}>
@@ -391,19 +472,28 @@ function EmailUnderwritePage() {
                   <th style={{ textAlign: 'left', padding: '10px', fontWeight: 600, color: '#6b7280', fontSize: '11px' }}>From</th>
                   <th style={{ textAlign: 'left', padding: '10px', fontWeight: 600, color: '#6b7280', fontSize: '11px' }}>Created</th>
                   <th style={{ textAlign: 'right', padding: '10px', fontWeight: 600, color: '#6b7280', fontSize: '11px' }}>Cash Flow (Stab.)</th>
+                  <th style={{ width: 40, padding: '10px' }}></th>
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 && !loading && (
                   <tr>
-                    <td colSpan={9} style={{ padding: '16px', textAlign: 'center', color: '#6b7280' }}>
+                    <td colSpan={11} style={{ padding: '16px', textAlign: 'center', color: '#6b7280' }}>
                       No email underwrite jobs yet. Forward your first OM/T12 to get started.
                     </td>
                   </tr>
                 )}
                 {rows.map(row => (
                   <tr key={row.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <td style={{ padding: '10px', verticalAlign: 'middle' }}>{renderStatusBadge(row.status)}</td>
+                    <td style={{ padding: '10px', verticalAlign: 'middle' }}>
+                      {renderStatusBadge(row.status)}
+                      {row.status === 'error' && row.errorMessage && (
+                        <div title={row.errorMessage} style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: '10px', color: '#b91c1c', cursor: 'help' }}>
+                          <AlertTriangle size={10} />
+                          <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.errorMessage}</span>
+                        </div>
+                      )}
+                    </td>
                     <td style={{ padding: '10px', verticalAlign: 'middle' }}>
                       <div style={{ fontWeight: 600, color: '#111827', fontSize: '12px' }}>{row.address}</div>
                       {row.dealId && (
@@ -445,6 +535,28 @@ function EmailUnderwritePage() {
                     </td>
                     <td style={{ padding: '10px', verticalAlign: 'middle', textAlign: 'right' }}>
                       {row.stabilizedCashFlow != null ? formatCurrency(row.stabilizedCashFlow) : '-'}
+                    </td>
+                    <td style={{ padding: '6px', verticalAlign: 'middle' }}>
+                      <button
+                        onClick={() => handleDeleteJob(row.id)}
+                        disabled={deleting === row.id}
+                        title="Delete this job"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: 28,
+                          height: 28,
+                          borderRadius: '6px',
+                          border: '1px solid #e5e7eb',
+                          backgroundColor: deleting === row.id ? '#f3f4f6' : 'white',
+                          color: '#6b7280',
+                          cursor: deleting === row.id ? 'not-allowed' : 'pointer',
+                          opacity: deleting === row.id ? 0.5 : 1,
+                        }}
+                      >
+                        <Trash2 size={13} />
+                      </button>
                     </td>
                   </tr>
                 ))}

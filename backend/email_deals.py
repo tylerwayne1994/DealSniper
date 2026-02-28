@@ -1025,15 +1025,25 @@ async def sync_inbound_inbox():
             except Exception:
                 pass
 
-            # Match sender to profile
+            # Match sender to profile (try email column, case-insensitive)
             email_match = re.search(r"<([^>]+)>", from_raw)
             sender_email = (email_match.group(1) if email_match else from_raw).strip().lower()
 
             matched_user_id = None
             try:
-                profile_result = supabase.table("profiles").select("id").eq("email", sender_email).execute()
+                # Primary: match against profiles.email
+                profile_result = supabase.table("profiles").select("id, email").ilike("email", sender_email).execute()
                 if profile_result.data and len(profile_result.data) > 0:
                     matched_user_id = profile_result.data[0]["id"]
+                else:
+                    # Fallback: try auth.users via Supabase admin API
+                    # (profiles.email might be empty if trigger didn't fire)
+                    log.info("[EmailDeals] No profile match for %s, trying broader lookup", sender_email)
+                    broad = supabase.table("profiles").select("id, email").execute()
+                    for row in (broad.data or []):
+                        if row.get("email") and row["email"].strip().lower() == sender_email:
+                            matched_user_id = row["id"]
+                            break
             except Exception as e:
                 log.warning("[EmailDeals] Profile lookup failed for %s: %s", sender_email, e)
 
@@ -1081,12 +1091,16 @@ async def sync_inbound_inbox():
 
         mail.logout()
 
+        log.info("[EmailDeals] sync-inbound: scanned=%d synced=%d already_known=%d skipped_no_user=%d",
+                 len(uids), synced, already_known, skipped_no_user)
+
         return {
             "success": True,
+            "total_scanned": len(uids),
             "synced": synced,
             "already_known": already_known,
             "skipped_no_user": skipped_no_user,
-            "message": f"Synced {synced} new emails, skipped {skipped_no_user} (no matching user).",
+            "message": f"Scanned {len(uids)} emails: {synced} new, {already_known} already known, {skipped_no_user} unmatched sender.",
         }
 
     except Exception as e:

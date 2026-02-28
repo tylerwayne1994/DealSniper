@@ -100,6 +100,73 @@ def create_underwrite_job(payload: IntakeTestPayload) -> str:
     return job_id
 
 
+@router.delete("/jobs/{job_id}")
+async def delete_job(job_id: str, request: Request):
+    """Delete a single email underwrite job.
+
+    Also cleans up the linked raw_email row if present.
+    Requires X-User-ID header to ensure the user owns this job.
+    """
+    user_id = request.headers.get("X-User-ID")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Missing X-User-ID header")
+
+    sb = get_supabase()
+
+    # Verify the job belongs to this user
+    result = sb.table("email_underwrite_jobs").select("id, user_id, raw_email_id").eq("id", job_id).single().execute()
+    job = getattr(result, "data", None)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job["user_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Not your job")
+
+    # Delete the job
+    sb.table("email_underwrite_jobs").delete().eq("id", job_id).execute()
+
+    # Clean up linked raw_email if present
+    raw_email_id = job.get("raw_email_id")
+    if raw_email_id:
+        try:
+            sb.table("raw_emails").delete().eq("id", raw_email_id).execute()
+        except Exception:
+            pass  # non-critical
+
+    log.info("[EmailUnderwrite] Deleted job %s for user %s", job_id, user_id)
+    return {"success": True, "deleted": job_id}
+
+
+@router.delete("/jobs")
+async def delete_all_jobs(request: Request):
+    """Delete ALL email underwrite jobs for the current user.
+
+    Requires X-User-ID header.
+    """
+    user_id = request.headers.get("X-User-ID")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Missing X-User-ID header")
+
+    sb = get_supabase()
+
+    # Get all jobs for this user (to clean up raw_emails too)
+    result = sb.table("email_underwrite_jobs").select("id, raw_email_id").eq("user_id", user_id).execute()
+    jobs = getattr(result, "data", None) or []
+
+    # Delete jobs
+    sb.table("email_underwrite_jobs").delete().eq("user_id", user_id).execute()
+
+    # Clean up raw_emails
+    raw_ids = [j["raw_email_id"] for j in jobs if j.get("raw_email_id")]
+    for rid in raw_ids:
+        try:
+            sb.table("raw_emails").delete().eq("id", rid).execute()
+        except Exception:
+            pass
+
+    log.info("[EmailUnderwrite] Deleted %d jobs for user %s", len(jobs), user_id)
+    return {"success": True, "deleted_count": len(jobs)}
+
+
 @router.post("/intake-test")
 async def intake_test(payload: IntakeTestPayload):
     """Test endpoint: pretend we received an email and create a job.
