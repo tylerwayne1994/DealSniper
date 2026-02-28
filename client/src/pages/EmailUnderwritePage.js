@@ -35,6 +35,26 @@ function EmailUnderwritePage() {
       const syncData = await syncRes.json();
       if (!syncRes.ok) throw new Error(syncData.detail || 'Sync failed');
 
+      // ── DEBUG: log full sync response to console ──
+      console.log('=== SYNC-INBOUND DEBUG ===');
+      console.log('Full response:', JSON.stringify(syncData, null, 2));
+      if (syncData.debug_log) {
+        syncData.debug_log.forEach((entry, i) => {
+          console.log(`\n--- Email ${i + 1} ---`);
+          console.log('  UID:', entry.uid);
+          console.log('  Raw From:', entry.from_raw);
+          console.log('  Extracted sender:', entry.sender_email);
+          console.log('  Match result:', entry.match || 'NONE');
+          if (entry.ilike_results) console.log('  ilike results:', entry.ilike_results);
+          if (entry.all_profiles) {
+            console.log('  All profiles in DB:');
+            entry.all_profiles.forEach(p => console.log(`    id=${p.id}  email="${p.email}"  normalized="${p.normalized}"`));
+          }
+          if (entry.error) console.log('  ERROR:', entry.error);
+        });
+      }
+      console.log('=== END DEBUG ===');
+
       const parts = [];
       if (syncData.synced > 0) parts.push(`${syncData.synced} new emails synced`);
       if (syncData.already_known > 0) parts.push(`${syncData.already_known} already synced`);

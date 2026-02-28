@@ -995,6 +995,7 @@ async def sync_inbound_inbox():
         synced = 0
         already_known = 0
         skipped_no_user = 0
+        debug_log = []  # collect debug info to return in response
 
         for uid_bytes in uids:
             uid_str = uid_bytes.decode()
@@ -1029,29 +1030,63 @@ async def sync_inbound_inbox():
             email_match = re.search(r"<([^>]+)>", from_raw)
             sender_email = (email_match.group(1) if email_match else from_raw).strip().lower()
 
+            # ── DEBUG LOGGING ──
+            print(f"\n{'='*60}")
+            print(f"[DEBUG] Processing email UID: {uid_str}")
+            print(f"[DEBUG] Raw From header : {from_raw!r}")
+            print(f"[DEBUG] Extracted sender : {sender_email!r}")
+            print(f"[DEBUG] Sender email len : {len(sender_email)}")
+            print(f"[DEBUG] Sender email bytes: {sender_email.encode()!r}")
+            log.info("[EmailDeals][DEBUG] UID=%s  from_raw=%r  sender_email=%r", uid_str, from_raw, sender_email)
+            email_debug = {"uid": uid_str, "from_raw": from_raw, "sender_email": sender_email}
+
             matched_user_id = None
             try:
                 # Primary: match against profiles.email
                 profile_result = supabase.table("profiles").select("id, email").ilike("email", sender_email).execute()
+                print(f"[DEBUG] ilike query email={sender_email!r}  result_count={len(profile_result.data or [])}")
+                print(f"[DEBUG] ilike result data : {profile_result.data}")
+                email_debug["ilike_results"] = profile_result.data
                 if profile_result.data and len(profile_result.data) > 0:
                     matched_user_id = profile_result.data[0]["id"]
+                    print(f"[DEBUG] ✅ MATCHED via ilike -> user_id={matched_user_id}")
+                    email_debug["match"] = "ilike"
                 else:
                     # Fallback: try auth.users via Supabase admin API
                     # (profiles.email might be empty if trigger didn't fire)
                     log.info("[EmailDeals] No profile match for %s, trying broader lookup", sender_email)
                     broad = supabase.table("profiles").select("id, email").execute()
+                    print(f"[DEBUG] Broad lookup: {len(broad.data or [])} profiles found")
+                    all_profile_emails = []
                     for row in (broad.data or []):
-                        if row.get("email") and row["email"].strip().lower() == sender_email:
+                        row_email = row.get("email", "")
+                        row_email_norm = row_email.strip().lower() if row_email else ""
+                        all_profile_emails.append({"id": row.get("id", "")[:8], "email": row_email, "normalized": row_email_norm})
+                        print(f"[DEBUG]   Profile id={row.get('id')[:8]}...  email={row_email!r}  normalized={row_email_norm!r}  match={row_email_norm == sender_email}")
+                        if row_email and row_email_norm == sender_email:
                             matched_user_id = row["id"]
+                            print(f"[DEBUG] ✅ MATCHED via broad lookup -> user_id={matched_user_id}")
+                            email_debug["match"] = "broad"
                             break
+                    email_debug["all_profiles"] = all_profile_emails
+                    if not matched_user_id:
+                        print(f"[DEBUG] ❌ NO MATCH found in any profile for sender={sender_email!r}")
+                        email_debug["match"] = "NONE"
             except Exception as e:
                 log.warning("[EmailDeals] Profile lookup failed for %s: %s", sender_email, e)
+                print(f"[DEBUG] ❌ EXCEPTION during lookup: {e}")
+                email_debug["error"] = str(e)
+
+            debug_log.append(email_debug)
 
             if not matched_user_id:
                 # No registered user matches this sender — skip
                 skipped_no_user += 1
                 log.info("[EmailDeals] Skipping email from %s — no matching profile", sender_email)
+                print(f"[DEBUG] SKIPPED — sender_email={sender_email!r} not found in profiles")
+                print(f"{'='*60}\n")
                 continue
+            print(f"{'='*60}\n")
 
             # Store raw email
             email_data = {
@@ -1094,12 +1129,17 @@ async def sync_inbound_inbox():
         log.info("[EmailDeals] sync-inbound: scanned=%d synced=%d already_known=%d skipped_no_user=%d",
                  len(uids), synced, already_known, skipped_no_user)
 
+        print(f"\n{'#'*60}")
+        print(f"[DEBUG] SYNC SUMMARY: scanned={len(uids)} synced={synced} already_known={already_known} skipped_no_user={skipped_no_user}")
+        print(f"{'#'*60}\n")
+
         return {
             "success": True,
             "total_scanned": len(uids),
             "synced": synced,
             "already_known": already_known,
             "skipped_no_user": skipped_no_user,
+            "debug_log": debug_log,
             "message": f"Scanned {len(uids)} emails: {synced} new, {already_known} already known, {skipped_no_user} unmatched sender.",
         }
 
