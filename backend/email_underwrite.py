@@ -488,13 +488,12 @@ async def process_pending_jobs(request: Request, limit: int = 5):
 
 @router.post("/parse-om/{job_id}")
 async def parse_email_om(job_id: str):
-    """Download the email attachment and parse the OM for a single job.
+    """Download the email attachment and parse using the V2 Claude Vision pipeline.
 
-    This creates full parsed_data / scenario_data in the Supabase deals row,
-    allowing the frontend ResultsPageV2 to render the deal with real data.
+    This is the same system used by /v2/deals/parse — Claude Sonnet vision
+    on PDF pages with post-processing. Then updates the Supabase deal row
+    so ResultsPageV2 can render it.
     """
-    import tempfile
-
     sb = get_supabase()
 
     # 1. Get the job
@@ -529,37 +528,90 @@ async def parse_email_om(job_id: str):
 
     print(f"[DEBUG] parse-om: downloaded {filename} ({len(file_bytes)} bytes)")
 
-    # 3. Save to temp file and parse with parser_v4
-    ext = os.path.splitext(filename)[1] if filename else ".pdf"
-    tmp = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
-    tmp.write(file_bytes)
-    tmp.close()
-    temp_path = tmp.name
+    # 3. Parse using V2 Claude Vision pipeline (same as /v2/deals/parse)
+    import io
+    from anthropic import Anthropic
+    from v2_underwriter.routes import filter_pdf_pages_smart, _post_process_parsed_data
 
-    try:
-        from parser_v4 import RealEstateParser
+    ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
+    ANTHROPIC_MODEL = "claude-sonnet-4-5-20250929"
 
-        parser = RealEstateParser()
-        result = parser.parse_document(temp_path)
-    finally:
+    if not ANTHROPIC_API_KEY:
+        raise HTTPException(status_code=503, detail="Anthropic API key not configured")
+
+    anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
+
+    ext = (os.path.splitext(filename)[1] if filename else ".pdf").lower()
+    mime_map = {".pdf": "application/pdf", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
+    mime = mime_map.get(ext, "application/pdf")
+
+    if mime == "application/pdf":
         try:
-            os.unlink(temp_path)
-        except OSError:
-            pass
+            images = filter_pdf_pages_smart(file_bytes, min_score=15, max_pages=15)
+        except Exception as filter_err:
+            print(f"[DEBUG] parse-om: Smart filter failed, falling back: {filter_err}")
+            from pdf2image import convert_from_bytes
+            images = convert_from_bytes(file_bytes, dpi=100, first_page=1, last_page=10)
 
-    if not result.get("success"):
-        raise HTTPException(
-            status_code=500,
-            detail=f"Parsing failed: {result.get('error', 'unknown error')}",
-        )
+        if not images:
+            raise HTTPException(status_code=400, detail="Could not extract images from PDF")
 
-    parsed_data = result["data"]
-    print(f"[DEBUG] parse-om: parsed successfully, keys={list(parsed_data.keys())}")
+        content_items = []
+        for img in images:
+            img_buf = io.BytesIO()
+            if img.mode == "RGBA":
+                img = img.convert("RGB")
+            img.save(img_buf, format="JPEG", quality=75, optimize=True)
+            file_b64 = base64.b64encode(img_buf.getvalue()).decode("utf-8")
+            content_items.append({
+                "type": "image",
+                "source": {"type": "base64", "media_type": "image/jpeg", "data": file_b64},
+            })
+    else:
+        file_b64 = base64.b64encode(file_bytes).decode("utf-8")
+        content_items = [{
+            "type": "image",
+            "source": {"type": "base64", "media_type": mime, "data": file_b64},
+        }]
 
-    # 4. Run post-processing to bridge expense/NOI fields (same as v2 parse)
+    # Use the same extraction prompt as /v2/deals/parse
+    schema_block = '''Return JSON matching this schema:
+{
+  "property": {"property_name": "", "address": "", "city": "", "state": "", "zip": "", "units": 0, "year_built": 0, "rba_sqft": 0, "land_area_acres": 0, "property_type": "", "property_class": "", "parking_spaces": 0},
+  "pricing_financing": {"price": 0, "price_per_unit": 0, "price_per_sf": 0, "loan_amount": 0, "down_payment": 0, "interest_rate": 0, "ltv": 0, "term_years": 0, "amortization_years": 0},
+  "pnl": {"gross_potential_rent": 0, "other_income": 0, "vacancy_rate": 0, "vacancy_amount": 0, "effective_gross_income": 0, "operating_expenses": 0, "operating_expenses_t12": 0, "operating_expenses_proforma": 0, "noi": 0, "noi_t12": 0, "noi_proforma": 0, "noi_stabilized": 0, "cap_rate": 0, "cap_rate_t12": 0, "cap_rate_proforma": 0, "expense_ratio": 0},
+  "expenses": {"taxes": 0, "insurance": 0, "utilities": 0, "repairs_maintenance": 0, "management": 0, "payroll": 0, "admin": 0, "marketing": 0, "other": 0, "total": 0},
+  "underwriting": {"holding_period": 0, "exit_cap_rate": 0},
+  "unit_mix": [{"type": "", "units": 0, "mix_pct": 0, "unit_sf": 0, "rent_current": 0, "rent_psf": 0, "rent_market": 0}],
+  "broker_info": {"broker_name": "", "broker_company": "", "broker_phone": "", "broker_email": ""}
+}
+Return ONLY valid JSON, no markdown or explanation.'''
+
+    content_items.append({
+        "type": "text",
+        "text": f"Extract ONLY numerical data from this real estate offering memorandum. Focus on property details, pricing/financing terms, income statements, expense breakdowns, underwriting assumptions, and unit mix.\n\n{schema_block}",
+    })
+
+    print(f"[DEBUG] parse-om: calling Claude Vision with {len(content_items) - 1} images")
+
+    response = anthropic_client.messages.create(
+        model=ANTHROPIC_MODEL,
+        max_tokens=8000,
+        messages=[{"role": "user", "content": content_items}],
+    )
+
+    text = response.content[0].text.strip()
+    if text.startswith("```"):
+        text = text.split("```", 2)[1]
+        if text.startswith("json"):
+            text = text[4:].strip()
+
+    import json as json_mod
+    parsed_data = json_mod.loads(text)
+    print(f"[DEBUG] parse-om: Claude parsed successfully, keys={list(parsed_data.keys())}")
+
+    # 4. Post-process to bridge expense/NOI fields
     try:
-        from v2_underwriter.routes import _post_process_parsed_data
-
         parsed_data = _post_process_parsed_data(parsed_data)
     except Exception as e:
         log.warning("[EmailUnderwrite] Post-process failed (non-fatal): %s", e)
@@ -572,7 +624,7 @@ async def parse_email_om(job_id: str):
 
     address = (
         prop.get("address")
-        or ", ".join(filter(None, [prop.get("city"), prop.get("state")])) 
+        or ", ".join(filter(None, [prop.get("city"), prop.get("state")]))
         or "Email OM"
     )
 
