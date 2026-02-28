@@ -200,10 +200,15 @@ function EmailUnderwritePage() {
   };
 
   useEffect(() => {
+    let pollTimer = null;
+
     const loadData = async () => {
       try {
-        setLoading(true);
-        setError('');
+        if (!loading) {
+          // Don't reset loading state on poll refreshes (only initial load)
+        } else {
+          setError('');
+        }
 
         const { data: userData, error: userError } = await supabase.auth.getUser();
         if (userError) throw userError;
@@ -213,7 +218,8 @@ function EmailUnderwritePage() {
           return;
         }
         setUserId(uid);
-        loadAliases(uid);
+        // Only load aliases on first load
+        if (!pollTimer) loadAliases(uid);
 
         const { data: jobRows, error: jobsError } = await supabase
           .from('email_underwrite_jobs')
@@ -258,13 +264,17 @@ function EmailUnderwritePage() {
         }
       } catch (err) {
         console.error('Error loading email underwrite pipeline:', err);
-        setError(err.message || 'Failed to load email underwrite pipeline');
+        if (loading) setError(err.message || 'Failed to load email underwrite pipeline');
       } finally {
         setLoading(false);
       }
     };
 
     loadData();
+
+    // Auto-refresh every 30 seconds to pick up background pipeline results
+    pollTimer = setInterval(loadData, 30000);
+    return () => clearInterval(pollTimer);
   }, []);
 
   const totalJobs = jobs.length;
@@ -293,16 +303,28 @@ function EmailUnderwritePage() {
     fontWeight: 600,
   };
 
-  const renderStatusBadge = (status) => {
+  const renderStatusBadge = (status, parsedStatus) => {
     const normalized = (status || 'pending').toLowerCase();
     let bg = '#e5e7eb';
     let color = '#111827';
     let label = normalized;
 
-    if (normalized === 'pending' || normalized === 'processing' || normalized === 'underwriting') {
+    if (normalized === 'processing') {
+      bg = '#fef3c7';
+      color = '#92400e';
+      label = '⏳ Parsing OM...';
+    } else if (normalized === 'pending') {
       bg = '#dbeafe';
       color = '#1d4ed8';
       label = 'In Queue';
+    } else if (normalized === 'done' && parsedStatus === 'no_attachment') {
+      bg = '#fef3c7';
+      color = '#92400e';
+      label = 'No Attachment';
+    } else if (normalized === 'done' && (parsedStatus === 'awaiting_parse' || parsedStatus === 'parsing')) {
+      bg = '#dbeafe';
+      color = '#1d4ed8';
+      label = 'Awaiting Parse';
     } else if (normalized === 'done') {
       bg = '#dcfce7';
       color = '#15803d';
@@ -334,6 +356,8 @@ function EmailUnderwritePage() {
   const rows = jobs.map(job => {
     const deal = job.deal_id ? dealsById[job.deal_id] : null;
     const scenarioCalculations = deal?.scenario_data?.calculations || {};
+    const parsedStatus = deal?.parsed_data?.status;
+    const isFullyParsed = deal?.parsed_data?.property != null;
 
     return {
       id: job.id,
@@ -343,7 +367,7 @@ function EmailUnderwritePage() {
       createdAt: job.created_at,
       dealId: job.deal_id,
       errorMessage: job.error_message || null,
-      address: deal?.address || 'Pending underwriting',
+      address: deal?.address || 'Processing...',
       units: deal?.units || null,
       purchasePrice: deal?.purchase_price || null,
       stage: deal?.pipeline_status || null,
@@ -351,7 +375,8 @@ function EmailUnderwritePage() {
       dayOneCashFlow: scenarioCalculations.dayOneCashFlow || null,
       stabilizedCashFlow: scenarioCalculations.stabilizedCashFlow || null,
       refiValue: scenarioCalculations.refiValue || null,
-      needsParse: deal?.parsed_data?.status === 'awaiting_parse',
+      needsParse: !isFullyParsed,
+      parsedStatus: parsedStatus || null,
     };
   });
 
@@ -587,11 +612,17 @@ function EmailUnderwritePage() {
                   }}
                 >
                   <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
-                  {syncing ? 'Syncing...' : 'Sync & Process'}
+                  {syncing ? 'Syncing...' : '↻ Refresh Now'}
                 </button>
                 {syncMessage && (
                   <span style={{ fontSize: '12px', color: syncMessage.startsWith('Error') ? '#b91c1c' : '#15803d' }}>
                     {syncMessage}
+                  </span>
+                )}
+                {!syncing && !syncMessage && (
+                  <span style={{ fontSize: '11px', color: '#6b7280', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#22c55e', display: 'inline-block' }} />
+                    Auto-syncing every 2 min
                   </span>
                 )}
               </div>
@@ -684,14 +715,14 @@ function EmailUnderwritePage() {
                 {rows.length === 0 && !loading && (
                   <tr>
                     <td colSpan={11} style={{ padding: '16px', textAlign: 'center', color: '#6b7280' }}>
-                      No email underwrite jobs yet. Forward your first OM/T12 to get started.
+                      No deals yet. Forward an email with an OM/T12 attachment — it will be automatically parsed and underwritten.
                     </td>
                   </tr>
                 )}
                 {rows.map(row => (
                   <tr key={row.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                     <td style={{ padding: '10px', verticalAlign: 'middle' }}>
-                      {renderStatusBadge(row.status)}
+                      {renderStatusBadge(row.status, row.parsedStatus)}
                       {row.status === 'error' && row.errorMessage && (
                         <div title={row.errorMessage} style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: '10px', color: '#b91c1c', cursor: 'help' }}>
                           <AlertTriangle size={10} />

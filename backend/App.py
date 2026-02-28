@@ -504,6 +504,14 @@ async def _init_clients():
     else:
         log.warning("ANTHROPIC_API_KEY/CLAUDE_API_KEY missing")
 
+    # Start background email auto-pipeline
+    try:
+        from email_underwrite import start_auto_pipeline
+        start_auto_pipeline()
+        log.info("Email auto-pipeline background worker started")
+    except Exception as e:
+        log.warning("Failed to start email auto-pipeline: %s", e)
+
 # ---------------- Utils ----------------
 def _to_data_url(file_bytes: bytes, mime: str) -> str:
     return f"data:{mime};base64,{base64.b64encode(file_bytes).decode('utf-8')}"
