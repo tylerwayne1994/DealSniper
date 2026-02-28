@@ -981,30 +981,48 @@ async def sync_inbound_inbox():
         )
 
     try:
-        mail.select("INBOX")
-
-        # Search for emails from last 7 days
+        # Search multiple folders: INBOX and Spam
+        folders_to_check = ["INBOX", "[Gmail]/Spam"]
         since_date = (datetime.utcnow() - timedelta(days=7)).strftime("%d-%b-%Y")
-        status, data = mail.uid("search", None, f"(SINCE {since_date})")
 
-        if status != "OK":
-            raise RuntimeError("IMAP search failed")
+        all_uid_folder_pairs = []  # list of (uid_bytes, folder_name)
 
-        uids = data[0].split() if data[0] else []
+        for folder in folders_to_check:
+            try:
+                st, _ = mail.select(folder)
+                if st != "OK":
+                    print(f"[DEBUG] Could not select folder {folder!r}, skipping")
+                    continue
+                status, data = mail.uid("search", None, f"(SINCE {since_date})")
+                if status == "OK" and data[0]:
+                    folder_uids = data[0].split()
+                    print(f"[DEBUG] Folder {folder!r}: found {len(folder_uids)} emails")
+                    for uid_bytes in folder_uids:
+                        all_uid_folder_pairs.append((uid_bytes, folder))
+                else:
+                    print(f"[DEBUG] Folder {folder!r}: 0 emails")
+            except Exception as folder_err:
+                print(f"[DEBUG] Error checking folder {folder!r}: {folder_err}")
+
         supabase = get_supabase()
         synced = 0
         already_known = 0
         skipped_no_user = 0
         debug_log = []  # collect debug info to return in response
 
-        for uid_bytes in uids:
+        for uid_bytes, folder in all_uid_folder_pairs:
             uid_str = uid_bytes.decode()
+            # Use folder:uid as dedup key so INBOX uid=1 and Spam uid=1 don't collide
+            dedup_key = f"{folder}:{uid_str}"
 
-            # Deduplicate by provider_message_id = IMAP UID
-            existing = supabase.table("raw_emails").select("id").eq("provider_message_id", uid_str).execute()
+            # Deduplicate by provider_message_id
+            existing = supabase.table("raw_emails").select("id").eq("provider_message_id", dedup_key).execute()
             if existing.data:
                 already_known += 1
                 continue
+
+            # Select the correct folder before fetching
+            mail.select(folder)
 
             # Fetch headers only (lightweight)
             st, msg_data = mail.uid("fetch", uid_bytes, "(RFC822.HEADER)")
@@ -1032,13 +1050,13 @@ async def sync_inbound_inbox():
 
             # ── DEBUG LOGGING ──
             print(f"\n{'='*60}")
-            print(f"[DEBUG] Processing email UID: {uid_str}")
+            print(f"[DEBUG] Processing email UID: {uid_str} (folder: {folder})")
             print(f"[DEBUG] Raw From header : {from_raw!r}")
             print(f"[DEBUG] Extracted sender : {sender_email!r}")
             print(f"[DEBUG] Sender email len : {len(sender_email)}")
             print(f"[DEBUG] Sender email bytes: {sender_email.encode()!r}")
-            log.info("[EmailDeals][DEBUG] UID=%s  from_raw=%r  sender_email=%r", uid_str, from_raw, sender_email)
-            email_debug = {"uid": uid_str, "from_raw": from_raw, "sender_email": sender_email}
+            log.info("[EmailDeals][DEBUG] UID=%s folder=%s from_raw=%r sender_email=%r", uid_str, folder, from_raw, sender_email)
+            email_debug = {"uid": uid_str, "folder": folder, "from_raw": from_raw, "sender_email": sender_email}
 
             matched_user_id = None
             try:
@@ -1091,7 +1109,7 @@ async def sync_inbound_inbox():
             # Store raw email
             email_data = {
                 "user_id": matched_user_id,
-                "provider_message_id": uid_str,
+                "provider_message_id": dedup_key,
                 "thread_id": message_id_header,
                 "from_address": from_raw,
                 "subject": subject,
@@ -1114,7 +1132,7 @@ async def sync_inbound_inbox():
                     "to_address": None,
                     "subject": subject,
                     "thread_id": message_id_header,
-                    "provider_message_id": uid_str,
+                    "provider_message_id": dedup_key,
                     "attachments": [],
                     "status": "pending",
                 }
@@ -1126,21 +1144,22 @@ async def sync_inbound_inbox():
 
         mail.logout()
 
+        total_scanned = len(all_uid_folder_pairs)
         log.info("[EmailDeals] sync-inbound: scanned=%d synced=%d already_known=%d skipped_no_user=%d",
-                 len(uids), synced, already_known, skipped_no_user)
+                 total_scanned, synced, already_known, skipped_no_user)
 
         print(f"\n{'#'*60}")
-        print(f"[DEBUG] SYNC SUMMARY: scanned={len(uids)} synced={synced} already_known={already_known} skipped_no_user={skipped_no_user}")
+        print(f"[DEBUG] SYNC SUMMARY: scanned={total_scanned} synced={synced} already_known={already_known} skipped_no_user={skipped_no_user}")
         print(f"{'#'*60}\n")
 
         return {
             "success": True,
-            "total_scanned": len(uids),
+            "total_scanned": total_scanned,
             "synced": synced,
             "already_known": already_known,
             "skipped_no_user": skipped_no_user,
             "debug_log": debug_log,
-            "message": f"Scanned {len(uids)} emails: {synced} new, {already_known} already known, {skipped_no_user} unmatched sender.",
+            "message": f"Scanned {total_scanned} emails: {synced} new, {already_known} already known, {skipped_no_user} unmatched sender.",
         }
 
     except Exception as e:
