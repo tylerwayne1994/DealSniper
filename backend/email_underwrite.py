@@ -364,12 +364,10 @@ def _download_attachment_via_imap(uid_str: str) -> tuple[Optional[bytes], Option
 
 @router.post("/process-pending")
 async def process_pending_jobs(request: Request, limit: int = 5):
-    """Process pending email_underwrite_jobs into basic pipeline deals.
+    """Process pending email_underwrite_jobs through the full auto-pipeline.
 
-    Creates a row in Supabase `deals` for each pending job using email
-    metadata. Downloads the attachment and stores it, but does NOT run
-    heavy OCR/parsing synchronously (that would timeout on Render).
-    The user can trigger full underwriting later from the deal page.
+    For each pending job: creates a deal, downloads the attachment,
+    parses with Claude Vision, and updates the deal with real data.
     """
 
     sb = get_supabase()
@@ -412,81 +410,24 @@ async def process_pending_jobs(request: Request, limit: int = 5):
 
     for job in jobs:
         job_id = job["id"]
-        user_id = job["user_id"]
-        subject = job.get("subject") or "Email OM"
-        from_addr = job.get("from_address") or "unknown"
-        msg_id = job.get("provider_message_id")
-
         try:
-            print(f"[DEBUG] Processing job {job_id}: msg_id={msg_id} subject={subject!r}")
-
-            # Generate a unique deal_id
-            deal_id = str(uuid.uuid4())
-            now = datetime.utcnow().isoformat()
-
-            # Build a lightweight Supabase deals row from email metadata only
-            # No IMAP download — that would timeout on Render.
-            # The attachment can be fetched/parsed later from the deal page.
-            deal_record = {
-                "deal_id": deal_id,
-                "user_id": user_id,
-                "address": subject or "Email OM (pending parse)",
-                "units": None,
-                "purchase_price": None,
-                "deal_structure": "Email OM",
-                "parsed_data": {
-                    "source": "email_underwrite",
-                    "email_from": from_addr,
-                    "email_subject": subject,
-                    "provider_message_id": msg_id,
-                    "status": "awaiting_parse",
-                },
-                "scenario_data": None,
-                "market_cap_rate": None,
-                "rentcast_data": None,
-                "costseg_data": None,
-                "images": [],
-                "broker_name": None,
-                "broker_phone": None,
-                "broker_email": None,
-                "notes": f"Auto-created from email. From: {from_addr}.",
-                "latitude": None,
-                "longitude": None,
-                "pipeline_status": "pipeline",
-                "created_at": now,
-                "updated_at": now,
-            }
-
-            # Insert into deals table
-            sb.table("deals").insert(deal_record).execute()
-            print(f"[DEBUG] Created deal {deal_id} for job {job_id}")
-
-            # Link job to deal and mark as done
-            sb.table("email_underwrite_jobs").update(
-                {"deal_id": deal_id, "status": "done", "updated_at": now}
-            ).eq("id", job_id).execute()
-
-            processed += 1
-
+            print(f"[DEBUG] process-pending: routing job {job_id} to full pipeline (_process_and_parse_job)")
+            result = _process_and_parse_job(job_id)
+            if result.get("success"):
+                processed += 1
+            elif result.get("error"):
+                errors.append({"job_id": job_id, "error": result["error"]})
+            print(f"[DEBUG] process-pending: job {job_id} result: {result}")
         except Exception as e:
             log.exception("[EmailUnderwrite] Failed to process job %s: %s", job_id, e)
-            error_msg = str(e)
-            errors.append({"job_id": job_id, "error": error_msg})
-            print(f"[DEBUG] Job {job_id} failed: {error_msg}")
-            # Mark job as errored
-            sb.table("email_underwrite_jobs").update(
-                {
-                    "status": "error",
-                    "error_message": error_msg,
-                    "updated_at": datetime.utcnow().isoformat(),
-                }
-            ).eq("id", job_id).execute()
+            errors.append({"job_id": job_id, "error": str(e)})
+            print(f"[DEBUG] process-pending: job {job_id} failed: {e}")
 
     return {
         "processed": processed,
         "total_jobs": len(jobs),
         "errors": errors,
-        "debug": f"Attempted {len(jobs)} jobs, processed {processed}",
+        "debug": f"Attempted {len(jobs)} jobs via full pipeline, processed {processed}",
     }
 
 
@@ -1026,15 +967,192 @@ Return ONLY valid JSON, no markdown or explanation.'''
         return {"error": str(e), "job_id": job_id}
 
 
+def _reprocess_existing_job(job_id: str) -> dict:
+    """Re-process a 'done' job whose deal has only metadata (no real parsed data).
+
+    Unlike _process_and_parse_job, this uses the EXISTING deal_id and just
+    re-downloads the attachment and runs Claude Vision parsing.
+    """
+    sb = get_supabase()
+
+    try:
+        job_result = sb.table("email_underwrite_jobs").select("*").eq("id", job_id).single().execute()
+        job = getattr(job_result, "data", None)
+        if not job:
+            return {"error": f"Job {job_id} not found"}
+
+        deal_id = job.get("deal_id")
+        if not deal_id:
+            return {"error": f"Job {job_id} has no deal_id"}
+
+        msg_id = job.get("provider_message_id")
+        from_addr = job.get("from_address") or "unknown"
+        subject = job.get("subject") or "Email OM"
+
+        # Mark job as processing
+        now = datetime.utcnow().isoformat()
+        sb.table("email_underwrite_jobs").update(
+            {"status": "processing", "updated_at": now}
+        ).eq("id", job_id).execute()
+
+        if not msg_id:
+            sb.table("email_underwrite_jobs").update(
+                {"status": "error", "error_message": "No provider_message_id", "updated_at": datetime.utcnow().isoformat()}
+            ).eq("id", job_id).execute()
+            return {"error": "No provider_message_id", "deal_id": deal_id}
+
+        print(f"[AutoPipeline-Reprocess] Downloading attachment for job {job_id}, msg_id={msg_id}")
+        file_bytes, filename = _download_attachment_via_imap(msg_id)
+        if not file_bytes:
+            sb.table("deals").update({
+                "parsed_data": {"source": "email_underwrite", "status": "no_attachment", "email_from": from_addr, "email_subject": subject},
+                "updated_at": datetime.utcnow().isoformat(),
+            }).eq("deal_id", deal_id).execute()
+            sb.table("email_underwrite_jobs").update(
+                {"status": "done", "error_message": "No attachment found", "updated_at": datetime.utcnow().isoformat()}
+            ).eq("id", job_id).execute()
+            return {"warning": "No attachment found", "deal_id": deal_id}
+
+        print(f"[AutoPipeline-Reprocess] Downloaded {filename} ({len(file_bytes)} bytes), parsing with Claude Vision...")
+
+        # Parse with Claude Vision (same as _process_and_parse_job)
+        from anthropic import Anthropic
+        from v2_underwriter.routes import filter_pdf_pages_smart, _post_process_parsed_data
+
+        ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
+        ANTHROPIC_MODEL = "claude-sonnet-4-5-20250929"
+
+        if not ANTHROPIC_API_KEY:
+            sb.table("email_underwrite_jobs").update(
+                {"status": "error", "error_message": "No Anthropic API key", "updated_at": datetime.utcnow().isoformat()}
+            ).eq("id", job_id).execute()
+            return {"error": "Anthropic API key not configured", "deal_id": deal_id}
+
+        anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
+
+        ext = (os.path.splitext(filename)[1] if filename else ".pdf").lower()
+        mime_map = {".pdf": "application/pdf", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
+        mime = mime_map.get(ext, "application/pdf")
+
+        if mime == "application/pdf":
+            try:
+                images = filter_pdf_pages_smart(file_bytes, min_score=15, max_pages=15)
+            except Exception:
+                from pdf2image import convert_from_bytes
+                images = convert_from_bytes(file_bytes, dpi=100, first_page=1, last_page=10)
+
+            if not images:
+                sb.table("email_underwrite_jobs").update(
+                    {"status": "error", "error_message": "Could not extract PDF images", "updated_at": datetime.utcnow().isoformat()}
+                ).eq("id", job_id).execute()
+                return {"error": "Could not extract PDF images", "deal_id": deal_id}
+
+            content_items = []
+            for img in images:
+                img_buf = io.BytesIO()
+                if img.mode == "RGBA":
+                    img = img.convert("RGB")
+                img.save(img_buf, format="JPEG", quality=75, optimize=True)
+                file_b64 = base64.b64encode(img_buf.getvalue()).decode("utf-8")
+                content_items.append({
+                    "type": "image",
+                    "source": {"type": "base64", "media_type": "image/jpeg", "data": file_b64},
+                })
+        else:
+            file_b64 = base64.b64encode(file_bytes).decode("utf-8")
+            content_items = [{"type": "image", "source": {"type": "base64", "media_type": mime, "data": file_b64}}]
+
+        schema_block = '''Return JSON matching this schema:
+{
+  "property": {"property_name": "", "address": "", "city": "", "state": "", "zip": "", "units": 0, "year_built": 0, "rba_sqft": 0, "land_area_acres": 0, "property_type": "", "property_class": "", "parking_spaces": 0},
+  "pricing_financing": {"price": 0, "price_per_unit": 0, "price_per_sf": 0, "loan_amount": 0, "down_payment": 0, "interest_rate": 0, "ltv": 0, "term_years": 0, "amortization_years": 0},
+  "pnl": {"gross_potential_rent": 0, "other_income": 0, "vacancy_rate": 0, "vacancy_amount": 0, "effective_gross_income": 0, "operating_expenses": 0, "operating_expenses_t12": 0, "operating_expenses_proforma": 0, "noi": 0, "noi_t12": 0, "noi_proforma": 0, "noi_stabilized": 0, "cap_rate": 0, "cap_rate_t12": 0, "cap_rate_proforma": 0, "expense_ratio": 0},
+  "expenses": {"taxes": 0, "insurance": 0, "utilities": 0, "repairs_maintenance": 0, "management": 0, "payroll": 0, "admin": 0, "marketing": 0, "other": 0, "total": 0},
+  "underwriting": {"holding_period": 0, "exit_cap_rate": 0},
+  "unit_mix": [{"type": "", "units": 0, "mix_pct": 0, "unit_sf": 0, "rent_current": 0, "rent_psf": 0, "rent_market": 0}],
+  "broker_info": {"broker_name": "", "broker_company": "", "broker_phone": "", "broker_email": ""}
+}
+Return ONLY valid JSON, no markdown or explanation.'''
+
+        content_items.append({
+            "type": "text",
+            "text": f"Extract ONLY numerical data from this real estate offering memorandum. Focus on property details, pricing/financing terms, income statements, expense breakdowns, underwriting assumptions, and unit mix.\n\n{schema_block}",
+        })
+
+        response = anthropic_client.messages.create(
+            model=ANTHROPIC_MODEL,
+            max_tokens=8000,
+            messages=[{"role": "user", "content": content_items}],
+        )
+
+        text = response.content[0].text.strip()
+        if text.startswith("```"):
+            text = text.split("```", 2)[1]
+            if text.startswith("json"):
+                text = text[4:].strip()
+
+        parsed_data = json.loads(text)
+
+        try:
+            parsed_data = _post_process_parsed_data(parsed_data)
+        except Exception as e:
+            print(f"[AutoPipeline-Reprocess] Post-process failed (non-fatal): {e}")
+
+        # Update deal with full parsed data
+        prop = parsed_data.get("property", {})
+        pricing = parsed_data.get("pricing_financing", {})
+        broker = parsed_data.get("broker_info", {})
+
+        address = (
+            prop.get("address")
+            or ", ".join(filter(None, [prop.get("city"), prop.get("state")]))
+            or subject or "Email OM"
+        )
+
+        update_payload = {
+            "parsed_data": parsed_data,
+            "scenario_data": parsed_data,
+            "address": address,
+            "units": prop.get("units"),
+            "purchase_price": pricing.get("price"),
+            "broker_name": broker.get("broker_name"),
+            "broker_phone": broker.get("broker_phone"),
+            "broker_email": broker.get("broker_email"),
+            "updated_at": datetime.utcnow().isoformat(),
+        }
+
+        sb.table("deals").update(update_payload).eq("deal_id", deal_id).execute()
+
+        sb.table("email_underwrite_jobs").update(
+            {"status": "done", "error_message": None, "updated_at": datetime.utcnow().isoformat()}
+        ).eq("id", job_id).execute()
+
+        print(f"[AutoPipeline-Reprocess] ✅ Job {job_id} completed — deal {deal_id}: {address}")
+        return {"success": True, "deal_id": deal_id, "address": address}
+
+    except Exception as e:
+        print(f"[AutoPipeline-Reprocess] Job {job_id} failed: {e}")
+        log.exception("[AutoPipeline-Reprocess] Job %s failed: %s", job_id, e)
+        try:
+            sb.table("email_underwrite_jobs").update(
+                {"status": "error", "error_message": str(e)[:500], "updated_at": datetime.utcnow().isoformat()}
+            ).eq("id", job_id).execute()
+        except Exception:
+            pass
+        return {"error": str(e), "job_id": job_id}
+
+
 def _run_auto_pipeline():
     """Single run of the full pipeline: sync → process → parse."""
+    print("[AutoPipeline] Running auto-pipeline cycle...")
     log.info("[AutoPipeline] Running auto-pipeline cycle...")
 
     # Step 1: Sync inbox
     sync_result = _sync_inbox_core()
     new_jobs = sync_result.get("new_job_ids", [])
-    log.info("[AutoPipeline] Sync done: synced=%s new_jobs=%d",
-             sync_result.get("synced", 0), len(new_jobs))
+    print(f"[AutoPipeline] Sync done: synced={sync_result.get('synced', 0)} already_known={sync_result.get('already_known', 0)} skipped_no_user={sync_result.get('skipped_no_user', 0)} new_jobs={len(new_jobs)}")
+    if sync_result.get("error"):
+        print(f"[AutoPipeline] Sync ERROR: {sync_result['error']}")
 
     # Step 2: Also pick up any leftover pending jobs (from manual sync or previous failures)
     try:
@@ -1044,20 +1162,61 @@ def _run_auto_pipeline():
             jid = row["id"]
             if jid not in new_jobs:
                 new_jobs.append(jid)
+                print(f"[AutoPipeline] Added leftover pending job: {jid}")
     except Exception as e:
-        log.warning("[AutoPipeline] Failed to query pending jobs: %s", e)
+        print(f"[AutoPipeline] Failed to query pending jobs: {e}")
 
-    if not new_jobs:
-        log.info("[AutoPipeline] No new jobs to process.")
+    # Step 2b: Pick up "done" jobs whose deals were never actually parsed
+    # (created by the old process-pending endpoint with metadata-only stubs)
+    reprocess_jobs = []
+    try:
+        done_jobs = (
+            sb.table("email_underwrite_jobs")
+            .select("id, deal_id")
+            .eq("status", "done")
+            .not_.is_("deal_id", None)
+            .limit(20)
+            .execute()
+        )
+        for row in (done_jobs.data or []):
+            deal_id = row["deal_id"]
+            # Check if the deal has real parsed data
+            deal_res = sb.table("deals").select("deal_id, parsed_data, units, purchase_price").eq("deal_id", deal_id).single().execute()
+            deal = getattr(deal_res, "data", None)
+            if deal:
+                pd = deal.get("parsed_data") or {}
+                has_property = isinstance(pd.get("property"), dict) and pd["property"].get("address")
+                has_units = deal.get("units") is not None
+                if not has_property and not has_units:
+                    # Deal was created with metadata only — needs full parsing
+                    print(f"[AutoPipeline] Found unparsed done job {row['id']} (deal={deal_id}) — will reprocess")
+                    reprocess_jobs.append(row["id"])
+    except Exception as e:
+        print(f"[AutoPipeline] Failed to check done-but-unparsed jobs: {e}")
+
+    if not new_jobs and not reprocess_jobs:
+        print("[AutoPipeline] No new jobs to process.")
         return
 
-    # Step 3: Process each job (create deal + download + parse)
+    # Step 3: Process each NEW job (create deal + download + parse)
     for job_id in new_jobs:
         try:
+            print(f"[AutoPipeline] Processing NEW job {job_id}...")
             result = _process_and_parse_job(job_id)
-            log.info("[AutoPipeline] Job %s result: %s", job_id, result)
+            print(f"[AutoPipeline] Job {job_id} result: {result}")
         except Exception as e:
+            print(f"[AutoPipeline] Unexpected error processing job {job_id}: {e}")
             log.exception("[AutoPipeline] Unexpected error processing job %s: %s", job_id, e)
+
+    # Step 4: Reprocess "done" jobs that have empty deals
+    for job_id in reprocess_jobs:
+        try:
+            print(f"[AutoPipeline] Re-processing unparsed job {job_id}...")
+            result = _reprocess_existing_job(job_id)
+            print(f"[AutoPipeline] Re-process job {job_id} result: {result}")
+        except Exception as e:
+            print(f"[AutoPipeline] Unexpected error re-processing job {job_id}: {e}")
+            log.exception("[AutoPipeline] Unexpected error re-processing job %s: %s", job_id, e)
 
 
 _last_run_time = None

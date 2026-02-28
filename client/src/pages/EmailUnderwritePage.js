@@ -229,7 +229,6 @@ function EmailUnderwritePage() {
   }, []);
 
   const totalJobs = jobs.length;
-  const completedJobs = jobs.filter(j => j.status === 'done').length;
   const inProgressJobs = jobs.filter(j => j.status !== 'done' && j.status !== 'error').length;
 
   const cardStyle = {
@@ -254,7 +253,7 @@ function EmailUnderwritePage() {
     fontWeight: 600,
   };
 
-  const renderStatusBadge = (status, parsedStatus) => {
+  const renderStatusBadge = (status, parsedStatus, isFullyParsed) => {
     const normalized = (status || 'pending').toLowerCase();
     let bg = '#e5e7eb';
     let color = '#111827';
@@ -272,10 +271,15 @@ function EmailUnderwritePage() {
       bg = '#fef3c7';
       color = '#92400e';
       label = 'No Attachment';
-    } else if (normalized === 'done' && (parsedStatus === 'awaiting_parse' || parsedStatus === 'parsing')) {
-      bg = '#dbeafe';
-      color = '#1d4ed8';
-      label = 'Awaiting Parse';
+    } else if (normalized === 'done' && !isFullyParsed) {
+      // Job is "done" but deal has no real parsed data — still processing
+      bg = '#fef3c7';
+      color = '#92400e';
+      label = '⏳ Parsing OM...';
+    } else if (normalized === 'done' && isFullyParsed) {
+      bg = '#dcfce7';
+      color = '#15803d';
+      label = 'Underwritten';
     } else if (normalized === 'done') {
       bg = '#dcfce7';
       color = '#15803d';
@@ -328,8 +332,12 @@ function EmailUnderwritePage() {
       refiValue: scenarioCalculations.refiValue || null,
       needsParse: !isFullyParsed,
       parsedStatus: parsedStatus || null,
+      isFullyParsed,
     };
   });
+
+  // Counts that depend on rows (computed after rows)
+  const completedJobs = rows.filter(r => r.status === 'done' && r.isFullyParsed).length;
 
   const handleViewUnderwrite = async (jobId, dealId, needsParse) => {
     if (!needsParse) {
@@ -673,7 +681,7 @@ function EmailUnderwritePage() {
                 {rows.map(row => (
                   <tr key={row.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                     <td style={{ padding: '10px', verticalAlign: 'middle' }}>
-                      {renderStatusBadge(row.status, row.parsedStatus)}
+                      {renderStatusBadge(row.status, row.parsedStatus, row.isFullyParsed)}
                       {row.status === 'error' && row.errorMessage && (
                         <div title={row.errorMessage} style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: '10px', color: '#b91c1c', cursor: 'help' }}>
                           <AlertTriangle size={10} />
