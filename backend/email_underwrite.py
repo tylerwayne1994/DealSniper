@@ -15,7 +15,6 @@ It also contains a worker endpoint that:
 import base64
 import logging
 import os
-import tempfile
 import uuid
 import email as email_mod
 from datetime import datetime
@@ -26,8 +25,6 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from email_deals import get_supabase, get_imap_connection  # IMAP-based helpers
-from parser_v4 import RealEstateParser
-from v2_underwriter import storage
 
 log = logging.getLogger("email_underwrite")
 
@@ -365,10 +362,10 @@ def _download_attachment_via_imap(uid_str: str) -> tuple[Optional[bytes], Option
 async def process_pending_jobs(request: Request, limit: int = 5):
     """Process pending email_underwrite_jobs into basic pipeline deals.
 
-    This creates a minimal row in the Supabase `deals` table for each
-    pending job (if it doesn't already have a deal_id), then marks the
-    job as `done` and links the new deal_id. Full attachment parsing and
-    detailed underwriting can be layered on top of this later.
+    Creates a row in Supabase `deals` for each pending job using email
+    metadata. Downloads the attachment and stores it, but does NOT run
+    heavy OCR/parsing synchronously (that would timeout on Render).
+    The user can trigger full underwriting later from the deal page.
     """
 
     sb = get_supabase()
@@ -407,7 +404,7 @@ async def process_pending_jobs(request: Request, limit: int = 5):
         return {"processed": 0, "total_jobs": 0, "debug": "No pending or errored jobs found"}
 
     processed = 0
-    parser = RealEstateParser()
+    errors = []
 
     for job in jobs:
         job_id = job["id"]
@@ -417,96 +414,103 @@ async def process_pending_jobs(request: Request, limit: int = 5):
         msg_id = job.get("provider_message_id")
 
         try:
+            print(f"[DEBUG] Processing job {job_id}: msg_id={msg_id} subject={subject!r}")
+
             if not msg_id:
                 raise RuntimeError("Missing provider_message_id on job")
 
             # Download first OM-style attachment via IMAP
             content, filename = _download_attachment_via_imap(msg_id)
-            if not content or not filename:
-                raise RuntimeError("No PDF/Excel/CSV attachment found on email")
 
-            # Persist attachment to temp file for parser_v4
-            suffix = Path(filename).suffix or ".pdf"
-            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-                tmp.write(content)
-                tmp_path = Path(tmp.name)
-
-            try:
-                # OCR + parse to underwriting JSON
-                ocr_result = parser.extract_text_with_ocr(str(tmp_path))
-                if not ocr_result.get("success") or not ocr_result.get("text"):
-                    raise RuntimeError(f"OCR failed: {ocr_result.get('error')}")
-
-                parse_result = parser.parse_with_claude(ocr_result["text"], mode="underwriting")
-                if not parse_result.get("success"):
-                    raise RuntimeError(f"Parse failed: {parse_result.get('error')}")
-
-                parsed_json = parse_result.get("data") or {}
-
-                # Create DealV2 in file-based storage
-                deal = storage.create_deal(parsed_json, filename)
-
-                # Optionally run full underwriting analysis to attach verdict/summary
-                try:
-                    from v2_underwriter.routes import underwrite_deal as _underwrite_endpoint
-                    # Fabricate a minimal Request-like object is messy; instead, we
-                    # call the llm client indirectly by importing the helper.
-                    # For now, skip auto-running narrative to avoid double-charging tokens
-                    # and let the UI trigger it when the user opens the deal.
-                except Exception:
-                    pass
-
-                # Build Supabase deals row
-                now = datetime.utcnow().isoformat()
-                deal_record = {
-                    "deal_id": deal.id,
-                    "user_id": user_id,
-                    "address": getattr(deal, "summary_address", None) or subject,
-                    "units": getattr(deal, "summary_units", None),
-                    "purchase_price": getattr(deal, "summary_price", None),
-                    "deal_structure": "Email OM",
-                    "parsed_data": parsed_json,
-                    "scenario_data": None,
-                    "market_cap_rate": getattr(deal, "summary_cap_rate", None),
-                    "rentcast_data": None,
-                    "costseg_data": None,
-                    "images": [],
-                    "broker_name": None,
-                    "broker_phone": None,
-                    "broker_email": None,
-                    "notes": None,
-                    "latitude": None,
-                    "longitude": None,
-                    "pipeline_status": "pipeline",
-                    "created_at": now,
-                    "updated_at": now,
+            attachment_info = {}
+            if content and filename:
+                attachment_info = {
+                    "filename": filename,
+                    "size_bytes": len(content),
+                    "downloaded": True,
                 }
+                print(f"[DEBUG] Downloaded attachment: {filename} ({len(content)} bytes)")
 
-                # Insert into deals table; service role key bypasses RLS
-                sb.table("deals").insert(deal_record).execute()
-
-                # Link job to deal and mark as done
-                sb.table("email_underwrite_jobs").update(
-                    {"deal_id": deal.id, "status": "done", "updated_at": now}
-                ).eq("id", job_id).execute()
-
-                processed += 1
-            finally:
+                # Store attachment in Supabase storage for later parsing
                 try:
-                    if tmp_path and tmp_path.exists():
-                        os.remove(tmp_path)
-                except Exception:
-                    pass
+                    storage_path = f"email-om-attachments/{user_id}/{job_id}/{filename}"
+                    sb.storage.from_("deal-documents").upload(
+                        storage_path,
+                        content,
+                        {"content-type": "application/octet-stream"},
+                    )
+                    attachment_info["storage_path"] = storage_path
+                    print(f"[DEBUG] Uploaded to storage: {storage_path}")
+                except Exception as upload_err:
+                    print(f"[DEBUG] Storage upload failed (non-fatal): {upload_err}")
+                    # Non-fatal — we can still create the deal
+            else:
+                print(f"[DEBUG] No attachment found for job {job_id}")
+                attachment_info = {"filename": None, "downloaded": False}
+
+            # Generate a unique deal_id
+            deal_id = str(uuid.uuid4())
+            now = datetime.utcnow().isoformat()
+
+            # Build a lightweight Supabase deals row from email metadata
+            deal_record = {
+                "deal_id": deal_id,
+                "user_id": user_id,
+                "address": subject or "Email OM (pending parse)",
+                "units": None,
+                "purchase_price": None,
+                "deal_structure": "Email OM",
+                "parsed_data": {
+                    "source": "email_underwrite",
+                    "email_from": from_addr,
+                    "email_subject": subject,
+                    "attachment": attachment_info,
+                    "status": "awaiting_parse",
+                },
+                "scenario_data": None,
+                "market_cap_rate": None,
+                "rentcast_data": None,
+                "costseg_data": None,
+                "images": [],
+                "broker_name": None,
+                "broker_phone": None,
+                "broker_email": None,
+                "notes": f"Auto-created from email. From: {from_addr}. Attachment: {attachment_info.get('filename', 'none')}",
+                "latitude": None,
+                "longitude": None,
+                "pipeline_status": "pipeline",
+                "created_at": now,
+                "updated_at": now,
+            }
+
+            # Insert into deals table
+            sb.table("deals").insert(deal_record).execute()
+            print(f"[DEBUG] Created deal {deal_id} for job {job_id}")
+
+            # Link job to deal and mark as done
+            sb.table("email_underwrite_jobs").update(
+                {"deal_id": deal_id, "status": "done", "updated_at": now}
+            ).eq("id", job_id).execute()
+
+            processed += 1
 
         except Exception as e:
             log.exception("[EmailUnderwrite] Failed to process job %s: %s", job_id, e)
-            # Mark job as errored so we don't reprocess endlessly
+            error_msg = str(e)
+            errors.append({"job_id": job_id, "error": error_msg})
+            print(f"[DEBUG] Job {job_id} failed: {error_msg}")
+            # Mark job as errored
             sb.table("email_underwrite_jobs").update(
                 {
                     "status": "error",
-                    "error_message": str(e),
+                    "error_message": error_msg,
                     "updated_at": datetime.utcnow().isoformat(),
                 }
             ).eq("id", job_id).execute()
 
-    return {"processed": processed, "total_jobs": len(jobs), "debug": f"Attempted {len(jobs)} jobs, processed {processed}"}
+    return {
+        "processed": processed,
+        "total_jobs": len(jobs),
+        "errors": errors,
+        "debug": f"Attempted {len(jobs)} jobs, processed {processed}",
+    }
