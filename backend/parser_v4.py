@@ -20,7 +20,7 @@ if not MISTRAL_API_KEY or not CLAUDE_API_KEY:
 
 mistral_client = Mistral(api_key=MISTRAL_API_KEY)
 anthropic_client = Anthropic(api_key=CLAUDE_API_KEY)
-ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-3-haiku-20240307")
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
 
 class RealEstateParser:
     """Parser for real estate offering memorandums and financial documents"""
@@ -168,7 +168,7 @@ class RealEstateParser:
         try:
             response = self.anthropic.messages.create(
                 model=ANTHROPIC_MODEL,
-                max_tokens=8000,
+                max_tokens=4096,
                 temperature=0,
                 messages=[{"role": "user", "content": prompt}]
             )
