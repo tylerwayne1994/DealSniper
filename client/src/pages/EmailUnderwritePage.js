@@ -69,6 +69,9 @@ function EmailUnderwritePage() {
         method: 'POST',
       });
       const processData = await processRes.json();
+      console.log('=== PROCESS-PENDING DEBUG ===');
+      console.log('Full response:', JSON.stringify(processData, null, 2));
+      console.log('=== END PROCESS DEBUG ===');
       if (processData.processed > 0) parts.push(`${processData.processed} deals processed`);
 
       setSyncMessage(parts.length > 0 ? parts.join(' · ') : 'Inbox checked — no new emails found.');

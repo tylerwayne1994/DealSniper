@@ -291,6 +291,21 @@ def _download_attachment_via_imap(uid_str: str) -> tuple[Optional[bytes], Option
         raw_bytes = msg_data[0][1] if isinstance(msg_data[0], tuple) else msg_data[0]
         msg = email_mod.message_from_bytes(raw_bytes)
 
+        # ── DEBUG: dump all parts in the email ──
+        print(f"[DEBUG] Email Subject: {msg.get('Subject', '(none)')}")
+        print(f"[DEBUG] Email From: {msg.get('From', '(none)')}")
+        print(f"[DEBUG] Content-Type: {msg.get_content_type()}")
+        print(f"[DEBUG] Is multipart: {msg.is_multipart()}")
+        part_index = 0
+        for part in msg.walk():
+            ct = part.get_content_type()
+            fn = part.get_filename()
+            disp = part.get("Content-Disposition", "")
+            size = len(part.get_payload(decode=True) or b"") if part.get_content_maintype() != "multipart" else 0
+            print(f"[DEBUG]   Part {part_index}: type={ct}  filename={fn!r}  disposition={disp!r}  size={size}")
+            part_index += 1
+        # ── END DEBUG ──
+
         allowed_exts = (".pdf", ".xlsx", ".xls", ".csv")
 
         for part in msg.walk():
@@ -298,8 +313,26 @@ def _download_attachment_via_imap(uid_str: str) -> tuple[Optional[bytes], Option
                 continue
 
             filename = part.get_filename()
+            # Also check Content-Disposition for attachment without explicit filename
+            content_disp = str(part.get("Content-Disposition", ""))
+            content_type = part.get_content_type()
+
             if not filename:
-                continue
+                # Try to derive filename from content type for unnamed attachments
+                if "attachment" in content_disp or content_type == "application/pdf":
+                    if content_type == "application/pdf":
+                        filename = "attachment.pdf"
+                    elif content_type in ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",):
+                        filename = "attachment.xlsx"
+                    elif content_type in ("application/vnd.ms-excel",):
+                        filename = "attachment.xls"
+                    elif content_type == "text/csv":
+                        filename = "attachment.csv"
+                    else:
+                        print(f"[DEBUG] Skipping unnamed part with type={content_type}")
+                        continue
+                else:
+                    continue
 
             # Decode RFC-2047 filename if needed
             from email.header import decode_header
@@ -457,4 +490,4 @@ async def process_pending_jobs(request: Request, limit: int = 5):
                 }
             ).eq("id", job_id).execute()
 
-    return {"processed": processed}
+    return {"processed": processed, "total_jobs": len(jobs), "debug": f"Attempted {len(jobs)} jobs, processed {processed}"}
