@@ -168,7 +168,7 @@ class RealEstateParser:
         try:
             response = self.anthropic.messages.create(
                 model=ANTHROPIC_MODEL,
-                max_tokens=4096,
+                max_tokens=16384,
                 temperature=0,
                 messages=[{"role": "user", "content": prompt}]
             )
@@ -187,7 +187,20 @@ class RealEstateParser:
             else:
                 json_str = response_text
             
-            parsed_data = json.loads(json_str)
+            try:
+                parsed_data = json.loads(json_str)
+            except json.JSONDecodeError:
+                # Truncated JSON — try to repair by closing open structures
+                repaired = json_str.rstrip()
+                # Remove trailing comma if present
+                if repaired.endswith(','):
+                    repaired = repaired[:-1]
+                # Count unclosed braces/brackets and close them
+                open_braces = repaired.count('{') - repaired.count('}')
+                open_brackets = repaired.count('[') - repaired.count(']')
+                repaired += ']' * max(0, open_brackets)
+                repaired += '}' * max(0, open_braces)
+                parsed_data = json.loads(repaired)
             
             # Post-process the data
             parsed_data = self._post_process_data(parsed_data)
