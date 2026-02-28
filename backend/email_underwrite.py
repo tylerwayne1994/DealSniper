@@ -373,19 +373,38 @@ async def process_pending_jobs(request: Request, limit: int = 5):
 
     sb = get_supabase()
 
-    # Fetch a batch of jobs that don't yet have deals (pending or errored for retry)
-    result = (
-        sb.table("email_underwrite_jobs")
-        .select("id, user_id, deal_id, from_address, subject, raw_email_id, provider_message_id")
-        .in_("status", ["pending", "error"])
-        .is_("deal_id", None)
-        .limit(limit)
-        .execute()
-    )
-    jobs = getattr(result, "data", None) or []
+    try:
+        # Fetch pending jobs
+        pending_result = (
+            sb.table("email_underwrite_jobs")
+            .select("id, user_id, deal_id, from_address, subject, raw_email_id, provider_message_id")
+            .eq("status", "pending")
+            .is_("deal_id", None)
+            .limit(limit)
+            .execute()
+        )
+        pending_jobs = getattr(pending_result, "data", None) or []
+
+        # Fetch errored jobs for retry
+        error_result = (
+            sb.table("email_underwrite_jobs")
+            .select("id, user_id, deal_id, from_address, subject, raw_email_id, provider_message_id")
+            .eq("status", "error")
+            .is_("deal_id", None)
+            .limit(limit)
+            .execute()
+        )
+        error_jobs = getattr(error_result, "data", None) or []
+
+        jobs = pending_jobs + error_jobs
+        print(f"[DEBUG] process-pending: found {len(pending_jobs)} pending + {len(error_jobs)} errored = {len(jobs)} total jobs")
+    except Exception as query_err:
+        print(f"[DEBUG] process-pending query error: {query_err}")
+        log.exception("[EmailUnderwrite] Failed to query jobs: %s", query_err)
+        raise HTTPException(status_code=500, detail=f"Failed to query jobs: {str(query_err)}")
 
     if not jobs:
-        return {"processed": 0}
+        return {"processed": 0, "total_jobs": 0, "debug": "No pending or errored jobs found"}
 
     processed = 0
     parser = RealEstateParser()

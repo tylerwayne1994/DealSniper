@@ -65,18 +65,28 @@ function EmailUnderwritePage() {
       if (syncData.skipped_no_user > 0) parts.push(`${syncData.skipped_no_user} skipped (sender not matched)`);
 
       // Step 2: Process pending jobs into deals
-      const processRes = await fetch(`${API_BASE_URL}/api/email-underwrite/process-pending`, {
-        method: 'POST',
-      });
-      const processData = await processRes.json();
-      console.log('=== PROCESS-PENDING DEBUG ===');
-      console.log('Full response:', JSON.stringify(processData, null, 2));
-      console.log('=== END PROCESS DEBUG ===');
+      let processData = { processed: 0 };
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 min timeout
+        const processRes = await fetch(`${API_BASE_URL}/api/email-underwrite/process-pending`, {
+          method: 'POST',
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        processData = await processRes.json();
+        console.log('=== PROCESS-PENDING DEBUG ===');
+        console.log('Full response:', JSON.stringify(processData, null, 2));
+        console.log('=== END PROCESS DEBUG ===');
+      } catch (processErr) {
+        console.error('Process-pending error (non-fatal):', processErr);
+        parts.push('processing may still be running');
+      }
       if (processData.processed > 0) parts.push(`${processData.processed} deals processed`);
 
       setSyncMessage(parts.length > 0 ? parts.join(' · ') : 'Inbox checked — no new emails found.');
 
-      // Reload data (only if something changed)
+      // Reload data
       if (syncData.synced > 0 || processData.processed > 0) {
         window.location.reload();
       }
