@@ -43,7 +43,6 @@ function EmailUnderwritePage() {
       setSyncing(false);
     }
   };
-  };
 
   const handleDeleteJob = async (jobId) => {
     if (!userId) return;
