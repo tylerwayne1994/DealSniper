@@ -262,6 +262,7 @@ def _download_attachment_via_imap(uid_str: str) -> tuple[Optional[bytes], Option
     """Download the first PDF/Excel/CSV attachment from the inbound inbox via IMAP.
 
     Uses the system-level IMAP connection (env vars, no OAuth).
+    uid_str may be a plain UID like "5" or a folder:uid key like "[Gmail]/Spam:1".
     Returns (file_bytes, filename) or (None, None).
     """
     mail = get_imap_connection()
@@ -270,8 +271,18 @@ def _download_attachment_via_imap(uid_str: str) -> tuple[Optional[bytes], Option
         return None, None
 
     try:
-        mail.select("INBOX")
-        st, msg_data = mail.uid("fetch", uid_str.encode(), "(RFC822)")
+        # Parse folder and UID from the dedup key
+        if ":" in uid_str:
+            folder, uid_only = uid_str.rsplit(":", 1)
+        else:
+            folder = "INBOX"
+            uid_only = uid_str
+
+        log.info("[EmailUnderwrite] Fetching attachment: folder=%s uid=%s", folder, uid_only)
+        print(f"[DEBUG] _download_attachment_via_imap: folder={folder!r} uid={uid_only!r}")
+
+        mail.select(folder)
+        st, msg_data = mail.uid("fetch", uid_only.encode(), "(RFC822)")
 
         if st != "OK" or not msg_data or not msg_data[0]:
             log.warning("[EmailUnderwrite] IMAP fetch failed for UID %s", uid_str)
@@ -329,11 +340,11 @@ async def process_pending_jobs(request: Request, limit: int = 5):
 
     sb = get_supabase()
 
-    # Fetch a batch of jobs that don't yet have deals
+    # Fetch a batch of jobs that don't yet have deals (pending or errored for retry)
     result = (
         sb.table("email_underwrite_jobs")
         .select("id, user_id, deal_id, from_address, subject, raw_email_id, provider_message_id")
-        .eq("status", "pending")
+        .in_("status", ["pending", "error"])
         .is_("deal_id", None)
         .limit(limit)
         .execute()
