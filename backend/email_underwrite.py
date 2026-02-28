@@ -1039,7 +1039,7 @@ def _run_auto_pipeline():
     # Step 2: Also pick up any leftover pending jobs (from manual sync or previous failures)
     try:
         sb = get_supabase()
-        pending = sb.table("email_underwrite_jobs").select("id").eq("status", "pending").is_("deal_id", "null").limit(10).execute()
+        pending = sb.table("email_underwrite_jobs").select("id").eq("status", "pending").is_("deal_id", None).limit(10).execute()
         for row in (pending.data or []):
             jid = row["id"]
             if jid not in new_jobs:
@@ -1060,18 +1060,31 @@ def _run_auto_pipeline():
             log.exception("[AutoPipeline] Unexpected error processing job %s: %s", job_id, e)
 
 
+_last_run_time = None
+_last_run_result = None
+
+
 def _auto_pipeline_loop():
     """Background thread loop — runs the pipeline every N seconds."""
+    global _last_run_time, _last_run_result
     log.info("[AutoPipeline] Background worker started (interval=%ds)", _AUTO_PIPELINE_INTERVAL)
+    print(f"[AutoPipeline] Background worker started (interval={_AUTO_PIPELINE_INTERVAL}s)")
 
     # Wait 30 seconds on startup before first run (let the app fully initialize)
     time.sleep(30)
 
     while True:
         try:
+            print(f"[AutoPipeline] Starting pipeline cycle at {datetime.utcnow().isoformat()}")
             _run_auto_pipeline()
+            _last_run_time = datetime.utcnow().isoformat()
+            _last_run_result = "ok"
+            print(f"[AutoPipeline] Cycle complete at {_last_run_time}")
         except Exception as e:
+            _last_run_time = datetime.utcnow().isoformat()
+            _last_run_result = str(e)
             log.exception("[AutoPipeline] Unhandled error in pipeline loop: %s", e)
+            print(f"[AutoPipeline] ERROR: {e}")
 
         time.sleep(_AUTO_PIPELINE_INTERVAL)
 
@@ -1089,3 +1102,16 @@ def start_auto_pipeline():
     _pipeline_thread = threading.Thread(target=_auto_pipeline_loop, daemon=True, name="email-auto-pipeline")
     _pipeline_thread.start()
     log.info("[AutoPipeline] Background thread launched.")
+    print("[AutoPipeline] Background thread launched.")
+
+
+@router.get("/pipeline-status")
+async def pipeline_status():
+    """Check if the background auto-pipeline worker is running."""
+    alive = _pipeline_thread is not None and _pipeline_thread.is_alive()
+    return {
+        "running": alive,
+        "interval_seconds": _AUTO_PIPELINE_INTERVAL,
+        "last_run_time": _last_run_time,
+        "last_run_result": _last_run_result,
+    }

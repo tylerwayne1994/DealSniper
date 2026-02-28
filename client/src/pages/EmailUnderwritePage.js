@@ -35,69 +35,14 @@ function EmailUnderwritePage() {
     setSyncing(true);
     setSyncMessage('');
     try {
-      // Step 1: Sync inbound inbox
-      const syncRes = await fetch(`${API_BASE_URL}/api/email-deals/sync-inbound`);
-      const syncData = await syncRes.json();
-      if (!syncRes.ok) throw new Error(syncData.detail || 'Sync failed');
-
-      // ── DEBUG: log full sync response to console ──
-      console.log('=== SYNC-INBOUND DEBUG ===');
-      console.log('Full response:', JSON.stringify(syncData, null, 2));
-      if (syncData.debug_log) {
-        syncData.debug_log.forEach((entry, i) => {
-          console.log(`\n--- Email ${i + 1} ---`);
-          console.log('  UID:', entry.uid);
-          console.log('  Raw From:', entry.from_raw);
-          console.log('  Extracted sender:', entry.sender_email);
-          console.log('  Match result:', entry.match || 'NONE');
-          if (entry.ilike_results) console.log('  ilike results:', entry.ilike_results);
-          if (entry.all_profiles) {
-            console.log('  All profiles in DB:');
-            entry.all_profiles.forEach(p => console.log(`    id=${p.id}  email="${p.email}"  normalized="${p.normalized}"`));
-          }
-          if (entry.error) console.log('  ERROR:', entry.error);
-        });
-      }
-      console.log('=== END DEBUG ===');
-
-      const parts = [];
-      if (syncData.synced > 0) parts.push(`${syncData.synced} new emails synced`);
-      if (syncData.already_known > 0) parts.push(`${syncData.already_known} already synced`);
-      if (syncData.skipped_no_user > 0) parts.push(`${syncData.skipped_no_user} skipped (sender not matched)`);
-
-      // Step 2: Process pending jobs into deals
-      let processData = { processed: 0 };
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 min timeout
-        const processRes = await fetch(`${API_BASE_URL}/api/email-underwrite/process-pending`, {
-          method: 'POST',
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-        processData = await processRes.json();
-        console.log('=== PROCESS-PENDING DEBUG ===');
-        console.log('Full response:', JSON.stringify(processData, null, 2));
-        console.log('=== END PROCESS DEBUG ===');
-      } catch (processErr) {
-        console.error('Process-pending error (non-fatal):', processErr);
-        parts.push('processing may still be running');
-      }
-      if (processData.processed > 0) parts.push(`${processData.processed} deals processed`);
-
-      setSyncMessage(parts.length > 0 ? parts.join(' · ') : 'Inbox checked — no new emails found.');
-
-      // Reload data
-      if (syncData.synced > 0 || processData.processed > 0) {
-        window.location.reload();
-      }
+      // Just reload the page data — the background worker handles sync+parse automatically
+      window.location.reload();
     } catch (err) {
-      console.error('Sync error:', err);
+      console.error('Refresh error:', err);
       setSyncMessage('Error: ' + err.message);
-    } finally {
       setSyncing(false);
-      setTimeout(() => setSyncMessage(''), 12000);
     }
+  };
   };
 
   const handleDeleteJob = async (jobId) => {
@@ -219,7 +164,13 @@ function EmailUnderwritePage() {
         }
         setUserId(uid);
         // Only load aliases on first load
-        if (!pollTimer) loadAliases(uid);
+        if (!pollTimer) {
+          loadAliases(uid);
+          // Use auth email as fallback for display if profile email not set
+          if (userData?.user?.email) {
+            setPrimaryEmail(prev => prev || userData.user.email);
+          }
+        }
 
         const { data: jobRows, error: jobsError } = await supabase
           .from('email_underwrite_jobs')
