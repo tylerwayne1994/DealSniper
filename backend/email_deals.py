@@ -1070,21 +1070,43 @@ async def sync_inbound_inbox():
                     print(f"[DEBUG] ✅ MATCHED via ilike -> user_id={matched_user_id}")
                     email_debug["match"] = "ilike"
                 else:
-                    # Fallback: try auth.users via Supabase admin API
-                    # (profiles.email might be empty if trigger didn't fire)
+                    # Secondary: check email_aliases array column
+                    print(f"[DEBUG] No primary email match, checking email_aliases...")
+                    try:
+                        alias_result = supabase.table("profiles").select("id, email, email_aliases").contains("email_aliases", [sender_email]).execute()
+                        print(f"[DEBUG] email_aliases query result_count={len(alias_result.data or [])}")
+                        print(f"[DEBUG] email_aliases result data: {alias_result.data}")
+                        email_debug["alias_results"] = alias_result.data
+                        if alias_result.data and len(alias_result.data) > 0:
+                            matched_user_id = alias_result.data[0]["id"]
+                            print(f"[DEBUG] ✅ MATCHED via email_aliases -> user_id={matched_user_id}")
+                            email_debug["match"] = "alias"
+                    except Exception as alias_err:
+                        print(f"[DEBUG] email_aliases lookup error (column may not exist yet): {alias_err}")
+                        email_debug["alias_error"] = str(alias_err)
+
+                if not matched_user_id:
+                    # Fallback: broad scan of all profiles
                     log.info("[EmailDeals] No profile match for %s, trying broader lookup", sender_email)
-                    broad = supabase.table("profiles").select("id, email").execute()
+                    broad = supabase.table("profiles").select("id, email, email_aliases").execute()
                     print(f"[DEBUG] Broad lookup: {len(broad.data or [])} profiles found")
                     all_profile_emails = []
                     for row in (broad.data or []):
                         row_email = row.get("email", "")
                         row_email_norm = row_email.strip().lower() if row_email else ""
-                        all_profile_emails.append({"id": row.get("id", "")[:8], "email": row_email, "normalized": row_email_norm})
-                        print(f"[DEBUG]   Profile id={row.get('id')[:8]}...  email={row_email!r}  normalized={row_email_norm!r}  match={row_email_norm == sender_email}")
+                        row_aliases = row.get("email_aliases") or []
+                        row_aliases_norm = [a.strip().lower() for a in row_aliases if a]
+                        all_profile_emails.append({"id": row.get("id", "")[:8], "email": row_email, "normalized": row_email_norm, "aliases": row_aliases_norm})
+                        print(f"[DEBUG]   Profile id={row.get('id')[:8]}...  email={row_email!r}  aliases={row_aliases_norm}  match_email={row_email_norm == sender_email}  match_alias={sender_email in row_aliases_norm}")
                         if row_email and row_email_norm == sender_email:
                             matched_user_id = row["id"]
-                            print(f"[DEBUG] ✅ MATCHED via broad lookup -> user_id={matched_user_id}")
+                            print(f"[DEBUG] ✅ MATCHED via broad email lookup -> user_id={matched_user_id}")
                             email_debug["match"] = "broad"
+                            break
+                        if sender_email in row_aliases_norm:
+                            matched_user_id = row["id"]
+                            print(f"[DEBUG] ✅ MATCHED via broad alias lookup -> user_id={matched_user_id}")
+                            email_debug["match"] = "broad_alias"
                             break
                     email_debug["all_profiles"] = all_profile_emails
                     if not matched_user_id:

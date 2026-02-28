@@ -25,6 +25,10 @@ function EmailUnderwritePage() {
   const [syncMessage, setSyncMessage] = useState('');
   const [userId, setUserId] = useState(null);
   const [deleting, setDeleting] = useState(null); // job id being deleted, or 'all'
+  const [aliases, setAliases] = useState([]);
+  const [primaryEmail, setPrimaryEmail] = useState('');
+  const [newAlias, setNewAlias] = useState('');
+  const [aliasLoading, setAliasLoading] = useState(false);
 
   const handleSyncAndProcess = async () => {
     setSyncing(true);
@@ -127,6 +131,60 @@ function EmailUnderwritePage() {
     }
   };
 
+  const loadAliases = async (uid) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/email-underwrite/aliases`, {
+        headers: { 'X-User-ID': uid },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAliases(data.aliases || []);
+        setPrimaryEmail(data.primary_email || '');
+      }
+    } catch (err) {
+      console.error('Failed to load aliases:', err);
+    }
+  };
+
+  const handleAddAlias = async () => {
+    if (!userId || !newAlias.trim()) return;
+    setAliasLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/email-underwrite/aliases`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-User-ID': userId },
+        body: JSON.stringify({ email: newAlias.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to add alias');
+      setAliases(data.aliases || []);
+      setNewAlias('');
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      setAliasLoading(false);
+    }
+  };
+
+  const handleRemoveAlias = async (email) => {
+    if (!userId) return;
+    setAliasLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/email-underwrite/aliases`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'X-User-ID': userId },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to remove alias');
+      setAliases(data.aliases || []);
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      setAliasLoading(false);
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -141,6 +199,7 @@ function EmailUnderwritePage() {
           return;
         }
         setUserId(uid);
+        loadAliases(uid);
 
         const { data: jobRows, error: jobsError } = await supabase
           .from('email_underwrite_jobs')
@@ -382,6 +441,91 @@ function EmailUnderwritePage() {
                   We automatically parse the attachments, run the underwriter, and push the deal into your pipeline.
                 </li>
               </ol>
+
+              {/* Email Aliases Section */}
+              <div style={{ marginTop: '12px', padding: '10px 12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                  Linked Sender Emails
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px' }}>
+                  {primaryEmail ? (
+                    <span>Primary: <strong>{primaryEmail}</strong></span>
+                  ) : (
+                    <span>Primary email not set on profile</span>
+                  )}
+                </div>
+                {aliases.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                    {aliases.map((alias) => (
+                      <span
+                        key={alias}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '3px 8px',
+                          backgroundColor: '#e0f2fe',
+                          color: '#0369a1',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: 500,
+                        }}
+                      >
+                        {alias}
+                        <button
+                          onClick={() => handleRemoveAlias(alias)}
+                          disabled={aliasLoading}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#0369a1',
+                            cursor: 'pointer',
+                            padding: '0 2px',
+                            fontSize: '14px',
+                            lineHeight: 1,
+                          }}
+                          title="Remove alias"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <input
+                    type="email"
+                    placeholder="Add another sending email..."
+                    value={newAlias}
+                    onChange={(e) => setNewAlias(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddAlias()}
+                    style={{
+                      flex: 1,
+                      padding: '5px 8px',
+                      fontSize: '12px',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '6px',
+                      outline: 'none',
+                    }}
+                  />
+                  <button
+                    onClick={handleAddAlias}
+                    disabled={aliasLoading || !newAlias.trim()}
+                    style={{
+                      padding: '5px 12px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      backgroundColor: aliasLoading || !newAlias.trim() ? '#94a3b8' : '#2563eb',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: aliasLoading || !newAlias.trim() ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
 
               <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <button

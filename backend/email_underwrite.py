@@ -100,6 +100,86 @@ def create_underwrite_job(payload: IntakeTestPayload) -> str:
     return job_id
 
 
+# ============================================================================
+# Email Aliases Management
+# ============================================================================
+
+class AliasPayload(BaseModel):
+    email: str
+
+
+@router.get("/aliases")
+async def get_aliases(request: Request):
+    """Get the list of email aliases for the current user."""
+    user_id = request.headers.get("X-User-ID")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Missing X-User-ID header")
+
+    sb = get_supabase()
+    result = sb.table("profiles").select("email, email_aliases").eq("id", user_id).single().execute()
+    data = getattr(result, "data", None)
+    if not data:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    return {
+        "primary_email": data.get("email", ""),
+        "aliases": data.get("email_aliases") or [],
+    }
+
+
+@router.post("/aliases")
+async def add_alias(payload: AliasPayload, request: Request):
+    """Add an email alias for the current user."""
+    user_id = request.headers.get("X-User-ID")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Missing X-User-ID header")
+
+    alias = payload.email.strip().lower()
+    if not alias or "@" not in alias:
+        raise HTTPException(status_code=400, detail="Invalid email address")
+
+    sb = get_supabase()
+
+    # Get current aliases
+    result = sb.table("profiles").select("email_aliases").eq("id", user_id).single().execute()
+    data = getattr(result, "data", None)
+    if not data:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    current = data.get("email_aliases") or []
+    if alias in current:
+        return {"aliases": current, "message": "Alias already exists"}
+
+    updated = current + [alias]
+    sb.table("profiles").update({"email_aliases": updated}).eq("id", user_id).execute()
+
+    log.info("[EmailUnderwrite] Added alias %s for user %s", alias, user_id)
+    return {"aliases": updated, "message": f"Added {alias}"}
+
+
+@router.delete("/aliases")
+async def remove_alias(payload: AliasPayload, request: Request):
+    """Remove an email alias for the current user."""
+    user_id = request.headers.get("X-User-ID")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Missing X-User-ID header")
+
+    alias = payload.email.strip().lower()
+    sb = get_supabase()
+
+    result = sb.table("profiles").select("email_aliases").eq("id", user_id).single().execute()
+    data = getattr(result, "data", None)
+    if not data:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    current = data.get("email_aliases") or []
+    updated = [a for a in current if a != alias]
+    sb.table("profiles").update({"email_aliases": updated}).eq("id", user_id).execute()
+
+    log.info("[EmailUnderwrite] Removed alias %s for user %s", alias, user_id)
+    return {"aliases": updated, "message": f"Removed {alias}"}
+
+
 @router.delete("/jobs/{job_id}")
 async def delete_job(job_id: str, request: Request):
     """Delete a single email underwrite job.
