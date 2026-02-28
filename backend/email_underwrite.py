@@ -416,43 +416,13 @@ async def process_pending_jobs(request: Request, limit: int = 5):
         try:
             print(f"[DEBUG] Processing job {job_id}: msg_id={msg_id} subject={subject!r}")
 
-            if not msg_id:
-                raise RuntimeError("Missing provider_message_id on job")
-
-            # Download first OM-style attachment via IMAP
-            content, filename = _download_attachment_via_imap(msg_id)
-
-            attachment_info = {}
-            if content and filename:
-                attachment_info = {
-                    "filename": filename,
-                    "size_bytes": len(content),
-                    "downloaded": True,
-                }
-                print(f"[DEBUG] Downloaded attachment: {filename} ({len(content)} bytes)")
-
-                # Store attachment in Supabase storage for later parsing
-                try:
-                    storage_path = f"email-om-attachments/{user_id}/{job_id}/{filename}"
-                    sb.storage.from_("deal-documents").upload(
-                        storage_path,
-                        content,
-                        {"content-type": "application/octet-stream"},
-                    )
-                    attachment_info["storage_path"] = storage_path
-                    print(f"[DEBUG] Uploaded to storage: {storage_path}")
-                except Exception as upload_err:
-                    print(f"[DEBUG] Storage upload failed (non-fatal): {upload_err}")
-                    # Non-fatal — we can still create the deal
-            else:
-                print(f"[DEBUG] No attachment found for job {job_id}")
-                attachment_info = {"filename": None, "downloaded": False}
-
             # Generate a unique deal_id
             deal_id = str(uuid.uuid4())
             now = datetime.utcnow().isoformat()
 
-            # Build a lightweight Supabase deals row from email metadata
+            # Build a lightweight Supabase deals row from email metadata only
+            # No IMAP download — that would timeout on Render.
+            # The attachment can be fetched/parsed later from the deal page.
             deal_record = {
                 "deal_id": deal_id,
                 "user_id": user_id,
@@ -464,7 +434,7 @@ async def process_pending_jobs(request: Request, limit: int = 5):
                     "source": "email_underwrite",
                     "email_from": from_addr,
                     "email_subject": subject,
-                    "attachment": attachment_info,
+                    "provider_message_id": msg_id,
                     "status": "awaiting_parse",
                 },
                 "scenario_data": None,
@@ -475,7 +445,7 @@ async def process_pending_jobs(request: Request, limit: int = 5):
                 "broker_name": None,
                 "broker_phone": None,
                 "broker_email": None,
-                "notes": f"Auto-created from email. From: {from_addr}. Attachment: {attachment_info.get('filename', 'none')}",
+                "notes": f"Auto-created from email. From: {from_addr}.",
                 "latitude": None,
                 "longitude": None,
                 "pipeline_status": "pipeline",
