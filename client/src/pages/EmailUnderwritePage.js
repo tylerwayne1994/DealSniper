@@ -228,7 +228,6 @@ function EmailUnderwritePage() {
   }, []);
 
   const totalJobs = jobs.length;
-  const inProgressJobs = jobs.filter(j => j.status !== 'done' && j.status !== 'error').length;
 
   const cardStyle = {
     backgroundColor: 'white',
@@ -258,7 +257,12 @@ function EmailUnderwritePage() {
     let color = '#111827';
     let label = normalized;
 
-    if (normalized === 'processing') {
+    if (isFullyParsed) {
+      // Deal has real data — it's been underwritten regardless of job status
+      bg = '#dcfce7';
+      color = '#15803d';
+      label = 'Underwritten';
+    } else if (normalized === 'processing') {
       bg = '#fef3c7';
       color = '#92400e';
       label = '⏳ Parsing OM...';
@@ -270,19 +274,10 @@ function EmailUnderwritePage() {
       bg = '#fef3c7';
       color = '#92400e';
       label = 'No Attachment';
-    } else if (normalized === 'done' && !isFullyParsed) {
-      // Job is "done" but deal has no real parsed data — still processing
+    } else if (normalized === 'done') {
       bg = '#fef3c7';
       color = '#92400e';
       label = '⏳ Parsing OM...';
-    } else if (normalized === 'done' && isFullyParsed) {
-      bg = '#dcfce7';
-      color = '#15803d';
-      label = 'Underwritten';
-    } else if (normalized === 'done') {
-      bg = '#dcfce7';
-      color = '#15803d';
-      label = 'Underwritten';
     } else if (normalized === 'error') {
       bg = '#fee2e2';
       color = '#b91c1c';
@@ -311,7 +306,10 @@ function EmailUnderwritePage() {
     const deal = job.deal_id ? dealsById[job.deal_id] : null;
     const scenarioCalculations = deal?.scenario_data?.calculations || {};
     const parsedStatus = deal?.parsed_data?.status;
-    const isFullyParsed = deal?.parsed_data?.property != null;
+    // Check multiple signals: parsed_data.property exists, OR deal has actual units/price data
+    const hasParsedProperty = deal?.parsed_data?.property != null;
+    const hasRealData = (deal?.units != null && deal?.units > 0) || (deal?.purchase_price != null && deal?.purchase_price > 0);
+    const isFullyParsed = hasParsedProperty || hasRealData;
 
     return {
       id: job.id,
@@ -336,7 +334,8 @@ function EmailUnderwritePage() {
   });
 
   // Counts that depend on rows (computed after rows)
-  const completedJobs = rows.filter(r => r.status === 'done' && r.isFullyParsed).length;
+  const completedJobs = rows.filter(r => r.isFullyParsed).length;
+  const inProgressJobs = rows.filter(r => !r.isFullyParsed && r.status !== 'error').length;
 
   const handleViewUnderwrite = async (jobId, dealId, needsParse) => {
     if (!needsParse) {
