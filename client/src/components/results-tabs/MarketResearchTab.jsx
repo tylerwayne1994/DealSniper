@@ -220,8 +220,8 @@ const ZipDataMarkers = ({ zipCentroids, fmrData, migrationData, censusData, metr
           key={zip}
           pane="markerPane"
           center={[coords.lat, coords.lng]}
-          radius={3}
-          pathOptions={{ fillColor: color, color: color, weight: 1, fillOpacity: 0.7, opacity: 0.9, className: 'clickable-marker' }}
+          radius={2}
+          pathOptions={{ fillColor: color, color: color, weight: 0.5, fillOpacity: 0.6, opacity: 0.8, className: 'clickable-marker' }}
           eventHandlers={{ click: () => onSelectZip && onSelectZip(zip, coords, metric === 'fmr' ? fmrData[zip] : migrationData[zip]) }}
         >
           <LeafletTooltip direction="top" offset={[0, -5]} opacity={0.95} className="text-xs">
@@ -1169,7 +1169,7 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
               )}
 
               {/* MSA markers (aggregated from ZIPs) */}
-              {Object.entries(msaCentroids).map(([msaName, m]) => (
+              {showZipMarkers && Object.entries(msaCentroids).map(([msaName, m]) => (
                 <CircleMarker
                   key={`msa-${msaName}`}
                   pane="markerPane"
