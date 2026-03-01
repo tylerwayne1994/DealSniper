@@ -3284,19 +3284,21 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
         }
         
         // Get interest rate - check multiple sources
-        // pricing_financing stores as decimal (0.055 for 5.5%)
-        // financing object may store as percentage (5.5)
+        // DealStructureTab writes financing.interest_rate as a percentage number (e.g. 5.96)
+        // We need it as a decimal (0.0596) for amortization math
         let amortInterestRate = pricing_financing?.interest_rate || 0;
         if (!amortInterestRate || amortInterestRate === 0) {
-          // Check financing object (stored as percentage, convert to decimal)
           const financeRate = scenarioData.financing?.interest_rate || 0;
           if (financeRate > 0) {
-            amortInterestRate = financeRate > 1 ? financeRate / 100 : financeRate; // Convert if percentage
+            amortInterestRate = financeRate;
           }
         }
-        // If still 0, use a default rate for display purposes
         if (!amortInterestRate || amortInterestRate === 0) {
-          amortInterestRate = 0.06; // Default 6%
+          amortInterestRate = 6; // Default 6%
+        }
+        // Normalize: if > 1, it's a percentage like 5.96 → convert to decimal 0.0596
+        if (amortInterestRate > 1) {
+          amortInterestRate = amortInterestRate / 100;
         }
         
         // Get loan term

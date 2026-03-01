@@ -32,15 +32,21 @@ export default function AmortizationTab({ scenarioData, fullCalcs }) {
   }
   
   // Get interest rate - check multiple sources
+  // NOTE: financing.interest_rate from DealStructureTab is stored as a percentage (e.g. 5.96),
+  // NOT a decimal (0.0596). We need it as a decimal for math.
   let interestRate = pricing_financing?.interest_rate || 0;
   if (!interestRate || interestRate === 0) {
     const financeRate = scenarioData.financing?.interest_rate || 0;
     if (financeRate > 0) {
-      interestRate = financeRate > 1 ? financeRate / 100 : financeRate;
+      interestRate = financeRate;
     }
   }
   if (!interestRate || interestRate === 0) {
-    interestRate = 0.06; // Default 6%
+    interestRate = 6; // Default 6%
+  }
+  // Normalize: if > 1, it's a percentage like 5.96 → convert to decimal 0.0596
+  if (interestRate > 1) {
+    interestRate = interestRate / 100;
   }
   
   // Get loan term
