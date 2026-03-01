@@ -14,6 +14,7 @@ import MarketResearchPage from './pages/MarketResearchPage'; // Market Discovery
 import DueDiligencePage from './pages/DueDiligencePage'; // Due Diligence Checklist
 import EmailDealsPage from './pages/EmailDealsPage'; // Email Deal Screener
 import EmailUnderwritePage from './pages/EmailUnderwritePage'; // Email Underwrite Pipeline
+import TemplatesPage from './pages/TemplatesPage'; // Deal Templates
 import SignUpPage from './pages/SignUpPage'; // Sign Up
 import SignupCompletePage from './pages/SignupCompletePage'; // Signup Complete
 import LoginPage from './pages/LoginPage'; // Login
@@ -47,6 +48,7 @@ function App() {
         <Route path="/due-diligence" element={<DueDiligencePage />} /> {/* Due Diligence Checklist */}
         <Route path="/email-deals" element={<EmailDealsPage />} /> {/* Email Deal Screener */}
         <Route path="/email-underwrite" element={<EmailUnderwritePage />} /> {/* Email Underwrite Pipeline */}
+        <Route path="/templates" element={<TemplatesPage />} /> {/* Deal Templates */}
       </Routes>
     </Router>
   );
