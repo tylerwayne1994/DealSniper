@@ -1223,21 +1223,6 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
             {/* Map overlays */}
             <div className="absolute top-3 left-3 flex flex-wrap gap-2 z-[1000] pointer-events-auto">
               <div className="bg-white/95 backdrop-blur rounded-full shadow-sm border px-3 py-2 text-sm font-semibold flex items-center gap-2">
-                <Clock size={16} className="text-blue-500" />
-                <select
-                  value={selectedDriveTime}
-                  onChange={(e) => handleDriveTimeChange(Number(e.target.value))}
-                  className="bg-transparent border-none outline-none font-semibold cursor-pointer"
-                >
-                  <option value={5}>5-min</option>
-                  <option value={10}>10-min</option>
-                  <option value={15}>15-min</option>
-                  <option value={20}>20-min</option>
-                  <option value={30}>30-min</option>
-                </select>
-                <span>Drive</span>
-              </div>
-              <div className="bg-white/95 backdrop-blur rounded-full shadow-sm border px-3 py-2 text-sm font-semibold flex items-center gap-2">
                 <label className="text-xs mr-2">ZIP Heat</label>
                 <input type="checkbox" checked={showZipHeat} onChange={() => setShowZipHeat((s) => !s)} />
               </div>
