@@ -339,7 +339,7 @@ function EmailUnderwritePage() {
 
   const handleViewUnderwrite = async (jobId, dealId, needsParse) => {
     if (!needsParse) {
-      navigate(`/underwrite?viewDeal=${dealId}`);
+      navigate(`/underwrite?viewDeal=${dealId}&source=email`);
       return;
     }
 
@@ -353,7 +353,7 @@ function EmailUnderwritePage() {
       if (!res.ok) throw new Error(data.detail || 'Parse failed');
 
       console.log('[PARSE-OM] Result:', data);
-      navigate(`/underwrite?viewDeal=${dealId}`);
+      navigate(`/underwrite?viewDeal=${dealId}&source=email`);
     } catch (err) {
       console.error('Parse OM error:', err);
       alert('Failed to parse OM: ' + err.message);

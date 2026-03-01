@@ -13,6 +13,7 @@ import WizardStepNavigation from '../components/WizardStepNavigation';
 import PropertyDetailsWizardTab from '../components/wizard/PropertyDetailsWizardTab';
 import FinancialDataWizardTab from '../components/wizard/FinancialDataWizardTab';
 import PDFViewerModal from '../components/PDFViewerModal';
+import { loadTemplate, applyFinancingTemplate } from '../lib/templateService';
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8010";
 
@@ -183,6 +184,9 @@ function UnderwriteV2Page() {
   const [savedRentcastData, setSavedRentcastData] = useState(null);
   const [modifiedFields, setModifiedFields] = useState({});
   
+  // Underwrite template (loaded from Supabase profiles)
+  const [uwTemplate, setUwTemplate] = useState(null);
+
   // AI Underwriting result
   const [underwritingResult, setUnderwritingResult] = useState(null);
   
@@ -198,6 +202,14 @@ function UnderwriteV2Page() {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // ── Load underwrite template on mount ──
+  useEffect(() => {
+    loadTemplate('underwrite').then(tpl => {
+      console.log('[TEMPLATE] Loaded underwrite template:', tpl);
+      setUwTemplate(tpl);
+    });
+  }, []);
 
   // ── Load saved deal from pipeline (viewDeal query param) ──
   useEffect(() => {
@@ -235,6 +247,28 @@ function UnderwriteV2Page() {
           if (rawVac > 0 && rawVac < 1) {
             dealData.pnl.vacancy_rate = rawVac * 100;
           }
+        }
+
+        // Apply template defaults for missing financing/exit/criteria
+        const isEmailDeal = params.get('source') === 'email';
+        const templateSlot = isEmailDeal ? 'email_underwrite' : 'underwrite';
+        try {
+          const tpl = await loadTemplate(templateSlot);
+          const fin = dealData.financing || {};
+          const hasFinancing = fin.ltv > 0 || fin.interest_rate > 0;
+          if (!hasFinancing) {
+            applyFinancingTemplate(dealData, tpl);
+            console.log(`[TEMPLATE] Applied ${templateSlot} template to loaded deal`);
+          }
+          // Always apply exit_details and investment_criteria if missing
+          if (!dealData.exit_details && tpl.exit_details) {
+            dealData.exit_details = { ...tpl.exit_details };
+          }
+          if (!dealData.investment_criteria?.length && tpl.investment_criteria?.length) {
+            dealData.investment_criteria = tpl.investment_criteria.map(c => ({ ...c }));
+          }
+        } catch (tplErr) {
+          console.warn('[TEMPLATE] Could not load template for saved deal:', tplErr);
         }
 
         setDealId(viewDealId);
@@ -453,19 +487,25 @@ function UnderwriteV2Page() {
       }
       console.log('[BRIDGE] Final pnl state:', JSON.stringify(parsedCopy.pnl, null, 2));
       
-      // Ensure financing object exists with defaults
+      // Ensure financing object exists — apply user's saved template defaults
       if (!parsedCopy.financing) {
         parsedCopy.financing = {};
       }
-      parsedCopy.financing = {
-        ltv: parsedCopy.financing.ltv || 75,
-        interest_rate: parsedCopy.financing.interest_rate || 6.0,
-        loan_term_years: parsedCopy.financing.loan_term_years || 10,
-        amortization_years: parsedCopy.financing.amortization_years || 30,
-        io_years: parsedCopy.financing.io_years || 0,
-        loan_fees_percent: parsedCopy.financing.loan_fees_percent || 1.5,
-        ...parsedCopy.financing
-      };
+      if (uwTemplate) {
+        applyFinancingTemplate(parsedCopy, uwTemplate);
+        console.log('[TEMPLATE] Applied template to parsed data:', uwTemplate.financing);
+      } else {
+        // Fallback hardcoded defaults if template not loaded yet
+        parsedCopy.financing = {
+          ltv: parsedCopy.financing.ltv || 75,
+          interest_rate: parsedCopy.financing.interest_rate || 6.0,
+          loan_term_years: parsedCopy.financing.loan_term_years || 10,
+          amortization_years: parsedCopy.financing.amortization_years || 30,
+          io_years: parsedCopy.financing.io_years || 0,
+          loan_fees_percent: parsedCopy.financing.loan_fees_percent || 1.5,
+          ...parsedCopy.financing
+        };
+      }
       setVerifiedData(parsedCopy);
       
       // Move to wizard step
@@ -672,15 +712,27 @@ function UnderwriteV2Page() {
       transformedData.financing = {};
     }
     
-    // Copy values from pricing_financing to financing object (interest_rate is stored as decimal like 0.055)
+    // Copy values from pricing_financing to financing object
     const pf = transformedData.pricing_financing || {};
-    transformedData.financing.ltv = transformedData.financing.ltv || pf.ltv || 75;
-    // Interest rate: pricing_financing stores as decimal (0.055), financing uses percentage (5.5) or decimal
-    transformedData.financing.interest_rate = transformedData.financing.interest_rate || (pf.interest_rate ? pf.interest_rate * 100 : 0) || 6.0;
-    transformedData.financing.loan_term_years = transformedData.financing.loan_term_years || pf.term_years || 10;
-    transformedData.financing.amortization_years = transformedData.financing.amortization_years || pf.amortization_years || 30;
-    transformedData.financing.io_years = transformedData.financing.io_years || 0;
-    transformedData.financing.loan_fees_percent = transformedData.financing.loan_fees_percent || 1.5;
+    // Use saved template defaults (if available) instead of hardcoded values
+    const tDef = uwTemplate?.financing || { ltv: 75, interest_rate: 6.0, loan_term_years: 10, amortization_years: 30, io_years: 0, loan_fees_percent: 1.5 };
+    transformedData.financing.ltv = transformedData.financing.ltv || pf.ltv || tDef.ltv;
+    // Interest rate: pricing_financing stores as decimal (0.055), financing uses percentage (5.5)
+    transformedData.financing.interest_rate = transformedData.financing.interest_rate || (pf.interest_rate ? pf.interest_rate * 100 : 0) || tDef.interest_rate;
+    transformedData.financing.loan_term_years = transformedData.financing.loan_term_years || pf.term_years || tDef.loan_term_years;
+    transformedData.financing.amortization_years = transformedData.financing.amortization_years || pf.amortization_years || tDef.amortization_years;
+    transformedData.financing.io_years = transformedData.financing.io_years ?? tDef.io_years;
+    transformedData.financing.loan_fees_percent = transformedData.financing.loan_fees_percent || tDef.loan_fees_percent;
+
+    // Apply exit details + investment criteria from template
+    if (uwTemplate) {
+      if (!transformedData.exit_details) {
+        transformedData.exit_details = { ...uwTemplate.exit_details };
+      }
+      if (!transformedData.investment_criteria?.length && uwTemplate.investment_criteria?.length) {
+        transformedData.investment_criteria = uwTemplate.investment_criteria.map(c => ({ ...c }));
+      }
+    }
     
     // Also ensure pricing_financing has the interest rate if user entered it
     if (pf.interest_rate && pf.interest_rate > 0) {
