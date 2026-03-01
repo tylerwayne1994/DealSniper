@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Legend, Cell } from 'recharts';
-import { Clock, Percent, Layers, Users, TrendingUp, Home as HomeIcon, DollarSign, Briefcase, Activity, Map as MapIcon, Info, Shield } from 'lucide-react';
+import { Clock, Percent, Layers, Users, TrendingUp, Home as HomeIcon, DollarSign, Briefcase, Activity, Map as MapIcon, Info, Shield, Globe } from 'lucide-react';
 import { MapContainer, TileLayer, CircleMarker, Tooltip as LeafletTooltip, GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet.heat';
@@ -266,7 +266,8 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
     fmr = {},
     market_cap_rate = {},
     zip_renter_owner = {},
-    msa_units = {}
+    msa_units = {},
+    macro_environment = {}
   } = marketDataSafe;
 
   const [countyGeoJson, setCountyGeoJson] = useState(null);
@@ -1503,6 +1504,54 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
       {/* ============================================================ */}
       {/* =================== BOTTOM HALF REDESIGN =================== */}
       {/* ============================================================ */}
+
+      {/* Macro Environment (FRED Data) */}
+      {macro_environment && Object.keys(macro_environment).length > 1 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100">
+              <Globe size={20} className="text-indigo-600" />
+            </div>
+            <div>
+              <div className="text-base font-bold text-gray-900">Macro Environment</div>
+              <div className="text-xs text-gray-500">
+                Real-time economic indicators from the Federal Reserve (FRED)
+                {macro_environment.as_of && <span className="ml-1">· as of {new Date(macro_environment.as_of).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { key: 'mortgage_30yr', icon: <HomeIcon size={16} className="text-blue-500" />, bg: '#eff6ff', border: '#dbeafe' },
+              { key: 'treasury_10yr', icon: <TrendingUp size={16} className="text-emerald-500" />, bg: '#ecfdf5', border: '#d1fae5' },
+              { key: 'fed_funds_rate', icon: <DollarSign size={16} className="text-purple-500" />, bg: '#faf5ff', border: '#e9d5ff' },
+              { key: 'unemployment_rate', icon: <Users size={16} className="text-amber-500" />, bg: '#fffbeb', border: '#fde68a' },
+              { key: 'gdp_growth', icon: <Activity size={16} className="text-green-500" />, bg: '#f0fdf4', border: '#bbf7d0' },
+              { key: 'cpi_rent_yoy', icon: <TrendingUp size={16} className="text-red-500" />, bg: '#fef2f2', border: '#fecaca' },
+              { key: 'housing_starts', icon: <HomeIcon size={16} className="text-cyan-500" />, bg: '#ecfeff', border: '#cffafe' },
+              { key: 'consumer_sentiment', icon: <Users size={16} className="text-indigo-500" />, bg: '#eef2ff', border: '#c7d2fe' },
+            ].filter(item => macro_environment[item.key]).map(({ key, icon, bg, border }) => {
+              const d = macro_environment[key];
+              const isPercent = d.unit === '%';
+              const displayVal = isPercent ? `${d.value}%` : d.unit === 'K' ? `${Math.round(d.value).toLocaleString()}K` : d.value?.toLocaleString();
+              return (
+                <div key={key} className="rounded-lg p-3" style={{ backgroundColor: bg, borderWidth: 1, borderStyle: 'solid', borderColor: border }}>
+                  <div className="flex items-center gap-2 mb-1">
+                    {icon}
+                    <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">{d.label}</span>
+                  </div>
+                  <div className="text-lg font-bold text-gray-900">{displayVal}</div>
+                  {d.date && (
+                    <div className="text-[10px] text-gray-400 mt-0.5">
+                      {new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Rent Growth Opportunity + Affordability Summary */}
       <div className="grid md:grid-cols-2 gap-4">

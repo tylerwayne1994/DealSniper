@@ -29,6 +29,9 @@ PUBLIC_DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'client', 'publi
 # US Census Bureau API key
 CENSUS_API_KEY = os.environ.get('CENSUS_API_KEY', 'a58ee4f1fa1db660eb306d9eb39390aa1ae6c6c8')
 
+# FRED macro data
+from fred_api import fetch_fred_macro_data
+
 # LLM clients for fallback (injected from App.py)
 ANTHROPIC_CLIENT = None
 MISTRAL_CLIENT = None
@@ -1186,6 +1189,16 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
             }
         }
         
+        # Fetch FRED macro environment data (cached, non-blocking)
+        try:
+            fred_data = fetch_fred_macro_data()
+            response.update(fred_data)
+            logger.info("[MARKET ANALYSIS] FRED macro data attached (%d indicators)",
+                       len(fred_data.get('macro_environment', {})) - 1)  # -1 for as_of key
+        except Exception as fred_err:
+            logger.warning("[MARKET ANALYSIS] FRED fetch failed (non-fatal): %s", fred_err)
+            response['macro_environment'] = {}
+
         return response
         
     except HTTPException:
