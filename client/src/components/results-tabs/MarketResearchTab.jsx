@@ -1935,16 +1935,24 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
         </div>
 
         {/* FMR Row */}
-        <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4">
-          {[0,1,2,3,4].map(br => {
-            const fmrVal = fmr?.[`fmr_${br}br`] || (br === 2 ? fmr?.fmr_2br : null);
-            return (
-              <div key={br} className="bg-blue-50 rounded-xl p-4 text-center border border-blue-100">
-                <div className="text-lg font-bold text-blue-700">{fmrVal ? fmtCurrency(fmrVal) : 'N/A'}</div>
-                <div className="text-[10px] text-gray-500 mt-1">FMR {br}BR</div>
-              </div>
-            );
-          })}
+        <div className="mt-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">HUD Fair Market Rents</span>
+            {fmr?.source === 'hud_api' && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-medium">Live API{fmr?.year ? ` · FY${fmr.year}` : ''}</span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {[0,1,2,3,4].map(br => {
+              const fmrVal = fmr?.[`fmr_${br}br`] || (br === 2 ? fmr?.fmr_2br : null);
+              return (
+                <div key={br} className="bg-blue-50 rounded-xl p-4 text-center border border-blue-100">
+                  <div className="text-lg font-bold text-blue-700">{fmrVal ? fmtCurrency(fmrVal) : 'N/A'}</div>
+                  <div className="text-[10px] text-gray-500 mt-1">FMR {br}BR</div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 

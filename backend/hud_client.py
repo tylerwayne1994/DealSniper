@@ -63,7 +63,7 @@ def _set_cache(key: str, data: dict):
         pass
 
 def _get_auth_headers():
-    token = os.getenv('HUD_API_KEY')
+    token = os.getenv('HUD_API_KEY', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI2IiwianRpIjoiMmYxNThkMDI1MTJiM2YwNmE5YTQxYmUxNWRmZDE5MDY5NWY5MmZhYjdhYjVkNzcwOWNhMGRkNWVkNDUxMGNmNmRkNzg5MDZjNWZmYTU1NWEiLCJpYXQiOjE3NzI0MDM3ODkuMjM3NDgzLCJuYmYiOjE3NzI0MDM3ODkuMjM3NDg2LCJleHAiOjIwODgwMjI5ODkuMjMzMzUyLCJzdWIiOiI5OTY4NiIsInNjb3BlcyI6W119.d8mLW6nl_y81ebW9IKQnAEYygRgAtaI9pG2DQlSU0BnDLRskPTehSuA7izk7E4N9fd4CZnfZpJvvkTytMjQ5vw')
     if not token:
         return None
     return {'Authorization': f'Bearer {token}', 'Accept': 'application/json'}
@@ -91,6 +91,60 @@ def fetch_fmr(entityid: str, year: Optional[int] = None) -> dict:
     data = resp.json()
     _set_cache(key, data)
     return data
+
+def fetch_fmr_for_zip(zip_code: str) -> Optional[dict]:
+    """Convenience: fetch all FMR bedroom values for a ZIP code.
+
+    Returns dict like:
+      {'fmr_0br': 900, 'fmr_1br': 1050, 'fmr_2br': 1300, 'fmr_3br': 1700, 'fmr_4br': 2000,
+       'county': 'Harris County', 'state': 'TX', 'metro': 'Houston-The Woodlands-Sugar Land',
+       'year': 2025, 'source': 'hud_api'}
+    or None on failure.
+    """
+    try:
+        raw = fetch_fmr(zip_code)
+        # HUD returns {"data": {"basicdata": {...}, ...}} for ZIP queries
+        data = raw.get('data', raw) if isinstance(raw, dict) else raw
+        basic = None
+        if isinstance(data, dict):
+            basic = data.get('basicdata', data)
+        elif isinstance(data, list) and len(data) > 0:
+            basic = data[0] if isinstance(data[0], dict) else None
+
+        if not basic:
+            return None
+
+        # HUD field names vary: try several patterns
+        def _fmr_val(basic_dict, br_num):
+            for key in (f'fmr_{br_num}', f'fmr{br_num}', f'Rent_{br_num}',
+                        f'fmr_{br_num}br', f'basicdata.fmr_{br_num}'):
+                v = basic_dict.get(key)
+                if v is not None:
+                    try:
+                        return float(v)
+                    except (ValueError, TypeError):
+                        pass
+            return None
+
+        result = {
+            'fmr_0br': _fmr_val(basic, 0),
+            'fmr_1br': _fmr_val(basic, 1),
+            'fmr_2br': _fmr_val(basic, 2),
+            'fmr_3br': _fmr_val(basic, 3),
+            'fmr_4br': _fmr_val(basic, 4),
+            'county': basic.get('county_name') or basic.get('county'),
+            'state': basic.get('state_alpha') or basic.get('state'),
+            'metro': basic.get('metro_name') or basic.get('hud_area_name') or basic.get('areaname'),
+            'year': basic.get('year') or basic.get('fy'),
+            'source': 'hud_api',
+        }
+        # If all FMR values are None, treat as failure
+        if all(result[f'fmr_{i}br'] is None for i in range(5)):
+            return None
+        return result
+    except Exception:
+        return None
+
 
 def list_counties(state_code: str) -> dict:
     key = f'fmr:listCounties:{state_code}'

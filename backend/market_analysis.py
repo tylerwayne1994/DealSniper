@@ -32,6 +32,9 @@ CENSUS_API_KEY = os.environ.get('CENSUS_API_KEY', 'a58ee4f1fa1db660eb306d9eb3939
 # FRED macro data
 from fred_api import fetch_fred_macro_data
 
+# HUD FMR API
+import hud_client
+
 # LLM clients for fallback (injected from App.py)
 ANTHROPIC_CLIENT = None
 MISTRAL_CLIENT = None
@@ -708,8 +711,17 @@ def build_zip_rir_points(center_lng: float, center_lat: float, county_median_inc
 
 
 def get_fmr_for_zip(zip_code: str) -> Optional[float]:
-    """Get FMR (2BR) for a ZIP from local datasets (backend/data or client/public)."""
-    # Try backend/data FMR first
+    """Get FMR (2BR) for a ZIP.  Priority: HUD API → local CSV."""
+    # 1) Try live HUD API (cached 24h in hud_client)
+    try:
+        hud_data = hud_client.fetch_fmr_for_zip(zip_code)
+        if hud_data and hud_data.get('fmr_2br'):
+            logger.info(f"[FMR] HUD API returned 2BR=${hud_data['fmr_2br']} for ZIP {zip_code}")
+            return hud_data['fmr_2br']
+    except Exception as e:
+        logger.warning(f"[FMR] HUD API failed for ZIP {zip_code}: {e}")
+
+    # 2) Fallback: backend/data CSV
     try:
         fmr_path = os.path.join(DATA_DIR, 'fmr_by_zip_clean.csv')
         if os.path.exists(fmr_path):
@@ -723,7 +735,7 @@ def get_fmr_for_zip(zip_code: str) -> Optional[float]:
                             return 0.0
     except Exception:
         pass
-    # Fallback: attempt public FY26 FMRs if present
+    # 3) Fallback: public FY26 CSV
     try:
         public_fmr = os.path.join(PUBLIC_DATA_DIR, 'FY26_FMRs - FY26_FMRs.csv')
         if os.path.exists(public_fmr):
@@ -731,7 +743,6 @@ def get_fmr_for_zip(zip_code: str) -> Optional[float]:
                 reader = csv.DictReader(f)
                 for row in reader:
                     if (row.get('ZIP') or '').strip() == zip_code or (row.get('zip') or '').strip() == zip_code:
-                        # Support multiple possible column names
                         for key in ('FMR_2BR', 'fmr_2br', 'fmr2br', '2br'):
                             if key in row:
                                 try:
@@ -741,6 +752,43 @@ def get_fmr_for_zip(zip_code: str) -> Optional[float]:
     except Exception:
         pass
     return None
+
+
+def get_full_fmr_for_zip(zip_code: str) -> dict:
+    """Get all bedroom FMR values for a ZIP.  Priority: HUD API → local CSV.
+
+    Returns dict like:
+        {'zip': '77001', 'fmr_0br': 900, 'fmr_1br': 1050, 'fmr_2br': 1300,
+         'fmr_3br': 1700, 'fmr_4br': 2000, 'source': 'hud_api', 'year': 2025}
+    """
+    # 1) Try HUD API
+    try:
+        hud_data = hud_client.fetch_fmr_for_zip(zip_code)
+        if hud_data and hud_data.get('fmr_2br'):
+            logger.info(f"[FMR] HUD API full FMR for {zip_code}: 2BR=${hud_data['fmr_2br']}")
+            return {'zip': zip_code, **hud_data}
+    except Exception as e:
+        logger.warning(f"[FMR] HUD API full FMR failed for {zip_code}: {e}")
+
+    # 2) Fallback: backend/data CSV
+    result = {'zip': zip_code, 'source': 'csv'}
+    try:
+        fmr_path = os.path.join(DATA_DIR, 'fmr_by_zip_clean.csv')
+        if os.path.exists(fmr_path):
+            with open(fmr_path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if (row.get('zip') or '').strip() == zip_code:
+                        for br in range(5):
+                            key = f'fmr_{br}br'
+                            try:
+                                result[key] = float(row.get(key) or 0) or None
+                            except Exception:
+                                result[key] = None
+                        return result
+    except Exception:
+        pass
+    return result
 
 
 def load_landlord_data(zip_code: str, county_name: str) -> Dict:
@@ -961,7 +1009,8 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
             # Build ZIP-level RIR points around the property for choropleth-like rendering
             llm_zip_rir_points = build_zip_rir_points(lng, lat, llm_median_income)
             # FMR, landlord, renter/owner, cap rate
-            fmr_2br = llm_data.get('fmr_2br') if llm_data.get('fmr_2br') is not None else get_fmr_for_zip(zip_code)
+            full_fmr = get_full_fmr_for_zip(zip_code)
+            fmr_2br = llm_data.get('fmr_2br') if llm_data.get('fmr_2br') is not None else full_fmr.get('fmr_2br')
             landlord_data = load_landlord_data(zip_code, llm_data.get('county_name', f'{city} County'))
             if llm_data.get('landlord_friendly_score') is not None:
                 landlord_data['landlord_friendly_score'] = llm_data.get('landlord_friendly_score')
@@ -1040,7 +1089,7 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
                 'rent_to_income_ratio': round(llm_rir / 100, 4),
                 'area_classification': llm_area_classification,
                 'zip_rir_points': llm_zip_rir_points,
-                'fmr': {'zip': zip_code, 'fmr_2br': fmr_2br},
+                'fmr': {**full_fmr, 'fmr_2br': fmr_2br},
                 'landlord': landlord_data,
                 'zip_renter_owner': renter_owner,
                 'market_cap_rate': {'value_percent': cap_rate, 'source': cap_source},
@@ -1060,8 +1109,9 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
         rent_to_income_ratio = calculate_rent_to_income_ratio(median_rent, median_income)
         area_classification = classify_area_by_rir(rent_to_income_ratio)
         zip_rir_points = build_zip_rir_points(lng, lat, median_income)
-        # FMR, landlord, renter/owner, cap rate
-        fmr_2br = get_fmr_for_zip(zip_code)
+        # FMR (HUD API first, CSV fallback), landlord, renter/owner, cap rate
+        full_fmr = get_full_fmr_for_zip(zip_code)
+        fmr_2br = full_fmr.get('fmr_2br') or get_fmr_for_zip(zip_code)
         landlord_data = load_landlord_data(zip_code, county_name)
         renter_owner = load_zip_renter_owner_stats(zip_code)
         cap_rate, cap_source = estimate_market_cap_rate(city, state, msa_data.get('msa_name') if msa_data else None)
@@ -1122,7 +1172,7 @@ async def market_analysis_endpoint(request_data: MarketAnalysisRequest):
             'rent_to_income_ratio': round(rent_to_income_ratio / 100, 4),
             'area_classification': area_classification,
             'zip_rir_points': zip_rir_points,
-            'fmr': {'zip': zip_code, 'fmr_2br': fmr_2br},
+            'fmr': {**full_fmr, 'fmr_2br': fmr_2br},
             'landlord': landlord_data,
             'zip_renter_owner': renter_owner,
             'market_cap_rate': {'value_percent': cap_rate, 'source': cap_source},
