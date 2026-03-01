@@ -470,75 +470,18 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
           )}
         </div>
 
-        {/* ═══ 2. EXIT DETAILS ═══ */}
-        <div style={SC}>
-          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:20}}>
-            <ArrowRight size={20} color={AC}/>
-            <h3 style={{margin:0,fontSize:16,fontWeight:700,color:VL,textTransform:'uppercase',letterSpacing:'0.04em'}}>Exit Details</h3>
-          </div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:16,marginBottom:20}}>
-            <Field label="Holding Period (years)" value={exit.holdYrs} onChange={v=>setExitF('holdYrs',v)} step={1} min={1}/>
-            <Field label="Closing Costs" suffix="%" value={exit.closingPct} onChange={v=>setExitF('closingPct',v)} step={0.25}/>
-            <Field label="Broker Commissions" suffix="%" value={exit.brokerPct} onChange={v=>setExitF('brokerPct',v)} step={0.25}/>
-          </div>
-
-          <div style={{marginBottom:20}}>
-            <label style={{display:'block',fontSize:11,fontWeight:600,color:LB,marginBottom:8,textTransform:'uppercase',letterSpacing:'0.04em'}}>Exit Strategy</label>
-            <div style={{display:'flex',borderRadius:8,overflow:'hidden',border:`1px solid ${B}`,width:'fit-content'}}>
-              {[{k:'cap_rate',l:'Cap Rate Method'},{k:'value_growth',l:'Value Growth Method'}].map(o=>(
-                <button key={o.k} onClick={()=>setExitF('strategy',o.k)}
-                  style={{padding:'10px 20px',border:'none',cursor:'pointer',fontSize:13,fontWeight:600,backgroundColor:exit.strategy===o.k?AC:'white',color:exit.strategy===o.k?'white':LB,transition:'all 0.15s'}}>
-                  {o.l}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {exit.strategy==='cap_rate'?(
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
-              <div>
-                <label style={{display:'block',fontSize:11,fontWeight:600,color:LB,marginBottom:8,textTransform:'uppercase',letterSpacing:'0.04em'}}>Current Market Cap Rate</label>
-                <div style={{padding:16,backgroundColor:'#f9fafb',borderRadius:10,border:`1px solid ${B}`}}>
-                  <div style={{fontSize:28,fontWeight:800,color:AC,marginBottom:8}}>{pct(baseMktCap)}</div>
-                  {marketCapRate&&(
-                    <div style={{fontSize:12,lineHeight:2,color:LB}}>
-                      <div style={{display:'flex',justifyContent:'space-between'}}><span>Base Cap Rate</span><span style={{fontWeight:600,color:VL}}>{pct(marketCapRate.base_rate||baseMktCap)}</span></div>
-                      {marketCapRate.size_adjustment!=null&&<div style={{display:'flex',justifyContent:'space-between'}}><span>Size Adjustment</span><span style={{fontWeight:600,color:marketCapRate.size_adjustment>=0?'#10b981':'#ef4444'}}>{marketCapRate.size_adjustment>=0?'+':''}{marketCapRate.size_adjustment?.toFixed(2)}%</span></div>}
-                      {marketCapRate.year_built_adjustment!=null&&<div style={{display:'flex',justifyContent:'space-between'}}><span>Year Built Adj.</span><span style={{fontWeight:600,color:marketCapRate.year_built_adjustment>=0?'#10b981':'#ef4444'}}>{marketCapRate.year_built_adjustment>=0?'+':''}{marketCapRate.year_built_adjustment?.toFixed(2)}%</span></div>}
-                      <div style={{borderTop:`1px solid ${B}`,marginTop:4,paddingTop:4,display:'flex',justifyContent:'space-between'}}><span style={{fontWeight:700}}>Market Cap Rate</span><span style={{fontWeight:700,color:VL}}>{pct(baseMktCap)}</span></div>
-                    </div>
-                  )}
-                  {!marketCapRate&&<div style={{fontSize:12,color:LB}}>Using going-in cap rate</div>}
-                  <div style={{marginTop:6,fontSize:10,color:LB}}>{marketCapRate?`${marketCapRate.asset_class} Class · ${marketCapRate.confidence} confidence`:'LLM Estimate'}</div>
-                </div>
-              </div>
-              <div>
-                <Field label="Annual Cap Rate Adjustment" suffix="%" value={exit.capAdj} onChange={v=>setExitF('capAdj',v)} step={0.1} min={-5}/>
-                <div style={{padding:16,backgroundColor:'#f9fafb',borderRadius:10,border:`1px solid ${B}`,marginTop:8}}>
-                  <div style={{fontSize:11,fontWeight:600,color:LB,textTransform:'uppercase',marginBottom:6}}>Exit Cap Rate</div>
-                  <div style={{fontSize:28,fontWeight:800,color:VL}}>{pct(exitCap)}</div>
-                  <div style={{fontSize:12,color:LB,marginTop:4}}>{pct(baseMktCap)} market {exit.capAdj>=0?'+':''}{Number(exit.capAdj).toFixed(2)}% adj</div>
-                </div>
-              </div>
-            </div>
-          ):(
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
-              <Field label="Annual Value Growth" suffix="%" value={exit.growthPct} onChange={v=>setExitF('growthPct',v)} step={0.5}/>
-              <div style={{padding:16,backgroundColor:'#f9fafb',borderRadius:10,border:`1px solid ${B}`}}>
-                <div style={{fontSize:11,fontWeight:600,color:LB,textTransform:'uppercase',marginBottom:6}}>Projected Exit Value</div>
-                <div style={{fontSize:28,fontWeight:800,color:VL}}>{fmt(exitVal)}</div>
-                <div style={{fontSize:12,color:LB,marginTop:4}}>{fmt(pp)} × {Number(exit.growthPct).toFixed(1)}%/yr × {exit.holdYrs} yrs</div>
-              </div>
-            </div>
-          )}
-
-          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14,marginTop:20}}>
-            <div style={{padding:14,borderRadius:10,backgroundColor:'#f9fafb',textAlign:'center'}}><div style={{fontSize:11,color:LB,marginBottom:4}}>Exit Value</div><div style={{fontSize:18,fontWeight:800,color:VL}}>{fmt(exitVal)}</div></div>
-            <div style={{padding:14,borderRadius:10,backgroundColor:'#fef2f2',textAlign:'center'}}><div style={{fontSize:11,color:LB,marginBottom:4}}>Closing + Broker</div><div style={{fontSize:18,fontWeight:800,color:'#ef4444'}}>{fmt(exitCosts)}</div></div>
-            <div style={{padding:14,borderRadius:10,backgroundColor:'#eff6ff',textAlign:'center'}}><div style={{fontSize:11,color:LB,marginBottom:4}}>Loan Payoff</div><div style={{fontSize:18,fontWeight:800,color:'#1d4ed8'}}>{fmt(structure?.totalLoanAmt||0)}</div></div>
-            <div style={{padding:14,borderRadius:10,backgroundColor:netProceeds>=0?'#ecfdf5':'#fef2f2',textAlign:'center'}}><div style={{fontSize:11,color:LB,marginBottom:4}}>Net Sale Proceeds</div><div style={{fontSize:18,fontWeight:800,color:netProceeds>=0?'#10b981':'#ef4444'}}>{fmt(netProceeds)}</div></div>
-          </div>
-        </div>
+        {/* ═══ EXIT DETAILS — REMOVED FROM HERE, WILL BE REUSED IN DEDICATED TAB ═══
+         * Contents that were here:
+         * - Holding Period (years): exit.holdYrs
+         * - Closing Costs %: exit.closingPct
+         * - Broker Commissions %: exit.brokerPct
+         * - Exit Strategy toggle: 'cap_rate' vs 'value_growth'
+         * - Cap Rate Method: baseMktCap, marketCapRate breakdown (base_rate, size_adjustment, year_built_adjustment, asset_class, confidence), capAdj, exitCap
+         * - Value Growth Method: exit.growthPct, projected exitVal from pp
+         * - Summary cards: Exit Value (exitVal), Closing+Broker (exitCosts), Loan Payoff (structure.totalLoanAmt), Net Sale Proceeds (netProceeds)
+         * - State setter: setExitF(field, value)
+         * - Computed values: exitCap, exitVal, exitCosts, netProceeds
+         */}
 
         {/* ═══ 3. INVESTMENT CRITERIA ═══ */}
         <div style={SC}>

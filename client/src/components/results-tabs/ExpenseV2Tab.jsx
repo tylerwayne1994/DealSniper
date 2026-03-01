@@ -460,18 +460,6 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
     <div style={{ padding: 24, backgroundColor: '#f3f4f6' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
 
-        {/* Legend */}
-        <div style={{ display: 'flex', gap: 16, marginBottom: 14, fontSize: 12, color: GRAY }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ width: 12, height: 12, borderRadius: 3, background: '#fff', border: `1px solid ${B}`, display: 'inline-block' }} />
-            Seller Actuals
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ width: 12, height: 12, borderRadius: 3, background: '#f9fafb', border: `1px solid ${B}`, display: 'inline-block' }} />
-            Value Add
-          </span>
-        </div>
-
         {/* ── Main Table ── */}
         <div style={{ background: '#fff', border: `1px solid ${B}`, borderRadius: 12, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
