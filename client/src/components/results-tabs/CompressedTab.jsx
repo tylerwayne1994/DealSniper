@@ -21,6 +21,8 @@ export default function CompressedTab({
   onTabChange,
   vaRentUpside = 0,
   vaRubsRecovery = 0,
+  vaOtherIncome = 0,
+  vaExpenseSavings = 0,
 }) {
   const navigate = useNavigate();
 
@@ -103,7 +105,7 @@ export default function CompressedTab({
   const safeDscr = isFinite(dscrVal) ? dscrVal : 0;
 
   // === Value-Add Pro Forma Adjustments (passed from parent) ===
-  const vaTotalAdj = vaRentUpside + vaRubsRecovery;
+  const vaTotalAdj = vaRentUpside + vaRubsRecovery + vaOtherIncome + vaExpenseSavings;
   const adjNOI = noiYear1 + vaTotalAdj;
   const adjCashFlow = cashFlowYear1 + vaTotalAdj;
 
@@ -1030,6 +1032,8 @@ export default function CompressedTab({
               <FinRow label="Capital Expenditure" monthly={capitalExpenditure / 12} yearly={capitalExpenditure} dot="#f97316" />
               {vaRentUpside > 0 && <FinRow label="+ Rent Optimization (Value-Add)" monthly={vaRentUpside / 12} yearly={vaRentUpside} dot="#4f46e5" />}
               {vaRubsRecovery > 0 && <FinRow label="+ RUBS Recovery (Value-Add)" monthly={vaRubsRecovery / 12} yearly={vaRubsRecovery} dot="#0ea5e9" />}
+              {vaOtherIncome > 0 && <FinRow label="+ Other Income (Value-Add)" monthly={vaOtherIncome / 12} yearly={vaOtherIncome} dot="#8b5cf6" />}
+              {vaExpenseSavings > 0 && <FinRow label="+ Expense Savings (Value-Add)" monthly={vaExpenseSavings / 12} yearly={vaExpenseSavings} dot="#f59e0b" />}
               <tr style={{ borderTop: `2px solid ${B}` }}>
                 <td style={{ padding: '12px 12px', fontSize: 13, fontWeight: 800, color: '#16a34a' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
