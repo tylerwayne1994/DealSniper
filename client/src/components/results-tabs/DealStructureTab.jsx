@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   DollarSign, Calculator,
-  Target, Wallet, Plus, X, Trash2,
+  Wallet, Plus, X, Trash2,
   BarChart3, ArrowRight, Edit3
 } from 'lucide-react';
 
@@ -177,25 +177,7 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
   const exitCosts=exitVal*(Number(exit.closingPct)||0)/100+exitVal*(Number(exit.brokerPct)||0)/100;
   const netProceeds=exitVal-exitCosts-(structure?.totalLoanAmt||0);
 
-  // Investment Criteria
-  const critOpts=[{key:'irr',label:'IRR',sug:15,u:'%'},{key:'emx',label:'Equity Multiple',sug:2.0,u:'x'},{key:'coc',label:'Cash on Cash',sug:8,u:'%'},{key:'total_profit',label:'Total Profit',sug:500000,u:'$'},{key:'monthly_cf',label:'Monthly Cash Flow',sug:5000,u:'$'}];
-  const [criteria,setCriteria]=useState(()=>scenarioData?.investment_criteria||[]);
-  const [showCritMenu,setShowCritMenu]=useState(false);
-  const addCrit=useCallback((k)=>{
-    const o=critOpts.find(x=>x.key===k);if(!o)return;
-    setCriteria(p=>{if(p.find(c=>c.key===k))return p;const u=[...p,{key:k,label:o.label,target:o.sug,unit:o.u}];if(onFieldChange)onFieldChange('investment_criteria',u);return u;});
-    setShowCritMenu(false);
-  },[onFieldChange]); // eslint-disable-line
-  const updateCrit=useCallback((k,v)=>{setCriteria(p=>{const u=p.map(c=>c.key===k?{...c,target:v}:c);if(onFieldChange)onFieldChange('investment_criteria',u);return u;});},[onFieldChange]);
-  const removeCrit=useCallback((k)=>{setCriteria(p=>{const u=p.filter(c=>c.key!==k);if(onFieldChange)onFieldChange('investment_criteria',u);return u;});},[onFieldChange]);
-
-  const compCrit=useMemo(()=>{
-    if(!structure)return{};
-    const h=Number(exit.holdYrs)||5,acf=structure.cashflow,eq=structure.cashOutOfPocket;
-    const tp=netProceeds+acf*h-eq,emx=eq>0?(tp+eq)/eq:0,mc=acf/12;
-    const tr=tp+eq,irr=eq>0&&h>0?((Math.pow(tr/eq,1/h)-1)*100):0;
-    return {irr,emx,coc:structure.cashOnCash,total_profit:tp,monthly_cf:mc};
-  },[structure,exit.holdYrs,netProceeds]);
+  /* Investment criteria moved to Templates page */
 
   useEffect(()=>{
     if(!structure)return;
@@ -392,7 +374,7 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
           <div style={{width:36,height:36,borderRadius:'50%',backgroundColor:AC,color:'white',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,marginRight:12}}><DollarSign size={20}/></div>
           <div>
             <h2 style={{margin:0,fontSize:22,fontWeight:800,color:VL}}>Deal Structure</h2>
-            <p style={{margin:0,fontSize:13,color:LB}}>Configure financing, exit strategy, and investment criteria</p>
+            <p style={{margin:0,fontSize:13,color:LB}}>Configure financing and capital stack</p>
           </div>
         </div>
 
@@ -482,73 +464,6 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
          * - State setter: setExitF(field, value)
          * - Computed values: exitCap, exitVal, exitCosts, netProceeds
          */}
-
-        {/* ═══ 3. INVESTMENT CRITERIA ═══ */}
-        <div style={SC}>
-          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:20}}>
-            <Target size={20} color={AC}/>
-            <h3 style={{margin:0,fontSize:16,fontWeight:700,color:VL,textTransform:'uppercase',letterSpacing:'0.04em'}}>Investment Criteria</h3>
-            <div style={{marginLeft:'auto',position:'relative'}}>
-              <button onClick={()=>setShowCritMenu(!showCritMenu)}
-                style={{display:'flex',alignItems:'center',gap:6,padding:'8px 16px',backgroundColor:`${AC}10`,color:AC,border:`1px solid ${AC}40`,borderRadius:8,fontSize:13,fontWeight:600,cursor:'pointer'}}>
-                <Plus size={16}/> Add Criteria
-              </button>
-              {showCritMenu&&(
-                <div style={{position:'absolute',right:0,top:'100%',marginTop:4,backgroundColor:'white',borderRadius:10,boxShadow:'0 10px 25px rgba(0,0,0,0.15)',border:`1px solid ${B}`,zIndex:50,minWidth:200,overflow:'hidden'}}>
-                  {critOpts.filter(o=>!criteria.find(c=>c.key===o.key)).map(o=>(
-                    <button key={o.key} onClick={()=>addCrit(o.key)}
-                      style={{display:'flex',alignItems:'center',justifyContent:'space-between',width:'100%',padding:'12px 16px',border:'none',background:'white',cursor:'pointer',fontSize:13,textAlign:'left',color:VL}}
-                      onMouseEnter={e=>e.currentTarget.style.backgroundColor='#f9fafb'} onMouseLeave={e=>e.currentTarget.style.backgroundColor='white'}>
-                      <span style={{fontWeight:600}}>{o.label}</span>
-                      <span style={{fontSize:11,color:LB}}>{o.u==='$'?`>${fmt(o.sug)}`:`>${o.sug}${o.u}`}</span>
-                    </button>
-                  ))}
-                  {critOpts.filter(o=>!criteria.find(c=>c.key===o.key)).length===0&&<div style={{padding:'12px 16px',fontSize:13,color:LB}}>All criteria added</div>}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {criteria.length===0&&(
-            <div style={{padding:40,textAlign:'center',backgroundColor:'#fafafa',borderRadius:12,border:`1px dashed ${B}`}}>
-              <Target size={32} color={LB} style={{marginBottom:8}}/>
-              <p style={{margin:0,color:LB,fontSize:14}}>No investment criteria set. Click "Add Criteria" to define your targets.</p>
-            </div>
-          )}
-
-          {criteria.length>0&&(
-            <div style={{display:'grid',gridTemplateColumns:`repeat(${Math.min(criteria.length,3)},1fr)`,gap:16}}>
-              {criteria.map(c=>{
-                const actual=compCrit[c.key],target=Number(c.target)||0;
-                const opt=critOpts.find(o=>o.key===c.key),sug=opt?.sug||0;
-                const above=actual!==undefined&&(actual>=target);
-                const disp=c.unit==='$'?fmt(actual||0):c.unit==='x'?`${(actual||0).toFixed(2)}x`:`${(actual||0).toFixed(2)}%`;
-                return (
-                  <div key={c.key} style={{padding:20,borderRadius:14,border:`1px solid ${B}`,backgroundColor:'white',position:'relative'}}>
-                    <button onClick={()=>removeCrit(c.key)} style={{position:'absolute',top:8,right:8,background:'none',border:'none',cursor:'pointer',color:'#d1d5db',padding:4}}><X size={14}/></button>
-                    <div style={{fontSize:13,fontWeight:700,color:VL,marginBottom:12}}>{c.label}</div>
-                    <div style={{marginBottom:12}}>
-                      <label style={{fontSize:11,color:LB,marginBottom:4,display:'block'}}>Target{c.unit!=='$'?` (${c.unit})`:''}</label>
-                      <div style={{position:'relative'}}>
-                        {c.unit==='$'&&<span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',fontSize:13,color:LB}}>$</span>}
-                        <input type="number" step={c.unit==='x'?0.1:c.unit==='$'?1000:0.5} value={c.target} onChange={e=>updateCrit(c.key,Number(e.target.value))}
-                          style={{...IS,paddingLeft:c.unit==='$'?24:10,paddingRight:c.unit!=='$'?28:10}}/>
-                        {c.unit!=='$'&&<span style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',fontSize:12,color:LB}}>{c.unit}</span>}
-                      </div>
-                      <div style={{fontSize:10,color:LB,marginTop:4}}>{c.unit==='$'?`>${fmt(sug)}`:`>${sug}${c.unit}`} Suggested</div>
-                    </div>
-                    <div style={{padding:'12px 14px',borderRadius:10,backgroundColor:above?'#ecfdf5':'#fef2f2',border:`1px solid ${above?'#6ee7b7':'#fecaca'}`}}>
-                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                        <span style={{fontSize:11,fontWeight:600,color:above?'#047857':'#991b1b'}}>{above?'✓ Meets Target':'✗ Below Target'}</span>
-                        <span style={{fontSize:16,fontWeight:800,color:above?'#10b981':'#ef4444'}}>{disp}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
 
         {/* ═══ 4. CAPITAL STACK & DEBT SERVICE ═══ */}
         {structure&&(
