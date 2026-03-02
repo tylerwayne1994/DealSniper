@@ -29,6 +29,7 @@ export default function CompressedTab({
   const [displayMode, setDisplayMode] = useState('monetary');
   const [profitView, setProfitView] = useState('table');
   const [capStructYear, setCapStructYear] = useState(0);
+  const [stressOpen, setStressOpen] = useState(false);
 
   // ── Theme ──
   const B = '#e5e7eb', AC = '#4f46e5', LB = '#6b7280', VL = '#111827';
@@ -187,6 +188,9 @@ export default function CompressedTab({
   const basePrice = initialPriceRef.current || purchasePrice;
   const minPrice = Math.round(basePrice * 0.4);
   const maxPrice = Math.round(basePrice * 1.6);
+
+  // ── Stress Test Playground — freeze original values on first render ──
+  const stressOrigRef = useRef(null);
 
   // Cap rate sensitivity
   const baseCapRate = capRateVal > 0 ? capRateVal : 5.0;
@@ -410,6 +414,39 @@ export default function CompressedTab({
   const exitCapRate = fullCalcs?.returns?.exitCapRate || selectedScenario?.exitCapRate || (capRateVal + 0.5);
   const noiAtSale = exitProj?.noi || (startingNOI * Math.pow(1.03, holdingPeriod));
 
+  // ── Stress Test: current slider values (normalized to %) ──
+  const stClosingPct = Number(scenarioData?.pricing_financing?.closing_costs_percent || (purchasePrice > 0 ? (closingCosts / purchasePrice) * 100 : 2));
+  const stVacancy = (() => {
+    const raw = scenarioData?.pnl?.vacancy_rate || scenarioData?.expenses?.vacancy_pct || 5;
+    return raw > 0 && raw <= 1 ? raw * 100 : raw;
+  })();
+  const stRentGrowth = (() => {
+    const raw = scenarioData?.underwriting?.revenue_growth_rate;
+    if (raw == null) return 3;
+    const num = Number(raw);
+    return num > 0 && num < 1 ? num * 100 : num;
+  })();
+  const stExpGrowth = (() => {
+    const raw = scenarioData?.underwriting?.expense_growth_rate;
+    if (raw == null) return 3;
+    const num = Number(raw);
+    return num > 0 && num < 1 ? num * 100 : num;
+  })();
+
+  // Freeze original baseline on first render
+  if (!stressOrigRef.current) {
+    stressOrigRef.current = {
+      purchasePrice, ltv: ltvPct, interestRate, closingPct: stClosingPct,
+      exitCapRate: Number(exitCapRate), holdingPeriod: Number(holdingPeriod),
+      vacancy: stVacancy, rentGrowth: stRentGrowth, expGrowth: stExpGrowth,
+      irr: irrVal, totalProfit, coc: isFinite(adjCocVal) ? adjCocVal : cocVal,
+      equityMultiple, capRate: capRateVal, dscr: safeDscr,
+      noi: noiYear1, cashFlow: adjCashFlow,
+      valuation: fullCalcs?.returns?.terminalValue || 0,
+    };
+  }
+  const orig = stressOrigRef.current;
+
   // Property coordinates for satellite map
   const rawLat = property?.lat ?? property?.latitude ?? scenarioData?.lat ?? scenarioData?.latitude;
   const rawLng = property?.lng ?? property?.longitude ?? scenarioData?.lng ?? scenarioData?.longitude;
@@ -538,6 +575,232 @@ export default function CompressedTab({
             ))}
           </div>
         </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          1a. STRESS TEST PLAYGROUND — Collapsible slider section
+          ═══════════════════════════════════════════════════════════════ */}
+      <div style={card}>
+        {/* Header with toggle */}
+        <div
+          onClick={() => setStressOpen(!stressOpen)}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 4, height: 24, backgroundColor: '#10b981', borderRadius: 2 }} />
+            <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: VL, letterSpacing: '-0.01em' }}>Stress Test Playground</h3>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#10b981', background: '#ecfdf5', padding: '2px 10px', borderRadius: 6, border: '1px solid #d1fae5' }}>LIVE</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 12, color: LB, fontWeight: 600 }}>{stressOpen ? 'Collapse' : 'Expand'}</span>
+            <span style={{ fontSize: 16, color: LB, transition: 'transform 0.2s', transform: stressOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</span>
+          </div>
+        </div>
+
+        {stressOpen && (
+          <div style={{ marginTop: 20 }}>
+            {/* ── Playground Results vs Original Results ── */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+              {/* Playground (current) */}
+              <div style={{ border: '2px solid #10b981', borderRadius: 12, padding: '16px 20px', background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 14 }}>Playground Results</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 20px' }}>
+                  {[
+                    { label: 'IRR', value: `${irrVal.toFixed(2)}%`, delta: irrVal - orig.irr, suffix: ' pts' },
+                    { label: 'Total Potential Profit', value: fmt(totalProfit), delta: totalProfit - orig.totalProfit, money: true },
+                    { label: 'Cash on Cash Return', value: `${(isFinite(adjCocVal) ? adjCocVal : cocVal).toFixed(2)}%`, delta: (isFinite(adjCocVal) ? adjCocVal : cocVal) - orig.coc, suffix: ' pts' },
+                    { label: 'Equity Multiple', value: `${equityMultiple.toFixed(2)}x`, delta: equityMultiple - orig.equityMultiple, suffix: 'x' },
+                    { label: 'Current Valuation', value: fmt(fullCalcs?.returns?.terminalValue || 0), delta: (fullCalcs?.returns?.terminalValue || 0) - orig.valuation, money: true },
+                    { label: 'DSCR', value: `${safeDscr.toFixed(2)}x`, delta: safeDscr - orig.dscr, suffix: 'x' },
+                  ].map((m, i) => {
+                    const d = m.delta || 0;
+                    const show = m.money ? Math.abs(d) > 50 : Math.abs(d) > 0.005;
+                    const color = d > 0 ? '#10b981' : d < 0 ? '#ef4444' : LB;
+                    const sign = d > 0 ? '+' : '';
+                    const deltaStr = m.money
+                      ? `${sign}${fmt(d)}`
+                      : `${sign}${d.toFixed(2)}${m.suffix || ''}`;
+                    return (
+                      <div key={i}>
+                        <div style={{ fontSize: 10, color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{m.label}</div>
+                        <div style={{ fontSize: 22, fontWeight: 800, color: VL, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{m.value}</div>
+                        {show && <div style={{ fontSize: 11, fontWeight: 700, color, marginTop: 2 }}>{d > 0 ? '↑' : '↓'} {deltaStr}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Original */}
+              <div style={{ border: `1px solid ${B}`, borderRadius: 12, padding: '16px 20px', background: '#fff' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: LB, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 14 }}>Original Input Results</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 20px' }}>
+                  {[
+                    { label: 'IRR', value: `${orig.irr.toFixed(2)}%` },
+                    { label: 'Total Potential Profit', value: fmt(orig.totalProfit) },
+                    { label: 'Cash on Cash Return', value: `${orig.coc.toFixed(2)}%` },
+                    { label: 'Equity Multiple', value: `${orig.equityMultiple.toFixed(2)}x` },
+                    { label: 'Current Valuation', value: fmt(orig.valuation) },
+                    { label: 'DSCR', value: `${orig.dscr.toFixed(2)}x` },
+                  ].map((m, i) => (
+                    <div key={i}>
+                      <div style={{ fontSize: 10, color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{m.label}</div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: VL, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{m.value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Investment Structure Sliders ── */}
+            <div style={{ borderTop: `1px solid ${B}`, paddingTop: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: VL, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 20 }}>Investment Structure</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 40px' }}>
+                {/* ── Stress Slider Definitions ── */}
+                {[
+                  {
+                    key: 'purchasePrice', label: 'Purchase Price', prefix: '$',
+                    min: Math.round(orig.purchasePrice * 0.4), max: Math.round(orig.purchasePrice * 1.6), step: 25000,
+                    value: purchasePrice, origValue: orig.purchasePrice,
+                    format: (v) => `$${Math.round(v).toLocaleString()}`,
+                    onChange: (v) => { handleChange('pricing_financing.purchase_price', v); handleChange('pricing_financing.price', v); },
+                  },
+                  {
+                    key: 'ltv', label: 'LTV', suffix: '%',
+                    min: 0, max: 95, step: 0.5,
+                    value: ltvPct, origValue: orig.ltv,
+                    format: (v) => `${Number(v).toFixed(1)}%`,
+                    onChange: (v) => { handleChange('financing.ltv', v); handleChange('pricing_financing.ltv', v); },
+                  },
+                  {
+                    key: 'interestRate', label: 'Interest Rate', suffix: '%',
+                    min: 0, max: 15, step: 0.05,
+                    value: interestRate, origValue: orig.interestRate,
+                    format: (v) => `${Number(v).toFixed(2)}%`,
+                    onChange: (v) => { handleChange('financing.interest_rate', v); handleChange('pricing_financing.interest_rate', v); },
+                  },
+                  {
+                    key: 'closingPct', label: 'Closing Costs', suffix: '%',
+                    min: 0, max: 8, step: 0.1,
+                    value: stClosingPct, origValue: orig.closingPct,
+                    format: (v) => `${Number(v).toFixed(2)}%`,
+                    onChange: (v) => { handleChange('pricing_financing.closing_costs_percent', v); },
+                  },
+                  {
+                    key: 'exitCap', label: 'Exit Cap Rate', suffix: '%',
+                    min: 2, max: 15, step: 0.05,
+                    value: Number(exitCapRate), origValue: orig.exitCapRate,
+                    format: (v) => `${Number(v).toFixed(2)}%`,
+                    onChange: (v) => { handleChange('underwriting.exit_cap_rate', v); },
+                  },
+                  {
+                    key: 'holdPeriod', label: 'Holding Period (Years)', suffix: ' yrs',
+                    min: 1, max: 30, step: 1,
+                    value: Number(holdingPeriod), origValue: orig.holdingPeriod,
+                    format: (v) => `${Math.round(v)} Years`,
+                    onChange: (v) => { const r = Math.round(v); handleChange('underwriting.holding_period', r); if (setSelectedHoldPeriod) setSelectedHoldPeriod(r); },
+                  },
+                  {
+                    key: 'vacancy', label: 'Vacancy Rate', suffix: '%',
+                    min: 0, max: 30, step: 0.5,
+                    value: stVacancy, origValue: orig.vacancy,
+                    format: (v) => `${Number(v).toFixed(1)}%`,
+                    onChange: (v) => { handleChange('pnl.vacancy_rate', v); handleChange('expenses.vacancy_pct', v); },
+                  },
+                  {
+                    key: 'rentGrowth', label: 'Rent Growth Rate', suffix: '%',
+                    min: -5, max: 10, step: 0.25,
+                    value: stRentGrowth, origValue: orig.rentGrowth,
+                    format: (v) => `${Number(v).toFixed(2)}%`,
+                    onChange: (v) => { handleChange('underwriting.revenue_growth_rate', v); },
+                  },
+                  {
+                    key: 'expGrowth', label: 'Expense Growth Rate', suffix: '%',
+                    min: -5, max: 10, step: 0.25,
+                    value: stExpGrowth, origValue: orig.expGrowth,
+                    format: (v) => `${Number(v).toFixed(2)}%`,
+                    onChange: (v) => { handleChange('underwriting.expense_growth_rate', v); },
+                  },
+                ].map((s) => {
+                  const d = s.origValue !== 0 ? ((s.value - s.origValue) / Math.abs(s.origValue)) * 100 : 0;
+                  const isChanged = Math.abs(s.value - s.origValue) > (s.step || 0.01);
+                  const dColor = d > 0 ? '#10b981' : d < 0 ? '#ef4444' : LB;
+                  return (
+                    <div key={s.key} style={{ padding: '10px 0', borderBottom: `1px solid #f3f4f6` }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: VL }}>{s.label}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, background: isChanged ? '#ecfdf5' : '#f9fafb', color: isChanged ? '#10b981' : VL, padding: '2px 10px', borderRadius: 6, border: `1px solid ${isChanged ? '#d1fae5' : B}` }}>
+                          {s.format(s.value)}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <input
+                          type="range"
+                          min={s.min} max={s.max} step={s.step}
+                          value={s.value}
+                          onChange={(e) => s.onChange(parseFloat(e.target.value))}
+                          style={{ flex: 1, accentColor: '#10b981', height: 6, cursor: 'pointer' }}
+                        />
+                        <input
+                          type="number"
+                          value={s.key === 'purchasePrice' ? Math.round(s.value) : Number(s.value).toFixed(s.step < 0.1 ? 2 : s.step < 1 ? 1 : 0)}
+                          onChange={(e) => s.onChange(parseFloat(e.target.value) || 0)}
+                          style={{ width: 90, padding: '6px 8px', fontSize: 13, fontWeight: 600, border: `1px solid ${B}`, borderRadius: 6, textAlign: 'right', color: VL, outline: 'none', background: '#fff' }}
+                        />
+                      </div>
+                      {/* Original value (clickable to reset) + delta % */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
+                        <span
+                          onClick={() => s.onChange(s.origValue)}
+                          style={{ fontSize: 11, color: LB, cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: '2px' }}
+                          title="Click to reset to original value"
+                        >
+                          Original: {s.format(s.origValue)}
+                        </span>
+                        {isChanged && (
+                          <span style={{ fontSize: 11, fontWeight: 700, color: dColor }}>
+                            {d > 0 ? '↑' : '↓'} {Math.abs(d).toFixed(1)}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Reset All button */}
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 20 }}>
+                <button
+                  onClick={() => {
+                    handleChange('pricing_financing.purchase_price', orig.purchasePrice);
+                    handleChange('pricing_financing.price', orig.purchasePrice);
+                    handleChange('financing.ltv', orig.ltv);
+                    handleChange('pricing_financing.ltv', orig.ltv);
+                    handleChange('financing.interest_rate', orig.interestRate);
+                    handleChange('pricing_financing.interest_rate', orig.interestRate);
+                    handleChange('pricing_financing.closing_costs_percent', orig.closingPct);
+                    handleChange('underwriting.exit_cap_rate', orig.exitCapRate);
+                    handleChange('underwriting.holding_period', orig.holdingPeriod);
+                    if (setSelectedHoldPeriod) setSelectedHoldPeriod(orig.holdingPeriod);
+                    handleChange('pnl.vacancy_rate', orig.vacancy);
+                    handleChange('expenses.vacancy_pct', orig.vacancy);
+                    handleChange('underwriting.revenue_growth_rate', orig.rentGrowth);
+                    handleChange('underwriting.expense_growth_rate', orig.expGrowth);
+                  }}
+                  style={{ padding: '8px 24px', fontSize: 12, fontWeight: 700, color: '#ef4444', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, cursor: 'pointer', transition: 'all 0.2s' }}
+                >
+                  ↺ Reset All to Original
+                </button>
+                <button
+                  onClick={() => navigate('/loi-generator')}
+                  style={{ padding: '8px 24px', fontSize: 12, fontWeight: 700, color: '#10b981', background: '#ecfdf5', border: '1px solid #d1fae5', borderRadius: 8, cursor: 'pointer' }}
+                >
+                  + Create LOI with Current Values
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════
