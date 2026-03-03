@@ -17,6 +17,8 @@ const DEFAULTS = {
     amortization_years: 30,
     io_years: 0,
     loan_fees_percent: 1.5,
+    spread: 1.5,
+    selected_treasury_term: 5,
   },
   exit_details: {
     holdYrs: 5,

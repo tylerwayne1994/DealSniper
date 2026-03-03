@@ -25,6 +25,15 @@ logger = logging.getLogger("fred_api")
 FRED_API_KEY = os.environ.get("FRED_API_KEY", "3c4009c078f0d493a204f079ca093980")
 FRED_BASE_URL = "https://api.stlouisfed.org/fred/series/observations"
 
+# Treasury bond series by term
+TREASURY_SERIES = {
+    2: "DGS2",    # 2-Year Treasury Constant Maturity Rate
+    3: "DGS3",    # 3-Year Treasury Constant Maturity Rate
+    5: "DGS5",    # 5-Year Treasury Constant Maturity Rate
+    7: "DGS7",    # 7-Year Treasury Constant Maturity Rate
+    10: "DGS10",  # 10-Year Treasury Constant Maturity Rate
+}
+
 # Series IDs for the data we want
 FRED_SERIES = {
     "mortgage_30yr": "MORTGAGE30US",          # 30-Year Fixed Rate Mortgage Average
@@ -226,4 +235,31 @@ def fetch_fred_macro_data() -> Dict:
             **indicators,
             "as_of": as_of,
         }
+    }
+
+
+def fetch_treasury_rates() -> Dict:
+    """
+    Fetch current Treasury bond yields for common CRE loan terms (2, 3, 5, 7, 10 year).
+    Returns rates keyed by term with value and date.
+    """
+    logger.info("[FRED] Fetching treasury bond rates...")
+    rates = []
+    as_of = None
+
+    for term, series_id in TREASURY_SERIES.items():
+        val, date = _latest_value_and_date(series_id)
+        if val is not None:
+            rates.append({
+                "term": term,
+                "rate": round(val, 2),
+                "date": date,
+            })
+            if date and (as_of is None or date > as_of):
+                as_of = date
+
+    logger.info("[FRED] Fetched %d treasury rates (as_of=%s)", len(rates), as_of)
+    return {
+        "rates": rates,
+        "as_of": as_of,
     }

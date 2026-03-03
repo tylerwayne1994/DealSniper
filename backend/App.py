@@ -234,6 +234,18 @@ except Exception as e:
     import traceback
     traceback.print_exc()
 
+# ── Treasury Bond Rates endpoint (FRED API) ──
+try:
+    from fred_api import fetch_treasury_rates
+    log.info("[FRED] Treasury rates endpoint ready")
+
+    @app.get("/api/treasury-rates")
+    async def treasury_rates_route():
+        """Fetch current Treasury bond yields for 2, 3, 5, 7, 10 year terms."""
+        return fetch_treasury_rates()
+except Exception as e:
+    log.warning(f"[FRED] Treasury rates endpoint unavailable: {e}")
+
 # Google Sheets: Auto-populate underwriting model
 from google_sheets_updater import update_google_sheet
 

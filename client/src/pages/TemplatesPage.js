@@ -16,6 +16,8 @@ const DEFAULT_FINANCING = {
   amortization_years: 30,
   io_years: 0,
   loan_fees_percent: 1.5,
+  spread: 1.5,
+  selected_treasury_term: 5,
 };
 
 const DEFAULT_EXIT = {
@@ -191,6 +193,29 @@ function TemplatesPage() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState({ financing: false, exit: false, renovation: false, criteria: false });
+  const [treasuryRates, setTreasuryRates] = useState([]);
+  const [treasuryAsOf, setTreasuryAsOf] = useState(null);
+  const [treasuryLoading, setTreasuryLoading] = useState(false);
+
+  /* ── Fetch Treasury rates from FRED API ── */
+  useEffect(() => {
+    (async () => {
+      setTreasuryLoading(true);
+      try {
+        const apiBase = process.env.REACT_APP_API_URL || '';
+        const resp = await fetch(`${apiBase}/api/treasury-rates`);
+        if (resp.ok) {
+          const data = await resp.json();
+          setTreasuryRates(data.rates || []);
+          setTreasuryAsOf(data.as_of || null);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch treasury rates:', err);
+      } finally {
+        setTreasuryLoading(false);
+      }
+    })();
+  }, []);
 
   /* ── Load from Supabase ── */
   useEffect(() => {
@@ -426,6 +451,101 @@ function TemplatesPage() {
                 <div style={{ fontSize: 20, fontWeight: 700, color: '#4338ca' }}>
                   ${monthlyPayment.toFixed(0)}
                 </div>
+              </div>
+
+              {/* ── Loan Interest Rate Options (Treasury Bonds) ── */}
+              <div style={{ marginTop: 28 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <div style={{ width: 3, height: 22, background: '#6366f1', borderRadius: 2 }} />
+                  <span style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>Loan Interest Rate Options</span>
+                </div>
+                <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 16 }}>
+                  View and adjust your total interest rate based on Treasury Bond values and custom Spread inputs.
+                </div>
+
+                {treasuryLoading ? (
+                  <div style={{ padding: 20, textAlign: 'center', color: '#9ca3af', fontSize: 13 }}>
+                    Loading Treasury rates...
+                  </div>
+                ) : treasuryRates.length > 0 ? (
+                  <>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                          <th style={{ width: 40, padding: '10px 8px' }} />
+                          <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: '#374151', fontSize: 12, textTransform: 'uppercase' }}>Term (Years)</th>
+                          <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: '#374151', fontSize: 12, textTransform: 'uppercase' }}>Treasury Bonds</th>
+                          <th style={{ padding: '10px 4px', textAlign: 'center', color: '#9ca3af', fontSize: 14, fontWeight: 600 }}>+</th>
+                          <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: '#374151', fontSize: 12, textTransform: 'uppercase' }}>Spread</th>
+                          <th style={{ padding: '10px 4px', textAlign: 'center', color: '#9ca3af', fontSize: 14, fontWeight: 600 }}>=</th>
+                          <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: '#374151', fontSize: 12, textTransform: 'uppercase' }}>Total Rate</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {treasuryRates.map(tr => {
+                          const isSelected = tpl.financing.selected_treasury_term === tr.term;
+                          const spread = tpl.financing.spread ?? 1.5;
+                          const totalRate = (tr.rate + spread).toFixed(2);
+                          return (
+                            <tr key={tr.term} style={{ borderBottom: '1px solid #f3f4f6', background: isSelected ? '#f5f3ff' : 'transparent' }}>
+                              <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                                <div
+                                  onClick={() => {
+                                    updateField('financing', 'selected_treasury_term', tr.term);
+                                    updateField('financing', 'interest_rate', parseFloat(totalRate));
+                                  }}
+                                  style={{
+                                    width: 20, height: 20, borderRadius: '50%', cursor: 'pointer',
+                                    border: isSelected ? '6px solid #4f46e5' : '2px solid #d1d5db',
+                                    background: '#fff', transition: 'all .15s',
+                                  }}
+                                />
+                              </td>
+                              <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 500, color: '#111827' }}>{tr.term}</td>
+                              <td style={{ padding: '10px 12px', textAlign: 'center', color: '#374151' }}>{tr.rate.toFixed(2)}%</td>
+                              <td />
+                              <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    value={spread}
+                                    onChange={(e) => {
+                                      const newSpread = parseFloat(e.target.value) || 0;
+                                      updateField('financing', 'spread', newSpread);
+                                      if (isSelected) {
+                                        updateField('financing', 'interest_rate', parseFloat((tr.rate + newSpread).toFixed(2)));
+                                      }
+                                    }}
+                                    style={{
+                                      width: 64, padding: '6px 8px', borderRadius: 6, textAlign: 'center',
+                                      border: '1px solid #d1d5db', fontSize: 13, outline: 'none',
+                                      background: '#f9fafb',
+                                    }}
+                                    onFocus={(e) => { e.target.style.borderColor = '#6366f1'; }}
+                                    onBlur={(e) => { e.target.style.borderColor = '#d1d5db'; }}
+                                  />
+                                  <span style={{ fontSize: 13, color: '#9ca3af' }}>%</span>
+                                </div>
+                              </td>
+                              <td />
+                              <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: isSelected ? '#4f46e5' : '#374151' }}>{totalRate}%</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                    {treasuryAsOf && (
+                      <div style={{ textAlign: 'right', fontSize: 11, color: '#9ca3af', marginTop: 6 }}>
+                        Treasury rates as of {treasuryAsOf}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div style={{ padding: '14px 18px', borderRadius: 8, background: '#fef3c7', border: '1px solid #fde68a', fontSize: 12, color: '#92400e' }}>
+                    Treasury rates unavailable — you can still set the interest rate manually above.
+                  </div>
+                )}
               </div>
             </>
           )}
