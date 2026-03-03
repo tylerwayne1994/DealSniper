@@ -1,4 +1,4 @@
-/* eslint-disable */
+﻿/* eslint-disable */
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -6,36 +6,26 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 // Default renovation line items — common multifamily value-add plays
 // ═══════════════════════════════════════════════════════════════════
 const DEFAULT_RENO_ITEMS = [
-  { id: 'kitchen', name: 'Kitchen Upgrade', costPerUnit: 5000, icon: '🍳' },
-  { id: 'bathroom', name: 'Bathroom Refresh', costPerUnit: 3000, icon: '🚿' },
-  { id: 'flooring', name: 'Flooring Replacement', costPerUnit: 2500, icon: '🏠' },
-  { id: 'paint', name: 'Paint & Finishes', costPerUnit: 1500, icon: '🎨' },
-  { id: 'appliances', name: 'New Appliances', costPerUnit: 2000, icon: '🧊' },
-  { id: 'lighting', name: 'Lighting & Fixtures', costPerUnit: 800, icon: '💡' },
-  { id: 'hvac', name: 'HVAC / Mechanical', costPerUnit: 1200, icon: '❄️' },
-  { id: 'windows', name: 'Windows & Doors', costPerUnit: 1800, icon: '🪟' },
-  { id: 'exterior', name: 'Exterior / Curb Appeal', costPerUnit: 0, icon: '🏗️', isCommon: true, totalCost: 50000 },
-  { id: 'amenity', name: 'Amenity Improvements', costPerUnit: 0, icon: '🏊', isCommon: true, totalCost: 75000 },
-  { id: 'security', name: 'Security / Access Control', costPerUnit: 0, icon: '🔒', isCommon: true, totalCost: 25000 },
-];
-
-const DEFAULT_OTHER_INCOME = [
-  { id: 'pet_rent', name: 'Pet Rent', perUnitMonthly: 35, pctUnits: 40, icon: '🐾' },
-  { id: 'parking', name: 'Parking Premium', perUnitMonthly: 75, pctUnits: 30, icon: '🅿️' },
-  { id: 'storage', name: 'Storage Units', perUnitMonthly: 50, pctUnits: 20, icon: '📦' },
-  { id: 'laundry', name: 'Laundry Income', perUnitMonthly: 25, pctUnits: 100, icon: '🧺' },
-  { id: 'cable_internet', name: 'Cable / Internet', perUnitMonthly: 45, pctUnits: 60, icon: '📡' },
-  { id: 'app_fees', name: 'Application Fees', annual: 5000, icon: '📋', isFlat: true },
-  { id: 'late_fees', name: 'Late Fees', annual: 3000, icon: '⏰', isFlat: true },
+  { id: 'kitchen', name: 'Kitchen Upgrade', costPerUnit: 5000 },
+  { id: 'bathroom', name: 'Bathroom Refresh', costPerUnit: 3000 },
+  { id: 'flooring', name: 'Flooring Replacement', costPerUnit: 2500 },
+  { id: 'paint', name: 'Paint & Finishes', costPerUnit: 1500 },
+  { id: 'appliances', name: 'New Appliances', costPerUnit: 2000 },
+  { id: 'lighting', name: 'Lighting & Fixtures', costPerUnit: 800 },
+  { id: 'hvac', name: 'HVAC / Mechanical', costPerUnit: 1200 },
+  { id: 'windows', name: 'Windows & Doors', costPerUnit: 1800 },
+  { id: 'exterior', name: 'Exterior / Curb Appeal', costPerUnit: 0, isCommon: true, totalCost: 50000 },
+  { id: 'amenity', name: 'Amenity Improvements', costPerUnit: 0, isCommon: true, totalCost: 75000 },
+  { id: 'security', name: 'Security / Access Control', costPerUnit: 0, isCommon: true, totalCost: 25000 },
 ];
 
 const EXPENSE_OPT_ITEMS = [
-  { id: 'insurance', name: 'Insurance Renegotiation', icon: '🛡️', defaultSavingsPct: 15, expKey: 'insurance' },
-  { id: 'tax_appeal', name: 'Property Tax Appeal', icon: '🏛️', defaultSavingsPct: 10, expKey: 'taxes' },
-  { id: 'management', name: 'Management Fee Reduction', icon: '👔', defaultSavingsPct: 20, expKey: 'management' },
-  { id: 'maintenance', name: 'Maintenance Contracts', icon: '🔧', defaultSavingsPct: 15, expKey: 'repairs_maintenance' },
-  { id: 'energy', name: 'Energy Efficiency (LED, Low-Flow)', icon: '💡', defaultSavingsPct: 25, expKey: 'utilities' },
-  { id: 'landscaping', name: 'Landscape Contract', icon: '🌿', defaultSavingsPct: 10, expKey: 'landscaping' },
+  { id: 'insurance', name: 'Insurance Renegotiation', defaultSavingsPct: 15, expKey: 'insurance' },
+  { id: 'tax_appeal', name: 'Property Tax Appeal', defaultSavingsPct: 10, expKey: 'taxes' },
+  { id: 'management', name: 'Management Fee Reduction', defaultSavingsPct: 20, expKey: 'management' },
+  { id: 'maintenance', name: 'Maintenance Contracts', defaultSavingsPct: 15, expKey: 'repairs_maintenance' },
+  { id: 'energy', name: 'Energy Efficiency (LED, Low-Flow)', defaultSavingsPct: 25, expKey: 'utilities' },
+  { id: 'landscaping', name: 'Landscape Contract', defaultSavingsPct: 10, expKey: 'landscaping' },
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -55,7 +45,6 @@ export default function ValueAddTab({
 }) {
   // ── Local UI state ──
   const [renoOpen, setRenoOpen] = useState(true);
-  const [otherIncOpen, setOtherIncOpen] = useState(true);
   const [expOptOpen, setExpOptOpen] = useState(true);
   const [leaseUpOpen, setLeaseUpOpen] = useState(true);
   const [timelineOpen, setTimelineOpen] = useState(true);
@@ -78,7 +67,7 @@ export default function ValueAddTab({
   const SectionToggle = ({ title, icon, open, setOpen, badge, badgeColor }) => (
     <div onClick={() => setOpen(!open)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ fontSize: 18 }}>{icon}</span>
+        {icon && <span style={{ fontSize: 18 }}>{icon}</span>}
         <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: vVL }}>{title}</h3>
         {badge && <span style={{ fontSize: 10, fontWeight: 700, color: badgeColor || '#10b981', background: `${badgeColor || '#10b981'}15`, padding: '2px 10px', borderRadius: 6, border: `1px solid ${badgeColor || '#10b981'}30` }}>{badge}</span>}
       </div>
@@ -189,26 +178,7 @@ export default function ValueAddTab({
     });
   }, [unitMix, totalRenoPerUnit]);
 
-  // ═════════════════════════════════════════════════════════════
-  // OTHER INCOME STREAMS (NEW)
-  // ═════════════════════════════════════════════════════════════
-  const otherIncConfig = scenarioData?.value_add?.other_income || {};
-  const otherIncItems = DEFAULT_OTHER_INCOME.map(d => {
-    const saved = otherIncConfig[d.id];
-    return saved ? { ...d, ...saved } : { ...d, enabled: false };
-  });
 
-  const updateOtherInc = (id, changes) => {
-    const updated = { ...otherIncConfig, [id]: { ...(otherIncConfig[id] || {}), ...changes } };
-    onFieldChange('value_add.other_income', updated);
-  };
-
-  const totalAnnualOtherIncome = otherIncItems.reduce((s, item) => {
-    if (!item.enabled) return s;
-    if (item.isFlat) return s + (item.annual || 0);
-    const units = Math.round(totalUnits * ((item.pctUnits || 0) / 100));
-    return s + ((item.perUnitMonthly || 0) * units * 12);
-  }, 0);
 
   // ═════════════════════════════════════════════════════════════
   // EXPENSE OPTIMIZATION (NEW)
@@ -265,22 +235,12 @@ export default function ValueAddTab({
   // STABILIZED METRICS (ENHANCED — includes all value-add sources)
   // ═════════════════════════════════════════════════════════════
   const mktCapRate = marketCapRate?.market_cap_rate ? (marketCapRate.market_cap_rate / 100) : (currentCapRate / 100 || 0.05);
-  const totalNOILift = totalAnnualRentUpside + totalRubsRecovery + totalAnnualOtherIncome + totalExpSavings;
+  const totalNOILift = totalAnnualRentUpside + totalRubsRecovery + totalExpSavings;
   const stabilizedNOI = currentNOI + totalNOILift;
   const stabilizedValue = mktCapRate > 0 ? stabilizedNOI / mktCapRate : 0;
   const valueCreation = stabilizedValue - currentPurchasePrice;
   const netValueCreation = valueCreation - totalRenoBudget;
   const stabilizedDSCR = dsAnnual > 0 ? stabilizedNOI / dsAnnual : 0;
-
-  // ═════════════════════════════════════════════════════════════
-  // WATERFALL DATA (ENHANCED)
-  // ═════════════════════════════════════════════════════════════
-  const waterfallItems = [];
-  if (totalAnnualRentUpside > 0) waterfallItems.push({ label: 'Rent Upside', value: totalAnnualRentUpside, color: '#4f46e5' });
-  if (totalRubsRecovery > 0) waterfallItems.push({ label: 'RUBS Recovery', value: totalRubsRecovery, color: '#0ea5e9' });
-  if (totalAnnualOtherIncome > 0) waterfallItems.push({ label: 'Other Income', value: totalAnnualOtherIncome, color: '#8b5cf6' });
-  if (totalExpSavings > 0) waterfallItems.push({ label: 'Expense Savings', value: totalExpSavings, color: '#f59e0b' });
-  const waterfallMax = Math.max(totalNOILift, valueCreation, 1);
 
   // ═════════════════════════════════════════════════════════════
   // RENOVATION FINANCING CALCULATIONS
@@ -462,7 +422,7 @@ export default function ValueAddTab({
   }, [currentPurchasePrice, scenarioData, totalRenoBudget, renoTimeline, totalMonths, holdYears,
       rentUpside, totalMarketMonthlyRent, totalRenoPerUnit, rubsEnabled, totalRubsRecovery,
       totalExpSavings, currentNOI, stabilizedNOI, dsAnnual, totalNOILift, leaseUpData,
-      stabilizedValue, valueCreation, currentPurchasePrice, totalAnnualOtherIncome]);
+      stabilizedValue, valueCreation, currentPurchasePrice]);
 
   // ═════════════════════════════════════════════════════════════
   // ANIMATED TIMELINE STATE
@@ -511,324 +471,10 @@ export default function ValueAddTab({
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
 
         {/* ═══════════════════════════════════════════════════════
-            ANIMATED VALUE-ADD EXECUTION TIMELINE
-            ═══════════════════════════════════════════════════════ */}
-        <div style={{ ...vSC, border: '2px solid #6366f1', background: '#fff', overflow: 'hidden' }}>
-          <SectionToggle
-            title="Value-Add Execution Timeline"
-            icon="⏱️"
-            open={timelineOpen}
-            setOpen={setTimelineOpen}
-            badge={`${holdYears}-Year`}
-            badgeColor="#6366f1"
-          />
-
-          {timelineOpen && (
-            <div style={{ marginTop: 20 }}>
-              {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                <span style={{
-                  background: '#f0fdf4', color: '#15803d',
-                  border: '1px solid #bbf7d0',
-                  borderRadius: 20, padding: '3px 12px',
-                  fontSize: 12, fontWeight: 600,
-                }}>
-                  {holdYears}-Year Projection
-                </span>
-                <span style={{ fontSize: 12, color: vLB }}>
-                  {scenarioData?.property?.name || scenarioData?.property?.address || 'Property'} · {[
-                    rentUpside > 0 && 'Rent Increase',
-                    rubsEnabled && totalRubsRecovery > 0 && 'RUBS',
-                    totalExpSavings > 0 && 'Expense Opt.',
-                    totalRenoBudget > 0 && 'Renovation',
-                  ].filter(Boolean).join(' + ') || 'Value-Add'} Strategy
-                </span>
-              </div>
-
-              {/* Timeline stage */}
-              <div style={{ position: 'relative', height: 360, marginTop: 16 }}>
-                {/* Cards ABOVE the track */}
-                {timelineMilestones.filter(ms => ms.above).map(ms => {
-                  const visible = currentTimelineMonth >= ms.month - 0.5;
-                  const active = Math.abs(currentTimelineMonth - ms.month) < (totalMonths * 0.04);
-                  return (
-                    <div key={ms.month + ms.label} style={{
-                      position: 'absolute',
-                      left: `${tlPct(ms.month)}%`,
-                      bottom: 'calc(50% + 22px)',
-                      transform: 'translateX(-50%)',
-                      display: 'flex',
-                      flexDirection: 'column-reverse',
-                      alignItems: 'center',
-                      zIndex: 10,
-                      pointerEvents: 'none',
-                    }}>
-                      {/* Connector */}
-                      <div style={{
-                        width: 1, height: visible ? 32 : 0,
-                        background: ms.color, opacity: visible ? 0.5 : 0,
-                        transition: 'height 0.3s ease, opacity 0.3s ease', flexShrink: 0,
-                      }} />
-                      {/* Card */}
-                      <div style={{
-                        background: '#fff',
-                        border: `1.5px solid ${active ? ms.color : '#e5e7eb'}`,
-                        borderRadius: 10, padding: '10px 14px',
-                        minWidth: 140, maxWidth: 165,
-                        boxShadow: active
-                          ? `0 4px 20px ${ms.color}30, 0 1px 4px rgba(0,0,0,0.08)`
-                          : '0 1px 4px rgba(0,0,0,0.07)',
-                        opacity: visible ? 1 : 0,
-                        transform: visible ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.95)',
-                        transition: 'all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                        borderTopColor: ms.color, borderTopWidth: 3,
-                        position: 'relative',
-                      }}>
-                        <div style={{ marginBottom: 6 }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: '#111827', lineHeight: 1.2 }}>{ms.label}</div>
-                          <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 1 }}>{ms.sublabel}</div>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, borderTop: '1px solid #f3f4f6', paddingTop: 6 }}>
-                          {ms.metrics.map((m, i) => (
-                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: 10, color: '#6b7280' }}>{m.label}</span>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: ms.color }}>{m.value}</span>
-                            </div>
-                          ))}
-                        </div>
-                        <div style={{
-                          position: 'absolute', top: -10, right: 10,
-                          background: ms.color, color: '#fff',
-                          fontSize: 9, fontWeight: 800,
-                          padding: '2px 7px', borderRadius: 10, letterSpacing: '0.04em',
-                        }}>
-                          {ms.month === 0 ? 'DAY 1' : ms.month === totalMonths ? `YR ${holdYears}` : `M${ms.month}`}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* The Track — centered */}
-                <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, transform: 'translateY(-50%)' }}>
-                  {/* BG bar */}
-                  <div style={{ height: 6, background: '#e5e7eb', borderRadius: 3, position: 'relative', overflow: 'visible' }}>
-                    {/* Progress fill */}
-                    <div style={{
-                      position: 'absolute', top: 0, left: 0,
-                      width: `${timelineProgressPct}%`, height: '100%',
-                      background: 'linear-gradient(90deg, #6366f1, #8b5cf6, #22c55e)',
-                      borderRadius: 3, boxShadow: '0 0 12px #6366f140',
-                    }} />
-
-                    {/* Milestone dots */}
-                    {timelineMilestones.map(ms => {
-                      const hit = currentTimelineMonth >= ms.month - 0.5;
-                      const active = Math.abs(currentTimelineMonth - ms.month) < (totalMonths * 0.04);
-                      return (
-                        <div key={ms.month + ms.label} style={{
-                          position: 'absolute', left: `${tlPct(ms.month)}%`,
-                          top: '50%', transform: 'translate(-50%, -50%)',
-                          width: active ? 20 : hit ? 14 : 10,
-                          height: active ? 20 : hit ? 14 : 10,
-                          borderRadius: '50%',
-                          background: hit ? ms.color : '#fff',
-                          border: `2px solid ${hit ? ms.color : '#d1d5db'}`,
-                          boxShadow: active ? `0 0 0 5px ${ms.color}25, 0 0 18px ${ms.color}50` : 'none',
-                          transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                          zIndex: 5,
-                        }} />
-                      );
-                    })}
-
-                    {/* Cursor */}
-                    <div style={{
-                      position: 'absolute', left: `${timelineProgressPct}%`,
-                      top: '50%', transform: 'translate(-50%, -50%)', zIndex: 8,
-                    }}>
-                      <div style={{
-                        width: 22, height: 22, borderRadius: '50%',
-                        background: '#111827', border: '3px solid #fff',
-                        boxShadow: '0 0 0 3px #11182730, 0 2px 12px rgba(0,0,0,0.25)',
-                        position: 'relative',
-                      }}>
-                        <div style={{
-                          position: 'absolute', bottom: 28, left: '50%',
-                          transform: 'translateX(-50%)',
-                          background: '#111827', color: '#fff',
-                          fontSize: 10, fontWeight: 700,
-                          padding: '3px 9px', borderRadius: 6,
-                          whiteSpace: 'nowrap',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                        }}>
-                          {currentTimelineMonth < 1 ? 'Day 1' : `Month ${Math.round(currentTimelineMonth)}`}
-                          <div style={{
-                            position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)',
-                            width: 0, height: 0,
-                            borderLeft: '4px solid transparent', borderRight: '4px solid transparent',
-                            borderTop: '4px solid #111827',
-                          }} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Year labels */}
-                  <div style={{ position: 'relative', marginTop: 16 }}>
-                    {yearMarks.map(m => (
-                      <div key={m} style={{
-                        position: 'absolute', left: `${tlPct(m)}%`,
-                        transform: 'translateX(-50%)', textAlign: 'center',
-                      }}>
-                        <div style={{ width: 1, height: 6, background: '#d1d5db', margin: '0 auto 4px' }} />
-                        <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>
-                          {m === 0 ? 'Now' : m === totalMonths ? `Yr ${holdYears}` : `Yr ${m / 12}`}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Cards BELOW the track */}
-                {timelineMilestones.filter(ms => !ms.above).map(ms => {
-                  const visible = currentTimelineMonth >= ms.month - 0.5;
-                  const active = Math.abs(currentTimelineMonth - ms.month) < (totalMonths * 0.04);
-                  return (
-                    <div key={ms.month + ms.label} style={{
-                      position: 'absolute',
-                      left: `${tlPct(ms.month)}%`,
-                      top: 'calc(50% + 22px)',
-                      transform: 'translateX(-50%)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      zIndex: 10,
-                      pointerEvents: 'none',
-                    }}>
-                      {/* Connector */}
-                      <div style={{
-                        width: 1, height: visible ? 32 : 0,
-                        background: ms.color, opacity: visible ? 0.5 : 0,
-                        transition: 'height 0.3s ease, opacity 0.3s ease', flexShrink: 0,
-                      }} />
-                      {/* Card */}
-                      <div style={{
-                        background: '#fff',
-                        border: `1.5px solid ${active ? ms.color : '#e5e7eb'}`,
-                        borderRadius: 10, padding: '10px 14px',
-                        minWidth: 140, maxWidth: 165,
-                        boxShadow: active
-                          ? `0 4px 20px ${ms.color}30, 0 1px 4px rgba(0,0,0,0.08)`
-                          : '0 1px 4px rgba(0,0,0,0.07)',
-                        opacity: visible ? 1 : 0,
-                        transform: visible ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.95)',
-                        transition: 'all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                        borderTopColor: ms.color, borderTopWidth: 3,
-                        position: 'relative',
-                      }}>
-                        <div style={{ marginBottom: 6 }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: '#111827', lineHeight: 1.2 }}>{ms.label}</div>
-                          <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 1 }}>{ms.sublabel}</div>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, borderTop: '1px solid #f3f4f6', paddingTop: 6 }}>
-                          {ms.metrics.map((m, i) => (
-                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: 10, color: '#6b7280' }}>{m.label}</span>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: ms.color }}>{m.value}</span>
-                            </div>
-                          ))}
-                        </div>
-                        <div style={{
-                          position: 'absolute', bottom: -10, right: 10,
-                          background: ms.color, color: '#fff',
-                          fontSize: 9, fontWeight: 800,
-                          padding: '2px 7px', borderRadius: 10, letterSpacing: '0.04em',
-                        }}>
-                          {ms.month === 0 ? 'DAY 1' : ms.month === totalMonths ? `YR ${holdYears}` : `M${ms.month}`}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Bottom summary bar */}
-              <div style={{
-                marginTop: 20, background: '#fff', border: '1px solid #e5e7eb',
-                borderRadius: 12, padding: '16px 20px',
-                display: 'flex', gap: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                overflow: 'hidden',
-              }}>
-                {[
-                  { label: 'Current NOI', value: vFmt(currentNOI), color: '#6b7280' },
-                  { label: 'Stabilized NOI', value: vFmt(stabilizedNOI), color: '#22c55e' },
-                  { label: 'NOI Lift', value: `+${vFmt(totalNOILift)}`, color: '#22c55e' },
-                  { label: 'Renovation Budget', value: vFmt(totalRenoBudget), color: '#f59e0b' },
-                  { label: 'Net Value Created', value: vFmt(netValueCreation), color: '#6366f1' },
-                  { label: `${holdYears}-Yr Est. Value`, value: vFmt(stabilizedValue), color: '#8b5cf6' },
-                ].map((item, i, arr) => (
-                  <div key={i} style={{
-                    flex: 1, padding: '4px 12px',
-                    borderRight: i < arr.length - 1 ? '1px solid #f3f4f6' : 'none',
-                    textAlign: 'center',
-                  }}>
-                    <div style={{ fontSize: 9, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
-                      {item.label}
-                    </div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: item.color }}>
-                      {item.value}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Renovation financing callout (if financed) */}
-              {renoFinancing.financed && totalRenoBudget > 0 && (
-                <div style={{
-                  marginTop: 14, padding: '14px 18px', borderRadius: 10,
-                  background: 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%)',
-                  border: '1px solid #fde68a',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12,
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 16 }}>🏦</span>
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e' }}>Renovation Financing</div>
-                      <div style={{ fontSize: 11, color: '#b45309' }}>
-                        {vFmt(renoFinancing.loanAmount)} loan @ {renoFinancing.rate}% · {renoFinancing.termYrs}yr term
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 16 }}>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>RENO LOAN</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#92400e' }}>{vFmt(renoFinancing.loanAmount)}</div>
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>EQUITY NEEDED</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#92400e' }}>{vFmt(renoFinancing.equityNeeded)}</div>
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>MONTHLY PMT</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#92400e' }}>{vFmt(Math.round(renoFinancing.monthlyPayment))}/mo</div>
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>ADDL DEBT SVC</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#ef4444' }}>{vFmt(Math.round(renoFinancing.annualDebtService))}/yr</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* ═══════════════════════════════════════════════════════
             0. BEFORE / AFTER VISUAL SUMMARY
             ═══════════════════════════════════════════════════════ */}
         <div style={{ ...vSC, border: '2px solid #10b981', background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #fff 100%)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-            <span style={{ fontSize: 22 }}>🔄</span>
             <div>
               <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: vVL }}>Value-Add Transformation</h3>
               <p style={{ margin: '2px 0 0', fontSize: 12, color: vLB }}>Before → After comparison across all value-add strategies</p>
@@ -907,7 +553,6 @@ export default function ValueAddTab({
             ═══════════════════════════════════════════════════════ */}
         <div style={vSC}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-            <span style={{ fontSize: 18 }}>📈</span>
             <div>
               <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: vVL }}>Property Value Creation Calculator</h3>
               <p style={{ margin: '2px 0 0', fontSize: 12, color: vLB }}>Calculate potential value creation from all value-add strategies</p>
@@ -915,17 +560,16 @@ export default function ValueAddTab({
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 14, marginTop: 20, marginBottom: 20 }}>
             {[
-              { label: '% Rent Increase', icon: '📈', val: avgMarketRent > 0 && avgCurrentRent > 0 ? ((avgMarketRent - avgCurrentRent) / avgCurrentRent * 100).toFixed(1) : '0', suffix: '%' },
-              { label: 'Avg. Rent', icon: '$', val: Math.round(avgCurrentRent), suffix: '/mo' },
-              { label: 'Units', icon: '🏢', val: totalUnits, suffix: 'units' },
-              { label: '% Vacancy', icon: '%', val: (expenses.vacancy_pct || 5).toFixed(0), suffix: '%' },
-              { label: 'Exp. Ratio', icon: '📊', val: (totalCurrentExpenses > 0 && currentNOI + totalCurrentExpenses > 0 ? (totalCurrentExpenses / (currentNOI + totalCurrentExpenses) * 100) : 0).toFixed(0), suffix: '%' },
-              { label: 'Cap Rate', icon: '⊙', val: (mktCapRate * 100).toFixed(2), suffix: '%' },
+              { label: '% Rent Increase', val: avgMarketRent > 0 && avgCurrentRent > 0 ? ((avgMarketRent - avgCurrentRent) / avgCurrentRent * 100).toFixed(1) : '0', suffix: '%' },
+              { label: 'Avg. Rent', val: Math.round(avgCurrentRent), suffix: '/mo' },
+              { label: 'Units', val: totalUnits, suffix: 'units' },
+              { label: '% Vacancy', val: (expenses.vacancy_pct || 5).toFixed(0), suffix: '%' },
+              { label: 'Exp. Ratio', val: (totalCurrentExpenses > 0 && currentNOI + totalCurrentExpenses > 0 ? (totalCurrentExpenses / (currentNOI + totalCurrentExpenses) * 100) : 0).toFixed(0), suffix: '%' },
+              { label: 'Cap Rate', val: (mktCapRate * 100).toFixed(2), suffix: '%' },
             ].map((f, i) => (
               <div key={i}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: vLB, marginBottom: 6 }}>{f.label}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', border: `1px solid ${vB}`, borderRadius: 8, background: '#f9fafb' }}>
-                  <span style={{ fontSize: 12, color: vLB }}>{f.icon}</span>
                   <span style={{ fontSize: 14, fontWeight: 700, color: vVL }}>{f.val}</span>
                   <span style={{ fontSize: 11, color: vLB }}>{f.suffix}</span>
                 </div>
@@ -934,13 +578,12 @@ export default function ValueAddTab({
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
             {[
-              { label: 'Annual Revenue Increase', val: totalAnnualRentUpside + totalRubsRecovery + totalAnnualOtherIncome, icon: '$', color: vAC },
-              { label: 'Expense Savings', val: totalExpSavings, icon: '✂️', color: '#f59e0b' },
-              { label: 'Total NOI Impact', val: totalNOILift, icon: '📈', color: '#10b981' },
-              { label: 'Estimated Value Add', val: valueCreation, icon: '🏢', color: vVL },
+              { label: 'Annual Revenue Increase', val: totalAnnualRentUpside + totalRubsRecovery, color: vAC },
+              { label: 'Expense Savings', val: totalExpSavings, color: '#f59e0b' },
+              { label: 'Total NOI Impact', val: totalNOILift, color: '#10b981' },
+              { label: 'Estimated Value Add', val: valueCreation, color: vVL },
             ].map((c, i) => (
               <div key={i} style={{ background: '#f8fafc', borderRadius: 12, padding: '20px 24px', textAlign: 'center', border: `1px solid ${vB}` }}>
-                <div style={{ fontSize: 14, marginBottom: 8, color: vLB }}>{c.icon}</div>
                 <div style={{ fontSize: 22, fontWeight: 800, color: c.color }}>{vFmt(c.val)}</div>
                 <div style={{ fontSize: 11, fontWeight: 600, color: vLB, marginTop: 4 }}>{c.label}</div>
               </div>
@@ -1005,7 +648,7 @@ export default function ValueAddTab({
             3. RENOVATION BUDGET & PER-UNIT ROI (NEW)
             ═══════════════════════════════════════════════════════ */}
         <div style={vSC}>
-          <SectionToggle title="Renovation / CapEx Budget" icon="🏗️" open={renoOpen} setOpen={setRenoOpen}
+          <SectionToggle title="Renovation / CapEx Budget" open={renoOpen} setOpen={setRenoOpen}
             badge={totalRenoBudget > 0 ? vFmt(totalRenoBudget) : null} badgeColor="#f59e0b" />
 
           {renoOpen && (
@@ -1036,7 +679,7 @@ export default function ValueAddTab({
                         <VToggle checked={item.enabled} onChange={v => updateReno(item.id, { enabled: v })} color="#f59e0b" />
                       </td>
                       <td style={{ padding: '10px 12px', fontWeight: 600, color: vVL }}>
-                        <span style={{ marginRight: 8 }}>{item.icon}</span>{item.name}
+                        {item.name}
                       </td>
                       <td style={{ padding: '10px 12px', textAlign: 'right' }}>
                         <input type="number" value={item.costPerUnit} onChange={e => updateReno(item.id, { costPerUnit: parseInt(e.target.value) || 0 })}
@@ -1061,7 +704,7 @@ export default function ValueAddTab({
                         <VToggle checked={item.enabled} onChange={v => updateReno(item.id, { enabled: v })} color="#f59e0b" />
                       </td>
                       <td style={{ padding: '10px 12px', fontWeight: 600, color: vVL }}>
-                        <span style={{ marginRight: 8 }}>{item.icon}</span>{item.name}
+                        {item.name}
                       </td>
                       <td style={{ padding: '10px 12px', textAlign: 'right' }}>
                         <input type="number" value={item.totalCost || 0} onChange={e => updateReno(item.id, { totalCost: parseInt(e.target.value) || 0 })}
@@ -1105,7 +748,7 @@ export default function ValueAddTab({
                         fontSize: 13, fontWeight: 600, transition: 'all 0.15s',
                       }}
                     >
-                      💵 Cash (No Loan)
+                      Cash (No Loan)
                     </div>
                     <div
                       onClick={() => onFieldChange('renovation.financed', true)}
@@ -1117,7 +760,7 @@ export default function ValueAddTab({
                         fontSize: 13, fontWeight: 600, transition: 'all 0.15s',
                       }}
                     >
-                      🏦 Financed (Reno Loan)
+                      Financed (Reno Loan)
                     </div>
                   </div>
 
@@ -1210,78 +853,6 @@ export default function ValueAddTab({
         </div>
 
         {/* ═══════════════════════════════════════════════════════
-            4. OTHER INCOME STREAMS (NEW)
-            ═══════════════════════════════════════════════════════ */}
-        <div style={vSC}>
-          <SectionToggle title="Other Income Streams" icon="💰" open={otherIncOpen} setOpen={setOtherIncOpen}
-            badge={totalAnnualOtherIncome > 0 ? `+${vFmt(totalAnnualOtherIncome)}/yr` : null} badgeColor="#8b5cf6" />
-
-          {otherIncOpen && (
-            <div style={{ marginTop: 20 }}>
-              <p style={{ margin: '0 0 16px', fontSize: 12, color: vLB }}>Toggle income streams and customize amounts to model additional revenue sources beyond rent.</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                {otherIncItems.filter(i => !i.isFlat).map(item => {
-                  const units = Math.round(totalUnits * ((item.pctUnits || 0) / 100));
-                  const annualVal = item.enabled ? (item.perUnitMonthly || 0) * units * 12 : 0;
-                  return (
-                    <div key={item.id} style={{ padding: 16, borderRadius: 12, border: `1px solid ${item.enabled ? '#c4b5fd' : vB}`, background: item.enabled ? '#faf5ff' : '#fff', transition: 'all 0.2s' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 18 }}>{item.icon}</span>
-                          <span style={{ fontSize: 14, fontWeight: 700, color: vVL }}>{item.name}</span>
-                        </div>
-                        <VToggle checked={item.enabled} onChange={v => updateOtherInc(item.id, { enabled: v })} color="#8b5cf6" />
-                      </div>
-                      {item.enabled && (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                          <div>
-                            <label style={{ fontSize: 10, fontWeight: 600, color: vLB, textTransform: 'uppercase' }}>$/Unit/Month</label>
-                            <input type="number" value={item.perUnitMonthly || 0} onChange={e => updateOtherInc(item.id, { perUnitMonthly: parseFloat(e.target.value) || 0 })}
-                              style={{ ...vINP, width: '100%', marginTop: 4 }} />
-                          </div>
-                          <div>
-                            <label style={{ fontSize: 10, fontWeight: 600, color: vLB, textTransform: 'uppercase' }}>% Units Participating</label>
-                            <input type="number" min={0} max={100} value={item.pctUnits || 0} onChange={e => updateOtherInc(item.id, { pctUnits: Math.min(100, parseInt(e.target.value) || 0) })}
-                              style={{ ...vINP, width: '100%', marginTop: 4 }} />
-                          </div>
-                          <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderTop: `1px solid ${vB}` }}>
-                            <span style={{ fontSize: 11, color: vLB }}>{units} units × ${item.perUnitMonthly}/mo × 12</span>
-                            <span style={{ fontSize: 13, fontWeight: 800, color: '#8b5cf6' }}>{vFmt(annualVal)}/yr</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Flat fee items */}
-              <div style={{ fontSize: 11, fontWeight: 700, color: vLB, textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: 20, marginBottom: 10 }}>Flat Annual Income</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-                {otherIncItems.filter(i => i.isFlat).map(item => (
-                  <div key={item.id} style={{ padding: 14, borderRadius: 10, border: `1px solid ${item.enabled ? '#c4b5fd' : vB}`, background: item.enabled ? '#faf5ff' : '#fff' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: vVL }}>{item.icon} {item.name}</span>
-                      <VToggle checked={item.enabled} onChange={v => updateOtherInc(item.id, { enabled: v })} color="#8b5cf6" />
-                    </div>
-                    {item.enabled && (
-                      <input type="number" value={item.annual || 0} onChange={e => updateOtherInc(item.id, { annual: parseInt(e.target.value) || 0 })}
-                        style={{ ...vINP, width: '100%' }} />
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Other Income Total */}
-              <div style={{ marginTop: 16, background: totalAnnualOtherIncome > 0 ? '#faf5ff' : '#f9fafb', borderRadius: 10, padding: '14px 18px', border: `1px solid ${totalAnnualOtherIncome > 0 ? '#c4b5fd' : vB}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: vVL }}>Total Additional Income</span>
-                <span style={{ fontSize: 20, fontWeight: 800, color: totalAnnualOtherIncome > 0 ? '#8b5cf6' : vLB }}>{vFmt(totalAnnualOtherIncome)}<span style={{ fontSize: 11, color: vLB }}>/yr</span></span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ═══════════════════════════════════════════════════════
             5. RUBS (existing - preserved)
             ═══════════════════════════════════════════════════════ */}
         <div style={vSC}>
@@ -1314,7 +885,7 @@ export default function ValueAddTab({
                 </div>
               ))}
               <div style={{ background: computedUtilityTotal > 0 ? '#eef2ff' : '#f8fafc', borderRadius: 10, padding: '12px 14px', border: `1px solid ${computedUtilityTotal > 0 ? '#c7d2fe' : vB}`, textAlign: 'center' }}>
-                <div style={{ fontSize: 18, marginBottom: 4 }}>📊</div>
+
                 <div style={{ fontSize: 10, fontWeight: 700, color: computedUtilityTotal > 0 ? '#4338ca' : vLB, textTransform: 'uppercase', marginBottom: 4 }}>Total</div>
                 <div style={{ fontSize: 16, fontWeight: 800, color: computedUtilityTotal > 0 ? '#4338ca' : vVL }}>{vFmt(computedUtilityTotal)}<span style={{ fontSize: 10, color: vLB }}>/yr</span></div>
                 <div style={{ fontSize: 11, color: vLB, marginTop: 2 }}>{vFmt(Math.round(computedUtilityTotal / 12))}/mo</div>
@@ -1418,7 +989,7 @@ export default function ValueAddTab({
             6. EXPENSE OPTIMIZATION (NEW)
             ═══════════════════════════════════════════════════════ */}
         <div style={vSC}>
-          <SectionToggle title="Expense Optimization" icon="✂️" open={expOptOpen} setOpen={setExpOptOpen}
+          <SectionToggle title="Expense Optimization" open={expOptOpen} setOpen={setExpOptOpen}
             badge={totalExpSavings > 0 ? `−${vFmt(totalExpSavings)}/yr` : null} badgeColor="#f59e0b" />
 
           {expOptOpen && (
@@ -1439,7 +1010,7 @@ export default function ValueAddTab({
                         <VToggle checked={item.enabled} onChange={v => updateExpOpt(item.id, { enabled: v })} color="#f59e0b" />
                       </td>
                       <td style={{ padding: '10px 12px', fontWeight: 600, color: vVL }}>
-                        <span style={{ marginRight: 8 }}>{item.icon}</span>{item.name}
+                        {item.name}
                       </td>
                       <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600, color: vLB }}>{vFmt(item.currentAmount)}</td>
                       <td style={{ padding: '10px 12px', textAlign: 'right' }}>
@@ -1470,7 +1041,7 @@ export default function ValueAddTab({
             7. LEASE-UP TIMELINE (NEW)
             ═══════════════════════════════════════════════════════ */}
         <div style={vSC}>
-          <SectionToggle title="Lease-Up / Absorption Timeline" icon="📅" open={leaseUpOpen} setOpen={setLeaseUpOpen}
+          <SectionToggle title="Lease-Up / Absorption Timeline" open={leaseUpOpen} setOpen={setLeaseUpOpen}
             badge={leaseUpData.monthsToStab > 0 ? `${leaseUpData.monthsToStab} mo to stabilize` : 'Stabilized'} badgeColor="#0ea5e9" />
 
           {leaseUpOpen && (
@@ -1549,68 +1120,307 @@ export default function ValueAddTab({
         </div>
 
         {/* ═══════════════════════════════════════════════════════
-            8. ENHANCED VALUE-ADD WATERFALL
+            ANIMATED VALUE-ADD EXECUTION TIMELINE
             ═══════════════════════════════════════════════════════ */}
         <div style={vSC}>
-          <h3 style={{ margin: '0 0 20px', fontSize: 15, fontWeight: 800, color: vVL }}>Value-Add Waterfall</h3>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', minHeight: 220, padding: '0 20px' }}>
-            {/* Current NOI block */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: vLB, marginBottom: 6 }}>{vFmt(currentNOI)}</div>
-              <div style={{ width: '100%', maxWidth: 80, height: Math.max(waterfallMax > 0 ? (currentNOI / waterfallMax) * 160 : 0, 10), background: '#94a3b8', borderRadius: '8px 8px 0 0' }} />
-              <div style={{ fontSize: 10, fontWeight: 600, color: vLB, marginTop: 8, textAlign: 'center' }}>Current NOI</div>
-            </div>
+          <SectionToggle
+            title="Value-Add Execution Timeline"
+            open={timelineOpen}
+            setOpen={setTimelineOpen}
+            badge={`${holdYears}-Year`}
+            badgeColor="#6366f1"
+          />
 
-            {/* Source bars */}
-            {waterfallItems.map((item, i) => {
-              const pctH = waterfallMax > 0 ? (item.value / waterfallMax) * 160 : 0;
-              return (
-                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: item.color, marginBottom: 6 }}>+{vFmt(item.value)}</div>
-                  <div style={{ width: '100%', maxWidth: 80, height: Math.max(pctH, 10), background: `linear-gradient(180deg, ${item.color} 0%, ${item.color}cc 100%)`, borderRadius: '8px 8px 0 0', transition: 'height 0.3s' }} />
-                  <div style={{ fontSize: 10, fontWeight: 600, color: vLB, marginTop: 8, textAlign: 'center', lineHeight: 1.3 }}>{item.label}</div>
-                </div>
-              );
-            })}
+          {timelineOpen && (
+            <div style={{ marginTop: 20 }}>
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <span style={{
+                  background: '#eef2ff', color: '#4338ca',
+                  border: '1px solid #c7d2fe',
+                  borderRadius: 20, padding: '3px 12px',
+                  fontSize: 12, fontWeight: 600,
+                }}>
+                  {holdYears}-Year Projection
+                </span>
+                <span style={{ fontSize: 12, color: vLB }}>
+                  {scenarioData?.property?.name || scenarioData?.property?.address || 'Property'} &middot; {[
+                    rentUpside > 0 && 'Rent Increase',
+                    rubsEnabled && totalRubsRecovery > 0 && 'RUBS',
+                    totalExpSavings > 0 && 'Expense Opt.',
+                    totalRenoBudget > 0 && 'Renovation',
+                  ].filter(Boolean).join(' + ') || 'Value-Add'} Strategy
+                </span>
+              </div>
 
-            {waterfallItems.length > 0 && (
-              <>
-                <div style={{ display: 'flex', alignItems: 'center', padding: '0 6px', fontSize: 22, color: '#d1d5db' }}>→</div>
-                {/* Stabilized NOI */}
-                <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: '#16a34a', marginBottom: 6 }}>{vFmt(stabilizedNOI)}</div>
-                  <div style={{ width: '100%', maxWidth: 90, height: Math.max(waterfallMax > 0 ? (stabilizedNOI / waterfallMax) * 160 : 0, 10), background: 'linear-gradient(180deg, #16a34a 0%, #15803dcc 100%)', borderRadius: '8px 8px 0 0' }} />
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#16a34a', marginTop: 8, textAlign: 'center' }}>Stabilized NOI</div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', padding: '0 6px', fontSize: 22, color: '#d1d5db' }}>→</div>
-                {/* Value Creation */}
-                <div style={{ flex: 1.3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: vVL, marginBottom: 6 }}>{vFmt(valueCreation)}</div>
-                  <div style={{ width: '100%', maxWidth: 100, height: Math.max(waterfallMax > 0 ? (Math.abs(valueCreation) / waterfallMax) * 160 : 0, 10), background: valueCreation >= 0 ? `linear-gradient(180deg, ${vVL} 0%, ${vVL}cc 100%)` : 'linear-gradient(180deg, #ef4444 0%, #dc2626cc 100%)', borderRadius: '8px 8px 0 0' }} />
-                  <div style={{ fontSize: 10, fontWeight: 700, color: vVL, marginTop: 8, textAlign: 'center' }}>
-                    Value Creation<br /><span style={{ color: vLB, fontWeight: 500 }}>@ {vPct(mktCapRate * 100)} cap</span>
+              {/* Timeline stage */}
+              <div style={{ position: 'relative', height: 360, marginTop: 16, overflow: 'visible' }}>
+                {/* Cards ABOVE the track */}
+                {timelineMilestones.filter(ms => ms.above).map(ms => {
+                  const visible = currentTimelineMonth >= ms.month - 0.5;
+                  const active = Math.abs(currentTimelineMonth - ms.month) < (totalMonths * 0.04);
+                  const pct = tlPct(ms.month);
+                  const clampedLeft = Math.max(8, Math.min(92, pct));
+                  return (
+                    <div key={ms.month + ms.label} style={{
+                      position: 'absolute',
+                      left: `${clampedLeft}%`,
+                      bottom: 'calc(50% + 22px)',
+                      transform: 'translateX(-50%)',
+                      display: 'flex',
+                      flexDirection: 'column-reverse',
+                      alignItems: 'center',
+                      zIndex: 10,
+                      pointerEvents: 'none',
+                    }}>
+                      <div style={{
+                        width: 1, height: visible ? 32 : 0,
+                        background: ms.color, opacity: visible ? 0.5 : 0,
+                        transition: 'height 0.3s ease, opacity 0.3s ease', flexShrink: 0,
+                      }} />
+                      <div style={{
+                        background: '#fff',
+                        border: `1.5px solid ${active ? ms.color : '#e5e7eb'}`,
+                        borderRadius: 10, padding: '10px 14px',
+                        minWidth: 140, maxWidth: 180,
+                        boxShadow: active
+                          ? `0 4px 20px ${ms.color}30, 0 1px 4px rgba(0,0,0,0.08)`
+                          : '0 1px 4px rgba(0,0,0,0.07)',
+                        opacity: visible ? 1 : 0,
+                        transform: visible ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.95)',
+                        transition: 'all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        borderTopColor: ms.color, borderTopWidth: 3,
+                        position: 'relative',
+                      }}>
+                        <div style={{ marginBottom: 6 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#111827', lineHeight: 1.2 }}>{ms.label}</div>
+                          <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 1 }}>{ms.sublabel}</div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, borderTop: '1px solid #f3f4f6', paddingTop: 6 }}>
+                          {ms.metrics.map((m, i) => (
+                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: 10, color: '#6b7280' }}>{m.label}</span>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: ms.color }}>{m.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{
+                          position: 'absolute', top: -10, right: 10,
+                          background: ms.color, color: '#fff',
+                          fontSize: 9, fontWeight: 800,
+                          padding: '2px 7px', borderRadius: 10, letterSpacing: '0.04em',
+                        }}>
+                          {ms.month === 0 ? 'DAY 1' : ms.month === totalMonths ? `YR ${holdYears}` : `M${ms.month}`}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* The Track — centered */}
+                <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, transform: 'translateY(-50%)' }}>
+                  <div style={{ height: 6, background: '#e5e7eb', borderRadius: 3, position: 'relative', overflow: 'visible' }}>
+                    <div style={{
+                      position: 'absolute', top: 0, left: 0,
+                      width: `${timelineProgressPct}%`, height: '100%',
+                      background: 'linear-gradient(90deg, #6366f1, #8b5cf6, #a78bfa)',
+                      borderRadius: 3, boxShadow: '0 0 12px #6366f140',
+                    }} />
+
+                    {timelineMilestones.map(ms => {
+                      const hit = currentTimelineMonth >= ms.month - 0.5;
+                      const active = Math.abs(currentTimelineMonth - ms.month) < (totalMonths * 0.04);
+                      return (
+                        <div key={ms.month + ms.label} style={{
+                          position: 'absolute', left: `${tlPct(ms.month)}%`,
+                          top: '50%', transform: 'translate(-50%, -50%)',
+                          width: active ? 20 : hit ? 14 : 10,
+                          height: active ? 20 : hit ? 14 : 10,
+                          borderRadius: '50%',
+                          background: hit ? ms.color : '#fff',
+                          border: `2px solid ${hit ? ms.color : '#d1d5db'}`,
+                          boxShadow: active ? `0 0 0 5px ${ms.color}25, 0 0 18px ${ms.color}50` : 'none',
+                          transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                          zIndex: 5,
+                        }} />
+                      );
+                    })}
+
+                    <div style={{
+                      position: 'absolute', left: `${timelineProgressPct}%`,
+                      top: '50%', transform: 'translate(-50%, -50%)', zIndex: 8,
+                    }}>
+                      <div style={{
+                        width: 22, height: 22, borderRadius: '50%',
+                        background: '#111827', border: '3px solid #fff',
+                        boxShadow: '0 0 0 3px #11182730, 0 2px 12px rgba(0,0,0,0.25)',
+                        position: 'relative',
+                      }}>
+                        <div style={{
+                          position: 'absolute', bottom: 28, left: '50%',
+                          transform: 'translateX(-50%)',
+                          background: '#111827', color: '#fff',
+                          fontSize: 10, fontWeight: 700,
+                          padding: '3px 9px', borderRadius: 6,
+                          whiteSpace: 'nowrap',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                        }}>
+                          {currentTimelineMonth < 1 ? 'Day 1' : `Month ${Math.round(currentTimelineMonth)}`}
+                          <div style={{
+                            position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)',
+                            width: 0, height: 0,
+                            borderLeft: '4px solid transparent', borderRight: '4px solid transparent',
+                            borderTop: '4px solid #111827',
+                          }} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ position: 'relative', marginTop: 16 }}>
+                    {yearMarks.map(m => (
+                      <div key={m} style={{
+                        position: 'absolute', left: `${tlPct(m)}%`,
+                        transform: 'translateX(-50%)', textAlign: 'center',
+                      }}>
+                        <div style={{ width: 1, height: 6, background: '#d1d5db', margin: '0 auto 4px' }} />
+                        <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>
+                          {m === 0 ? 'Now' : m === totalMonths ? `Yr ${holdYears}` : `Yr ${m / 12}`}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </>
-            )}
-            {waterfallItems.length === 0 && (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: vLB, fontSize: 13 }}>
-                Enable value-add strategies above to see the waterfall
-              </div>
-            )}
-          </div>
 
-          {/* Waterfall breakdown strip */}
-          {totalNOILift > 0 && (
-            <div style={{ marginTop: 20, background: '#f8fafc', borderRadius: 10, padding: '14px 18px', border: `1px solid ${vB}`, display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
-              {waterfallItems.map((w, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                  <div style={{ width: 10, height: 10, borderRadius: 2, background: w.color }} />
-                  <span style={{ color: vLB }}>{w.label}:</span>
-                  <span style={{ fontWeight: 700, color: vVL }}>{vFmt(w.value)}</span>
-                  <span style={{ color: vLB }}>({(w.value / totalNOILift * 100).toFixed(0)}%)</span>
+                {/* Cards BELOW the track */}
+                {timelineMilestones.filter(ms => !ms.above).map(ms => {
+                  const visible = currentTimelineMonth >= ms.month - 0.5;
+                  const active = Math.abs(currentTimelineMonth - ms.month) < (totalMonths * 0.04);
+                  const pct = tlPct(ms.month);
+                  const clampedLeft = Math.max(8, Math.min(92, pct));
+                  return (
+                    <div key={ms.month + ms.label} style={{
+                      position: 'absolute',
+                      left: `${clampedLeft}%`,
+                      top: 'calc(50% + 22px)',
+                      transform: 'translateX(-50%)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      zIndex: 10,
+                      pointerEvents: 'none',
+                    }}>
+                      <div style={{
+                        width: 1, height: visible ? 32 : 0,
+                        background: ms.color, opacity: visible ? 0.5 : 0,
+                        transition: 'height 0.3s ease, opacity 0.3s ease', flexShrink: 0,
+                      }} />
+                      <div style={{
+                        background: '#fff',
+                        border: `1.5px solid ${active ? ms.color : '#e5e7eb'}`,
+                        borderRadius: 10, padding: '10px 14px',
+                        minWidth: 140, maxWidth: 180,
+                        boxShadow: active
+                          ? `0 4px 20px ${ms.color}30, 0 1px 4px rgba(0,0,0,0.08)`
+                          : '0 1px 4px rgba(0,0,0,0.07)',
+                        opacity: visible ? 1 : 0,
+                        transform: visible ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.95)',
+                        transition: 'all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        borderTopColor: ms.color, borderTopWidth: 3,
+                        position: 'relative',
+                      }}>
+                        <div style={{ marginBottom: 6 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#111827', lineHeight: 1.2 }}>{ms.label}</div>
+                          <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 1 }}>{ms.sublabel}</div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, borderTop: '1px solid #f3f4f6', paddingTop: 6 }}>
+                          {ms.metrics.map((m, i) => (
+                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: 10, color: '#6b7280' }}>{m.label}</span>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: ms.color }}>{m.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{
+                          position: 'absolute', bottom: -10, right: 10,
+                          background: ms.color, color: '#fff',
+                          fontSize: 9, fontWeight: 800,
+                          padding: '2px 7px', borderRadius: 10, letterSpacing: '0.04em',
+                        }}>
+                          {ms.month === 0 ? 'DAY 1' : ms.month === totalMonths ? `YR ${holdYears}` : `M${ms.month}`}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Bottom summary bar */}
+              <div style={{
+                marginTop: 20, background: '#fff', border: '1px solid #e5e7eb',
+                borderRadius: 12, padding: '16px 20px',
+                display: 'flex', gap: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                overflow: 'hidden',
+              }}>
+                {[
+                  { label: 'Current NOI', value: vFmt(currentNOI), color: '#6b7280' },
+                  { label: 'Stabilized NOI', value: vFmt(stabilizedNOI), color: '#22c55e' },
+                  { label: 'NOI Lift', value: `+${vFmt(totalNOILift)}`, color: '#22c55e' },
+                  { label: 'Renovation Budget', value: vFmt(totalRenoBudget), color: '#f59e0b' },
+                  { label: 'Net Value Created', value: vFmt(netValueCreation), color: '#6366f1' },
+                  { label: `${holdYears}-Yr Est. Value`, value: vFmt(stabilizedValue), color: '#8b5cf6' },
+                ].map((item, i, arr) => (
+                  <div key={i} style={{
+                    flex: 1, padding: '4px 12px',
+                    borderRight: i < arr.length - 1 ? '1px solid #f3f4f6' : 'none',
+                    textAlign: 'center',
+                  }}>
+                    <div style={{ fontSize: 9, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
+                      {item.label}
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: item.color }}>
+                      {item.value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Renovation financing callout (if financed) */}
+              {renoFinancing.financed && totalRenoBudget > 0 && (
+                <div style={{
+                  marginTop: 14, padding: '14px 18px', borderRadius: 10,
+                  background: 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%)',
+                  border: '1px solid #fde68a',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e' }}>Renovation Financing</div>
+                      <div style={{ fontSize: 11, color: '#b45309' }}>
+                        {vFmt(renoFinancing.loanAmount)} loan @ {renoFinancing.rate}% &middot; {renoFinancing.termYrs}yr term
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 16 }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>RENO LOAN</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#92400e' }}>{vFmt(renoFinancing.loanAmount)}</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>EQUITY NEEDED</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#92400e' }}>{vFmt(renoFinancing.equityNeeded)}</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>MONTHLY PMT</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#92400e' }}>{vFmt(Math.round(renoFinancing.monthlyPayment))}/mo</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>ADDL DEBT SVC</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#ef4444' }}>{vFmt(Math.round(renoFinancing.annualDebtService))}/yr</div>
+                    </div>
+                  </div>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>
@@ -1637,7 +1447,6 @@ export default function ValueAddTab({
                 { label: 'Annual Debt Service', cur: vFmt(dsAnnual), stab: vFmt(dsAnnual), delta: 0, isCurrency: true },
                 { label: 'Monthly Rent (Total)', cur: `${vFmt(totalCurrentMonthlyRent)}/mo`, stab: `${vFmt(totalMarketMonthlyRent)}/mo`, delta: rentUpside, isCurrency: true },
                 { label: 'RUBS Recovery', cur: vFmt(0), stab: vFmt(totalRubsRecovery), delta: totalRubsRecovery, isCurrency: true },
-                { label: 'Other Income', cur: vFmt(0), stab: vFmt(totalAnnualOtherIncome), delta: totalAnnualOtherIncome, isCurrency: true },
                 { label: 'Expense Savings', cur: vFmt(0), stab: vFmt(totalExpSavings), delta: totalExpSavings, isCurrency: true },
               ].map((row, i) => (
                 <tr key={i} style={{ borderBottom: `1px solid ${vB}` }}>
@@ -1674,7 +1483,6 @@ export default function ValueAddTab({
             ═══════════════════════════════════════════════════════ */}
         <div style={{ ...vSC, border: `2px solid ${vAC}`, background: 'linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-            <span style={{ fontSize: 18 }}>⚡</span>
             <div>
               <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: vVL }}>Apply to Overview Pro Forma</h3>
               <p style={{ margin: '2px 0 0', fontSize: 12, color: vLB }}>Toggle switches to reflect value-add adjustments in Overview tab financials</p>
@@ -1685,7 +1493,7 @@ export default function ValueAddTab({
             <div style={{ padding: 20, borderRadius: 12, border: `2px solid ${scenarioData?.value_add?.apply_rent_upside ? vAC : vB}`, backgroundColor: scenarioData?.value_add?.apply_rent_upside ? '#eef2ff' : 'white' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: vVL }}>📈 Rent Optimization</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: vVL }}>Rent Optimization</div>
                   <div style={{ fontSize: 12, color: vLB, marginTop: 4 }}>Higher rents from market adjustments</div>
                   <div style={{ fontSize: 18, fontWeight: 800, color: totalAnnualRentUpside > 0 ? '#16a34a' : vLB, marginTop: 8 }}>+{vFmt(totalAnnualRentUpside)}<span style={{ fontSize: 11, fontWeight: 500, color: vLB }}>/yr</span></div>
                 </div>
@@ -1699,7 +1507,7 @@ export default function ValueAddTab({
             <div style={{ padding: 20, borderRadius: 12, border: `2px solid ${scenarioData?.value_add?.apply_rubs ? '#0ea5e9' : vB}`, backgroundColor: scenarioData?.value_add?.apply_rubs ? '#f0f9ff' : 'white' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: vVL }}>💧 RUBS Recovery</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: vVL }}>RUBS Recovery</div>
                   <div style={{ fontSize: 12, color: vLB, marginTop: 4 }}>Utility cost recovery from tenants</div>
                   <div style={{ fontSize: 18, fontWeight: 800, color: totalRubsRecovery > 0 ? '#16a34a' : vLB, marginTop: 8 }}>+{vFmt(totalRubsRecovery)}<span style={{ fontSize: 11, fontWeight: 500, color: vLB }}>/yr</span></div>
                 </div>
@@ -1709,25 +1517,11 @@ export default function ValueAddTab({
                 }} />
               </div>
             </div>
-            {/* Other Income toggle */}
-            <div style={{ padding: 20, borderRadius: 12, border: `2px solid ${scenarioData?.value_add?.apply_other_income ? '#8b5cf6' : vB}`, backgroundColor: scenarioData?.value_add?.apply_other_income ? '#faf5ff' : 'white' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: vVL }}>💰 Other Income</div>
-                  <div style={{ fontSize: 12, color: vLB, marginTop: 4 }}>Pet rent, parking, storage, etc.</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: totalAnnualOtherIncome > 0 ? '#16a34a' : vLB, marginTop: 8 }}>+{vFmt(totalAnnualOtherIncome)}<span style={{ fontSize: 11, fontWeight: 500, color: vLB }}>/yr</span></div>
-                </div>
-                <VToggle checked={scenarioData?.value_add?.apply_other_income || false} onChange={v => {
-                  onFieldChange('value_add.apply_other_income', v);
-                  onFieldChange('value_add.annual_other_income', totalAnnualOtherIncome);
-                }} />
-              </div>
-            </div>
             {/* Expense Savings toggle */}
             <div style={{ padding: 20, borderRadius: 12, border: `2px solid ${scenarioData?.value_add?.apply_expense_savings ? '#f59e0b' : vB}`, backgroundColor: scenarioData?.value_add?.apply_expense_savings ? '#fffbeb' : 'white' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: vVL }}>✂️ Expense Savings</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: vVL }}>Expense Savings</div>
                   <div style={{ fontSize: 12, color: vLB, marginTop: 4 }}>Optimized contracts & operations</div>
                   <div style={{ fontSize: 18, fontWeight: 800, color: totalExpSavings > 0 ? '#16a34a' : vLB, marginTop: 8 }}>−{vFmt(totalExpSavings)}<span style={{ fontSize: 11, fontWeight: 500, color: vLB }}> expenses/yr</span></div>
                 </div>
@@ -1740,21 +1534,18 @@ export default function ValueAddTab({
           </div>
 
           {/* Active adjustments summary */}
-          {(scenarioData?.value_add?.apply_rent_upside || scenarioData?.value_add?.apply_rubs || scenarioData?.value_add?.apply_other_income || scenarioData?.value_add?.apply_expense_savings) && (
+          {(scenarioData?.value_add?.apply_rent_upside || scenarioData?.value_add?.apply_rubs || scenarioData?.value_add?.apply_expense_savings) && (
             <div style={{ marginTop: 16, padding: '14px 18px', backgroundColor: '#ecfdf5', borderRadius: 10, border: '1px solid #6ee7b7', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 16 }}>✅</span>
               <div style={{ fontSize: 13, color: '#047857' }}>
                 <strong>Adjusted NOI:</strong> {vFmt(currentNOI
                   + (scenarioData?.value_add?.apply_rent_upside ? totalAnnualRentUpside : 0)
                   + (scenarioData?.value_add?.apply_rubs ? totalRubsRecovery : 0)
-                  + (scenarioData?.value_add?.apply_other_income ? totalAnnualOtherIncome : 0)
                   + (scenarioData?.value_add?.apply_expense_savings ? totalExpSavings : 0)
                 )}
                 <span style={{ color: vLB, marginLeft: 8 }}>(Base: {vFmt(currentNOI)})</span>
                 <span style={{ color: '#16a34a', marginLeft: 8 }}>+{vFmt(
                   (scenarioData?.value_add?.apply_rent_upside ? totalAnnualRentUpside : 0)
                   + (scenarioData?.value_add?.apply_rubs ? totalRubsRecovery : 0)
-                  + (scenarioData?.value_add?.apply_other_income ? totalAnnualOtherIncome : 0)
                   + (scenarioData?.value_add?.apply_expense_savings ? totalExpSavings : 0)
                 )}</span>
               </div>
