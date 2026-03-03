@@ -2398,6 +2398,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
             marketCapRate={marketCapRate}
             purchasePrice={purchasePrice}
             annualDebtService={annualDebtService}
+            holdPeriod={selectedHoldPeriod}
           />
         );
       // OLD INLINE VALUE-ADD REMOVED -- now in ValueAddTab component

@@ -1,5 +1,5 @@
 /* eslint-disable */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -51,12 +51,14 @@ export default function ValueAddTab({
   marketCapRate,
   purchasePrice,
   annualDebtService,
+  holdPeriod,
 }) {
   // ── Local UI state ──
   const [renoOpen, setRenoOpen] = useState(true);
   const [otherIncOpen, setOtherIncOpen] = useState(true);
   const [expOptOpen, setExpOptOpen] = useState(true);
   const [leaseUpOpen, setLeaseUpOpen] = useState(true);
+  const [timelineOpen, setTimelineOpen] = useState(true);
 
   // ── Theme ──
   const vB = '#e5e7eb', vLB = '#6b7280', vVL = '#111827', vAC = '#4f46e5';
@@ -281,11 +283,545 @@ export default function ValueAddTab({
   const waterfallMax = Math.max(totalNOILift, valueCreation, 1);
 
   // ═════════════════════════════════════════════════════════════
+  // RENOVATION FINANCING CALCULATIONS
+  // ═════════════════════════════════════════════════════════════
+  const renoFinancing = useMemo(() => {
+    const renoConfig = scenarioData?.renovation || scenarioData?.value_add?.renovation_finance || {};
+    const financed = renoConfig.financed || false;
+    const renoLtv = renoConfig.reno_ltv || 80;
+    const renoRate = renoConfig.reno_interest_rate || 8.0;
+    const renoTermYrs = renoConfig.reno_loan_term_years || 3;
+    const renoIoMonths = renoConfig.reno_io_months || 6;
+
+    if (!financed || totalRenoBudget <= 0) {
+      return { financed: false, loanAmount: 0, equityNeeded: totalRenoBudget, monthlyPayment: 0, annualDebtService: 0, ioMonthlyPayment: 0 };
+    }
+
+    const loanAmount = totalRenoBudget * (renoLtv / 100);
+    const equityNeeded = totalRenoBudget - loanAmount;
+    const r = (renoRate / 100) / 12;
+    const n = renoTermYrs * 12;
+    const monthlyPayment = r > 0 && n > 0 ? (loanAmount * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1) : 0;
+    const ioMonthlyPayment = loanAmount * r;
+
+    return {
+      financed: true,
+      loanAmount,
+      equityNeeded,
+      monthlyPayment,
+      annualDebtService: monthlyPayment * 12,
+      ioMonthlyPayment,
+      ioMonths: renoIoMonths,
+      rate: renoRate,
+      termYrs: renoTermYrs,
+    };
+  }, [scenarioData, totalRenoBudget]);
+
+  // ═════════════════════════════════════════════════════════════
+  // EXECUTION TIMELINE — Dynamic milestones based on deal data
+  // ═════════════════════════════════════════════════════════════
+  const holdYears = holdPeriod || scenarioData?.exit_details?.holdYrs || fullCalcs?.returns?.holdingPeriod || 5;
+  const totalMonths = holdYears * 12;
+
+  const timelineMilestones = useMemo(() => {
+    const ms = [];
+    const downPayment = currentPurchasePrice * ((100 - (scenarioData?.financing?.ltv || 75)) / 100);
+    const renoMonths = renoTimeline || 12;
+    const monthsToStabilize = leaseUpData.monthsToStab || 0;
+    // Reno end can't exceed half the hold period
+    const renoEnd = Math.min(renoMonths, Math.floor(totalMonths * 0.4));
+    // RUBS/expense optimizations implemented shortly after reno starts
+    const utilityTransferMonth = Math.min(renoEnd + Math.ceil(renoEnd * 0.5), Math.floor(totalMonths * 0.5));
+    // Stabilization = max of reno end, lease-up, and utility transfer + buffer
+    const stabMonth = Math.max(renoEnd + 3, utilityTransferMonth + 3, monthsToStabilize + 3, Math.ceil(totalMonths * 0.25));
+    const midHoldMonth = Math.floor(totalMonths * 0.5);
+    const exitMonth = totalMonths;
+
+    // Compute progressive NOI ramp
+    const currentMonthlyNOI = currentNOI / 12;
+    const stabilizedMonthlyNOI = stabilizedNOI / 12;
+    const y3MonthlyNOI = currentMonthlyNOI + (stabilizedMonthlyNOI - currentMonthlyNOI) * 0.85;
+
+    // 1. Acquisition
+    ms.push({
+      month: 0,
+      label: 'Property Acquired',
+      sublabel: 'Day 1',
+      color: '#6366f1',
+      above: true,
+      metrics: [
+        { label: 'Purchase Price', value: vFmt(currentPurchasePrice) },
+        { label: 'Down Payment', value: vFmt(downPayment) },
+      ],
+    });
+
+    // 2. Renovation Begins (if budget > 0)
+    if (totalRenoBudget > 0) {
+      ms.push({
+        month: 1,
+        label: 'Renovation Begins',
+        sublabel: `Month 1–${renoEnd}`,
+        color: '#f59e0b',
+        above: false,
+        metrics: [
+          { label: 'Reno Budget', value: vFmt(totalRenoBudget) },
+          { label: 'Duration', value: `${renoEnd} months` },
+        ],
+      });
+
+      // 3. Renovation Complete
+      ms.push({
+        month: renoEnd,
+        label: 'Renovation Complete',
+        sublabel: rentUpside > 0 ? 'Rent Increase Active' : 'Units Updated',
+        color: '#22c55e',
+        above: true,
+        metrics: [
+          ...(rentUpside > 0 ? [
+            { label: 'New Rent', value: `${vFmt(totalMarketMonthlyRent)}/mo` },
+            { label: 'Rent Upside', value: `+${vFmt(rentUpside)}/mo` },
+          ] : [
+            { label: 'Total Invested', value: vFmt(totalRenoBudget) },
+            { label: 'Per Unit', value: vFmt(totalRenoPerUnit) },
+          ]),
+        ],
+      });
+    }
+
+    // 4. Utility Transfer / RUBS or Expense Optimization (if active)
+    if (rubsEnabled && totalRubsRecovery > 0) {
+      ms.push({
+        month: utilityTransferMonth,
+        label: 'Utilities Transferred',
+        sublabel: 'RUBS Active',
+        color: '#8b5cf6',
+        above: false,
+        metrics: [
+          { label: 'RUBS Recovery', value: `${vFmt(Math.round(totalRubsRecovery / 12))}/mo` },
+          { label: 'Annual Savings', value: `${vFmt(totalRubsRecovery)}/yr` },
+        ],
+      });
+    } else if (totalExpSavings > 0) {
+      ms.push({
+        month: utilityTransferMonth,
+        label: 'Expense Optimization',
+        sublabel: 'Contracts Renegotiated',
+        color: '#8b5cf6',
+        above: false,
+        metrics: [
+          { label: 'Annual Savings', value: `${vFmt(totalExpSavings)}/yr` },
+          { label: 'Monthly Save', value: `${vFmt(Math.round(totalExpSavings / 12))}/mo` },
+        ],
+      });
+    }
+
+    // 5. Stabilized
+    if (totalNOILift > 0) {
+      ms.push({
+        month: Math.min(stabMonth, Math.floor(totalMonths * 0.6)),
+        label: 'Stabilized',
+        sublabel: 'Full Pro Forma Achieved',
+        color: '#0ea5e9',
+        above: true,
+        metrics: [
+          { label: 'Monthly NOI', value: `${vFmt(Math.round(stabilizedMonthlyNOI))}` },
+          { label: 'Cash Flow', value: `${vFmt(Math.round(stabilizedMonthlyNOI - (dsAnnual / 12)))}/mo` },
+        ],
+      });
+    }
+
+    // 6. Mid-hold performance
+    if (holdYears >= 4 && midHoldMonth > stabMonth + 6) {
+      ms.push({
+        month: midHoldMonth,
+        label: `Year ${Math.round(midHoldMonth / 12)} Performance`,
+        sublabel: 'Strong Cash Flow',
+        color: '#22c55e',
+        above: false,
+        metrics: [
+          { label: 'Annual NOI', value: vFmt(Math.round(stabilizedNOI)) },
+          { label: 'Cap Rate', value: currentPurchasePrice > 0 ? vPct(stabilizedNOI / currentPurchasePrice * 100) : '—' },
+        ],
+      });
+    }
+
+    // 7. Exit
+    ms.push({
+      month: exitMonth,
+      label: `${holdYears}-Year Exit`,
+      sublabel: 'Refinance or Sale',
+      color: '#6366f1',
+      above: true,
+      metrics: [
+        { label: 'Est. Value', value: vFmt(stabilizedValue) },
+        { label: 'Total Return', value: valueCreation >= 0 ? `+${vFmt(valueCreation)}` : vFmt(valueCreation) },
+      ],
+    });
+
+    return ms;
+  }, [currentPurchasePrice, scenarioData, totalRenoBudget, renoTimeline, totalMonths, holdYears,
+      rentUpside, totalMarketMonthlyRent, totalRenoPerUnit, rubsEnabled, totalRubsRecovery,
+      totalExpSavings, currentNOI, stabilizedNOI, dsAnnual, totalNOILift, leaseUpData,
+      stabilizedValue, valueCreation, currentPurchasePrice, totalAnnualOtherIncome]);
+
+  // ═════════════════════════════════════════════════════════════
+  // ANIMATED TIMELINE STATE
+  // ═════════════════════════════════════════════════════════════
+  const LOOP_DURATION_MS = 14000;
+  const [timelineProgress, setTimelineProgress] = useState(0);
+  const startTimeRef = useRef(Date.now());
+  const rafRef = useRef(null);
+
+  useEffect(() => {
+    if (!timelineOpen) {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      return;
+    }
+    startTimeRef.current = Date.now();
+    const tick = () => {
+      const now = Date.now();
+      const loopProgress = ((now - startTimeRef.current) % LOOP_DURATION_MS) / LOOP_DURATION_MS;
+      setTimelineProgress(loopProgress);
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [timelineOpen]);
+
+  // Eased progress gives a more readable sweep
+  const eased = timelineProgress < 0.5
+    ? 2 * timelineProgress * timelineProgress
+    : 1 - Math.pow(-2 * timelineProgress + 2, 2) / 2;
+  const currentTimelineMonth = eased * totalMonths;
+  const timelineProgressPct = (currentTimelineMonth / totalMonths) * 100;
+  const tlPct = (month) => (month / totalMonths) * 100;
+
+  // Year marks for timeline
+  const yearMarks = useMemo(() => {
+    const marks = [];
+    for (let y = 0; y <= holdYears; y++) marks.push(y * 12);
+    return marks;
+  }, [holdYears]);
+
+  // ═════════════════════════════════════════════════════════════
   // RENDER
   // ═════════════════════════════════════════════════════════════
   return (
     <div style={{ padding: 24, backgroundColor: '#f3f4f6' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+
+        {/* ═══════════════════════════════════════════════════════
+            ANIMATED VALUE-ADD EXECUTION TIMELINE
+            ═══════════════════════════════════════════════════════ */}
+        <div style={{ ...vSC, border: '2px solid #6366f1', background: '#fff', overflow: 'hidden' }}>
+          <SectionToggle
+            title="Value-Add Execution Timeline"
+            icon="⏱️"
+            open={timelineOpen}
+            setOpen={setTimelineOpen}
+            badge={`${holdYears}-Year`}
+            badgeColor="#6366f1"
+          />
+
+          {timelineOpen && (
+            <div style={{ marginTop: 20 }}>
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <span style={{
+                  background: '#f0fdf4', color: '#15803d',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: 20, padding: '3px 12px',
+                  fontSize: 12, fontWeight: 600,
+                }}>
+                  {holdYears}-Year Projection
+                </span>
+                <span style={{ fontSize: 12, color: vLB }}>
+                  {scenarioData?.property?.name || scenarioData?.property?.address || 'Property'} · {[
+                    rentUpside > 0 && 'Rent Increase',
+                    rubsEnabled && totalRubsRecovery > 0 && 'RUBS',
+                    totalExpSavings > 0 && 'Expense Opt.',
+                    totalRenoBudget > 0 && 'Renovation',
+                  ].filter(Boolean).join(' + ') || 'Value-Add'} Strategy
+                </span>
+              </div>
+
+              {/* Timeline stage */}
+              <div style={{ position: 'relative', height: 360, marginTop: 16 }}>
+                {/* Cards ABOVE the track */}
+                {timelineMilestones.filter(ms => ms.above).map(ms => {
+                  const visible = currentTimelineMonth >= ms.month - 0.5;
+                  const active = Math.abs(currentTimelineMonth - ms.month) < (totalMonths * 0.04);
+                  return (
+                    <div key={ms.month + ms.label} style={{
+                      position: 'absolute',
+                      left: `${tlPct(ms.month)}%`,
+                      bottom: 'calc(50% + 22px)',
+                      transform: 'translateX(-50%)',
+                      display: 'flex',
+                      flexDirection: 'column-reverse',
+                      alignItems: 'center',
+                      zIndex: 10,
+                      pointerEvents: 'none',
+                    }}>
+                      {/* Connector */}
+                      <div style={{
+                        width: 1, height: visible ? 32 : 0,
+                        background: ms.color, opacity: visible ? 0.5 : 0,
+                        transition: 'height 0.3s ease, opacity 0.3s ease', flexShrink: 0,
+                      }} />
+                      {/* Card */}
+                      <div style={{
+                        background: '#fff',
+                        border: `1.5px solid ${active ? ms.color : '#e5e7eb'}`,
+                        borderRadius: 10, padding: '10px 14px',
+                        minWidth: 140, maxWidth: 165,
+                        boxShadow: active
+                          ? `0 4px 20px ${ms.color}30, 0 1px 4px rgba(0,0,0,0.08)`
+                          : '0 1px 4px rgba(0,0,0,0.07)',
+                        opacity: visible ? 1 : 0,
+                        transform: visible ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.95)',
+                        transition: 'all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        borderTopColor: ms.color, borderTopWidth: 3,
+                        position: 'relative',
+                      }}>
+                        <div style={{ marginBottom: 6 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#111827', lineHeight: 1.2 }}>{ms.label}</div>
+                          <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 1 }}>{ms.sublabel}</div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, borderTop: '1px solid #f3f4f6', paddingTop: 6 }}>
+                          {ms.metrics.map((m, i) => (
+                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: 10, color: '#6b7280' }}>{m.label}</span>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: ms.color }}>{m.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{
+                          position: 'absolute', top: -10, right: 10,
+                          background: ms.color, color: '#fff',
+                          fontSize: 9, fontWeight: 800,
+                          padding: '2px 7px', borderRadius: 10, letterSpacing: '0.04em',
+                        }}>
+                          {ms.month === 0 ? 'DAY 1' : ms.month === totalMonths ? `YR ${holdYears}` : `M${ms.month}`}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* The Track — centered */}
+                <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, transform: 'translateY(-50%)' }}>
+                  {/* BG bar */}
+                  <div style={{ height: 6, background: '#e5e7eb', borderRadius: 3, position: 'relative', overflow: 'visible' }}>
+                    {/* Progress fill */}
+                    <div style={{
+                      position: 'absolute', top: 0, left: 0,
+                      width: `${timelineProgressPct}%`, height: '100%',
+                      background: 'linear-gradient(90deg, #6366f1, #8b5cf6, #22c55e)',
+                      borderRadius: 3, boxShadow: '0 0 12px #6366f140',
+                    }} />
+
+                    {/* Milestone dots */}
+                    {timelineMilestones.map(ms => {
+                      const hit = currentTimelineMonth >= ms.month - 0.5;
+                      const active = Math.abs(currentTimelineMonth - ms.month) < (totalMonths * 0.04);
+                      return (
+                        <div key={ms.month + ms.label} style={{
+                          position: 'absolute', left: `${tlPct(ms.month)}%`,
+                          top: '50%', transform: 'translate(-50%, -50%)',
+                          width: active ? 20 : hit ? 14 : 10,
+                          height: active ? 20 : hit ? 14 : 10,
+                          borderRadius: '50%',
+                          background: hit ? ms.color : '#fff',
+                          border: `2px solid ${hit ? ms.color : '#d1d5db'}`,
+                          boxShadow: active ? `0 0 0 5px ${ms.color}25, 0 0 18px ${ms.color}50` : 'none',
+                          transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                          zIndex: 5,
+                        }} />
+                      );
+                    })}
+
+                    {/* Cursor */}
+                    <div style={{
+                      position: 'absolute', left: `${timelineProgressPct}%`,
+                      top: '50%', transform: 'translate(-50%, -50%)', zIndex: 8,
+                    }}>
+                      <div style={{
+                        width: 22, height: 22, borderRadius: '50%',
+                        background: '#111827', border: '3px solid #fff',
+                        boxShadow: '0 0 0 3px #11182730, 0 2px 12px rgba(0,0,0,0.25)',
+                        position: 'relative',
+                      }}>
+                        <div style={{
+                          position: 'absolute', bottom: 28, left: '50%',
+                          transform: 'translateX(-50%)',
+                          background: '#111827', color: '#fff',
+                          fontSize: 10, fontWeight: 700,
+                          padding: '3px 9px', borderRadius: 6,
+                          whiteSpace: 'nowrap',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                        }}>
+                          {currentTimelineMonth < 1 ? 'Day 1' : `Month ${Math.round(currentTimelineMonth)}`}
+                          <div style={{
+                            position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)',
+                            width: 0, height: 0,
+                            borderLeft: '4px solid transparent', borderRight: '4px solid transparent',
+                            borderTop: '4px solid #111827',
+                          }} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Year labels */}
+                  <div style={{ position: 'relative', marginTop: 16 }}>
+                    {yearMarks.map(m => (
+                      <div key={m} style={{
+                        position: 'absolute', left: `${tlPct(m)}%`,
+                        transform: 'translateX(-50%)', textAlign: 'center',
+                      }}>
+                        <div style={{ width: 1, height: 6, background: '#d1d5db', margin: '0 auto 4px' }} />
+                        <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>
+                          {m === 0 ? 'Now' : m === totalMonths ? `Yr ${holdYears}` : `Yr ${m / 12}`}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cards BELOW the track */}
+                {timelineMilestones.filter(ms => !ms.above).map(ms => {
+                  const visible = currentTimelineMonth >= ms.month - 0.5;
+                  const active = Math.abs(currentTimelineMonth - ms.month) < (totalMonths * 0.04);
+                  return (
+                    <div key={ms.month + ms.label} style={{
+                      position: 'absolute',
+                      left: `${tlPct(ms.month)}%`,
+                      top: 'calc(50% + 22px)',
+                      transform: 'translateX(-50%)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      zIndex: 10,
+                      pointerEvents: 'none',
+                    }}>
+                      {/* Connector */}
+                      <div style={{
+                        width: 1, height: visible ? 32 : 0,
+                        background: ms.color, opacity: visible ? 0.5 : 0,
+                        transition: 'height 0.3s ease, opacity 0.3s ease', flexShrink: 0,
+                      }} />
+                      {/* Card */}
+                      <div style={{
+                        background: '#fff',
+                        border: `1.5px solid ${active ? ms.color : '#e5e7eb'}`,
+                        borderRadius: 10, padding: '10px 14px',
+                        minWidth: 140, maxWidth: 165,
+                        boxShadow: active
+                          ? `0 4px 20px ${ms.color}30, 0 1px 4px rgba(0,0,0,0.08)`
+                          : '0 1px 4px rgba(0,0,0,0.07)',
+                        opacity: visible ? 1 : 0,
+                        transform: visible ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.95)',
+                        transition: 'all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        borderTopColor: ms.color, borderTopWidth: 3,
+                        position: 'relative',
+                      }}>
+                        <div style={{ marginBottom: 6 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#111827', lineHeight: 1.2 }}>{ms.label}</div>
+                          <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 1 }}>{ms.sublabel}</div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, borderTop: '1px solid #f3f4f6', paddingTop: 6 }}>
+                          {ms.metrics.map((m, i) => (
+                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: 10, color: '#6b7280' }}>{m.label}</span>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: ms.color }}>{m.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{
+                          position: 'absolute', bottom: -10, right: 10,
+                          background: ms.color, color: '#fff',
+                          fontSize: 9, fontWeight: 800,
+                          padding: '2px 7px', borderRadius: 10, letterSpacing: '0.04em',
+                        }}>
+                          {ms.month === 0 ? 'DAY 1' : ms.month === totalMonths ? `YR ${holdYears}` : `M${ms.month}`}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Bottom summary bar */}
+              <div style={{
+                marginTop: 20, background: '#fff', border: '1px solid #e5e7eb',
+                borderRadius: 12, padding: '16px 20px',
+                display: 'flex', gap: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                overflow: 'hidden',
+              }}>
+                {[
+                  { label: 'Current NOI', value: vFmt(currentNOI), color: '#6b7280' },
+                  { label: 'Stabilized NOI', value: vFmt(stabilizedNOI), color: '#22c55e' },
+                  { label: 'NOI Lift', value: `+${vFmt(totalNOILift)}`, color: '#22c55e' },
+                  { label: 'Renovation Budget', value: vFmt(totalRenoBudget), color: '#f59e0b' },
+                  { label: 'Net Value Created', value: vFmt(netValueCreation), color: '#6366f1' },
+                  { label: `${holdYears}-Yr Est. Value`, value: vFmt(stabilizedValue), color: '#8b5cf6' },
+                ].map((item, i, arr) => (
+                  <div key={i} style={{
+                    flex: 1, padding: '4px 12px',
+                    borderRight: i < arr.length - 1 ? '1px solid #f3f4f6' : 'none',
+                    textAlign: 'center',
+                  }}>
+                    <div style={{ fontSize: 9, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
+                      {item.label}
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: item.color }}>
+                      {item.value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Renovation financing callout (if financed) */}
+              {renoFinancing.financed && totalRenoBudget > 0 && (
+                <div style={{
+                  marginTop: 14, padding: '14px 18px', borderRadius: 10,
+                  background: 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%)',
+                  border: '1px solid #fde68a',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 16 }}>🏦</span>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e' }}>Renovation Financing</div>
+                      <div style={{ fontSize: 11, color: '#b45309' }}>
+                        {vFmt(renoFinancing.loanAmount)} loan @ {renoFinancing.rate}% · {renoFinancing.termYrs}yr term
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 16 }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>RENO LOAN</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#92400e' }}>{vFmt(renoFinancing.loanAmount)}</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>EQUITY NEEDED</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#92400e' }}>{vFmt(renoFinancing.equityNeeded)}</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>MONTHLY PMT</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#92400e' }}>{vFmt(Math.round(renoFinancing.monthlyPayment))}/mo</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>ADDL DEBT SVC</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#ef4444' }}>{vFmt(Math.round(renoFinancing.annualDebtService))}/yr</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* ═══════════════════════════════════════════════════════
             0. BEFORE / AFTER VISUAL SUMMARY
@@ -553,6 +1089,88 @@ export default function ValueAddTab({
                   </div>
                 ))}
               </div>
+
+              {/* Renovation Financing Toggle */}
+              {totalRenoBudget > 0 && (
+                <div style={{ marginTop: 20 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: vLB, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10 }}>Renovation Financing</div>
+                  <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
+                    <div
+                      onClick={() => onFieldChange('renovation.financed', false)}
+                      style={{
+                        flex: 1, padding: '12px 16px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
+                        border: !renoFinancing.financed ? '2px solid #f59e0b' : `1px solid ${vB}`,
+                        background: !renoFinancing.financed ? '#fffbeb' : '#fff',
+                        color: !renoFinancing.financed ? '#92400e' : vLB,
+                        fontSize: 13, fontWeight: 600, transition: 'all 0.15s',
+                      }}
+                    >
+                      💵 Cash (No Loan)
+                    </div>
+                    <div
+                      onClick={() => onFieldChange('renovation.financed', true)}
+                      style={{
+                        flex: 1, padding: '12px 16px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
+                        border: renoFinancing.financed ? '2px solid #f59e0b' : `1px solid ${vB}`,
+                        background: renoFinancing.financed ? '#fffbeb' : '#fff',
+                        color: renoFinancing.financed ? '#92400e' : vLB,
+                        fontSize: 13, fontWeight: 600, transition: 'all 0.15s',
+                      }}
+                    >
+                      🏦 Financed (Reno Loan)
+                    </div>
+                  </div>
+
+                  {renoFinancing.financed && (
+                    <>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12, marginBottom: 14 }}>
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase', marginBottom: 4 }}>LTV %</div>
+                          <input type="number" value={scenarioData?.renovation?.reno_ltv || 80}
+                            onChange={e => onFieldChange('renovation.reno_ltv', parseFloat(e.target.value) || 0)}
+                            style={{ ...vINP, width: '100%' }} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase', marginBottom: 4 }}>Interest Rate</div>
+                          <input type="number" step="0.1" value={scenarioData?.renovation?.reno_interest_rate || 8.0}
+                            onChange={e => onFieldChange('renovation.reno_interest_rate', parseFloat(e.target.value) || 0)}
+                            style={{ ...vINP, width: '100%' }} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase', marginBottom: 4 }}>Term (yrs)</div>
+                          <input type="number" value={scenarioData?.renovation?.reno_loan_term_years || 3}
+                            onChange={e => onFieldChange('renovation.reno_loan_term_years', parseInt(e.target.value) || 0)}
+                            style={{ ...vINP, width: '100%' }} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase', marginBottom: 4 }}>IO Period (mo)</div>
+                          <input type="number" value={scenarioData?.renovation?.reno_io_months || 6}
+                            onChange={e => onFieldChange('renovation.reno_io_months', parseInt(e.target.value) || 0)}
+                            style={{ ...vINP, width: '100%' }} />
+                        </div>
+                      </div>
+
+                      {/* Reno Financing Summary Card */}
+                      <div style={{
+                        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12,
+                        background: '#fffbeb', borderRadius: 10, padding: '16px 18px', border: '1px solid #fde68a',
+                      }}>
+                        {[
+                          { label: 'Reno Loan', value: vFmt(renoFinancing.loanAmount), color: '#92400e' },
+                          { label: 'Equity Needed', value: vFmt(renoFinancing.equityNeeded), color: '#b45309' },
+                          { label: 'Monthly Payment', value: `${vFmt(Math.round(renoFinancing.monthlyPayment))}/mo`, color: '#ef4444' },
+                          { label: 'Addl. Annual Debt', value: `${vFmt(Math.round(renoFinancing.annualDebtService))}/yr`, color: '#ef4444' },
+                        ].map((c, i) => (
+                          <div key={i} style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase', marginBottom: 4 }}>{c.label}</div>
+                            <div style={{ fontSize: 16, fontWeight: 800, color: c.color }}>{c.value}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* Per-Unit Renovation ROI Table */}
               {renoROIByType.length > 0 && totalRenoPerUnit > 0 && (

@@ -26,6 +26,16 @@ const DEFAULTS = {
     capAdj: 0,
     growthPct: 3,
   },
+  renovation: {
+    total_budget: 0,
+    cost_per_unit: 5000,
+    timeline_months: 12,
+    financed: false,
+    reno_ltv: 80,
+    reno_interest_rate: 8.0,
+    reno_loan_term_years: 3,
+    reno_io_months: 6,
+  },
   investment_criteria: [
     { key: 'irr', label: 'Internal Rate of Return (IRR)', target: 15, unit: '%' },
     { key: 'coc', label: 'Cash on Cash', target: 7, unit: '%' },
@@ -56,6 +66,7 @@ export async function loadTemplate(slot = 'underwrite') {
     return {
       financing: { ...DEFAULTS.financing, ...(saved.financing || {}) },
       exit_details: { ...DEFAULTS.exit_details, ...(saved.exit_details || {}) },
+      renovation: { ...DEFAULTS.renovation, ...(saved.renovation || {}) },
       investment_criteria: saved.investment_criteria?.length
         ? saved.investment_criteria
         : DEFAULTS.investment_criteria,
@@ -102,6 +113,22 @@ export function applyFinancingTemplate(parsedData, template) {
   // Apply investment criteria template
   if (template.investment_criteria?.length && !parsedData.investment_criteria?.length) {
     parsedData.investment_criteria = template.investment_criteria.map(c => ({ ...c }));
+  }
+
+  // Apply renovation template defaults
+  if (template.renovation) {
+    const r = parsedData.renovation || parsedData.value_add?.renovation || {};
+    const tReno = template.renovation;
+    parsedData.renovation = {
+      total_budget: r.total_budget || tReno.total_budget || 0,
+      cost_per_unit: r.cost_per_unit || tReno.cost_per_unit,
+      timeline_months: r.timeline_months || tReno.timeline_months,
+      financed: r.financed ?? tReno.financed,
+      reno_ltv: r.reno_ltv ?? tReno.reno_ltv,
+      reno_interest_rate: r.reno_interest_rate ?? tReno.reno_interest_rate,
+      reno_loan_term_years: r.reno_loan_term_years ?? tReno.reno_loan_term_years,
+      reno_io_months: r.reno_io_months ?? tReno.reno_io_months,
+    };
   }
 
   return parsedData;

@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import {
   FileText, Save, Check, ChevronDown, ChevronUp,
   DollarSign, TrendingUp, Target, Mail, Upload,
-  Plus, Trash2, Info
+  Plus, Trash2, Info, Hammer
 } from 'lucide-react';
 
 /* ───────────────────────── Default template shapes ───────────────────────── */
@@ -27,6 +27,17 @@ const DEFAULT_EXIT = {
   growthPct: 3,
 };
 
+const DEFAULT_RENOVATION = {
+  total_budget: 0,
+  cost_per_unit: 5000,
+  timeline_months: 12,
+  financed: false,
+  reno_ltv: 80,
+  reno_interest_rate: 8.0,
+  reno_loan_term_years: 3,
+  reno_io_months: 6,
+};
+
 const DEFAULT_CRITERIA = [
   { key: 'irr', label: 'Internal Rate of Return (IRR)', target: 15, unit: '%' },
   { key: 'coc', label: 'Cash on Cash', target: 7, unit: '%' },
@@ -43,6 +54,7 @@ const CRITERIA_OPTIONS = [
 const blankTemplate = () => ({
   financing: { ...DEFAULT_FINANCING },
   exit_details: { ...DEFAULT_EXIT },
+  renovation: { ...DEFAULT_RENOVATION },
   investment_criteria: DEFAULT_CRITERIA.map(c => ({ ...c })),
 });
 
@@ -178,7 +190,7 @@ function TemplatesPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [collapsed, setCollapsed] = useState({ financing: false, exit: false, criteria: false });
+  const [collapsed, setCollapsed] = useState({ financing: false, exit: false, renovation: false, criteria: false });
 
   /* ── Load from Supabase ── */
   useEffect(() => {
@@ -500,7 +512,118 @@ function TemplatesPage() {
           )}
         </div>
 
-        {/* ══════════ SECTION 3: INVESTMENT CRITERIA ══════════ */}
+        {/* ══════════ SECTION 3: RENOVATION / CAPEX ══════════ */}
+        <div style={s.section}>
+          <div style={s.sectionHeader} onClick={() => toggle('renovation')}>
+            <div style={s.sectionTitle}>
+              <div style={{ ...s.sectionIcon, background: '#fef3c7' }}>
+                <Hammer size={18} style={{ color: '#d97706' }} />
+              </div>
+              Renovation / CapEx Defaults
+              <span style={s.badge('yellow')}>Value-Add</span>
+            </div>
+            {collapsed.renovation ? <ChevronDown size={18} color="#9ca3af" /> : <ChevronUp size={18} color="#9ca3af" />}
+          </div>
+
+          {!collapsed.renovation && (
+            <>
+              <div style={s.grid2}>
+                <Field
+                  label="DEFAULT BUDGET PER UNIT"
+                  value={tpl.renovation.cost_per_unit}
+                  onChange={(v) => updateField('renovation', 'cost_per_unit', v)}
+                  suffix="$"
+                  hint="Typical: $3,000-$15,000"
+                />
+                <Field
+                  label="RENOVATION TIMELINE"
+                  value={tpl.renovation.timeline_months}
+                  onChange={(v) => updateField('renovation', 'timeline_months', v)}
+                  suffix="mo"
+                  hint="Typical: 6-24 months"
+                />
+              </div>
+
+              {/* Financing toggle */}
+              <div style={{ marginTop: 20 }}>
+                <div style={s.fieldLabel}>RENOVATION FINANCING</div>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <div
+                    style={s.stratToggle(tpl.renovation.financed === false)}
+                    onClick={() => updateField('renovation', 'financed', false)}
+                  >
+                    Cash (No Loan)
+                  </div>
+                  <div
+                    style={s.stratToggle(tpl.renovation.financed === true)}
+                    onClick={() => updateField('renovation', 'financed', true)}
+                  >
+                    Financed (Reno Loan)
+                  </div>
+                </div>
+              </div>
+
+              {tpl.renovation.financed && (
+                <>
+                  <div style={s.grid2}>
+                    <Field
+                      label="RENO LOAN LTV"
+                      value={tpl.renovation.reno_ltv}
+                      onChange={(v) => updateField('renovation', 'reno_ltv', v)}
+                      suffix="%"
+                      hint="% of renovation cost financed"
+                    />
+                    <Field
+                      label="RENO INTEREST RATE"
+                      value={tpl.renovation.reno_interest_rate}
+                      onChange={(v) => updateField('renovation', 'reno_interest_rate', v)}
+                      suffix="%"
+                      hint="Bridge/reno loans: 7-12%"
+                    />
+                  </div>
+                  <div style={s.grid2}>
+                    <Field
+                      label="RENO LOAN TERM"
+                      value={tpl.renovation.reno_loan_term_years}
+                      onChange={(v) => updateField('renovation', 'reno_loan_term_years', v)}
+                      suffix="yrs"
+                      hint="Typical: 2-5 years"
+                    />
+                    <Field
+                      label="INTEREST-ONLY PERIOD"
+                      value={tpl.renovation.reno_io_months}
+                      onChange={(v) => updateField('renovation', 'reno_io_months', v)}
+                      suffix="mo"
+                      hint="IO during renovation"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Preview */}
+              <div style={{
+                marginTop: 20, padding: '14px 20px', borderRadius: 10,
+                background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#d97706', textTransform: 'uppercase' }}>
+                    Renovation Defaults Summary
+                  </div>
+                  <div style={{ fontSize: 11, color: '#b45309', marginTop: 2 }}>
+                    ${tpl.renovation.cost_per_unit.toLocaleString()}/unit over {tpl.renovation.timeline_months} months
+                    {tpl.renovation.financed ? ` · Financed at ${tpl.renovation.reno_interest_rate}%` : ' · Cash funded'}
+                  </div>
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#92400e' }}>
+                  {tpl.renovation.financed ? '🏦' : '💵'} {tpl.renovation.financed ? 'Financed' : 'Cash'}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* ══════════ SECTION 4: INVESTMENT CRITERIA ══════════ */}
         <div style={s.section}>
           <div style={s.sectionHeader} onClick={() => toggle('criteria')}>
             <div style={s.sectionTitle}>
