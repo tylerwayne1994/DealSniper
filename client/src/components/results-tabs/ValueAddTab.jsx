@@ -1465,7 +1465,7 @@ export default function ValueAddTab({
           <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
             {[
               { label: 'Total Value Creation', val: vFmt(valueCreation), sub: `${currentPurchasePrice > 0 ? ((valueCreation / currentPurchasePrice) * 100).toFixed(1) : '0.0'}% ROI on cost` },
-              { label: 'Total NOI Lift', val: vFmt(totalNOILift), sub: `${waterfallItems.length} active strategies` },
+              { label: 'Total NOI Lift', val: vFmt(totalNOILift), sub: `Rent: ${vFmt(totalAnnualRentUpside)} + RUBS: ${vFmt(totalRubsRecovery)}` },
               { label: 'Renovation Budget', val: vFmt(totalRenoBudget), sub: `${renoTimeline} month timeline` },
               { label: 'Net Value Created', val: vFmt(netValueCreation), sub: `Value creation minus reno cost` },
             ].map((c, i) => (
