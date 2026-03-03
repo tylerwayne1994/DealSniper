@@ -283,24 +283,32 @@ export default function ValueAddTab({
   const holdYears = holdPeriod || scenarioData?.exit_details?.holdYrs || fullCalcs?.returns?.holdingPeriod || 5;
   const totalMonths = holdYears * 12;
 
+  // User-specified implementation months for each value-add strategy
+  const renoStartMonth = scenarioData?.value_add?.reno_start_month || 1;
+  const rentStartMonth = scenarioData?.value_add?.rent_start_month || Math.round(renoTimeline) || 12;
+  const rubsStartMonth = scenarioData?.value_add?.rubs_start_month || 3;
+  const expenseStartMonth = scenarioData?.value_add?.expense_start_month || 3;
+  const leaseUpStartMonth = scenarioData?.value_add?.leaseup_start_month || 1;
+
   const timelineMilestones = useMemo(() => {
     const ms = [];
     const downPayment = currentPurchasePrice * ((100 - (scenarioData?.financing?.ltv || 75)) / 100);
     const renoMonths = renoTimeline || 12;
+    const renoEndMonth = renoStartMonth + renoMonths;
     const monthsToStabilize = leaseUpData.monthsToStab || 0;
-    // Reno end can't exceed half the hold period
-    const renoEnd = Math.min(renoMonths, Math.floor(totalMonths * 0.4));
-    // RUBS/expense optimizations implemented shortly after reno starts
-    const utilityTransferMonth = Math.min(renoEnd + Math.ceil(renoEnd * 0.5), Math.floor(totalMonths * 0.5));
-    // Stabilization = max of reno end, lease-up, and utility transfer + buffer
-    const stabMonth = Math.max(renoEnd + 3, utilityTransferMonth + 3, monthsToStabilize + 3, Math.ceil(totalMonths * 0.25));
-    const midHoldMonth = Math.floor(totalMonths * 0.5);
     const exitMonth = totalMonths;
 
-    // Compute progressive NOI ramp
-    const currentMonthlyNOI = currentNOI / 12;
     const stabilizedMonthlyNOI = stabilizedNOI / 12;
-    const y3MonthlyNOI = currentMonthlyNOI + (stabilizedMonthlyNOI - currentMonthlyNOI) * 0.85;
+
+    // Stabilization = latest completion of all active strategies + buffer
+    const allEndMonths = [
+      totalRenoBudget > 0 ? renoEndMonth : 0,
+      rentUpside > 0 ? rentStartMonth + 1 : 0,
+      rubsEnabled && totalRubsRecovery > 0 ? rubsStartMonth + 1 : 0,
+      totalExpSavings > 0 ? expenseStartMonth + 1 : 0,
+      monthsToStabilize > 0 ? leaseUpStartMonth + monthsToStabilize : 0,
+    ];
+    const stabMonth = Math.max(...allEndMonths.filter(m => m > 0), 6) + 2;
 
     // 1. Acquisition
     ms.push({
@@ -315,59 +323,87 @@ export default function ValueAddTab({
       ],
     });
 
-    // 2. Renovation Begins (if budget > 0)
-    if (totalRenoBudget > 0) {
+    // 2. Lease-Up Begins (if there's a gap to fill)
+    if (monthsToStabilize > 0) {
       ms.push({
-        month: 1,
-        label: 'Renovation Begins',
-        sublabel: `Month 1–${renoEnd}`,
-        color: '#f59e0b',
+        month: leaseUpStartMonth,
+        label: 'Lease-Up Begins',
+        sublabel: `${leaseUpData.gap} units to fill`,
+        color: '#0ea5e9',
         above: false,
         metrics: [
-          { label: 'Reno Budget', value: vFmt(totalRenoBudget) },
-          { label: 'Duration', value: `${renoEnd} months` },
-        ],
-      });
-
-      // 3. Renovation Complete
-      ms.push({
-        month: renoEnd,
-        label: 'Renovation Complete',
-        sublabel: rentUpside > 0 ? 'Rent Increase Active' : 'Units Updated',
-        color: '#22c55e',
-        above: true,
-        metrics: [
-          ...(rentUpside > 0 ? [
-            { label: 'New Rent', value: `${vFmt(totalMarketMonthlyRent)}/mo` },
-            { label: 'Rent Upside', value: `+${vFmt(rentUpside)}/mo` },
-          ] : [
-            { label: 'Total Invested', value: vFmt(totalRenoBudget) },
-            { label: 'Per Unit', value: vFmt(totalRenoPerUnit) },
-          ]),
+          { label: 'Current Occ.', value: `${currentOccPct.toFixed(1)}%` },
+          { label: 'Duration', value: `${monthsToStabilize} months` },
         ],
       });
     }
 
-    // 4. Utility Transfer / RUBS or Expense Optimization (if active)
+    // 3. Renovation Begins (if budget > 0)
+    if (totalRenoBudget > 0) {
+      ms.push({
+        month: renoStartMonth,
+        label: 'Renovation Begins',
+        sublabel: `Month ${renoStartMonth}–${renoEndMonth}`,
+        color: '#f59e0b',
+        above: renoStartMonth !== leaseUpStartMonth,
+        metrics: [
+          { label: 'Reno Budget', value: vFmt(totalRenoBudget) },
+          { label: 'Duration', value: `${renoMonths} months` },
+        ],
+      });
+
+      // Renovation Complete
+      ms.push({
+        month: renoEndMonth,
+        label: 'Renovation Complete',
+        sublabel: rentUpside > 0 ? 'Units Updated' : 'CapEx Complete',
+        color: '#22c55e',
+        above: true,
+        metrics: [
+          { label: 'Total Invested', value: vFmt(totalRenoBudget) },
+          { label: 'Per Unit', value: vFmt(totalRenoPerUnit) },
+        ],
+      });
+    }
+
+    // 4. Rent Increase (if upside exists)
+    if (rentUpside > 0) {
+      ms.push({
+        month: rentStartMonth,
+        label: 'Rent Increases',
+        sublabel: `New rents active Month ${rentStartMonth}`,
+        color: '#22c55e',
+        above: false,
+        metrics: [
+          { label: 'New Rent', value: `${vFmt(totalMarketMonthlyRent)}/mo` },
+          { label: 'Rent Upside', value: `+${vFmt(rentUpside)}/mo` },
+        ],
+      });
+    }
+
+    // 5. RUBS (if active)
     if (rubsEnabled && totalRubsRecovery > 0) {
       ms.push({
-        month: utilityTransferMonth,
-        label: 'Utilities Transferred',
-        sublabel: 'RUBS Active',
+        month: rubsStartMonth,
+        label: 'RUBS Implemented',
+        sublabel: `Billing starts Month ${rubsStartMonth}`,
         color: '#8b5cf6',
-        above: false,
+        above: rubsStartMonth !== rentStartMonth,
         metrics: [
           { label: 'RUBS Recovery', value: `${vFmt(Math.round(totalRubsRecovery / 12))}/mo` },
           { label: 'Annual Savings', value: `${vFmt(totalRubsRecovery)}/yr` },
         ],
       });
-    } else if (totalExpSavings > 0) {
+    }
+
+    // 6. Expense Optimization (if active)
+    if (totalExpSavings > 0) {
       ms.push({
-        month: utilityTransferMonth,
+        month: expenseStartMonth,
         label: 'Expense Optimization',
-        sublabel: 'Contracts Renegotiated',
+        sublabel: `Contracts renegotiated Month ${expenseStartMonth}`,
         color: '#8b5cf6',
-        above: false,
+        above: expenseStartMonth !== rubsStartMonth,
         metrics: [
           { label: 'Annual Savings', value: `${vFmt(totalExpSavings)}/yr` },
           { label: 'Monthly Save', value: `${vFmt(Math.round(totalExpSavings / 12))}/mo` },
@@ -375,10 +411,10 @@ export default function ValueAddTab({
       });
     }
 
-    // 5. Stabilized
-    if (totalNOILift > 0) {
+    // 7. Stabilized — derived from latest strategy completion
+    if (totalNOILift > 0 && stabMonth < exitMonth) {
       ms.push({
-        month: Math.min(stabMonth, Math.floor(totalMonths * 0.6)),
+        month: Math.min(stabMonth, exitMonth - 3),
         label: 'Stabilized',
         sublabel: 'Full Pro Forma Achieved',
         color: '#0ea5e9',
@@ -390,22 +426,7 @@ export default function ValueAddTab({
       });
     }
 
-    // 6. Mid-hold performance
-    if (holdYears >= 4 && midHoldMonth > stabMonth + 6) {
-      ms.push({
-        month: midHoldMonth,
-        label: `Year ${Math.round(midHoldMonth / 12)} Performance`,
-        sublabel: 'Strong Cash Flow',
-        color: '#22c55e',
-        above: false,
-        metrics: [
-          { label: 'Annual NOI', value: vFmt(Math.round(stabilizedNOI)) },
-          { label: 'Cap Rate', value: currentPurchasePrice > 0 ? vPct(stabilizedNOI / currentPurchasePrice * 100) : '—' },
-        ],
-      });
-    }
-
-    // 7. Exit
+    // 8. Exit
     ms.push({
       month: exitMonth,
       label: `${holdYears}-Year Exit`,
@@ -418,11 +439,20 @@ export default function ValueAddTab({
       ],
     });
 
+    // Sort milestones by month
+    ms.sort((a, b) => a.month - b.month);
+    // Alternate above/below for overlapping months
+    for (let i = 1; i < ms.length; i++) {
+      if (ms[i].month === ms[i - 1].month) ms[i].above = !ms[i - 1].above;
+    }
+
     return ms;
-  }, [currentPurchasePrice, scenarioData, totalRenoBudget, renoTimeline, totalMonths, holdYears,
-      rentUpside, totalMarketMonthlyRent, totalRenoPerUnit, rubsEnabled, totalRubsRecovery,
-      totalExpSavings, currentNOI, stabilizedNOI, dsAnnual, totalNOILift, leaseUpData,
-      stabilizedValue, valueCreation, currentPurchasePrice]);
+  }, [currentPurchasePrice, scenarioData, totalRenoBudget, renoTimeline, renoStartMonth,
+      rentStartMonth, rubsStartMonth, expenseStartMonth, leaseUpStartMonth,
+      totalMonths, holdYears, rentUpside, totalMarketMonthlyRent, totalRenoPerUnit,
+      rubsEnabled, totalRubsRecovery, totalExpSavings, currentNOI, stabilizedNOI,
+      dsAnnual, totalNOILift, leaseUpData, stabilizedValue, valueCreation,
+      currentOccPct, currentPurchasePrice]);
 
   // ═════════════════════════════════════════════════════════════
   // ANIMATED TIMELINE STATE
@@ -595,7 +625,15 @@ export default function ValueAddTab({
             2. RENT OPTIMIZATION (existing)
             ═══════════════════════════════════════════════════════ */}
         <div style={vSC}>
-          <h3 style={{ margin: '0 0 20px', fontSize: 15, fontWeight: 800, color: vVL }}>Rent Optimization</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: vVL }}>Rent Optimization</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f9fafb', padding: '6px 12px', borderRadius: 8, border: `1px solid ${vB}` }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: vLB }}>Starts Month</span>
+              <input type="number" min={1} max={totalMonths} value={scenarioData?.value_add?.rent_start_month || Math.round(renoTimeline) || 12}
+                onChange={e => onFieldChange('value_add.rent_start_month', Math.max(1, Math.min(totalMonths, parseInt(e.target.value) || 1)))}
+                style={{ ...vINP, width: 55, textAlign: 'center', fontSize: 13, fontWeight: 700 }} />
+            </div>
+          </div>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
@@ -653,13 +691,21 @@ export default function ValueAddTab({
 
           {renoOpen && (
             <div style={{ marginTop: 20 }}>
-              {/* Timeline */}
+              {/* Timeline + Start Month */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, background: '#f9fafb', padding: '12px 16px', borderRadius: 10, border: `1px solid ${vB}` }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: vVL }}>Renovation Timeline</span>
-                <input type="range" min={3} max={36} step={1} value={renoTimeline}
-                  onChange={e => onFieldChange('value_add.renovation_timeline_months', parseInt(e.target.value))}
-                  style={{ flex: 1, accentColor: '#f59e0b', height: 5 }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b', minWidth: 80 }}>{renoTimeline} months</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: vLB }}>Starts Month</span>
+                  <input type="number" min={1} max={totalMonths} value={scenarioData?.value_add?.reno_start_month || 1}
+                    onChange={e => onFieldChange('value_add.reno_start_month', Math.max(1, Math.min(totalMonths, parseInt(e.target.value) || 1)))}
+                    style={{ ...vINP, width: 55, textAlign: 'center', fontSize: 13, fontWeight: 700 }} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: vVL }}>Duration</span>
+                  <input type="range" min={3} max={36} step={1} value={renoTimeline}
+                    onChange={e => onFieldChange('value_add.renovation_timeline_months', parseInt(e.target.value))}
+                    style={{ flex: 1, accentColor: '#f59e0b', height: 5 }} />
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b', minWidth: 80 }}>{renoTimeline} months</span>
+                </div>
               </div>
 
               {/* Interior renovation items */}
@@ -864,6 +910,12 @@ export default function ValueAddTab({
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f9fafb', padding: '5px 10px', borderRadius: 8, border: `1px solid ${vB}` }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: vLB }}>Starts Mo.</span>
+                <input type="number" min={1} max={totalMonths} value={scenarioData?.value_add?.rubs_start_month || 3}
+                  onChange={e => onFieldChange('value_add.rubs_start_month', Math.max(1, Math.min(totalMonths, parseInt(e.target.value) || 1)))}
+                  style={{ ...vINP, width: 50, textAlign: 'center', fontSize: 12, fontWeight: 700 }} />
+              </div>
               <div style={{ textAlign: 'right', marginRight: 8 }}>
                 <div style={{ fontSize: 11, color: vLB }}>Implement RUBS</div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: rubsEnabled ? vAC : vLB }}>{rubsEnabled ? 'ON' : 'OFF'}</div>
@@ -994,7 +1046,15 @@ export default function ValueAddTab({
 
           {expOptOpen && (
             <div style={{ marginTop: 20 }}>
-              <p style={{ margin: '0 0 16px', fontSize: 12, color: vLB }}>Model expense reductions from renegotiated contracts, tax appeals, and operational efficiencies.</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <p style={{ margin: 0, fontSize: 12, color: vLB }}>Model expense reductions from renegotiated contracts, tax appeals, and operational efficiencies.</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f9fafb', padding: '5px 10px', borderRadius: 8, border: `1px solid ${vB}`, flexShrink: 0, marginLeft: 16 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: vLB }}>Starts Mo.</span>
+                  <input type="number" min={1} max={totalMonths} value={scenarioData?.value_add?.expense_start_month || 3}
+                    onChange={e => onFieldChange('value_add.expense_start_month', Math.max(1, Math.min(totalMonths, parseInt(e.target.value) || 1)))}
+                    style={{ ...vINP, width: 50, textAlign: 'center', fontSize: 12, fontWeight: 700 }} />
+                </div>
+              </div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
                   <tr style={{ background: '#fffbeb' }}>
@@ -1046,6 +1106,13 @@ export default function ValueAddTab({
 
           {leaseUpOpen && (
             <div style={{ marginTop: 20 }}>
+              {/* Start month */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, background: '#f9fafb', padding: '8px 14px', borderRadius: 8, border: `1px solid ${vB}`, width: 'fit-content' }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: vLB }}>Lease-Up Starts Month</span>
+                <input type="number" min={1} max={totalMonths} value={scenarioData?.value_add?.leaseup_start_month || 1}
+                  onChange={e => onFieldChange('value_add.leaseup_start_month', Math.max(1, Math.min(totalMonths, parseInt(e.target.value) || 1)))}
+                  style={{ ...vINP, width: 55, textAlign: 'center', fontSize: 13, fontWeight: 700 }} />
+              </div>
               {/* Sliders */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, marginBottom: 24 }}>
                 <div>
