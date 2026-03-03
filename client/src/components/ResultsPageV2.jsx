@@ -32,6 +32,7 @@ import DocumentAnalysisTab from './results-tabs/DocumentAnalysisTab';
 import DealStructureTab from './results-tabs/DealStructureTab';
 import ExpenseV2Tab from './results-tabs/ExpenseV2Tab';
 import ValueAddTab from './results-tabs/ValueAddTab';
+import WaterfallTab from './results-tabs/WaterfallTab';
 import CompressedTab from './results-tabs/CompressedTab';
 import UnderwritingTablePage from '../pages/UnderwritingTablePage';
 import { saveDeal, updateDeal, loadDeal } from '../lib/dealsService';
@@ -1305,6 +1306,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
     { id: 'amortization', label: 'Amortization', icon: Calculator, accent: '#f97316' },
     { id: 'rent-roll', label: 'Rent Roll', icon: Users, accent: '#ef4444' },
     { id: 'costseg', label: 'Cost Seg', icon: Calculator, accent: '#ec4899' },
+    { id: 'waterfall', label: 'Waterfall', icon: Wallet, accent: '#6366f1' },
     { id: 'market-data', label: 'Market Data', icon: BarChart3, accent: '#a855f7' }
   ];
 
@@ -3106,7 +3108,17 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
         );
 
       case 'waterfall':
-        return <WaterfallView waterfall={fullCalcs.multiTierWaterfall} />;
+        return (
+          <WaterfallTab
+            scenarioData={scenarioData}
+            fullCalcs={fullCalcs}
+            onFieldChange={handleFieldChange}
+            purchasePrice={purchasePrice}
+            annualDebtService={annualDebtService}
+            holdPeriod={selectedHoldPeriod}
+            noiT12={noiT12}
+          />
+        );
 
       case 'fees':
         return <ManagementFeesView fees={fullCalcs.managementFees} />;
