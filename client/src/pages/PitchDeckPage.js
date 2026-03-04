@@ -1187,7 +1187,7 @@ function PitchDeckPage() {
                   borderRadius: '12px',
                   padding: '24px',
                   marginBottom: '24px',
-                  border: '1px solid #fde68a',
+                  border: '1px solid #c7d2fe',
                 }}>
                   <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>
                     📸 Property Images
@@ -1734,14 +1734,14 @@ function PitchDeckPage() {
                   {isEditMode && !showCodeEditor && (
                     <div style={{
                       padding: '8px 20px',
-                      backgroundColor: '#fef3c7',
-                      borderBottom: '1px solid #fde68a',
+                      backgroundColor: '#e0e7ff',
+                      borderBottom: '1px solid #c7d2fe',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       fontSize: '13px',
                       fontWeight: '600',
-                      color: '#92400e',
+                      color: '#3730a3',
                     }}>
                       <span>✏️ Click on any text in the slide to edit it directly. Changes are saved when you switch slides or exit edit mode.</span>
                       {hasUnsavedEdits && (

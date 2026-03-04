@@ -1112,11 +1112,11 @@ const EnhancedUploadPage = () => {
           )}
 
           {backendData?.parsed?.data_quality?.missing_critical_fields?.length > 0 && (
-            <div style={{ ...styles.card, background: "#fffbeb", borderColor: "#fbbf24", marginBottom: 20 }}>
+            <div style={{ ...styles.card, background: "#eef2ff", borderColor: "#fbbf24", marginBottom: 20 }}>
               <div style={{ display: "flex", alignItems: "start", gap: 12 }}>
                 <AlertTriangle size={20} color="#f59e0b" style={{ marginTop: 2 }} />
                 <div>
-                  <div style={{ fontWeight: 900, marginBottom: 8, color: "#92400e" }}>Missing Critical Data</div>
+                  <div style={{ fontWeight: 900, marginBottom: 8, color: "#3730a3" }}>Missing Critical Data</div>
                   <div style={{ fontSize: 14, color: "#78350f" }}>
                     The following fields could not be extracted and need your input:
                   </div>
@@ -1124,10 +1124,10 @@ const EnhancedUploadPage = () => {
                     {backendData.parsed.data_quality.missing_critical_fields.map((field, i) => (
                       <span key={i} style={{ 
                         padding: "4px 12px", 
-                        background: "#fef3c7", 
+                        background: "#e0e7ff", 
                         borderRadius: 6, 
                         fontSize: 13,
-                        border: "1px solid #fde68a"
+                        border: "1px solid #c7d2fe"
                       }}>
                         {field}
                       </span>
@@ -3345,11 +3345,11 @@ const EnhancedUploadPage = () => {
                         return (
                           <tr key={index} style={{ 
                             borderBottom: '1px solid #F3F4F6',
-                            background: isOriginal ? '#FEF3C7' : 'transparent'
+                            background: isOriginal ? '#e0e7ff' : 'transparent'
                           }}>
                             <td style={{ padding: 12, fontWeight: isOriginal ? 700 : 500 }}>
                               {fmtCurrency(testPrice)}
-                              {isOriginal && <span style={{ marginLeft: 8, fontSize: 12, color: '#92400e' }}>(Current)</span>}
+                              {isOriginal && <span style={{ marginLeft: 8, fontSize: 12, color: '#3730a3' }}>(Current)</span>}
                             </td>
                             <td style={{ padding: 12, textAlign: 'center', fontWeight: 900, color }}>
                               {fmtPct(testCapRate)}
@@ -3592,12 +3592,12 @@ const EnhancedUploadPage = () => {
                           </div>
                         </div>
                         {pricing.balloon_payment && pricing.balloon_payment > 0 && (
-                          <div style={{ padding: 12, background: '#FEF3C7', borderRadius: 8, border: '1px solid #FCD34D' }}>
-                            <div style={{ fontSize: 12, color: '#92400e', marginBottom: 4 }}>Balloon Payment</div>
-                            <div style={{ fontSize: 18, fontWeight: 900, color: '#92400e' }}>
+                          <div style={{ padding: 12, background: '#e0e7ff', borderRadius: 8, border: '1px solid #FCD34D' }}>
+                            <div style={{ fontSize: 12, color: '#3730a3', marginBottom: 4 }}>Balloon Payment</div>
+                            <div style={{ fontSize: 18, fontWeight: 900, color: '#3730a3' }}>
                               {fmtCurrency(pricing.balloon_payment)}
                             </div>
-                            <div style={{ fontSize: 11, color: '#92400e', marginTop: 2 }}>
+                            <div style={{ fontSize: 11, color: '#3730a3', marginTop: 2 }}>
                               Due at end of term
                             </div>
                           </div>
@@ -4048,8 +4048,8 @@ const EnhancedUploadPage = () => {
                     
                     {/* Change Indicators */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 16 }}>
-                      <div style={{ padding: 12, background: proformaPrice < pricing.price ? '#ECFDF5' : '#FEF3C7', borderRadius: 8 }}>
-                        <div style={{ fontSize: 12, fontWeight: 900, color: proformaPrice < pricing.price ? '#047857' : '#92400e' }}>
+                      <div style={{ padding: 12, background: proformaPrice < pricing.price ? '#ECFDF5' : '#e0e7ff', borderRadius: 8 }}>
+                        <div style={{ fontSize: 12, fontWeight: 900, color: proformaPrice < pricing.price ? '#047857' : '#3730a3' }}>
                           {proformaPrice < pricing.price ? '✓ ' : '⚠ '}
                           Price {proformaPrice < pricing.price ? 'Decrease' : 'Increase'}: {fmtCurrency(Math.abs(proformaPrice - pricing.price))} 
                           ({fmtPct(Math.abs(proformaPrice - pricing.price) / pricing.price)})
@@ -4525,11 +4525,11 @@ const EnhancedUploadPage = () => {
                         </div>
                       </div>
                       
-                      <div style={{ padding: 16, background: proformaPrice < currentPrice ? '#ECFDF5' : '#FEF3C7', borderRadius: 8, border: `1px solid ${proformaPrice < currentPrice ? '#86EFAC' : '#FCD34D'}` }}>
-                        <div style={{ fontSize: 12, color: proformaPrice < currentPrice ? '#047857' : '#92400e', marginBottom: 4, fontWeight: 900 }}>
+                      <div style={{ padding: 16, background: proformaPrice < currentPrice ? '#ECFDF5' : '#e0e7ff', borderRadius: 8, border: `1px solid ${proformaPrice < currentPrice ? '#86EFAC' : '#FCD34D'}` }}>
+                        <div style={{ fontSize: 12, color: proformaPrice < currentPrice ? '#047857' : '#3730a3', marginBottom: 4, fontWeight: 900 }}>
                           PRICE SAVINGS
                         </div>
-                        <div style={{ fontSize: 20, fontWeight: 900, color: proformaPrice < currentPrice ? '#047857' : '#92400e' }}>
+                        <div style={{ fontSize: 20, fontWeight: 900, color: proformaPrice < currentPrice ? '#047857' : '#3730a3' }}>
                           {proformaPrice < currentPrice ? '✓ ' : '⚠ '}{fmtCurrency(Math.abs(currentPrice - proformaPrice))}
                         </div>
                       </div>

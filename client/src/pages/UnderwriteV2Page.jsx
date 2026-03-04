@@ -1030,12 +1030,12 @@ function UnderwriteV2Page() {
                 alignItems: 'center',
                 gap: 8,
                 padding: '8px 16px',
-                background: dataQuality.overall_confidence >= 0.8 ? '#dcfce7' : '#fef3c7',
+                background: dataQuality.overall_confidence >= 0.8 ? '#dcfce7' : '#e0e7ff',
                 border: `1px solid ${dataQuality.overall_confidence >= 0.8 ? '#bbf7d0' : '#fcd34d'}`,
                 borderRadius: 8,
                 fontSize: 14,
                 fontWeight: 600,
-                color: dataQuality.overall_confidence >= 0.8 ? '#166534' : '#92400e'
+                color: dataQuality.overall_confidence >= 0.8 ? '#166534' : '#3730a3'
               }}>
                 <CheckCircle size={16} />
                 Overall Confidence: {(dataQuality.overall_confidence * 100).toFixed(0)}%
@@ -1241,17 +1241,17 @@ function UnderwriteV2Page() {
                     </div>
 
                     {/* Fees breakdown */}
-                    <div style={{ marginTop: 16, padding: 14, background: '#fffbeb', borderRadius: 10, border: '1px solid #fde68a', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                    <div style={{ marginTop: 16, padding: 14, background: '#eef2ff', borderRadius: 10, border: '1px solid #c7d2fe', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                       <div>
-                        <div style={{ fontSize: 11, color: '#92400e', fontWeight: 600 }}>Loan Fees ({loanFeesPct}%)</div>
+                        <div style={{ fontSize: 11, color: '#3730a3', fontWeight: 600 }}>Loan Fees ({loanFeesPct}%)</div>
                         <div style={{ fontSize: 15, fontWeight: 700, color: '#78350f' }}>${loanFees.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                       </div>
                       <div>
-                        <div style={{ fontSize: 11, color: '#92400e', fontWeight: 600 }}>Est. Closing Costs (2%)</div>
+                        <div style={{ fontSize: 11, color: '#3730a3', fontWeight: 600 }}>Est. Closing Costs (2%)</div>
                         <div style={{ fontSize: 15, fontWeight: 700, color: '#78350f' }}>${closingCosts.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                       </div>
                       <div>
-                        <div style={{ fontSize: 11, color: '#92400e', fontWeight: 600 }}>Total Cash to Close</div>
+                        <div style={{ fontSize: 11, color: '#3730a3', fontWeight: 600 }}>Total Cash to Close</div>
                         <div style={{ fontSize: 15, fontWeight: 700, color: '#78350f' }}>${(downPmt + loanFees + closingCosts).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                       </div>
                     </div>

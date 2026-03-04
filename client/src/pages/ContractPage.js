@@ -115,8 +115,8 @@ const SignatureModal = ({ isOpen, onClose, onSave, signerName }) => {
           <button onClick={onClose} style={{ background:'none',border:'none',cursor:'pointer',padding:'8px',borderRadius:'8px',color:'#6b7280' }}><X size={24} /></button>
         </div>
         {/* Signer */}
-        <div style={{ padding:'16px 24px',backgroundColor:'#fffbeb',borderBottom:'1px solid #fde68a' }}>
-          <div style={{ fontSize:'13px',color:'#92400e' }}><strong>Signing as:</strong> {signerName}</div>
+        <div style={{ padding:'16px 24px',backgroundColor:'#eef2ff',borderBottom:'1px solid #c7d2fe' }}>
+          <div style={{ fontSize:'13px',color:'#3730a3' }}><strong>Signing as:</strong> {signerName}</div>
         </div>
         {/* Canvas */}
         <div style={{ padding:'24px' }}>
@@ -940,9 +940,9 @@ function ContractPage() {
                           </div>
                         ) : (
                           <button onClick={() => setShowSignatureModal(true)}
-                            style={{ padding:'20px 40px',backgroundColor:'#fffbeb',border:'2px dashed #fbbf24',
+                            style={{ padding:'20px 40px',backgroundColor:'#eef2ff',border:'2px dashed #fbbf24',
                               borderRadius:'8px',cursor:'pointer',display:'flex',alignItems:'center',gap:'12px',
-                              color:'#92400e',fontSize:'14px',fontWeight:'600',marginLeft:'20px' }}>
+                              color:'#3730a3',fontSize:'14px',fontWeight:'600',marginLeft:'20px' }}>
                             <PenTool size={20} /> Click Here to Sign
                           </button>
                         )}

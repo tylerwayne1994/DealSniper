@@ -131,8 +131,8 @@ const s = {
   badge: (color) => ({
     display: 'inline-flex', alignItems: 'center', gap: 4,
     padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600,
-    background: color === 'green' ? '#dcfce7' : color === 'yellow' ? '#fef9c3' : '#e0e7ff',
-    color: color === 'green' ? '#166534' : color === 'yellow' ? '#854d0e' : '#3730a3',
+    background: color === 'green' ? '#dcfce7' : color === 'yellow' ? '#e0e7ff' : '#e0e7ff',
+    color: color === 'green' ? '#166534' : color === 'yellow' ? '#3730a3' : '#3730a3',
   }),
   stratToggle: (active) => ({
     flex: 1, padding: '10px 16px', borderRadius: 8,
@@ -542,7 +542,7 @@ function TemplatesPage() {
                     )}
                   </>
                 ) : (
-                  <div style={{ padding: '14px 18px', borderRadius: 8, background: '#fef3c7', border: '1px solid #fde68a', fontSize: 12, color: '#92400e' }}>
+                  <div style={{ padding: '14px 18px', borderRadius: 8, background: '#e0e7ff', border: '1px solid #c7d2fe', fontSize: 12, color: '#3730a3' }}>
                     Treasury rates unavailable — you can still set the interest rate manually above.
                   </div>
                 )}
@@ -555,7 +555,7 @@ function TemplatesPage() {
         <div style={s.section}>
           <div style={s.sectionHeader} onClick={() => toggle('exit')}>
             <div style={s.sectionTitle}>
-              <div style={{ ...s.sectionIcon, background: '#fef3c7' }}>
+              <div style={{ ...s.sectionIcon, background: '#e0e7ff' }}>
                 <TrendingUp size={18} style={{ color: '#d97706' }} />
               </div>
               Exit Details
@@ -636,7 +636,7 @@ function TemplatesPage() {
         <div style={s.section}>
           <div style={s.sectionHeader} onClick={() => toggle('renovation')}>
             <div style={s.sectionTitle}>
-              <div style={{ ...s.sectionIcon, background: '#fef3c7' }}>
+              <div style={{ ...s.sectionIcon, background: '#e0e7ff' }}>
                 <Hammer size={18} style={{ color: '#d97706' }} />
               </div>
               Renovation / CapEx Defaults
@@ -723,19 +723,19 @@ function TemplatesPage() {
               {/* Preview */}
               <div style={{
                 marginTop: 20, padding: '14px 20px', borderRadius: 10,
-                background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+                background: 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               }}>
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 600, color: '#d97706', textTransform: 'uppercase' }}>
                     Renovation Defaults Summary
                   </div>
-                  <div style={{ fontSize: 11, color: '#b45309', marginTop: 2 }}>
+                  <div style={{ fontSize: 11, color: '#4338ca', marginTop: 2 }}>
                     ${tpl.renovation.cost_per_unit.toLocaleString()}/unit over {tpl.renovation.timeline_months} months
                     {tpl.renovation.financed ? ` · Financed at ${tpl.renovation.reno_interest_rate}%` : ' · Cash funded'}
                   </div>
                 </div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#92400e' }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#3730a3' }}>
                   {tpl.renovation.financed ? '🏦' : '💵'} {tpl.renovation.financed ? 'Financed' : 'Cash'}
                 </div>
               </div>

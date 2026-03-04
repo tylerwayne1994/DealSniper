@@ -658,8 +658,8 @@ export default function WaterfallTab({
             </div>
 
             {(gpFeeCalcs.totalUpfront > 0 || gpFeeCalcs.totalAnnual > 0 || gpFeeCalcs.totalDisposition > 0) && (
-              <div style={{ marginTop: 20, padding: '14px 18px', background: '#fffbeb', borderRadius: 10, border: '1px solid #fde68a' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e', marginBottom: 8 }}>Fee Summary</div>
+              <div style={{ marginTop: 20, padding: '14px 18px', background: '#eef2ff', borderRadius: 10, border: '1px solid #c7d2fe' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#3730a3', marginBottom: 8 }}>Fee Summary</div>
                 <div style={{ display: 'flex', gap: 24, fontSize: 12 }}>
                   <span>Upfront: <strong>{fmt(gpFeeCalcs.totalUpfront)}</strong></span>
                   <span>Annual: <strong>{fmt(gpFeeCalcs.totalAnnual)}</strong>/yr</span>
@@ -827,8 +827,8 @@ export default function WaterfallTab({
                 </div>
 
                 {activeTiers[0] && (
-                  <div style={{ marginTop: 12, padding: '12px 16px', background: '#fffbeb', borderRadius: 8,
-                                border: '1px solid #fde68a', fontSize: 12, color: '#92400e', lineHeight: 1.5 }}>
+                  <div style={{ marginTop: 12, padding: '12px 16px', background: '#eef2ff', borderRadius: 8,
+                                border: '1px solid #c7d2fe', fontSize: 12, color: '#3730a3', lineHeight: 1.5 }}>
                     <strong>Tier 1 &ndash; {activeTiers[0].name}:</strong>{' '}
                     Investors first receive their contributed capital back plus a{' '}
                     {activeTiers[0].to_pct || 0}% preferred return ({activeTiers[0].hurdle_type}).{' '}

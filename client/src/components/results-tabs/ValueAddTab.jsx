@@ -1,4 +1,4 @@
-﻿/* eslint-disable */
+/* eslint-disable */
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -283,6 +283,14 @@ export default function ValueAddTab({
   const holdYears = holdPeriod || scenarioData?.exit_details?.holdYrs || fullCalcs?.returns?.holdingPeriod || 5;
   const totalMonths = holdYears * 12;
 
+  // EXIT-YEAR PROJECTIONS — NOI with appreciation & exit valuation
+  const noiGrowthRate = (scenarioData?.exit_details?.growthPct || 3) / 100;
+  const exitCapAdj = (scenarioData?.exit_details?.capAdj || 0) / 100;
+  const exitCapRate = mktCapRate + exitCapAdj;
+  const exitNOI = stabilizedNOI * Math.pow(1 + noiGrowthRate, holdYears);
+  const exitValue = exitCapRate > 0 ? exitNOI / exitCapRate : 0;
+  const exitAnnualCashflow = exitNOI - dsAnnual;
+
   // User-specified implementation months for each value-add strategy
   const renoStartMonth = scenarioData?.value_add?.reno_start_month || 1;
   const rentStartMonth = scenarioData?.value_add?.rent_start_month || Math.round(renoTimeline) || 12;
@@ -426,7 +434,7 @@ export default function ValueAddTab({
       });
     }
 
-    // 8. Exit
+    // 8. Exit — shows projected exit-year NOI (with appreciation), property value, and cashflow
     ms.push({
       month: exitMonth,
       label: `${holdYears}-Year Exit`,
@@ -434,8 +442,9 @@ export default function ValueAddTab({
       color: '#6366f1',
       above: true,
       metrics: [
-        { label: 'Est. Value', value: vFmt(stabilizedValue) },
-        { label: 'Total Return', value: valueCreation >= 0 ? `+${vFmt(valueCreation)}` : vFmt(valueCreation) },
+        { label: `Yr ${holdYears} NOI`, value: vFmt(Math.round(exitNOI)) },
+        { label: 'Exit Value', value: vFmt(Math.round(exitValue)) },
+        { label: `Yr ${holdYears} Cashflow`, value: vFmt(Math.round(exitAnnualCashflow)) },
       ],
     });
 
@@ -452,6 +461,7 @@ export default function ValueAddTab({
       totalMonths, holdYears, rentUpside, totalMarketMonthlyRent, totalRenoPerUnit,
       rubsEnabled, totalRubsRecovery, totalExpSavings, currentNOI, stabilizedNOI,
       dsAnnual, totalNOILift, leaseUpData, stabilizedValue, valueCreation,
+      exitNOI, exitValue, exitAnnualCashflow,
       currentOccPct, currentPurchasePrice]);
 
   // ═════════════════════════════════════════════════════════════
@@ -712,9 +722,9 @@ export default function ValueAddTab({
               <div style={{ fontSize: 11, fontWeight: 700, color: vLB, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10 }}>Interior Renovations (per unit)</div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 20 }}>
                 <thead>
-                  <tr style={{ background: '#fffbeb' }}>
+                  <tr style={{ background: '#eef2ff' }}>
                     {['', 'Item', 'Cost / Unit', 'Total Cost', ''].map((h, i) => (
-                      <th key={i} style={{ padding: '8px 12px', textAlign: i === 0 || i === 4 ? 'center' : (i >= 2 ? 'right' : 'left'), fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase', borderBottom: '2px solid #fde68a', width: i === 0 ? 50 : i === 4 ? 50 : 'auto' }}>{h}</th>
+                      <th key={i} style={{ padding: '8px 12px', textAlign: i === 0 || i === 4 ? 'center' : (i >= 2 ? 'right' : 'left'), fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase', borderBottom: '2px solid #c7d2fe', width: i === 0 ? 50 : i === 4 ? 50 : 'auto' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -772,7 +782,7 @@ export default function ValueAddTab({
                   { label: 'Common Area', value: vFmt(totalRenoCommon), color: '#f97316' },
                   { label: 'Total Budget', value: vFmt(totalRenoBudget), color: vVL },
                 ].map((c, i) => (
-                  <div key={i} style={{ background: i === 3 ? '#fffbeb' : '#f9fafb', borderRadius: 10, padding: '14px 16px', border: `1px solid ${i === 3 ? '#fde68a' : vB}`, textAlign: 'center' }}>
+                  <div key={i} style={{ background: i === 3 ? '#eef2ff' : '#f9fafb', borderRadius: 10, padding: '14px 16px', border: `1px solid ${i === 3 ? '#c7d2fe' : vB}`, textAlign: 'center' }}>
                     <div style={{ fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase', marginBottom: 4 }}>{c.label}</div>
                     <div style={{ fontSize: 18, fontWeight: 800, color: c.color }}>{c.value}</div>
                   </div>
@@ -789,8 +799,8 @@ export default function ValueAddTab({
                       style={{
                         flex: 1, padding: '12px 16px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
                         border: !renoFinancing.financed ? '2px solid #f59e0b' : `1px solid ${vB}`,
-                        background: !renoFinancing.financed ? '#fffbeb' : '#fff',
-                        color: !renoFinancing.financed ? '#92400e' : vLB,
+                        background: !renoFinancing.financed ? '#eef2ff' : '#fff',
+                        color: !renoFinancing.financed ? '#3730a3' : vLB,
                         fontSize: 13, fontWeight: 600, transition: 'all 0.15s',
                       }}
                     >
@@ -801,8 +811,8 @@ export default function ValueAddTab({
                       style={{
                         flex: 1, padding: '12px 16px', borderRadius: 10, textAlign: 'center', cursor: 'pointer',
                         border: renoFinancing.financed ? '2px solid #f59e0b' : `1px solid ${vB}`,
-                        background: renoFinancing.financed ? '#fffbeb' : '#fff',
-                        color: renoFinancing.financed ? '#92400e' : vLB,
+                        background: renoFinancing.financed ? '#eef2ff' : '#fff',
+                        color: renoFinancing.financed ? '#3730a3' : vLB,
                         fontSize: 13, fontWeight: 600, transition: 'all 0.15s',
                       }}
                     >
@@ -842,11 +852,11 @@ export default function ValueAddTab({
                       {/* Reno Financing Summary Card */}
                       <div style={{
                         display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12,
-                        background: '#fffbeb', borderRadius: 10, padding: '16px 18px', border: '1px solid #fde68a',
+                        background: '#eef2ff', borderRadius: 10, padding: '16px 18px', border: '1px solid #c7d2fe',
                       }}>
                         {[
-                          { label: 'Reno Loan', value: vFmt(renoFinancing.loanAmount), color: '#92400e' },
-                          { label: 'Equity Needed', value: vFmt(renoFinancing.equityNeeded), color: '#b45309' },
+                          { label: 'Reno Loan', value: vFmt(renoFinancing.loanAmount), color: '#3730a3' },
+                          { label: 'Equity Needed', value: vFmt(renoFinancing.equityNeeded), color: '#4338ca' },
                           { label: 'Monthly Payment', value: `${vFmt(Math.round(renoFinancing.monthlyPayment))}/mo`, color: '#ef4444' },
                           { label: 'Addl. Annual Debt', value: `${vFmt(Math.round(renoFinancing.annualDebtService))}/yr`, color: '#ef4444' },
                         ].map((c, i) => (
@@ -945,7 +955,7 @@ export default function ValueAddTab({
               </div>
             </div>
             {totalUtilityCost === 0 && (
-              <div style={{ marginTop: 8, padding: '8px 12px', background: '#fffbeb', borderRadius: 8, border: '1px solid #fde68a', fontSize: 11, color: '#92400e' }}>
+              <div style={{ marginTop: 8, padding: '8px 12px', background: '#eef2ff', borderRadius: 8, border: '1px solid #c7d2fe', fontSize: 11, color: '#3730a3' }}>
                 No utility costs found. Enter utility costs in the Expenses tab or manually adjust values here.
               </div>
             )}
@@ -1057,9 +1067,9 @@ export default function ValueAddTab({
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
-                  <tr style={{ background: '#fffbeb' }}>
+                  <tr style={{ background: '#eef2ff' }}>
                     {['', 'Category', 'Current Cost', 'Savings %', 'Annual Savings'].map((h, i) => (
-                      <th key={i} style={{ padding: '10px 12px', textAlign: i <= 1 ? (i === 0 ? 'center' : 'left') : 'right', fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase', borderBottom: '2px solid #fde68a', width: i === 0 ? 50 : 'auto' }}>{h}</th>
+                      <th key={i} style={{ padding: '10px 12px', textAlign: i <= 1 ? (i === 0 ? 'center' : 'left') : 'right', fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase', borderBottom: '2px solid #c7d2fe', width: i === 0 ? 50 : 'auto' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1085,7 +1095,7 @@ export default function ValueAddTab({
                       </td>
                     </tr>
                   ))}
-                  <tr style={{ background: '#fffbeb', borderTop: '2px solid #fde68a' }}>
+                  <tr style={{ background: '#eef2ff', borderTop: '2px solid #c7d2fe' }}>
                     <td colSpan={2} style={{ padding: '12px 12px', fontWeight: 800, color: vVL }}>Total Expense Savings</td>
                     <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: vLB }}>{vFmt(totalCurrentExpenses)}</td>
                     <td />
@@ -1435,7 +1445,8 @@ export default function ValueAddTab({
                   { label: 'NOI Lift', value: `+${vFmt(totalNOILift)}`, color: '#22c55e' },
                   { label: 'Renovation Budget', value: vFmt(totalRenoBudget), color: '#f59e0b' },
                   { label: 'Net Value Created', value: vFmt(netValueCreation), color: '#6366f1' },
-                  { label: `${holdYears}-Yr Est. Value`, value: vFmt(stabilizedValue), color: '#8b5cf6' },
+                  { label: `Yr ${holdYears} Cashflow`, value: vFmt(Math.round(exitAnnualCashflow)), color: '#10b981' },
+                  { label: `${holdYears}-Yr Exit Value`, value: vFmt(Math.round(exitValue)), color: '#8b5cf6' },
                 ].map((item, i, arr) => (
                   <div key={i} style={{
                     flex: 1, padding: '4px 12px',
@@ -1456,33 +1467,33 @@ export default function ValueAddTab({
               {renoFinancing.financed && totalRenoBudget > 0 && (
                 <div style={{
                   marginTop: 14, padding: '14px 18px', borderRadius: 10,
-                  background: 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%)',
-                  border: '1px solid #fde68a',
+                  background: 'linear-gradient(135deg, #e0e7ff 0%, #eef2ff 100%)',
+                  border: '1px solid #c7d2fe',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12,
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e' }}>Renovation Financing</div>
-                      <div style={{ fontSize: 11, color: '#b45309' }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#3730a3' }}>Renovation Financing</div>
+                      <div style={{ fontSize: 11, color: '#4338ca' }}>
                         {vFmt(renoFinancing.loanAmount)} loan @ {renoFinancing.rate}% &middot; {renoFinancing.termYrs}yr term
                       </div>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 16 }}>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>RENO LOAN</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#92400e' }}>{vFmt(renoFinancing.loanAmount)}</div>
+                      <div style={{ fontSize: 10, color: '#4338ca', fontWeight: 600 }}>RENO LOAN</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#3730a3' }}>{vFmt(renoFinancing.loanAmount)}</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>EQUITY NEEDED</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#92400e' }}>{vFmt(renoFinancing.equityNeeded)}</div>
+                      <div style={{ fontSize: 10, color: '#4338ca', fontWeight: 600 }}>EQUITY NEEDED</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#3730a3' }}>{vFmt(renoFinancing.equityNeeded)}</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>MONTHLY PMT</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#92400e' }}>{vFmt(Math.round(renoFinancing.monthlyPayment))}/mo</div>
+                      <div style={{ fontSize: 10, color: '#4338ca', fontWeight: 600 }}>MONTHLY PMT</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#3730a3' }}>{vFmt(Math.round(renoFinancing.monthlyPayment))}/mo</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>ADDL DEBT SVC</div>
+                      <div style={{ fontSize: 10, color: '#4338ca', fontWeight: 600 }}>ADDL DEBT SVC</div>
                       <div style={{ fontSize: 14, fontWeight: 700, color: '#ef4444' }}>{vFmt(Math.round(renoFinancing.annualDebtService))}/yr</div>
                     </div>
                   </div>
@@ -1585,7 +1596,7 @@ export default function ValueAddTab({
               </div>
             </div>
             {/* Expense Savings toggle */}
-            <div style={{ padding: 20, borderRadius: 12, border: `2px solid ${scenarioData?.value_add?.apply_expense_savings ? '#f59e0b' : vB}`, backgroundColor: scenarioData?.value_add?.apply_expense_savings ? '#fffbeb' : 'white' }}>
+            <div style={{ padding: 20, borderRadius: 12, border: `2px solid ${scenarioData?.value_add?.apply_expense_savings ? '#f59e0b' : vB}`, backgroundColor: scenarioData?.value_add?.apply_expense_savings ? '#eef2ff' : 'white' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: vVL }}>Expense Savings</div>

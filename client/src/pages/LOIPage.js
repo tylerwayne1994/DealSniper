@@ -173,10 +173,10 @@ const SignatureModal = ({ isOpen, onClose, onSave, signerName }) => {
         {/* Signer Info */}
         <div style={{
           padding: '16px 24px',
-          backgroundColor: '#fffbeb',
-          borderBottom: '1px solid #fde68a'
+          backgroundColor: '#eef2ff',
+          borderBottom: '1px solid #c7d2fe'
         }}>
-          <div style={{ fontSize: '13px', color: '#92400e' }}>
+          <div style={{ fontSize: '13px', color: '#3730a3' }}>
             <strong>Signing as:</strong> {signerName}
           </div>
         </div>
@@ -1364,14 +1364,14 @@ function LOIPage() {
                                   onClick={() => setShowSignatureModal(true)}
                                   style={{
                                     padding: '20px 40px',
-                                    backgroundColor: '#fffbeb',
+                                    backgroundColor: '#eef2ff',
                                     border: '2px dashed #fbbf24',
                                     borderRadius: '8px',
                                     cursor: 'pointer',
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '12px',
-                                    color: '#92400e',
+                                    color: '#3730a3',
                                     fontSize: '14px',
                                     fontWeight: '600',
                                     marginLeft: '20px'
