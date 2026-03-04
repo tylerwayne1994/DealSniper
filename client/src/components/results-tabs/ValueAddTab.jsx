@@ -29,6 +29,55 @@ const EXPENSE_OPT_ITEMS = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════
+// STABLE TOGGLE COMPONENT — defined outside to avoid remount on re-render
+// ═══════════════════════════════════════════════════════════════════
+const VToggle = ({ checked, onChange, color, accentColor }) => {
+  const activeColor = color || accentColor || '#4f46e5';
+  return (
+    <div
+      role="switch"
+      aria-checked={checked}
+      tabIndex={0}
+      onClick={(e) => { e.stopPropagation(); onChange(!checked); }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onChange(!checked); } }}
+      style={{
+        width: 40, height: 22,
+        backgroundColor: checked ? activeColor : '#d1d5db',
+        borderRadius: 11, padding: 2,
+        cursor: 'pointer', display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: checked ? 'flex-end' : 'flex-start',
+        transition: 'background-color 0.2s ease',
+        flexShrink: 0,
+        position: 'relative',
+        zIndex: 2,
+      }}
+    >
+      <div style={{
+        width: 18, height: 18,
+        backgroundColor: '#fff', borderRadius: '50%',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+        pointerEvents: 'none',
+      }} />
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// STABLE SECTION TOGGLE — defined outside to avoid remount on re-render
+// ═══════════════════════════════════════════════════════════════════
+const SectionToggle = ({ title, icon, open, setOpen, badge, badgeColor }) => (
+  <div onClick={() => setOpen(!open)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      {icon && <span style={{ fontSize: 18 }}>{icon}</span>}
+      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#111827' }}>{title}</h3>
+      {badge && <span style={{ fontSize: 10, fontWeight: 700, color: badgeColor || '#10b981', background: `${badgeColor || '#10b981'}15`, padding: '2px 10px', borderRadius: 6, border: `1px solid ${badgeColor || '#10b981'}30` }}>{badge}</span>}
+    </div>
+    <span style={{ fontSize: 16, color: '#6b7280', transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</span>
+  </div>
+);
+
+// ═══════════════════════════════════════════════════════════════════
 // VALUE-ADD TAB COMPONENT
 // ═══════════════════════════════════════════════════════════════════
 export default function ValueAddTab({
@@ -55,25 +104,6 @@ export default function ValueAddTab({
   const vFmt = (v) => { if (v == null || isNaN(v)) return '$0'; return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v); };
   const vPct = (v) => { if (v == null || isNaN(v)) return '0.0%'; return `${Number(v).toFixed(2)}%`; };
   const vINP = { padding: '8px 12px', border: `1px solid ${vB}`, borderRadius: 8, fontSize: 13, fontWeight: 600, outline: 'none', textAlign: 'right', background: '#fff', fontFamily: 'inherit', boxSizing: 'border-box' };
-
-  // ── Toggle ──
-  const VToggle = ({ checked, onChange, color }) => (
-    <div onClick={() => onChange(!checked)} style={{ width: 40, height: 22, backgroundColor: checked ? (color || vAC) : '#d1d5db', borderRadius: 11, padding: 2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: checked ? 'flex-end' : 'flex-start', transition: 'background 0.2s' }}>
-      <div style={{ width: 18, height: 18, backgroundColor: '#fff', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
-    </div>
-  );
-
-  // ── Section toggle heading ──
-  const SectionToggle = ({ title, icon, open, setOpen, badge, badgeColor }) => (
-    <div onClick={() => setOpen(!open)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        {icon && <span style={{ fontSize: 18 }}>{icon}</span>}
-        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: vVL }}>{title}</h3>
-        {badge && <span style={{ fontSize: 10, fontWeight: 700, color: badgeColor || '#10b981', background: `${badgeColor || '#10b981'}15`, padding: '2px 10px', borderRadius: 6, border: `1px solid ${badgeColor || '#10b981'}30` }}>{badge}</span>}
-      </div>
-      <span style={{ fontSize: 16, color: vLB, transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</span>
-    </div>
-  );
 
   // ═════════════════════════════════════════════════════════════
   // CORE DATA — from fullCalcs & scenarioData
