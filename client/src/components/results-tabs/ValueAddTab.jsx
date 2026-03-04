@@ -499,24 +499,35 @@ export default function ValueAddTab({
   // ═════════════════════════════════════════════════════════════
   const LOOP_DURATION_MS = 14000;
   const [timelineProgress, setTimelineProgress] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   const startTimeRef = useRef(Date.now());
   const rafRef = useRef(null);
+  const pausedProgressRef = useRef(0);
 
   useEffect(() => {
-    if (!timelineOpen) {
+    if (!timelineOpen || isPaused) {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       return;
     }
-    startTimeRef.current = Date.now();
+    // Resume from where we paused
+    startTimeRef.current = Date.now() - (pausedProgressRef.current * LOOP_DURATION_MS);
     const tick = () => {
       const now = Date.now();
       const loopProgress = ((now - startTimeRef.current) % LOOP_DURATION_MS) / LOOP_DURATION_MS;
       setTimelineProgress(loopProgress);
+      pausedProgressRef.current = loopProgress;
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [timelineOpen]);
+  }, [timelineOpen, isPaused]);
+
+  const handleReplay = useCallback(() => {
+    pausedProgressRef.current = 0;
+    setTimelineProgress(0);
+    setIsPaused(false);
+    startTimeRef.current = Date.now();
+  }, []);
 
   // Eased progress gives a more readable sweep
   const eased = timelineProgress < 0.5
@@ -525,6 +536,34 @@ export default function ValueAddTab({
   const currentTimelineMonth = eased * totalMonths;
   const timelineProgressPct = (currentTimelineMonth / totalMonths) * 100;
   const tlPct = (month) => (month / totalMonths) * 100;
+
+  // ── Collision-resolved card positions (prevents overlapping) ──
+  const { aboveCards, belowCards } = useMemo(() => {
+    const MIN_GAP = 18; // minimum % gap between card centers
+    const resolve = (cards) => {
+      const sorted = cards
+        .map(ms => ({ ...ms, adjustedPct: Math.max(6, Math.min(94, (ms.month / totalMonths) * 100)) }))
+        .sort((a, b) => a.adjustedPct - b.adjustedPct);
+      for (let pass = 0; pass < 12; pass++) {
+        let moved = false;
+        for (let i = 1; i < sorted.length; i++) {
+          const gap = sorted[i].adjustedPct - sorted[i - 1].adjustedPct;
+          if (gap < MIN_GAP) {
+            const push = (MIN_GAP - gap) / 2 + 0.5;
+            sorted[i - 1].adjustedPct = Math.max(4, sorted[i - 1].adjustedPct - push);
+            sorted[i].adjustedPct = Math.min(96, sorted[i].adjustedPct + push);
+            moved = true;
+          }
+        }
+        if (!moved) break;
+      }
+      return sorted;
+    };
+    return {
+      aboveCards: resolve(timelineMilestones.filter(ms => ms.above)),
+      belowCards: resolve(timelineMilestones.filter(ms => !ms.above)),
+    };
+  }, [timelineMilestones, totalMonths]);
 
   // Year marks for timeline
   const yearMarks = useMemo(() => {
@@ -1250,7 +1289,7 @@ export default function ValueAddTab({
                 }}>
                   {holdYears}-Year Projection
                 </span>
-                <span style={{ fontSize: 12, color: vLB }}>
+                <span style={{ fontSize: 12, color: vLB, flex: 1 }}>
                   {scenarioData?.property?.name || scenarioData?.property?.address || 'Property'} &middot; {[
                     rentUpside > 0 && 'Rent Increase',
                     rubsEnabled && totalRubsRecovery > 0 && 'RUBS',
@@ -1258,20 +1297,47 @@ export default function ValueAddTab({
                     totalRenoBudget > 0 && 'Renovation',
                   ].filter(Boolean).join(' + ') || 'Value-Add'} Strategy
                 </span>
+                {/* Pause / Play / Replay controls */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
+                  <button
+                    onClick={() => setIsPaused(p => !p)}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 32, height: 32, borderRadius: '50%',
+                      border: '1.5px solid #c7d2fe', background: isPaused ? '#eef2ff' : '#fff',
+                      cursor: 'pointer', color: '#4338ca', fontSize: 14,
+                      transition: 'all 0.15s ease',
+                    }}
+                    title={isPaused ? 'Play' : 'Pause'}
+                  >
+                    {isPaused ? '▶' : '❚❚'}
+                  </button>
+                  <button
+                    onClick={handleReplay}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 32, height: 32, borderRadius: '50%',
+                      border: '1.5px solid #c7d2fe', background: '#fff',
+                      cursor: 'pointer', color: '#4338ca', fontSize: 14,
+                      transition: 'all 0.15s ease',
+                    }}
+                    title="Replay"
+                  >
+                    ↻
+                  </button>
+                </div>
               </div>
 
               {/* Timeline stage */}
-              <div style={{ position: 'relative', height: 360, marginTop: 16, overflow: 'visible' }}>
-                {/* Cards ABOVE the track */}
-                {timelineMilestones.filter(ms => ms.above).map(ms => {
+              <div style={{ position: 'relative', height: 380, marginTop: 16, overflow: 'visible' }}>
+                {/* Cards ABOVE the track — collision-resolved positions */}
+                {aboveCards.map(ms => {
                   const visible = currentTimelineMonth >= ms.month - 0.5;
                   const active = Math.abs(currentTimelineMonth - ms.month) < (totalMonths * 0.04);
-                  const pct = tlPct(ms.month);
-                  const clampedLeft = Math.max(8, Math.min(92, pct));
                   return (
                     <div key={ms.month + ms.label} style={{
                       position: 'absolute',
-                      left: `${clampedLeft}%`,
+                      left: `${ms.adjustedPct}%`,
                       bottom: 'calc(50% + 22px)',
                       transform: 'translateX(-50%)',
                       display: 'flex',
@@ -1399,16 +1465,14 @@ export default function ValueAddTab({
                   </div>
                 </div>
 
-                {/* Cards BELOW the track */}
-                {timelineMilestones.filter(ms => !ms.above).map(ms => {
+                {/* Cards BELOW the track — collision-resolved positions */}
+                {belowCards.map(ms => {
                   const visible = currentTimelineMonth >= ms.month - 0.5;
                   const active = Math.abs(currentTimelineMonth - ms.month) < (totalMonths * 0.04);
-                  const pct = tlPct(ms.month);
-                  const clampedLeft = Math.max(8, Math.min(92, pct));
                   return (
                     <div key={ms.month + ms.label} style={{
                       position: 'absolute',
-                      left: `${clampedLeft}%`,
+                      left: `${ms.adjustedPct}%`,
                       top: 'calc(50% + 22px)',
                       transform: 'translateX(-50%)',
                       display: 'flex',
