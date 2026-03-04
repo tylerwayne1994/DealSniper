@@ -3117,6 +3117,10 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
             annualDebtService={annualDebtService}
             holdPeriod={selectedHoldPeriod}
             noiT12={noiT12}
+            vaRentUpside={scenarioData?.value_add?.apply_rent_upside ? vaAnnualRentUpside : 0}
+            vaRubsRecovery={scenarioData?.value_add?.apply_rubs ? vaAnnualRubsRecovery : 0}
+            vaExpenseSavings={scenarioData?.value_add?.apply_expense_savings ? (scenarioData?.value_add?.annual_expense_savings || 0) : 0}
+            marketCapRate={marketCapRate}
           />
         );
 

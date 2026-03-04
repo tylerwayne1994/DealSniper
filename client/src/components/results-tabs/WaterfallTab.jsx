@@ -42,6 +42,8 @@ const calcIRR = (cashFlows) => {
 export default function WaterfallTab({
   scenarioData, fullCalcs, onFieldChange,
   purchasePrice, annualDebtService, holdPeriod, noiT12,
+  vaRentUpside = 0, vaRubsRecovery = 0, vaExpenseSavings = 0,
+  marketCapRate = 0,
 }) {
   // ── Theme ──
   const B = '#e5e7eb', LB = '#6b7280', VL = '#111827', AC = '#4f46e5';
@@ -55,6 +57,8 @@ export default function WaterfallTab({
   const [resultsOpen, setResultsOpen] = useState(true);
   const [overviewOpen, setOverviewOpen] = useState(true);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [noiBreakdownOpen, setNoiBreakdownOpen] = useState(true);
+  const [monthlyDistOpen, setMonthlyDistOpen] = useState(true);
 
   // ── Config from scenarioData.waterfall ──
   const wf = scenarioData?.waterfall || {};
@@ -111,6 +115,19 @@ export default function WaterfallTab({
   const gpContribution = totalEquity * (gpShare / 100);
   const egi = fullCalcs?.year1?.effectiveGrossIncome || fullCalcs?.year1?.potentialGrossIncome || noiT12 || 0;
 
+  // ── Value-Add NOI Adjustments ──
+  const vaTotalNOIAdj = vaRentUpside + vaRubsRecovery + vaExpenseSavings;
+  const hasValueAdd = vaTotalNOIAdj > 0;
+  const baseNOI = fullCalcs?.year1?.noi || noiT12 || 0;
+  const stabilizedNOI = baseNOI + vaTotalNOIAdj;
+  const totalExpenses = fullCalcs?.year1?.totalOperatingExpenses || 0;
+  const grossRevenue = fullCalcs?.year1?.effectiveGrossIncome || fullCalcs?.year1?.potentialGrossIncome || 0;
+  const dsAnnual = annualDebtService || fullCalcs?.financing?.annualDebtService || 0;
+  const baseCashFlow = baseNOI - dsAnnual;
+  const stabilizedCashFlow = stabilizedNOI - dsAnnual;
+  const mktCapRate = marketCapRate || fullCalcs?.year1?.capRate || (baseNOI > 0 && purchasePrice > 0 ? (baseNOI / purchasePrice) * 100 : 5);
+  const stabilizedValue = mktCapRate > 0 ? (stabilizedNOI / (mktCapRate / 100)) : 0;
+
   // ── GP Fee calculations ──
   const gpFeeCalcs = useMemo(() => {
     const acq = acqFee.type === 'pct_purchase' ? purchasePrice * ((acqFee.pct || 0) / 100) : (acqFee.amount || 0);
@@ -126,7 +143,7 @@ export default function WaterfallTab({
              totalDisposition: disp };
   }, [acqFee, dispFee, assetMgmtFee, propMgmtFee, orgFee, capRaiseFee, purchasePrice, egi, lpContribution, fullCalcs]);
 
-  // ── Yearly levered project cash flows ──
+  // ── Yearly levered project cash flows (includes value-add adjustments) ──
   const yearlyCashFlows = useMemo(() => {
     const flows = [];
     const yearly = fullCalcs?.yearly || [];
@@ -141,15 +158,45 @@ export default function WaterfallTab({
       } else {
         cf = ((noiT12 || 100000) * Math.pow(1.02, y - 1) - annualDebtService) - gpFeeCalcs.totalAnnual;
       }
+      // Add value-add NOI adjustments (rent upside + RUBS + expense savings)
+      cf += vaTotalNOIAdj;
       if (y === holdYears) {
-        const saleProceeds = selectedExit.saleProceeds || selectedExit.terminalValue || fullCalcs?.returns?.terminalValue || purchasePrice * 1.2;
+        // Use stabilized NOI for exit valuation when value-add is active
+        const baseExit = selectedExit.saleProceeds || selectedExit.terminalValue || fullCalcs?.returns?.terminalValue || purchasePrice * 1.2;
+        const saleProceeds = hasValueAdd && stabilizedValue > 0 ? Math.max(baseExit, stabilizedValue) : baseExit;
         const remainingLoan = selectedExit.remainingLoanBalance ?? (loanAmount * Math.pow(0.98, holdYears));
         cf += saleProceeds - remainingLoan - gpFeeCalcs.totalDisposition;
       }
       flows.push(cf);
     }
     return flows;
-  }, [fullCalcs, holdYears, totalEquity, gpFeeCalcs, annualDebtService, noiT12, loanAmount, purchasePrice]);
+  }, [fullCalcs, holdYears, totalEquity, gpFeeCalcs, annualDebtService, noiT12, loanAmount, purchasePrice, vaTotalNOIAdj, hasValueAdd, stabilizedValue]);
+
+  // ── Per-year NOI detail (for NOI breakdown table) ──
+  const yearlyNOIDetail = useMemo(() => {
+    const rows = [];
+    const yearly = fullCalcs?.yearly || [];
+    for (let y = 0; y < holdYears; y++) {
+      const yd = yearly[y];
+      const yearBaseNOI = yd?.noi ?? (noiT12 || 0) * Math.pow(1.02, y);
+      const yearStabNOI = yearBaseNOI + vaTotalNOIAdj;
+      const yearDS = annualDebtService || 0;
+      const yearBaseCF = yearBaseNOI - yearDS;
+      const yearStabCF = yearStabNOI - yearDS;
+      rows.push({
+        year: y + 1,
+        baseNOI: yearBaseNOI,
+        rentUpside: vaRentUpside,
+        rubsRecovery: vaRubsRecovery,
+        expSavings: vaExpenseSavings,
+        stabNOI: yearStabNOI,
+        debtService: yearDS,
+        baseCF: yearBaseCF,
+        stabCF: yearStabCF,
+      });
+    }
+    return rows;
+  }, [fullCalcs, holdYears, noiT12, vaTotalNOIAdj, vaRentUpside, vaRubsRecovery, vaExpenseSavings, annualDebtService]);
 
   // ═══════════════════════════════════════════════════════════════
   // WATERFALL DISTRIBUTION ENGINE (REAL IRR-HURDLE)
@@ -841,6 +888,291 @@ export default function WaterfallTab({
             )}
           </div>
         )}
+      </div>
+
+      {/* ═══ NOI & CASH FLOW WATERFALL BREAKDOWN ═══ */}
+      <div style={SC}>
+        <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: noiBreakdownOpen ? 20 : 0 }}
+          onClick={() => setNoiBreakdownOpen(!noiBreakdownOpen)}>
+          <span style={{ fontSize: 15, fontWeight: 800, color: VL }}>NOI &amp; Cash Flow Waterfall</span>
+          <span style={{ fontSize: 12, color: LB, transform: noiBreakdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: '0.2s' }}>&#9660;</span>
+        </div>
+        {noiBreakdownOpen && (
+          <div>
+            {/* ── Waterfall from Revenue → NOI → Cash Flow ── */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+              {/* Current (Day 1) */}
+              <div style={{ borderRadius: 12, border: `1px solid ${B}`, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 20px', background: '#f9fafb', borderBottom: `1px solid ${B}` }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: VL }}>Current (Day 1)</div>
+                </div>
+                <div style={{ padding: '16px 20px' }}>
+                  {[
+                    { label: 'Gross Revenue', value: fmt(grossRevenue), color: VL },
+                    { label: 'Total Operating Expenses', value: fmt(-totalExpenses), color: '#ef4444' },
+                    { label: 'Net Operating Income (NOI)', value: fmt(baseNOI), color: VL, bold: true, divider: true },
+                    { label: 'Annual Debt Service', value: fmt(-dsAnnual), color: '#ef4444' },
+                    { label: 'GP Annual Fees', value: fmt(-gpFeeCalcs.totalAnnual), color: '#ef4444' },
+                    { label: 'Cash Flow After Debt', value: fmt(baseCashFlow - gpFeeCalcs.totalAnnual), color: baseCashFlow > 0 ? '#047857' : '#ef4444', bold: true, divider: true },
+                  ].map((r, i) => (
+                    <div key={i}>
+                      {r.divider && <div style={{ borderTop: `2px solid ${B}`, margin: '8px 0' }} />}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', fontSize: 12 }}>
+                        <span style={{ color: r.bold ? VL : LB, fontWeight: r.bold ? 700 : 400 }}>{r.label}</span>
+                        <span style={{ fontWeight: r.bold ? 800 : 600, color: r.color }}>{r.value}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Stabilized (After Value-Add) */}
+              <div style={{ borderRadius: 12, border: `2px solid ${hasValueAdd ? '#22c55e' : B}`, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 20px', background: hasValueAdd ? '#f0fdf4' : '#f9fafb', borderBottom: `1px solid ${hasValueAdd ? '#a7f3d0' : B}` }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: hasValueAdd ? '#047857' : VL }}>
+                    Stabilized (After Value-Add){!hasValueAdd && <span style={{ fontSize: 11, fontWeight: 400, color: LB, marginLeft: 8 }}> — No adjustments active</span>}
+                  </div>
+                </div>
+                <div style={{ padding: '16px 20px' }}>
+                  {[
+                    { label: 'Gross Revenue', value: fmt(grossRevenue), color: VL },
+                    ...(vaRentUpside > 0 ? [{ label: '+ Rent Optimization', value: `+${fmt(vaRentUpside)}`, color: '#22c55e' }] : []),
+                    ...(vaRubsRecovery > 0 ? [{ label: '+ RUBS Recovery', value: `+${fmt(vaRubsRecovery)}`, color: '#22c55e' }] : []),
+                    { label: 'Total Operating Expenses', value: fmt(-totalExpenses), color: '#ef4444' },
+                    ...(vaExpenseSavings > 0 ? [{ label: '+ Expense Savings', value: `+${fmt(vaExpenseSavings)}`, color: '#22c55e' }] : []),
+                    { label: 'Stabilized NOI', value: fmt(stabilizedNOI), color: hasValueAdd ? '#047857' : VL, bold: true, divider: true },
+                    ...(hasValueAdd ? [{ label: 'NOI Lift from Value-Add', value: `+${fmt(vaTotalNOIAdj)}`, color: '#22c55e' }] : []),
+                    { label: 'Annual Debt Service', value: fmt(-dsAnnual), color: '#ef4444' },
+                    { label: 'GP Annual Fees', value: fmt(-gpFeeCalcs.totalAnnual), color: '#ef4444' },
+                    { label: 'Stabilized Cash Flow', value: fmt(stabilizedCashFlow - gpFeeCalcs.totalAnnual), color: stabilizedCashFlow > 0 ? '#047857' : '#ef4444', bold: true, divider: true },
+                    ...(hasValueAdd ? [{ label: 'Stabilized Property Value', value: fmt(Math.round(stabilizedValue)), color: AC }] : []),
+                  ].map((r, i) => (
+                    <div key={i}>
+                      {r.divider && <div style={{ borderTop: `2px solid ${hasValueAdd ? '#a7f3d0' : B}`, margin: '8px 0' }} />}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', fontSize: 12 }}>
+                        <span style={{ color: r.bold ? VL : LB, fontWeight: r.bold ? 700 : 400 }}>{r.label}</span>
+                        <span style={{ fontWeight: r.bold ? 800 : 600, color: r.color }}>{r.value}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Year-by-Year NOI Progression Table ── */}
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 600 }}>
+                <thead>
+                  <tr style={{ borderBottom: `2px solid ${B}` }}>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: VL, width: 180 }}>Metric</th>
+                    {yearlyNOIDetail.map(r => (
+                      <th key={r.year} style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: VL }}>Year {r.year}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: `1px solid ${B}` }}>
+                    <td style={{ padding: '8px 12px', fontWeight: 600, color: VL }}>Base NOI</td>
+                    {yearlyNOIDetail.map(r => <td key={r.year} style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: VL }}>{fmt(r.baseNOI)}</td>)}
+                  </tr>
+                  {vaRentUpside > 0 && (
+                    <tr style={{ borderBottom: `1px solid ${B}` }}>
+                      <td style={{ padding: '8px 12px', color: '#22c55e', paddingLeft: 20 }}>+ Rent Optimization</td>
+                      {yearlyNOIDetail.map(r => <td key={r.year} style={{ padding: '8px 12px', textAlign: 'right', color: '#22c55e' }}>+{fmt(r.rentUpside)}</td>)}
+                    </tr>
+                  )}
+                  {vaRubsRecovery > 0 && (
+                    <tr style={{ borderBottom: `1px solid ${B}` }}>
+                      <td style={{ padding: '8px 12px', color: '#22c55e', paddingLeft: 20 }}>+ RUBS Recovery</td>
+                      {yearlyNOIDetail.map(r => <td key={r.year} style={{ padding: '8px 12px', textAlign: 'right', color: '#22c55e' }}>+{fmt(r.rubsRecovery)}</td>)}
+                    </tr>
+                  )}
+                  {vaExpenseSavings > 0 && (
+                    <tr style={{ borderBottom: `1px solid ${B}` }}>
+                      <td style={{ padding: '8px 12px', color: '#22c55e', paddingLeft: 20 }}>+ Expense Savings</td>
+                      {yearlyNOIDetail.map(r => <td key={r.year} style={{ padding: '8px 12px', textAlign: 'right', color: '#22c55e' }}>+{fmt(r.expSavings)}</td>)}
+                    </tr>
+                  )}
+                  <tr style={{ background: '#f0fdf4', borderBottom: `2px solid ${B}` }}>
+                    <td style={{ padding: '10px 12px', fontWeight: 800, color: '#047857' }}>Stabilized NOI</td>
+                    {yearlyNOIDetail.map(r => <td key={r.year} style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, color: '#047857' }}>{fmt(r.stabNOI)}</td>)}
+                  </tr>
+                  <tr style={{ borderBottom: `1px solid ${B}` }}>
+                    <td style={{ padding: '8px 12px', color: '#ef4444' }}>– Debt Service</td>
+                    {yearlyNOIDetail.map(r => <td key={r.year} style={{ padding: '8px 12px', textAlign: 'right', color: '#ef4444' }}>{fmt(-r.debtService)}</td>)}
+                  </tr>
+                  <tr style={{ background: '#f9fafb', borderBottom: `2px solid ${B}` }}>
+                    <td style={{ padding: '10px 12px', fontWeight: 800, color: VL }}>Cash Flow After Debt</td>
+                    {yearlyNOIDetail.map(r => <td key={r.year} style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, color: r.stabCF >= 0 ? '#047857' : '#ef4444' }}>{fmt(r.stabCF)}</td>)}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ═══ MONTHLY GP / LP DISTRIBUTION BREAKDOWN ═══ */}
+      <div style={SC}>
+        <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: monthlyDistOpen ? 20 : 0 }}
+          onClick={() => setMonthlyDistOpen(!monthlyDistOpen)}>
+          <span style={{ fontSize: 15, fontWeight: 800, color: VL }}>Monthly GP &amp; LP Distributions</span>
+          <span style={{ fontSize: 12, color: LB, transform: monthlyDistOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: '0.2s' }}>&#9660;</span>
+        </div>
+        {monthlyDistOpen && (() => {
+          const lpPct = lpShare / 100;
+          const gpPct = gpShare / 100;
+          // Current monthly
+          const monthlyBaseCF = Math.max((baseCashFlow - gpFeeCalcs.totalAnnual) / 12, 0);
+          const monthlyStabCF = Math.max((stabilizedCashFlow - gpFeeCalcs.totalAnnual) / 12, 0);
+          const monthlyLPBase = monthlyBaseCF * lpPct;
+          const monthlyGPBase = monthlyBaseCF * gpPct;
+          const monthlyLPStab = monthlyStabCF * lpPct;
+          const monthlyGPStab = monthlyStabCF * gpPct;
+          const annualLPBase = monthlyLPBase * 12;
+          const annualGPBase = monthlyGPBase * 12;
+          const annualLPStab = monthlyLPStab * 12;
+          const annualGPStab = monthlyGPStab * 12;
+          return (
+            <div>
+              <div style={{ fontSize: 12, color: LB, marginBottom: 16 }}>
+                Operating cash flow split between GP ({gpShare}%) and LP ({lpShare.toFixed(0)}%) — excludes exit proceeds, pref accrual, and promote tiers. Based on {gpShare}/{lpShare.toFixed(0)} contribution split.
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: hasValueAdd ? '1fr 1fr' : '1fr', gap: 24 }}>
+
+                {/* Current Distribution */}
+                <div style={{ borderRadius: 12, border: `1px solid ${B}`, overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 20px', background: '#f9fafb', borderBottom: `1px solid ${B}` }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: VL }}>Current (Day 1) Distributions</div>
+                  </div>
+                  <div style={{ padding: '16px 20px' }}>
+                    {/* Cash Flow bar */}
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: LB, textTransform: 'uppercase', marginBottom: 6 }}>NOI to Distributions Flow</div>
+                      {[
+                        { label: 'NOI', val: fmt(baseNOI), sub: `${fmt(Math.round(baseNOI / 12))}/mo` },
+                        { label: '– Debt Svc', val: fmt(-dsAnnual), sub: `${fmt(Math.round(dsAnnual / 12))}/mo`, color: '#ef4444' },
+                        { label: '– GP Fees', val: fmt(-gpFeeCalcs.totalAnnual), sub: `${fmt(Math.round(gpFeeCalcs.totalAnnual / 12))}/mo`, color: '#ef4444' },
+                        { label: '= Distributable CF', val: fmt(Math.max(baseCashFlow - gpFeeCalcs.totalAnnual, 0)), sub: `${fmt(Math.round(monthlyBaseCF))}/mo`, color: '#047857', bold: true },
+                      ].map((r, i) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: r.bold ? 'none' : `1px solid #f3f4f6` }}>
+                          <span style={{ fontSize: 12, color: r.color || LB, fontWeight: r.bold ? 700 : 400 }}>{r.label}</span>
+                          <div style={{ textAlign: 'right' }}>
+                            <span style={{ fontSize: 12, fontWeight: r.bold ? 800 : 600, color: r.color || VL }}>{r.val}</span>
+                            <div style={{ fontSize: 10, color: LB }}>{r.sub}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {/* LP / GP split */}
+                    <div style={{ borderTop: `2px solid ${B}`, paddingTop: 14 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        <div style={{ padding: 14, borderRadius: 10, background: '#f0fdf4', border: '1px solid #a7f3d0' }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: '#047857', textTransform: 'uppercase', marginBottom: 6 }}>LP Take-Home ({lpShare.toFixed(0)}%)</div>
+                          <div style={{ fontSize: 20, fontWeight: 800, color: '#047857' }}>{fmt(Math.round(monthlyLPBase))}<span style={{ fontSize: 11, color: LB }}>/mo</span></div>
+                          <div style={{ fontSize: 11, color: LB, marginTop: 4 }}>{fmt(Math.round(annualLPBase))}/yr</div>
+                        </div>
+                        <div style={{ padding: 14, borderRadius: 10, background: '#eef2ff', border: '1px solid #c7d2fe' }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: AC, textTransform: 'uppercase', marginBottom: 6 }}>GP Take-Home ({gpShare}%)</div>
+                          <div style={{ fontSize: 20, fontWeight: 800, color: AC }}>{fmt(Math.round(monthlyGPBase))}<span style={{ fontSize: 11, color: LB }}>/mo</span></div>
+                          <div style={{ fontSize: 11, color: LB, marginTop: 4 }}>{fmt(Math.round(annualGPBase))}/yr</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stabilized Distribution (only if value-add active) */}
+                {hasValueAdd && (
+                  <div style={{ borderRadius: 12, border: '2px solid #22c55e', overflow: 'hidden' }}>
+                    <div style={{ padding: '14px 20px', background: '#f0fdf4', borderBottom: '1px solid #a7f3d0' }}>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: '#047857' }}>Stabilized (After Value-Add)</div>
+                    </div>
+                    <div style={{ padding: '16px 20px' }}>
+                      <div style={{ marginBottom: 16 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: LB, textTransform: 'uppercase', marginBottom: 6 }}>Stabilized NOI to Distributions</div>
+                        {[
+                          { label: 'Stabilized NOI', val: fmt(stabilizedNOI), sub: `${fmt(Math.round(stabilizedNOI / 12))}/mo` },
+                          { label: '– Debt Svc', val: fmt(-dsAnnual), sub: `${fmt(Math.round(dsAnnual / 12))}/mo`, color: '#ef4444' },
+                          { label: '– GP Fees', val: fmt(-gpFeeCalcs.totalAnnual), sub: `${fmt(Math.round(gpFeeCalcs.totalAnnual / 12))}/mo`, color: '#ef4444' },
+                          { label: '= Distributable CF', val: fmt(Math.max(stabilizedCashFlow - gpFeeCalcs.totalAnnual, 0)), sub: `${fmt(Math.round(monthlyStabCF))}/mo`, color: '#047857', bold: true },
+                        ].map((r, i) => (
+                          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: r.bold ? 'none' : `1px solid #f3f4f6` }}>
+                            <span style={{ fontSize: 12, color: r.color || LB, fontWeight: r.bold ? 700 : 400 }}>{r.label}</span>
+                            <div style={{ textAlign: 'right' }}>
+                              <span style={{ fontSize: 12, fontWeight: r.bold ? 800 : 600, color: r.color || VL }}>{r.val}</span>
+                              <div style={{ fontSize: 10, color: LB }}>{r.sub}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ borderTop: '2px solid #a7f3d0', paddingTop: 14 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                          <div style={{ padding: 14, borderRadius: 10, background: '#f0fdf4', border: '1px solid #a7f3d0' }}>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: '#047857', textTransform: 'uppercase', marginBottom: 6 }}>LP Take-Home ({lpShare.toFixed(0)}%)</div>
+                            <div style={{ fontSize: 20, fontWeight: 800, color: '#047857' }}>{fmt(Math.round(monthlyLPStab))}<span style={{ fontSize: 11, color: LB }}>/mo</span></div>
+                            <div style={{ fontSize: 11, color: LB, marginTop: 4 }}>{fmt(Math.round(annualLPStab))}/yr</div>
+                            {monthlyLPStab > monthlyLPBase && (
+                              <div style={{ fontSize: 10, color: '#22c55e', marginTop: 4, fontWeight: 700 }}>
+                                +{fmt(Math.round(monthlyLPStab - monthlyLPBase))}/mo vs current
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ padding: 14, borderRadius: 10, background: '#eef2ff', border: '1px solid #c7d2fe' }}>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: AC, textTransform: 'uppercase', marginBottom: 6 }}>GP Take-Home ({gpShare}%)</div>
+                            <div style={{ fontSize: 20, fontWeight: 800, color: AC }}>{fmt(Math.round(monthlyGPStab))}<span style={{ fontSize: 11, color: LB }}>/mo</span></div>
+                            <div style={{ fontSize: 11, color: LB, marginTop: 4 }}>{fmt(Math.round(annualGPStab))}/yr</div>
+                            {monthlyGPStab > monthlyGPBase && (
+                              <div style={{ fontSize: 10, color: '#22c55e', marginTop: 4, fontWeight: 700 }}>
+                                +{fmt(Math.round(monthlyGPStab - monthlyGPBase))}/mo vs current
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Full year-by-year distribution table */}
+              <div style={{ marginTop: 24, overflowX: 'auto' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: VL, marginBottom: 10 }}>Year-by-Year Distribution Schedule</div>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, minWidth: 600 }}>
+                  <thead>
+                    <tr style={{ borderBottom: `2px solid ${B}` }}>
+                      {['Year', 'NOI', 'Value-Add Adj.', 'Stab. NOI', 'Debt Service', 'GP Fees', 'Dist. CF', 'LP Monthly', 'LP Annual', 'GP Monthly', 'GP Annual'].map((h, i) => (
+                        <th key={i} style={{ padding: '8px 8px', textAlign: i === 0 ? 'center' : 'right', fontWeight: 700, color: LB, fontSize: 9, textTransform: 'uppercase' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {yearlyNOIDetail.map(r => {
+                      const distribCF = Math.max(r.stabCF - gpFeeCalcs.totalAnnual, 0);
+                      const lpAnn = distribCF * lpPct;
+                      const gpAnn = distribCF * gpPct;
+                      return (
+                        <tr key={r.year} style={{ borderBottom: `1px solid ${B}` }}>
+                          <td style={{ padding: '8px 8px', textAlign: 'center', fontWeight: 700, color: AC }}>Yr {r.year}</td>
+                          <td style={{ padding: '8px 8px', textAlign: 'right', color: VL }}>{fmt(r.baseNOI)}</td>
+                          <td style={{ padding: '8px 8px', textAlign: 'right', color: vaTotalNOIAdj > 0 ? '#22c55e' : LB }}>{vaTotalNOIAdj > 0 ? `+${fmt(vaTotalNOIAdj)}` : '—'}</td>
+                          <td style={{ padding: '8px 8px', textAlign: 'right', fontWeight: 700, color: '#047857' }}>{fmt(r.stabNOI)}</td>
+                          <td style={{ padding: '8px 8px', textAlign: 'right', color: '#ef4444' }}>{fmt(-r.debtService)}</td>
+                          <td style={{ padding: '8px 8px', textAlign: 'right', color: '#ef4444' }}>{fmt(-gpFeeCalcs.totalAnnual)}</td>
+                          <td style={{ padding: '8px 8px', textAlign: 'right', fontWeight: 700, color: distribCF > 0 ? '#047857' : '#ef4444' }}>{fmt(distribCF)}</td>
+                          <td style={{ padding: '8px 8px', textAlign: 'right', fontWeight: 700, color: '#047857' }}>{fmt(Math.round(lpAnn / 12))}</td>
+                          <td style={{ padding: '8px 8px', textAlign: 'right', color: '#047857' }}>{fmt(Math.round(lpAnn))}</td>
+                          <td style={{ padding: '8px 8px', textAlign: 'right', fontWeight: 700, color: AC }}>{fmt(Math.round(gpAnn / 12))}</td>
+                          <td style={{ padding: '8px 8px', textAlign: 'right', color: AC }}>{fmt(Math.round(gpAnn))}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* ═══ LP & GP SUMMARY CARDS ═══ */}
