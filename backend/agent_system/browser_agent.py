@@ -39,6 +39,8 @@ class DealResult:
         self.listing_url: str = kwargs.get("listing_url", "")
         self.om_pdf_bytes: Optional[bytes] = kwargs.get("om_pdf_bytes")
         self.om_filename: Optional[str] = kwargs.get("om_filename")
+        # "om" = full offering memorandum, "flyer" = marketing flyer, "none" = no document
+        self.doc_type: str = kwargs.get("doc_type", "none")
         self.raw_data: Dict[str, Any] = kwargs.get("raw_data", {})
 
     def to_dict(self) -> Dict[str, Any]:
@@ -53,6 +55,7 @@ class DealResult:
             "occupancy": self.occupancy,
             "listing_url": self.listing_url,
             "om_filename": self.om_filename,
+            "doc_type": self.doc_type,
             "raw_data": self.raw_data,
         }
 
@@ -141,24 +144,84 @@ def _build_search_task(platform_id: str, credentials: Dict[str, str],
     # Platform-specific instructions
     if platform_id == "crexi":
         return f"""
-You are an automated real estate deal finder. Perform the following steps:
+You are an automated real estate deal finder on Crexi.com. Follow these steps EXACTLY:
 
-1. Go to https://www.crexi.com/login
-2. Log in with email: {credentials['username']} and password: {credentials['password']}
-3. After login, navigate to the search/listings page
-4. Apply these search filters:
-   Location: {location_str}
+=== STEP 1: LOG IN (REQUIRED — you MUST be logged in to download documents) ===
+1. Navigate to https://www.crexi.com/login
+2. Enter email: {credentials['username']}
+3. Enter password: {credentials['password']}
+4. Click the "Log In" button
+5. Wait for the dashboard to load. If there is a popup or modal, close it.
+6. VERIFY you are logged in by checking for a user avatar/icon in the top-right.
+   If login failed, try once more. If it still fails, continue without login but note it.
+
+=== STEP 2: SEARCH WITH FILTERS ===
+7. Navigate to https://www.crexi.com/properties or click on "Search" / "Find Properties"
+8. In the search bar or location filter, enter: {location_str}
+9. Apply these filters using Crexi's filter panel:
 {filter_str}
-5. Browse through the search results (up to 20 listings)
-6. For EACH listing that appears:
-   a. Click into the listing detail page
-   b. Extract: address, asking price, cap rate, property type, number of units, square footage, occupancy rate
-   c. Check if there is an Offering Memorandum (OM) PDF available for download
-   d. If an OM PDF is available, download it
-   e. Copy the listing URL
-   f. Go back to search results and continue to the next listing
-7. Return all found deals as a JSON array with these fields for each:
-   address, price, cap_rate, property_type, units, sqft, occupancy, listing_url, has_om
+10. Wait for results to load.
+
+=== STEP 3: BROWSE AND EXTRACT DEAL DATA ===
+11. Go through the search results (process up to 15 listings).
+12. For EACH listing:
+    a. Click into the listing detail page
+    b. Extract ALL of these fields:
+       - address (full street address, city, state, zip)
+       - price (the asking price — may say "Negotiable" or "Unpriced" or "Contact for Price")
+       - cap_rate (if shown)
+       - property_type (Multifamily, Self-Storage, Mobile Home Park, etc.)
+       - units (number of units)
+       - sqft (total square footage)
+       - occupancy (occupancy rate percentage, if shown)
+       - listing_url (the full URL of this listing page)
+
+=== STEP 4: IDENTIFY AND DOWNLOAD DOCUMENTS (CRITICAL) ===
+    c. Look at the listing detail page for downloadable documents. On Crexi, documents
+       are typically found in a "Documents" tab/section or a "Download" button area.
+
+    d. IMPORTANT — Crexi has TWO types of documents:
+       TYPE 1 - "Offering Memorandum" (OM): This is a detailed PDF (usually 20+ pages)
+                with financial data, rent rolls, unit mix, P&L, expense breakdowns,
+                property photos, and market analysis. This is what we want MOST.
+       TYPE 2 - "Flyer" or "Brochure": This is a short marketing PDF (usually 1-4 pages)
+                with just photos, price, and basic property highlights. Less useful but
+                still download it if there's no OM.
+
+    e. DOWNLOAD PRIORITY:
+       - If there is an OM: Download the OM PDF. Set doc_type = "om"
+       - If there is NO OM but there IS a flyer/brochure: Download the flyer. Set doc_type = "flyer"
+       - If there are NO documents at all: Set doc_type = "none"
+       - If the listing says "Unpriced" or has no price but HAS an OM, STILL download it.
+         Unpriced listings with OMs are valuable because the OM contains the real financials.
+
+    f. To download: Click the document download button/link. The PDF should save to
+       the downloads folder. Note the filename.
+
+    g. Go back to search results and continue to the next listing.
+
+=== STEP 5: RETURN RESULTS ===
+13. After processing all listings, return the results as a JSON array.
+    Each item must have these exact fields:
+    {{
+      "address": "123 Main St, City, ST 12345",
+      "price": 1500000,
+      "cap_rate": 6.5,
+      "property_type": "Multifamily",
+      "units": 12,
+      "sqft": 8500,
+      "occupancy": 92.0,
+      "listing_url": "https://www.crexi.com/properties/...",
+      "doc_type": "om",
+      "downloaded_filename": "Property_OM.pdf"
+    }}
+
+    IMPORTANT NOTES ON PRICE:
+    - If the listing shows a price, use that number (e.g., 1500000)
+    - If the listing says "Negotiable", "Unpriced", or "Contact for Price", set price to null
+    - Do NOT skip unpriced listings — they often have the best OMs with real financial data
+
+    Return ONLY the JSON array, no other text.
 """
     elif platform_id == "zillow":
         return f"""
@@ -227,8 +290,7 @@ def _parse_agent_output(raw_output: str, platform_id: str) -> List[DealResult]:
                     units=_parse_int(d.get("units")),
                     sqft=_parse_int(d.get("sqft")),
                     occupancy=_parse_number(d.get("occupancy")),
-                    listing_url=d.get("listing_url", ""),
-                    raw_data=d,
+                    listing_url=d.get("listing_url", ""),                    doc_type=d.get("doc_type", "none"),                    raw_data=d,
                 ))
         except json.JSONDecodeError:
             log.warning("Failed to parse JSON from agent output")
@@ -289,7 +351,7 @@ async def run_platform_search(
     if not download_dir:
         download_dir = tempfile.mkdtemp(prefix="agent_om_")
 
-    log.info("Starting browser-use agent for platform=%s", platform_id)
+    log.info("Starting browser-use agent for platform=%s download_dir=%s", platform_id, download_dir)
 
     # Initialize the LLM
     llm = ChatOpenAI(
@@ -298,11 +360,25 @@ async def run_platform_search(
         temperature=0.0,
     )
 
-    # Create and run the browser-use agent
-    agent = Agent(
-        task=task,
-        llm=llm,
-    )
+    # Configure browser with download directory so PDFs save to a known location
+    try:
+        from browser_use import BrowserConfig
+        browser_config = BrowserConfig(
+            downloads_dir=download_dir,
+            headless=True,
+        )
+        agent = Agent(
+            task=task,
+            llm=llm,
+            browser_config=browser_config,
+        )
+    except (ImportError, TypeError):
+        # Older browser-use versions may not support BrowserConfig
+        log.warning("BrowserConfig not available, using default Agent config")
+        agent = Agent(
+            task=task,
+            llm=llm,
+        )
 
     result = await agent.run()
 
@@ -324,15 +400,35 @@ async def run_platform_search(
     # Parse results
     deals = _parse_agent_output(output_text, platform_id)
 
-    # Check download directory for any PDFs the agent downloaded
+    # Match downloaded PDFs to deals by filename from agent output
     if os.path.isdir(download_dir):
-        pdf_files = list(Path(download_dir).glob("*.pdf"))
+        pdf_files = {p.name.lower(): p for p in Path(download_dir).glob("*.pdf")}
         if pdf_files and deals:
-            # Attach first PDF to first deal (basic heuristic)
-            for i, pdf_path in enumerate(pdf_files):
-                if i < len(deals):
-                    deals[i].om_pdf_bytes = pdf_path.read_bytes()
-                    deals[i].om_filename = pdf_path.name
+            for deal in deals:
+                # Try to match by the filename the agent reported
+                reported_name = (deal.raw_data.get("downloaded_filename") or "").lower()
+                matched_path = None
+                if reported_name and reported_name in pdf_files:
+                    matched_path = pdf_files[reported_name]
+                elif reported_name:
+                    # Fuzzy match — check if reported name is a substring
+                    for fname, fpath in pdf_files.items():
+                        if reported_name in fname or fname in reported_name:
+                            matched_path = fpath
+                            break
+                if matched_path:
+                    deal.om_pdf_bytes = matched_path.read_bytes()
+                    deal.om_filename = matched_path.name
+                    log.info("Matched PDF %s to deal %s", matched_path.name, deal.address)
+
+            # For any remaining unmatched deals, assign PDFs by order
+            unmatched_deals = [d for d in deals if not d.om_pdf_bytes and d.doc_type != "none"]
+            used_paths = {d.om_filename for d in deals if d.om_filename}
+            unused_pdfs = [p for n, p in pdf_files.items() if p.name not in used_paths]
+            for deal, pdf_path in zip(unmatched_deals, unused_pdfs):
+                deal.om_pdf_bytes = pdf_path.read_bytes()
+                deal.om_filename = pdf_path.name
+                log.info("Fallback-matched PDF %s to deal %s", pdf_path.name, deal.address)
 
     return deals
 

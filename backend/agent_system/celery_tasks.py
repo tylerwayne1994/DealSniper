@@ -67,18 +67,13 @@ def _run_agent_task_impl(self_or_none, run_id: str, agent_id: str, user_id: str)
         platforms = config.get("platform_credentials", [])
         decrypted = decrypt_platform_list(platforms)
 
-        buy_box = config.get("buy_box_params", {})
-
-        # Build credential dict keyed by platform_id
-        cred_map = {}
-        for p in decrypted:
-            cred_map[p["platform_id"]] = p
+        buy_box = config.get("buy_box", {})
 
         result = asyncio.run(execute_agent_run(
             run_id=run_id,
             agent_id=agent_id,
             user_id=user_id,
-            platform_credentials=cred_map,
+            platform_credentials=decrypted,
             buy_box=buy_box,
         ))
         return result
