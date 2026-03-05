@@ -25,6 +25,7 @@ google-api-python-client
 
 # Agent System: browser-use + background tasks
 browser-use
+playwright
 langchain-openai
 celery
 redis
