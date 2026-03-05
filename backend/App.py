@@ -214,6 +214,10 @@ app.include_router(stripe_webhook_router)
 from token_purchase_handler import router as token_purchase_router
 app.include_router(token_purchase_router)
 
+# Agent System: Browser-use AI deal scouting agents
+from agent_system.router import router as agent_router
+app.include_router(agent_router)
+
 # Market Analysis: Drive-time isochrones & census aggregation
 try:
     import market_analysis

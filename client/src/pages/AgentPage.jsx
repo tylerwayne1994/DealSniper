@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import DashboardShell from '../components/DashboardShell';
 import { supabase } from '../lib/supabase';
+import { API_ENDPOINTS } from '../config/api';
 
 // ============================================================================
 // Constants
@@ -347,11 +348,12 @@ function AgentPage() {
   const [loading, setLoading] = useState(true);
 
   // Agent config state
+  const [agentId, setAgentId] = useState(null);
   const [agentStatus, setAgentStatus] = useState('inactive'); // inactive, active, paused, running
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
-  const [lastRunAt] = useState(null);
-  const [totalDealsFound] = useState(0);
+  const [lastRunAt, setLastRunAt] = useState(null);
+  const [totalDealsFound, setTotalDealsFound] = useState(0);
 
   // Section collapse state
   const [expandedSections, setExpandedSections] = useState({
@@ -406,6 +408,9 @@ function AgentPage() {
         if (error) throw error;
         const uid = userData?.user?.id || null;
         setUserId(uid);
+        if (uid) {
+          await loadAgentConfig(uid);
+        }
       } catch (err) {
         console.error('Error loading user:', err);
       } finally {
@@ -414,6 +419,74 @@ function AgentPage() {
     };
     loadUser();
   }, []);
+
+  // ============================================================================
+  // Load existing agent config from backend
+  // ============================================================================
+
+  const loadAgentConfig = async (uid) => {
+    try {
+      const resp = await fetch(API_ENDPOINTS.agentConfig, {
+        headers: { 'X-User-ID': uid },
+      });
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const cfg = data.config;
+      if (!cfg) return;
+
+      setAgentId(cfg.id);
+      setAgentStatus(cfg.status || 'active');
+      setLastRunAt(cfg.last_run_at || null);
+      setRunsPerWeek(cfg.runs_per_week || 1);
+
+      // Restore buy box
+      const bb = cfg.buy_box || {};
+      setBuyBox({
+        states: bb.states || [],
+        cities: (bb.cities || []).join(', '),
+        zipCodes: (bb.zip_codes || []).join(', '),
+        propertyTypes: bb.property_types || [],
+        minPrice: bb.min_price ? String(bb.min_price) : '',
+        maxPrice: bb.max_price ? String(bb.max_price) : '',
+        minCapRate: bb.min_cap_rate ? String(bb.min_cap_rate) : '',
+        maxCapRate: bb.max_cap_rate ? String(bb.max_cap_rate) : '',
+        minOccupancy: bb.min_occupancy ? String(bb.min_occupancy) : '',
+        maxOccupancy: bb.max_occupancy ? String(bb.max_occupancy) : '',
+        minUnits: bb.min_units ? String(bb.min_units) : '',
+        maxUnits: bb.max_units ? String(bb.max_units) : '',
+        minSqft: bb.min_sqft ? String(bb.min_sqft) : '',
+        maxSqft: bb.max_sqft ? String(bb.max_sqft) : '',
+        minYearBuilt: bb.min_year_built ? String(bb.min_year_built) : '',
+        maxYearBuilt: bb.max_year_built ? String(bb.max_year_built) : '',
+        keywords: (bb.keywords || []).join(', '),
+      });
+
+      // Restore enabled platforms (credentials are NOT returned — only platform IDs)
+      const platforms = cfg.platforms || [];
+      const enabledIds = platforms.map((p) => p.platform_id);
+      setEnabledPlatforms(enabledIds);
+      const creds = {};
+      enabledIds.forEach((pid) => {
+        creds[pid] = { username: '', password: '' };
+      });
+      setPlatformCredentials(creds);
+
+      // Load deals count from recent runs
+      try {
+        const runsResp = await fetch(`${API_ENDPOINTS.agentRuns}?agent_id=${cfg.id}`, {
+          headers: { 'X-User-ID': uid },
+        });
+        if (runsResp.ok) {
+          const runsData = await runsResp.json();
+          const total = (runsData.runs || []).reduce((sum, r) => sum + (r.deals_found || 0), 0);
+          setTotalDealsFound(total);
+        }
+      } catch (_) { /* ignore */ }
+
+    } catch (err) {
+      console.error('Error loading agent config:', err);
+    }
+  };
 
   // ============================================================================
   // Helpers
@@ -479,13 +552,11 @@ function AgentPage() {
     setSaving(true);
     setSaveMessage('');
     try {
-      // Build payload (ready for backend integration)
+      // Build payload
       const payload = {
-        user_id: userId,
         platforms: enabledPlatforms.map((pid) => ({
           platform_id: pid,
           username: platformCredentials[pid]?.username || '',
-          // Password will be sent to backend for encryption — never stored in frontend
           password: platformCredentials[pid]?.password || '',
         })),
         buy_box: {
@@ -507,24 +578,100 @@ function AgentPage() {
           max_year_built: buyBox.maxYearBuilt ? parseInt(buyBox.maxYearBuilt) : null,
           keywords: buyBox.keywords ? buyBox.keywords.split(',').map((k) => k.trim()).filter(Boolean) : [],
         },
-        schedule: {
-          runs_per_week: runsPerWeek,
-        },
+        runs_per_week: runsPerWeek,
       };
 
-      console.log('Agent config payload (ready for backend):', payload);
+      let resp;
+      if (agentId) {
+        // Update existing config
+        resp = await fetch(API_ENDPOINTS.agentConfigById(agentId), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'X-User-ID': userId },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        // Create new config
+        resp = await fetch(API_ENDPOINTS.agentConfig, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-User-ID': userId },
+          body: JSON.stringify(payload),
+        });
+      }
 
-      // TODO: POST to /agents/create or PUT to /agents/{agentId}
-      // For now just simulate success
-      await new Promise((r) => setTimeout(r, 600));
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.detail || `Server error ${resp.status}`);
+      }
+
+      const result = await resp.json();
+      if (result.id) {
+        setAgentId(result.id);
+        setAgentStatus(result.status || 'active');
+      }
 
       setSaveMessage('Agent configuration saved successfully');
       setTimeout(() => setSaveMessage(''), 4000);
     } catch (err) {
       console.error('Error saving agent config:', err);
-      setSaveMessage('Error saving configuration');
+      setSaveMessage(`Error: ${err.message}`);
     } finally {
       setSaving(false);
+    }
+  };
+
+  // ============================================================================
+  // Run Now handler
+  // ============================================================================
+
+  const handleRunNow = async () => {
+    if (!agentId) {
+      setSaveMessage('Save your configuration first before running');
+      return;
+    }
+    try {
+      setAgentStatus('running');
+      const resp = await fetch(API_ENDPOINTS.agentRun(agentId), {
+        method: 'POST',
+        headers: { 'X-User-ID': userId },
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.detail || `Server error ${resp.status}`);
+      }
+      const data = await resp.json();
+      setSaveMessage(`Agent run started (${data.dispatch || 'queued'})`);
+      setTimeout(() => setSaveMessage(''), 4000);
+      // Refresh config to update last_run_at after a delay
+      setTimeout(() => loadAgentConfig(userId), 5000);
+    } catch (err) {
+      console.error('Error triggering run:', err);
+      setAgentStatus('active');
+      setSaveMessage(`Run failed: ${err.message}`);
+    }
+  };
+
+  // ============================================================================
+  // Pause / Resume handler
+  // ============================================================================
+
+  const handleTogglePause = async () => {
+    if (!agentId) return;
+    try {
+      const isPaused = agentStatus === 'paused';
+      const url = isPaused ? API_ENDPOINTS.agentResume(agentId) : API_ENDPOINTS.agentPause(agentId);
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'X-User-ID': userId },
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.detail || `Server error ${resp.status}`);
+      }
+      const data = await resp.json();
+      setAgentStatus(data.status || (isPaused ? 'active' : 'paused'));
+    } catch (err) {
+      console.error('Error toggling pause:', err);
+      setSaveMessage(`Error: ${err.message}`);
     }
   };
 
@@ -1117,15 +1264,12 @@ function AgentPage() {
             {saving ? 'Saving...' : 'Save Configuration'}
           </button>
           <button
-            onClick={() => {
-              // TODO: Wire to POST /agents/{agentId}/run
-              console.log('Manual run triggered');
-            }}
-            disabled={enabledPlatforms.length === 0}
+            onClick={handleRunNow}
+            disabled={enabledPlatforms.length === 0 || !agentId}
             style={{
               ...buttonSuccess,
-              opacity: enabledPlatforms.length === 0 ? 0.5 : 1,
-              cursor: enabledPlatforms.length === 0 ? 'not-allowed' : 'pointer',
+              opacity: (enabledPlatforms.length === 0 || !agentId) ? 0.5 : 1,
+              cursor: (enabledPlatforms.length === 0 || !agentId) ? 'not-allowed' : 'pointer',
             }}
           >
             <Play size={16} />
@@ -1133,11 +1277,20 @@ function AgentPage() {
           </button>
           {agentStatus === 'active' && (
             <button
-              onClick={() => setAgentStatus('paused')}
+              onClick={handleTogglePause}
               style={buttonSecondary}
             >
               <Pause size={16} />
               Pause Agent
+            </button>
+          )}
+          {agentStatus === 'paused' && (
+            <button
+              onClick={handleTogglePause}
+              style={buttonSecondary}
+            >
+              <Play size={16} />
+              Resume Agent
             </button>
           )}
         </div>
