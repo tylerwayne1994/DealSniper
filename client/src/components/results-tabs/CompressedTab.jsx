@@ -907,7 +907,6 @@ export default function CompressedTab({
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, paddingBottom: 6, borderBottom: `2px solid ${B}` }}>
               <span style={{ fontSize: 13 }}>🏢</span>
               <span style={{ fontSize: 12, fontWeight: 700, color: VL, textTransform: 'uppercase', letterSpacing: '0.5px' }}>PROPERTY DETAILS</span>
-              <span style={{ marginLeft: 'auto', fontSize: 10, color: LB, fontStyle: 'italic' }}>✏ to edit</span>
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
@@ -935,7 +934,6 @@ export default function CompressedTab({
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, paddingBottom: 6, borderBottom: `2px solid ${B}` }}>
               <span style={{ fontSize: 13 }}>💰</span>
               <span style={{ fontSize: 12, fontWeight: 700, color: VL, textTransform: 'uppercase', letterSpacing: '0.5px' }}>TRANSACTION DETAILS</span>
-              <span style={{ marginLeft: 'auto', fontSize: 10, color: LB, fontStyle: 'italic' }}>✏ to edit</span>
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>

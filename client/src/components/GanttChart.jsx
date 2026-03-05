@@ -1,8 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Building } from 'lucide-react';
 
 const DealExecutionTab = ({ scenarioData }) => {
-  const [expandedStructure, setExpandedStructure] = useState(null);
 
   // Helper to calculate monthly payment
   const calcMonthlyPayment = (principal, annualRate, amortMonths) => {
@@ -287,15 +286,13 @@ const DealExecutionTab = ({ scenarioData }) => {
             {structures.map((structure, index) => (
               <tr 
                 key={structure.name}
-                onClick={() => setExpandedStructure(expandedStructure === structure.name ? null : structure.name)}
                 style={{ 
                   borderBottom: '1px solid #e5e7eb', 
-                  cursor: 'pointer',
-                  backgroundColor: expandedStructure === structure.name ? '#eff6ff' : index === 0 ? '#f0f9ff' : 'white',
+                  backgroundColor: index === 0 ? '#f0f9ff' : 'white',
                   transition: 'background-color 0.2s'
                 }}
               >
-                <td style={{ padding: '14px', fontWeight: expandedStructure === structure.name ? '700' : '600', color: '#111827', fontSize: '14px' }}>
+                <td style={{ padding: '14px', fontWeight: '600', color: '#111827', fontSize: '14px' }}>
                   {structure.name}
                   {index === 0 && <span style={{ marginLeft: '10px', fontSize: '11px', color: '#6366f1', fontWeight: '700', backgroundColor: '#dbeafe', padding: '3px 8px', borderRadius: '4px' }}>★ YOUR CHOICE</span>}
                 </td>

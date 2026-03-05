@@ -8,7 +8,6 @@ import {
   BarChart3,
   FileSpreadsheet,
   Home,
-  Bell,
   MapPin,
   Shield,
   Mail,
@@ -276,10 +275,7 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
               <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{title}</span>
             </div>
             <div style={dashboardStyles.topRight}>
-              <div style={dashboardStyles.circleButton(false)}>
-                <Bell size={14} />
-              </div>
-              <div style={dashboardStyles.circleButton(true)}>U</div>
+              <div style={dashboardStyles.circleButton(true)}>{initial}</div>
             </div>
           </div>
 

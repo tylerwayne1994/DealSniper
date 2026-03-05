@@ -203,16 +203,12 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange, ini
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
         {/* ═══ SOURCE DOCUMENT ═══ */}
+        {scenarioData?.source_filename && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: 'white', border: `1px solid ${B}`, padding: '12px', borderRadius: '8px', marginBottom: '20px' }}>
           <div style={{ fontSize: '12px', color: LB, minWidth: 110 }}>Source Document</div>
-          <select
-            style={{ border: '1px solid #d1d5db', padding: '6px 8px', borderRadius: '6px', fontSize: '12px', minWidth: 260 }}
-            defaultValue={scenarioData?.source_filename || ''}
-          >
-            <option value="">{scenarioData?.source_filename || 'Select a source...'}</option>
-          </select>
-          <button type="button" style={{ marginLeft: 'auto', fontSize: '12px', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View Source</button>
+          <div style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>{scenarioData.source_filename}</div>
         </div>
+        )}
 
         {/* ═══ UNIT MIX TABLE ═══ */}
         <div style={{ marginBottom: '24px' }}>

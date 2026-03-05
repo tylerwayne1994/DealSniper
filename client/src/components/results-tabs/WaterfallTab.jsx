@@ -640,7 +640,7 @@ export default function WaterfallTab({
                 <div key={key}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: VL, marginBottom: 6 }}>{label}</div>
                   <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                    <Dropdown value="pct_egi" onChange={() => {}} options={[{ value: 'pct_egi', label: '% of EGI' }]} width={160} />
+                    <div style={{ width: 160, padding: '7px 10px', fontSize: 12, color: LB, backgroundColor: '#f9fafb', borderRadius: 6, border: `1px solid ${B}` }}>% of EGI</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
                       <input type="number" value={fee.pct || ''} placeholder="0"
                         onChange={e => update(`gp_fees.${key}.pct`, parseFloat(e.target.value) || 0)} style={{ ...INP, width: '100%' }} />
@@ -675,7 +675,7 @@ export default function WaterfallTab({
               <div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: VL, marginBottom: 6 }}>Organizational Fee</div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <Dropdown value="fixed" onChange={() => {}} options={[{ value: 'fixed', label: 'Fixed Amount ($)' }]} width={160} />
+                  <div style={{ width: 160, padding: '7px 10px', fontSize: 12, color: LB, backgroundColor: '#f9fafb', borderRadius: 6, border: `1px solid ${B}` }}>Fixed Amount ($)</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
                     <span style={{ fontSize: 13, color: LB }}>$</span>
                     <input type="number" value={orgFee.amount || ''} placeholder="0"
@@ -686,7 +686,7 @@ export default function WaterfallTab({
               <div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: VL, marginBottom: 6 }}>Capital Raise Fee</div>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                  <Dropdown value="pct_lp_equity" onChange={() => {}} options={[{ value: 'pct_lp_equity', label: '% LP Equity Raised' }]} width={160} />
+                  <div style={{ width: 160, padding: '7px 10px', fontSize: 12, color: LB, backgroundColor: '#f9fafb', borderRadius: 6, border: `1px solid ${B}` }}>% LP Equity Raised</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
                     <input type="number" value={capRaiseFee.pct || ''} placeholder="0"
                       onChange={e => update('gp_fees.capital_raise_fee.pct', parseFloat(e.target.value) || 0)} style={{ ...INP, width: '100%' }} />

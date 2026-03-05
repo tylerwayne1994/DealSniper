@@ -29,6 +29,8 @@ import {
 // Score Card Component
 // ============================================================================
 
+const API_BASE = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
+
 const ScoreCard = ({ label, score, icon: Icon, description, inverted = false }) => {
   // For inverted scores (like supply risk), lower is better
   const getScoreColor = (s, inv) => {
@@ -440,7 +442,7 @@ const MarketResearchTab = ({ dealId, scenarioData }) => {
     setError(null);
     
     try {
-      const response = await fetch(`http://localhost:8010/v2/deals/${dealId}/market_research/status`);
+      const response = await fetch(`${API_BASE}/v2/deals/${dealId}/market_research/status`);
       const data = await response.json();
       
       if (response.ok) {
@@ -462,7 +464,7 @@ const MarketResearchTab = ({ dealId, scenarioData }) => {
   
   const fetchReports = async () => {
     try {
-      const response = await fetch(`http://localhost:8010/v2/deals/${dealId}/market_research/reports`);
+      const response = await fetch(`${API_BASE}/v2/deals/${dealId}/market_research/reports`);
       const data = await response.json();
       
       if (response.ok && data.reports) {
@@ -472,14 +474,14 @@ const MarketResearchTab = ({ dealId, scenarioData }) => {
         
         // Fetch full report details if found
         if (quick) {
-          const qRes = await fetch(`http://localhost:8010/v2/deals/${dealId}/market_research/report/${quick.id}`);
+          const qRes = await fetch(`${API_BASE}/v2/deals/${dealId}/market_research/report/${quick.id}`);
           if (qRes.ok) {
             setQuickReport(await qRes.json());
           }
         }
         
         if (deep) {
-          const dRes = await fetch(`http://localhost:8010/v2/deals/${dealId}/market_research/report/${deep.id}`);
+          const dRes = await fetch(`${API_BASE}/v2/deals/${dealId}/market_research/report/${deep.id}`);
           if (dRes.ok) {
             setDeepReport(await dRes.json());
           }
@@ -494,7 +496,7 @@ const MarketResearchTab = ({ dealId, scenarioData }) => {
     // Check token balance first
     try {
       const operationType = tier === 'quick' ? 'market_research_results' : 'market_research_dashboard';
-      const tokenCheck = await fetch('http://localhost:8010/api/tokens/check', {
+      const tokenCheck = await fetch(`${API_BASE}/api/tokens/check`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ operation_type: operationType })
@@ -532,7 +534,7 @@ const MarketResearchTab = ({ dealId, scenarioData }) => {
     setError(null);
     
     try {
-      const response = await fetch(`http://localhost:8010/v2/deals/${dealId}/market_research/run`, {
+      const response = await fetch(`${API_BASE}/v2/deals/${dealId}/market_research/run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tier, force_refresh: false })

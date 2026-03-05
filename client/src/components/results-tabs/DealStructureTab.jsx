@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import {
   DollarSign, Calculator,
   Wallet, Plus, X, Trash2,
-  BarChart3, ArrowRight, Edit3
+  BarChart3, Edit3
 } from 'lucide-react';
 
 const calcMonthlyPayment = (principal, annualRate, amortMonths) => {

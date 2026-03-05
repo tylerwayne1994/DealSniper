@@ -1,23 +1,17 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Building2, 
-  Calendar, 
   Users, 
   DollarSign, 
   TrendingUp, 
-  Percent, 
   Calculator,
   CheckCircle,
   XCircle,
   AlertTriangle,
-  Send,
-  FileText,
   Phone,
   Mail,
   Layers,
-  ArrowRight,
-  Rocket,
-  Sparkles
+  Rocket
 } from 'lucide-react';
 import { saveDeal } from '../../lib/dealsService';
 
@@ -639,7 +633,7 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
                   <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px', textTransform: 'uppercase', fontWeight: '600' }}>
                     Deal Cap Rate
                   </div>
-                  <div style={{ fontSize: '32px', fontWeight: '800', color: 'white' }}>
+                  <div style={{ fontSize: '32px', fontWeight: '800', color: '#111827' }}>
                     {inPlaceCapRate?.toFixed(2) || '-'}%
                   </div>
                   <div style={{ fontSize: '10px', color: '#64748b', marginTop: '4px' }}>

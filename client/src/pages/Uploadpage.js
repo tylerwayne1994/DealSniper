@@ -42,8 +42,8 @@ const autoCalculateFinancing = (pricing, setVerifiedData) => {
   }
 };
 
-// Use relative API path - backend runs on same host
-const API_BASE = "http://localhost:8010";
+// Use env variable with production fallback
+const API_BASE = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
 
 const COLORS = {
   primary: '#4F46E5',
@@ -4641,97 +4641,6 @@ const EnhancedUploadPage = () => {
           </div>
         </div>
 
-        {/* Upgrade Modal - Removed */}
-        {false && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-          }}>
-            <div style={{
-              background: '#fff',
-              borderRadius: 16,
-              padding: 32,
-              maxWidth: 500,
-              width: '90%',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-            }}>
-              <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>📄</div>
-                <h2 style={{ fontSize: 24, fontWeight: 900, color: '#111827', marginBottom: 12 }}>
-                  60-Page Limit Reached
-                </h2>
-                <p style={{ fontSize: 16, color: '#6b7280', lineHeight: 1.6 }}>
-                  You've processed 60 pages this month. Purchase 60 more pages to continue analyzing deals.
-                </p>
-              </div>
-
-              <div style={{ 
-                background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-                border: '2px solid #0ea5e9',
-                borderRadius: 12,
-                padding: 24,
-                marginBottom: 24,
-                textAlign: 'center',
-              }}>
-                <div style={{ fontSize: 14, color: '#0369a1', fontWeight: 900, marginBottom: 8 }}>
-                  60 PAGE PACK
-                </div>
-                <div style={{ fontSize: 36, fontWeight: 900, color: '#0369a1' }}>
-                  $29
-                </div>
-                <div style={{ fontSize: 14, color: '#0369a1', marginTop: 4 }}>
-                  One-time purchase • No subscription
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: 12 }}>
-                <button
-                  onClick={() => {
-                    alert('Purchase feature disabled - no authentication required');
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: '14px 28px',
-                    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: 10,
-                    fontSize: 16,
-                    fontWeight: 900,
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.3)',
-                  }}
-                >
-                  Buy 60 Pages - $29
-                </button>
-              </div>
-              <button
-                onClick={() => window.location.href = '/'}
-                style={{
-                  width: '100%',
-                  marginTop: 12,
-                  padding: '10px',
-                  background: 'transparent',
-                  color: '#6b7280',
-                  border: 'none',
-                  fontSize: 14,
-                  cursor: 'pointer',
-                  textDecoration: 'underline',
-                }}
-              >
-                Go to Dashboard
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     );
   }

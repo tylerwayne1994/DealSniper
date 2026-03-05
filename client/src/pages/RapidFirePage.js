@@ -416,53 +416,6 @@ const TokenConfirmModal = ({ isOpen, onCancel, onConfirm, tokensRequired, tokenB
   );
 };
 
-// Mock deals used if backend is not yet implemented or request fails
-/** @type {RapidFireDeal[]} */
-const MOCK_DEALS = [
-  {
-    id: 'rf-1',
-    name: 'Creekside Apartments',
-    city: 'Dallas',
-    state: 'TX',
-    units: 42,
-    price: 4100000,
-    brokerCapRate: 6.9,
-    noi: 310000,
-    capRate: 7.6,
-    dscr: 1.34,
-    cashOnCash: 9.2,
-    verdict: 'deal'
-  },
-  {
-    id: 'rf-2',
-    name: 'Sunset Villas',
-    city: 'Phoenix',
-    state: 'AZ',
-    units: 60,
-    price: 5500000,
-    brokerCapRate: 6.5,
-    noi: 360000,
-    capRate: 6.8,
-    dscr: 1.18,
-    cashOnCash: 7.1,
-    verdict: 'maybe'
-  },
-  {
-    id: 'rf-3',
-    name: 'Oak Ridge Homes',
-    city: 'Atlanta',
-    state: 'GA',
-    units: 28,
-    price: 3100000,
-    brokerCapRate: 5.8,
-    noi: 185000,
-    capRate: 6.0,
-    dscr: 1.02,
-    cashOnCash: 4.3,
-    verdict: 'trash'
-  }
-];
-
 function RapidFirePage() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);

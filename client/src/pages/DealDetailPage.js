@@ -564,7 +564,7 @@ function DealDetailPage() {
         <div style={{...styles.card, ...styles.lightCard}}>
           <h2 style={styles.sectionTitle}>AI-Assisted Actions</h2>
           <p style={{marginBottom: '20px', color: '#888', fontSize: '14px'}}>
-            These are stub endpoints that will be powered by LLM later.
+            Generate AI-powered documents for this deal.
           </p>
           <div style={styles.buttonContainer}>
             <button onClick={handleGeneratePitchDeck} style={styles.button}>Generate Pitch Deck</button>

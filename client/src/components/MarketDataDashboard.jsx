@@ -787,7 +787,7 @@ const MarketDataDashboard = ({ dealId, initialZip, initialCity, initialState, in
         ? `${dealAddress}, ${location.city}, ${location.state} ${location.zip}`.trim()
         : `${location.city}, ${location.state} ${location.zip}`.trim();
       
-      const response = await fetch('http://localhost:8010/api/market-data/summary', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com'}/api/market-data/summary`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -828,13 +828,6 @@ const MarketDataDashboard = ({ dealId, initialZip, initialCity, initialState, in
         <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>
           View housing, economic, and demographic data for any market
         </p>
-        {/* Debug: show resolved and input location values for verification */}
-        <div style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280' }}>
-          <div><strong>Debug inputs:</strong> initialZip: {initialZip || '—'} • initialCity: {initialCity || '—'} • initialState: {initialState || '—'}</div>
-          <div>current search: ZIP {searchZip || '—'} • County {searchCounty || '—'} • State {searchState || '—'}</div>
-          <div>activeSearch (applied): ZIP {activeSearch.zip || '—'} • County {activeSearch.county || '—'} • State {activeSearch.state || '—'}</div>
-          <div>dealAddress: {dealAddress ? dealAddress : '—'}</div>
-        </div>
       </div>
 
       {/* Search Section */}
@@ -1309,22 +1302,6 @@ const MarketDataDashboard = ({ dealId, initialZip, initialCity, initialState, in
                 </div>
               </div>
 
-              {/* Debug info: show which migration source and sample matched rows */}
-              {migrationData && (migrationData.source || migrationData.samples) && (
-                <div style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280' }}>
-                  <div><strong>Migration source:</strong> {migrationData.source || 'primary'}</div>
-                  {migrationData.samples && migrationData.samples.length > 0 && (
-                    <div style={{ marginTop: '8px' }}>
-                      <div style={{ fontSize: '12px', color: '#374151', marginBottom: '6px' }}>Sample matched rows (first {migrationData.samples.length}):</div>
-                      <ol style={{ paddingLeft: '18px', margin: 0 }}>
-                        {migrationData.samples.map((s, i) => (
-                          <li key={i} style={{ marginBottom: '6px', fontSize: '12px' }}>{s.type} — {s.origin || s.rowZip || 'unknown'} → {s.dest || s.rowCounty || ''} — {s.migrants || s.rowIn || 0}</li>
-                        ))}
-                      </ol>
-                    </div>
-                  )}
-                </div>
-              )}
             </>
           )}
 

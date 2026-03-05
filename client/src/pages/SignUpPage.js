@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Building2, Mail, Lock, Phone, MapPin, Briefcase, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -7,10 +6,6 @@ import { supabase } from '../lib/supabase';
 // ============================================================================
 // Sign Up Page - Create account with profile fields
 // ============================================================================
-
-// Initialize Stripe once outside component (prevents multiple instances)
-const STRIPE_PUBLISHABLE_KEY = 'pk_test_51Sf9IJRRD0SJQZk3CyZb1eweP0dpjdba4gQpIk0PxQRlFn4Zn4qarExANcYwdxI1MwMRXuM8LapyQCASNy4KypWJ00RxuONolG';
-const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
 
 function SignUpPage() {
   const navigate = useNavigate();
