@@ -52,10 +52,13 @@ def _task_decorator(fn):
 
 def _run_agent_task_impl(self_or_none, run_id: str, agent_id: str, user_id: str):
     """Execute a single agent run (called as Celery task OR synchronously)."""
+    logger.info("[DEBUG] ===== AGENT TASK STARTING =====")
+    logger.info("[DEBUG] run_id=%s agent_id=%s user_id=%s", run_id, agent_id, user_id)
     try:
+        logger.info("[DEBUG] Loading agent config...")
         config = get_agent_config(agent_id, user_id)
         if not config:
-            logger.error(f"Agent config {agent_id} not found")
+            logger.error("[DEBUG] Agent config %s not found for user %s", agent_id, user_id)
             update_agent_run(run_id, {
                 "status": "failed",
                 "error": "Agent configuration not found",
@@ -65,10 +68,15 @@ def _run_agent_task_impl(self_or_none, run_id: str, agent_id: str, user_id: str)
 
         # Decrypt credentials
         platforms = config.get("platform_credentials", [])
+        logger.info("[DEBUG] Found %d platform credentials, decrypting...", len(platforms))
         decrypted = decrypt_platform_list(platforms)
+        logger.info("[DEBUG] Decrypted %d platforms: %s",
+                     len(decrypted), [d.get('platform_id') for d in decrypted])
 
         buy_box = config.get("buy_box", {})
+        logger.info("[DEBUG] Buy box: %s", {k: v for k, v in buy_box.items() if v} if isinstance(buy_box, dict) else buy_box)
 
+        logger.info("[DEBUG] Starting execute_agent_run via asyncio.run()...")
         result = asyncio.run(execute_agent_run(
             run_id=run_id,
             agent_id=agent_id,
@@ -76,10 +84,13 @@ def _run_agent_task_impl(self_or_none, run_id: str, agent_id: str, user_id: str)
             platform_credentials=decrypted,
             buy_box=buy_box,
         ))
+        logger.info("[DEBUG] ===== AGENT TASK COMPLETED =====")
+        logger.info("[DEBUG] Result: %s", result)
         return result
 
     except Exception as exc:
-        logger.error(f"Agent run {run_id} failed: {exc}\n{traceback.format_exc()}")
+        logger.error("[ERROR] ===== AGENT TASK FAILED =====")
+        logger.error("[ERROR] Agent run %s failed: %s\n%s", run_id, exc, traceback.format_exc())
         update_agent_run(run_id, {
             "status": "failed",
             "error": str(exc)[:500],
@@ -185,10 +196,14 @@ else:
 
 def dispatch_agent_run(run_id: str, agent_id: str, user_id: str) -> dict:
     """Dispatch an agent run — async via Celery if available, else sync."""
+    logger.info("[DEBUG] dispatch_agent_run: run_id=%s agent_id=%s has_celery=%s", run_id, agent_id, _HAS_CELERY)
     if _HAS_CELERY:
+        logger.info("[DEBUG] Dispatching via Celery (async)")
         task_result = run_agent_task.delay(run_id, agent_id, user_id)
+        logger.info("[DEBUG] Celery task dispatched: task_id=%s", task_result.id)
         return {"dispatch": "async", "celery_task_id": task_result.id}
     else:
-        logger.info("Celery unavailable — running agent synchronously")
+        logger.info("[DEBUG] Celery unavailable — running agent SYNCHRONOUSLY (this will block the request!)")
         result = _run_agent_task_impl(None, run_id, agent_id, user_id)
+        logger.info("[DEBUG] Sync run completed: %s", result)
         return {"dispatch": "sync", "result": result}

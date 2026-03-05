@@ -35,6 +35,7 @@ def get_supabase() -> Client:
 
 def create_agent_config(user_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
     """Insert a new agent config row. Returns the created record."""
+    log.info("[DEBUG] create_agent_config: user_id=%s", user_id)
     sb = get_supabase()
     now = datetime.now(timezone.utc).isoformat()
     row = {
@@ -46,8 +47,11 @@ def create_agent_config(user_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
         "created_at": now,
         "updated_at": now,
     }
+    log.info("[DEBUG] Inserting into agent_configs...")
     result = sb.table("agent_configs").insert(row).execute()
-    return result.data[0] if result.data else row
+    inserted = result.data[0] if result.data else row
+    log.info("[DEBUG] agent_configs insert success: id=%s", inserted.get('id', '?'))
+    return inserted
 
 
 def get_agent_config(agent_id: str, user_id: str) -> Optional[Dict[str, Any]]:
@@ -138,6 +142,7 @@ def delete_agent_config(agent_id: str, user_id: str) -> bool:
 
 def create_agent_run(agent_id: str, user_id: str) -> Dict[str, Any]:
     """Create a new run record (status=running)."""
+    log.info("[DEBUG] create_agent_run: agent_id=%s user_id=%s", agent_id, user_id)
     sb = get_supabase()
     now = datetime.now(timezone.utc).isoformat()
     row = {
@@ -148,12 +153,20 @@ def create_agent_run(agent_id: str, user_id: str) -> Dict[str, Any]:
         "deals_found": 0,
         "log": json.dumps([]),
     }
+    log.info("[DEBUG] Inserting into agent_runs...")
     result = sb.table("agent_runs").insert(row).execute()
-    return result.data[0] if result.data else row
+    inserted = result.data[0] if result.data else row
+    log.info("[DEBUG] agent_runs insert success: run_id=%s status=%s", inserted.get('id', '?'), inserted.get('status'))
+    return inserted
 
 
 def update_agent_run(run_id: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """Update a run record (status, deals_found, finished_at, log, error)."""
+    log.info("[DEBUG] update_agent_run: run_id=%s data_keys=%s", run_id, list(data.keys()))
+    if 'status' in data:
+        log.info("[DEBUG] Run %s → status=%s", run_id, data['status'])
+    if 'error' in data:
+        log.error("[DEBUG] Run %s error: %s", run_id, str(data['error'])[:200])
     sb = get_supabase()
     update_row: Dict[str, Any] = {}
     if "status" in data:
@@ -195,6 +208,8 @@ def get_agent_runs(agent_id: str, user_id: str, limit: int = 20) -> List[Dict[st
 
 def create_agent_deal(run_id: str, user_id: str, deal_data: Dict[str, Any]) -> Dict[str, Any]:
     """Insert a deal found by an agent run."""
+    log.info("[DEBUG] create_agent_deal: run_id=%s address=%s platform=%s",
+             run_id, deal_data.get('address', '?'), deal_data.get('platform', '?'))
     sb = get_supabase()
     now = datetime.now(timezone.utc).isoformat()
     row = {
@@ -215,7 +230,9 @@ def create_agent_deal(run_id: str, user_id: str, deal_data: Dict[str, Any]) -> D
         "created_at": now,
     }
     result = sb.table("agent_deals").insert(row).execute()
-    return result.data[0] if result.data else row
+    inserted = result.data[0] if result.data else row
+    log.info("[DEBUG] agent_deals insert success: deal_id=%s", inserted.get('id', '?'))
+    return inserted
 
 
 def get_agent_deals(user_id: str, limit: int = 50) -> List[Dict[str, Any]]:
@@ -239,6 +256,7 @@ def get_agent_deals(user_id: str, limit: int = 50) -> List[Dict[str, Any]]:
 def create_notification(user_id: str, message: str, run_id: Optional[str] = None,
                         deal_id: Optional[str] = None) -> Dict[str, Any]:
     """Create a user notification."""
+    log.info("[DEBUG] create_notification: user=%s msg=%s", user_id, message[:100])
     sb = get_supabase()
     row = {
         "user_id": user_id,
@@ -249,7 +267,9 @@ def create_notification(user_id: str, message: str, run_id: Optional[str] = None
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     result = sb.table("agent_notifications").insert(row).execute()
-    return result.data[0] if result.data else row
+    inserted = result.data[0] if result.data else row
+    log.info("[DEBUG] Notification created: id=%s", inserted.get('id', '?'))
+    return inserted
 
 
 def get_notifications(user_id: str, unread_only: bool = False, limit: int = 30) -> List[Dict[str, Any]]:

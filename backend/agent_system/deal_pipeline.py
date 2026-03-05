@@ -187,9 +187,14 @@ async def process_agent_deals(
     Returns list of created deal records.
     """
     created_deals = []
+    log.info("[DEBUG] ===== PROCESS AGENT DEALS =====")
+    log.info("[DEBUG] Processing %d deals for run_id=%s", len(deals), run_id)
 
-    for deal in deals:
+    for idx, deal in enumerate(deals):
         try:
+            log.info("[DEBUG] --- Deal %d/%d: %s (%s) ---", idx+1, len(deals), deal.address, deal.platform)
+            log.info("[DEBUG] Price=%s Units=%s DocType=%s HasPDF=%s",
+                     deal.price, deal.units, deal.doc_type, bool(deal.om_pdf_bytes))
             om_file_path = None
             v2_deal_id = None
             underwrite_result = None
@@ -295,16 +300,25 @@ async def execute_agent_run(
     """
     from agent_system.browser_agent import run_agent_search
 
-    log.info("Executing agent run: run_id=%s agent_id=%s", run_id, agent_id)
+    log.info("[DEBUG] ===== EXECUTE AGENT RUN START =====")
+    log.info("[DEBUG] run_id=%s agent_id=%s user_id=%s", run_id, agent_id, user_id)
+    log.info("[DEBUG] Platforms to search: %s", [c.get('platform_id') for c in platform_credentials])
+    log.info("[DEBUG] Buy box: %s", {k: v for k, v in buy_box.items() if v} if isinstance(buy_box, dict) else buy_box)
 
     try:
         # Run the browser agent across all platforms
+        log.info("[DEBUG] Starting browser agent search across %d platforms...", len(platform_credentials))
         deals = await run_agent_search(
             platform_credentials=platform_credentials,
             buy_box=buy_box,
         )
+        log.info("[DEBUG] Browser search complete: %d deals found", len(deals))
+        for i, d in enumerate(deals):
+            log.info("[DEBUG] Deal %d: %s | %s | $%s | %s",
+                     i+1, d.address, d.platform, d.price, d.doc_type)
 
         # Process found deals (parse, underwrite, push to pipeline)
+        log.info("[DEBUG] Starting deal processing pipeline...")
         created = await process_agent_deals(
             run_id=run_id,
             user_id=user_id,

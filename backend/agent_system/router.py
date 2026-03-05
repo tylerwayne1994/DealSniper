@@ -34,6 +34,7 @@ from agent_system.models import (
 )
 from agent_system.encryption import encrypt_platform_list, decrypt_platform_list
 
+import os
 log = logging.getLogger("agent_system.router")
 
 router = APIRouter(prefix="/api/agents", tags=["agents"])
@@ -59,23 +60,32 @@ def _get_user_id(request: Request) -> str:
 async def create_agent(request: Request, body: AgentCreateRequest):
     """Create or reset the user's agent configuration."""
     user_id = _get_user_id(request)
+    log.info("[DEBUG] POST /config — user_id=%s platforms=%d runs_per_week=%s",
+             user_id, len(body.platforms), body.runs_per_week)
     try:
         # Encrypt platform credentials before storing
+        platform_ids = [p.platform_id for p in body.platforms]
+        log.info("[DEBUG] Encrypting credentials for platforms: %s", platform_ids)
         encrypted_platforms = encrypt_platform_list([
             {"platform_id": p.platform_id, "username": p.username, "password": p.password}
             for p in body.platforms
         ])
+        log.info("[DEBUG] Encryption successful, %d platforms encrypted", len(encrypted_platforms))
+
+        buy_box = body.buy_box.dict() if body.buy_box else {}
+        log.info("[DEBUG] Buy box: %s", {k: v for k, v in buy_box.items() if v})
 
         config = create_agent_config(user_id, {
             "platform_credentials": encrypted_platforms,
-            "buy_box": body.buy_box.dict() if body.buy_box else {},
+            "buy_box": buy_box,
             "runs_per_week": body.runs_per_week,
         })
+        log.info("[DEBUG] Agent config created: id=%s status=%s", config.get('id'), config.get('status'))
 
         return _config_response(config)
 
     except Exception as e:
-        log.error("Failed to create agent config: %s\n%s", e, traceback.format_exc())
+        log.error("[ERROR] Failed to create agent config: %s\n%s", e, traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e)[:200])
 
 
@@ -83,9 +93,13 @@ async def create_agent(request: Request, body: AgentCreateRequest):
 async def get_agent(request: Request):
     """Get the current user's agent configuration (credentials redacted)."""
     user_id = _get_user_id(request)
+    log.info("[DEBUG] GET /config — user_id=%s", user_id)
     config = get_agent_config_by_user(user_id)
     if not config:
+        log.info("[DEBUG] No agent config found for user %s", user_id)
         return JSONResponse(status_code=200, content={"config": None})
+    log.info("[DEBUG] Found agent config: id=%s status=%s last_run=%s",
+             config.get('id'), config.get('status'), config.get('last_run_at'))
     return {"config": _config_response(config)}
 
 
@@ -93,9 +107,11 @@ async def get_agent(request: Request):
 async def update_agent(request: Request, agent_id: str, body: AgentUpdateRequest):
     """Update the user's agent configuration."""
     user_id = _get_user_id(request)
+    log.info("[DEBUG] PUT /config/%s — user_id=%s", agent_id, user_id)
 
     update_data = {}
     if body.platforms is not None:
+        log.info("[DEBUG] Updating platforms: %s", [p.platform_id for p in body.platforms])
         update_data["platform_credentials"] = encrypt_platform_list([
             {"platform_id": p.platform_id, "username": p.username, "password": p.password}
             for p in body.platforms
@@ -107,9 +123,12 @@ async def update_agent(request: Request, agent_id: str, body: AgentUpdateRequest
     if body.status is not None:
         update_data["status"] = body.status
 
+    log.info("[DEBUG] Update data keys: %s", list(update_data.keys()))
     config = update_agent_config(agent_id, user_id, update_data)
     if not config:
+        log.warning("[DEBUG] Agent config %s not found for user %s", agent_id, user_id)
         raise HTTPException(status_code=404, detail="Agent config not found")
+    log.info("[DEBUG] Agent config updated successfully: id=%s", config.get('id'))
 
     return _config_response(config)
 
@@ -118,9 +137,11 @@ async def update_agent(request: Request, agent_id: str, body: AgentUpdateRequest
 async def delete_agent(request: Request, agent_id: str):
     """Delete the user's agent configuration."""
     user_id = _get_user_id(request)
+    log.info("[DEBUG] DELETE /config/%s — user_id=%s", agent_id, user_id)
     ok = delete_agent_config(agent_id, user_id)
     if not ok:
         raise HTTPException(status_code=404, detail="Agent config not found")
+    log.info("[DEBUG] Agent config %s deleted", agent_id)
     return {"deleted": True}
 
 
@@ -132,21 +153,32 @@ async def delete_agent(request: Request, agent_id: str):
 async def trigger_run(request: Request, agent_id: str):
     """Trigger an immediate agent run (Run Now button)."""
     user_id = _get_user_id(request)
+    log.info("[DEBUG] ===== RUN NOW TRIGGERED =====")
+    log.info("[DEBUG] POST /config/%s/run — user_id=%s", agent_id, user_id)
 
     config = get_agent_config(agent_id, user_id)
     if not config:
+        log.error("[DEBUG] Agent config %s not found for user %s", agent_id, user_id)
         raise HTTPException(status_code=404, detail="Agent config not found")
+
+    platforms = config.get('platform_credentials', [])
+    buy_box = config.get('buy_box', {})
+    log.info("[DEBUG] Config loaded: %d platforms, buy_box keys=%s, status=%s",
+             len(platforms), list(buy_box.keys()) if isinstance(buy_box, dict) else '?', config.get('status'))
 
     # Create run record
     run = create_agent_run(agent_id, user_id)
+    log.info("[DEBUG] Agent run record created: run_id=%s", run.get('id'))
 
     # Dispatch — async via Celery if available, else synchronous
     from agent_system.celery_tasks import dispatch_agent_run
+    log.info("[DEBUG] Dispatching agent run...")
     dispatch_result = dispatch_agent_run(
         run_id=run["id"],
         agent_id=agent_id,
         user_id=user_id,
     )
+    log.info("[DEBUG] Dispatch result: %s", dispatch_result)
 
     return {
         "run_id": run["id"],
@@ -227,24 +259,53 @@ async def read_notification(request: Request, notification_id: str):
 @router.get("/health")
 async def agent_health():
     """Quick health check for the agent subsystem."""
+    log.info("[DEBUG] GET /health — checking agent subsystem")
+
+    # Check Celery
     try:
         from agent_system.celery_app import celery_app
         celery_ok = celery_app is not None
-    except Exception:
+    except Exception as e:
         celery_ok = False
+        log.info("[DEBUG] Celery not available: %s", e)
 
+    # Check database
     try:
         from agent_system.models import get_supabase
         sb = get_supabase()
         db_ok = sb is not None
-    except Exception:
+    except Exception as e:
         db_ok = False
+        log.error("[DEBUG] Database connection failed: %s", e)
 
-    return {
+    # Check encryption key
+    encryption_ok = bool(os.getenv("AGENT_ENCRYPTION_KEY"))
+
+    # Check browser-use
+    try:
+        import browser_use
+        browser_ok = True
+    except ImportError:
+        browser_ok = False
+
+    # Check playwright
+    try:
+        import playwright
+        playwright_ok = True
+    except ImportError:
+        playwright_ok = False
+
+    result = {
         "agent_system": "ok",
         "celery": celery_ok,
         "database": db_ok,
+        "encryption_key_set": encryption_ok,
+        "browser_use_installed": browser_ok,
+        "playwright_installed": playwright_ok,
+        "openai_key_set": bool(os.getenv("OPENAI_API_KEY")),
     }
+    log.info("[DEBUG] Health check result: %s", result)
+    return result
 
 
 # ---------------------------------------------------------------------------

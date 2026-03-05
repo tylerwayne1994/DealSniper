@@ -62,13 +62,19 @@ def encrypt_platform_list(platforms: list) -> list:
     Input: [{"platform_id": "crexi", "username": "x", "password": "y"}, ...]
     Returns the same list but with username/password replaced by an encrypted token.
     """
+    log.info("[DEBUG] Encrypting %d platform credentials", len(platforms))
     encrypted = []
     for p in platforms:
+        pid = p["platform_id"]
+        has_user = bool(p.get("username"))
+        has_pass = bool(p.get("password"))
+        log.info("[DEBUG] Encrypting %s — has_username=%s has_password=%s", pid, has_user, has_pass)
         creds = {"username": p.get("username", ""), "password": p.get("password", "")}
         encrypted.append({
-            "platform_id": p["platform_id"],
+            "platform_id": pid,
             "encrypted_credentials": encrypt_credentials(creds),
         })
+    log.info("[DEBUG] All %d platforms encrypted successfully", len(encrypted))
     return encrypted
 
 
@@ -77,15 +83,21 @@ def decrypt_platform_list(platforms: list) -> list:
     Decrypt credentials for each platform entry.
     Returns list with username/password in plaintext (for agent use only).
     """
+    log.info("[DEBUG] Decrypting %d platform credentials", len(platforms))
     decrypted = []
     for p in platforms:
+        pid = p.get("platform_id", "unknown")
         token = p.get("encrypted_credentials", "")
         if token:
+            log.info("[DEBUG] Decrypting %s — token length=%d", pid, len(token))
             creds = decrypt_credentials(token)
+            log.info("[DEBUG] Decrypted %s — has_username=%s has_password=%s",
+                     pid, bool(creds.get('username')), bool(creds.get('password')))
         else:
+            log.warning("[DEBUG] No encrypted token for %s — credentials will be empty", pid)
             creds = {"username": "", "password": ""}
         decrypted.append({
-            "platform_id": p["platform_id"],
+            "platform_id": pid,
             "username": creds.get("username", ""),
             "password": creds.get("password", ""),
         })
