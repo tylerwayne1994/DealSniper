@@ -37,19 +37,13 @@ import { supabase } from '../lib/supabase';
 const PLATFORMS = [
   { id: 'crexi', name: 'Crexi', url: 'https://www.crexi.com', color: '#2563eb' },
   { id: 'zillow', name: 'Zillow', url: 'https://www.zillow.com', color: '#006aff' },
+  { id: 'propstream', name: 'PropStream', url: 'https://www.propstream.com', color: '#0d9488' },
 ];
 
 const PROPERTY_TYPES = [
   'Multifamily',
-  'Office',
-  'Retail',
-  'Industrial',
-  'Mixed-Use',
   'Self-Storage',
   'Mobile Home Park',
-  'Hotel/Hospitality',
-  'Land',
-  'Special Purpose',
 ];
 
 const SCHEDULE_OPTIONS = [
@@ -389,6 +383,9 @@ function AgentPage() {
     maxUnits: '',
     minSqft: '',
     maxSqft: '',
+    // Occupancy
+    minOccupancy: '',
+    maxOccupancy: '',
     // Additional filters
     minYearBuilt: '',
     maxYearBuilt: '',
@@ -500,6 +497,8 @@ function AgentPage() {
           max_price: buyBox.maxPrice ? parseInt(buyBox.maxPrice.replace(/[^0-9]/g, '')) : null,
           min_cap_rate: buyBox.minCapRate ? parseFloat(buyBox.minCapRate) : null,
           max_cap_rate: buyBox.maxCapRate ? parseFloat(buyBox.maxCapRate) : null,
+          min_occupancy: buyBox.minOccupancy ? parseFloat(buyBox.minOccupancy) : null,
+          max_occupancy: buyBox.maxOccupancy ? parseFloat(buyBox.maxOccupancy) : null,
           min_units: buyBox.minUnits ? parseInt(buyBox.minUnits) : null,
           max_units: buyBox.maxUnits ? parseInt(buyBox.maxUnits) : null,
           min_sqft: buyBox.minSqft ? parseInt(buyBox.minSqft.replace(/[^0-9]/g, '')) : null,
@@ -587,7 +586,7 @@ function AgentPage() {
                 AI Deal Finder Agent
               </h1>
               <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: '#676879', fontWeight: '400' }}>
-                Configure your automated deal-searching agent to scan Crexi &amp; Zillow
+                Configure your automated deal-searching agent to scan Crexi, Zillow &amp; PropStream
               </p>
             </div>
           </div>
@@ -596,17 +595,17 @@ function AgentPage() {
             <div style={{
               display: 'flex', alignItems: 'center', gap: '6px',
               padding: '7px 14px', borderRadius: '999px',
-              backgroundColor: agentStatus === 'active' ? '#dcfce7' : agentStatus === 'running' ? '#dbeafe' : agentStatus === 'paused' ? '#fef3c7' : '#f3f4f6',
-              border: `1px solid ${agentStatus === 'active' ? '#86efac' : agentStatus === 'running' ? '#93c5fd' : agentStatus === 'paused' ? '#fcd34d' : '#e5e7eb'}`,
+              backgroundColor: agentStatus === 'active' ? '#dcfce7' : agentStatus === 'running' ? '#dbeafe' : agentStatus === 'paused' ? '#e0f2fe' : '#f3f4f6',
+              border: `1px solid ${agentStatus === 'active' ? '#86efac' : agentStatus === 'running' ? '#93c5fd' : agentStatus === 'paused' ? '#7dd3fc' : '#e5e7eb'}`,
             }}>
               <div style={{
                 width: '8px', height: '8px', borderRadius: '50%',
-                backgroundColor: agentStatus === 'active' ? '#059669' : agentStatus === 'running' ? '#2563eb' : agentStatus === 'paused' ? '#d97706' : '#9ca3af',
+                backgroundColor: agentStatus === 'active' ? '#059669' : agentStatus === 'running' ? '#2563eb' : agentStatus === 'paused' ? '#0284c7' : '#9ca3af',
                 ...(agentStatus === 'running' ? { animation: 'pulse 1.5s infinite' } : {}),
               }} />
               <span style={{
                 fontSize: '12px', fontWeight: '600',
-                color: agentStatus === 'active' ? '#059669' : agentStatus === 'running' ? '#2563eb' : agentStatus === 'paused' ? '#d97706' : '#6b7280',
+                color: agentStatus === 'active' ? '#059669' : agentStatus === 'running' ? '#2563eb' : agentStatus === 'paused' ? '#0284c7' : '#6b7280',
                 textTransform: 'capitalize',
               }}>
                 {agentStatus === 'inactive' ? 'Not Configured' : agentStatus}
@@ -636,7 +635,7 @@ function AgentPage() {
       {/* ================================================================ */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
         <StatCard label="Agent Status" value={agentStatus === 'inactive' ? 'Setup' : agentStatus.charAt(0).toUpperCase() + agentStatus.slice(1)} icon={Bot} color="#2563eb" />
-        <StatCard label="Runs / Week" value={runsPerWeek} icon={Clock} color="#7c3aed" />
+        <StatCard label="Runs / Week" value={runsPerWeek} icon={Clock} color="#0891b2" />
         <StatCard label="Deals Found" value={totalDealsFound} icon={Building2} color="#059669" />
         <StatCard label="Platforms" value={enabledPlatforms.length} icon={Globe} color="#0891b2" />
       </div>
@@ -795,7 +794,7 @@ function AgentPage() {
             {/* ---- Property Type ---- */}
             <div style={{ marginBottom: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <Building2 size={14} color="#7c3aed" />
+                <Building2 size={14} color="#2563eb" />
                 <span style={{ fontSize: '13px', fontWeight: '700', color: '#111827', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Property Type</span>
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -804,7 +803,7 @@ function AgentPage() {
                     key={type}
                     type="button"
                     onClick={() => togglePropertyType(type)}
-                    style={pillBadge(buyBox.propertyTypes.includes(type), '#7c3aed')}
+                    style={pillBadge(buyBox.propertyTypes.includes(type), '#2563eb')}
                   >
                     {type}
                   </button>
@@ -940,6 +939,46 @@ function AgentPage() {
               </div>
             </div>
 
+            {/* ---- Occupancy % ---- */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <TrendingUp size={14} color="#059669" />
+                <span style={{ fontSize: '13px', fontWeight: '700', color: '#111827', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Occupancy %</span>
+              </div>
+              <div style={gridRow(2)}>
+                <div>
+                  <label style={labelStyle}>Min Occupancy (%)</label>
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    max="100"
+                    placeholder="e.g. 85"
+                    value={buyBox.minOccupancy}
+                    onChange={(e) => handleBuyBoxChange('minOccupancy', e.target.value)}
+                    style={inputStyle}
+                    onFocus={(e) => { e.target.style.borderColor = '#059669'; }}
+                    onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; }}
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>Max Occupancy (%)</label>
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    max="100"
+                    placeholder="e.g. 100"
+                    value={buyBox.maxOccupancy}
+                    onChange={(e) => handleBuyBoxChange('maxOccupancy', e.target.value)}
+                    style={inputStyle}
+                    onFocus={(e) => { e.target.style.borderColor = '#059669'; }}
+                    onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; }}
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* ---- Additional Filters ---- */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
@@ -999,10 +1038,10 @@ function AgentPage() {
         >
           <div style={{
             width: '32px', height: '32px', borderRadius: '8px',
-            backgroundColor: '#faf5ff',
+            backgroundColor: '#ecfdf5',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <Clock size={16} color="#7c3aed" />
+            <Clock size={16} color="#059669" />
           </div>
           <h2 style={sectionTitleStyle}>Run Schedule</h2>
           <span style={sectionSubtitleStyle}>
@@ -1026,9 +1065,9 @@ function AgentPage() {
                   style={{
                     padding: '12px 24px',
                     borderRadius: '10px',
-                    border: runsPerWeek === opt.value ? '2px solid #7c3aed' : '1px solid #e5e7eb',
-                    backgroundColor: runsPerWeek === opt.value ? '#faf5ff' : '#fff',
-                    color: runsPerWeek === opt.value ? '#7c3aed' : '#374151',
+                    border: runsPerWeek === opt.value ? '2px solid #059669' : '1px solid #e5e7eb',
+                    backgroundColor: runsPerWeek === opt.value ? '#ecfdf5' : '#fff',
+                    color: runsPerWeek === opt.value ? '#059669' : '#374151',
                     fontSize: '14px',
                     fontWeight: '600',
                     cursor: 'pointer',
@@ -1036,7 +1075,7 @@ function AgentPage() {
                     minWidth: '120px',
                     textAlign: 'center',
                   }}
-                  onMouseEnter={(e) => { if (runsPerWeek !== opt.value) e.currentTarget.style.borderColor = '#c4b5fd'; }}
+                  onMouseEnter={(e) => { if (runsPerWeek !== opt.value) e.currentTarget.style.borderColor = '#6ee7b7'; }}
                   onMouseLeave={(e) => { if (runsPerWeek !== opt.value) e.currentTarget.style.borderColor = '#e5e7eb'; }}
                 >
                   {opt.label}
