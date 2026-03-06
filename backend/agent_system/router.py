@@ -207,6 +207,22 @@ async def resume_agent(request: Request, agent_id: str):
     return {"status": "active"}
 
 
+@router.post("/runs/{run_id}/cancel")
+async def cancel_run(request: Request, run_id: str):
+    """Cancel a running agent run."""
+    user_id = _get_user_id(request)
+    log.info("[DEBUG] POST /runs/%s/cancel — user_id=%s", run_id, user_id)
+    result = update_agent_run(run_id, {
+        "status": "cancelled",
+        "error": "Cancelled by user",
+        "finished_at": datetime.now(timezone.utc).isoformat(),
+    })
+    if not result:
+        raise HTTPException(status_code=404, detail="Run not found")
+    log.info("[DEBUG] Run %s cancelled", run_id)
+    return {"status": "cancelled", "run_id": run_id}
+
+
 @router.get("/runs")
 async def list_runs(request: Request, agent_id: Optional[str] = Query(None)):
     """List recent agent runs for the user."""

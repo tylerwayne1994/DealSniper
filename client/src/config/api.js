@@ -79,6 +79,7 @@ export const API_ENDPOINTS = {
   agentPause: (agentId) => `${API_BASE_URL}/api/agents/config/${agentId}/pause`,
   agentResume: (agentId) => `${API_BASE_URL}/api/agents/config/${agentId}/resume`,
   agentRuns: `${API_BASE_URL}/api/agents/runs`,
+  agentCancelRun: (runId) => `${API_BASE_URL}/api/agents/runs/${runId}/cancel`,
   agentDeals: `${API_BASE_URL}/api/agents/deals`,
   agentNotifications: `${API_BASE_URL}/api/agents/notifications`,
   agentHealth: `${API_BASE_URL}/api/agents/health`,

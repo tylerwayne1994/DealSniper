@@ -26,6 +26,10 @@ import {
   Trash2,
   Plus,
   Search,
+  XCircle,
+  ExternalLink,
+  History,
+  Target,
 } from 'lucide-react';
 import DashboardShell from '../components/DashboardShell';
 import { supabase } from '../lib/supabase';
@@ -355,11 +359,17 @@ function AgentPage() {
   const [lastRunAt, setLastRunAt] = useState(null);
   const [totalDealsFound, setTotalDealsFound] = useState(0);
 
+  // Run history & deals state
+  const [agentRuns, setAgentRuns] = useState([]);
+  const [agentDeals, setAgentDeals] = useState([]);
+
   // Section collapse state
   const [expandedSections, setExpandedSections] = useState({
     credentials: true,
     buyBox: true,
     schedule: true,
+    runHistory: true,
+    dealsFound: true,
   });
 
   // Platform credentials (only in state during this session, cleared on nav away)
@@ -471,15 +481,26 @@ function AgentPage() {
       });
       setPlatformCredentials(creds);
 
-      // Load deals count from recent runs
+      // Load runs + deals
       try {
-        const runsResp = await fetch(`${API_ENDPOINTS.agentRuns}?agent_id=${cfg.id}`, {
-          headers: { 'X-User-ID': uid },
-        });
+        const [runsResp, dealsResp] = await Promise.all([
+          fetch(`${API_ENDPOINTS.agentRuns}?agent_id=${cfg.id}`, { headers: { 'X-User-ID': uid } }),
+          fetch(API_ENDPOINTS.agentDeals, { headers: { 'X-User-ID': uid } }),
+        ]);
         if (runsResp.ok) {
           const runsData = await runsResp.json();
-          const total = (runsData.runs || []).reduce((sum, r) => sum + (r.deals_found || 0), 0);
+          const runs = runsData.runs || [];
+          setAgentRuns(runs);
+          const total = runs.reduce((sum, r) => sum + (r.deals_found || 0), 0);
           setTotalDealsFound(total);
+          // If any run is still "running", keep status as running
+          if (runs.some(r => r.status === 'running')) {
+            setAgentStatus('running');
+          }
+        }
+        if (dealsResp.ok) {
+          const dealsData = await dealsResp.json();
+          setAgentDeals(dealsData.deals || []);
         }
       } catch (_) { /* ignore */ }
 
@@ -672,6 +693,30 @@ function AgentPage() {
     } catch (err) {
       console.error('Error toggling pause:', err);
       setSaveMessage(`Error: ${err.message}`);
+    }
+  };
+
+  // ============================================================================
+  // Cancel Run handler
+  // ============================================================================
+
+  const handleCancelRun = async (runId) => {
+    try {
+      const resp = await fetch(API_ENDPOINTS.agentCancelRun(runId), {
+        method: 'POST',
+        headers: { 'X-User-ID': userId },
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.detail || `Server error ${resp.status}`);
+      }
+      setSaveMessage('Run cancelled');
+      setTimeout(() => setSaveMessage(''), 3000);
+      // Refresh
+      loadAgentConfig(userId);
+    } catch (err) {
+      console.error('Error cancelling run:', err);
+      setSaveMessage(`Cancel failed: ${err.message}`);
     }
   };
 
@@ -1293,6 +1338,23 @@ function AgentPage() {
               Resume Agent
             </button>
           )}
+          {agentStatus === 'running' && (
+            <button
+              onClick={() => {
+                const runningRun = agentRuns.find(r => r.status === 'running');
+                if (runningRun) handleCancelRun(runningRun.id);
+              }}
+              style={{
+                ...buttonSecondary,
+                background: '#fef2f2',
+                color: '#dc2626',
+                border: '1px solid #fecaca',
+              }}
+            >
+              <XCircle size={16} />
+              Cancel Run
+            </button>
+          )}
         </div>
 
         <div style={{ fontSize: '12px', color: '#9ca3af' }}>
@@ -1300,6 +1362,238 @@ function AgentPage() {
             ? 'Add at least one platform to get started'
             : `Agent will search ${enabledPlatforms.length} platform${enabledPlatforms.length !== 1 ? 's' : ''}, ${runsPerWeek}x per week`}
         </div>
+      </div>
+
+      {/* ================================================================ */}
+      {/* Run History */}
+      {/* ================================================================ */}
+      <div style={cardStyle}>
+        <div
+          onClick={() => toggleSection('runHistory')}
+          style={sectionHeaderStyle}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <History size={20} color="#2563eb" />
+            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#111827' }}>
+              Run History
+            </h3>
+            <span style={{
+              fontSize: '11px',
+              background: '#eff6ff',
+              color: '#2563eb',
+              padding: '2px 8px',
+              borderRadius: '10px',
+              fontWeight: '500',
+            }}>
+              {agentRuns.length} run{agentRuns.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          {expandedSections.runHistory ? <ChevronDown size={18} color="#9ca3af" /> : <ChevronRight size={18} color="#9ca3af" />}
+        </div>
+        {expandedSections.runHistory && (
+          <div style={{ marginTop: '12px' }}>
+            {agentRuns.length === 0 ? (
+              <p style={{ fontSize: '13px', color: '#9ca3af', fontStyle: 'italic', margin: 0 }}>
+                No runs yet — click "Run Now" to start your first agent run.
+              </p>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+                      <th style={{ textAlign: 'left', padding: '8px 10px', color: '#6b7280', fontWeight: '500' }}>Status</th>
+                      <th style={{ textAlign: 'left', padding: '8px 10px', color: '#6b7280', fontWeight: '500' }}>Started</th>
+                      <th style={{ textAlign: 'left', padding: '8px 10px', color: '#6b7280', fontWeight: '500' }}>Finished</th>
+                      <th style={{ textAlign: 'center', padding: '8px 10px', color: '#6b7280', fontWeight: '500' }}>Deals</th>
+                      <th style={{ textAlign: 'right', padding: '8px 10px', color: '#6b7280', fontWeight: '500' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {agentRuns.slice(0, 10).map((run) => {
+                      const statusColors = {
+                        running: { bg: '#eff6ff', text: '#2563eb' },
+                        completed: { bg: '#f0fdf4', text: '#16a34a' },
+                        failed: { bg: '#fef2f2', text: '#dc2626' },
+                        cancelled: { bg: '#f9fafb', text: '#6b7280' },
+                      };
+                      const sc = statusColors[run.status] || statusColors.cancelled;
+                      return (
+                        <tr key={run.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                          <td style={{ padding: '8px 10px' }}>
+                            <span style={{
+                              fontSize: '11px',
+                              fontWeight: '500',
+                              background: sc.bg,
+                              color: sc.text,
+                              padding: '2px 8px',
+                              borderRadius: '10px',
+                              textTransform: 'capitalize',
+                            }}>
+                              {run.status}
+                            </span>
+                          </td>
+                          <td style={{ padding: '8px 10px', color: '#374151' }}>
+                            {run.started_at ? new Date(run.started_at).toLocaleString() : '—'}
+                          </td>
+                          <td style={{ padding: '8px 10px', color: '#374151' }}>
+                            {run.finished_at ? new Date(run.finished_at).toLocaleString() : '—'}
+                          </td>
+                          <td style={{ padding: '8px 10px', textAlign: 'center', color: '#374151', fontWeight: '600' }}>
+                            {run.deals_found || 0}
+                          </td>
+                          <td style={{ padding: '8px 10px', textAlign: 'right' }}>
+                            {run.status === 'running' && (
+                              <button
+                                onClick={() => handleCancelRun(run.id)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#dc2626',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  fontWeight: '500',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                }}
+                              >
+                                <XCircle size={14} /> Cancel
+                              </button>
+                            )}
+                            {run.status === 'failed' && run.error_message && (
+                              <span title={run.error_message} style={{ color: '#dc2626', cursor: 'help', fontSize: '12px' }}>
+                                <AlertCircle size={14} />
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ================================================================ */}
+      {/* Deals Found */}
+      {/* ================================================================ */}
+      <div style={cardStyle}>
+        <div
+          onClick={() => toggleSection('dealsFound')}
+          style={sectionHeaderStyle}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Target size={20} color="#059669" />
+            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#111827' }}>
+              Deals Found
+            </h3>
+            <span style={{
+              fontSize: '11px',
+              background: '#f0fdf4',
+              color: '#059669',
+              padding: '2px 8px',
+              borderRadius: '10px',
+              fontWeight: '500',
+            }}>
+              {agentDeals.length} deal{agentDeals.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          {expandedSections.dealsFound ? <ChevronDown size={18} color="#9ca3af" /> : <ChevronRight size={18} color="#9ca3af" />}
+        </div>
+        {expandedSections.dealsFound && (
+          <div style={{ marginTop: '12px' }}>
+            {agentDeals.length === 0 ? (
+              <p style={{ fontSize: '13px', color: '#9ca3af', fontStyle: 'italic', margin: 0 }}>
+                No deals found yet — run the agent to start discovering deals that match your buy box.
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {agentDeals.slice(0, 20).map((deal) => (
+                  <div
+                    key={deal.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 14px',
+                      background: '#f9fafb',
+                      borderRadius: '8px',
+                      border: '1px solid #f3f4f6',
+                      flexWrap: 'wrap',
+                      gap: '8px',
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: '200px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: '600', color: '#111827' }}>
+                        {deal.address || deal.listing_url || 'Unknown Property'}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                        {deal.platform && <span>{deal.platform}</span>}
+                        {deal.property_type && <span>{deal.property_type}</span>}
+                        {deal.price && <span>${Number(deal.price).toLocaleString()}</span>}
+                        {deal.units && <span>{deal.units} units</span>}
+                        {deal.cap_rate && <span>{deal.cap_rate}% cap</span>}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{
+                        fontSize: '11px',
+                        fontWeight: '500',
+                        background: deal.pipeline_deal_id ? '#f0fdf4' : '#eff6ff',
+                        color: deal.pipeline_deal_id ? '#059669' : '#2563eb',
+                        padding: '2px 8px',
+                        borderRadius: '10px',
+                        textTransform: 'capitalize',
+                      }}>
+                        {deal.pipeline_deal_id ? 'In Pipeline' : deal.status || 'found'}
+                      </span>
+                      {deal.listing_url && (
+                        <a
+                          href={deal.listing_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: '#2563eb', display: 'inline-flex' }}
+                          title="View Listing"
+                        >
+                          <ExternalLink size={14} />
+                        </a>
+                      )}
+                      {deal.pipeline_deal_id && (
+                        <button
+                          onClick={() => navigate(`/underwrite?viewDeal=${deal.pipeline_deal_id}`)}
+                          style={{
+                            background: '#059669',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '6px',
+                            padding: '4px 10px',
+                            fontSize: '11px',
+                            fontWeight: '500',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          <TrendingUp size={12} />
+                          View Deal
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {agentDeals.length > 20 && (
+                  <p style={{ fontSize: '12px', color: '#9ca3af', textAlign: 'center', margin: '4px 0 0 0' }}>
+                    Showing 20 of {agentDeals.length} deals
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Inline keyframes for spinner */}

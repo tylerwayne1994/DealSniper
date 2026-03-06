@@ -20,6 +20,7 @@ load_dotenv(dotenv_path=Path(__file__).resolve().parents[1] / ".env", override=T
 log = logging.getLogger("agent_system.browser_agent")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "") or os.getenv("CLAUDE_API_KEY", "")
 
 # ============================================================================
 # Deal result structure returned by each platform search
@@ -334,15 +335,15 @@ async def run_platform_search(
     """
     try:
         from browser_use import Agent
-        from langchain_openai import ChatOpenAI
+        from langchain_anthropic import ChatAnthropic
     except ImportError as e:
-        log.error("browser-use or langchain-openai not installed: %s", e)
+        log.error("browser-use or langchain-anthropic not installed: %s", e)
         raise RuntimeError(
-            "browser-use library not installed. Run: pip install browser-use langchain-openai"
+            "browser-use library not installed. Run: pip install browser-use langchain-anthropic"
         ) from e
 
-    if not OPENAI_API_KEY:
-        raise RuntimeError("OPENAI_API_KEY environment variable is not set")
+    if not ANTHROPIC_API_KEY:
+        raise RuntimeError("ANTHROPIC_API_KEY environment variable is not set")
 
     # Build the task prompt
     task = _build_search_task(platform_id, credentials, buy_box)
@@ -353,21 +354,13 @@ async def run_platform_search(
 
     log.info("[DEBUG] Starting browser-use agent for platform=%s download_dir=%s", platform_id, download_dir)
 
-    # Initialize the LLM
-    llm = ChatOpenAI(
-        model="gpt-4o",
-        api_key=OPENAI_API_KEY,
+    # Initialize the LLM — using Claude to avoid Pydantic compat issues with ChatOpenAI
+    llm = ChatAnthropic(
+        model="claude-sonnet-4-20250514",
+        api_key=ANTHROPIC_API_KEY,
         temperature=0.0,
     )
-
-    # browser-use expects .provider attribute on the LLM — patch if missing.
-    # ChatOpenAI is a Pydantic model, so we must bypass validation.
-    if not hasattr(llm, 'provider'):
-        try:
-            object.__setattr__(llm, 'provider', 'openai')
-            log.info("[DEBUG] Patched ChatOpenAI with .provider='openai' (via object.__setattr__)")
-        except Exception as patch_err:
-            log.warning("[DEBUG] Could not patch .provider: %s", patch_err)
+    log.info("[DEBUG] ChatAnthropic initialized with claude-sonnet-4-20250514")
 
     # Configure browser with download directory so PDFs save to a known location
     try:
