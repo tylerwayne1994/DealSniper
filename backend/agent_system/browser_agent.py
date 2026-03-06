@@ -360,7 +360,12 @@ async def run_platform_search(
         api_key=ANTHROPIC_API_KEY,
         temperature=0.0,
     )
-    log.info("[DEBUG] ChatAnthropic initialized with claude-sonnet-4-20250514")
+    # browser-use accesses llm.provider — Pydantic blocks normal setattr, so bypass it
+    try:
+        object.__setattr__(llm, 'provider', 'anthropic')
+    except Exception:
+        pass
+    log.info("[DEBUG] ChatAnthropic initialized with claude-sonnet-4-20250514 (provider patched)")
 
     # Configure browser with download directory so PDFs save to a known location
     try:

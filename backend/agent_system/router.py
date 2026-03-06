@@ -27,6 +27,7 @@ from agent_system.models import (
     update_agent_config,
     delete_agent_config,
     create_agent_run,
+    update_agent_run,
     get_agent_runs,
     get_agent_deals,
     get_notifications,
