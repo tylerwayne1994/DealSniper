@@ -354,18 +354,17 @@ async def run_platform_search(
 
     log.info("[DEBUG] Starting browser-use agent for platform=%s download_dir=%s", platform_id, download_dir)
 
-    # Initialize the LLM — using Claude to avoid Pydantic compat issues with ChatOpenAI
-    llm = ChatAnthropic(
+    # Subclass ChatAnthropic so browser-use can access .provider as a real field
+    class _BrowserUseLLM(ChatAnthropic):
+        """ChatAnthropic with .provider attribute that browser-use expects."""
+        provider: str = "anthropic"
+
+    llm = _BrowserUseLLM(
         model="claude-sonnet-4-20250514",
         api_key=ANTHROPIC_API_KEY,
         temperature=0.0,
     )
-    # browser-use accesses llm.provider — Pydantic blocks normal setattr, so bypass it
-    try:
-        object.__setattr__(llm, 'provider', 'anthropic')
-    except Exception:
-        pass
-    log.info("[DEBUG] ChatAnthropic initialized with claude-sonnet-4-20250514 (provider patched)")
+    log.info("[DEBUG] ChatAnthropic subclass initialized (provider=%s)", llm.provider)
 
     # Configure browser with download directory so PDFs save to a known location
     try:

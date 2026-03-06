@@ -211,17 +211,21 @@ async def resume_agent(request: Request, agent_id: str):
 @router.post("/runs/{run_id}/cancel")
 async def cancel_run(request: Request, run_id: str):
     """Cancel a running agent run."""
-    user_id = _get_user_id(request)
-    log.info("[DEBUG] POST /runs/%s/cancel — user_id=%s", run_id, user_id)
-    result = update_agent_run(run_id, {
-        "status": "cancelled",
-        "error": "Cancelled by user",
-        "finished_at": datetime.now(timezone.utc).isoformat(),
-    })
-    if not result:
-        raise HTTPException(status_code=404, detail="Run not found")
-    log.info("[DEBUG] Run %s cancelled", run_id)
-    return {"status": "cancelled", "run_id": run_id}
+    try:
+        user_id = _get_user_id(request)
+        log.info("[DEBUG] POST /runs/%s/cancel — user_id=%s", run_id, user_id)
+        result = update_agent_run(run_id, {
+            "status": "cancelled",
+            "error": "Cancelled by user",
+            "finished_at": datetime.now(timezone.utc).isoformat(),
+        })
+        if not result:
+            return JSONResponse(status_code=404, content={"detail": "Run not found"})
+        log.info("[DEBUG] Run %s cancelled", run_id)
+        return {"status": "cancelled", "run_id": run_id}
+    except Exception as e:
+        log.error("[DEBUG] cancel_run error: %s", e)
+        return JSONResponse(status_code=500, content={"detail": str(e)})
 
 
 @router.get("/runs")
