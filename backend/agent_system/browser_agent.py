@@ -354,17 +354,24 @@ async def run_platform_search(
 
     log.info("[DEBUG] Starting browser-use agent for platform=%s download_dir=%s", platform_id, download_dir)
 
-    llm = ChatAnthropic(
+    # browser-use monkey-patches attributes onto the LLM (e.g. provider, ainvoke).
+    # Pydantic v2 blocks __setattr__ for unknown fields on ChatAnthropic.
+    # This subclass overrides __setattr__ so rejected attrs fall back to __dict__,
+    # preserving all original methods and isinstance checks.
+    class _FlexibleLLM(ChatAnthropic):
+        def __setattr__(self, name, value):
+            try:
+                super().__setattr__(name, value)
+            except (ValueError, AttributeError):
+                self.__dict__[name] = value
+
+    llm = _FlexibleLLM(
         model="claude-sonnet-4-20250514",
         api_key=ANTHROPIC_API_KEY,
         temperature=0.0,
     )
-    # browser-use reads llm.provider — write directly to instance __dict__
-    # so Python finds it in __getattribute__ before Pydantic's __getattr__ fires.
-    # Class-level attrs corrupt Pydantic's model; object.__setattr__ also fails.
-    # __dict__ is the ONE place Pydantic cannot intercept.
-    llm.__dict__['provider'] = 'anthropic'
-    log.info("[DEBUG] ChatAnthropic initialized (provider=%s)", llm.__dict__.get('provider', 'unset'))
+    llm.provider = 'anthropic'
+    log.info("[DEBUG] _FlexibleLLM initialized (provider=%s)", getattr(llm, 'provider', 'unset'))
 
     # Configure browser with download directory so PDFs save to a known location
     try:
