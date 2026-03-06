@@ -354,17 +354,17 @@ async def run_platform_search(
 
     log.info("[DEBUG] Starting browser-use agent for platform=%s download_dir=%s", platform_id, download_dir)
 
-    # Subclass ChatAnthropic so browser-use can access .provider as a real field
-    class _BrowserUseLLM(ChatAnthropic):
-        """ChatAnthropic with .provider attribute that browser-use expects."""
-        provider: str = "anthropic"
+    # browser-use reads llm.provider — set it as a plain class attr (not a Pydantic field)
+    # so it's found by normal Python attribute lookup without breaking Pydantic methods
+    if not hasattr(ChatAnthropic, 'provider'):
+        ChatAnthropic.provider = 'anthropic'
 
-    llm = _BrowserUseLLM(
+    llm = ChatAnthropic(
         model="claude-sonnet-4-20250514",
         api_key=ANTHROPIC_API_KEY,
         temperature=0.0,
     )
-    log.info("[DEBUG] ChatAnthropic subclass initialized (provider=%s)", llm.provider)
+    log.info("[DEBUG] ChatAnthropic initialized (provider=%s)", getattr(llm, 'provider', 'unset'))
 
     # Configure browser with download directory so PDFs save to a known location
     try:
