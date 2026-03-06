@@ -354,17 +354,17 @@ async def run_platform_search(
 
     log.info("[DEBUG] Starting browser-use agent for platform=%s download_dir=%s", platform_id, download_dir)
 
-    # browser-use reads llm.provider — set it as a plain class attr (not a Pydantic field)
-    # so it's found by normal Python attribute lookup without breaking Pydantic methods
-    if not hasattr(ChatAnthropic, 'provider'):
-        ChatAnthropic.provider = 'anthropic'
-
     llm = ChatAnthropic(
         model="claude-sonnet-4-20250514",
         api_key=ANTHROPIC_API_KEY,
         temperature=0.0,
     )
-    log.info("[DEBUG] ChatAnthropic initialized (provider=%s)", getattr(llm, 'provider', 'unset'))
+    # browser-use reads llm.provider — write directly to instance __dict__
+    # so Python finds it in __getattribute__ before Pydantic's __getattr__ fires.
+    # Class-level attrs corrupt Pydantic's model; object.__setattr__ also fails.
+    # __dict__ is the ONE place Pydantic cannot intercept.
+    llm.__dict__['provider'] = 'anthropic'
+    log.info("[DEBUG] ChatAnthropic initialized (provider=%s)", llm.__dict__.get('provider', 'unset'))
 
     # Configure browser with download directory so PDFs save to a known location
     try:
