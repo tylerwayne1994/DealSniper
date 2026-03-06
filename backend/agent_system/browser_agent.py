@@ -360,10 +360,14 @@ async def run_platform_search(
         temperature=0.0,
     )
 
-    # browser-use expects .provider attribute on the LLM — patch if missing
+    # browser-use expects .provider attribute on the LLM — patch if missing.
+    # ChatOpenAI is a Pydantic model, so we must bypass validation.
     if not hasattr(llm, 'provider'):
-        llm.provider = 'openai'
-        log.info("[DEBUG] Patched ChatOpenAI with .provider='openai'")
+        try:
+            object.__setattr__(llm, 'provider', 'openai')
+            log.info("[DEBUG] Patched ChatOpenAI with .provider='openai' (via object.__setattr__)")
+        except Exception as patch_err:
+            log.warning("[DEBUG] Could not patch .provider: %s", patch_err)
 
     # Configure browser with download directory so PDFs save to a known location
     try:
