@@ -351,7 +351,7 @@ async def run_platform_search(
     if not download_dir:
         download_dir = tempfile.mkdtemp(prefix="agent_om_")
 
-    log.info("Starting browser-use agent for platform=%s download_dir=%s", platform_id, download_dir)
+    log.info("[DEBUG] Starting browser-use agent for platform=%s download_dir=%s", platform_id, download_dir)
 
     # Initialize the LLM
     llm = ChatOpenAI(
@@ -360,6 +360,11 @@ async def run_platform_search(
         temperature=0.0,
     )
 
+    # browser-use expects .provider attribute on the LLM — patch if missing
+    if not hasattr(llm, 'provider'):
+        llm.provider = 'openai'
+        log.info("[DEBUG] Patched ChatOpenAI with .provider='openai'")
+
     # Configure browser with download directory so PDFs save to a known location
     try:
         from browser_use import BrowserConfig
@@ -367,20 +372,23 @@ async def run_platform_search(
             downloads_dir=download_dir,
             headless=True,
         )
+        log.info("[DEBUG] BrowserConfig created: headless=True downloads_dir=%s", download_dir)
         agent = Agent(
             task=task,
             llm=llm,
             browser_config=browser_config,
         )
-    except (ImportError, TypeError):
+    except (ImportError, TypeError) as bc_err:
         # Older browser-use versions may not support BrowserConfig
-        log.warning("BrowserConfig not available, using default Agent config")
+        log.warning("[DEBUG] BrowserConfig not available (%s), using default Agent config", bc_err)
         agent = Agent(
             task=task,
             llm=llm,
         )
 
+    log.info("[DEBUG] Agent created, calling agent.run()...")
     result = await agent.run()
+    log.info("[DEBUG] Agent.run() returned, type=%s", type(result).__name__)
 
     # Extract the final output text
     output_text = ""
