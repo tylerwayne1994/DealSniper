@@ -215,8 +215,14 @@ from token_purchase_handler import router as token_purchase_router
 app.include_router(token_purchase_router)
 
 # Agent System: Browser-use AI deal scouting agents
-from agent_system.router import router as agent_router
-app.include_router(agent_router)
+try:
+    from agent_system.router import router as agent_router
+    app.include_router(agent_router)
+    log.info("[AGENT SYSTEM] Router loaded successfully")
+except Exception as _agent_err:
+    log.error("[AGENT SYSTEM] Failed to load agent system — backend will still run without it: %s", _agent_err)
+    import traceback
+    traceback.print_exc()
 
 # Market Analysis: Drive-time isochrones & census aggregation
 try:

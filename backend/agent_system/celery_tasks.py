@@ -20,9 +20,11 @@ try:
     if celery_app is None:
         raise ImportError("celery_app is None")
     _HAS_CELERY = True
-except ImportError:
+    logger.info("[DEBUG] Celery is available — will dispatch agent runs asynchronously")
+except ImportError as _ce:
     _HAS_CELERY = False
     celery_app = None
+    logger.info("[DEBUG] Celery NOT available (%s) — will run agent tasks synchronously", _ce)
 
 from agent_system.models import (
     get_agent_config,
@@ -192,10 +194,23 @@ else:
 
 # ---------------------------------------------------------------------------
 # Synchronous wrapper for when Celery is unavailable (e.g., Render free tier)
+# Uses a background thread so the HTTP request returns immediately.
 # ---------------------------------------------------------------------------
 
+import threading
+
+def _run_in_background(run_id: str, agent_id: str, user_id: str):
+    """Run the agent task in a background thread."""
+    logger.info("[DEBUG] Background thread started for run_id=%s", run_id)
+    try:
+        _run_agent_task_impl(None, run_id, agent_id, user_id)
+        logger.info("[DEBUG] Background thread completed for run_id=%s", run_id)
+    except Exception as exc:
+        logger.error("[ERROR] Background thread failed for run_id=%s: %s", run_id, exc)
+
+
 def dispatch_agent_run(run_id: str, agent_id: str, user_id: str) -> dict:
-    """Dispatch an agent run — async via Celery if available, else sync."""
+    """Dispatch an agent run — async via Celery if available, else background thread."""
     logger.info("[DEBUG] dispatch_agent_run: run_id=%s agent_id=%s has_celery=%s", run_id, agent_id, _HAS_CELERY)
     if _HAS_CELERY:
         logger.info("[DEBUG] Dispatching via Celery (async)")
@@ -203,7 +218,12 @@ def dispatch_agent_run(run_id: str, agent_id: str, user_id: str) -> dict:
         logger.info("[DEBUG] Celery task dispatched: task_id=%s", task_result.id)
         return {"dispatch": "async", "celery_task_id": task_result.id}
     else:
-        logger.info("[DEBUG] Celery unavailable — running agent SYNCHRONOUSLY (this will block the request!)")
-        result = _run_agent_task_impl(None, run_id, agent_id, user_id)
-        logger.info("[DEBUG] Sync run completed: %s", result)
-        return {"dispatch": "sync", "result": result}
+        logger.info("[DEBUG] Celery unavailable — running agent in background thread")
+        t = threading.Thread(
+            target=_run_in_background,
+            args=(run_id, agent_id, user_id),
+            daemon=True,
+        )
+        t.start()
+        logger.info("[DEBUG] Background thread launched: %s", t.name)
+        return {"dispatch": "background_thread", "thread": t.name}

@@ -9,10 +9,13 @@ from pathlib import Path
 
 load_dotenv(dotenv_path=Path(__file__).resolve().parents[1] / ".env", override=True)
 
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+REDIS_URL = os.getenv("REDIS_URL", "")
 
-# Only create the Celery app if celery is installed
+# Only create the Celery app if celery is installed AND Redis is configured
 try:
+    if not REDIS_URL:
+        raise ImportError("REDIS_URL not set — skipping Celery, will use sync fallback")
+
     from celery import Celery
     from celery.schedules import crontab
 
