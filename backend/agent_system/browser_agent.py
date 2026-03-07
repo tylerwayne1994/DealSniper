@@ -354,16 +354,26 @@ async def run_platform_search(
 
     log.info("[DEBUG] Starting browser-use agent for platform=%s download_dir=%s", platform_id, download_dir)
 
-    # browser-use monkey-patches attributes onto the LLM (e.g. provider, ainvoke).
-    # Pydantic v2 blocks __setattr__ for unknown fields on ChatAnthropic.
-    # This subclass overrides __setattr__ so rejected attrs fall back to __dict__,
-    # preserving all original methods and isinstance checks.
+    # browser-use monkey-patches attributes onto the LLM (e.g. provider, ainvoke)
+    # and reads attributes like model_name that ChatAnthropic doesn't have.
+    # This subclass handles both:
+    #   __setattr__: rejected attrs fall back to __dict__
+    #   __getattr__: maps model_name -> model, and checks __dict__ for patched attrs
     class _FlexibleLLM(ChatAnthropic):
         def __setattr__(self, name, value):
             try:
                 super().__setattr__(name, value)
             except (ValueError, AttributeError):
                 self.__dict__[name] = value
+
+        def __getattr__(self, name):
+            # browser-use reads model_name but ChatAnthropic calls it 'model'
+            if name == 'model_name':
+                return self.model
+            # Check __dict__ for attrs set via the __setattr__ fallback
+            if name in self.__dict__:
+                return self.__dict__[name]
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
     llm = _FlexibleLLM(
         model="claude-sonnet-4-20250514",
