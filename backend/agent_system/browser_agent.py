@@ -6,9 +6,12 @@
 
 import os
 import re
+import glob
 import logging
 import asyncio
+import shutil
 import tempfile
+import subprocess
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 
@@ -320,6 +323,60 @@ def _parse_int(val) -> Optional[int]:
 
 
 # ============================================================================
+# Find the Playwright-installed Chromium binary
+# ============================================================================
+
+def _find_chromium_binary() -> Optional[str]:
+    """
+    Locate the Playwright Chromium binary on the system.
+    Tries multiple strategies in order of reliability.
+    """
+    # Strategy 1: CHROME_PATH env var (often set on CI servers)
+    env_path = os.environ.get("CHROME_PATH") or os.environ.get("CHROMIUM_PATH")
+    if env_path and os.path.isfile(env_path):
+        log.info("[DEBUG] Chromium found via env var: %s", env_path)
+        return env_path
+
+    # Strategy 2: Glob for Playwright's managed browser directory
+    home = os.path.expanduser("~")
+    playwright_patterns = [
+        f"{home}/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
+        "/ms-playwright/chromium-*/chrome-linux/chrome",
+        "/opt/render/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
+        # Fallback: inside the venv
+        "/opt/render/project/src/.venv/**/ms-playwright/chromium-*/chrome-linux/chrome",
+    ]
+    for pattern in playwright_patterns:
+        matches = sorted(glob.glob(pattern, recursive=True))
+        if matches:
+            log.info("[DEBUG] Chromium found via glob pattern %s: %s", pattern, matches[-1])
+            return matches[-1]
+
+    # Strategy 3: shutil.which for system-installed browsers
+    for name in ["chromium", "chromium-browser", "google-chrome", "google-chrome-stable"]:
+        path = shutil.which(name)
+        if path:
+            log.info("[DEBUG] Chromium found via shutil.which(%s): %s", name, path)
+            return path
+
+    # Strategy 4: Ask playwright where it installed chromium
+    try:
+        result = subprocess.run(
+            ["python", "-m", "playwright", "install", "--dry-run", "chromium"],
+            capture_output=True, text=True, timeout=10,
+        )
+        for line in (result.stdout + result.stderr).splitlines():
+            if "chrome" in line.lower() and os.path.isfile(line.strip()):
+                log.info("[DEBUG] Chromium found via playwright dry-run: %s", line.strip())
+                return line.strip()
+    except Exception as e:
+        log.debug("[DEBUG] playwright dry-run failed: %s", e)
+
+    log.warning("[DEBUG] Could not find Chromium binary anywhere!")
+    return None
+
+
+# ============================================================================
 # Main agent runner — executes browser-use for one platform
 # ============================================================================
 
@@ -336,6 +393,11 @@ async def run_platform_search(
     try:
         from browser_use import Agent
         from langchain_anthropic import ChatAnthropic
+        # browser-use 0.12.x uses BrowserSession instead of BrowserConfig
+        try:
+            from browser_use import BrowserSession
+        except ImportError:
+            BrowserSession = None
     except ImportError as e:
         log.error("browser-use or langchain-anthropic not installed: %s", e)
         raise RuntimeError(
@@ -383,22 +445,42 @@ async def run_platform_search(
     llm.provider = 'anthropic'
     log.info("[DEBUG] _FlexibleLLM initialized (provider=%s)", getattr(llm, 'provider', 'unset'))
 
-    # Configure browser with download directory so PDFs save to a known location
-    try:
-        from browser_use import BrowserConfig
-        browser_config = BrowserConfig(
-            downloads_dir=download_dir,
-            headless=True,
-        )
-        log.info("[DEBUG] BrowserConfig created: headless=True downloads_dir=%s", download_dir)
-        agent = Agent(
-            task=task,
-            llm=llm,
-            browser_config=browser_config,
-        )
-    except (ImportError, TypeError) as bc_err:
-        # Older browser-use versions may not support BrowserConfig
-        log.warning("[DEBUG] BrowserConfig not available (%s), using default Agent config", bc_err)
+    # Configure browser with explicit Chromium path to avoid uvx dependency
+    chromium_path = _find_chromium_binary()
+    log.info("[DEBUG] Chromium binary path: %s", chromium_path)
+
+    if BrowserSession is not None:
+        try:
+            session_kwargs = {
+                "headless": True,
+            }
+            if chromium_path:
+                session_kwargs["browser_binary_path"] = chromium_path
+            # Try passing downloads path if supported
+            try:
+                browser_session = BrowserSession(**session_kwargs)
+                log.info("[DEBUG] BrowserSession created: headless=True binary=%s", chromium_path or "auto")
+                agent = Agent(
+                    task=task,
+                    llm=llm,
+                    browser_session=browser_session,
+                )
+            except TypeError as te:
+                log.warning("[DEBUG] BrowserSession init failed (%s), trying without browser_binary_path", te)
+                browser_session = BrowserSession(headless=True)
+                agent = Agent(
+                    task=task,
+                    llm=llm,
+                    browser_session=browser_session,
+                )
+        except Exception as bs_err:
+            log.warning("[DEBUG] BrowserSession failed (%s), falling back to default Agent config", bs_err)
+            agent = Agent(
+                task=task,
+                llm=llm,
+            )
+    else:
+        log.warning("[DEBUG] BrowserSession not available, using default Agent config")
         agent = Agent(
             task=task,
             llm=llm,
