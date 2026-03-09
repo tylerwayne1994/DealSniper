@@ -22,6 +22,15 @@ load_dotenv(dotenv_path=Path(__file__).resolve().parents[1] / ".env", override=T
 
 log = logging.getLogger("agent_system.browser_agent")
 
+# ── Set PLAYWRIGHT_BROWSERS_PATH at module load time ────────────────────────
+# browser-use 0.12.1 uses Playwright's internal detection which reads this var.
+# Must be set BEFORE any Playwright or browser-use imports pick it up.
+_BROWSERS_DIR = os.path.join(os.path.dirname(__file__), "..", ".browsers")
+_BROWSERS_DIR_ABS = os.path.abspath(_BROWSERS_DIR)
+if "PLAYWRIGHT_BROWSERS_PATH" not in os.environ:
+    os.environ["PLAYWRIGHT_BROWSERS_PATH"] = _BROWSERS_DIR_ABS
+    log.info("[CHROMIUM] Module init: set PLAYWRIGHT_BROWSERS_PATH=%s", _BROWSERS_DIR_ABS)
+
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "") or os.getenv("CLAUDE_API_KEY", "")
 
@@ -328,7 +337,8 @@ def _parse_int(val) -> Optional[int]:
 
 # Persistent browser dir INSIDE the project so it survives Render build→runtime.
 # Set via PLAYWRIGHT_BROWSERS_PATH env var in render.yaml.
-_PROJECT_BROWSERS_DIR = os.path.join(os.path.dirname(__file__), "..", ".browsers")
+# Reuse _BROWSERS_DIR computed at module top.
+_PROJECT_BROWSERS_DIR = _BROWSERS_DIR
 _CHROMIUM_PATH_FILE = os.path.join(os.path.dirname(__file__), "..", ".chromium_path")
 
 
@@ -445,7 +455,18 @@ def _ensure_chromium() -> Optional[str]:
 
 
 def _set_chromium_env(binary_path: Optional[str]):
-    """Set env vars so browser-use's watchdog finds the binary."""
+    """Set env vars so browser-use's watchdog finds the binary.
+    
+    CRITICAL: browser-use 0.12.1 uses Playwright's internal browser detection
+    which reads PLAYWRIGHT_BROWSERS_PATH. Without it, the watchdog cannot
+    find the binary even if CHROME_PATH and PATH are set.
+    """
+    # Always set PLAYWRIGHT_BROWSERS_PATH to the project .browsers dir
+    # so Playwright's internal registry can find installed browsers.
+    browsers_abs = os.path.abspath(_PROJECT_BROWSERS_DIR)
+    os.environ["PLAYWRIGHT_BROWSERS_PATH"] = browsers_abs
+    log.info("[CHROMIUM] Set PLAYWRIGHT_BROWSERS_PATH=%s", browsers_abs)
+
     if not binary_path:
         return
     os.environ["CHROME_PATH"] = binary_path
@@ -540,28 +561,16 @@ async def run_platform_search(
 
     if BrowserSession is not None:
         try:
-            session_kwargs = {
-                "headless": True,
-            }
-            if chromium_path:
-                session_kwargs["browser_binary_path"] = chromium_path
-            # Try passing downloads path if supported
-            try:
-                browser_session = BrowserSession(**session_kwargs)
-                log.info("[DEBUG] BrowserSession created: headless=True binary=%s", chromium_path or "auto")
-                agent = Agent(
-                    task=task,
-                    llm=llm,
-                    browser_session=browser_session,
-                )
-            except TypeError as te:
-                log.warning("[DEBUG] BrowserSession init failed (%s), trying without browser_binary_path", te)
-                browser_session = BrowserSession(headless=True)
-                agent = Agent(
-                    task=task,
-                    llm=llm,
-                    browser_session=browser_session,
-                )
+            # PLAYWRIGHT_BROWSERS_PATH is already set by _set_chromium_env(),
+            # so browser-use's internal Playwright detection will find the binary.
+            browser_session = BrowserSession(headless=True)
+            log.info("[DEBUG] BrowserSession created: headless=True, PLAYWRIGHT_BROWSERS_PATH=%s",
+                     os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "<unset>"))
+            agent = Agent(
+                task=task,
+                llm=llm,
+                browser_session=browser_session,
+            )
         except Exception as bs_err:
             log.warning("[DEBUG] BrowserSession failed (%s), falling back to default Agent config", bs_err)
             agent = Agent(
