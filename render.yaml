@@ -2,7 +2,7 @@ services:
   - type: web
     name: dealsniper-backend
     runtime: python
-    buildCommand: "cd backend && pip install -r requirements.txt && playwright install chromium --with-deps"
+    buildCommand: "cd backend && pip install -r requirements.txt && playwright install chromium --with-deps && python -c \"import glob,os; p=glob.glob(os.path.expanduser('~/.cache/ms-playwright/chromium-*/chrome-linux/chrome')); f=open('.chromium_path','w'); f.write(p[-1] if p else ''); f.close(); print('CHROMIUM_PATH:', p[-1] if p else 'NOT FOUND')\""
     startCommand: "cd backend && uvicorn App:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: MISTRAL_API_KEY
