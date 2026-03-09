@@ -32,6 +32,8 @@ from email_deals import get_supabase, get_imap_connection  # IMAP-based helpers
 
 log = logging.getLogger("email_underwrite")
 
+INBOUND_EMAIL = os.getenv("INBOUND_GMAIL_ADDRESS", "dealsniperinbound@gmail.com").strip().lower()
+
 router = APIRouter(prefix="/api/email-underwrite", tags=["Email Underwrite"])
 
 
@@ -617,6 +619,54 @@ def _safe_decode_header(raw: str) -> str:
     return " ".join(decoded)
 
 
+def _match_sender_to_user(sb, sender_email: str) -> Optional[str]:
+    """Try to match a sender email to a user profile ID.
+
+    Checks: profiles.email (ilike) → email_aliases (contains) → broad scan.
+    Returns user_id or None.
+    """
+    if not sender_email:
+        return None
+
+    sender_email = sender_email.strip().lower()
+
+    # Primary: profiles.email
+    try:
+        res = sb.table("profiles").select("id, email").ilike("email", sender_email).execute()
+        if res.data:
+            uid = res.data[0]["id"]
+            print(f"[AutoPipeline-Match]   ✅ {sender_email} matched via profiles.email → {uid}")
+            return uid
+    except Exception as e:
+        print(f"[AutoPipeline-Match]   profiles.email lookup error: {e}")
+
+    # Secondary: email_aliases
+    try:
+        alias_res = sb.table("profiles").select("id").contains("email_aliases", [sender_email]).execute()
+        if alias_res.data:
+            uid = alias_res.data[0]["id"]
+            print(f"[AutoPipeline-Match]   ✅ {sender_email} matched via email_aliases → {uid}")
+            return uid
+    except Exception as e:
+        print(f"[AutoPipeline-Match]   email_aliases lookup error: {e}")
+
+    # Fallback: broad scan
+    try:
+        broad = sb.table("profiles").select("id, email, email_aliases").execute()
+        for row in (broad.data or []):
+            row_email = (row.get("email") or "").strip().lower()
+            row_aliases = [a.strip().lower() for a in (row.get("email_aliases") or []) if a]
+            if row_email == sender_email or sender_email in row_aliases:
+                uid = row["id"]
+                print(f"[AutoPipeline-Match]   ✅ {sender_email} matched via broad_scan → {uid}")
+                return uid
+    except Exception as e:
+        print(f"[AutoPipeline-Match]   broad scan error: {e}")
+
+    print(f"[AutoPipeline-Match]   ❌ No match for {sender_email}")
+    return None
+
+
 def _sync_inbox_core() -> dict:
     """Core IMAP sync logic — scans inbox + spam, matches senders, creates jobs.
 
@@ -698,40 +748,98 @@ def _sync_inbox_core() -> dict:
 
             print(f"[AutoPipeline-Sync]   NEW email UID={uid_str} from={sender_email} subject={subject[:60]}")
 
+            # ── Handle forwarded emails (From = inbound address) ──
+            # When someone forwards to the inbound, Gmail may rewrite From
+            # to the inbound address. We need to find the ORIGINAL sender.
+            original_sender = None
+            forwarded_subject = None
+            if sender_email == INBOUND_EMAIL:
+                print(f"[AutoPipeline-Sync]     Sender is inbound address — checking for forwarded sender...")
+                try:
+                    # Download full message to inspect body/headers
+                    mail.select(folder)
+                    st_full, full_data = mail.uid("fetch", uid_bytes, "(RFC822)")
+                    if st_full == "OK" and full_data and full_data[0]:
+                        full_bytes = full_data[0][1] if isinstance(full_data[0], tuple) else full_data[0]
+                        full_msg = email_mod.message_from_bytes(full_bytes)
+
+                        # Check headers: X-Forwarded-For, Reply-To, Return-Path
+                        for hdr in ["X-Forwarded-For", "Reply-To", "Return-Path", "X-Original-Sender"]:
+                            hdr_val = full_msg.get(hdr, "")
+                            if hdr_val:
+                                hm = re.search(r"[\w.+-]+@[\w.-]+", hdr_val)
+                                if hm:
+                                    candidate = hm.group(0).strip().lower()
+                                    if candidate != INBOUND_EMAIL:
+                                        original_sender = candidate
+                                        print(f"[AutoPipeline-Sync]     Found original sender via {hdr}: {original_sender}")
+                                        break
+
+                        # Check email body for forwarded message pattern
+                        if not original_sender:
+                            body_text = ""
+                            for part in full_msg.walk():
+                                ct = part.get_content_type()
+                                if ct in ("text/plain", "text/html"):
+                                    try:
+                                        payload = part.get_payload(decode=True)
+                                        if payload:
+                                            body_text += payload.decode("utf-8", errors="replace")
+                                    except Exception:
+                                        pass
+
+                            # Pattern: "From: Name <email>" or "From: email" in forwarded block
+                            fwd_from = re.search(r"(?:From|De|Von):\s*(?:.*?<)?([\w.+-]+@[\w.-]+)", body_text)
+                            if fwd_from:
+                                candidate = fwd_from.group(1).strip().lower()
+                                if candidate != INBOUND_EMAIL:
+                                    original_sender = candidate
+                                    print(f"[AutoPipeline-Sync]     Found original sender in body: {original_sender}")
+
+                            # Extract forwarded subject from body
+                            if not subject:
+                                fwd_subj = re.search(r"Subject:\s*(.+?)(?:\r?\n|$)", body_text)
+                                if fwd_subj:
+                                    forwarded_subject = fwd_subj.group(1).strip()[:200]
+                                    print(f"[AutoPipeline-Sync]     Extracted forwarded subject: {forwarded_subject}")
+                except Exception as fwd_err:
+                    print(f"[AutoPipeline-Sync]     Error extracting forwarded sender: {fwd_err}")
+
+            # Use original sender if found, otherwise keep header sender
+            lookup_email = original_sender or sender_email
+            if forwarded_subject and not subject:
+                subject = forwarded_subject
+            print(f"[AutoPipeline-Sync]     Lookup email for matching: {lookup_email}")
+
             # Match sender to user profile
             matched_user_id = None
             try:
-                # Primary: profiles.email
-                res = sb.table("profiles").select("id, email").ilike("email", sender_email).execute()
-                if res.data:
-                    matched_user_id = res.data[0]["id"]
-                    print(f"[AutoPipeline-Sync]     ✅ Matched via profiles.email → user {matched_user_id}")
-                else:
-                    # Secondary: email_aliases
+                matched_user_id = _match_sender_to_user(sb, lookup_email)
+
+                # If original sender didn't match but we have a forwarded email,
+                # try the header sender too
+                if not matched_user_id and original_sender and original_sender != sender_email:
+                    matched_user_id = _match_sender_to_user(sb, sender_email)
+
+                # LAST RESORT: If sender is the inbound address and we still
+                # can't match, assign to the most recently active user
+                if not matched_user_id and sender_email == INBOUND_EMAIL:
+                    print(f"[AutoPipeline-Sync]     Trying last-resort: assign to most recent active user...")
                     try:
-                        alias_res = sb.table("profiles").select("id").contains("email_aliases", [sender_email]).execute()
-                        if alias_res.data:
-                            matched_user_id = alias_res.data[0]["id"]
-                            print(f"[AutoPipeline-Sync]     ✅ Matched via email_aliases → user {matched_user_id}")
-                    except Exception as alias_err:
-                        print(f"[AutoPipeline-Sync]     Alias lookup error: {alias_err}")
+                        recent_job = sb.table("email_underwrite_jobs").select("user_id").order("created_at", desc=True).limit(1).execute()
+                        if recent_job.data:
+                            matched_user_id = recent_job.data[0]["user_id"]
+                            print(f"[AutoPipeline-Sync]     ✅ Assigned to most recent user: {matched_user_id}")
+                    except Exception:
+                        pass
 
                 if not matched_user_id:
-                    # Fallback: broad scan
                     broad = sb.table("profiles").select("id, email, email_aliases").execute()
-                    for row in (broad.data or []):
-                        row_email = (row.get("email") or "").strip().lower()
-                        row_aliases = [a.strip().lower() for a in (row.get("email_aliases") or []) if a]
-                        if row_email == sender_email or sender_email in row_aliases:
-                            matched_user_id = row["id"]
-                            print(f"[AutoPipeline-Sync]     ✅ Matched via broad_scan → user {matched_user_id}")
-                            break
-                    if not matched_user_id:
-                        all_emails = [(r.get("email",""), r.get("email_aliases",[])) for r in (broad.data or [])]
-                        print(f"[AutoPipeline-Sync]     ❌ NO MATCH for sender={sender_email}")
-                        print(f"[AutoPipeline-Sync]     Available profiles: {all_emails}")
+                    all_emails = [(r.get("email",""), r.get("email_aliases",[])) for r in (broad.data or [])]
+                    print(f"[AutoPipeline-Sync]     ❌ NO MATCH for lookup_email={lookup_email} sender={sender_email}")
+                    print(f"[AutoPipeline-Sync]     Available profiles: {all_emails}")
             except Exception as e:
-                log.warning("[AutoPipeline] Profile lookup failed for %s: %s", sender_email, e)
+                log.warning("[AutoPipeline] Profile lookup failed for %s: %s", lookup_email, e)
                 print(f"[AutoPipeline-Sync]     ❌ Profile lookup EXCEPTION: {e}")
 
             if not matched_user_id:
@@ -1548,4 +1656,30 @@ async def force_sync_pipeline():
         "jobs_processed": len(new_jobs),
         "job_results": job_results,
         "log": debug_log,
+    }
+
+
+@router.post("/reset-stuck-jobs")
+async def reset_stuck_jobs():
+    """Reset jobs stuck in 'processing' status back to 'pending'.
+
+    Also clears old error messages so they can be retried.
+    """
+    sb = get_supabase()
+    now = datetime.utcnow().isoformat()
+
+    # Find stuck processing jobs (older than 10 minutes)
+    stuck = sb.table("email_underwrite_jobs").select("id, status, error_message, updated_at").eq("status", "processing").execute()
+    reset_count = 0
+    for row in (stuck.data or []):
+        sb.table("email_underwrite_jobs").update({
+            "status": "pending",
+            "error_message": f"Reset from processing at {now}",
+            "updated_at": now,
+        }).eq("id", row["id"]).execute()
+        reset_count += 1
+
+    return {
+        "reset_count": reset_count,
+        "message": f"Reset {reset_count} stuck jobs to pending status",
     }

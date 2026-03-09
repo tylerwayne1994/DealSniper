@@ -33,6 +33,21 @@ function EmailUnderwritePage() {
   const [pipelineStatus, setPipelineStatus] = useState(null);
   const [debugResult, setDebugResult] = useState(null);
   const [debugging, setDebugging] = useState(false);
+  const [resettingJobs, setResettingJobs] = useState(false);
+
+  const handleResetStuckJobs = async () => {
+    setResettingJobs(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/email-underwrite/reset-stuck-jobs`, { method: 'POST' });
+      const data = await res.json();
+      setSyncMessage(`Reset ${data.reset_count || 0} stuck jobs. They will be retried on next sync.`);
+      setTimeout(() => loadPipeline(), 1000);
+    } catch (err) {
+      setSyncMessage('Reset error: ' + err.message);
+    } finally {
+      setResettingJobs(false);
+    }
+  };
 
   const handleSyncAndProcess = async () => {
     setSyncing(true);
@@ -656,6 +671,26 @@ function EmailUnderwritePage() {
                 >
                   <AlertTriangle size={14} />
                   {debugging ? 'Diagnosing...' : 'Diagnose Pipeline'}
+                </button>
+                <button
+                  onClick={handleResetStuckJobs}
+                  disabled={resettingJobs}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 16px',
+                    backgroundColor: resettingJobs ? '#94a3b8' : '#dc2626',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: resettingJobs ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  <Trash2 size={14} />
+                  {resettingJobs ? 'Resetting...' : 'Reset Stuck Jobs'}
                 </button>
                 {syncMessage && (
                   <span style={{ fontSize: '12px', color: syncMessage.startsWith('Error') || syncMessage.startsWith('Sync error') ? '#b91c1c' : '#15803d' }}>
