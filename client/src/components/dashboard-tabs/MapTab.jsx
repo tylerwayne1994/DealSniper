@@ -30,28 +30,28 @@ import {
 // ─── Zone color by prefix ────────────────
 // ─── Zoning Category Colors (legend-driven) ─────────────────────────────────
 const CATEGORY_COLORS = {
-  'Residential':               '#a8d8a8', // green
-  'Commercial':                '#f9d57a', // gold
-  'Industrial':                '#c8a8d8', // purple
-  'Agricultural':              '#d4e8a0', // lime
-  'Mixed Use':                 '#e8b4a0', // warm salmon
-  'Institutional / Public':    '#a8c8e8', // sky blue
-  'Open Space / Parks':        '#6dcf6d', // bright green
-  'Overlay / Special District':'#e0c8f0', // lavender
-  'Planned Development':       '#f0c8a0', // peach
-  'Transportation':            '#b0b0b0', // grey
-  'Right-of-Way':              '#c0c0c0', // light grey
-  'Timberland Production Zone':'#8fbc8f', // dark sea green
-  'Town Specific':             '#dcc8a0', // tan
-  'RPD':                       '#b8d8b8', // pale green
-  'Jurisdictional':            '#a0a0d0', // slate blue
-  'Unknown':                   '#cccccc', // default grey
+  'Residential':               '#22c55e', // vivid green
+  'Commercial':                '#ef4444', // bold red
+  'Industrial':                '#8b5cf6', // strong purple
+  'Agricultural':              '#eab308', // bright yellow
+  'Mixed Use':                 '#f97316', // vibrant orange
+  'Institutional / Public':    '#3b82f6', // blue
+  'Open Space / Parks':        '#10b981', // emerald
+  'Overlay / Special District':'#ec4899', // hot pink
+  'Planned Development':       '#06b6d4', // cyan
+  'Transportation':            '#64748b', // slate
+  'Right-of-Way':              '#94a3b8', // light slate
+  'Timberland Production Zone':'#16a34a', // deep green
+  'Town Specific':             '#d97706', // amber
+  'RPD':                       '#14b8a6', // teal
+  'Jurisdictional':            '#6366f1', // indigo
+  'Unknown':                   '#9ca3af', // cool grey
 };
 const DEFAULT_ZONE_COLOR = '#cccccc';
 
 // Fallback: first-character prefix guess (used when legend has no match)
 const ZONE_PREFIX_COLORS = {
-  R: '#a8d8a8', C: '#f9d57a', I: '#c8a8d8', A: '#d4e8a0', M: '#e8b4a0', O: '#a8c8e8',
+  R: '#22c55e', C: '#ef4444', I: '#8b5cf6', A: '#eab308', M: '#f97316', O: '#3b82f6',
 };
 
 function zoneColor(zoneCode, legend) {
@@ -162,15 +162,22 @@ function ZoningOverlayLayer({ serviceKey, enabled, zoneFilter }) {
 
           lyr.bindPopup(
             `<div style="max-height:280px;overflow-y:auto;font-family:Inter,sans-serif">${header}<table>${rows}</table></div>`,
-            { maxWidth: 320 }
+            { maxWidth: 320, autoPan: true, closeOnClick: true, autoClose: false }
           );
 
           // Highlight on hover
-          lyr.on('mouseover', () => {
-            lyr.setStyle({ weight: 3, color: '#1d4ed8', fillOpacity: 0.7 });
-            lyr.bringToFront();
+          lyr.on('mouseover', (e) => {
+            if (!lyr.isPopupOpen()) {
+              lyr.setStyle({ weight: 3, color: '#1d4ed8', fillOpacity: 0.7 });
+              lyr.bringToFront();
+            }
           });
-          lyr.on('mouseout', () => {
+          lyr.on('mouseout', (e) => {
+            if (!lyr.isPopupOpen()) {
+              layer.resetStyle(lyr);
+            }
+          });
+          lyr.on('popupclose', () => {
             layer.resetStyle(lyr);
           });
         },
@@ -303,11 +310,12 @@ function AgentZoningOverlayLayer({ slug, enabled, zoneFilter }) {
 
             lyr.bindPopup(
               `<div style="max-height:280px;overflow-y:auto;font-family:Inter,sans-serif">${header}<table>${rows}</table></div>`,
-              { maxWidth: 320 }
+              { maxWidth: 320, autoPan: true, closeOnClick: true, autoClose: false }
             );
 
-            lyr.on('mouseover', () => { lyr.setStyle({ weight: 3, color: '#1d4ed8', fillOpacity: 0.7 }); lyr.bringToFront(); });
-            lyr.on('mouseout', () => { layer.resetStyle(lyr); });
+            lyr.on('mouseover', (e) => { if (!lyr.isPopupOpen()) { lyr.setStyle({ weight: 3, color: '#1d4ed8', fillOpacity: 0.7 }); lyr.bringToFront(); } });
+            lyr.on('mouseout', (e) => { if (!lyr.isPopupOpen()) { layer.resetStyle(lyr); } });
+            lyr.on('popupclose', () => { layer.resetStyle(lyr); });
           },
         });
 

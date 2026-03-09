@@ -80,15 +80,9 @@ ZONING_SERVICES: dict[str, dict] = {
         "zone_field": "ZONING",
         "label_field": "ZONING",
     },
-    "az_flagstaff": {
-        "label": "City of Flagstaff",
-        "region": "SW",
-        "state": "AZ",
-        "base_url": "https://services8.arcgis.com/KyZIQDOsXnGaTxj2/ArcGIS/rest/services/ZONING/FeatureServer",
-        "default_layer_id": 0,
-        "zone_field": "Zoning",
-        "label_field": "Zoning",
-    },
+    # "az_flagstaff" REMOVED — that ArcGIS org (KyZIQDOsXnGaTxj2) is Apache County,
+    # not Flagstaff. The ZONING layer there covers Greer/Eagar area at [-109.4, 34.0],
+    # while Flagstaff is at [-111.65, 35.20]. Use the AI agent to discover Flagstaff.
     "az_kingman_city": {
         "label": "City of Kingman",
         "region": "SW",
