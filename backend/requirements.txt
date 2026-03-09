@@ -30,3 +30,4 @@ langchain-anthropic
 celery
 redis
 cryptography
+uv

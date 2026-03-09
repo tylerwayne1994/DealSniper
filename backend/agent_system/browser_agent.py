@@ -340,11 +340,17 @@ def _find_chromium_binary() -> Optional[str]:
     # Strategy 2: Glob for Playwright's managed browser directory
     home = os.path.expanduser("~")
     playwright_patterns = [
+        # Standard Playwright cache locations
         f"{home}/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
         "/ms-playwright/chromium-*/chrome-linux/chrome",
         "/opt/render/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
+        # Render home variants
+        "/home/render/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
+        "/root/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
         # Fallback: inside the venv
         "/opt/render/project/src/.venv/**/ms-playwright/chromium-*/chrome-linux/chrome",
+        # Broader recursive search (slower, last resort)
+        "/opt/render/**/ms-playwright/chromium-*/chrome-linux/chrome",
     ]
     for pattern in playwright_patterns:
         matches = sorted(glob.glob(pattern, recursive=True))
@@ -372,8 +378,40 @@ def _find_chromium_binary() -> Optional[str]:
     except Exception as e:
         log.debug("[DEBUG] playwright dry-run failed: %s", e)
 
+    # Strategy 5: Use `find` on Linux to brute-force locate it
+    try:
+        result = subprocess.run(
+            ["find", "/", "-name", "chrome", "-path", "*/ms-playwright/*", "-type", "f"],
+            capture_output=True, text=True, timeout=15,
+        )
+        for line in result.stdout.strip().splitlines():
+            if os.path.isfile(line.strip()) and os.access(line.strip(), os.X_OK):
+                log.info("[DEBUG] Chromium found via 'find': %s", line.strip())
+                return line.strip()
+    except Exception as e:
+        log.debug("[DEBUG] 'find' command failed: %s", e)
+
     log.warning("[DEBUG] Could not find Chromium binary anywhere!")
     return None
+
+
+def _set_chromium_env(binary_path: Optional[str]):
+    """
+    Set environment variables so browser-use's internal watchdog can find
+    the Chromium binary without falling back to uvx.
+    """
+    if not binary_path:
+        return
+    # CHROME_PATH — checked by browser-use's _find_browser_binary()
+    os.environ["CHROME_PATH"] = binary_path
+    # Also set PLAYWRIGHT_BROWSERS_PATH to the parent ms-playwright dir
+    # so Playwright's own detection finds the managed browsers.
+    ms_pw_idx = binary_path.find("ms-playwright")
+    if ms_pw_idx != -1:
+        pw_path = binary_path[:ms_pw_idx + len("ms-playwright")]
+        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = os.path.dirname(pw_path)
+        log.info("[DEBUG] Set PLAYWRIGHT_BROWSERS_PATH=%s", os.path.dirname(pw_path))
+    log.info("[DEBUG] Set CHROME_PATH=%s", binary_path)
 
 
 # ============================================================================
@@ -448,6 +486,8 @@ async def run_platform_search(
     # Configure browser with explicit Chromium path to avoid uvx dependency
     chromium_path = _find_chromium_binary()
     log.info("[DEBUG] Chromium binary path: %s", chromium_path)
+    # Set env vars so browser-use's internal watchdog also finds the binary
+    _set_chromium_env(chromium_path)
 
     if BrowserSession is not None:
         try:
