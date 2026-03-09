@@ -74,7 +74,7 @@ Return a JSON object with this exact schema:
 {{
   "city": "{city}",
   "data_source_url": "<URL to the open data portal page for the zoning dataset>",
-  "geojson_api_url": "<Direct URL to download the full zoning GeoJSON. For ArcGIS REST services use: https://...FeatureServer/0/query?where=1%3D1&outFields=*&f=geojson&resultRecordCount=10000>",
+  "geojson_api_url": "<Direct URL to download the full zoning GeoJSON. For ArcGIS REST services use the MapServer query endpoint: https://...MapServer/0/query?where=1%3D1&outFields=*&f=geojson  (prefer MapServer over FeatureServer — many city ArcGIS instances only expose MapServer)>",
   "wms_tile_url": "<The MapServer or WMS tile URL for rendering. For ArcGIS MapServer use: https://.../MapServer/tile/{{z}}/{{y}}/{{x}} or WMS equivalent. Leave null if unavailable>",
   "zoning_field_name": "<The property key in the GeoJSON features that holds the zoning code, e.g. 'ZONING', 'CODE', 'ZONE_CLASS', 'ZONING_LBL'>",
   "legend_source_url": "<URL to the zoning ordinance, code table, or metadata that explains the zone codes>",
@@ -89,7 +89,8 @@ Return a JSON object with this exact schema:
 
 Rules:
 - The geojson_api_url MUST be a direct download URL, not a portal page.
-- For ArcGIS FeatureServer layers, always append: ?where=1%3D1&outFields=*&f=geojson
+- For ArcGIS REST services, PREFER MapServer over FeatureServer (many cities only expose MapServer). Use: .../MapServer/0/query?where=1%3D1&outFields=*&f=geojson
+- Only use FeatureServer if you are confident the city exposes it.
 - For Socrata datasets, use the .geojson endpoint (e.g., https://data.city.gov/resource/xxxx-xxxx.geojson?$limit=50000)
 - Include ALL major base zoning codes in legend_mapping (at minimum 5-15 codes).
 - Map every code to one of the 7 standardized categories listed above.
@@ -142,18 +143,47 @@ def ask_agent(city: str, max_retries: int = 3) -> Optional[dict]:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def download_geojson(url: str, city: str, max_features: int = None) -> Optional[dict]:
-    """Download GeoJSON from a URL, handling ArcGIS pagination."""
+    """Download GeoJSON from a URL, handling ArcGIS pagination.
+    Automatically tries FeatureServer ↔ MapServer fallback."""
     log.info(f"[{city}] Downloading GeoJSON from: {url}")
 
     if ("FeatureServer" in url or "MapServer" in url) and "/query" not in url.lower():
-        return _download_arcgis_geojson(url, city, max_features)
+        result = _download_arcgis_geojson(url, city, max_features)
+        if result:
+            return result
+        # Fallback: try the other server type
+        alt_url = _swap_server_type(url)
+        if alt_url != url:
+            log.info(f"[{city}] Retrying with alternate endpoint: {alt_url}")
+            return _download_arcgis_geojson(alt_url, city, max_features)
+        return None
     elif "FeatureServer" in url or "MapServer" in url:
         result = _download_direct_geojson(url, city)
         if result:
             return result
-        return _download_arcgis_geojson(url, city, max_features)
+        result = _download_arcgis_geojson(url, city, max_features)
+        if result:
+            return result
+        # Fallback: try the other server type
+        alt_url = _swap_server_type(url)
+        if alt_url != url:
+            log.info(f"[{city}] Retrying with alternate endpoint: {alt_url}")
+            result = _download_direct_geojson(alt_url, city)
+            if result:
+                return result
+            return _download_arcgis_geojson(alt_url, city, max_features)
+        return None
     else:
         return _download_direct_geojson(url, city)
+
+
+def _swap_server_type(url: str) -> str:
+    """Swap FeatureServer ↔ MapServer in a URL for fallback."""
+    if "FeatureServer" in url:
+        return url.replace("FeatureServer", "MapServer")
+    elif "MapServer" in url:
+        return url.replace("MapServer", "FeatureServer")
+    return url
 
 
 def _download_direct_geojson(url: str, city: str) -> Optional[dict]:
@@ -181,6 +211,15 @@ def _download_direct_geojson(url: str, city: str) -> Optional[dict]:
 def _download_arcgis_geojson(base_url: str, city: str, max_features: int = None) -> Optional[dict]:
     """Download all features from ArcGIS with pagination."""
     base_url = re.sub(r"\?.*", "", base_url)  # strip existing params
+
+    # Ensure the URL ends with /query (some URLs point to layer root)
+    if not base_url.rstrip("/").lower().endswith("/query"):
+        # If URL ends with a layer number, append /query
+        if re.search(r"/\d+$", base_url.rstrip("/")):
+            base_url = base_url.rstrip("/") + "/query"
+        else:
+            # Assume layer 0
+            base_url = base_url.rstrip("/") + "/0/query"
 
     all_features = []
     offset = 0
