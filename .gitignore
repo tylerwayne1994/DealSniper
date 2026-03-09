@@ -63,3 +63,5 @@ logs/
 
 # Parcel GeoJSON data (57GB+ — too large for git)
 client/public/parcels/
+
+client/build2/

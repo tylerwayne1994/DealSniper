@@ -169,6 +169,11 @@ const ZIP_HEATMAP_METRICS = {
   vacancyRate:            { name: 'Vacancy Rate',   group: 'Housing & Economy',  fmt: v => fmtPct(v) },
   unemploymentRate:       { name: 'Unemployment',   group: 'Housing & Economy',  fmt: v => fmtPct(v) },
   migrationRate:          { name: 'Net Migration',  group: 'Demographics',       fmt: v => v == null ? 'N/A' : `${v > 0 ? '+' : ''}${v.toFixed(1)}‰` },
+  fmr_0br:                { name: 'FMR Studio',     group: 'HUD Fair Market Rent', fmt: v => fmtDollar(v) },
+  fmr_1br:                { name: 'FMR 1-Bed',      group: 'HUD Fair Market Rent', fmt: v => fmtDollar(v) },
+  fmr_2br:                { name: 'FMR 2-Bed',      group: 'HUD Fair Market Rent', fmt: v => fmtDollar(v) },
+  fmr_3br:                { name: 'FMR 3-Bed',      group: 'HUD Fair Market Rent', fmt: v => fmtDollar(v) },
+  fmr_4br:                { name: 'FMR 4-Bed',      group: 'HUD Fair Market Rent', fmt: v => fmtDollar(v) },
 };
 
 const ZIP_HEATMAP_COLOR_SCALES = {
@@ -211,6 +216,32 @@ const ZIP_HEATMAP_COLOR_SCALES = {
     { min: -Infinity, max: -10, color: '#7f1d1d' }, { min: -10, max: -5, color: '#dc2626' },
     { min: -5, max: 0, color: '#f59e0b' }, { min: 0, max: 5, color: '#84cc16' },
     { min: 5, max: 10, color: '#22c55e' }, { min: 10, max: Infinity, color: '#166534' },
+  ],
+  // HUD FMR Rents: red (low) → yellow → green (high)
+  fmr_0br: [
+    { min: -Infinity, max: 600, color: '#dc2626' }, { min: 600, max: 900, color: '#f97316' },
+    { min: 900, max: 1200, color: '#eab308' }, { min: 1200, max: 1600, color: '#84cc16' },
+    { min: 1600, max: Infinity, color: '#16a34a' },
+  ],
+  fmr_1br: [
+    { min: -Infinity, max: 700, color: '#dc2626' }, { min: 700, max: 1000, color: '#f97316' },
+    { min: 1000, max: 1400, color: '#eab308' }, { min: 1400, max: 1800, color: '#84cc16' },
+    { min: 1800, max: Infinity, color: '#16a34a' },
+  ],
+  fmr_2br: [
+    { min: -Infinity, max: 800, color: '#dc2626' }, { min: 800, max: 1200, color: '#f97316' },
+    { min: 1200, max: 1600, color: '#eab308' }, { min: 1600, max: 2100, color: '#84cc16' },
+    { min: 2100, max: Infinity, color: '#16a34a' },
+  ],
+  fmr_3br: [
+    { min: -Infinity, max: 1000, color: '#dc2626' }, { min: 1000, max: 1500, color: '#f97316' },
+    { min: 1500, max: 2000, color: '#eab308' }, { min: 2000, max: 2700, color: '#84cc16' },
+    { min: 2700, max: Infinity, color: '#16a34a' },
+  ],
+  fmr_4br: [
+    { min: -Infinity, max: 1200, color: '#dc2626' }, { min: 1200, max: 1800, color: '#f97316' },
+    { min: 1800, max: 2400, color: '#eab308' }, { min: 2400, max: 3200, color: '#84cc16' },
+    { min: 3200, max: Infinity, color: '#16a34a' },
   ],
 };
 
@@ -544,13 +575,14 @@ export default function MapOverlayLayers({ countyEnabled, zipEnabled, countyMetr
     if (zipHeatmapDataRef.current) { setZipHeatmapLoaded(true); return; }
     setLoadingZipHeatmap(true);
     try {
-      const [dp03Raw, dp04Raw, popRaw, densityRaw, migRaw, zhviRaw] = await Promise.all([
+      const [dp03Raw, dp04Raw, popRaw, densityRaw, migRaw, zhviRaw, fmrRaw] = await Promise.all([
         loadCSV('/ZIPACSDP5Y2023.DP03-Data.csv'),
         loadCSV('/ZIPACSDP5Y2023.DP04-Data.csv'),
         loadCSV('/ZIPACSDT5Y2023.B01003-Data.csv'),
         loadCSV('/zcta_density.csv'),
         loadCSV('/migration_with_clean_zipcodes.csv'),
         loadCSV('/Zip_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv'),
+        loadCSV('/fmr_by_zip_clean.csv'),
       ]);
 
       const zips = {};
@@ -624,6 +656,36 @@ export default function MapOverlayLayers({ countyEnabled, zipEnabled, countyMetr
         }
         if (!zips[zip].countyName && row.CountyName) zips[zip].countyName = row.CountyName;
         if (!zips[zip].stateName && row.StateName) zips[zip].stateName = row.StateName;
+      });
+
+      // HUD FMR — Fair Market Rents by bedroom count
+      fmrRaw.forEach(row => {
+        // CSV has BOM-prefixed first column, papaparse may key it with or without BOM
+        const rawZip = row.zip || row['\ufeffzip'] || row[Object.keys(row)[0]];
+        const zip = zeroZip(rawZip);
+        if (!zip) return;
+        zips[zip] = zips[zip] || { zip };
+        // Parse rent columns — some rows have a column shift where fmr_0br contains a text name
+        const r0 = clean(row.fmr_0br);
+        const r1 = clean(row.fmr_1br);
+        const r2 = clean(row.fmr_2br);
+        const r3 = clean(row.fmr_3br);
+        const r4 = clean(row.fmr_4br);
+        if (isNum(r0)) zips[zip].fmr_0br = Math.round(r0);
+        if (isNum(r1)) zips[zip].fmr_1br = Math.round(r1);
+        if (isNum(r2)) zips[zip].fmr_2br = Math.round(r2);
+        if (isNum(r3)) zips[zip].fmr_3br = Math.round(r3);
+        if (isNum(r4)) zips[zip].fmr_4br = Math.round(r4);
+        // If fmr_0br was text (column shift), shift rents: fmr_1br->0br, fmr_2br->1br, etc.
+        if (!isNum(r0) && isNum(r1)) {
+          zips[zip].fmr_0br = Math.round(r1);
+          zips[zip].fmr_1br = isNum(r2) ? Math.round(r2) : undefined;
+          zips[zip].fmr_2br = isNum(r3) ? Math.round(r3) : undefined;
+          zips[zip].fmr_3br = isNum(r4) ? Math.round(r4) : undefined;
+          zips[zip].fmr_4br = undefined;
+        }
+        if (!zips[zip].countyName && row.county_name) zips[zip].countyName = row.county_name;
+        if (!zips[zip].stateName && row.state_usps) zips[zip].stateName = row.state_usps;
       });
 
       zipHeatmapDataRef.current = zips;

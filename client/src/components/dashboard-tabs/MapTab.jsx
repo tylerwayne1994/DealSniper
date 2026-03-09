@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle, CircleMarker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -12,19 +12,14 @@ import MapOverlayLayers, { COUNTY_METRIC_OPTIONS, ZIP_METRIC_OPTIONS, ZIP_HEATMA
 import MSA_COORDINATES from '../../data/msaCoordinates';
 import {
   MessageSquare,
-  MapPin,
-  Star,
-  Heart,
-  Cog,
-  CheckCircle,
-  XCircle,
-  Building2,
-  Filter,
-  Calendar,
   Download,
   UploadCloud,
-  FileSpreadsheet,
-  Layers
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  Layers,
+  Plus
 } from 'lucide-react';
 
 // ─── Zone color by prefix ────────────────
@@ -32,7 +27,7 @@ import {
 const CATEGORY_COLORS = {
   'Residential':               '#22c55e', // vivid green
   'Commercial':                '#ef4444', // bold red
-  'Industrial':                '#8b5cf6', // strong purple
+  'Industrial':                '#0ea5e9', // teal-blue
   'Agricultural':              '#eab308', // bright yellow
   'Mixed Use':                 '#f97316', // vibrant orange
   'Institutional / Public':    '#3b82f6', // blue
@@ -341,47 +336,9 @@ function AgentZoningOverlayLayer({ slug, enabled, zoneFilter }) {
   return null;
 }
 
-// ─── ParcelOverlayLayer (child of MapContainer, uses useMap) ─────────
-// Uses Regrid raster tile layer for nationwide parcel boundaries
-const REGRID_TOKEN = process.env.REACT_APP_REGRID_TOKEN || 'eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJyZWdyaWQuY29tIiwiaWF0IjoxNzczMDcwNzc3LCJleHAiOjE3NzU2NjI3NzcsInUiOjcxMzc3MCwiZyI6MjMxNTMsImNhcCI6InBhOnRzOnBzOmJmOm1hOnR5OmVvOnpvOnNiIn0.n9xInEA21sComIh5H0tL68Ku-AsWsdq0vrErJGly-k0';
-const REGRID_TILE_URL = `https://tiles.regrid.com/api/v1/parcels/{z}/{x}/{y}.png?token=${REGRID_TOKEN}`;
 
-function ParcelOverlayLayer({ enabled }) {
-  const map = useMap();
-  const layerRef = useRef(null);
 
-  useEffect(() => {
-    if (!map) return;
 
-    if (enabled) {
-      if (!layerRef.current) {
-        layerRef.current = L.tileLayer(REGRID_TILE_URL, {
-          minZoom: 14,
-          maxZoom: 20,
-          opacity: 0.7,
-          attribution: '&copy; <a href="https://regrid.com">Regrid</a>',
-        });
-        layerRef.current.addTo(map);
-        console.log('[Parcels] ✅ Regrid raster tile layer added');
-      }
-    } else {
-      if (layerRef.current) {
-        map.removeLayer(layerRef.current);
-        layerRef.current = null;
-        console.log('[Parcels] tile layer removed');
-      }
-    }
-
-    return () => {
-      if (layerRef.current) {
-        map.removeLayer(layerRef.current);
-        layerRef.current = null;
-      }
-    };
-  }, [map, enabled]);
-
-  return null;
-}
 
 // Helper to create Tailwind-styled divIcon
 function createDivIcon({ bgClass, borderClass = 'border-white/60', icon: Icon, iconColor = '#fff', size = 'normal' }) {
@@ -517,17 +474,26 @@ function DashboardMapTab() {
 
   const [customPins, setCustomPins] = useState([]);
   const [form, setForm] = useState({ name: '', address: '', units: '', notes: '' });
-  const [activeTab, setActiveTab] = useState('assistant'); // 'assistant' | 'add' | 'upload'
   const [chat, setChat] = useState({ input: '', messages: [], loading: false });
   const [pendingCommands, setPendingCommands] = useState([]);
   const [rapidFireQueue, setRapidFireQueue] = useState([]);
   const [processingStatus, setProcessingStatus] = useState('');
   const [mapFilter, setMapFilter] = useState('all'); // 'all' | 'rapidfire' | 'prospects' | 'pipeline'
   const [userId, setUserId] = useState(null);
-  const [mapStyle, setMapStyle] = useState('voyager');
+  const [mapStyle, setMapStyle] = useState('satellite');
   const [isChatMinimized, setIsChatMinimized] = useState(true);
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Collapsible map panel state
+  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelTab, setPanelTab] = useState('layers'); // 'layers' | 'pins' | 'upload' | 'add'
+
+  // Pin visibility toggles
+  const [showPipelinePins, setShowPipelinePins] = useState(true);
+  const [showRapidFirePins, setShowRapidFirePins] = useState(true);
+  const [showUploadedPins, setShowUploadedPins] = useState(true);
+  const [showProspectPins, setShowProspectPins] = useState(true);
 
   // Overlay layer state
   const [countyOverlay, setCountyOverlay] = useState(false);
@@ -561,8 +527,7 @@ function DashboardMapTab() {
   const [agentDiscovering, setAgentDiscovering] = useState(false);
   const [agentDiscoverError, setAgentDiscoverError] = useState('');
 
-  // Parcel overlay state
-  const [parcelOverlay, setParcelOverlay] = useState(false);
+
 
   // Uploaded property sheets state
   const [uploadedSheets, setUploadedSheets] = useState([]); // Array of { id, name, properties: [...] }
@@ -1106,11 +1071,11 @@ function DashboardMapTab() {
 
         const badgeBg = pin.category === 'pipeline' ? '#d1fae5' :
           pin.source === 'uploaded' ? '#dbeafe' :
-          pin.category === 'rapidfire' ? '#fecaca' : '#faf5ff';
+          pin.category === 'rapidfire' ? '#fecaca' : '#fef3c7';
 
         const badgeColor = pin.category === 'pipeline' ? '#065f46' :
           pin.source === 'uploaded' ? '#1e40af' :
-          pin.category === 'rapidfire' ? '#991b1b' : '#5b21b6';
+          pin.category === 'rapidfire' ? '#991b1b' : '#92400e';
 
         const popup = new maplibregl.Popup({ offset: 25, maxWidth: '300px' })
           .setHTML(`
@@ -1374,7 +1339,6 @@ function DashboardMapTab() {
       if (zipOverlay) mapContext.activeLayers.push('ZIP Points (' + zipMetric + ')');
       if (zipHeatmap) mapContext.activeLayers.push('ZIP Heatmap (' + zipHeatmapMetric + ')');
       if (zoningEnabled) mapContext.activeLayers.push('Zoning');
-      if (parcelOverlay) mapContext.activeLayers.push('Parcels');
 
       const headers = { 'Content-Type': 'application/json' };
       if (userId) headers['X-Profile-ID'] = userId;
@@ -1413,7 +1377,7 @@ function DashboardMapTab() {
     }
   }, [chat, userId, customPins, devPipelineEnabled, devPipelineData, devPipelineFilter,
       absorptionEnabled, absorptionData, absorptionFilter, countyOverlay, countyMetric,
-      zipOverlay, zipMetric, zipHeatmap, zipHeatmapMetric, zoningEnabled, parcelOverlay]);
+      zipOverlay, zipMetric, zipHeatmap, zipHeatmapMetric, zoningEnabled]);
 
   // Render assistant content with simple markdown-ish formatting and collapse
   const FormattedMessage = ({ text }) => {
@@ -2208,832 +2172,494 @@ function DashboardMapTab() {
     }
   }, [userId]);
 
+  // Pin visibility filter
+  const visiblePins = useMemo(() => customPins.filter(p => {
+    if (p.category === 'pipeline' && !showPipelinePins) return false;
+    if (p.category === 'rapidfire' && !showRapidFirePins) return false;
+    if (p.source === 'uploaded' && !showUploadedPins) return false;
+    if (p.category === 'prospect' && !showProspectPins) return false;
+    // Also apply old mapFilter for backward compat
+    if (mapFilter !== 'all') {
+      if (mapFilter === 'pipeline' && p.category !== 'pipeline') return false;
+      if (mapFilter === 'rapidfire' && p.category !== 'rapidfire') return false;
+      if (mapFilter === 'prospects' && p.category !== 'prospect') return false;
+    }
+    return true;
+  }), [customPins, showPipelinePins, showRapidFirePins, showUploadedPins, showProspectPins, mapFilter]);
+
   return (
-    <div style={{ 
-      display: 'flex',
-      height: '100%',
-      backgroundColor: '#ffffff',
-      overflow: 'hidden'
-    }}>
-      {/* Main Map Area - Left Side */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'auto' }}>
-        
-        {/* Secondary Row - Tab Buttons */}
-        <div style={{ 
+    <div style={{ display: 'flex', height: '100%', backgroundColor: '#0f172a', overflow: 'hidden' }}>
+      {/* ═══════════════ MAIN MAP AREA (takes full space) ═══════════════ */}
+      <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
+
+        {/* ─── Floating Collapsible Panel (left side, inside map) ─── */}
+        <div style={{
+          position: 'absolute',
+          top: 12,
+          left: 12,
+          zIndex: 1000,
+          width: panelOpen ? 320 : 44,
+          maxHeight: 'calc(100% - 24px)',
+          backgroundColor: 'rgba(15, 23, 42, 0.92)',
+          backdropFilter: 'blur(16px)',
+          borderRadius: 12,
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          overflow: 'hidden',
           display: 'flex',
-          gap: '4px',
-          padding: '0 16px',
-          borderBottom: '1px solid #e5e7eb',
-          backgroundColor: '#f9fafb',
-          overflowX: 'auto',
-          flexWrap: 'nowrap',
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
-          flexShrink: 0
+          flexDirection: 'column',
+          transition: 'width 0.25s cubic-bezier(.4,0,.2,1)',
+          color: '#e2e8f0',
         }}>
-          <button
-            onClick={() => setActiveTab('add')}
-            style={{
-              padding: '12px 16px',
-              backgroundColor: activeTab === 'add' ? 'white' : 'transparent',
-              color: activeTab === 'add' ? '#111827' : '#6b7280',
-              border: 'none',
-              borderBottom: activeTab === 'add' ? '2px solid #3b82f6' : '2px solid transparent',
-              fontSize: '13px',
-              fontWeight: activeTab === 'add' ? '600' : '500',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              whiteSpace: 'nowrap',
-              transition: 'all 0.2s'
-            }}
-          >
-            <MapPin size={16} color={activeTab === 'add' ? '#000000' : '#6b7280'} />
-            Add Property
-          </button>
-          <button
-            onClick={() => setActiveTab('upload')}
-            style={{
-              padding: '12px 16px',
-              backgroundColor: activeTab === 'upload' ? 'white' : 'transparent',
-              color: activeTab === 'upload' ? '#111827' : '#6b7280',
-              border: 'none',
-              borderBottom: activeTab === 'upload' ? '2px solid #3b82f6' : '2px solid transparent',
-              fontSize: '13px',
-              fontWeight: activeTab === 'upload' ? '600' : '500',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              whiteSpace: 'nowrap',
-              transition: 'all 0.2s'
-            }}
-          >
-            <Building2 size={16} color={activeTab === 'upload' ? '#000000' : '#6b7280'} />
-            Upload
-          </button>
-          <button
-            onClick={() => setActiveTab('tools')}
-            style={{
-              padding: '12px 16px',
-              backgroundColor: activeTab === 'tools' ? 'white' : 'transparent',
-              color: activeTab === 'tools' ? '#111827' : '#6b7280',
-              border: 'none',
-              borderBottom: activeTab === 'tools' ? '2px solid #3b82f6' : '2px solid transparent',
-              fontSize: '13px',
-              fontWeight: activeTab === 'tools' ? '600' : '500',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              whiteSpace: 'nowrap',
-              transition: 'all 0.2s'
-            }}
-          >
-            <Cog size={16} color={activeTab === 'tools' ? '#000000' : '#6b7280'} />
-            Tools
-          </button>
-        </div>
+          {/* Panel Header */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: panelOpen ? '10px 14px' : '10px 11px',
+            borderBottom: panelOpen ? '1px solid rgba(255,255,255,0.06)' : 'none',
+            flexShrink: 0,
+          }}>
+            {panelOpen && <span style={{ fontSize: 13, fontWeight: 700, color: '#f1f5f9', letterSpacing: '0.3px' }}>Map Controls</span>}
+            <button onClick={() => setPanelOpen(v => !v)} style={{
+              background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: 6,
+              width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', color: '#94a3b8', flexShrink: 0,
+            }}>
+              {panelOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+            </button>
+          </div>
 
-        {/* Tab Content Area — scrollable, capped height so map dominates */}
-        <div style={{ 
-          padding: '8px 12px',
-          backgroundColor: '#f9fafb',
-          borderBottom: '1px solid #e5e7eb',
-          overflowY: 'auto',
-          maxHeight: '180px',
-          flexShrink: 0,
-        }}>
-          {activeTab === 'add' && (
-            <form onSubmit={handleSubmitProperty} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <input 
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  fontSize: '13px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  backgroundColor: 'white'
-                }}
-                placeholder="Property Name" 
-                value={form.name} 
-                onChange={(e) => setForm({ ...form, name: e.target.value })} 
-              />
-              <div style={{ position: 'relative' }}>
-                <input 
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    fontSize: '13px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    backgroundColor: 'white'
-                  }}
-                  placeholder="Street Address, City, ST ZIP" 
-                  value={form.address} 
-                  onChange={(e) => handleAddressChange(e.target.value)}
-                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                  type="text"
-                  name="address"
-                />
-                {showSuggestions && addressSuggestions.length > 0 && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    backgroundColor: 'white',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    marginTop: '4px',
-                    maxHeight: '200px',
-                    overflowY: 'auto',
-                    zIndex: 1000,
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                  }}>
-                    {addressSuggestions.map((suggestion, idx) => (
-                      <div
-                        key={idx}
-                        onClick={() => selectSuggestion(suggestion)}
-                        style={{
-                          padding: '8px 12px',
-                          cursor: 'pointer',
-                          fontSize: '13px',
-                          borderBottom: idx < addressSuggestions.length - 1 ? '1px solid #f3f4f6' : 'none'
-                        }}
-                        onMouseEnter={(e) => e.target.style.backgroundColor = '#f9fafb'}
-                        onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
-                      >
-                        {suggestion.label}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <input 
-                  style={{
-                    flex: 1,
-                    padding: '8px 12px',
-                    fontSize: '13px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    backgroundColor: 'white'
-                  }}
-                  placeholder="Units (optional)" 
-                  value={form.units} 
-                  onChange={(e) => setForm({ ...form, units: e.target.value })} 
-                />
-                <button 
-                  type="submit"
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#3b82f6',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    fontWeight: '500',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Add Pin
-                </button>
-              </div>
-            </form>
-          )}
-
-          {activeTab === 'upload' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '12px'
-              }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '10px 14px',
-                    backgroundColor: '#ffffff',
-                    borderRadius: '999px',
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 8px 20px rgba(15, 23, 42, 0.08)'
-                  }}>
-                    <Building2 size={18} color="#0f172a" />
-                    <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-                      <span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.6px' }}>Destination</span>
-                      <span style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a' }}>Map Pins</span>
-                    </div>
-                    <span style={{ color: '#94a3b8', fontSize: '12px', marginLeft: '4px' }}>▾</span>
-                  </div>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '10px 14px',
-                    backgroundColor: '#ffffff',
-                    borderRadius: '999px',
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 8px 20px rgba(15, 23, 42, 0.08)'
-                  }}>
-                    <Calendar size={18} color="#0f172a" />
-                    <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-                      <span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.6px' }}>Batch Window</span>
-                      <span style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a' }}>This Week</span>
-                    </div>
-                    <span style={{ color: '#94a3b8', fontSize: '12px', marginLeft: '4px' }}>▾</span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={loadRapidFireQueue}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '10px 18px',
-                    borderRadius: '999px',
-                    backgroundColor: '#0f172a',
-                    color: '#ffffff',
-                    border: 'none',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    boxShadow: '0 18px 35px rgba(15, 23, 42, 0.35)',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <Download size={16} />
-                  Refresh Queue
-                </button>
-              </div>
-
-              <div style={{
-                backgroundColor: '#ffffff',
-                borderRadius: '18px',
-                border: '1px solid #e0e7ff',
-                boxShadow: '0 35px 80px -45px rgba(15, 23, 42, 0.65)',
-                overflow: 'hidden'
-              }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '20px 24px',
-                  borderBottom: '1px solid #e2e8f0'
+          {/* Collapsed icon strip */}
+          {!panelOpen && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '8px 0' }}>
+              {[
+                { tab: 'layers', icon: <Layers size={18} />, tip: 'Layers' },
+                { tab: 'pins', icon: <Eye size={18} />, tip: 'Pins' },
+                { tab: 'upload', icon: <UploadCloud size={18} />, tip: 'Upload' },
+                { tab: 'add', icon: <Plus size={18} />, tip: 'Add Pin' },
+              ].map(({ tab, icon, tip }) => (
+                <button key={tab} title={tip} onClick={() => { setPanelTab(tab); setPanelOpen(true); }} style={{
+                  width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: panelTab === tab ? 'rgba(59,130,246,0.2)' : 'transparent',
+                  border: 'none', borderRadius: 8, cursor: 'pointer',
+                  color: panelTab === tab ? '#60a5fa' : '#64748b',
                 }}>
-                  <div>
-                    <div style={{ fontSize: '18px', fontWeight: '700', color: '#0f172a', marginBottom: '4px' }}>
-                      Upload Directory
-                    </div>
-                    <div style={{ fontSize: '13px', color: '#64748b' }}>
-                      Centralize property spreadsheets and rapid fire batches.
-                    </div>
-                  </div>
-                  <div style={{
-                    padding: '6px 12px',
-                    borderRadius: '999px',
-                    backgroundColor: '#e0f2fe',
-                    color: '#0369a1',
-                    fontSize: '11px',
-                    fontWeight: '700',
-                    letterSpacing: '0.5px',
-                    textTransform: 'uppercase'
-                  }}>
-                    Live
-                  </div>
-                </div>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                    <thead>
-                      <tr style={{ textAlign: 'left', color: '#94a3b8', fontSize: '11px', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
-                        <th style={{ padding: '14px 24px' }}>Upload Type</th>
-                        <th style={{ padding: '14px 24px' }}>Details</th>
-                        <th style={{ padding: '14px 24px' }}>Pin Style</th>
-                        <th style={{ padding: '14px 24px', textAlign: 'right' }}>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr style={{ borderTop: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '18px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '12px',
-                            backgroundColor: '#eef2ff',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}>
-                            <FileSpreadsheet size={18} color="#4c1d95" />
-                          </div>
-                          <div>
-                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>Property Spreadsheet</div>
-                            <div style={{ fontSize: '12px', color: '#64748b' }}>CSV or XLSX • up to 2,000 rows</div>
-                          </div>
-                        </td>
-                        <td style={{ padding: '18px 24px', color: '#0f172a', fontWeight: '500' }}>
-                          Upload clean rent rolls or broker lists to add blue pins with rich property data.
-                        </td>
-                        <td style={{ padding: '18px 24px' }}>
-                          <span style={{
-                            padding: '6px 12px',
-                            borderRadius: '999px',
-                            backgroundColor: '#dbeafe',
-                            color: '#1d4ed8',
-                            fontSize: '12px',
-                            fontWeight: '700'
-                          }}>Blue Pins</span>
-                        </td>
-                        <td style={{ padding: '18px 24px', textAlign: 'right' }}>
-                          <label style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            padding: '10px 16px',
-                            borderRadius: '999px',
-                            border: '1px solid #dbeafe',
-                            backgroundColor: '#f8fbff',
-                            color: '#1d4ed8',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            boxShadow: '0 12px 25px rgba(59, 130, 246, 0.2)'
-                          }}>
-                            <UploadCloud size={16} />
-                            Upload File
-                            <input
-                              type="file"
-                              accept=".csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-                              onChange={(e) => handleUploadedSheetFile(e.target.files?.[0])}
-                              style={{ display: 'none' }}
-                            />
-                          </label>
-                        </td>
-                      </tr>
-                      <tr style={{ borderTop: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '18px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '12px',
-                            backgroundColor: '#fef2f2',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '18px'
-                          }}>
-                            🔥
-                          </div>
-                          <div>
-                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>Rapid Fire Queue</div>
-                            <div style={{ fontSize: '12px', color: '#64748b' }}>CSV or XLSX • auto geocode</div>
-                          </div>
-                        </td>
-                        <td style={{ padding: '18px 24px', color: '#0f172a', fontWeight: '500' }}>
-                          Push prospect batches into the rapid fire workflow for fast outreach-ready pins.
-                        </td>
-                        <td style={{ padding: '18px 24px' }}>
-                          <span style={{
-                            padding: '6px 12px',
-                            borderRadius: '999px',
-                            backgroundColor: '#fee2e2',
-                            color: '#b91c1c',
-                            fontSize: '12px',
-                            fontWeight: '700'
-                          }}>Red Pins</span>
-                        </td>
-                        <td style={{ padding: '18px 24px', textAlign: 'right' }}>
-                          <label style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            padding: '10px 16px',
-                            borderRadius: '999px',
-                            border: '1px solid #fecaca',
-                            backgroundColor: '#fff7f7',
-                            color: '#b91c1c',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            boxShadow: '0 12px 25px rgba(239, 68, 68, 0.2)'
-                          }}>
-                            <UploadCloud size={16} />
-                            Upload File
-                            <input
-                              type="file"
-                              accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-                              onChange={(e) => handleProspectsFile(e.target.files?.[0])}
-                              style={{ display: 'none' }}
-                            />
-                          </label>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  flexWrap: 'wrap',
-                  gap: '12px',
-                  padding: '18px 24px',
-                  borderTop: '1px solid #e2e8f0',
-                  backgroundColor: '#f8fafc'
-                }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
-                    <span style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Queue Health</span>
-                    <span style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
-                      {processingStatus || 'Idle - awaiting new uploads'}
-                    </span>
-                    <span style={{ fontSize: '13px', color: '#475569' }}>
-                      Queue: {rapidFireQueue.length} {rapidFireQueue.length === 1 ? 'property' : 'properties'} ready
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    <button
-                      type="button"
-                      onClick={addAllRapidFireToMap}
-                      disabled={!rapidFireQueue.length}
-                      style={{
-                        padding: '10px 16px',
-                        borderRadius: '999px',
-                        border: '1px solid #cbd5f5',
-                        backgroundColor: rapidFireQueue.length ? '#eef2ff' : '#f1f5f9',
-                        color: rapidFireQueue.length ? '#4338ca' : '#94a3b8',
-                        fontWeight: '600',
-                        fontSize: '13px',
-                        cursor: rapidFireQueue.length ? 'pointer' : 'not-allowed',
-                        boxShadow: rapidFireQueue.length ? '0 12px 25px rgba(79, 70, 229, 0.2)' : 'none'
-                      }}
-                    >
-                      Add All to Map
-                    </button>
-                  </div>
-                </div>
-              </div>
+                  {icon}
+                </button>
+              ))}
             </div>
           )}
 
-          {activeTab === 'tools' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-
-              {/* ─── Pin Filter Row ─── */}
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '6px 10px', backgroundColor: '#f8fafc',
-                borderBottom: '1px solid #f1f5f9',
-              }}>
-                <Filter size={11} style={{ color: '#94a3b8', flexShrink: 0 }} />
-                <select value={mapFilter} onChange={(e) => setMapFilter(e.target.value)}
-                  style={{
-                    flex: 1, padding: '4px 8px', fontSize: '11px', fontWeight: '500',
-                    border: '1px solid #e2e8f0', borderRadius: '6px',
-                    backgroundColor: 'white', color: '#334155',
-                    backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2394a3b8\' stroke-width=\'2\'%3E%3Cpath d=\'m6 9 6 6 6-6\'/%3E%3C/svg%3E")',
-                    backgroundRepeat: 'no-repeat', backgroundPosition: 'right 6px center',
-                    WebkitAppearance: 'none', appearance: 'none', paddingRight: '24px',
-                  }}>
-                  <option value="all">All Pins</option>
-                  <option value="pipeline">Developments Only</option>
-                  <option value="rapidfire">Rapid Fire Only</option>
-                  <option value="prospects">Prospect Cities</option>
-                </select>
-                <span style={{
-                  fontSize: '10px', fontWeight: '700', color: '#64748b',
-                  backgroundColor: '#e2e8f0', padding: '2px 7px', borderRadius: '10px', minWidth: '20px', textAlign: 'center',
+          {/* Panel Tab Bar */}
+          {panelOpen && (
+            <div style={{
+              display: 'flex', gap: 2, padding: '6px 10px',
+              borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0,
+            }}>
+              {[
+                { tab: 'layers', label: 'Layers', icon: <Layers size={13} /> },
+                { tab: 'pins', label: 'Pins', icon: <Eye size={13} /> },
+                { tab: 'upload', label: 'Upload', icon: <UploadCloud size={13} /> },
+                { tab: 'add', label: 'Add', icon: <Plus size={13} /> },
+              ].map(({ tab, label, icon }) => (
+                <button key={tab} onClick={() => setPanelTab(tab)} style={{
+                  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                  padding: '6px 0', fontSize: 11, fontWeight: panelTab === tab ? 600 : 500,
+                  color: panelTab === tab ? '#60a5fa' : '#94a3b8',
+                  background: panelTab === tab ? 'rgba(59,130,246,0.1)' : 'transparent',
+                  border: 'none', borderRadius: 6, cursor: 'pointer',
+                  borderBottom: panelTab === tab ? '2px solid #3b82f6' : '2px solid transparent',
                 }}>
-                  {customPins.filter(p => { if (mapFilter === 'all') return true; if (mapFilter === 'pipeline') return p.category === 'pipeline'; if (mapFilter === 'rapidfire') return p.category === 'rapidfire'; if (mapFilter === 'prospects') return p.category === 'prospect'; return true; }).length}
-                </span>
-              </div>
+                  {icon} {label}
+                </button>
+              ))}
+            </div>
+          )}
 
-              {/* ─── Data Layers ─── */}
-              <div style={{ padding: '6px 10px 4px' }}>
-                <div style={{ fontSize: '9px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.8px', color: '#94a3b8', marginBottom: '5px' }}>Data Layers</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                  {[
-                    { label: 'Developments', active: devPipelineEnabled, color: '#f59e0b', count: devPipelineEnabled ? filteredPipeline.length : null, toggle: () => setDevPipelineEnabled(v => !v) },
-                    { label: 'Absorption', active: absorptionEnabled, color: '#059669', count: absorptionEnabled ? filteredAbsorption.length : null, toggle: () => setAbsorptionEnabled(v => !v) },
-                    { label: 'County', active: countyOverlay, color: '#6366f1', toggle: () => setCountyOverlay(v => !v) },
-                    { label: 'ZIP Points', active: zipOverlay, color: '#10b981', toggle: () => setZipOverlay(v => !v) },
-                    { label: 'ZIP Heat', active: zipHeatmap, color: '#7c3aed', toggle: () => setZipHeatmap(v => !v) },
-                    { label: 'Zoning', active: zoningEnabled, color: '#3b82f6', toggle: () => { setZoningEnabled(v => { if (v) { setZoningServiceKey(''); setZoningFilter(''); } return !v; }); } },
-                    { label: 'Parcels', active: parcelOverlay, color: '#e11d48', toggle: () => setParcelOverlay(v => !v) },
-                  ].map(({ label, active, color, count, toggle }) => (
-                    <button key={label} onClick={toggle}
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '4px',
-                        padding: '4px 10px', borderRadius: '20px',
-                        border: active ? `1.5px solid ${color}` : '1.5px solid #e2e8f0',
-                        cursor: 'pointer',
-                        fontSize: '11px', fontWeight: active ? '600' : '500',
-                        color: active ? color : '#64748b',
-                        backgroundColor: active ? `${color}10` : 'white',
-                        transition: 'all 0.15s ease',
-                        lineHeight: 1,
-                      }}>
-                      <span style={{
-                        width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
-                        backgroundColor: active ? color : '#cbd5e1',
-                      }} />
-                      {label}
-                      {count != null && <span style={{
-                        fontSize: '9px', fontWeight: '700', color: 'white',
-                        backgroundColor: color, borderRadius: '8px', padding: '1px 5px', marginLeft: '1px',
-                      }}>{count > 999 ? `${(count/1000).toFixed(1)}k` : count}</span>}
-                    </button>
-                  ))}
-                </div>
-              </div>
+          {/* Panel Content */}
+          {panelOpen && (
+            <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', minHeight: 0 }}>
 
-              {/* ─── Active Layer Settings ─── */}
-              {(countyOverlay || zipOverlay || zipHeatmap || devPipelineEnabled || absorptionEnabled || zoningEnabled) && (
-                <div style={{
-                  padding: '5px 10px 6px', borderTop: '1px solid #f1f5f9',
-                  display: 'flex', flexDirection: 'column', gap: '4px',
-                }}>
-                  {devPipelineEnabled && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '9px', fontWeight: '600', color: '#f59e0b', minWidth: '36px' }}>DEV</span>
-                      <select value={devPipelineFilter} onChange={(e) => setDevPipelineFilter(e.target.value)}
-                        style={{
-                          flex: 1, padding: '3px 8px', fontSize: '10px', fontWeight: '500',
-                          border: '1px solid #e2e8f0', borderRadius: '5px',
-                          backgroundColor: 'white', color: '#334155',
-                          WebkitAppearance: 'none', appearance: 'none',
+              {/* ═══ LAYERS TAB ═══ */}
+              {panelTab === 'layers' && (
+                <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {/* Data Layers */}
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#64748b', marginBottom: 6 }}>Data Layers</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {[
+                        { label: 'Developments', active: devPipelineEnabled, color: '#f59e0b', count: devPipelineEnabled ? filteredPipeline.length : null, toggle: () => setDevPipelineEnabled(v => !v) },
+                        { label: 'Absorption', active: absorptionEnabled, color: '#059669', count: absorptionEnabled ? filteredAbsorption.length : null, toggle: () => setAbsorptionEnabled(v => !v) },
+                        { label: 'County', active: countyOverlay, color: '#6366f1', toggle: () => setCountyOverlay(v => !v) },
+                        { label: 'ZIP Points', active: zipOverlay, color: '#10b981', toggle: () => setZipOverlay(v => !v) },
+                        { label: 'ZIP Heat', active: zipHeatmap, color: '#3b82f6', toggle: () => setZipHeatmap(v => !v) },
+                        { label: 'Zoning', active: zoningEnabled, color: '#0ea5e9', toggle: () => { setZoningEnabled(v => { if (v) { setZoningServiceKey(''); setZoningFilter(''); } return !v; }); } },
+                      ].map(({ label, active, color, count, toggle }) => (
+                        <button key={label} onClick={toggle} style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                          padding: '4px 10px', borderRadius: 20,
+                          border: active ? `1.5px solid ${color}` : '1.5px solid rgba(255,255,255,0.1)',
+                          cursor: 'pointer', fontSize: 11, fontWeight: active ? 600 : 500,
+                          color: active ? color : '#94a3b8',
+                          backgroundColor: active ? `${color}18` : 'transparent',
+                          transition: 'all 0.15s', lineHeight: 1,
                         }}>
-                        {pipelineStatuses.map(s => <option key={s} value={s}>{s === 'all' ? 'All Statuses' : s}</option>)}
-                      </select>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, backgroundColor: active ? color : '#475569' }} />
+                          {label}
+                          {count != null && <span style={{ fontSize: 9, fontWeight: 700, color: '#fff', backgroundColor: color, borderRadius: 8, padding: '1px 5px', marginLeft: 1 }}>{count > 999 ? `${(count/1000).toFixed(1)}k` : count}</span>}
+                        </button>
+                      ))}
                     </div>
-                  )}
-                  {absorptionEnabled && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '9px', fontWeight: '600', color: '#059669', minWidth: '36px' }}>ABS</span>
-                      <select value={absorptionFilter} onChange={(e) => setAbsorptionFilter(e.target.value)}
-                        style={{
-                          flex: 1, padding: '3px 8px', fontSize: '10px', fontWeight: '500',
-                          border: '1px solid #e2e8f0', borderRadius: '5px',
-                          backgroundColor: 'white', color: '#334155',
-                          WebkitAppearance: 'none', appearance: 'none',
-                        }}>
-                        {absorptionTrends.map(t => <option key={t} value={t}>{t === 'all' ? 'All Trends' : t}</option>)}
-                      </select>
-                    </div>
-                  )}
-                  {countyOverlay && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '9px', fontWeight: '600', color: '#6366f1', minWidth: '36px' }}>CTY</span>
-                      <select value={countyMetric} onChange={(e) => setCountyMetric(e.target.value)}
-                        style={{
-                          flex: 1, padding: '3px 8px', fontSize: '10px', fontWeight: '500',
-                          border: '1px solid #e2e8f0', borderRadius: '5px',
-                          backgroundColor: 'white', color: '#334155',
-                          WebkitAppearance: 'none', appearance: 'none',
-                        }}>
-                        {COUNTY_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                      </select>
-                    </div>
-                  )}
-                  {zipOverlay && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '9px', fontWeight: '600', color: '#10b981', minWidth: '36px' }}>ZIP</span>
-                      <select value={zipMetric} onChange={(e) => setZipMetric(e.target.value)}
-                        style={{
-                          flex: 1, padding: '3px 8px', fontSize: '10px', fontWeight: '500',
-                          border: '1px solid #e2e8f0', borderRadius: '5px',
-                          backgroundColor: 'white', color: '#334155',
-                          WebkitAppearance: 'none', appearance: 'none',
-                        }}>
-                        {ZIP_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                      </select>
-                    </div>
-                  )}
-                  {zipHeatmap && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '9px', fontWeight: '600', color: '#7c3aed', minWidth: '36px' }}>HEAT</span>
-                      <select value={zipHeatmapMetric} onChange={(e) => setZipHeatmapMetric(e.target.value)}
-                        style={{
-                          flex: 1, padding: '3px 8px', fontSize: '10px', fontWeight: '500',
-                          border: '1px solid #e2e8f0', borderRadius: '5px',
-                          backgroundColor: 'white', color: '#334155',
-                          WebkitAppearance: 'none', appearance: 'none',
-                        }}>
-                        {(() => { const g = {}; ZIP_HEATMAP_METRIC_OPTIONS.forEach(o => { if (!g[o.group]) g[o.group] = []; g[o.group].push(o); }); return Object.entries(g).map(([gr, os]) => <optgroup key={gr} label={gr}>{os.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</optgroup>); })()}
-                      </select>
-                    </div>
-                  )}
-                  {zoningEnabled && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '9px', fontWeight: '600', color: '#3b82f6', minWidth: '36px' }}>ZONE</span>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                        {zoningLoading ? <span style={{ fontSize: '10px', color: '#94a3b8' }}>Loading…</span> : (
-                          <select value={zoningServiceKey} onChange={(e) => { setZoningServiceKey(e.target.value); setAgentSelectedSlug(''); setZoningFilter(''); }}
-                            style={{
-                              width: '100%', padding: '3px 8px', fontSize: '10px', fontWeight: '500',
-                              border: '1px solid #e2e8f0', borderRadius: '5px',
-                              backgroundColor: 'white', color: '#334155',
-                              WebkitAppearance: 'none', appearance: 'none',
-                            }}>
-                            <option value="">Select zoning layer</option>
-                            {(() => {
-                              const groups = {};
-                              Object.entries(zoningServices).forEach(([key, svc]) => {
-                                const region = svc.region || 'SW';
-                                if (!groups[region]) groups[region] = [];
-                                groups[region].push({ key, label: svc.label, state: svc.state });
-                              });
-                              const regionNames = { SW: 'Southwest', NW: 'Northwest', SE: 'Southeast', NE: 'Northeast' };
-                              const regionOrder = ['SW', 'SE', 'NW', 'NE'];
-                              return regionOrder.filter(r => groups[r]).map(region => {
-                                const items = groups[region];
-                                const byState = {};
-                                items.forEach(item => {
-                                  const st = item.state || '??';
-                                  if (!byState[st]) byState[st] = [];
-                                  byState[st].push(item);
-                                });
-                                const stateLabels = { AZ: 'AZ', CA: 'CA', NC: 'NC', SC: 'SC' };
-                                return (
-                                  <optgroup key={region} label={`── ${regionNames[region] || region} (${items.length}) ──`}>
-                                    {Object.entries(byState).sort(([a],[b]) => a.localeCompare(b)).flatMap(([st, stItems]) =>
-                                      stItems.sort((a,b) => a.label.localeCompare(b.label)).map(({ key, label }) => (
-                                        <option key={key} value={key}>{label}, {stateLabels[st] || st}</option>
-                                      ))
-                                    )}
-                                  </optgroup>
-                                );
-                              });
-                            })()}
+                  </div>
+
+                  {/* Active Layer Settings */}
+                  {(countyOverlay || zipOverlay || zipHeatmap || devPipelineEnabled || absorptionEnabled || zoningEnabled) && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      {devPipelineEnabled && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 9, fontWeight: 600, color: '#f59e0b', minWidth: 36 }}>DEV</span>
+                          <select value={devPipelineFilter} onChange={(e) => setDevPipelineFilter(e.target.value)} style={{
+                            flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
+                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', WebkitAppearance: 'none', appearance: 'none',
+                          }}>
+                            {pipelineStatuses.map(s => <option key={s} value={s}>{s === 'all' ? 'All Statuses' : s}</option>)}
                           </select>
-                        )}
-                        {(zoningServiceKey || agentSelectedSlug) && <input type="text" placeholder="Filter zone code…" value={zoningFilter} onChange={(e) => setZoningFilter(e.target.value)}
-                          style={{
-                            padding: '3px 8px', fontSize: '10px', fontWeight: '500',
-                            border: '1px solid #e2e8f0', borderRadius: '5px',
-                            backgroundColor: 'white', color: '#334155',
-                          }} />}
-
-                        {/* ── AI Discovery section ── */}
-                        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '4px', marginTop: '2px' }}>
-                          <div style={{ fontSize: '9px', fontWeight: '700', color: '#7c3aed', marginBottom: '3px', letterSpacing: '0.5px' }}>AI DISCOVER ANY CITY</div>
-                          <div style={{ display: 'flex', gap: '3px' }}>
-                            <input
-                              type="text"
-                              placeholder="e.g. Raleigh, NC"
-                              value={agentCityInput}
-                              onChange={(e) => { setAgentCityInput(e.target.value); setAgentDiscoverError(''); }}
-                              onKeyDown={(e) => { if (e.key === 'Enter') handleDiscoverCity(); }}
-                              disabled={agentDiscovering}
-                              style={{
-                                flex: 1, padding: '3px 8px', fontSize: '10px', fontWeight: '500',
-                                border: '1px solid #e2e8f0', borderRadius: '5px',
-                                backgroundColor: agentDiscovering ? '#f1f5f9' : 'white', color: '#334155',
-                              }}
-                            />
-                            <button
-                              onClick={handleDiscoverCity}
-                              disabled={agentDiscovering || !agentCityInput.trim()}
-                              style={{
-                                padding: '3px 10px', fontSize: '10px', fontWeight: '600',
-                                border: 'none', borderRadius: '5px', cursor: agentDiscovering ? 'wait' : 'pointer',
-                                backgroundColor: agentDiscovering ? '#c4b5fd' : '#7c3aed', color: 'white',
-                                opacity: (!agentCityInput.trim() || agentDiscovering) ? 0.6 : 1,
-                              }}
-                            >
-                              {agentDiscovering ? 'Finding…' : 'Discover'}
-                            </button>
-                          </div>
-                          {agentDiscoverError && (
-                            <div style={{ fontSize: '9px', color: '#ef4444', marginTop: '2px' }}>{agentDiscoverError}</div>
-                          )}
-                          {agentCities.length > 0 && (
-                            <select
-                              value={agentSelectedSlug}
-                              onChange={(e) => { setAgentSelectedSlug(e.target.value); if (e.target.value) setZoningServiceKey(''); setZoningFilter(''); }}
-                              style={{
-                                width: '100%', padding: '3px 8px', fontSize: '10px', fontWeight: '500',
-                                border: '1px solid #e2e8f0', borderRadius: '5px', marginTop: '3px',
-                                backgroundColor: 'white', color: '#334155',
-                                WebkitAppearance: 'none', appearance: 'none',
-                              }}
-                            >
-                              <option value="">Discovered cities ({agentCities.length})</option>
-                              {agentCities.map(c => (
-                                <option key={c.slug || c} value={c.slug || c}>
-                                  {c.city || c.slug || c}
-                                </option>
-                              ))}
-                            </select>
-                          )}
                         </div>
-                      </div>
+                      )}
+                      {absorptionEnabled && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 9, fontWeight: 600, color: '#059669', minWidth: 36 }}>ABS</span>
+                          <select value={absorptionFilter} onChange={(e) => setAbsorptionFilter(e.target.value)} style={{
+                            flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
+                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', WebkitAppearance: 'none', appearance: 'none',
+                          }}>
+                            {absorptionTrends.map(t => <option key={t} value={t}>{t === 'all' ? 'All Trends' : t}</option>)}
+                          </select>
+                        </div>
+                      )}
+                      {countyOverlay && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 9, fontWeight: 600, color: '#6366f1', minWidth: 36 }}>CTY</span>
+                          <select value={countyMetric} onChange={(e) => setCountyMetric(e.target.value)} style={{
+                            flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
+                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', WebkitAppearance: 'none', appearance: 'none',
+                          }}>
+                            {COUNTY_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                          </select>
+                        </div>
+                      )}
+                      {zipOverlay && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 9, fontWeight: 600, color: '#10b981', minWidth: 36 }}>ZIP</span>
+                          <select value={zipMetric} onChange={(e) => setZipMetric(e.target.value)} style={{
+                            flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
+                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', WebkitAppearance: 'none', appearance: 'none',
+                          }}>
+                            {ZIP_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                          </select>
+                        </div>
+                      )}
+                      {zipHeatmap && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 9, fontWeight: 600, color: '#3b82f6', minWidth: 36 }}>HEAT</span>
+                          <select value={zipHeatmapMetric} onChange={(e) => setZipHeatmapMetric(e.target.value)} style={{
+                            flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
+                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', WebkitAppearance: 'none', appearance: 'none',
+                          }}>
+                            {(() => { const g = {}; ZIP_HEATMAP_METRIC_OPTIONS.forEach(o => { if (!g[o.group]) g[o.group] = []; g[o.group].push(o); }); return Object.entries(g).map(([gr, os]) => <optgroup key={gr} label={gr}>{os.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</optgroup>); })()}
+                          </select>
+                        </div>
+                      )}
+                      {zoningEnabled && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 9, fontWeight: 600, color: '#0ea5e9', minWidth: 36 }}>ZONE</span>
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            {zoningLoading ? <span style={{ fontSize: 10, color: '#94a3b8' }}>Loading…</span> : (
+                              <select value={zoningServiceKey} onChange={(e) => { setZoningServiceKey(e.target.value); setAgentSelectedSlug(''); setZoningFilter(''); }} style={{
+                                width: '100%', padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
+                                backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', WebkitAppearance: 'none', appearance: 'none',
+                              }}>
+                                <option value="">Select zoning layer</option>
+                                {(() => {
+                                  const groups = {};
+                                  Object.entries(zoningServices).forEach(([key, svc]) => {
+                                    const region = svc.region || 'SW';
+                                    if (!groups[region]) groups[region] = [];
+                                    groups[region].push({ key, label: svc.label, state: svc.state });
+                                  });
+                                  const regionNames = { SW: 'Southwest', NW: 'Northwest', SE: 'Southeast', NE: 'Northeast' };
+                                  const regionOrder = ['SW', 'SE', 'NW', 'NE'];
+                                  return regionOrder.filter(r => groups[r]).map(region => {
+                                    const items = groups[region];
+                                    const byState = {};
+                                    items.forEach(item => { const st = item.state || '??'; if (!byState[st]) byState[st] = []; byState[st].push(item); });
+                                    return (
+                                      <optgroup key={region} label={`── ${regionNames[region] || region} (${items.length}) ──`}>
+                                        {Object.entries(byState).sort(([a],[b]) => a.localeCompare(b)).flatMap(([st, stItems]) =>
+                                          stItems.sort((a,b) => a.label.localeCompare(b.label)).map(({ key, label }) => (
+                                            <option key={key} value={key}>{label}, {st}</option>
+                                          ))
+                                        )}
+                                      </optgroup>
+                                    );
+                                  });
+                                })()}
+                              </select>
+                            )}
+                            {(zoningServiceKey || agentSelectedSlug) && <input type="text" placeholder="Filter zone code…" value={zoningFilter} onChange={(e) => setZoningFilter(e.target.value)} style={{
+                              padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
+                              backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0',
+                            }} />}
+                            {/* AI Discovery */}
+                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 4, marginTop: 2 }}>
+                              <div style={{ fontSize: 9, fontWeight: 700, color: '#3b82f6', marginBottom: 3, letterSpacing: '0.5px' }}>AI DISCOVER ANY CITY</div>
+                              <div style={{ display: 'flex', gap: 3 }}>
+                                <input type="text" placeholder="e.g. Raleigh, NC" value={agentCityInput}
+                                  onChange={(e) => { setAgentCityInput(e.target.value); setAgentDiscoverError(''); }}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') handleDiscoverCity(); }}
+                                  disabled={agentDiscovering}
+                                  style={{
+                                    flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
+                                    backgroundColor: agentDiscovering ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)', color: '#e2e8f0',
+                                  }}
+                                />
+                                <button onClick={handleDiscoverCity} disabled={agentDiscovering || !agentCityInput.trim()} style={{
+                                  padding: '3px 10px', fontSize: 10, fontWeight: 600, border: 'none', borderRadius: 5,
+                                  cursor: agentDiscovering ? 'wait' : 'pointer',
+                                  backgroundColor: agentDiscovering ? '#1e40af' : '#2563eb', color: 'white',
+                                  opacity: (!agentCityInput.trim() || agentDiscovering) ? 0.5 : 1,
+                                }}>
+                                  {agentDiscovering ? 'Finding…' : 'Discover'}
+                                </button>
+                              </div>
+                              {agentDiscoverError && <div style={{ fontSize: 9, color: '#f87171', marginTop: 2 }}>{agentDiscoverError}</div>}
+                              {agentCities.length > 0 && (
+                                <select value={agentSelectedSlug} onChange={(e) => { setAgentSelectedSlug(e.target.value); if (e.target.value) setZoningServiceKey(''); setZoningFilter(''); }} style={{
+                                  width: '100%', padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5, marginTop: 3,
+                                  backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', WebkitAppearance: 'none', appearance: 'none',
+                                }}>
+                                  <option value="">Discovered cities ({agentCities.length})</option>
+                                  {agentCities.map(c => <option key={c.slug || c} value={c.slug || c}>{c.city || c.slug || c}</option>)}
+                                </select>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* ═══ PINS TAB ═══ */}
+              {panelTab === 'pins' && (
+                <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#64748b', marginBottom: 2 }}>Pin Visibility</div>
+                  {[
+                    { label: 'Pipeline Deals', enabled: showPipelinePins, toggle: () => setShowPipelinePins(v => !v), color: '#22c55e', count: customPins.filter(p => p.category === 'pipeline').length },
+                    { label: 'Rapid Fire', enabled: showRapidFirePins, toggle: () => setShowRapidFirePins(v => !v), color: '#ef4444', count: customPins.filter(p => p.category === 'rapidfire').length },
+                    { label: 'Uploaded Properties', enabled: showUploadedPins, toggle: () => setShowUploadedPins(v => !v), color: '#3b82f6', count: customPins.filter(p => p.source === 'uploaded').length },
+                    { label: 'Prospect Cities', enabled: showProspectPins, toggle: () => setShowProspectPins(v => !v), color: '#f59e0b', count: customPins.filter(p => p.category === 'prospect').length },
+                  ].map(({ label, enabled, toggle, color, count }) => (
+                    <div key={label} onClick={toggle} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '8px 10px', borderRadius: 8, cursor: 'pointer',
+                      backgroundColor: enabled ? 'rgba(255,255,255,0.04)' : 'transparent',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      transition: 'all 0.15s',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: enabled ? color : '#475569' }} />
+                        <span style={{ fontSize: 12, fontWeight: 500, color: enabled ? '#e2e8f0' : '#64748b' }}>{label}</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: '#64748b', backgroundColor: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 8 }}>{count}</span>
+                      </div>
+                      {enabled ? <Eye size={14} color="#60a5fa" /> : <EyeOff size={14} color="#475569" />}
+                    </div>
+                  ))}
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8, marginTop: 4 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#64748b', marginBottom: 6 }}>Quick Filter</div>
+                    <select value={mapFilter} onChange={(e) => setMapFilter(e.target.value)} style={{
+                      width: '100%', padding: '5px 8px', fontSize: 11, fontWeight: 500,
+                      border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6,
+                      backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0',
+                      WebkitAppearance: 'none', appearance: 'none',
+                    }}>
+                      <option value="all">All Pins ({customPins.length})</option>
+                      <option value="pipeline">Pipeline Only</option>
+                      <option value="rapidfire">Rapid Fire Only</option>
+                      <option value="prospects">Prospects Only</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* ═══ UPLOAD TAB ═══ */}
+              {panelTab === 'upload' && (
+                <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {/* Property Spreadsheet Upload */}
+                  <div style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: '10px 12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 4 }}>Property Spreadsheet</div>
+                    <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 8 }}>CSV/XLSX • Adds blue map pins</div>
+                    <label style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
+                      border: '1px dashed rgba(59,130,246,0.4)', backgroundColor: 'rgba(59,130,246,0.06)',
+                      color: '#60a5fa', fontSize: 11, fontWeight: 600,
+                    }}>
+                      <UploadCloud size={14} /> Upload File
+                      <input type="file" accept=".csv,.xlsx,.xls" onChange={(e) => handleUploadedSheetFile(e.target.files?.[0])} style={{ display: 'none' }} />
+                    </label>
+                  </div>
+                  {/* Rapid Fire Upload */}
+                  <div style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: '10px 12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 4 }}>Rapid Fire Queue</div>
+                    <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 8 }}>CSV/XLSX • Auto geocode, red pins</div>
+                    <label style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
+                      border: '1px dashed rgba(239,68,68,0.4)', backgroundColor: 'rgba(239,68,68,0.06)',
+                      color: '#f87171', fontSize: 11, fontWeight: 600,
+                    }}>
+                      <UploadCloud size={14} /> Upload File
+                      <input type="file" accept=".csv,.xlsx,.xls" onChange={(e) => handleProspectsFile(e.target.files?.[0])} style={{ display: 'none' }} />
+                    </label>
+                  </div>
+                  {/* Queue Status */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div>
+                      <div style={{ fontSize: 10, color: '#64748b' }}>Queue: {rapidFireQueue.length} ready</div>
+                      <div style={{ fontSize: 10, color: '#64748b' }}>{processingStatus || 'Idle'}</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button onClick={loadRapidFireQueue} style={{
+                        padding: '5px 10px', fontSize: 10, fontWeight: 600, borderRadius: 6, cursor: 'pointer',
+                        border: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0',
+                      }}>
+                        <Download size={12} style={{ marginRight: 4 }} /> Refresh
+                      </button>
+                      <button onClick={addAllRapidFireToMap} disabled={!rapidFireQueue.length} style={{
+                        padding: '5px 10px', fontSize: 10, fontWeight: 600, borderRadius: 6, cursor: rapidFireQueue.length ? 'pointer' : 'not-allowed',
+                        border: 'none', backgroundColor: rapidFireQueue.length ? '#2563eb' : 'rgba(255,255,255,0.05)', color: rapidFireQueue.length ? '#fff' : '#64748b',
+                      }}>
+                        Add All
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ═══ ADD PIN TAB ═══ */}
+              {panelTab === 'add' && (
+                <div style={{ padding: '10px 12px' }}>
+                  <form onSubmit={handleSubmitProperty} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <input placeholder="Property Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={{
+                      width: '100%', padding: '7px 10px', fontSize: 12, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6,
+                      backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', outline: 'none',
+                    }} />
+                    <div style={{ position: 'relative' }}>
+                      <input placeholder="Street Address, City, ST ZIP" value={form.address}
+                        onChange={(e) => handleAddressChange(e.target.value)}
+                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                        type="text" name="address" style={{
+                          width: '100%', padding: '7px 10px', fontSize: 12, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6,
+                          backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', outline: 'none',
+                        }}
+                      />
+                      {showSuggestions && addressSuggestions.length > 0 && (
+                        <div style={{
+                          position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, zIndex: 1000,
+                          backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6,
+                          maxHeight: 160, overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                        }}>
+                          {addressSuggestions.map((suggestion, idx) => (
+                            <div key={idx} onClick={() => selectSuggestion(suggestion)} style={{
+                              padding: '6px 10px', cursor: 'pointer', fontSize: 11, color: '#e2e8f0',
+                              borderBottom: idx < addressSuggestions.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                            }}
+                            onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255,255,255,0.06)'}
+                            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                            >
+                              {suggestion.label}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input placeholder="Units" value={form.units} onChange={(e) => setForm({ ...form, units: e.target.value })} style={{
+                        flex: 1, padding: '7px 10px', fontSize: 12, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6,
+                        backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', outline: 'none',
+                      }} />
+                      <button type="submit" style={{
+                        padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 6,
+                        backgroundColor: '#2563eb', color: '#fff', cursor: 'pointer',
+                      }}>Add Pin</button>
+                    </div>
+                  </form>
                 </div>
               )}
             </div>
           )}
         </div>
 
-        {/* Map Container */}
-        <div style={{ flex: 1, position: 'relative', minHeight: '600px' }}>
-          {/* ═══ Floating Map Style Switcher (top-right overlay) ═══ */}
-          <div style={{
-            position: 'absolute',
-            top: 12,
-            right: 12,
-            zIndex: 1000,
-            display: 'flex',
-            borderRadius: 8,
-            overflow: 'hidden',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
-            border: '1px solid rgba(255,255,255,0.6)',
-          }}>
-            {[
-              { key: 'voyager', label: 'Base' },
-              { key: 'satellite', label: 'Satellite' },
-              { key: 'streets', label: 'Hybrid' },
-              { key: '3d', label: '3D' },
-            ].map(({ key, label }, i) => (
-              <button
-                key={key}
-                onClick={() => setMapStyle(key)}
-                style={{
-                  padding: '6px 14px',
-                  fontSize: 12,
-                  fontWeight: mapStyle === key ? 700 : 500,
-                  cursor: 'pointer',
-                  border: 'none',
-                  borderLeft: i > 0 ? '1px solid rgba(0,0,0,0.08)' : 'none',
-                  color: mapStyle === key ? '#fff' : '#374151',
-                  background: mapStyle === key
-                    ? (key === '3d' ? 'linear-gradient(135deg,#7c3aed,#2563eb)' : '#3b82f6')
-                    : 'rgba(255,255,255,0.92)',
-                  backdropFilter: 'blur(8px)',
-                  transition: 'all 0.15s',
-                  letterSpacing: key === '3d' ? 1 : 0,
-                }}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+        {/* ─── Floating Map Style Switcher (top-right) ─── */}
+        <div style={{
+          position: 'absolute', top: 12, right: 12, zIndex: 1000,
+          display: 'flex', borderRadius: 8, overflow: 'hidden',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)',
+        }}>
+          {[
+            { key: 'satellite', label: 'Satellite' },
+            { key: 'voyager', label: 'Base' },
+            { key: 'streets', label: 'Hybrid' },
+            { key: '3d', label: '3D' },
+          ].map(({ key, label }, i) => (
+            <button key={key} onClick={() => setMapStyle(key)} style={{
+              padding: '6px 14px', fontSize: 12, fontWeight: mapStyle === key ? 700 : 500,
+              cursor: 'pointer', border: 'none',
+              borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none',
+              color: mapStyle === key ? '#fff' : '#cbd5e1',
+              background: mapStyle === key ? '#2563eb' : 'rgba(15,23,42,0.85)',
+              backdropFilter: 'blur(8px)', transition: 'all 0.15s',
+            }}>
+              {label}
+            </button>
+          ))}
+        </div>
 
-          {/* MapLibre GL 3D Map */}
-          {mapStyle === '3d' && (
-            <div 
-              ref={maplibreContainerRef} 
-              style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }} 
-            />
-          )}
+        {/* MapLibre GL 3D Map */}
+        {mapStyle === '3d' && (
+          <div ref={maplibreContainerRef} style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }} />
+        )}
 
-          {/* Leaflet 2D Map */}
-          {mapStyle !== '3d' && (
-          <MapContainer center={defaultCenter} zoom={defaultZoom} style={{ width: '100%', height: '100%' }}>
-            <TileLayer 
-              url={tileUrl} 
-              attribution={attribution} 
-            />
-            <CommandExecutor commands={pendingCommands} onDone={() => setPendingCommands([])} addPin={addPinFromCommand} />
+        {/* Leaflet 2D Map */}
+        {mapStyle !== '3d' && (
+        <MapContainer center={defaultCenter} zoom={defaultZoom} style={{ width: '100%', height: '100%' }}>
+          <TileLayer url={tileUrl} attribution={attribution} />
+          <CommandExecutor commands={pendingCommands} onDone={() => setPendingCommands([])} addPin={addPinFromCommand} />
 
-            {/* Base categorized markers */}
-            {baseMarkers.map((m) => (
-              <Marker key={m.id} position={m.position} icon={categoryIcon(m.category)}>
-                <Popup>
-                  <div style={{ minWidth: '220px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>{m.name}</div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>Influence zone radius ~2 miles</div>
-                    <div style={{ borderRadius: '8px', backgroundColor: '#e0e7ff', padding: '8px', fontSize: '12px', color: '#1e293b' }}>
-                      Research Insight: {m.insight}
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
+          {/* Base categorized markers */}
+          {baseMarkers.map((m) => (
+            <Marker key={m.id} position={m.position} icon={categoryIcon(m.category)}>
+              <Popup>
+                <div style={{ minWidth: '220px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>{m.name}</div>
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>Influence zone radius ~2 miles</div>
+                  <div style={{ borderRadius: '8px', backgroundColor: '#e0e7ff', padding: '8px', fontSize: '12px', color: '#1e293b' }}>Research Insight: {m.insight}</div>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
 
-            {/* Influence zones (2 miles ~ 3219m) */}
-            {/* Custom pins from form */}
-            {customPins
-              .filter(p => {
-                if (mapFilter === 'all') return true;
-                if (mapFilter === 'pipeline') return p.category === 'pipeline';
-                if (mapFilter === 'rapidfire') return p.category === 'rapidfire';
-                if (mapFilter === 'prospects') return p.category === 'prospect';
-                return true;
-              })
-              .map((p) => (
-              <Marker key={p.id} position={p.position} icon={categoryIcon(p.category, p.source)}>
-                <Popup maxWidth={350}>
-                  <div style={{ 
-                    minWidth: '280px', 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    gap: '12px',
-                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
+          {/* Custom pins — filtered by visibility toggles */}
+          {visiblePins.map((p) => (
+            <Marker key={p.id} position={p.position} icon={categoryIcon(p.category, p.source)}>
+              <Popup maxWidth={350}>
+                <div style={{ 
+                  minWidth: '280px', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '12px',
+                  fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
                   }}>
                     {/* Header */}
                     <div style={{ 
@@ -3061,13 +2687,13 @@ function DashboardMapTab() {
                           p.source === 'uploaded' ? '#dbeafe' :
                           p.category === 'pipeline' ? '#d1fae5' :
                           p.category === 'rapidfire' ? '#fecaca' : 
-                          p.category === 'prospect' ? '#ddd6fe' : 
+                          p.category === 'prospect' ? '#fef3c7' : 
                           '#fce7f3',
                         color:
                           p.source === 'uploaded' ? '#1e40af' :
                           p.category === 'pipeline' ? '#065f46' :
                           p.category === 'rapidfire' ? '#991b1b' : 
-                          p.category === 'prospect' ? '#5b21b6' : 
+                          p.category === 'prospect' ? '#92400e' : 
                           '#831843'
                       }}>
                         {p.source === 'uploaded' ? '📊 Uploaded' :
@@ -3091,13 +2717,13 @@ function DashboardMapTab() {
                           p.source === 'uploaded' ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)' :
                           p.category === 'pipeline' ? 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)' :
                           p.category === 'rapidfire' ? 'linear-gradient(135deg, #fef2f2 0%, #fecaca 100%)' : 
-                          'linear-gradient(135deg, #faf5ff 0%, #e9d5ff 100%)',
+                          'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
                         border: '1px solid',
                         borderColor:
                           p.source === 'uploaded' ? '#bfdbfe' :
                           p.category === 'pipeline' ? '#a7f3d0' :
                           p.category === 'rapidfire' ? '#fca5a5' : 
-                          '#c4b5fd'
+                          '#fcd34d'
                       }}>
                         {p.insight}
                       </div>
@@ -3364,45 +2990,46 @@ function DashboardMapTab() {
               zoneFilter={zoningFilter}
             />
 
-            {/* Parcel boundary overlay layer */}
-            <ParcelOverlayLayer enabled={parcelOverlay} />
+
           </MapContainer>
           )}
-        </div>
 
       </div>
 
-      {/* Max AI Sidebar - Right Side */}
+      {/* ═══════════════ MAX AI SIDEBAR (right side) ═══════════════ */}
       <div style={{
-        width: isChatMinimized ? 40 : 420,
-        minWidth: isChatMinimized ? 40 : 420,
-        maxWidth: isChatMinimized ? 40 : 420,
+        width: isChatMinimized ? 40 : 380,
+        minWidth: isChatMinimized ? 40 : 380,
+        maxWidth: isChatMinimized ? 40 : 380,
         height: '100%',
         flexShrink: 0,
-        borderLeft: '1px solid #e5e7eb',
+        borderLeft: '1px solid rgba(255,255,255,0.06)',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: '#ffffff',
+        backgroundColor: '#0f172a',
         overflow: 'hidden',
         transition: 'width 0.2s ease, min-width 0.2s ease, max-width 0.2s ease'
       }}>
         {/* AI Header */}
         <div style={{
           padding: isChatMinimized ? '8px' : '10px 14px',
-          borderBottom: '1px solid #e5e7eb',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: isChatMinimized ? 'center' : 'space-between',
-          fontSize: 15,
-          fontWeight: 600,
-          color: '#111827'
+          fontSize: 14,
+          fontWeight: 700,
+          color: '#f1f5f9',
         }}>
-          {!isChatMinimized && <span>Max</span>}
+          {!isChatMinimized && <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
+            Max AI
+          </span>}
           <button
             type="button"
             onClick={() => setIsChatMinimized(!isChatMinimized)}
             title={isChatMinimized ? 'Expand chat' : 'Minimize chat'}
-            style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#374151' }}
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8' }}
           >
             <MessageSquare size={15} />
           </button>
@@ -3414,27 +3041,24 @@ function DashboardMapTab() {
           flex: 1,
           padding: '12px 14px',
           overflowY: 'auto',
-          minHeight: 0
+          minHeight: 0,
         }}>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: '#111827' }}>
+          <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 8, color: '#94a3b8' }}>
             Ask Max about property clusters, market trends, or new investment markets.
           </div>
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px'
-          }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {chat.messages.map((msg, idx) => (
               <div
                 key={idx}
                 style={{
                   marginBottom: 8,
                   padding: '10px 12px',
-                  borderRadius: 6,
-                  backgroundColor: msg.role === 'user' ? '#e5f0ff' : '#f9fafb',
-                  color: '#111827',
+                  borderRadius: 8,
+                  backgroundColor: msg.role === 'user' ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.04)',
+                  color: '#e2e8f0',
                   fontSize: 13,
-                  lineHeight: 1.5
+                  lineHeight: 1.5,
+                  border: msg.role === 'user' ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(255,255,255,0.06)',
                 }}
               >
                 {msg.role === 'assistant' ? (
@@ -3447,11 +3071,12 @@ function DashboardMapTab() {
             {chat.loading && (
               <div style={{
                 padding: '10px 12px',
-                borderRadius: 6,
-                backgroundColor: '#f9fafb',
-                color: '#6b7280',
+                borderRadius: 8,
+                backgroundColor: 'rgba(255,255,255,0.04)',
+                color: '#94a3b8',
                 fontSize: 13,
-                fontStyle: 'italic'
+                fontStyle: 'italic',
+                border: '1px solid rgba(255,255,255,0.06)',
               }}>
                 Max is thinking...
               </div>
@@ -3464,21 +3089,22 @@ function DashboardMapTab() {
         {!isChatMinimized && (
         <div style={{
           padding: '12px 14px',
-          borderTop: '1px solid #e5e7eb',
-          backgroundColor: '#ffffff'
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          backgroundColor: 'rgba(255,255,255,0.02)',
         }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: 8 }}>
             <input
               style={{
                 flex: 1,
                 padding: '8px 12px',
                 fontSize: 13,
-                border: '1px solid #d1d5db',
-                borderRadius: 6,
-                backgroundColor: 'white',
-                outline: 'none'
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 8,
+                backgroundColor: 'rgba(255,255,255,0.05)',
+                color: '#e2e8f0',
+                outline: 'none',
               }}
-              placeholder="Ask about markets, trends, or request map commands..."
+              placeholder="Ask about markets, trends, or map commands..."
               value={chat.input}
               onChange={(e) => setChat({ ...chat, input: e.target.value })}
               onKeyDown={(e) => {
@@ -3491,14 +3117,14 @@ function DashboardMapTab() {
             <button
               style={{
                 padding: '8px 16px',
-                backgroundColor: '#3b82f6',
+                backgroundColor: '#2563eb',
                 color: 'white',
                 border: 'none',
-                borderRadius: 6,
+                borderRadius: 8,
                 fontSize: 13,
-                fontWeight: 500,
+                fontWeight: 600,
                 cursor: 'pointer',
-                opacity: chat.loading ? 0.6 : 1
+                opacity: chat.loading ? 0.6 : 1,
               }}
               disabled={chat.loading}
               onClick={() => sendMaxMessage(chat.input)}
