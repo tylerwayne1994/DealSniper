@@ -561,11 +561,28 @@ async def run_platform_search(
 
     if BrowserSession is not None:
         try:
-            # PLAYWRIGHT_BROWSERS_PATH is already set by _set_chromium_env(),
-            # so browser-use's internal Playwright detection will find the binary.
-            browser_session = BrowserSession(headless=True)
-            log.info("[DEBUG] BrowserSession created: headless=True, PLAYWRIGHT_BROWSERS_PATH=%s",
-                     os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "<unset>"))
+            # Pass executable_path so the watchdog skips its slow binary search.
+            # Also pass container-optimized args to speed up startup on Render.
+            browser_session = BrowserSession(
+                headless=True,
+                executable_path=chromium_path,
+                chromium_sandbox=False,
+                args=[
+                    "--disable-gpu",
+                    "--disable-software-rasterizer",
+                    "--disable-setuid-sandbox",
+                    "--disable-extensions",
+                    "--disable-background-networking",
+                    "--disable-default-apps",
+                    "--no-first-run",
+                ],
+            )
+            log.info(
+                "[DEBUG] BrowserSession created: headless=True, executable_path=%s, "
+                "PLAYWRIGHT_BROWSERS_PATH=%s",
+                chromium_path,
+                os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "<unset>"),
+            )
             agent = Agent(
                 task=task,
                 llm=llm,
