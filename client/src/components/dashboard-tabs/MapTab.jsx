@@ -1200,6 +1200,115 @@ function DashboardMapTab() {
     return cleaned;
   };
 
+  // ---- Shared Max chat send function ----
+  const sendMaxMessage = useCallback(async (messageText) => {
+    const trimmed = (messageText || '').trim();
+    if (!trimmed || chat.loading) return;
+    setChat(prev => ({ ...prev, loading: true, messages: [...prev.messages, { role: 'user', content: trimmed }], input: '' }));
+
+    try {
+      // Build compact mapContext from active layers
+      const mapContext = {};
+
+      // 1. Custom pins the user has placed
+      if (customPins.length > 0) {
+        mapContext.userPins = customPins.slice(0, 50).map(p => ({
+          name: p.name, lat: p.latitude, lng: p.longitude, units: p.units || '', notes: p.notes || ''
+        }));
+      }
+
+      // 2. Development pipeline summary (if layer is on)
+      if (devPipelineEnabled && devPipelineData.length > 0) {
+        // Group by status and top MSAs
+        const byStatus = {};
+        const byMSA = {};
+        devPipelineData.forEach(p => {
+          const s = p.status || 'Unknown';
+          byStatus[s] = (byStatus[s] || 0) + 1;
+          const m = p.msa || 'Unknown';
+          byMSA[m] = (byMSA[m] || 0) + 1;
+        });
+        const topMSAs = Object.entries(byMSA).sort((a, b) => b[1] - a[1]).slice(0, 15);
+        mapContext.developments = {
+          total: devPipelineData.length,
+          filter: devPipelineFilter,
+          byStatus,
+          topMSAs: topMSAs.map(([msa, count]) => `${msa} (${count})`),
+          sample: devPipelineData.slice(0, 10).map(p => ({
+            name: p.project_name, city: p.city, status: p.status, units: p.units,
+            developer: p.developer, class: p.class_type, msa: p.msa
+          }))
+        };
+      }
+
+      // 3. Absorption / market data summary (if layer is on)
+      if (absorptionEnabled && absorptionData.length > 0) {
+        const byTrend = {};
+        absorptionData.forEach(a => {
+          const t = a.Market_Trend || 'Unknown';
+          byTrend[t] = (byTrend[t] || 0) + 1;
+        });
+        mapContext.absorption = {
+          total: absorptionData.length,
+          filter: absorptionFilter,
+          byTrend,
+          sample: absorptionData.slice(0, 15).map(a => ({
+            msa: a.MSA, trend: a.Market_Trend, occupancy: a.Occupancy_Rate_Pct,
+            vacancy: a.Vacancy_Rate_Pct, avgRent: a.Avg_Effective_Rent_USD,
+            rentGrowth: a.YoY_Rent_Growth_Pct, absorption: a.Absorption_Rate_Pct
+          }))
+        };
+      }
+
+      // 4. Active overlay layers
+      mapContext.activeLayers = [];
+      if (devPipelineEnabled) mapContext.activeLayers.push('Developments');
+      if (absorptionEnabled) mapContext.activeLayers.push('Absorption');
+      if (countyOverlay) mapContext.activeLayers.push('County (' + countyMetric + ')');
+      if (zipOverlay) mapContext.activeLayers.push('ZIP Points (' + zipMetric + ')');
+      if (zipHeatmap) mapContext.activeLayers.push('ZIP Heatmap (' + zipHeatmapMetric + ')');
+      if (zoningEnabled) mapContext.activeLayers.push('Zoning');
+      if (parcelOverlay) mapContext.activeLayers.push('Parcels');
+
+      const headers = { 'Content-Type': 'application/json' };
+      if (userId) headers['X-Profile-ID'] = userId;
+
+      const res = await fetch(API_ENDPOINTS.marketResearchChat, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          message: trimmed,
+          mapContext: Object.keys(mapContext).length > 0 ? mapContext : undefined,
+          conversationHistory: chat.messages.slice(-10)
+        })
+      });
+      const isJson = res.headers.get('content-type')?.includes('application/json');
+      const data = isJson ? await res.json().catch(() => null) : null;
+      if (res.status === 401) {
+        setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: 'Please log in to use Market Research.' }] }));
+        return;
+      }
+      if (res.status === 402) {
+        const required = data?.tokens_required ?? 1;
+        const balance = data?.token_balance ?? 0;
+        setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: `You are out of tokens. Required: ${required}, Available: ${balance}.` }] }));
+        return;
+      }
+      if (!res.ok) {
+        setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: 'Error contacting Max.' }] }));
+        return;
+      }
+      const text = (data?.response || data?.message || data?.content || data?.assistant || 'No response');
+      const commands = extractCommands(text);
+      if (commands.length > 0) setPendingCommands(commands);
+      setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: text }] }));
+    } catch (err) {
+      setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: 'Error contacting Max.' }] }));
+    }
+  }, [chat, userId, customPins, devPipelineEnabled, devPipelineData, devPipelineFilter,
+      absorptionEnabled, absorptionData, absorptionFilter, countyOverlay, countyMetric,
+      zipOverlay, zipMetric, zipHeatmap, zipHeatmapMetric, zoningEnabled, parcelOverlay]);
+
   // Render assistant content with simple markdown-ish formatting and collapse
   const FormattedMessage = ({ text }) => {
     const [expanded, setExpanded] = useState(false);
@@ -3208,83 +3317,7 @@ function DashboardMapTab() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  const trimmed = chat.input.trim();
-                  if (!trimmed || chat.loading) return;
-                  setChat(prev => ({ ...prev, loading: true, messages: [...prev.messages, { role: 'user', content: trimmed }], input: '' }));
-                  (async () => {
-                    try {
-                      const system = `You are Max, an AI real estate market analyst with access to comprehensive market data. You help users analyze property clusters, identify market trends, and discover new investment markets.
-
-CAPABILITIES:
-- Analyze property patterns and clusters on the map
-- Access US Census data (demographics, housing, employment)
-- Access migration data, rent data (FMR, SAFMR), property tax rates
-- Access Zillow home value indices and growth rates
-- Access Cushman & Wakefield market reports
-- Perform web searches for current market conditions
-- Create map pins, pan/zoom map programmatically
-
-AVAILABLE DATA FILES (in /build folder):
-- 2025_National_Migration_Flows_With_Estimates.csv
-- ACSDP5Y2023.DP03-Data.csv (Demographics & Economics)
-- ACSDP5Y2023.DP04-Data.csv (Housing Characteristics)
-- cushman_q32025_full_markets.csv (Commercial market data)
-- fmr_by_zip_clean.csv, fy2026_safmrs_fullrange.csv (Fair Market Rents)
-- landlord_friendly_scores.csv
-- Property Taxes by State and County, 2025.csv
-- Zip_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv (Zillow Home Values)
-- Zip_zhvf_growth_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv (Growth Forecasts)
-- zip_renter_owner_stats_with_counts.csv
-- migration_with_clean_zipcodes.csv
-
-When analyzing markets or responding to questions:
-1. Reference specific data from these CSV files when relevant
-2. Identify trends in property clusters the user has mapped
-3. Suggest new markets based on data analysis
-4. Perform web searches for current local conditions (crime, development, employers)
-5. Use map commands to visualize findings
-
-MAP COMMANDS (output JSON at end of response):
-{
-  "commands": [
-    { "type": "panTo", "payload": { "center": [lat, lng], "zoom": 12 } },
-    { "type": "addPin", "payload": { "name": "Property Name", "lat": XX.XXX, "lng": -XX.XXX, "notes": "reason" } }
-  ]
-}`;
-                      // Include profile header for token/auth checks
-                      const headers = { 'Content-Type': 'application/json' };
-                      if (userId) headers['X-Profile-ID'] = userId;
-                      const res = await fetch(API_ENDPOINTS.marketResearchChat, {
-                        method: 'POST',
-                        headers,
-                        body: JSON.stringify({ message: trimmed, system })
-                      });
-                      const isJson = res.headers.get('content-type')?.includes('application/json');
-                      const data = isJson ? await res.json().catch(() => null) : null;
-                      if (res.status === 401) {
-                        const msg = 'Please log in to use Market Research.';
-                        setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: msg }] }));
-                        return;
-                      }
-                      if (res.status === 402) {
-                        const required = data?.tokens_required ?? 1;
-                        const balance = data?.token_balance ?? 0;
-                        const msg = `You are out of tokens for Market Research. Required: ${required}, Available: ${balance}.`;
-                        setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: msg }] }));
-                        return;
-                      }
-                      if (!res.ok) {
-                        setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: 'Error contacting Max.' }] }));
-                        return;
-                      }
-                      const text = (data?.response || data?.message || data?.content || data?.assistant || 'No response');
-                      const commands = extractCommands(text);
-                      if (commands.length > 0) setPendingCommands(commands);
-                      setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: text }] }));
-                    } catch (err) {
-                      setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: 'Error contacting Max.' }] }));
-                    }
-                  })();
+                  sendMaxMessage(chat.input);
                 }
               }}
             />
@@ -3301,83 +3334,7 @@ MAP COMMANDS (output JSON at end of response):
                 opacity: chat.loading ? 0.6 : 1
               }}
               disabled={chat.loading}
-              onClick={async () => {
-                const trimmed = chat.input.trim();
-                if (!trimmed || chat.loading) return;
-                setChat(prev => ({ ...prev, loading: true, messages: [...prev.messages, { role: 'user', content: trimmed }], input: '' }));
-                try {
-                  const system = `You are Max, an AI real estate market analyst with access to comprehensive market data. You help users analyze property clusters, identify market trends, and discover new investment markets.
-
-CAPABILITIES:
-- Analyze property patterns and clusters on the map
-- Access US Census data (demographics, housing, employment)
-- Access migration data, rent data (FMR, SAFMR), property tax rates
-- Access Zillow home value indices and growth rates
-- Access Cushman & Wakefield market reports
-- Perform web searches for current market conditions
-- Create map pins, pan/zoom map programmatically
-
-AVAILABLE DATA FILES (in /build folder):
-- 2025_National_Migration_Flows_With_Estimates.csv
-- ACSDP5Y2023.DP03-Data.csv (Demographics & Economics)
-- ACSDP5Y2023.DP04-Data.csv (Housing Characteristics)
-- cushman_q32025_full_markets.csv (Commercial market data)
-- fmr_by_zip_clean.csv, fy2026_safmrs_fullrange.csv (Fair Market Rents)
-- landlord_friendly_scores.csv
-- Property Taxes by State and County, 2025.csv
-- Zip_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv (Zillow Home Values)
-- Zip_zhvf_growth_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv (Growth Forecasts)
-- zip_renter_owner_stats_with_counts.csv
-- migration_with_clean_zipcodes.csv
-
-When analyzing markets or responding to questions:
-1. Reference specific data from these CSV files when relevant
-2. Identify trends in property clusters the user has mapped
-3. Suggest new markets based on data analysis
-4. Perform web searches for current local conditions (crime, development, employers)
-5. Use map commands to visualize findings
-
-MAP COMMANDS (output JSON at end of response):
-{
-  "commands": [
-    { "type": "panTo", "payload": { "center": [lat, lng], "zoom": 12 } },
-    { "type": "addPin", "payload": { "name": "Property Name", "lat": XX.XXX, "lng": -XX.XXX, "notes": "reason" } }
-  ]
-}`;
-                  // Include profile header for token/auth checks
-                  const headers = { 'Content-Type': 'application/json' };
-                  if (userId) headers['X-Profile-ID'] = userId;
-                  const res = await fetch(API_ENDPOINTS.marketResearchChat, {
-                    method: 'POST',
-                    headers,
-                    body: JSON.stringify({ message: trimmed, system })
-                  });
-                  const isJson = res.headers.get('content-type')?.includes('application/json');
-                  const data = isJson ? await res.json().catch(() => null) : null;
-                  if (res.status === 401) {
-                    const msg = 'Please log in to use Market Research.';
-                    setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: msg }] }));
-                    return;
-                  }
-                  if (res.status === 402) {
-                    const required = data?.tokens_required ?? 1;
-                    const balance = data?.token_balance ?? 0;
-                    const msg = `You are out of tokens for Market Research. Required: ${required}, Available: ${balance}.`;
-                    setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: msg }] }));
-                    return;
-                  }
-                  if (!res.ok) {
-                    setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: 'Error contacting Max.' }] }));
-                    return;
-                  }
-                  const text = (data?.response || data?.message || data?.content || data?.assistant || 'No response');
-                  const commands = extractCommands(text);
-                  if (commands.length > 0) setPendingCommands(commands);
-                  setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: text }] }));
-                } catch (err) {
-                  setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: 'Error contacting Max.' }] }));
-                }
-              }}
+              onClick={() => sendMaxMessage(chat.input)}
             >
               Send
             </button>

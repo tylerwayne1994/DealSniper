@@ -2472,6 +2472,7 @@ async def market_research_chat(request: Request):
         data = await request.json()
         message = data.get("message", "")
         conversation_history = data.get("conversationHistory", [])
+        map_context = data.get("mapContext", None)
         
         if not message:
             return JSONResponse(
@@ -2744,8 +2745,50 @@ MANDATORY FIELDS: name, state, lat, lng, medianPrice, occupancy, capRate, rentGr
 
 Use REAL DATA. If missing, use null. DO NOT SKIP THE JSON."""
 
+        # If the frontend sent mapContext, build a data supplement section
+        map_data_section = ""
+        if map_context and isinstance(map_context, dict):
+            parts = []
+            active = map_context.get("activeLayers", [])
+            if active:
+                parts.append(f"Active map layers: {', '.join(active)}")
+
+            pins = map_context.get("userPins", [])
+            if pins:
+                pin_lines = [f"  - {p.get('name','?')} ({p.get('lat')},{p.get('lng')}) units={p.get('units','')} {p.get('notes','')}" for p in pins[:30]]
+                parts.append("User's pinned properties:\n" + "\n".join(pin_lines))
+
+            dev = map_context.get("developments")
+            if dev:
+                parts.append(f"Development pipeline loaded: {dev.get('total',0)} projects (filter: {dev.get('filter','all')})")
+                by_status = dev.get("byStatus", {})
+                if by_status:
+                    parts.append("  By status: " + ", ".join(f"{k}: {v}" for k, v in by_status.items()))
+                top_msas = dev.get("topMSAs", [])
+                if top_msas:
+                    parts.append("  Top MSAs: " + ", ".join(top_msas[:15]))
+                sample = dev.get("sample", [])
+                if sample:
+                    sample_lines = [f"    {s.get('name','')} | {s.get('city','')} | {s.get('status','')} | {s.get('units','')} units | {s.get('developer','')}" for s in sample]
+                    parts.append("  Sample projects:\n" + "\n".join(sample_lines))
+
+            abs_ctx = map_context.get("absorption")
+            if abs_ctx:
+                parts.append(f"Absorption/market data loaded: {abs_ctx.get('total',0)} MSAs (filter: {abs_ctx.get('filter','all')})")
+                by_trend = abs_ctx.get("byTrend", {})
+                if by_trend:
+                    parts.append("  By trend: " + ", ".join(f"{k}: {v}" for k, v in by_trend.items()))
+                sample = abs_ctx.get("sample", [])
+                if sample:
+                    sample_lines = [f"    {s.get('msa','')} | trend={s.get('trend','')} | occ={s.get('occupancy','')}% | vac={s.get('vacancy','')}% | rent=${s.get('avgRent','')} | growth={s.get('rentGrowth','')}% | absorption={s.get('absorption','')}%" for s in sample]
+                    parts.append("  MSA data:\n" + "\n".join(sample_lines))
+
+            if parts:
+                map_data_section = "\n\n## LIVE MAP DATA (from user's current session)\nThe user has the following data loaded on their map right now. Reference this data when answering their questions.\n\n" + "\n\n".join(parts) + "\n"
+                print(f"[MarketResearch] Injecting map context: {len(map_data_section)} chars")
+
         # Build messages array
-        messages = [{"role": "system", "content": system_prompt}]
+        messages = [{"role": "system", "content": system_prompt + map_data_section}]
         
         # Add conversation history
         for msg in conversation_history:
