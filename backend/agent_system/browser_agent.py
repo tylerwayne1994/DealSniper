@@ -156,65 +156,70 @@ def _build_search_task(platform_id: str, credentials: Dict[str, str],
 
     # Platform-specific instructions
     if platform_id == "crexi":
+        # Build a direct search URL so the agent skips the login page
+        # (which triggers Cloudflare). Crexi search is public.
+        search_url = "https://www.crexi.com/properties"
         return f"""
 You are an automated real estate deal finder on Crexi.com. Follow these steps EXACTLY:
 
-=== STEP 1: LOG IN (REQUIRED — you MUST be logged in to download documents) ===
-1. Navigate to https://www.crexi.com/login
-2. Enter email: {credentials['username']}
-3. Enter password: {credentials['password']}
-4. Click the "Log In" button
-5. Wait for the dashboard to load. If there is a popup or modal, close it.
-6. VERIFY you are logged in by checking for a user avatar/icon in the top-right.
-   If login failed, try once more. If it still fails, continue without login but note it.
+IMPORTANT: You are running in a headless browser in a container with limited
+resources. Be efficient — do NOT take unnecessary actions. If a page shows
+"Just a moment..." or a loading spinner, wait 5-10 seconds, then try refreshing
+or navigating to the URL again.
+
+=== STEP 1: GO DIRECTLY TO SEARCH (skip login for now) ===
+1. Navigate to {search_url}
+2. Wait for the page to fully load (you should see property listings or a search interface).
+3. If the page shows "Just a moment..." or a Cloudflare challenge:
+   - Wait 10 seconds
+   - If still stuck, try navigating to https://www.crexi.com first, wait 5s,
+     then navigate to {search_url}
+   - If still no luck after 2 attempts, report the issue and stop.
 
 === STEP 2: SEARCH WITH FILTERS ===
-7. Navigate to https://www.crexi.com/properties or click on "Search" / "Find Properties"
-8. In the search bar or location filter, enter: {location_str}
-9. Apply these filters using Crexi's filter panel:
+4. In the search bar or location filter, enter: {location_str}
+5. Apply these filters using Crexi's filter panel:
 {filter_str}
-10. Wait for results to load.
+6. Wait for results to load. You should see property cards/listings.
 
 === STEP 3: BROWSE AND EXTRACT DEAL DATA ===
-11. Go through the search results (process up to 15 listings).
-12. For EACH listing:
-    a. Click into the listing detail page
-    b. Extract ALL of these fields:
-       - address (full street address, city, state, zip)
-       - price (the asking price — may say "Negotiable" or "Unpriced" or "Contact for Price")
-       - cap_rate (if shown)
-       - property_type (Multifamily, Self-Storage, Mobile Home Park, etc.)
-       - units (number of units)
-       - sqft (total square footage)
-       - occupancy (occupancy rate percentage, if shown)
-       - listing_url (the full URL of this listing page)
+7. Go through the search results. Process up to 15 listings.
+8. For EACH listing:
+   a. Click into the listing detail page.
+   b. Extract ALL of these fields:
+      - address (full street address, city, state, zip)
+      - price (asking price — may say "Negotiable" or "Unpriced" or "Contact for Price")
+      - cap_rate (if shown)
+      - property_type (Multifamily, Self-Storage, Mobile Home Park, etc.)
+      - units (number of units)
+      - sqft (total square footage)
+      - occupancy (occupancy rate percentage, if shown)
+      - listing_url (the full URL of this listing page)
 
-=== STEP 4: IDENTIFY AND DOWNLOAD DOCUMENTS (CRITICAL) ===
-    c. Look at the listing detail page for downloadable documents. On Crexi, documents
-       are typically found in a "Documents" tab/section or a "Download" button area.
+=== STEP 4: ATTEMPT LOGIN FOR DOCUMENT DOWNLOADS ===
+9.  After extracting data from a few listings, try logging in to enable downloads:
+    a. Navigate to https://www.crexi.com/login
+    b. If you see the login form, enter:
+       - Email: {credentials['username']}
+       - Password: {credentials['password']}
+       - Click "Log In"
+    c. If login succeeds, go back to searching and download documents.
+    d. If login page is stuck on "Just a moment..." or Cloudflare:
+       - Skip login entirely. Continue extracting listing DATA without downloading OMs.
+       - Set doc_type = "none" for all listings.
+       - The listing data itself is still valuable.
 
-    d. IMPORTANT — Crexi has TWO types of documents:
-       TYPE 1 - "Offering Memorandum" (OM): This is a detailed PDF (usually 20+ pages)
-                with financial data, rent rolls, unit mix, P&L, expense breakdowns,
-                property photos, and market analysis. This is what we want MOST.
-       TYPE 2 - "Flyer" or "Brochure": This is a short marketing PDF (usually 1-4 pages)
-                with just photos, price, and basic property highlights. Less useful but
-                still download it if there's no OM.
+=== STEP 5: DOWNLOAD DOCUMENTS (only if logged in) ===
+    e. Look for a "Documents" tab/section or "Download" button on listings.
+    f. DOWNLOAD PRIORITY:
+       - If there is an "Offering Memorandum" (OM): Download it. Set doc_type = "om"
+       - If there is NO OM but there IS a flyer/brochure: Download it. Set doc_type = "flyer"
+       - If there are NO documents: Set doc_type = "none"
+       - STILL extract data from "Unpriced" listings — they often have the best OMs.
+    g. Go back to search results and continue.
 
-    e. DOWNLOAD PRIORITY:
-       - If there is an OM: Download the OM PDF. Set doc_type = "om"
-       - If there is NO OM but there IS a flyer/brochure: Download the flyer. Set doc_type = "flyer"
-       - If there are NO documents at all: Set doc_type = "none"
-       - If the listing says "Unpriced" or has no price but HAS an OM, STILL download it.
-         Unpriced listings with OMs are valuable because the OM contains the real financials.
-
-    f. To download: Click the document download button/link. The PDF should save to
-       the downloads folder. Note the filename.
-
-    g. Go back to search results and continue to the next listing.
-
-=== STEP 5: RETURN RESULTS ===
-13. After processing all listings, return the results as a JSON array.
+=== STEP 6: RETURN RESULTS ===
+10. After processing listings, return the results as a JSON array.
     Each item must have these exact fields:
     {{
       "address": "123 Main St, City, ST 12345",
@@ -231,7 +236,7 @@ You are an automated real estate deal finder on Crexi.com. Follow these steps EX
 
     IMPORTANT NOTES ON PRICE:
     - If the listing shows a price, use that number (e.g., 1500000)
-    - If the listing says "Negotiable", "Unpriced", or "Contact for Price", set price to null
+    - If it says "Negotiable", "Unpriced", or "Contact for Price", set price to null
     - Do NOT skip unpriced listings — they often have the best OMs with real financial data
 
     Return ONLY the JSON array, no other text.
@@ -550,6 +555,11 @@ async def run_platform_search(
             # Disable default extensions (uBlock, cookie handler, ClearURLs,
             # Force Background Tab) — they add ~6s of download/extract time
             # and make Chrome initialization too heavy for Render's 15s CDP timeout.
+            # browser-use's CHROME_DEFAULT_ARGS already includes:
+            #   --disable-dev-shm-usage, --disable-background-networking,
+            #   --disable-component-update, --no-first-run, --disable-sync,
+            #   --disable-blink-features=AutomationControlled, etc.
+            # We only add flags NOT in the defaults.
             browser_session = BrowserSession(
                 headless=True,
                 executable_path=chromium_path,
@@ -558,26 +568,20 @@ async def run_platform_search(
                 disable_security=True,
                 # Smaller viewport = lighter rendering & faster DOM extraction
                 viewport={"width": 1280, "height": 720},
-                # Don't wait too long for Crexi's heavy SPA background requests
-                wait_for_network_idle_page_load_time=3,
-                minimum_wait_page_load_time=1,
+                # Crexi SPA fires endless background XHRs; don't wait forever
+                wait_for_network_idle_page_load_time=5,
+                minimum_wait_page_load_time=2,
                 args=[
+                    # Rendering: disable GPU since container has no GPU
                     "--disable-gpu",
                     "--disable-software-rasterizer",
-                    "--disable-setuid-sandbox",
+                    "--disable-accelerated-2d-canvas",
+                    # Memory: limit renderer processes & V8 heap for Render's
+                    # constrained container (512MB-1GB total RAM)
+                    "--renderer-process-limit=1",
+                    "--js-flags=--max-old-space-size=256",
+                    # Disable features that add overhead
                     "--disable-extensions",
-                    "--disable-background-networking",
-                    "--disable-default-apps",
-                    "--disable-component-update",
-                    "--disable-hang-monitor",
-                    "--disable-prompt-on-repost",
-                    "--disable-sync",
-                    "--no-first-run",
-                    # CRITICAL for containers: /dev/shm is only ~64MB on Render.
-                    # Chrome uses shared memory for rendering — without this flag,
-                    # captureScreenshot hangs and triggers cascading watchdog timeouts.
-                    "--disable-dev-shm-usage",
-                    "--no-zygote",
                 ],
             )
             log.info(
