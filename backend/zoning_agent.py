@@ -3,8 +3,9 @@ zoning_agent.py
 ---------------
 Autonomous Zoning Data Gathering Agent for secondary US cities.
 
-Uses OpenAI (gpt-4.1-mini) to discover zoning GeoJSON endpoints, WMS tile URLs,
-and legend mappings for any US city — then downloads and enriches the data.
+Uses Perplexity AI (sonar model with web search) to discover zoning GeoJSON
+endpoints, WMS tile URLs, and legend mappings for any US city — then downloads
+and enriches the data.
 
 Called by the zoning_router API endpoints. NOT a CLI tool — imported as a module.
 """
@@ -17,8 +18,6 @@ import logging
 import requests
 from pathlib import Path
 from typing import Optional
-
-from openai import OpenAI
 
 from legend_normalizer import (
     apply_legend_to_geojson,
@@ -36,45 +35,50 @@ log = logging.getLogger(__name__)
 DATA_DIR = Path(__file__).parent / "data" / "zoning_cache"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-LLM_MODEL = "gpt-4.1-mini"
+LLM_MODEL = "sonar"  # Perplexity sonar — has live web search
+PERPLEXITY_API_URL = "https://api.perplexity.ai/chat/completions"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# LLM Client
+# LLM Client (Perplexity AI — web-search-enabled)
 # ─────────────────────────────────────────────────────────────────────────────
 
-_client: Optional[OpenAI] = None
-
-def _get_client() -> OpenAI:
-    global _client
-    if _client is None:
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise RuntimeError("OPENAI_API_KEY not configured")
-        _client = OpenAI(api_key=api_key)
-    return _client
+def _get_perplexity_key() -> str:
+    key = os.getenv("PERPLEXITY_API_KEY")
+    if not key:
+        raise RuntimeError("PERPLEXITY_API_KEY not configured")
+    return key
 
 
-SYSTEM_PROMPT = """You are an expert geospatial data engineer and urban planning researcher.
-Your task is to gather zoning boundary data (GeoJSON), map tile services (WMS/Vector Tiles), and zoning legends for US cities.
+SYSTEM_PROMPT = """You are an expert geospatial data engineer specializing in US municipal GIS systems.
+Your task is to find REAL, VERIFIED zoning boundary data endpoints for US cities.
+
+You MUST search the web to find the actual ArcGIS REST service URLs, open data portal links,
+and zoning code legends. Do NOT guess or fabricate URLs — verify they exist by searching.
 
 You have deep knowledge of:
 - ESRI ArcGIS Hub, REST Services, MapServer, and FeatureServer endpoints
-- Socrata open data portals (data.cityname.gov)
-- OGC WMS (Web Map Service) and XYZ tile URL patterns
-- Municipal GIS departments and their URL patterns
+- Socrata open data portals (data.cityname.gov)  
+- Municipal GIS departments and their typical URL patterns
 - Zoning code conventions across US cities
 
-When given a city name, you must return a valid JSON object with no extra commentary.
+When given a city name, search the web to find the ACTUAL GIS service URLs,
+then return a valid JSON object with no extra commentary.
 Do NOT include markdown code fences. Return ONLY the raw JSON object."""
 
 
-DISCOVERY_PROMPT = """Find the zoning GeoJSON data, map tile service URL, and legend for: {city}
+DISCOVERY_PROMPT = """Search the web and find the REAL zoning GeoJSON data endpoint, map tile service URL, and legend for: {city}
+
+Search for things like:
+- "{city} zoning map arcgis rest services"
+- "{city} GIS open data zoning boundaries"
+- "{city} zoning ordinance map geojson"
+- site:arcgis.com "{city}" zoning
 
 Return a JSON object with this exact schema:
 {{
   "city": "{city}",
   "data_source_url": "<URL to the open data portal page for the zoning dataset>",
-  "geojson_api_url": "<Direct URL to download the full zoning GeoJSON. For ArcGIS REST services use the MapServer query endpoint: https://...MapServer/0/query?where=1%3D1&outFields=*&f=geojson  (prefer MapServer over FeatureServer — many city ArcGIS instances only expose MapServer)>",
+  "geojson_api_url": "<Direct URL to download the full zoning GeoJSON. For ArcGIS REST services use: https://...MapServer/0/query?where=1%3D1&outFields=*&f=geojson  (prefer MapServer over FeatureServer)>",
   "wms_tile_url": "<The MapServer or WMS tile URL for rendering. For ArcGIS MapServer use: https://.../MapServer/tile/{{z}}/{{y}}/{{x}} or WMS equivalent. Leave null if unavailable>",
   "zoning_field_name": "<The property key in the GeoJSON features that holds the zoning code, e.g. 'ZONING', 'CODE', 'ZONE_CLASS', 'ZONING_LBL'>",
   "legend_source_url": "<URL to the zoning ordinance, code table, or metadata that explains the zone codes>",
@@ -87,50 +91,65 @@ Return a JSON object with this exact schema:
   "notes": "<Any caveats, e.g. data last updated date, known limitations>"
 }}
 
-Rules:
-- The geojson_api_url MUST be a direct download URL, not a portal page.
-- For ArcGIS REST services, PREFER MapServer over FeatureServer (many cities only expose MapServer). Use: .../MapServer/0/query?where=1%3D1&outFields=*&f=geojson
-- Only use FeatureServer if you are confident the city exposes it.
+CRITICAL Rules:
+- SEARCH THE WEB to find REAL URLs. Do NOT guess or fabricate ArcGIS service IDs.
+- The geojson_api_url MUST be a real, working URL you found via web search.
+- For ArcGIS REST services, PREFER MapServer over FeatureServer (many cities only expose MapServer).
 - For Socrata datasets, use the .geojson endpoint (e.g., https://data.city.gov/resource/xxxx-xxxx.geojson?$limit=50000)
 - Include ALL major base zoning codes in legend_mapping (at minimum 5-15 codes).
-- Map every code to one of the 7 standardized categories listed above.
-- If a code is ambiguous, use "Overlay/Other".
+- Map every code to one of the 7 standardized categories.
+- If you cannot find a verified GeoJSON endpoint for this city, set geojson_api_url to null and explain in notes.
 - Return ONLY raw JSON, no markdown, no commentary."""
 
 
 def ask_agent(city: str, max_retries: int = 3) -> Optional[dict]:
-    """Ask the LLM agent to discover zoning data for a city."""
-    client = _get_client()
+    """Ask Perplexity (with web search) to discover zoning data for a city."""
+    api_key = _get_perplexity_key()
     prompt = DISCOVERY_PROMPT.format(city=city)
 
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+
     for attempt in range(1, max_retries + 1):
-        log.info(f"[{city}] LLM discovery attempt {attempt}/{max_retries}...")
+        log.info(f"[{city}] Perplexity discovery attempt {attempt}/{max_retries}...")
         try:
-            response = client.chat.completions.create(
-                model=LLM_MODEL,
-                messages=[
+            payload = {
+                "model": LLM_MODEL,
+                "messages": [
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user",   "content": prompt},
                 ],
-                temperature=0.1,
-                max_tokens=4096,
+                "temperature": 0.1,
+                "max_tokens": 4096,
+            }
+            resp = requests.post(
+                PERPLEXITY_API_URL,
+                headers=headers,
+                json=payload,
+                timeout=120,
             )
-            raw = response.choices[0].message.content.strip()
+            resp.raise_for_status()
+            result = resp.json()
+
+            raw = result["choices"][0]["message"]["content"].strip()
 
             # Strip markdown fences if the model adds them
             raw = re.sub(r"^```(?:json)?\s*", "", raw)
             raw = re.sub(r"\s*```$", "", raw)
 
             data = json.loads(raw)
-            log.info(f"[{city}] Agent returned data successfully.")
+            log.info(f"[{city}] Agent returned data successfully. URL: {data.get('geojson_api_url', 'none')}")
             return data
 
         except json.JSONDecodeError as e:
             log.warning(f"[{city}] JSON parse error on attempt {attempt}: {e}")
+            log.warning(f"[{city}] Raw response: {raw[:500] if 'raw' in dir() else 'N/A'}")
             if attempt < max_retries:
                 time.sleep(2)
         except Exception as e:
-            log.error(f"[{city}] LLM error on attempt {attempt}: {e}")
+            log.error(f"[{city}] Perplexity error on attempt {attempt}: {e}")
             if attempt < max_retries:
                 time.sleep(3)
 
