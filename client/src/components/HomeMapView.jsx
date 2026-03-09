@@ -1,12 +1,16 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import mapboxgl from 'mapbox-gl';
-import { Building2, DollarSign, TrendingUp, MapPin, User, Phone, Mail, Home, GraduationCap, Hospital, Briefcase, X } from 'lucide-react';
+import { Building2, DollarSign, TrendingUp, MapPin, User, Phone, Mail, Home, GraduationCap, Hospital, Briefcase, X, Layers } from 'lucide-react';
 import { loadPipelineDeals, deleteDeal } from '../lib/dealsService';
 import { PipelineTable } from './tables';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN || '';
+
+// Regrid Parcel Tiles — vector tile layer for property boundary lines
+const REGRID_TOKEN = process.env.REACT_APP_REGRID_TOKEN || 'eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJyZWdyaWQuY29tIiwiaWF0IjoxNzczMDcwNzc3LCJleHAiOjE3NzU2NjI3NzcsInUiOjcxMzc3MCwiZyI6MjMxNTMsImNhcCI6InBhOnRzOnBzOmJmOm1hOnR5OmVvOnpvOnNiIn0.n9xInEA21sComIh5H0tL68Ku-AsWsdq0vrErJGly-k0';
+const REGRID_TILE_URL = `https://tiles.regrid.com/api/v1/parcels/{z}/{x}/{y}.mvt?token=${REGRID_TOKEN}`;
 
 // Geocode an address to coordinates using Mapbox Geocoding API
 async function geocodeAddress(address) {
@@ -39,6 +43,8 @@ function HomeMapView() {
     transit: false
   });
   const [distanceFilter, setDistanceFilter] = useState(5); // miles
+  const [showParcels, setShowParcels] = useState(false);
+  const parcelPopupRef = useRef(null);
   const markersRef = useRef([]);
   const [pipelineDeals, setPipelineDeals] = useState([]);
   const [isLoadingPipeline, setIsLoadingPipeline] = useState(true);
@@ -225,7 +231,11 @@ function HomeMapView() {
         
         // Add Mapbox POI layers (FREE - no geocoding needed!)
         // These use Mapbox's built-in place data
-        addPOILayers();        
+        addPOILayers();
+
+        // Add Regrid parcel tile source & layers (hidden by default)
+        addParcelLayers();
+
         // Signal that map is ready (redundant safeguard)
         if (!mapReady) setMapReady(true);
       });
@@ -246,6 +256,108 @@ function HomeMapView() {
       }
     };
   }, []);
+
+  // ── Regrid Parcel Lines ──────────────────────────────────────────────
+  const addParcelLayers = useCallback(() => {
+    if (!map.current) return;
+    // Vector tile source
+    map.current.addSource('regrid-parcels', {
+      type: 'vector',
+      tiles: [REGRID_TILE_URL],
+      minzoom: 12,
+      maxzoom: 20,
+    });
+
+    // Parcel fill (subtle on-hover highlight)
+    map.current.addLayer({
+      id: 'regrid-parcels-fill',
+      type: 'fill',
+      source: 'regrid-parcels',
+      'source-layer': 'parcels',
+      minzoom: 14,
+      layout: { visibility: 'none' },
+      paint: {
+        'fill-color': '#6366f1',
+        'fill-opacity': [
+          'case',
+          ['boolean', ['feature-state', 'hover'], false],
+          0.15,
+          0.0,
+        ],
+      },
+    });
+
+    // Parcel boundary lines
+    map.current.addLayer({
+      id: 'regrid-parcels-line',
+      type: 'line',
+      source: 'regrid-parcels',
+      'source-layer': 'parcels',
+      minzoom: 14,
+      layout: { visibility: 'none' },
+      paint: {
+        'line-color': '#6366f1',
+        'line-width': [
+          'interpolate', ['linear'], ['zoom'],
+          14, 0.5,
+          16, 1.2,
+          18, 2,
+        ],
+        'line-opacity': 0.7,
+      },
+    });
+
+    // Click handler — show parcel info popup
+    map.current.on('click', 'regrid-parcels-fill', (e) => {
+      if (!e.features || e.features.length === 0) return;
+      const f = e.features[0];
+      const props = f.properties || {};
+      const address = props.address || props.situs_address || props.addr || 'N/A';
+      const owner = props.owner || props.owner1 || props.ownernme1 || '';
+      const acres = props.ll_gisacre ? Number(props.ll_gisacre).toFixed(2) : (props.acres || '');
+      const zoning = props.zoning || props.zoning_code || props.usecode || '';
+      const apn = props.parcelnumb || props.apn || props.parcel_id || '';
+      const landUse = props.usedesc || props.landuse || props.lu_desclu || '';
+      const yearBuilt = props.yearbuilt || props.year_built || '';
+      const sqft = props.ll_bldg_footprint_sqft || props.bldg_sqft || props.sqft || '';
+
+      let html = `<div style="font-family:system-ui;max-width:280px">`;
+      html += `<div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#111827">${address}</div>`;
+      if (owner) html += `<div style="font-size:12px;color:#6b7280;margin-bottom:4px"><b>Owner:</b> ${owner}</div>`;
+      if (apn) html += `<div style="font-size:12px;color:#6b7280;margin-bottom:4px"><b>APN:</b> ${apn}</div>`;
+      if (zoning) html += `<div style="font-size:12px;color:#6b7280;margin-bottom:4px"><b>Zoning:</b> ${zoning}</div>`;
+      if (landUse) html += `<div style="font-size:12px;color:#6b7280;margin-bottom:4px"><b>Land Use:</b> ${landUse}</div>`;
+      if (acres) html += `<div style="font-size:12px;color:#6b7280;margin-bottom:4px"><b>Acres:</b> ${acres}</div>`;
+      if (sqft) html += `<div style="font-size:12px;color:#6b7280;margin-bottom:4px"><b>Bldg SF:</b> ${Number(sqft).toLocaleString()}</div>`;
+      if (yearBuilt) html += `<div style="font-size:12px;color:#6b7280;margin-bottom:4px"><b>Year Built:</b> ${yearBuilt}</div>`;
+      html += `</div>`;
+
+      if (parcelPopupRef.current) parcelPopupRef.current.remove();
+      parcelPopupRef.current = new mapboxgl.Popup({ maxWidth: '320px', closeButton: true })
+        .setLngLat(e.lngLat)
+        .setHTML(html)
+        .addTo(map.current);
+    });
+
+    // Cursor change on hover
+    map.current.on('mouseenter', 'regrid-parcels-fill', () => {
+      if (map.current) map.current.getCanvas().style.cursor = 'pointer';
+    });
+    map.current.on('mouseleave', 'regrid-parcels-fill', () => {
+      if (map.current) map.current.getCanvas().style.cursor = '';
+    });
+  }, []);
+
+  // Toggle parcel layer visibility
+  useEffect(() => {
+    if (!map.current || !map.current.isStyleLoaded()) return;
+    const vis = showParcels ? 'visible' : 'none';
+    ['regrid-parcels-fill', 'regrid-parcels-line'].forEach(id => {
+      if (map.current.getLayer(id)) {
+        map.current.setLayoutProperty(id, 'visibility', vis);
+      }
+    });
+  }, [showParcels]);
 
   // Add POI layers using Mapbox's built-in data
   const addPOILayers = () => {
@@ -429,6 +541,34 @@ function HomeMapView() {
           width: '100%', 
           height: '100%'
         }} />
+
+      {/* Parcel Lines Toggle */}
+      <button
+        onClick={() => setShowParcels(prev => !prev)}
+        title={showParcels ? 'Hide parcel lines' : 'Show parcel lines (zoom in to see)'}
+        style={{
+          position: 'absolute',
+          top: '12px',
+          left: '12px',
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '8px 14px',
+          backgroundColor: showParcels ? '#6366f1' : 'white',
+          color: showParcels ? 'white' : '#374151',
+          border: showParcels ? '2px solid #6366f1' : '2px solid #d1d5db',
+          borderRadius: '8px',
+          fontSize: '13px',
+          fontWeight: '600',
+          cursor: 'pointer',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          transition: 'all 0.2s ease',
+        }}
+      >
+        <Layers size={16} />
+        Parcels
+      </button>
 
       {loading && (
         <div style={{
