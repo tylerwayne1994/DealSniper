@@ -2319,9 +2319,9 @@ function DashboardMapTab() {
                           <span style={{ fontSize: 9, fontWeight: 600, color: '#f59e0b', minWidth: 36 }}>DEV</span>
                           <select value={devPipelineFilter} onChange={(e) => setDevPipelineFilter(e.target.value)} style={{
                             flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
-                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', WebkitAppearance: 'none', appearance: 'none',
+                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
                           }}>
-                            {pipelineStatuses.map(s => <option key={s} value={s}>{s === 'all' ? 'All Statuses' : s}</option>)}
+                            {pipelineStatuses.map(s => <option key={s} value={s} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{s === 'all' ? 'All Statuses' : s}</option>)}
                           </select>
                         </div>
                       )}
@@ -2330,9 +2330,9 @@ function DashboardMapTab() {
                           <span style={{ fontSize: 9, fontWeight: 600, color: '#059669', minWidth: 36 }}>ABS</span>
                           <select value={absorptionFilter} onChange={(e) => setAbsorptionFilter(e.target.value)} style={{
                             flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
-                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', WebkitAppearance: 'none', appearance: 'none',
+                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
                           }}>
-                            {absorptionTrends.map(t => <option key={t} value={t}>{t === 'all' ? 'All Trends' : t}</option>)}
+                            {absorptionTrends.map(t => <option key={t} value={t} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{t === 'all' ? 'All Trends' : t}</option>)}
                           </select>
                         </div>
                       )}
@@ -2341,9 +2341,9 @@ function DashboardMapTab() {
                           <span style={{ fontSize: 9, fontWeight: 600, color: '#6366f1', minWidth: 36 }}>CTY</span>
                           <select value={countyMetric} onChange={(e) => setCountyMetric(e.target.value)} style={{
                             flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
-                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', WebkitAppearance: 'none', appearance: 'none',
+                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
                           }}>
-                            {COUNTY_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                            {COUNTY_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{opt.label}</option>)}
                           </select>
                         </div>
                       )}
@@ -2352,9 +2352,9 @@ function DashboardMapTab() {
                           <span style={{ fontSize: 9, fontWeight: 600, color: '#10b981', minWidth: 36 }}>ZIP</span>
                           <select value={zipMetric} onChange={(e) => setZipMetric(e.target.value)} style={{
                             flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
-                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', WebkitAppearance: 'none', appearance: 'none',
+                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
                           }}>
-                            {ZIP_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                            {ZIP_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{opt.label}</option>)}
                           </select>
                         </div>
                       )}
@@ -2363,9 +2363,9 @@ function DashboardMapTab() {
                           <span style={{ fontSize: 9, fontWeight: 600, color: '#3b82f6', minWidth: 36 }}>HEAT</span>
                           <select value={zipHeatmapMetric} onChange={(e) => setZipHeatmapMetric(e.target.value)} style={{
                             flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
-                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', WebkitAppearance: 'none', appearance: 'none',
+                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
                           }}>
-                            {(() => { const g = {}; ZIP_HEATMAP_METRIC_OPTIONS.forEach(o => { if (!g[o.group]) g[o.group] = []; g[o.group].push(o); }); return Object.entries(g).map(([gr, os]) => <optgroup key={gr} label={gr}>{os.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</optgroup>); })()}
+                            {(() => { const g = {}; ZIP_HEATMAP_METRIC_OPTIONS.forEach(o => { if (!g[o.group]) g[o.group] = []; g[o.group].push(o); }); return Object.entries(g).map(([gr, os]) => <optgroup key={gr} label={gr} style={{ backgroundColor: '#1e293b', color: '#94a3b8' }}>{os.map(o => <option key={o.value} value={o.value} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{o.label}</option>)}</optgroup>); })()}
                           </select>
                         </div>
                       )}
@@ -2376,9 +2376,9 @@ function DashboardMapTab() {
                             {zoningLoading ? <span style={{ fontSize: 10, color: '#94a3b8' }}>Loading…</span> : (
                               <select value={zoningServiceKey} onChange={(e) => { setZoningServiceKey(e.target.value); setAgentSelectedSlug(''); setZoningFilter(''); }} style={{
                                 width: '100%', padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
-                                backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', WebkitAppearance: 'none', appearance: 'none',
+                                backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
                               }}>
-                                <option value="">Select zoning layer</option>
+                                <option value="" style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>Select zoning layer</option>
                                 {(() => {
                                   const groups = {};
                                   Object.entries(zoningServices).forEach(([key, svc]) => {
@@ -2393,10 +2393,10 @@ function DashboardMapTab() {
                                     const byState = {};
                                     items.forEach(item => { const st = item.state || '??'; if (!byState[st]) byState[st] = []; byState[st].push(item); });
                                     return (
-                                      <optgroup key={region} label={`── ${regionNames[region] || region} (${items.length}) ──`}>
+                                      <optgroup key={region} label={`── ${regionNames[region] || region} (${items.length}) ──`} style={{ backgroundColor: '#1e293b', color: '#94a3b8' }}>
                                         {Object.entries(byState).sort(([a],[b]) => a.localeCompare(b)).flatMap(([st, stItems]) =>
                                           stItems.sort((a,b) => a.label.localeCompare(b.label)).map(({ key, label }) => (
-                                            <option key={key} value={key}>{label}, {st}</option>
+                                            <option key={key} value={key} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{label}, {st}</option>
                                           ))
                                         )}
                                       </optgroup>
@@ -2435,10 +2435,10 @@ function DashboardMapTab() {
                               {agentCities.length > 0 && (
                                 <select value={agentSelectedSlug} onChange={(e) => { setAgentSelectedSlug(e.target.value); if (e.target.value) setZoningServiceKey(''); setZoningFilter(''); }} style={{
                                   width: '100%', padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5, marginTop: 3,
-                                  backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', WebkitAppearance: 'none', appearance: 'none',
+                                  backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
                                 }}>
-                                  <option value="">Discovered cities ({agentCities.length})</option>
-                                  {agentCities.map(c => <option key={c.slug || c} value={c.slug || c}>{c.city || c.slug || c}</option>)}
+                                  <option value="" style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>Discovered cities ({agentCities.length})</option>
+                                  {agentCities.map(c => <option key={c.slug || c} value={c.slug || c} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{c.city || c.slug || c}</option>)}
                                 </select>
                               )}
                             </div>
@@ -2481,12 +2481,12 @@ function DashboardMapTab() {
                       width: '100%', padding: '5px 8px', fontSize: 11, fontWeight: 500,
                       border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6,
                       backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0',
-                      WebkitAppearance: 'none', appearance: 'none',
+                      colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
                     }}>
-                      <option value="all">All Pins ({customPins.length})</option>
-                      <option value="pipeline">Pipeline Only</option>
-                      <option value="rapidfire">Rapid Fire Only</option>
-                      <option value="prospects">Prospects Only</option>
+                      <option value="all" style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>All Pins ({customPins.length})</option>
+                      <option value="pipeline" style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>Pipeline Only</option>
+                      <option value="rapidfire" style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>Rapid Fire Only</option>
+                      <option value="prospects" style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>Prospects Only</option>
                     </select>
                   </div>
                 </div>
