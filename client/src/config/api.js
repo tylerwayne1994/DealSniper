@@ -68,6 +68,12 @@ export const API_ENDPOINTS = {
   zoningLegend: (serviceKey) => `${API_BASE_URL}/api/zoning/${serviceKey}/legend`,
   zoningFields: (serviceKey) => `${API_BASE_URL}/api/zoning/${serviceKey}/fields`,
 
+  // Zoning Agent (AI-discovered cities)
+  zoningAgentCities: `${API_BASE_URL}/api/zoning/agent/cities`,
+  zoningAgentDiscover: `${API_BASE_URL}/api/zoning/agent/discover`,
+  zoningAgentData: (slug) => `${API_BASE_URL}/api/zoning/agent/${slug}`,
+  zoningAgentLegend: (slug) => `${API_BASE_URL}/api/zoning/agent/${slug}/legend`,
+
   // Parcel Overlay
   parcels: `${API_BASE_URL}/api/parcels`,
   parcelsIndex: `${API_BASE_URL}/api/parcels/index`,

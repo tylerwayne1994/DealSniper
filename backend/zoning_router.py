@@ -3,7 +3,7 @@ import json
 import os
 import re
 import httpx
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Body
 from fastapi.responses import JSONResponse
 from typing import Optional
 
@@ -960,3 +960,181 @@ async def get_service_fields(
             for f in data.get("fields", [])
         ],
     }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# AI Zoning Agent — discover zoning data for ANY US city on-demand
+# ═══════════════════════════════════════════════════════════════════════════════
+
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
+_agent_executor = ThreadPoolExecutor(max_workers=2)
+
+
+@router.get("/api/zoning/agent/cities")
+async def list_agent_cities():
+    """List all cities that have been discovered by the AI agent (cached data)."""
+    try:
+        from zoning_agent import list_cached_cities
+        cities = list_cached_cities()
+        return {"cities": cities, "count": len(cities)}
+    except ImportError:
+        raise HTTPException(status_code=501, detail="Zoning agent module not available")
+
+
+@router.post("/api/zoning/agent/discover")
+async def discover_city_zoning(request_body: dict = Body(...)):
+    """
+    Run the AI agent to discover zoning data for a city.
+    Accepts JSON body: { "city": "Raleigh, NC" }
+    Returns the discovery result including legend and feature count.
+    """
+    if not request_body or not request_body.get("city"):
+        raise HTTPException(status_code=400, detail="Missing 'city' field in request body")
+
+    city = request_body["city"].strip()
+    if len(city) < 3 or len(city) > 100:
+        raise HTTPException(status_code=400, detail="City name must be 3-100 characters")
+
+    try:
+        from zoning_agent import process_city, city_slug, get_cached_legend
+
+        slug = city_slug(city)
+
+        # Check if already cached
+        cached = get_cached_legend(slug)
+        if cached:
+            from zoning_agent import get_cached_geojson_path
+            gj_path = get_cached_geojson_path(slug)
+            return {
+                "status": "cached",
+                "city": cached.get("city", city),
+                "slug": slug,
+                "legend_codes": len(cached.get("legend_mapping", {})),
+                "wms_tile_url": cached.get("wms_tile_url"),
+                "has_geojson": gj_path is not None,
+                "zoning_field": cached.get("zoning_field_name", "ZONING"),
+                "data_source_url": cached.get("data_source_url", ""),
+                "notes": cached.get("notes", ""),
+            }
+
+        # Run the agent in a thread pool (it does sync HTTP + LLM calls)
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(_agent_executor, process_city, city)
+
+        return result
+
+    except ImportError:
+        raise HTTPException(status_code=501, detail="Zoning agent module not available")
+    except Exception as e:
+        print(f"[ZoningAgent] Error discovering {city}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/zoning/agent/{city_slug}")
+async def get_agent_zoning_data(
+    city_slug: str,
+    bbox: Optional[str] = Query(default=None),
+):
+    """
+    Serve cached enriched GeoJSON for an agent-discovered city.
+    Optionally filter by bbox (west,south,east,north).
+    Returns GeoJSON with standard_zone, zone_description, zone_color on each feature.
+    """
+    try:
+        from zoning_agent import DATA_DIR, get_cached_legend
+    except ImportError:
+        raise HTTPException(status_code=501, detail="Zoning agent module not available")
+
+    geojson_path = DATA_DIR / f"{city_slug}_zoning.geojson"
+    legend_path = DATA_DIR / f"{city_slug}_legend.json"
+
+    if not geojson_path.exists():
+        raise HTTPException(status_code=404, detail=f"No cached GeoJSON for '{city_slug}'. Run /discover first.")
+
+    try:
+        with open(geojson_path, "r") as f:
+            geojson = json.load(f)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reading GeoJSON: {e}")
+
+    # Load legend for config metadata
+    legend = get_cached_legend(city_slug) or {}
+
+    # Optional bbox filter
+    if bbox:
+        parts = bbox.split(",")
+        if len(parts) == 4:
+            try:
+                minx, miny, maxx, maxy = [float(p.strip()) for p in parts]
+                # Filter features whose centroid is within bbox (rough filter)
+                filtered = []
+                for feat in geojson.get("features", []):
+                    geom = feat.get("geometry", {})
+                    if not geom:
+                        continue
+                    coords = geom.get("coordinates", [])
+                    # Rough centroid for polygons: average of first ring
+                    try:
+                        ring = coords[0] if geom.get("type") == "Polygon" else (
+                            coords[0][0] if geom.get("type") == "MultiPolygon" and coords else []
+                        )
+                        if ring:
+                            cx = sum(p[0] for p in ring) / len(ring)
+                            cy = sum(p[1] for p in ring) / len(ring)
+                            if minx <= cx <= maxx and miny <= cy <= maxy:
+                                filtered.append(feat)
+                    except (TypeError, IndexError, ZeroDivisionError):
+                        filtered.append(feat)  # include if we can't compute centroid
+                geojson["features"] = filtered
+            except ValueError:
+                pass  # ignore bad bbox, return all
+
+    # Attach config metadata for frontend compatibility
+    geojson["_zoning_config"] = {
+        "service_key": f"agent_{city_slug}",
+        "label": legend.get("city", city_slug),
+        "zone_field": legend.get("zoning_field_name", "ZONING"),
+        "label_field": legend.get("zoning_field_name", "ZONING"),
+        "is_agent": True,
+        "legend": {
+            code.upper(): {
+                "full_name": entry.get("description", code),
+                "category": _map_standard_to_existing(entry.get("standardized_category", "Overlay/Other")),
+            }
+            for code, entry in legend.get("legend_mapping", {}).items()
+        },
+    }
+
+    return JSONResponse(content=geojson)
+
+
+@router.get("/api/zoning/agent/{city_slug}/legend")
+async def get_agent_legend(city_slug: str):
+    """Return the full legend for an agent-discovered city."""
+    try:
+        from zoning_agent import get_cached_legend
+    except ImportError:
+        raise HTTPException(status_code=501, detail="Zoning agent module not available")
+
+    legend = get_cached_legend(city_slug)
+    if not legend:
+        raise HTTPException(status_code=404, detail=f"No cached legend for '{city_slug}'")
+
+    return legend
+
+
+def _map_standard_to_existing(standard_cat: str) -> str:
+    """Map the agent's 7 standardized categories to the existing CATEGORY_COLORS keys
+    used by the frontend's zoneColor() function."""
+    mapping = {
+        "Residential":          "Residential",
+        "Commercial":           "Commercial",
+        "Industrial":           "Industrial",
+        "Mixed Use":            "Mixed Use",
+        "Agricultural":         "Agricultural",
+        "Public/Institutional": "Institutional / Public",
+        "Overlay/Other":        "Overlay / Special District",
+    }
+    return mapping.get(standard_cat, standard_cat)

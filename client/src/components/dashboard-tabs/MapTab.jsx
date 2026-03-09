@@ -225,6 +225,114 @@ function ZoningOverlayLayer({ serviceKey, enabled, zoneFilter }) {
   return null; // Imperative-only; no JSX rendered
 }
 
+// ─── AgentZoningOverlayLayer (AI-discovered cities, pre-cached GeoJSON) ──────
+function AgentZoningOverlayLayer({ slug, enabled, zoneFilter }) {
+  const map = useMap();
+  const layerRef = useRef(null);
+  const prevSlug = useRef(null);
+
+  useEffect(() => {
+    if (!enabled || !slug) {
+      if (layerRef.current) { map.removeLayer(layerRef.current); layerRef.current = null; }
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(API_ENDPOINTS.zoningAgentData(slug));
+        if (!res.ok || cancelled) return;
+        const geojson = await res.json();
+        if (cancelled) return;
+        const config = geojson._zoning_config || {};
+        const zoneField = config.zone_field || 'ZONING';
+        const legend = config.legend || {};
+
+        if (layerRef.current) { map.removeLayer(layerRef.current); layerRef.current = null; }
+
+        const layer = L.geoJSON(geojson, {
+          filter: (feature) => {
+            if (!zoneFilter) return true;
+            const code = String(feature.properties?.[zoneField] || '').toLowerCase();
+            return code.includes(zoneFilter.toLowerCase());
+          },
+          style: (feature) => {
+            const code = feature.properties?.[zoneField] || '';
+            const preColor = feature.properties?.zone_color;
+            return {
+              fillColor: preColor || zoneColor(code, legend),
+              fillOpacity: 0.45,
+              color: '#555',
+              weight: 1.2,
+            };
+          },
+          onEachFeature: (feature, lyr) => {
+            const props = feature.properties || {};
+            const zoneVal = props[zoneField] || props.standard_zone || 'Unknown';
+            const desc = props.zone_description || '';
+            const cat = props.standard_zone || '';
+            const legendEntry = legend[String(zoneVal).trim().toUpperCase()] || null;
+            const fullName = legendEntry?.full_name || desc || '';
+            const category = legendEntry?.category || cat || '';
+            const catColor = CATEGORY_COLORS[category] || '';
+
+            const SKIP = new Set([
+              'OBJECTID', 'FID', 'GlobalID', 'Shape', 'Shape_Length', 'Shape_Area',
+              'Shape.STArea()', 'Shape.STLength()', 'zone_color', 'standard_zone', 'zone_description',
+              zoneField,
+            ]);
+
+            const rows = Object.entries(props)
+              .filter(([k, v]) => !SKIP.has(k) && v != null && v !== '' && !k.startsWith('Shape'))
+              .slice(0, 8)
+              .map(([k, v]) => {
+                const clean = k.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
+                return `<tr><td style="font-weight:600;color:#6b7280;padding:2px 8px 2px 0;font-size:11px">${clean}</td><td style="color:#111827;font-size:11px">${v}</td></tr>`;
+              }).join('');
+
+            const categoryBadge = category
+              ? `<span style="display:inline-block;padding:1px 8px;border-radius:9999px;font-size:10px;font-weight:600;color:#1f2937;background:${catColor};border:1px solid rgba(0,0,0,0.1);margin-top:3px">${category}</span>`
+              : '';
+
+            const header = `<div style="padding:6px 0 4px;border-bottom:1px solid #e5e7eb;margin-bottom:4px">`
+              + `<div style="font-weight:700;font-size:14px;color:#1d4ed8">${zoneVal}</div>`
+              + (fullName ? `<div style="font-size:11px;color:#374151;margin-top:1px">${fullName}</div>` : '')
+              + categoryBadge
+              + `<div style="font-size:9px;color:#9ca3af;margin-top:2px">${config.label || 'AI-Discovered Zoning'}</div>`
+              + `</div>`;
+
+            lyr.bindPopup(
+              `<div style="max-height:280px;overflow-y:auto;font-family:Inter,sans-serif">${header}<table>${rows}</table></div>`,
+              { maxWidth: 320 }
+            );
+
+            lyr.on('mouseover', () => { lyr.setStyle({ weight: 3, color: '#1d4ed8', fillOpacity: 0.7 }); lyr.bringToFront(); });
+            lyr.on('mouseout', () => { layer.resetStyle(lyr); });
+          },
+        });
+
+        layer.addTo(map);
+        layerRef.current = layer;
+
+        if (prevSlug.current !== slug && geojson.features?.length > 0) {
+          const b = layer.getBounds();
+          if (b.isValid()) map.fitBounds(b, { padding: [40, 40] });
+        }
+        prevSlug.current = slug;
+      } catch (err) {
+        console.error('[AgentZoning] Error fetching data:', err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (layerRef.current) { map.removeLayer(layerRef.current); layerRef.current = null; }
+    };
+  }, [enabled, slug, zoneFilter, map]);
+
+  return null;
+}
+
 // ─── ParcelOverlayLayer (child of MapContainer, uses useMap) ─────────
 function ParcelOverlayLayer({ enabled }) {
   const map = useMap();
@@ -505,6 +613,13 @@ function DashboardMapTab() {
   const [zoningFilter, setZoningFilter] = useState(''); // text filter by zone code
   const [zoningLoading, setZoningLoading] = useState(false);
 
+  // AI Agent zoning discovery state
+  const [agentCities, setAgentCities] = useState([]); // cached city slugs from backend
+  const [agentSelectedSlug, setAgentSelectedSlug] = useState('');
+  const [agentCityInput, setAgentCityInput] = useState('');
+  const [agentDiscovering, setAgentDiscovering] = useState(false);
+  const [agentDiscoverError, setAgentDiscoverError] = useState('');
+
   // Parcel overlay state
   const [parcelOverlay, setParcelOverlay] = useState(false);
 
@@ -615,6 +730,56 @@ function DashboardMapTab() {
       }
     })();
   }, [zoningEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load cached agent-discovered cities when zoning overlay is enabled
+  useEffect(() => {
+    if (!zoningEnabled) return;
+    (async () => {
+      try {
+        const res = await fetch(API_ENDPOINTS.zoningAgentCities);
+        if (res.ok) {
+          const data = await res.json();
+          setAgentCities(data.cities || []);
+        }
+      } catch (err) {
+        console.error('[ZoningAgent] Failed to load cached cities:', err);
+      }
+    })();
+  }, [zoningEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Handler: AI-discover zoning for a new city
+  const handleDiscoverCity = useCallback(async () => {
+    if (!agentCityInput.trim() || agentDiscovering) return;
+    setAgentDiscovering(true);
+    setAgentDiscoverError('');
+    try {
+      const res = await fetch(API_ENDPOINTS.zoningAgentDiscover, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ city: agentCityInput.trim() }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.detail || 'Discovery failed');
+
+      // Success: select the discovered city
+      const slug = result.slug;
+      if (slug && (result.has_geojson || result.geojson_path || result.status === 'cached' || result.status === 'success')) {
+        setAgentSelectedSlug(slug);
+        setZoningServiceKey(''); // deselect hardcoded service
+        setAgentCityInput('');
+        // Refresh cached cities list
+        const citiesRes = await fetch(API_ENDPOINTS.zoningAgentCities);
+        if (citiesRes.ok) setAgentCities((await citiesRes.json()).cities || []);
+      } else {
+        setAgentDiscoverError(result.notes || 'No zoning data found for this city');
+      }
+    } catch (err) {
+      console.error('[ZoningAgent] Discovery error:', err);
+      setAgentDiscoverError(err.message || 'Discovery failed');
+    } finally {
+      setAgentDiscovering(false);
+    }
+  }, [agentCityInput, agentDiscovering]);
 
   // Filtered pipeline projects
   const filteredPipeline = useMemo(() => {
@@ -2725,7 +2890,7 @@ function DashboardMapTab() {
                       <span style={{ fontSize: '9px', fontWeight: '600', color: '#3b82f6', minWidth: '36px' }}>ZONE</span>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '3px' }}>
                         {zoningLoading ? <span style={{ fontSize: '10px', color: '#94a3b8' }}>Loading…</span> : (
-                          <select value={zoningServiceKey} onChange={(e) => { setZoningServiceKey(e.target.value); setZoningFilter(''); }}
+                          <select value={zoningServiceKey} onChange={(e) => { setZoningServiceKey(e.target.value); setAgentSelectedSlug(''); setZoningFilter(''); }}
                             style={{
                               width: '100%', padding: '3px 8px', fontSize: '10px', fontWeight: '500',
                               border: '1px solid #e2e8f0', borderRadius: '5px',
@@ -2764,12 +2929,66 @@ function DashboardMapTab() {
                             })()}
                           </select>
                         )}
-                        {zoningServiceKey && <input type="text" placeholder="Filter zone code…" value={zoningFilter} onChange={(e) => setZoningFilter(e.target.value)}
+                        {(zoningServiceKey || agentSelectedSlug) && <input type="text" placeholder="Filter zone code…" value={zoningFilter} onChange={(e) => setZoningFilter(e.target.value)}
                           style={{
                             padding: '3px 8px', fontSize: '10px', fontWeight: '500',
                             border: '1px solid #e2e8f0', borderRadius: '5px',
                             backgroundColor: 'white', color: '#334155',
                           }} />}
+
+                        {/* ── AI Discovery section ── */}
+                        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '4px', marginTop: '2px' }}>
+                          <div style={{ fontSize: '9px', fontWeight: '700', color: '#7c3aed', marginBottom: '3px', letterSpacing: '0.5px' }}>AI DISCOVER ANY CITY</div>
+                          <div style={{ display: 'flex', gap: '3px' }}>
+                            <input
+                              type="text"
+                              placeholder="e.g. Raleigh, NC"
+                              value={agentCityInput}
+                              onChange={(e) => { setAgentCityInput(e.target.value); setAgentDiscoverError(''); }}
+                              onKeyDown={(e) => { if (e.key === 'Enter') handleDiscoverCity(); }}
+                              disabled={agentDiscovering}
+                              style={{
+                                flex: 1, padding: '3px 8px', fontSize: '10px', fontWeight: '500',
+                                border: '1px solid #e2e8f0', borderRadius: '5px',
+                                backgroundColor: agentDiscovering ? '#f1f5f9' : 'white', color: '#334155',
+                              }}
+                            />
+                            <button
+                              onClick={handleDiscoverCity}
+                              disabled={agentDiscovering || !agentCityInput.trim()}
+                              style={{
+                                padding: '3px 10px', fontSize: '10px', fontWeight: '600',
+                                border: 'none', borderRadius: '5px', cursor: agentDiscovering ? 'wait' : 'pointer',
+                                backgroundColor: agentDiscovering ? '#c4b5fd' : '#7c3aed', color: 'white',
+                                opacity: (!agentCityInput.trim() || agentDiscovering) ? 0.6 : 1,
+                              }}
+                            >
+                              {agentDiscovering ? 'Finding…' : 'Discover'}
+                            </button>
+                          </div>
+                          {agentDiscoverError && (
+                            <div style={{ fontSize: '9px', color: '#ef4444', marginTop: '2px' }}>{agentDiscoverError}</div>
+                          )}
+                          {agentCities.length > 0 && (
+                            <select
+                              value={agentSelectedSlug}
+                              onChange={(e) => { setAgentSelectedSlug(e.target.value); if (e.target.value) setZoningServiceKey(''); setZoningFilter(''); }}
+                              style={{
+                                width: '100%', padding: '3px 8px', fontSize: '10px', fontWeight: '500',
+                                border: '1px solid #e2e8f0', borderRadius: '5px', marginTop: '3px',
+                                backgroundColor: 'white', color: '#334155',
+                                WebkitAppearance: 'none', appearance: 'none',
+                              }}
+                            >
+                              <option value="">Discovered cities ({agentCities.length})</option>
+                              {agentCities.map(c => (
+                                <option key={c.slug || c} value={c.slug || c}>
+                                  {c.city || c.slug || c}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -3190,10 +3409,17 @@ function DashboardMapTab() {
               zipHeatmapMetric={zipHeatmapMetric}
             />
 
-            {/* Zoning overlay layer */}
+            {/* Zoning overlay layer (hardcoded ArcGIS services) */}
             <ZoningOverlayLayer
-              enabled={zoningEnabled && !!zoningServiceKey}
+              enabled={zoningEnabled && !!zoningServiceKey && !agentSelectedSlug}
               serviceKey={zoningServiceKey}
+              zoneFilter={zoningFilter}
+            />
+
+            {/* Agent-discovered zoning overlay layer */}
+            <AgentZoningOverlayLayer
+              enabled={zoningEnabled && !!agentSelectedSlug && !zoningServiceKey}
+              slug={agentSelectedSlug}
               zoneFilter={zoningFilter}
             />
 
