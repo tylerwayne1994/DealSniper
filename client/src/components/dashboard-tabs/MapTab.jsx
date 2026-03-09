@@ -9,6 +9,7 @@ import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
 import { loadPipelineDeals } from '../../lib/dealsService';
 import MapOverlayLayers, { COUNTY_METRIC_OPTIONS, ZIP_METRIC_OPTIONS, ZIP_HEATMAP_METRIC_OPTIONS } from './MapOverlayLayers';
+import MSA_COORDINATES from '../../data/msaCoordinates';
 import {
   MessageSquare,
   MapPin,
@@ -492,6 +493,11 @@ function DashboardMapTab() {
   const [devPipelineData, setDevPipelineData] = useState([]);
   const [devPipelineFilter, setDevPipelineFilter] = useState('all'); // 'all' | status filter
 
+  // Absorption / market data overlay
+  const [absorptionEnabled, setAbsorptionEnabled] = useState(false);
+  const [absorptionData, setAbsorptionData] = useState([]);
+  const [absorptionFilter, setAbsorptionFilter] = useState('all'); // 'all' | market trend filter
+
   // Zoning overlay state
   const [zoningEnabled, setZoningEnabled] = useState(false);
   const [zoningServices, setZoningServices] = useState({}); // { key: { label } }
@@ -512,21 +518,83 @@ function DashboardMapTab() {
   const [selectedProperties, setSelectedProperties] = useState([]);  // Track selected property indices
   const [geocodingResults, setGeocodingResults] = useState({ results: [], failed: [] }); // Store geocoding results
 
-  // Load development pipeline CSV when first enabled
+  // Load development pipeline CSV when first enabled — uses the rich national pipeline CSV
   useEffect(() => {
     if (!devPipelineEnabled || devPipelineData.length > 0) return;
-    Papa.parse('/development_pipeline.csv', {
+    Papa.parse('/Multifamily_ClassA_National_Pipeline_FINAL.csv', {
       download: true,
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
-        const valid = results.data.filter(r => r.latitude && r.longitude && !isNaN(Number(r.latitude)));
+        // Enrich rows with MSA centroid coordinates when lat/lng is missing
+        const enriched = results.data.map(r => {
+          let lat = r.Latitude ? Number(r.Latitude) : NaN;
+          let lng = r.Longitude ? Number(r.Longitude) : NaN;
+          if (isNaN(lat) || isNaN(lng) || !lat) {
+            const msa = r.MSA || '';
+            const coords = MSA_COORDINATES[msa];
+            if (coords) {
+              // Add slight jitter so projects in the same MSA don't stack
+              lat = coords[0] + (Math.random() - 0.5) * 0.06;
+              lng = coords[1] + (Math.random() - 0.5) * 0.06;
+            }
+          }
+          return {
+            ...r,
+            latitude: lat || null,
+            longitude: lng || null,
+            // Normalize field names for popup compatibility
+            project_name: r.Project_Name || r.project_name || '',
+            address: r.Address || r.address || '',
+            city: r.City || r.city || '',
+            status: r.Status || r.status || '',
+            units: r.Units || r.units || '',
+            developer: r.Developer || r.developer || '',
+            class_type: r.Building_Class || r.class_type || '',
+            cost_display: r.Cost_Display || '',
+            permit_type: r.Permit_Type || '',
+            description: r.Description || '',
+            source_url: r.Data_Source || r.source_url || '',
+            msa: r.MSA || '',
+            occupancy_rate: r.Occupancy_Rate_Pct || '',
+            vacancy_rate: r.Vacancy_Rate_Pct || '',
+            avg_rent: r.Avg_Effective_Rent_USD || '',
+            rent_growth: r.YoY_Rent_Growth_Pct || '',
+            absorption_rate: r.Absorption_Rate_Pct || '',
+            market_trend: r.Market_Trend || '',
+          };
+        });
+        const valid = enriched.filter(r => r.latitude && r.longitude && !isNaN(Number(r.latitude)));
         setDevPipelineData(valid);
-        console.log(`[DevPipeline] Loaded ${valid.length} projects`);
+        console.log(`[DevPipeline] Loaded ${valid.length} projects from national pipeline CSV`);
       },
       error: (err) => console.error('[DevPipeline] CSV parse error:', err)
     });
   }, [devPipelineEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load absorption rates CSV when first enabled
+  useEffect(() => {
+    if (!absorptionEnabled || absorptionData.length > 0) return;
+    Papa.parse('/absorption_rates_by_msa.csv', {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const enriched = results.data.map(r => {
+          const msa = r.MSA || '';
+          const coords = MSA_COORDINATES[msa];
+          return {
+            ...r,
+            latitude: coords ? coords[0] : null,
+            longitude: coords ? coords[1] : null,
+          };
+        }).filter(r => r.latitude && r.longitude);
+        setAbsorptionData(enriched);
+        console.log(`[Absorption] Loaded ${enriched.length} MSA market data points`);
+      },
+      error: (err) => console.error('[Absorption] CSV parse error:', err)
+    });
+  }, [absorptionEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load available zoning services when zoning overlay is first enabled
   useEffect(() => {
@@ -561,12 +629,35 @@ function DashboardMapTab() {
     return ['all', ...Array.from(s).sort()];
   }, [devPipelineData]);
 
+  // Filtered absorption data
+  const filteredAbsorption = useMemo(() => {
+    if (!absorptionEnabled) return [];
+    if (absorptionFilter === 'all') return absorptionData;
+    return absorptionData.filter(a => a.Market_Trend === absorptionFilter);
+  }, [absorptionEnabled, absorptionData, absorptionFilter]);
+
+  // Unique market trends for absorption filter
+  const absorptionTrends = useMemo(() => {
+    const s = new Set(absorptionData.map(a => a.Market_Trend).filter(Boolean));
+    return ['all', ...Array.from(s).sort()];
+  }, [absorptionData]);
+
+  // Color by market trend for absorption circles
+  const absorptionColor = (trend) => {
+    const t = (trend || '').toLowerCase();
+    if (t.includes('improving')) return '#22c55e';
+    if (t.includes('stable')) return '#3b82f6';
+    if (t.includes('softening')) return '#ef4444';
+    return '#6b7280';
+  };
+
   // Color by status
   const devPinColor = (status) => {
     const s = (status || '').toLowerCase();
-    if (s.includes('completed')) return '#22c55e';
+    if (s.includes('complete')) return '#22c55e';
     if (s.includes('under construction')) return '#f59e0b';
     if (s.includes('proposed') || s.includes('planning') || s.includes('approved') || s.includes('announced')) return '#8b5cf6';
+    if (s.includes('permitted')) return '#0ea5e9';
     return '#6b7280';
   };
 
@@ -799,21 +890,82 @@ function DashboardMapTab() {
           el.style.width = '18px';
           el.style.height = '18px';
           el.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`;
-          const popup = new maplibregl.Popup({ offset: 12, maxWidth: '320px' })
+          const popup = new maplibregl.Popup({ offset: 12, maxWidth: '380px' })
             .setHTML(`
               <div style="font-family:Inter,-apple-system,sans-serif;padding:8px;">
                 <div style="font-weight:700;font-size:14px;color:#111827;margin-bottom:4px;">${proj.project_name || 'Unknown'}</div>
                 <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">${proj.address || ''}, ${proj.city || ''}</div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
                   <span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${color}22;color:${color};">${proj.status || 'Unknown'}</span>
-                  ${proj.class_type ? `<span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#e0e7ff;color:#3730a3;">${proj.class_type}</span>` : ''}
+                  ${proj.class_type ? `<span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#e0e7ff;color:#3730a3;">Class ${proj.class_type}</span>` : ''}
+                  ${proj.cost_display ? `<span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#dcfce7;color:#166534;">${proj.cost_display}</span>` : ''}
                 </div>
-                <div style="font-size:12px;color:#374151;">
-                  ${proj.units ? `<div><strong>Units:</strong> ${Number(proj.units).toLocaleString()}</div>` : ''}
-                  ${proj.developer && proj.developer !== 'Unknown' ? `<div><strong>Developer:</strong> ${proj.developer}</div>` : ''}
-                  ${proj.completion_date ? `<div><strong>Completion:</strong> ${proj.completion_date}</div>` : ''}
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:12px;color:#374151;">
+                  ${proj.units ? `<div><span style="color:#9ca3af;font-weight:600;font-size:10px;">UNITS</span><br/><strong>${Number(proj.units).toLocaleString()}</strong></div>` : ''}
+                  ${proj.developer && proj.developer !== 'Unknown' && proj.developer !== 'Unknown Developer' ? `<div><span style="color:#9ca3af;font-weight:600;font-size:10px;">DEVELOPER</span><br/>${proj.developer}</div>` : ''}
+                  ${proj.permit_type ? `<div><span style="color:#9ca3af;font-weight:600;font-size:10px;">PERMIT</span><br/>${proj.permit_type.replace('PERMIT - ','')}</div>` : ''}
+                  ${proj.occupancy_rate ? `<div><span style="color:#9ca3af;font-weight:600;font-size:10px;">OCCUPANCY</span><br/>${proj.occupancy_rate}%</div>` : ''}
+                  ${proj.avg_rent ? `<div><span style="color:#9ca3af;font-weight:600;font-size:10px;">AVG RENT</span><br/>$${Number(proj.avg_rent).toLocaleString()}</div>` : ''}
+                  ${proj.rent_growth ? `<div><span style="color:#9ca3af;font-weight:600;font-size:10px;">RENT GROWTH</span><br/>${proj.rent_growth}%</div>` : ''}
                 </div>
-                ${proj.source_url ? `<a href="${proj.source_url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6;margin-top:4px;display:block;">View Source →</a>` : ''}
+                ${proj.description ? `<div style="margin-top:6px;font-size:11px;color:#6b7280;line-height:1.4;border-top:1px solid #e5e7eb;padding-top:6px;">${proj.description.substring(0, 150)}${proj.description.length > 150 ? '…' : ''}</div>` : ''}
+                ${proj.source_url ? `<a href="${proj.source_url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6;margin-top:4px;display:block;font-weight:600;">View Source →</a>` : ''}
+              </div>
+            `);
+          const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+            .setLngLat([lng, lat])
+            .setPopup(popup)
+            .addTo(map);
+          maplibreMarkersRef.current.push(marker);
+        });
+      }
+
+      // Absorption / Market Data markers on 3D map
+      if (absorptionEnabled) {
+        filteredAbsorption.forEach(msa => {
+          const lat = Number(msa.latitude), lng = Number(msa.longitude);
+          if (!lat || !lng) return;
+          const color = absorptionColor(msa.Market_Trend);
+          const radius = Math.max(16, Math.min(36, Math.sqrt(Number(msa.Net_Absorption_Units_Annual) || 0) * 0.8));
+          const el = document.createElement('div');
+          el.style.cursor = 'pointer';
+          el.style.width = `${radius}px`;
+          el.style.height = `${radius}px`;
+          el.innerHTML = `<div style="width:${radius}px;height:${radius}px;border-radius:50%;background:${color};opacity:0.7;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;"><span style="font-size:9px;font-weight:700;color:#fff;">${msa.Absorption_Rate_Pct || ''}%</span></div>`;
+          const popup = new maplibregl.Popup({ offset: 12, maxWidth: '380px' })
+            .setHTML(`
+              <div style="font-family:Inter,-apple-system,sans-serif;padding:10px;">
+                <div style="font-weight:700;font-size:15px;color:#111827;margin-bottom:2px;">${msa.MSA}</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+                  <span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${color}22;color:${color};">${msa.Market_Trend || 'Unknown'}</span>
+                  <span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#e0e7ff;color:#3730a3;">${msa.Market_Tier_Absorption || ''}</span>
+                  ${msa.Concession_Prevalence ? `<span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;">Concessions: ${msa.Concession_Prevalence}</span>` : ''}
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+                  <div style="background:#f0fdf4;padding:8px;border-radius:6px;text-align:center;">
+                    <div style="font-size:10px;color:#6b7280;font-weight:600;">ABSORPTION</div>
+                    <div style="font-size:16px;font-weight:700;color:#166534;">${Number(msa.Net_Absorption_Units_Annual || 0).toLocaleString()}</div>
+                    <div style="font-size:10px;color:#6b7280;">units/yr</div>
+                  </div>
+                  <div style="background:#eff6ff;padding:8px;border-radius:6px;text-align:center;">
+                    <div style="font-size:10px;color:#6b7280;font-weight:600;">OCCUPANCY</div>
+                    <div style="font-size:16px;font-weight:700;color:#1d4ed8;">${msa.Occupancy_Rate_Pct || 0}%</div>
+                    <div style="font-size:10px;color:#6b7280;">vacancy ${msa.Vacancy_Rate_Pct || 0}%</div>
+                  </div>
+                  <div style="background:#fefce8;padding:8px;border-radius:6px;text-align:center;">
+                    <div style="font-size:10px;color:#6b7280;font-weight:600;">AVG RENT</div>
+                    <div style="font-size:16px;font-weight:700;color:#92400e;">$${Number(msa.Avg_Effective_Rent_USD || 0).toLocaleString()}</div>
+                    <div style="font-size:10px;color:${Number(msa.YoY_Rent_Growth_Pct) >= 0 ? '#166534' : '#dc2626'};">${msa.YoY_Rent_Growth_Pct || 0}% YoY</div>
+                  </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:12px;color:#374151;padding-top:6px;border-top:1px solid #e5e7eb;">
+                  <div><span style="color:#9ca3af;font-weight:600;font-size:10px;">ABSORPTION RATE</span><br/><strong>${msa.Absorption_Rate_Pct || 0}%</strong></div>
+                  <div><span style="color:#9ca3af;font-weight:600;font-size:10px;">UNDER CONSTRUCTION</span><br/><strong>${Number(msa.Total_Units_Under_Construction || 0).toLocaleString()}</strong> units</div>
+                  <div><span style="color:#9ca3af;font-weight:600;font-size:10px;">DELIVERED 2024</span><br/><strong>${Number(msa.Units_Delivered_2024 || 0).toLocaleString()}</strong></div>
+                  <div><span style="color:#9ca3af;font-weight:600;font-size:10px;">DELIVERED 2025</span><br/><strong>${Number(msa.Units_Delivered_2025 || 0).toLocaleString()}</strong></div>
+                </div>
+                ${msa.Market_Commentary ? `<div style="margin-top:8px;font-size:11px;color:#6b7280;line-height:1.5;border-top:1px solid #e5e7eb;padding-top:6px;">${msa.Market_Commentary.substring(0, 200)}${msa.Market_Commentary.length > 200 ? '…' : ''}</div>` : ''}
+                ${msa.Absorption_Data_Source ? `<div style="margin-top:4px;font-size:10px;color:#9ca3af;">Source: ${msa.Absorption_Data_Source}</div>` : ''}
               </div>
             `);
           const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
@@ -881,7 +1033,7 @@ function DashboardMapTab() {
     } else {
       map.on('load', addMarkers);
     }
-  }, [mapStyle, customPins, baseMarkers, mapFilter, devPipelineEnabled, filteredPipeline]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mapStyle, customPins, baseMarkers, mapFilter, devPipelineEnabled, filteredPipeline, absorptionEnabled, filteredAbsorption]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmitProperty = async (e) => {
     e.preventDefault();
@@ -2337,6 +2489,7 @@ function DashboardMapTab() {
                   { label: 'ZIP Pts', active: zipOverlay, color: '#10b981', toggle: () => setZipOverlay(v => !v) },
                   { label: 'ZIP Heat', active: zipHeatmap, color: '#7c3aed', toggle: () => setZipHeatmap(v => !v) },
                   { label: 'Pipeline', active: devPipelineEnabled, color: '#f59e0b', toggle: () => setDevPipelineEnabled(v => !v) },
+                  { label: 'Absorb', active: absorptionEnabled, color: '#059669', toggle: () => setAbsorptionEnabled(v => !v) },
                   { label: 'Zoning', active: zoningEnabled, color: '#3b82f6', toggle: () => { setZoningEnabled(v => { if (v) { setZoningServiceKey(''); setZoningFilter(''); } return !v; }); } },
                   { label: 'Parcels', active: parcelOverlay, color: '#e11d48', toggle: () => setParcelOverlay(v => !v) },
                 ].map(({ label, active, color, toggle }) => (
@@ -2361,7 +2514,7 @@ function DashboardMapTab() {
               </div>
 
               {/* ─── Settings for active layers (only if any on) ─── */}
-              {(countyOverlay || zipOverlay || zipHeatmap || devPipelineEnabled || zoningEnabled) && (
+              {(countyOverlay || zipOverlay || zipHeatmap || devPipelineEnabled || absorptionEnabled || zoningEnabled) && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   {countyOverlay && (
                     <select value={countyMetric} onChange={(e) => setCountyMetric(e.target.value)}
@@ -2385,6 +2538,12 @@ function DashboardMapTab() {
                     <select value={devPipelineFilter} onChange={(e) => setDevPipelineFilter(e.target.value)}
                       style={{ padding: '3px 6px', fontSize: '10px', border: '1px solid #e5e7eb', borderRadius: '5px', backgroundColor: 'white', color: '#374151' }}>
                       {pipelineStatuses.map(s => <option key={s} value={s}>{s === 'all' ? 'All Statuses' : s}</option>)}
+                    </select>
+                  )}
+                  {absorptionEnabled && (
+                    <select value={absorptionFilter} onChange={(e) => setAbsorptionFilter(e.target.value)}
+                      style={{ padding: '3px 6px', fontSize: '10px', border: '1px solid #e5e7eb', borderRadius: '5px', backgroundColor: 'white', color: '#374151' }}>
+                      {absorptionTrends.map(t => <option key={t} value={t}>{t === 'all' ? 'All Trends' : t}</option>)}
                     </select>
                   )}
                   {zoningEnabled && (
@@ -2692,27 +2851,33 @@ function DashboardMapTab() {
                   radius={7}
                   pathOptions={{ fillColor: color, fillOpacity: 0.85, color: '#fff', weight: 2 }}
                 >
-                  <Popup maxWidth={340}>
-                    <div style={{ fontFamily: 'Inter, -apple-system, sans-serif', minWidth: 260, padding: 4 }}>
+                  <Popup maxWidth={360}>
+                    <div style={{ fontFamily: 'Inter, -apple-system, sans-serif', minWidth: 280, padding: 4 }}>
                       {/* Header */}
                       <div style={{ fontWeight: 700, fontSize: 15, color: '#111827', marginBottom: 2 }}>
                         {proj.project_name || 'Unknown Project'}
                       </div>
                       <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
-                        {proj.address || ''}{proj.address && proj.city ? ', ' : ''}{proj.city || ''}
+                        {proj.address || ''}{proj.address && proj.city ? ', ' : ''}{proj.city || ''}{proj.state ? `, ${proj.state}` : ''}
                       </div>
 
-                      {/* Status + Class badges */}
+                      {/* Status + Class + Permit badges */}
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
                         <span style={{
                           padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600,
                           background: `${color}20`, color: color, border: `1px solid ${color}40`
                         }}>{proj.status || 'Unknown'}</span>
-                        {proj.class_type && (
+                        {proj.building_class && (
                           <span style={{
                             padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600,
                             background: '#e0e7ff', color: '#3730a3', border: '1px solid #c7d2fe'
-                          }}>{proj.class_type}</span>
+                          }}>{proj.building_class}</span>
+                        )}
+                        {proj.permit_type && (
+                          <span style={{
+                            padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600,
+                            background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a'
+                          }}>{proj.permit_type}</span>
                         )}
                       </div>
 
@@ -2722,26 +2887,107 @@ function DashboardMapTab() {
                           <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>UNITS</span><br/>
                             <span style={{ fontWeight: 700, color: '#111827' }}>{Number(proj.units).toLocaleString()}</span></div>
                         )}
+                        {proj.cost_display && (
+                          <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>EST. COST</span><br/>
+                            <span style={{ fontWeight: 700, color: '#111827' }}>{proj.cost_display}</span></div>
+                        )}
                         {proj.developer && proj.developer !== 'Unknown' && (
                           <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>DEVELOPER</span><br/>
                             <span style={{ fontWeight: 600, color: '#374151' }}>{proj.developer}</span></div>
                         )}
-                        {proj.permit_date && (
-                          <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>PERMIT DATE</span><br/>
-                            <span style={{ color: '#374151' }}>{proj.permit_date}</span></div>
+                        {proj.issue_date && (
+                          <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>ISSUE DATE</span><br/>
+                            <span style={{ color: '#374151' }}>{proj.issue_date}</span></div>
                         )}
-                        {proj.completion_date && (
-                          <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>COMPLETION</span><br/>
-                            <span style={{ color: '#374151' }}>{proj.completion_date}</span></div>
+                        {proj.occupancy && (
+                          <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>OCCUPANCY</span><br/>
+                            <span style={{ color: '#374151' }}>{proj.occupancy}%</span></div>
+                        )}
+                        {proj.avg_rent && (
+                          <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>AVG RENT</span><br/>
+                            <span style={{ color: '#374151' }}>${Number(proj.avg_rent).toLocaleString()}</span></div>
                         )}
                       </div>
 
-                      {/* Source link */}
-                      {proj.source_url && (
-                        <a href={proj.source_url} target="_blank" rel="noopener noreferrer" style={{
-                          display: 'block', marginTop: 10, fontSize: 11, color: '#3b82f6',
-                          fontWeight: 600, textDecoration: 'none'
-                        }}>View Source →</a>
+                      {/* Description */}
+                      {proj.description && (
+                        <div style={{ marginTop: 8, fontSize: 11, color: '#6b7280', lineHeight: 1.4,
+                          borderTop: '1px solid #f3f4f6', paddingTop: 6 }}>{proj.description}</div>
+                      )}
+                    </div>
+                  </Popup>
+                </CircleMarker>
+              );
+            })}
+
+            {/* Absorption Rate markers */}
+            {absorptionEnabled && filteredAbsorption.map((msa, idx) => {
+              const lat = Number(msa.latitude), lng = Number(msa.longitude);
+              if (!lat || !lng) return null;
+              const absUnits = Math.abs(Number(msa.Net_Absorption_Units_Annual) || 0);
+              const radius = Math.max(8, Math.min(22, 8 + (absUnits / 1200)));
+              const color = absorptionColor(msa.Market_Trend);
+              return (
+                <CircleMarker
+                  key={`abs-${idx}`}
+                  center={[lat, lng]}
+                  radius={radius}
+                  pathOptions={{ fillColor: color, fillOpacity: 0.55, color: color, weight: 2, opacity: 0.8 }}
+                >
+                  <Popup maxWidth={380}>
+                    <div style={{ fontFamily: 'Inter, -apple-system, sans-serif', minWidth: 300, padding: 4 }}>
+                      {/* Header */}
+                      <div style={{ fontWeight: 700, fontSize: 15, color: '#111827', marginBottom: 2 }}>
+                        {msa.MSA}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                        <span style={{
+                          padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600,
+                          background: `${color}20`, color: color, border: `1px solid ${color}40`
+                        }}>{msa.Market_Trend || 'Unknown'}</span>
+                        {msa.Market_Tier_Absorption && (
+                          <span style={{
+                            padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600,
+                            background: '#e0e7ff', color: '#3730a3', border: '1px solid #c7d2fe'
+                          }}>{msa.Market_Tier_Absorption}</span>
+                        )}
+                      </div>
+
+                      {/* 3-col metrics */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
+                        <div style={{ textAlign: 'center', padding: '6px 4px', background: '#f0fdf4', borderRadius: 8 }}>
+                          <div style={{ fontSize: 10, color: '#6b7280', fontWeight: 600 }}>ABSORPTION</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>{Number(msa.Net_Absorption_Units_Annual || 0).toLocaleString()}</div>
+                          <div style={{ fontSize: 10, color: '#9ca3af' }}>units/yr</div>
+                        </div>
+                        <div style={{ textAlign: 'center', padding: '6px 4px', background: '#eff6ff', borderRadius: 8 }}>
+                          <div style={{ fontSize: 10, color: '#6b7280', fontWeight: 600 }}>OCCUPANCY</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>{msa.Occupancy_Rate_Pct || '–'}%</div>
+                          <div style={{ fontSize: 10, color: '#9ca3af' }}>rate</div>
+                        </div>
+                        <div style={{ textAlign: 'center', padding: '6px 4px', background: '#fefce8', borderRadius: 8 }}>
+                          <div style={{ fontSize: 10, color: '#6b7280', fontWeight: 600 }}>AVG RENT</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>${Number(msa.Avg_Effective_Rent_USD || 0).toLocaleString()}</div>
+                          <div style={{ fontSize: 10, color: '#9ca3af' }}>effective</div>
+                        </div>
+                      </div>
+
+                      {/* Detail grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: 12 }}>
+                        <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>VACANCY</span><br/>
+                          <span style={{ color: '#374151' }}>{msa.Vacancy_Rate_Pct || '–'}%</span></div>
+                        <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>RENT GROWTH</span><br/>
+                          <span style={{ color: Number(msa.YoY_Rent_Growth_Pct) >= 0 ? '#059669' : '#dc2626' }}>{msa.YoY_Rent_Growth_Pct || '–'}%</span></div>
+                        <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>UNDER CONST.</span><br/>
+                          <span style={{ color: '#374151' }}>{Number(msa.Total_Units_Under_Construction || 0).toLocaleString()}</span></div>
+                        <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>CONCESSIONS</span><br/>
+                          <span style={{ color: '#374151' }}>{msa.Concession_Prevalence || '–'}</span></div>
+                      </div>
+
+                      {/* Commentary */}
+                      {msa.Market_Commentary && (
+                        <div style={{ marginTop: 8, fontSize: 11, color: '#6b7280', lineHeight: 1.4,
+                          borderTop: '1px solid #f3f4f6', paddingTop: 6 }}>{msa.Market_Commentary}</div>
                       )}
                     </div>
                   </Popup>

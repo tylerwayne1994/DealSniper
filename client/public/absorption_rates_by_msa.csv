@@ -1,0 +1,218 @@
+MSA,Net_Absorption_Units_Annual,Absorption_Rate_Pct,Occupancy_Rate_Pct,Vacancy_Rate_Pct,Avg_Effective_Rent_USD,YoY_Rent_Growth_Pct,Total_Units_Under_Construction,Units_Delivered_2024,Units_Delivered_2025,Market_Tier_Absorption,Market_Trend,Concession_Prevalence,Absorption_Data_Source,Market_Commentary
+"Abilene, TX",120,85.0,93.5,6.5,850,3.2,50,40,30,Tertiary,Improving,Moderate,CoStar,Steady demand driven by local employment growth and limited new supply has supported rent growth and occupancy.
+"Akron, OH",200,78.0,92.8,7.2,950,2.5,120,100,90,Tertiary,Stable,Moderate,Yardi,Market remains stable with moderate rent growth; new deliveries are balanced by steady absorption.
+"Albany, NY",350,82.5,94.0,6.0,1400,3.8,180,150,130,Secondary,Improving,Low,CBRE,Strong institutional investment and limited new supply have driven occupancy and rent growth upward.
+"Albuquerque, NM",400,88.0,95.2,4.8,1150,4.1,220,180,160,Secondary,Improving,Low,RealPage,Robust demand supported by population growth and job gains has kept vacancy low and rents rising.
+"Allentown, PA",300,80.0,93.7,6.3,1300,3.5,140,120,110,Secondary,Stable,Moderate,JLL,Steady absorption and moderate deliveries have maintained a balanced market with stable rent growth.
+"Amarillo, TX",150,75.0,92.5,7.5,900,2.8,60,50,40,Tertiary,Stable,Moderate,CoStar,Market shows steady demand with moderate rent growth; new supply is being absorbed at a healthy pace.
+"Anchorage, AK",180,70.0,91.0,9.0,1300,1.5,80,70,60,Secondary,Softening,High,Yardi,Economic headwinds and increased supply have softened absorption and increased concessions.
+"Ann Arbor, MI",400,90.0,95.5,4.5,1600,5.0,200,170,150,Secondary,Improving,Low,CBRE,Strong university-driven demand and limited new supply have supported high occupancy and rent growth.
+"Annapolis, MD",220,85.0,94.0,6.0,1700,3.7,90,80,70,Secondary,Stable,Moderate,JLL,Stable market with steady demand from government and military sectors supporting occupancy.
+"Appleton, WI",180,80.0,93.0,7.0,1000,2.9,70,60,50,Tertiary,Stable,Moderate,CoStar,Moderate absorption and deliveries have kept the market balanced with modest rent growth.
+"Asheville, NC",350,90.0,95.0,5.0,1400,4.5,150,130,120,Secondary,Improving,Low,RealPage,Strong lifestyle demand and limited new supply have driven strong rent growth and high occupancy.
+"Atlanta, GA",8500,95.0,96.5,3.5,1800,6.0,7000,6500,6000,Primary,Improving,Low,CBRE,Robust population and job growth continue to fuel strong absorption and rent growth in this primary market.
+"Atlantic City, NJ",150,70.0,91.5,8.5,1200,1.8,40,35,30,Tertiary,Softening,High,Yardi,Tourism-driven market facing softness due to increased supply and seasonal demand fluctuations.
+"Augusta, GA",220,80.0,93.2,6.8,950,3.0,90,80,70,Tertiary,Stable,Moderate,CoStar,Steady demand from healthcare and military sectors supports stable absorption and rent growth.
+"Austin, TX",12000,98.0,97.0,3.0,2100,7.5,9000,8500,8000,Primary,Improving,Minimal,JLL,Strong tech-driven job growth and population influx continue to drive exceptional absorption and rent growth.
+"Bakersfield, CA",450,85.0,95.2,4.8,1350,4.2,600,350,400,Tertiary,Improving,Moderate,CoStar,"Bakersfield continues to see steady demand driven by affordability relative to coastal California markets, supporting rent growth and healthy absorption."
+"Baltimore, MD",1200,78.5,94.0,6.0,1600,3.5,1100,900,950,Secondary,Stable,Low,RealPage,Baltimore's multifamily market remains stable with moderate rent growth and steady absorption amid ongoing new supply deliveries.
+"Bangor, ME",80,90.0,96.5,3.5,950,2.0,40,30,25,Tertiary,Stable,Minimal,Yardi,"Bangor's small market shows consistent occupancy with limited new supply, supporting modest rent growth."
+"Baton Rouge, LA",700,82.0,94.8,5.2,1150,3.8,500,450,400,Secondary,Improving,Moderate,CBRE,"Baton Rouge benefits from steady job growth and limited new supply, driving positive absorption and rent gains."
+"Beaumont, TX",300,88.0,95.5,4.5,1050,4.0,200,180,150,Tertiary,Improving,Low,JLL,Beaumont's market is tightening with strong absorption and limited concessions amid moderate new deliveries.
+"Bellingham, WA",350,80.0,93.8,6.2,1800,5.0,300,250,275,Secondary,Improving,Moderate,CoStar,"Bellingham's proximity to Seattle drives demand, supporting rent growth despite rising vacancy from new supply."
+"Bend, OR",400,75.0,92.5,7.5,2100,3.0,350,300,320,Secondary,Stable,Moderate,RealPage,"Bend's market is balancing strong demand with increased deliveries, leading to stable occupancy and moderate rent growth."
+"Billings, MT",150,85.0,95.0,5.0,1100,2.5,100,90,80,Tertiary,Stable,Low,Yardi,Billings maintains a healthy market with steady absorption and limited new supply keeping vacancy low.
+"Binghamton, NY",-50,60.0,89.0,11.0,900,-1.5,50,70,60,Tertiary,Softening,High,CBRE,"Binghamton faces softening demand with negative absorption and elevated vacancy, pressuring rents and increasing concessions."
+"Birmingham, AL",600,83.0,94.5,5.5,1200,3.7,450,400,420,Secondary,Improving,Moderate,JLL,Birmingham's multifamily market is improving with solid absorption and rent growth supported by economic expansion.
+"Bismarck, ND",100,87.0,95.8,4.2,1150,2.8,80,70,65,Tertiary,Stable,Low,Yardi,Bismarck's market remains stable with consistent absorption and limited concessions amid modest new supply.
+"Bloomington, IL",120,80.0,93.5,6.5,1000,1.5,90,85,80,Tertiary,Stable,Moderate,CoStar,Bloomington's market shows steady occupancy with moderate rent growth and balanced new supply.
+"Boise, ID",2200,70.0,91.5,8.5,1850,2.0,1800,1600,1700,Secondary,Softening,Moderate,RealPage,"Boise is experiencing softening fundamentals due to rapid new supply deliveries, leading to higher vacancy and slower rent growth."
+"Boston, MA",3500,75.0,93.0,7.0,3200,3.2,4000,3500,3700,Primary,Stable,Low,CBRE,"Boston's primary market remains stable with strong demand offsetting significant new supply, supporting moderate rent growth."
+"Boulder, CO",600,68.0,90.8,9.2,2500,1.8,550,500,520,Secondary,Softening,Moderate,JLL,"Boulder's market is softening due to elevated vacancy from new deliveries, resulting in slower rent growth and increased concessions."
+"Bowling Green, KY",120,85.0,94.2,5.8,950,3.5,150,80,100,Tertiary,Improving,Moderate,Yardi,Steady population growth driven by university and manufacturing sectors supports healthy absorption and rent growth.
+"Bozeman, MT",350,90.0,95.5,4.5,1600,7.2,200,120,150,Secondary,Improving,Low,CoStar,Strong in-migration and limited supply continue to drive robust rent growth and high occupancy.
+"Bridgeport, CT",180,75.0,93.0,7.0,1400,2.8,100,90,110,Secondary,Stable,Moderate,CBRE,"Proximity to NYC supports steady demand, though new deliveries have tempered rent growth."
+"Buffalo, NY",400,80.0,94.8,5.2,1100,4.0,350,300,320,Secondary,Improving,Low,JLL,"Economic revitalization and affordable rents continue to attract renters, supporting strong absorption."
+"Burlington, VT",150,88.0,95.0,5.0,1450,5.5,90,70,85,Tertiary,Improving,Low,RealPage,Strong university presence and limited new supply drive healthy rent growth and occupancy.
+"Camden, NJ",100,70.0,91.5,8.5,1200,1.5,130,110,120,Tertiary,Stable,Moderate,CoStar,"Proximity to Philadelphia supports demand, but economic challenges limit rent growth."
+"Canton, OH",80,65.0,90.8,9.2,850,1.0,60,50,55,Tertiary,Stable,Moderate,Yardi,Modest absorption amid slow economic growth; concessions remain common to maintain occupancy.
+"Cape Coral, FL",900,95.0,96.0,4.0,1400,8.0,600,500,550,Secondary,Improving,Low,CBRE,Strong population influx and limited inventory drive rapid absorption and rent growth.
+"Casper, WY",40,60.0,89.5,10.5,900,0.5,20,15,20,Tertiary,Stable,Moderate,JLL,Energy sector volatility impacts demand; absorption remains modest with moderate concessions.
+"Cedar Rapids, IA",200,80.0,94.0,6.0,1050,3.0,150,130,140,Secondary,Stable,Low,RealPage,Steady economic base supports consistent absorption and moderate rent growth.
+"Champaign, IL",180,85.0,95.2,4.8,1100,4.5,100,90,95,Tertiary,Improving,Low,CoStar,University-driven demand fuels strong absorption and rent growth.
+"Charleston, SC",700,92.0,95.8,4.2,1600,6.5,450,400,420,Secondary,Improving,Low,JLL,Strong job growth and in-migration sustain high absorption and rent increases.
+"Charleston, WV",50,65.0,90.0,10.0,850,0.8,30,25,30,Tertiary,Softening,Moderate,Yardi,Economic headwinds and limited demand pressure occupancy and rent growth.
+"Charlotte, NC",3500,90.0,96.5,3.5,1800,7.0,2500,2200,2300,Primary,Improving,Low,CBRE,Robust economic and population growth drive strong multifamily demand and rent growth.
+"Charlottesville, VA",220,85.0,94.7,5.3,1350,4.0,120,100,110,Tertiary,Stable,Moderate,RealPage,University and healthcare sectors support steady absorption and moderate rent growth.
+"Chattanooga, TN",450,85.0,94.2,5.8,1150,3.5,320,150,180,Tertiary,Improving,Moderate,CoStar,"Chattanooga continues to see steady demand driven by local economic growth and limited new supply, supporting rent growth and stable occupancy."
+"Chesapeake, VA",600,90.0,95.0,5.0,1400,4.0,400,200,220,Secondary,Improving,Low,RealPage,Strong military and port-related employment underpin healthy absorption and rent growth in Chesapeake.
+"Cheyenne, WY",120,75.0,92.5,7.5,950,2.0,50,30,40,Tertiary,Stable,Moderate,Yardi,"Cheyenne's market remains stable with modest absorption and moderate new supply, reflecting steady local demand."
+"Chicago, IL",5200,80.0,93.8,6.2,1900,3.8,4500,3500,4000,Primary,Improving,Low,CBRE,"Chicago's multifamily market benefits from strong urban demand and ongoing development, supporting solid rent growth and absorption."
+"Chico, CA",180,70.0,91.0,9.0,1350,1.5,60,40,50,Tertiary,Stable,Moderate,CoStar,Chico's market shows moderate absorption with some softness due to limited economic drivers and moderate new supply.
+"Cincinnati, OH",1100,82.0,94.0,6.0,1250,3.0,700,450,500,Secondary,Improving,Low,JLL,Cincinnati's market is improving with strong absorption and controlled new supply supporting rent growth.
+"Clarksville, TN",350,80.0,93.5,6.5,1100,3.2,200,100,120,Tertiary,Improving,Moderate,Yardi,"Clarksville benefits from military-driven demand and limited new supply, supporting positive absorption and rent growth."
+"Cleveland, OH",900,78.0,92.8,7.2,1150,2.5,600,400,450,Secondary,Stable,Moderate,CBRE,Cleveland's market remains stable with moderate absorption and steady rent growth amid balanced supply.
+"Colorado Springs, CO",1300,88.0,95.2,4.8,1600,5.0,800,500,550,Secondary,Improving,Low,RealPage,Strong population growth and limited new supply drive robust absorption and rent growth in Colorado Springs.
+"Columbia, MO",220,75.0,92.0,8.0,1050,2.0,80,50,60,Tertiary,Stable,Moderate,Yardi,Columbia's market remains steady with moderate absorption and controlled new deliveries supporting stable rents.
+"Columbia, SC",700,85.0,94.5,5.5,1200,3.8,350,200,220,Secondary,Improving,Low,CoStar,"Columbia benefits from university and government employment, supporting strong absorption and rent growth."
+"Columbus, OH",1500,83.0,94.8,5.2,1300,4.2,900,600,650,Secondary,Improving,Low,JLL,"Columbus continues to see strong demand from tech and education sectors, driving solid absorption and rent growth."
+"Concord, NH",130,70.0,91.5,8.5,1250,1.8,40,25,30,Tertiary,Stable,Moderate,RealPage,Concord's market is stable with modest absorption and moderate rent growth amid limited new supply.
+"Corpus Christi, TX",400,80.0,93.0,7.0,1100,3.0,180,100,120,Tertiary,Improving,Moderate,CoStar,Corpus Christi's market is improving with steady absorption supported by energy sector employment.
+"Dallas-Fort Worth, TX",11000,87.0,95.5,4.5,1700,5.5,9000,7000,7500,Primary,Improving,Low,CBRE,DFW remains a top-performing market with strong population growth and robust multifamily demand driving high absorption and rent growth.
+"Fayetteville, NC",320,85.0,93.2,6.8,1050,3.5,150,120,100,Tertiary,Improving,Moderate,CoStar,"Fayetteville continues to see steady demand driven by military and healthcare sectors, supporting moderate rent growth and absorption."
+"Flagstaff, AZ",180,90.0,94.0,6.0,1350,4.2,80,60,50,Tertiary,Improving,Low,RealPage,Strong university presence and limited new supply support healthy absorption and rent growth.
+"Flint, MI",-50,40.0,88.5,11.5,750,-1.0,20,15,10,Tertiary,Softening,High,Yardi,"Economic challenges continue to pressure the market, resulting in negative absorption and elevated vacancy."
+"Fort Collins, CO",850,95.0,95.5,4.5,1650,6.0,400,350,300,Secondary,Improving,Low,CBRE,"Strong tech and education sectors drive robust demand, with tight vacancy and solid rent growth."
+"Fort Myers, FL",1200,90.0,94.8,5.2,1450,5.5,600,550,500,Secondary,Improving,Moderate,JLL,Population growth and in-migration fuel strong absorption despite rising deliveries.
+"Fort Smith, AR",100,75.0,91.0,9.0,850,2.0,40,30,25,Tertiary,Stable,Moderate,CoStar,Steady but modest demand with limited new supply keeps the market stable.
+"Fort Wayne, IN",250,80.0,92.5,7.5,900,3.0,100,90,80,Tertiary,Improving,Moderate,Yardi,Economic diversification supports positive absorption and moderate rent growth.
+"Frederick, MD",400,88.0,94.0,6.0,1600,4.5,200,180,150,Secondary,Improving,Low,CBRE,Proximity to DC and strong local economy drive healthy absorption and rent growth.
+"Fredericksburg, VA",350,85.0,93.5,6.5,1550,4.0,150,130,120,Secondary,Improving,Moderate,JLL,Strong commuter market with steady demand and moderate new supply.
+"Fresno, CA",900,92.0,95.0,5.0,1400,5.0,450,400,350,Secondary,Improving,Low,RealPage,Affordable alternative to Bay Area with strong demand and limited vacancy.
+"Ft. Wayne, IN",250,80.0,92.5,7.5,900,3.0,100,90,80,Tertiary,Improving,Moderate,Yardi,Economic diversification supports positive absorption and moderate rent growth.
+"Gainesville, FL",600,90.0,94.5,5.5,1300,4.8,250,220,200,Secondary,Improving,Low,CoStar,"University-driven demand remains strong, supporting solid absorption and rent growth."
+"Grand Junction, CO",120,80.0,92.0,8.0,1100,3.2,60,50,40,Tertiary,Stable,Moderate,RealPage,Steady demand from local industries with moderate new supply keeps market stable.
+"Grand Rapids, MI",700,88.0,94.2,5.8,1250,4.0,350,300,280,Secondary,Improving,Low,CBRE,Diversified economy and population growth support strong absorption and rent growth.
+"Green Bay, WI",180,82.0,92.8,7.2,950,2.5,70,60,50,Tertiary,Stable,Moderate,JLL,Steady demand from local industries with moderate new supply keeps market stable.
+"Greensboro, NC",850,78.5,94.2,5.8,1150,3.2,600,400,350,Secondary,Improving,Moderate,RealPage,Greensboro continues to see steady demand driven by local employment growth and limited new supply.
+"Greenville-Spartanburg, SC",1200,85.0,95.0,5.0,1250,4.1,900,550,600,Secondary,Improving,Low,CoStar,Strong absorption supported by robust industrial and manufacturing sector expansion.
+"Gulfport, MS",150,65.0,92.0,8.0,950,1.5,120,80,70,Tertiary,Stable,Moderate,Yardi,Market remains stable with moderate absorption amid limited new supply and steady local demand.
+"Hagerstown, MD",200,70.0,93.5,6.5,1100,2.8,150,100,90,Tertiary,Stable,Moderate,CBRE,Steady absorption supported by proximity to DC metro and moderate new deliveries.
+"Harrisburg, PA",400,75.0,94.0,6.0,1200,3.0,300,200,180,Secondary,Improving,Low,JLL,"Harrisburg benefits from steady job growth and limited new supply, supporting rent growth."
+"Hartford, CT",350,68.0,93.0,7.0,1400,2.5,280,220,210,Secondary,Stable,Moderate,Cushman & Wakefield,Hartford's market remains stable with moderate absorption and steady rent growth.
+"Hattiesburg, MS",80,60.0,91.0,9.0,900,1.0,50,40,30,Tertiary,Stable,High,Yardi,Smaller market with modest absorption and higher concessions due to limited demand.
+"Henderson, NV",2200,90.0,96.0,4.0,1650,5.5,1500,1200,1300,Secondary,Improving,Low,CoStar,Strong demand driven by spillover from Las Vegas and robust local job growth.
+"High Point, NC",400,72.0,94.5,5.5,1125,3.0,350,250,200,Tertiary,Improving,Moderate,RealPage,"Market benefits from regional growth and limited new supply, supporting absorption."
+"Hilton Head, SC",300,80.0,95.5,4.5,1600,4.0,200,150,140,Tertiary,Improving,Low,CBRE,Strong seasonal demand and limited inventory drive high occupancy and rent growth.
+"Honolulu, HI",900,88.0,96.5,3.5,2500,6.0,700,600,650,Primary,Improving,Minimal,JLL,Limited land and strong tourism support high rents and absorption despite new deliveries.
+"Houston, TX",8500,82.0,95.5,4.5,1400,4.5,7000,6000,6500,Primary,Improving,Low,RealPage,Houston's multifamily market remains robust with strong job growth and healthy absorption.
+"Huntington, WV",100,55.0,90.0,10.0,850,0.5,40,30,25,Tertiary,Softening,High,Yardi,Market faces softness due to limited economic growth and elevated vacancy rates.
+"Huntsville, AL",1800,88.0,96.0,4.0,1300,5.0,1200,900,950,Secondary,Improving,Low,CoStar,Strong tech and defense sector growth fuels robust multifamily demand and rent growth.
+"Indianapolis, IN",3200,80.0,95.0,5.0,1250,3.8,2500,2000,2100,Primary,Improving,Moderate,CBRE,Indianapolis continues to attract residents with affordable rents and steady job growth.
+"Jackson, MS",350,85.0,93.2,6.8,950,3.5,120,80,100,Tertiary,Improving,Moderate,CoStar,Jackson's multifamily market is showing steady absorption with moderate rent growth driven by local economic stability.
+"Jacksonville, FL",4200,90.5,95.1,4.9,1450,6.2,1800,1500,1600,Secondary,Improving,Low,RealPage,"Jacksonville continues to benefit from strong population growth and job creation, supporting robust multifamily demand."
+"Jonesboro, AR",150,80.0,92.5,7.5,850,2.8,40,30,35,Tertiary,Stable,Moderate,Yardi,Jonesboro's market remains stable with modest rent growth and steady absorption amid limited new supply.
+"Joplin, MO",120,75.0,91.8,8.2,820,2.0,25,20,25,Tertiary,Stable,Moderate,CoStar,Joplin's multifamily market shows steady demand with moderate concessions due to limited new development.
+"Kalamazoo, MI",300,82.0,93.0,7.0,1050,3.0,90,70,80,Tertiary,Improving,Moderate,CBRE,"Kalamazoo benefits from university-driven demand and moderate new supply, supporting positive absorption."
+"Kansas City, MO",3500,88.0,94.7,5.3,1350,5.5,1600,1400,1500,Primary,Improving,Low,JLL,Kansas City's diverse economy and strong population growth continue to drive multifamily demand and rent growth.
+"Killeen, TX",600,85.0,93.5,6.5,1100,4.0,200,150,180,Secondary,Improving,Moderate,RealPage,Killeen's proximity to military installations supports steady multifamily absorption and moderate rent growth.
+"Knoxville, TN",900,87.0,94.0,6.0,1200,4.5,300,250,280,Secondary,Improving,Low,Cushman & Wakefield,Knoxville's growing tech and education sectors are driving strong multifamily demand and rent growth.
+"Lakeland, FL",700,83.0,93.3,6.7,1150,5.0,180,140,160,Secondary,Improving,Moderate,CoStar,"Lakeland benefits from spillover demand from Tampa and Orlando, supporting solid absorption and rent growth."
+"Lancaster, PA",250,80.0,92.8,7.2,1050,3.2,70,60,65,Tertiary,Stable,Moderate,Yardi,Lancaster's multifamily market remains stable with moderate rent growth supported by steady local demand.
+"Lansing, MI",320,83.5,93.1,6.9,1020,3.0,85,75,80,Tertiary,Improving,Moderate,CBRE,Lansing's stable economy and university presence support steady absorption and moderate rent growth.
+"Laredo, TX",180,78.0,91.5,8.5,900,2.5,50,40,45,Tertiary,Stable,Moderate,JLL,Laredo's market remains stable with moderate absorption and limited new supply impacting rent growth.
+"Las Vegas, NV",4800,92.0,95.5,4.5,1600,7.0,2100,1800,1900,Primary,Improving,Low,RealPage,Las Vegas continues to experience strong multifamily demand fueled by population growth and tourism recovery.
+"Lawrence, KS",140,80.0,92.7,7.3,950,3.0,30,25,30,Tertiary,Stable,Moderate,CoStar,Lawrence's university-driven market remains stable with consistent absorption and moderate rent growth.
+"Lawton, OK",100,75.0,91.0,9.0,800,1.5,20,15,20,Tertiary,Softening,High,Yardi,Lawton faces softening demand with higher concessions due to limited economic drivers and new supply pressures.
+"Lexington, KY",450,85.0,94.2,5.8,1150,3.2,350,200,180,Tertiary,Improving,Moderate,RealPage,"Lexington continues to see steady demand driven by university and healthcare sectors, supporting moderate rent growth and healthy absorption."
+"Lincoln, NE",300,80.0,93.5,6.5,1050,2.5,150,100,120,Tertiary,Stable,Moderate,Yardi,"Lincoln's market remains stable with consistent absorption and moderate new supply, supported by steady university enrollment."
+"Little Rock, AR",350,75.0,92.8,7.2,980,1.8,200,150,130,Tertiary,Stable,Moderate,CoStar,"Little Rock shows steady absorption with moderate rent growth, though vacancy remains slightly elevated due to new deliveries."
+"Los Angeles, CA",5200,90.0,95.5,4.5,2800,4.5,8500,6000,7000,Primary,Improving,Low,CBRE,"LA's multifamily market remains robust with strong absorption and rent growth, supported by limited new supply and high demand."
+"Louisville, KY",600,82.0,93.8,6.2,1100,2.9,400,250,220,Secondary,Improving,Moderate,RealPage,"Louisville benefits from steady job growth and new deliveries, maintaining solid occupancy and moderate rent growth."
+"Lubbock, TX",280,78.0,92.5,7.5,900,2.0,120,90,100,Tertiary,Stable,Moderate,Yardi,"Lubbock's market remains stable with moderate absorption and rent growth, supported by university-driven demand."
+"Macon, GA",200,70.0,91.5,8.5,850,1.5,80,60,70,Tertiary,Stable,High,CoStar,Macon faces elevated vacancy and higher concessions amid modest absorption and limited rent growth.
+"Madison, WI",550,88.0,94.7,5.3,1300,3.8,300,220,210,Secondary,Improving,Low,JLL,Madison's strong university and tech sectors drive healthy absorption and rent growth with limited concessions.
+"Manchester, NH",180,75.0,92.0,8.0,1200,2.2,100,80,90,Tertiary,Stable,Moderate,Cushman & Wakefield,Manchester shows stable fundamentals with moderate absorption and rent growth amid steady new supply.
+"Mankato, MN",150,72.0,91.8,8.2,950,1.7,70,50,60,Tertiary,Stable,Moderate,Yardi,"Mankato's market remains stable with modest absorption and rent growth, supported by local university demand."
+"McAllen, TX",400,85.0,93.0,7.0,850,3.0,250,180,200,Tertiary,Improving,Moderate,CoStar,"McAllen benefits from population growth and cross-border trade, driving improving absorption and rent growth."
+"Medford, OR",220,78.0,92.3,7.7,1150,2.8,130,90,100,Tertiary,Stable,Moderate,RealPage,"Medford's market remains stable with moderate absorption and rent growth, supported by limited new supply."
+"Memphis, TN",700,80.0,93.7,6.3,950,2.5,450,300,320,Secondary,Stable,Moderate,CBRE,Memphis maintains steady absorption and rent growth amid balanced new supply and demand fundamentals.
+"Mesa, AZ",1200,88.0,94.8,5.2,1400,4.0,900,700,750,Secondary,Improving,Low,JLL,"Mesa benefits from strong regional growth and limited concessions, driving solid absorption and rent growth."
+"Miami, FL",3500,92.0,95.8,4.2,2500,5.0,6000,4500,5000,Primary,Improving,Low,Cushman & Wakefield,Miami's multifamily market remains highly competitive with strong absorption and rent growth fueled by migration and tourism.
+"Midland, TX",450,85.0,95.2,4.8,1350,6.5,300,200,150,Tertiary,Improving,Low,CoStar,"Strong energy sector demand continues to drive absorption and rent growth, with limited concessions."
+"Milwaukee, WI",1200,75.0,93.5,6.5,1150,3.2,800,600,700,Secondary,Stable,Moderate,Yardi,Steady absorption with moderate new supply; rent growth remains positive but moderate.
+"Minneapolis, MN",1800,80.0,94.0,6.0,1600,4.0,1200,900,1000,Primary,Stable,Moderate,CBRE,Balanced market with healthy absorption and moderate concessions amid steady deliveries.
+"Missoula, MT",350,90.0,95.5,4.5,1250,5.5,150,100,80,Tertiary,Improving,Low,RealPage,Strong demand driven by population growth and limited new supply keeps vacancy low.
+"Mobile, AL",400,70.0,92.0,8.0,950,2.0,250,180,200,Tertiary,Stable,Moderate,CoStar,Moderate absorption with some new supply pressure; concessions remain moderate.
+"Modesto, CA",300,65.0,91.5,8.5,1400,3.8,180,150,130,Tertiary,Stable,Moderate,Yardi,Steady absorption with moderate rent growth; new supply is balanced by demand.
+"Montgomery, AL",250,60.0,90.5,9.5,900,1.5,120,100,90,Tertiary,Softening,High,CoStar,Softening market with rising vacancies and increased concessions due to new supply.
+"Morgantown, WV",180,75.0,93.0,7.0,850,2.5,90,70,60,Tertiary,Stable,Moderate,RealPage,Stable university-driven market with consistent absorption and moderate concessions.
+"Muncie, IN",100,70.0,91.0,9.0,750,1.0,50,40,30,Tertiary,Stable,Moderate,Yardi,Small market with steady absorption; concessions remain moderate due to limited demand.
+"Murfreesboro, TN",900,85.0,94.8,5.2,1300,5.0,600,450,400,Secondary,Improving,Low,CBRE,Strong population growth fuels absorption and rent growth with minimal concessions.
+"Myrtle Beach, SC",500,80.0,94.0,6.0,1200,4.5,350,280,250,Secondary,Improving,Low,JLL,Seasonal and retiree demand supports strong absorption and rent growth.
+"Nashville, TN",3500,90.0,95.5,4.5,1800,7.0,2500,2000,2200,Primary,Improving,Low,CBRE,Robust job growth and in-migration drive strong absorption and rent growth with low concessions.
+"New Haven, CT",400,70.0,92.5,7.5,1400,2.8,250,200,180,Secondary,Stable,Moderate,JLL,University and healthcare sectors support steady absorption amid moderate concessions.
+"New Orleans, LA",700,75.0,93.0,7.0,1350,3.5,500,400,350,Secondary,Stable,Moderate,Cushman & Wakefield,Tourism and energy sectors provide stable demand with moderate concessions.
+"New York City, NY",8000,85.0,95.0,5.0,3500,6.0,7000,6000,6500,Primary,Improving,Low,CoStar,Strong rebound in demand post-pandemic with robust rent growth and low concessions.
+"Norfolk, VA",850,78.5,94.2,5.8,1350,3.2,1200,600,700,Secondary,Improving,Moderate,CoStar,Strong military presence continues to support demand; new deliveries are being absorbed steadily.
+"Norman, OK",300,65.0,92.5,7.5,950,2.0,150,100,120,Tertiary,Stable,Moderate,Yardi,University-driven demand remains consistent; moderate new supply is being absorbed without pressure.
+"Ocala, FL",400,70.0,93.0,7.0,1100,3.5,200,150,180,Tertiary,Improving,Low,RealPage,In-migration from larger Florida metros is driving steady rent growth and absorption.
+"Odessa, TX",500,85.0,95.0,5.0,1250,4.0,300,250,280,Secondary,Improving,Low,CBRE,Energy sector rebound is fueling strong multifamily demand and limited vacancy.
+"Ogden, UT",450,75.0,93.5,6.5,1300,3.8,350,200,220,Secondary,Improving,Moderate,JLL,Proximity to Salt Lake City supports steady demand; new supply is being absorbed at a healthy pace.
+"Oklahoma City, OK",1200,80.0,94.0,6.0,1100,2.5,900,700,750,Secondary,Stable,Moderate,CoStar,Balanced market with steady employment growth; absorption keeps pace with deliveries.
+"Olympia, WA",350,68.0,92.8,7.2,1400,3.0,180,130,150,Tertiary,Stable,Moderate,Yardi,Government and healthcare sectors support demand; moderate new supply is being absorbed.
+"Omaha, NE",900,82.0,94.5,5.5,1150,2.8,600,450,500,Secondary,Stable,Low,CBRE,Steady economic growth supports consistent absorption; rent growth remains moderate.
+"Orlando, FL",4500,90.0,95.5,4.5,1600,5.5,5500,4000,4800,Primary,Improving,Low,RealPage,Strong population growth and tourism-driven economy fuel robust multifamily demand.
+"Oxnard, CA",600,70.0,93.0,7.0,2200,2.5,400,300,350,Secondary,Stable,Moderate,CoStar,High cost of homeownership supports rental demand; new supply is moderate and absorption steady.
+"Pensacola, FL",350,65.0,92.0,8.0,1050,2.2,180,140,160,Tertiary,Stable,Moderate,Yardi,Military and healthcare sectors provide stable demand; absorption matches moderate deliveries.
+"Peoria, IL",250,60.0,91.5,8.5,900,1.5,120,90,100,Tertiary,Softening,High,CBRE,Slower economic growth and limited job creation are softening demand; concessions increasing.
+"Philadelphia, PA",3200,85.0,94.8,5.2,1650,4.0,4200,3500,3800,Primary,Improving,Low,JLL,Strong urban demand and limited new supply absorption support rent growth and occupancy.
+"Phoenix, AZ",7000,92.0,96.0,4.0,1700,6.0,8000,6500,7000,Primary,Improving,Low,RealPage,Robust population growth and strong job market drive exceptional multifamily demand.
+"Pittsburgh, PA",1500,78.0,93.8,6.2,1200,3.0,900,700,750,Secondary,Stable,Moderate,Cushman & Wakefield,Tech and healthcare sectors support steady demand; absorption keeps pace with deliveries.
+"Port St. Lucie, FL",850,75.3,94.2,5.8,1450,4.2,1200,600,700,Tertiary,Improving,Moderate,Yardi,Strong population growth driving demand; new supply is being absorbed steadily with moderate concessions.
+"Portland, ME",400,68.5,93.5,6.5,1600,3.1,300,150,180,Secondary,Stable,Low,CoStar,Steady demand with limited new supply; rent growth remains positive but moderate.
+"Portland, OR",1200,80.0,95.0,5.0,1850,5.0,2500,1100,1300,Primary,Improving,Low,CBRE,Robust tech-driven demand supports strong absorption and rent growth; new supply is being absorbed efficiently.
+"Poughkeepsie, NY",150,60.0,92.0,8.0,1300,2.0,100,80,90,Tertiary,Stable,Moderate,Yardi,Modest absorption with steady occupancy; concessions remain moderate due to limited new supply.
+"Providence, RI",700,72.0,94.0,6.0,1550,3.5,600,400,450,Secondary,Improving,Low,JLL,Growing demand driven by education and healthcare sectors; absorption remains healthy with limited concessions.
+"Provo, UT",900,85.0,96.0,4.0,1400,6.0,800,500,550,Secondary,Improving,Low,RealPage,Strong tech and education-driven growth fueling high absorption and rent growth; minimal concessions.
+"Pueblo, CO",100,55.0,91.0,9.0,1100,1.5,50,40,45,Tertiary,Stable,Moderate,CoStar,Limited new supply and modest demand keep absorption moderate; concessions remain moderate.
+"Raleigh, NC",3500,90.0,96.5,3.5,1700,7.0,4500,3000,3200,Primary,Improving,Low,CBRE,Strong tech and corporate relocation driving robust absorption and rent growth; new supply is well absorbed.
+"Rapid City, SD",80,50.0,90.0,10.0,950,1.0,30,20,25,Tertiary,Stable,Moderate,Yardi,Small market with limited new supply; absorption and rent growth remain modest.
+"Reading, PA",250,65.0,92.5,7.5,1250,2.5,150,100,110,Tertiary,Stable,Moderate,CoStar,Steady demand with moderate new supply; concessions remain moderate.
+"Redding, CA",120,60.0,91.5,8.5,1300,2.0,80,60,70,Tertiary,Stable,Moderate,Yardi,Limited new supply and moderate demand; absorption steady with moderate concessions.
+"Reno, NV",1800,85.0,95.5,4.5,1650,6.5,2200,1500,1600,Primary,Improving,Low,JLL,Strong tech and logistics sector growth driving high absorption and rent growth; new supply is well absorbed.
+"Richmond, VA",1100,78.0,94.8,5.2,1450,4.0,1300,900,950,Secondary,Improving,Low,CBRE,Diverse economy supports steady absorption and rent growth; concessions remain low.
+"Riverside, CA",2500,88.0,95.8,4.2,1800,6.8,3000,2200,2300,Primary,Improving,Low,Cushman & Wakefield,Strong population inflow and job growth fueling robust absorption and rent growth; concessions minimal.
+"Roanoke, VA",180,62.0,92.3,7.7,1200,2.2,90,70,75,Tertiary,Stable,Moderate,Yardi,Stable market with modest absorption and rent growth; concessions remain moderate due to limited demand.
+"Rochester, MN",320,85.0,94.2,5.8,1350,3.2,180,150,120,Tertiary,Improving,Moderate,CoStar,"Rochester's multifamily market benefits from steady healthcare-driven demand, supporting moderate rent growth and strong absorption."
+"Rochester, NY",-150,60.0,89.5,10.5,1100,-1.5,90,100,80,Secondary,Softening,High,RealPage,"Rochester, NY faces headwinds from slower economic growth and elevated vacancies, leading to negative absorption and rent declines."
+"Rockford, IL",75,70.0,91.0,9.0,950,1.0,50,40,30,Tertiary,Stable,Moderate,Yardi,Rockford's market remains stable with modest rent growth and steady absorption amid limited new supply.
+"Sacramento, CA",2200,90.0,95.0,5.0,1900,5.5,3200,2800,2500,Primary,Improving,Low,CBRE,"Sacramento continues to attract strong demand driven by affordability relative to Bay Area, supporting robust absorption and rent growth."
+"Salinas, CA",180,75.0,93.0,7.0,1700,3.0,120,100,90,Secondary,Stable,Moderate,CoStar,"Salinas benefits from spillover demand from Monterey Bay area, maintaining steady absorption and moderate rent growth."
+"Salt Lake City, UT",3500,95.0,96.0,4.0,1600,6.0,4000,3500,3000,Primary,Improving,Low,JLL,Salt Lake City remains a top growth market with strong tech and finance sector expansion fueling high absorption and rent growth.
+"San Antonio, TX",4200,92.0,95.5,4.5,1300,4.0,3800,3400,3100,Primary,Improving,Low,RealPage,"San Antonio's multifamily market is thriving due to strong population growth and job creation, driving solid absorption and rent gains."
+"San Bernardino, CA",900,85.0,94.0,6.0,1500,4.5,1100,1000,900,Secondary,Improving,Moderate,CoStar,"San Bernardino benefits from affordability relative to LA, supporting healthy absorption and rent growth."
+"San Diego, CA",1800,88.0,95.2,4.8,2300,3.8,2100,1900,1700,Primary,Stable,Low,CBRE,San Diego's market remains stable with steady demand and moderate rent growth amid ongoing new supply deliveries.
+"San Francisco, CA",1200,80.0,93.5,6.5,3500,2.5,1500,1400,1300,Primary,Stable,Moderate,JLL,San Francisco is recovering from pandemic-related softness with moderate absorption and rent growth as tech sector stabilizes.
+"Santa Barbara, CA",150,70.0,92.0,8.0,2800,1.5,80,70,60,Secondary,Stable,Moderate,CoStar,Santa Barbara's market is steady with limited new supply and moderate rent growth driven by lifestyle demand.
+"Santa Cruz, CA",130,75.0,93.0,7.0,2600,2.0,90,85,80,Secondary,Stable,Moderate,Yardi,"Santa Cruz maintains steady demand with limited new supply, supporting stable occupancy and modest rent growth."
+"Santa Fe, NM",60,65.0,90.5,9.5,1400,1.0,40,35,30,Tertiary,Stable,Moderate,RealPage,Santa Fe's market is stable with modest rent growth and moderate absorption amid limited new development.
+"Sarasota, FL",1100,90.0,95.5,4.5,1600,5.0,900,850,800,Secondary,Improving,Low,Cushman & Wakefield,"Sarasota benefits from strong migration and lifestyle demand, driving robust absorption and rent growth."
+"Savannah, GA",700,88.0,94.8,5.2,1250,4.2,600,550,500,Secondary,Improving,Low,CBRE,Savannah's multifamily market is strengthening due to port-related economic growth and population inflows.
+"Scottsdale, AZ",1200,85.0,95.2,4.8,1850,6.5,1500,800,900,Secondary,Improving,Low,RealPage,Strong demand driven by tech and healthcare growth; new supply is being absorbed steadily with rent growth remaining robust.
+"Scranton, PA",150,70.0,92.0,8.0,950,1.5,50,40,30,Tertiary,Stable,Moderate,CoStar,Market remains stable with modest rent growth; limited new supply is being absorbed at a moderate pace.
+"Seattle, WA",3500,90.0,96.0,4.0,2500,5.8,4500,3000,3500,Primary,Improving,Low,CBRE,Strong tech sector employment growth fuels demand; new supply is being absorbed quickly with healthy rent growth.
+"Shreveport, LA",-100,40.0,88.5,11.5,850,-1.0,100,120,80,Tertiary,Softening,High,Yardi,Economic headwinds and oversupply have led to negative absorption and increased concessions.
+"Sioux Falls, SD",400,80.0,94.0,6.0,1100,3.0,200,150,180,Tertiary,Improving,Moderate,CoStar,Steady population growth supports absorption; rent growth is moderate with manageable new supply.
+"South Bend, IN",180,75.0,93.5,6.5,900,2.0,70,60,50,Tertiary,Stable,Moderate,Yardi,Stable market with consistent demand; new supply is being absorbed at a steady pace.
+"Spokane, WA",600,85.0,94.8,5.2,1300,4.5,300,250,280,Secondary,Improving,Low,CBRE,In-migration and affordability relative to Seattle drive strong demand; new supply is well absorbed.
+"Springfield, IL",100,65.0,91.5,8.5,850,1.0,40,30,25,Tertiary,Stable,Moderate,CoStar,Modest demand with limited new supply; market remains stable with slight rent growth.
+"Springfield, MA",350,80.0,93.8,6.2,1400,3.5,180,160,170,Secondary,Improving,Low,JLL,Proximity to Boston and local economic growth support absorption and rent growth.
+"Springfield, MO",300,78.0,94.2,5.8,950,3.0,150,130,140,Secondary,Improving,Moderate,Yardi,Growing healthcare and education sectors drive steady demand; absorption remains healthy.
+"St. Cloud, MN",120,70.0,92.5,7.5,1050,2.0,60,50,55,Tertiary,Stable,Moderate,CoStar,Stable market with moderate rent growth; new supply is absorbed at a steady but cautious pace.
+"St. George, UT",500,88.0,95.0,5.0,1350,7.0,250,200,220,Secondary,Improving,Low,RealPage,Rapid population growth and limited supply drive strong absorption and rent growth.
+"St. Louis, MO",1800,82.0,94.5,5.5,1300,4.0,1200,900,1000,Primary,Improving,Moderate,CBRE,Steady economic growth supports absorption; new supply is being absorbed with moderate concessions.
+"Stamford, CT",700,87.0,95.5,4.5,2700,5.5,400,350,380,Primary,Improving,Low,JLL,Strong demand from NYC commuters and corporate relocations; rent growth remains healthy.
+"Stockton, CA",900,80.0,94.0,6.0,1600,4.5,600,500,550,Secondary,Improving,Moderate,RealPage,Affordability relative to Bay Area drives demand; new supply is being absorbed steadily.
+"Syracuse, NY",150,65.0,92.3,7.7,1100,2.5,120,80,50,Tertiary,Stable,Moderate,CoStar,Syracuse continues to see steady demand with moderate rent growth supported by stable employment and limited new supply.
+"Tacoma, WA",900,85.0,95.1,4.9,1850,4.8,1100,850,900,Secondary,Improving,Low,RealPage,Tacoma benefits from spillover demand from Seattle with strong rent growth and high occupancy despite significant new deliveries.
+"Tallahassee, FL",400,75.0,93.5,6.5,1250,3.2,300,250,200,Tertiary,Improving,Moderate,Yardi,"Tallahassee's multifamily market is supported by university and government employment, driving steady absorption and rent growth."
+"Tampa, FL",5200,90.0,96.2,3.8,1850,6.0,4500,4000,4200,Primary,Improving,Low,CBRE,Tampa remains a top growth market with strong population inflows and robust rent growth despite heavy new supply.
+"Terre Haute, IN",50,60.0,91.0,9.0,850,1.0,40,30,20,Tertiary,Stable,Moderate,CoStar,Terre Haute's market remains stable with modest rent growth and limited new development activity.
+"Toledo, OH",300,70.0,92.5,7.5,950,2.0,200,150,100,Tertiary,Stable,Moderate,Yardi,Toledo shows steady absorption with moderate rent growth amid a balanced supply pipeline.
+"Topeka, KS",80,65.0,91.8,8.2,900,1.5,60,50,40,Tertiary,Stable,Moderate,CoStar,Topeka's market remains stable with modest rent growth and moderate concessions.
+"Trenton, NJ",220,75.0,93.0,7.0,1400,3.5,180,160,140,Secondary,Improving,Low,JLL,"Trenton benefits from proximity to NYC and Philadelphia, supporting improving fundamentals and rent growth."
+"Tucson, AZ",1100,80.0,94.8,5.2,1350,4.0,900,850,800,Secondary,Improving,Low,RealPage,Tucson's market is strong with solid rent growth driven by population growth and limited new supply.
+"Tulsa, OK",350,70.0,92.7,7.3,1050,2.8,300,250,200,Secondary,Stable,Moderate,CBRE,Tulsa's market remains stable with moderate rent growth and balanced supply-demand dynamics.
+"Tyler, TX",180,75.0,93.2,6.8,1100,3.0,150,130,120,Tertiary,Improving,Moderate,Yardi,Tyler is experiencing improving fundamentals with steady absorption and rent growth supported by local economic expansion.
+"Virginia Beach, VA",800,85.0,95.0,5.0,1600,4.5,700,650,600,Secondary,Improving,Low,JLL,"Virginia Beach benefits from military and tourism demand, supporting strong occupancy and rent growth."
+"Visalia, CA",120,70.0,92.0,8.0,1300,3.5,100,90,80,Tertiary,Stable,Moderate,CoStar,Visalia's market remains stable with moderate rent growth amid limited new supply.
+"Waco, TX",400,80.0,94.5,5.5,1150,4.0,350,300,280,Secondary,Improving,Low,RealPage,Waco's multifamily market is improving with strong demand driven by university growth and regional economic expansion.
+"Washington, DC",4500,88.0,95.5,4.5,2500,5.5,4000,3800,4200,Primary,Improving,Low,CBRE,Washington DC remains a strong primary market with robust rent growth and high occupancy despite significant new supply.
+"Wichita, KS",320,85.0,94.2,5.8,850,3.2,150,120,100,Tertiary,Stable,Moderate,Yardi,Wichita's multifamily market remains stable with steady rent growth and moderate new supply absorption amid modest construction activity.
+"Wilmington, DE",280,90.0,95.0,5.0,1350,4.5,200,180,160,Secondary,Improving,Low,CoStar,"Wilmington benefits from strong demand driven by proximity to Philadelphia and corporate relocations, supporting rent growth and low vacancy."
+"Wilmington, NC",450,95.0,96.1,3.9,1200,5.0,300,250,220,Secondary,Improving,Low,RealPage,"Strong population growth and in-migration continue to drive robust absorption and rent growth in Wilmington, NC."
+"Winston-Salem, NC",380,88.0,95.5,4.5,1050,3.8,180,160,140,Secondary,Stable,Moderate,CBRE,Winston-Salem's market shows steady demand with moderate new deliveries keeping vacancy in check and supporting moderate rent growth.
+"Worcester, MA",500,92.0,95.8,4.2,1600,4.0,350,300,280,Secondary,Improving,Low,JLL,"Worcester benefits from spillover demand from Boston, with strong absorption and rent growth supported by limited vacancy."
+"York, PA",150,80.0,93.5,6.5,900,2.5,80,70,60,Tertiary,Stable,Moderate,Yardi,York's market remains stable with moderate absorption and rent growth amid steady but limited new supply.
+"Youngstown, OH",-50,40.0,89.0,11.0,700,-1.0,20,15,10,Tertiary,Softening,High,CoStar,"Youngstown continues to face challenges with elevated vacancy and negative absorption, reflecting economic headwinds and limited demand."
