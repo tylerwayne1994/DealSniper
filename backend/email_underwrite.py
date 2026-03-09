@@ -1497,244 +1497,293 @@ async def pipeline_status():
     }
 
 
+# ── Async result storage for non-blocking endpoints ──
+_debug_result: Optional[dict] = None
+_debug_running: bool = False
+_sync_result: Optional[dict] = None
+_sync_running: bool = False
+
+
+def _run_debug_pipeline_bg():
+    """Run full diagnostic in background thread, store result."""
+    global _debug_result, _debug_running
+    _debug_running = True
+    try:
+        debug_log = []
+
+        def dbg(msg):
+            debug_log.append(msg)
+            print(f"[DEBUG-PIPELINE] {msg}")
+
+        addr = os.getenv("INBOUND_GMAIL_ADDRESS")
+        pwd = os.getenv("INBOUND_GMAIL_APP_PASSWORD")
+        dbg(f"INBOUND_GMAIL_ADDRESS set: {bool(addr)} (value: {addr!r})")
+        dbg(f"INBOUND_GMAIL_APP_PASSWORD set: {bool(pwd)} (length: {len(pwd) if pwd else 0})")
+
+        if not addr or not pwd:
+            dbg("IMAP credentials missing — pipeline CANNOT work!")
+            _debug_result = {"status": "error", "reason": "IMAP credentials not configured", "log": debug_log}
+            return
+
+        try:
+            import imaplib
+            mail = imaplib.IMAP4_SSL("imap.gmail.com")
+            mail.login(addr, pwd)
+            dbg("IMAP login successful")
+        except Exception as e:
+            dbg(f"IMAP login FAILED: {e}")
+            _debug_result = {"status": "error", "reason": f"IMAP login failed: {e}", "log": debug_log}
+            return
+
+        folders_to_check = ["INBOX", "[Gmail]/All Mail", "[Gmail]/Spam"]
+        since_date = (datetime.utcnow() - timedelta(days=14)).strftime("%d-%b-%Y")
+        all_emails = []
+
+        for folder in folders_to_check:
+            try:
+                quoted_folder = f'"{folder}"'
+                st, _ = mail.select(quoted_folder)
+                if st != "OK":
+                    dbg(f"  Folder {folder}: could not select (status={st})")
+                    continue
+                status, data = mail.uid("search", None, f"(SINCE {since_date})")
+                if status == "OK" and data[0]:
+                    uids = data[0].split()
+                    dbg(f"  Folder {folder}: {len(uids)} emails since {since_date}")
+                    for uid_bytes in uids:
+                        uid_str = uid_bytes.decode()
+                        dedup_key = f"{folder}:{uid_str}"
+                        try:
+                            mail.select(quoted_folder)
+                            st2, msg_data = mail.uid("fetch", uid_bytes, "(RFC822.HEADER)")
+                            if st2 == "OK" and msg_data and msg_data[0]:
+                                header_bytes = msg_data[0][1] if isinstance(msg_data[0], tuple) else msg_data[0]
+                                msg = email_mod.message_from_bytes(header_bytes)
+                                from_raw = _safe_decode_header(msg.get("From", ""))
+                                subject = _safe_decode_header(msg.get("Subject", ""))
+                                date_str = msg.get("Date", "")
+                                email_match = re.search(r"<([^>]+)>", from_raw)
+                                sender_email = (email_match.group(1) if email_match else from_raw).strip().lower()
+                                all_emails.append({
+                                    "folder": folder, "uid": uid_str, "dedup_key": dedup_key,
+                                    "from": from_raw, "sender_email": sender_email,
+                                    "subject": subject, "date": date_str,
+                                })
+                                dbg(f"    UID {uid_str}: from={sender_email} subject={subject[:60]}")
+                        except Exception as e:
+                            dbg(f"    UID {uid_str}: fetch error: {e}")
+                else:
+                    dbg(f"  Folder {folder}: 0 emails since {since_date}")
+            except Exception as e:
+                dbg(f"  Folder {folder}: error: {e}")
+
+        try:
+            mail.logout()
+        except Exception:
+            pass
+
+        dbg(f"Total emails found in last 14 days: {len(all_emails)}")
+
+        sb = get_supabase()
+        new_emails, known_emails = [], []
+        for em in all_emails:
+            try:
+                existing = sb.table("raw_emails").select("id").eq("provider_message_id", em["dedup_key"]).execute()
+                if existing.data:
+                    known_emails.append(em)
+                else:
+                    new_emails.append(em)
+            except Exception as e:
+                dbg(f"  Dedup check error for {em['dedup_key']}: {e}")
+
+        dbg(f"Already known (deduplicated): {len(known_emails)}")
+        dbg(f"NEW emails to process: {len(new_emails)}")
+
+        matched_emails, unmatched_emails = [], []
+        for em in new_emails:
+            sender = em["sender_email"]
+            matched_user_id = None
+            match_method = None
+            try:
+                res = sb.table("profiles").select("id, email").ilike("email", sender).execute()
+                if res.data:
+                    matched_user_id = res.data[0]["id"]
+                    match_method = "profiles.email"
+                else:
+                    try:
+                        alias_res = sb.table("profiles").select("id").contains("email_aliases", [sender]).execute()
+                        if alias_res.data:
+                            matched_user_id = alias_res.data[0]["id"]
+                            match_method = "email_aliases"
+                    except Exception:
+                        pass
+                if not matched_user_id:
+                    broad = sb.table("profiles").select("id, email, email_aliases").execute()
+                    for row in (broad.data or []):
+                        row_email = (row.get("email") or "").strip().lower()
+                        row_aliases = [a.strip().lower() for a in (row.get("email_aliases") or []) if a]
+                        if row_email == sender or sender in row_aliases:
+                            matched_user_id = row["id"]
+                            match_method = "broad_scan"
+                            break
+                    if not matched_user_id:
+                        dbg(f"  No profile match for sender: {sender}")
+                        unmatched_emails.append(em)
+            except Exception as e:
+                dbg(f"  Profile lookup error for {sender}: {e}")
+                unmatched_emails.append(em)
+                continue
+            if matched_user_id:
+                dbg(f"  Sender {sender} -> user {matched_user_id} (via {match_method})")
+                em["matched_user_id"] = matched_user_id
+                em["match_method"] = match_method
+                matched_emails.append(em)
+
+        try:
+            all_jobs = sb.table("email_underwrite_jobs").select("id, status, from_address, subject, created_at, deal_id, error_message").order("created_at", desc=True).limit(20).execute()
+            recent_jobs = all_jobs.data or []
+            dbg(f"Recent jobs in DB: {len(recent_jobs)}")
+            for j in recent_jobs:
+                dbg(f"  Job {j['id'][:8]}...: status={j['status']} from={j.get('from_address','')} subject={j.get('subject','')[:40]} error={j.get('error_message','')}")
+        except Exception as e:
+            recent_jobs = []
+            dbg(f"Failed to query jobs: {e}")
+
+        _debug_result = {
+            "status": "ok",
+            "imap_connected": True,
+            "total_emails_14d": len(all_emails),
+            "already_known": len(known_emails),
+            "new_unprocessed": len(new_emails),
+            "matched_to_user": len(matched_emails),
+            "unmatched_no_user": len(unmatched_emails),
+            "matched_details": matched_emails,
+            "unmatched_details": unmatched_emails,
+            "recent_jobs": recent_jobs,
+            "log": debug_log,
+        }
+    except Exception as e:
+        _debug_result = {"status": "error", "reason": str(e), "log": []}
+    finally:
+        _debug_running = False
+
+
 @router.get("/debug-pipeline")
 async def debug_pipeline():
-    """Full diagnostic endpoint — tests IMAP, scans inbox, shows matching details.
-
-    Call this manually to diagnose why emails aren't being processed.
+    """Kick off diagnostics in background, return immediately.
+    Poll GET /debug-pipeline/result to get the results.
     """
-    debug_log = []
+    global _debug_result, _debug_running
+    if _debug_running:
+        return {"status": "running", "message": "Diagnostics already in progress. Poll /debug-pipeline/result"}
+    _debug_result = None
+    t = threading.Thread(target=_run_debug_pipeline_bg, daemon=True, name="debug-pipeline-bg")
+    t.start()
+    return {"status": "started", "message": "Diagnostics started. Poll /debug-pipeline/result in a few seconds."}
 
-    def dbg(msg):
-        debug_log.append(msg)
-        print(f"[DEBUG-PIPELINE] {msg}")
 
-    # ── Step 1: Check env vars ──
-    addr = os.getenv("INBOUND_GMAIL_ADDRESS")
-    pwd = os.getenv("INBOUND_GMAIL_APP_PASSWORD")
-    dbg(f"INBOUND_GMAIL_ADDRESS set: {bool(addr)} (value: {addr!r})")
-    dbg(f"INBOUND_GMAIL_APP_PASSWORD set: {bool(pwd)} (length: {len(pwd) if pwd else 0})")
+@router.get("/debug-pipeline/result")
+async def debug_pipeline_result():
+    """Poll for debug-pipeline results."""
+    if _debug_running:
+        return {"status": "running", "message": "Still running..."}
+    if _debug_result is None:
+        return {"status": "not_started", "message": "No diagnostics have been run yet. Call GET /debug-pipeline first."}
+    return _debug_result
 
-    if not addr or not pwd:
-        dbg("❌ IMAP credentials missing — pipeline CANNOT work!")
-        return {"status": "error", "reason": "IMAP credentials not configured", "log": debug_log}
 
-    # ── Step 2: Test IMAP connection ──
+def _run_force_sync_bg():
+    """Run full sync + process cycle in background thread."""
+    global _sync_result, _sync_running
+    _sync_running = True
     try:
-        import imaplib
-        mail = imaplib.IMAP4_SSL("imap.gmail.com")
-        mail.login(addr, pwd)
-        dbg("✅ IMAP login successful")
+        print("[FORCE-SYNC-BG] Starting inbox sync...")
+        sync_result = _sync_inbox_core()
+        new_jobs = sync_result.get("new_job_ids", [])
+        print(f"[FORCE-SYNC-BG] Sync complete: synced={sync_result.get('synced',0)}, already_known={sync_result.get('already_known',0)}")
+
+        reprocess_jobs = []
+        try:
+            sb = get_supabase()
+            all_pending = sb.table("email_underwrite_jobs").select("id, deal_id").eq("status", "pending").limit(20).execute()
+            for row in (all_pending.data or []):
+                jid = row["id"]
+                if jid in new_jobs:
+                    continue
+                if row.get("deal_id"):
+                    reprocess_jobs.append(jid)
+                else:
+                    new_jobs.append(jid)
+        except Exception as e:
+            print(f"[FORCE-SYNC-BG] Failed to query pending jobs: {e}")
+
+        total = len(new_jobs) + len(reprocess_jobs)
+        print(f"[FORCE-SYNC-BG] {len(new_jobs)} new + {len(reprocess_jobs)} reprocess = {total} total jobs")
+
+        processed = 0
+        errors = 0
+        for job_id in new_jobs:
+            try:
+                print(f"[FORCE-SYNC-BG] Processing NEW job {job_id}...")
+                result = _process_and_parse_job(job_id)
+                print(f"[FORCE-SYNC-BG] Job {job_id} result: {result}")
+                processed += 1
+            except Exception as e:
+                print(f"[FORCE-SYNC-BG] Job {job_id} FAILED: {e}")
+                errors += 1
+        for job_id in reprocess_jobs:
+            try:
+                print(f"[FORCE-SYNC-BG] Re-processing job {job_id}...")
+                result = _reprocess_existing_job(job_id)
+                print(f"[FORCE-SYNC-BG] Reprocess {job_id} result: {result}")
+                processed += 1
+            except Exception as e:
+                print(f"[FORCE-SYNC-BG] Reprocess {job_id} FAILED: {e}")
+                errors += 1
+
+        _sync_result = {
+            "status": "done",
+            "sync": sync_result,
+            "jobs_total": total,
+            "jobs_processed": processed,
+            "jobs_errors": errors,
+            "new_job_ids": new_jobs,
+            "reprocess_job_ids": reprocess_jobs,
+            "finished_at": datetime.utcnow().isoformat(),
+        }
+        print(f"[FORCE-SYNC-BG] Complete: processed={processed}, errors={errors}")
     except Exception as e:
-        dbg(f"❌ IMAP login FAILED: {e}")
-        return {"status": "error", "reason": f"IMAP login failed: {e}", "log": debug_log}
-
-    # ── Step 3: Scan folders ──
-    folders_to_check = ["INBOX", "[Gmail]/All Mail", "[Gmail]/Spam"]
-    since_date = (datetime.utcnow() - timedelta(days=14)).strftime("%d-%b-%Y")
-    all_emails = []
-
-    for folder in folders_to_check:
-        try:
-            quoted_folder = f'"{folder}"'
-            st, _ = mail.select(quoted_folder)
-            if st != "OK":
-                dbg(f"  Folder {folder}: could not select (status={st})")
-                continue
-            status, data = mail.uid("search", None, f"(SINCE {since_date})")
-            if status == "OK" and data[0]:
-                uids = data[0].split()
-                dbg(f"  Folder {folder}: {len(uids)} emails since {since_date}")
-
-                # Show details of each email
-                for uid_bytes in uids:
-                    uid_str = uid_bytes.decode()
-                    dedup_key = f"{folder}:{uid_str}"
-                    try:
-                        mail.select(quoted_folder)
-                        st2, msg_data = mail.uid("fetch", uid_bytes, "(RFC822.HEADER)")
-                        if st2 == "OK" and msg_data and msg_data[0]:
-                            header_bytes = msg_data[0][1] if isinstance(msg_data[0], tuple) else msg_data[0]
-                            msg = email_mod.message_from_bytes(header_bytes)
-                            from_raw = _safe_decode_header(msg.get("From", ""))
-                            subject = _safe_decode_header(msg.get("Subject", ""))
-                            date_str = msg.get("Date", "")
-
-                            email_match = re.search(r"<([^>]+)>", from_raw)
-                            sender_email = (email_match.group(1) if email_match else from_raw).strip().lower()
-
-                            all_emails.append({
-                                "folder": folder,
-                                "uid": uid_str,
-                                "dedup_key": dedup_key,
-                                "from": from_raw,
-                                "sender_email": sender_email,
-                                "subject": subject,
-                                "date": date_str,
-                            })
-                            dbg(f"    UID {uid_str}: from={sender_email} subject={subject[:60]}")
-                    except Exception as e:
-                        dbg(f"    UID {uid_str}: fetch error: {e}")
-            else:
-                dbg(f"  Folder {folder}: 0 emails since {since_date}")
-        except Exception as e:
-            dbg(f"  Folder {folder}: error: {e}")
-
-    try:
-        mail.logout()
-    except Exception:
-        pass
-
-    dbg(f"Total emails found in last 7 days: {len(all_emails)}")
-
-    # ── Step 4: Check which are already known ──
-    sb = get_supabase()
-    new_emails = []
-    known_emails = []
-    for em in all_emails:
-        try:
-            existing = sb.table("raw_emails").select("id").eq("provider_message_id", em["dedup_key"]).execute()
-            if existing.data:
-                known_emails.append(em)
-            else:
-                new_emails.append(em)
-        except Exception as e:
-            dbg(f"  Dedup check error for {em['dedup_key']}: {e}")
-
-    dbg(f"Already known (deduplicated): {len(known_emails)}")
-    dbg(f"NEW emails to process: {len(new_emails)}")
-
-    # ── Step 5: Check sender→profile matching for NEW emails ──
-    matched_emails = []
-    unmatched_emails = []
-    for em in new_emails:
-        sender = em["sender_email"]
-        matched_user_id = None
-        match_method = None
-        try:
-            res = sb.table("profiles").select("id, email").ilike("email", sender).execute()
-            if res.data:
-                matched_user_id = res.data[0]["id"]
-                match_method = "profiles.email"
-            else:
-                try:
-                    alias_res = sb.table("profiles").select("id").contains("email_aliases", [sender]).execute()
-                    if alias_res.data:
-                        matched_user_id = alias_res.data[0]["id"]
-                        match_method = "email_aliases"
-                except Exception:
-                    pass
-
-            if not matched_user_id:
-                broad = sb.table("profiles").select("id, email, email_aliases").execute()
-                for row in (broad.data or []):
-                    row_email = (row.get("email") or "").strip().lower()
-                    row_aliases = [a.strip().lower() for a in (row.get("email_aliases") or []) if a]
-                    if row_email == sender or sender in row_aliases:
-                        matched_user_id = row["id"]
-                        match_method = "broad_scan"
-                        break
-                if not matched_user_id:
-                    dbg(f"  ❌ No profile match for sender: {sender}")
-                    dbg(f"     Available profiles: {[(r.get('email',''), r.get('email_aliases',[])) for r in (broad.data or [])]}")
-                    unmatched_emails.append(em)
-        except Exception as e:
-            dbg(f"  Profile lookup error for {sender}: {e}")
-            unmatched_emails.append(em)
-            continue
-
-        if matched_user_id:
-            dbg(f"  ✅ Sender {sender} → user {matched_user_id} (via {match_method})")
-            em["matched_user_id"] = matched_user_id
-            em["match_method"] = match_method
-            matched_emails.append(em)
-
-    # ── Step 6: Check existing jobs ──
-    try:
-        all_jobs = sb.table("email_underwrite_jobs").select("id, status, from_address, subject, created_at, deal_id, error_message").order("created_at", desc=True).limit(20).execute()
-        recent_jobs = all_jobs.data or []
-        dbg(f"Recent jobs in DB: {len(recent_jobs)}")
-        for j in recent_jobs:
-            dbg(f"  Job {j['id'][:8]}...: status={j['status']} from={j.get('from_address','')} subject={j.get('subject','')[:40]} error={j.get('error_message','')}")
-    except Exception as e:
-        recent_jobs = []
-        dbg(f"Failed to query jobs: {e}")
-
-    # ── Summary ──
-    return {
-        "status": "ok",
-        "imap_connected": True,
-        "total_emails_7d": len(all_emails),
-        "already_known": len(known_emails),
-        "new_unprocessed": len(new_emails),
-        "matched_to_user": len(matched_emails),
-        "unmatched_no_user": len(unmatched_emails),
-        "matched_details": matched_emails,
-        "unmatched_details": unmatched_emails,
-        "recent_jobs": recent_jobs,
-        "log": debug_log,
-    }
+        print(f"[FORCE-SYNC-BG] FATAL ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        _sync_result = {"status": "error", "error": str(e), "finished_at": datetime.utcnow().isoformat()}
+    finally:
+        _sync_running = False
 
 
 @router.post("/force-sync")
 async def force_sync_pipeline():
-    """Force a pipeline cycle: sync inbox immediately, then kick off
-    job processing in a background thread so the HTTP response returns fast.
+    """Kick off sync + process in background. Returns immediately.
+    Poll GET /force-sync/result to check progress.
     """
-    print("[FORCE-SYNC] Starting forced sync...")
+    global _sync_result, _sync_running
+    if _sync_running:
+        return {"status": "running", "message": "Sync already in progress. Poll /force-sync/result"}
+    _sync_result = None
+    print("[FORCE-SYNC] Launching background sync+process thread...")
+    t = threading.Thread(target=_run_force_sync_bg, daemon=True, name="force-sync-bg")
+    t.start()
+    return {"status": "started", "message": "Sync started in background. Poll /force-sync/result for progress."}
 
-    # Step 1: Sync inbox (fast — just IMAP header scan)
-    sync_result = _sync_inbox_core()
-    new_jobs = sync_result.get("new_job_ids", [])
-    print(f"[FORCE-SYNC] Sync complete: {json.dumps(sync_result, default=str)}")
 
-    # Step 2: Gather all pending jobs
-    reprocess_jobs = []
-    try:
-        sb = get_supabase()
-        all_pending = sb.table("email_underwrite_jobs").select("id, deal_id").eq("status", "pending").limit(20).execute()
-        for row in (all_pending.data or []):
-            jid = row["id"]
-            if jid in new_jobs:
-                continue
-            if row.get("deal_id"):
-                reprocess_jobs.append(jid)
-            else:
-                new_jobs.append(jid)
-    except Exception as e:
-        print(f"[FORCE-SYNC] Failed to query pending jobs: {e}")
-
-    total = len(new_jobs) + len(reprocess_jobs)
-    print(f"[FORCE-SYNC] {len(new_jobs)} new + {len(reprocess_jobs)} reprocess = {total} total jobs")
-
-    # Step 3: Fire off processing in a background thread so we return immediately
-    if total > 0:
-        def _bg_process():
-            for job_id in new_jobs:
-                try:
-                    print(f"[FORCE-SYNC-BG] Processing NEW job {job_id}...")
-                    result = _process_and_parse_job(job_id)
-                    print(f"[FORCE-SYNC-BG] Job {job_id} result: {result}")
-                except Exception as e:
-                    print(f"[FORCE-SYNC-BG] Job {job_id} FAILED: {e}")
-            for job_id in reprocess_jobs:
-                try:
-                    print(f"[FORCE-SYNC-BG] Re-processing job {job_id}...")
-                    result = _reprocess_existing_job(job_id)
-                    print(f"[FORCE-SYNC-BG] Reprocess {job_id} result: {result}")
-                except Exception as e:
-                    print(f"[FORCE-SYNC-BG] Reprocess {job_id} FAILED: {e}")
-
-        bg = threading.Thread(target=_bg_process, daemon=True, name="force-sync-bg")
-        bg.start()
-
-    return {
-        "sync_result": sync_result,
-        "jobs_queued": total,
-        "new_job_ids": new_jobs,
-        "reprocess_job_ids": reprocess_jobs,
-        "message": f"Synced inbox. {total} jobs queued for background processing.",
-    }
+@router.get("/force-sync/result")
+async def force_sync_result():
+    """Poll for force-sync results."""
+    if _sync_running:
+        return {"status": "running", "message": "Still syncing and processing..."}
+    if _sync_result is None:
+        return {"status": "not_started", "message": "No sync has been run. Call POST /force-sync first."}
+    return _sync_result
 
 
 @router.post("/reset-stuck-jobs")

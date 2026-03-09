@@ -51,28 +51,55 @@ function EmailUnderwritePage() {
 
   const handleSyncAndProcess = async () => {
     setSyncing(true);
-    setSyncMessage('Triggering force sync...');
+    setSyncMessage('Starting sync...');
     try {
+      // Fire off sync (returns immediately — work happens in background)
       const res = await fetch(`${API_BASE_URL}/api/email-underwrite/force-sync`, {
         method: 'POST',
       });
       const data = await res.json();
-      const syncInfo = data.sync_result || {};
-      const queued = data.jobs_queued || 0;
-      setSyncMessage(
-        `Synced: ${syncInfo.synced || 0} new, ${syncInfo.already_known || 0} known, ${syncInfo.skipped_no_user || 0} no-match. ${queued} jobs queued for processing.`
-      );
-      // Poll for job completion every 5 seconds
-      if (queued > 0) {
-        setSyncMessage(prev => prev + ' Processing in background...');
-        const pollId = setInterval(() => loadPipeline(), 5000);
-        setTimeout(() => clearInterval(pollId), 120000); // stop polling after 2 min
+      if (data.status === 'running') {
+        setSyncMessage('Sync already in progress...');
+      } else {
+        setSyncMessage('Sync started! Processing emails in background...');
       }
-      setTimeout(() => loadPipeline(), 2000);
+      // Poll for results every 4 seconds
+      let polls = 0;
+      const maxPolls = 45; // ~3 minutes
+      const pollId = setInterval(async () => {
+        polls++;
+        try {
+          const pollRes = await fetch(`${API_BASE_URL}/api/email-underwrite/force-sync/result`);
+          const pollData = await pollRes.json();
+          if (pollData.status === 'done' || pollData.status === 'error') {
+            clearInterval(pollId);
+            setSyncing(false);
+            if (pollData.status === 'done') {
+              const s = pollData.sync || {};
+              setSyncMessage(
+                `Done! Synced: ${s.synced || 0} new, ${s.already_known || 0} known. Processed: ${pollData.jobs_processed || 0} jobs, ${pollData.jobs_errors || 0} errors.`
+              );
+            } else {
+              setSyncMessage(`Sync error: ${pollData.error || 'unknown'}`);
+            }
+            loadPipeline();
+          } else if (pollData.status === 'running') {
+            setSyncMessage(`Syncing & processing... (${polls * 4}s elapsed)`);
+            loadPipeline(); // refresh table while processing
+          }
+        } catch (e) {
+          // polling error, keep trying
+        }
+        if (polls >= maxPolls) {
+          clearInterval(pollId);
+          setSyncing(false);
+          setSyncMessage('Sync may still be running in background. Refresh to check.');
+          loadPipeline();
+        }
+      }, 4000);
     } catch (err) {
       console.error('Force sync error:', err);
       setSyncMessage('Sync error: ' + err.message);
-    } finally {
       setSyncing(false);
     }
   };
@@ -81,12 +108,41 @@ function EmailUnderwritePage() {
     setDebugging(true);
     setDebugResult(null);
     try {
+      // Fire off diagnostics (returns immediately)
       const res = await fetch(`${API_BASE_URL}/api/email-underwrite/debug-pipeline`);
       const data = await res.json();
-      setDebugResult(data);
+      if (data.status === 'started' || data.status === 'running') {
+        setDebugResult({ status: 'running', log: ['Diagnostics started...'] });
+        // Poll for results
+        let polls = 0;
+        const pollId = setInterval(async () => {
+          polls++;
+          try {
+            const pollRes = await fetch(`${API_BASE_URL}/api/email-underwrite/debug-pipeline/result`);
+            const pollData = await pollRes.json();
+            if (pollData.status && pollData.status !== 'running') {
+              clearInterval(pollId);
+              setDebugResult(pollData);
+              setDebugging(false);
+            } else {
+              setDebugResult({ status: 'running', log: [`Diagnosing... (${polls * 3}s)`] });
+            }
+          } catch (e) {
+            // keep polling
+          }
+          if (polls >= 40) { // ~2 minutes
+            clearInterval(pollId);
+            setDebugResult({ error: 'Diagnostics timed out. Check server logs.' });
+            setDebugging(false);
+          }
+        }, 3000);
+      } else {
+        // Direct result (unlikely but handle it)
+        setDebugResult(data);
+        setDebugging(false);
+      }
     } catch (err) {
       setDebugResult({ error: err.message });
-    } finally {
       setDebugging(false);
     }
   };
