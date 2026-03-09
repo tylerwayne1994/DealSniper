@@ -556,6 +556,11 @@ async def run_platform_search(
                 chromium_sandbox=False,
                 enable_default_extensions=False,
                 disable_security=True,
+                # Smaller viewport = lighter rendering & faster DOM extraction
+                viewport={"width": 1280, "height": 720},
+                # Don't wait too long for Crexi's heavy SPA background requests
+                wait_for_network_idle_page_load_time=3,
+                minimum_wait_page_load_time=1,
                 args=[
                     "--disable-gpu",
                     "--disable-software-rasterizer",
@@ -568,6 +573,11 @@ async def run_platform_search(
                     "--disable-prompt-on-repost",
                     "--disable-sync",
                     "--no-first-run",
+                    # CRITICAL for containers: /dev/shm is only ~64MB on Render.
+                    # Chrome uses shared memory for rendering — without this flag,
+                    # captureScreenshot hangs and triggers cascading watchdog timeouts.
+                    "--disable-dev-shm-usage",
+                    "--no-zygote",
                 ],
             )
             log.info(
@@ -580,18 +590,28 @@ async def run_platform_search(
                 task=task,
                 llm=llm,
                 browser_session=browser_session,
+                # Disable vision (screenshots) — Render's limited RAM/CPU
+                # can't handle captureScreenshot reliably, causing cascading
+                # DOMWatchdog → ScreenshotWatchdog timeouts. DOM-only mode
+                # provides element IDs and text, which is sufficient for Crexi.
+                use_vision=False,
+                max_failures=10,
             )
         except Exception as bs_err:
             log.warning("[DEBUG] BrowserSession failed (%s), falling back to default Agent config", bs_err)
             agent = Agent(
                 task=task,
                 llm=llm,
+                use_vision=False,
+                max_failures=10,
             )
     else:
         log.warning("[DEBUG] BrowserSession not available, using default Agent config")
         agent = Agent(
             task=task,
             llm=llm,
+            use_vision=False,
+            max_failures=10,
         )
 
     log.info("[DEBUG] Agent created, calling agent.run()...")
