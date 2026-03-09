@@ -342,110 +342,43 @@ function AgentZoningOverlayLayer({ slug, enabled, zoneFilter }) {
 }
 
 // ─── ParcelOverlayLayer (child of MapContainer, uses useMap) ─────────
+// Uses Regrid raster tile layer for nationwide parcel boundaries
+const REGRID_TOKEN = process.env.REACT_APP_REGRID_TOKEN || 'eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJyZWdyaWQuY29tIiwiaWF0IjoxNzczMDcwNzc3LCJleHAiOjE3NzU2NjI3NzcsInUiOjcxMzc3MCwiZyI6MjMxNTMsImNhcCI6InBhOnRzOnBzOmJmOm1hOnR5OmVvOnpvOnNiIn0.n9xInEA21sComIh5H0tL68Ku-AsWsdq0vrErJGly-k0';
+const REGRID_TILE_URL = `https://tiles.regrid.com/api/v1/parcels/{z}/{x}/{y}.png?token=${REGRID_TOKEN}`;
+
 function ParcelOverlayLayer({ enabled }) {
   const map = useMap();
   const layerRef = useRef(null);
-  const debounceRef = useRef(null);
-  const abortRef = useRef(null);
-
-  const fetchAndRender = useCallback(async () => {
-    if (!map || !enabled) { console.log('[Parcels] skip: map=', !!map, 'enabled=', enabled); return; }
-
-    const zoom = map.getZoom();
-    const center = map.getCenter();
-    console.log('[Parcels] fetchAndRender called — zoom:', zoom, 'center:', center.lat.toFixed(4), center.lng.toFixed(4));
-
-    // Clean up previous
-    if (layerRef.current) { map.removeLayer(layerRef.current); layerRef.current = null; }
-
-    if (zoom < 14) { console.log('[Parcels] zoom too low (' + zoom + ' < 14), skipping'); return; }
-
-    // Abort any in-flight request
-    if (abortRef.current) abortRef.current.abort();
-    abortRef.current = new AbortController();
-
-    const bounds = map.getBounds();
-    const params = new URLSearchParams({
-      west: bounds.getWest(),
-      south: bounds.getSouth(),
-      east: bounds.getEast(),
-      north: bounds.getNorth(),
-      zoom,
-      limit: 3000,
-    });
-
-    const url = `${API_ENDPOINTS.parcels}?${params}`;
-    console.log('[Parcels] fetching:', url);
-
-    try {
-      const res = await fetch(url, { signal: abortRef.current.signal });
-      console.log('[Parcels] response status:', res.status);
-      if (!res.ok) { console.error('[Parcels] fetch error', res.status, await res.text()); return; }
-      const geojson = await res.json();
-      console.log('[Parcels] received:', geojson.features?.length, 'features, meta:', geojson._parcel_meta);
-
-      if (!geojson.features?.length) { console.log('[Parcels] no features returned'); return; }
-
-      const layer = L.geoJSON(geojson, {
-        style: () => ({
-          fillColor: '#7c3aed',
-          fillOpacity: 0.03,
-          color: '#e11d48',
-          weight: 2,
-          dashArray: null,
-        }),
-        onEachFeature: (feature, lyr) => {
-          const props = feature.properties || {};
-          const pid = props.pid || props.id || 'N/A';
-          const rows = Object.entries(props)
-            .filter(([, v]) => v !== '' && v !== null && v !== undefined)
-            .map(([k, v]) => `<tr><td style="font-weight:600;color:#6b7280;padding:2px 8px 2px 0;font-size:11px;white-space:nowrap">${k}</td><td style="color:#111827;padding:2px 0;font-size:11px">${v}</td></tr>`)
-            .join('');
-          lyr.bindPopup(
-            `<div style="font-family:Inter,sans-serif"><div style="font-weight:700;font-size:13px;margin-bottom:6px;color:#e11d48">📐 Parcel ${pid}</div><table>${rows}</table></div>`,
-            { maxWidth: 300 }
-          );
-          lyr.on('mouseover', () => {
-            lyr.setStyle({ weight: 3.5, color: '#be123c', fillOpacity: 0.15 });
-            lyr.bringToFront();
-          });
-          lyr.on('mouseout', () => { layer.resetStyle(lyr); });
-        },
-      });
-
-      layer.addTo(map);
-      layerRef.current = layer;
-      console.log('[Parcels] ✅ layer added to map with', geojson.features.length, 'features');
-    } catch (err) {
-      if (err.name !== 'AbortError') {
-        console.error('[Parcels] ❌ Error fetching parcel data:', err);
-      } else {
-        console.log('[Parcels] fetch aborted (superseded)');
-      }
-    }
-  }, [map, enabled]);
 
   useEffect(() => {
-    if (!enabled) {
-      if (layerRef.current) { map.removeLayer(layerRef.current); layerRef.current = null; }
-      return;
+    if (!map) return;
+
+    if (enabled) {
+      if (!layerRef.current) {
+        layerRef.current = L.tileLayer(REGRID_TILE_URL, {
+          minZoom: 14,
+          maxZoom: 20,
+          opacity: 0.7,
+          attribution: '&copy; <a href="https://regrid.com">Regrid</a>',
+        });
+        layerRef.current.addTo(map);
+        console.log('[Parcels] ✅ Regrid raster tile layer added');
+      }
+    } else {
+      if (layerRef.current) {
+        map.removeLayer(layerRef.current);
+        layerRef.current = null;
+        console.log('[Parcels] tile layer removed');
+      }
     }
 
-    fetchAndRender();
-
-    const onMoveEnd = () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => fetchAndRender(), 600);
-    };
-    map.on('moveend', onMoveEnd);
-
     return () => {
-      map.off('moveend', onMoveEnd);
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      if (abortRef.current) abortRef.current.abort();
-      if (layerRef.current) { map.removeLayer(layerRef.current); layerRef.current = null; }
+      if (layerRef.current) {
+        map.removeLayer(layerRef.current);
+        layerRef.current = null;
+      }
     };
-  }, [enabled, fetchAndRender, map]);
+  }, [map, enabled]);
 
   return null;
 }
