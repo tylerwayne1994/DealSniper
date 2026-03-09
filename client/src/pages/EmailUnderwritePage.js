@@ -30,17 +30,54 @@ function EmailUnderwritePage() {
   const [newAlias, setNewAlias] = useState('');
   const [aliasLoading, setAliasLoading] = useState(false);
   const [parsingJobId, setParsingJobId] = useState(null);
+  const [pipelineStatus, setPipelineStatus] = useState(null);
+  const [debugResult, setDebugResult] = useState(null);
+  const [debugging, setDebugging] = useState(false);
 
   const handleSyncAndProcess = async () => {
     setSyncing(true);
-    setSyncMessage('');
+    setSyncMessage('Triggering force sync...');
     try {
-      // Just reload the page data — the background worker handles sync+parse automatically
-      window.location.reload();
+      const res = await fetch(`${API_BASE_URL}/api/email-underwrite/force-sync`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      const syncInfo = data.sync_result || {};
+      const jobCount = data.jobs_processed || 0;
+      setSyncMessage(
+        `Synced: ${syncInfo.synced || 0} new, ${syncInfo.already_known || 0} known, ${syncInfo.skipped_no_user || 0} no-match. Processed: ${jobCount} jobs.`
+      );
+      // Reload jobs from DB
+      setTimeout(() => loadPipeline(), 1000);
     } catch (err) {
-      console.error('Refresh error:', err);
-      setSyncMessage('Error: ' + err.message);
+      console.error('Force sync error:', err);
+      setSyncMessage('Sync error: ' + err.message);
+    } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleDebugPipeline = async () => {
+    setDebugging(true);
+    setDebugResult(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/email-underwrite/debug-pipeline`);
+      const data = await res.json();
+      setDebugResult(data);
+    } catch (err) {
+      setDebugResult({ error: err.message });
+    } finally {
+      setDebugging(false);
+    }
+  };
+
+  const checkPipelineStatus = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/email-underwrite/pipeline-status`);
+      const data = await res.json();
+      setPipelineStatus(data);
+    } catch (err) {
+      console.error('Pipeline status error:', err);
     }
   };
 
@@ -221,11 +258,40 @@ function EmailUnderwritePage() {
     };
 
     loadData();
+    checkPipelineStatus();
 
     // Auto-refresh every 30 seconds to pick up background pipeline results
     pollTimer = setInterval(loadData, 30000);
     return () => clearInterval(pollTimer);
   }, []);
+
+  // loadPipeline alias for force-sync callback
+  const loadPipeline = async () => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData?.user?.id;
+      if (!uid) return;
+      const { data: jobRows } = await supabase
+        .from('email_underwrite_jobs')
+        .select('*')
+        .eq('user_id', uid)
+        .order('created_at', { ascending: false });
+      setJobs(jobRows || []);
+
+      const dealIds = (jobRows || []).map(j => j.deal_id).filter(Boolean);
+      if (dealIds.length > 0) {
+        const { data: dealRows } = await supabase
+          .from('deals')
+          .select('deal_id, address, units, purchase_price, deal_structure, pipeline_status, created_at, market_cap_rate, scenario_data, parsed_data')
+          .in('deal_id', dealIds);
+        const map = {};
+        (dealRows || []).forEach(d => { map[d.deal_id] = d; });
+        setDealsById(map);
+      }
+    } catch (err) {
+      console.error('loadPipeline error:', err);
+    }
+  };
 
   const totalJobs = jobs.length;
 
@@ -550,7 +616,7 @@ function EmailUnderwritePage() {
                 </div>
               </div>
 
-              <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                 <button
                   onClick={handleSyncAndProcess}
                   disabled={syncing}
@@ -569,20 +635,94 @@ function EmailUnderwritePage() {
                   }}
                 >
                   <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
-                  {syncing ? 'Syncing...' : '↻ Refresh Now'}
+                  {syncing ? 'Syncing...' : 'Force Sync Now'}
+                </button>
+                <button
+                  onClick={handleDebugPipeline}
+                  disabled={debugging}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 16px',
+                    backgroundColor: debugging ? '#94a3b8' : '#6366f1',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: debugging ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  <AlertTriangle size={14} />
+                  {debugging ? 'Diagnosing...' : 'Diagnose Pipeline'}
                 </button>
                 {syncMessage && (
-                  <span style={{ fontSize: '12px', color: syncMessage.startsWith('Error') ? '#b91c1c' : '#15803d' }}>
+                  <span style={{ fontSize: '12px', color: syncMessage.startsWith('Error') || syncMessage.startsWith('Sync error') ? '#b91c1c' : '#15803d' }}>
                     {syncMessage}
                   </span>
                 )}
-                {!syncing && !syncMessage && (
-                  <span style={{ fontSize: '11px', color: '#6b7280', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#22c55e', display: 'inline-block' }} />
-                    Auto-syncing every 2 min
-                  </span>
-                )}
               </div>
+
+              {/* Pipeline Status */}
+              {pipelineStatus && (
+                <div style={{ marginTop: '10px', padding: '8px 12px', backgroundColor: pipelineStatus.running ? '#f0fdf4' : '#fef2f2', borderRadius: '8px', border: `1px solid ${pipelineStatus.running ? '#bbf7d0' : '#fecaca'}`, fontSize: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, color: pipelineStatus.running ? '#166534' : '#991b1b' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: pipelineStatus.running ? '#22c55e' : '#ef4444', display: 'inline-block' }} />
+                    Background Worker: {pipelineStatus.running ? 'RUNNING' : 'STOPPED'}
+                  </div>
+                  {pipelineStatus.last_run_time && (
+                    <div style={{ color: '#64748b', marginTop: '4px' }}>
+                      Last run: {new Date(pipelineStatus.last_run_time).toLocaleString()} — Result: {pipelineStatus.last_run_result || 'unknown'}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Debug Results */}
+              {debugResult && (
+                <div style={{ marginTop: '10px', padding: '12px', backgroundColor: '#1e293b', borderRadius: '8px', border: '1px solid #334155', fontSize: '12px', color: '#e2e8f0', maxHeight: '400px', overflow: 'auto' }}>
+                  <div style={{ fontWeight: 700, marginBottom: '8px', color: '#f59e0b', fontSize: '13px' }}>Pipeline Diagnostic Results</div>
+                  {debugResult.error && <div style={{ color: '#ef4444', fontWeight: 600 }}>Error: {debugResult.error}</div>}
+                  {debugResult.status && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '10px' }}>
+                      <div style={{ padding: '6px 10px', backgroundColor: '#334155', borderRadius: '6px' }}>
+                        <div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase' }}>Total Emails (7d)</div>
+                        <div style={{ fontSize: '18px', fontWeight: 700 }}>{debugResult.total_emails_7d}</div>
+                      </div>
+                      <div style={{ padding: '6px 10px', backgroundColor: '#334155', borderRadius: '6px' }}>
+                        <div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase' }}>New Unprocessed</div>
+                        <div style={{ fontSize: '18px', fontWeight: 700, color: debugResult.new_unprocessed > 0 ? '#f59e0b' : '#e2e8f0' }}>{debugResult.new_unprocessed}</div>
+                      </div>
+                      <div style={{ padding: '6px 10px', backgroundColor: '#334155', borderRadius: '6px' }}>
+                        <div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase' }}>Matched to User</div>
+                        <div style={{ fontSize: '18px', fontWeight: 700, color: debugResult.matched_to_user > 0 ? '#22c55e' : '#e2e8f0' }}>{debugResult.matched_to_user}</div>
+                      </div>
+                    </div>
+                  )}
+                  {debugResult.unmatched_details && debugResult.unmatched_details.length > 0 && (
+                    <div style={{ marginBottom: '10px' }}>
+                      <div style={{ color: '#ef4444', fontWeight: 600, marginBottom: '4px' }}>Unmatched Senders (emails from unknown addresses):</div>
+                      {debugResult.unmatched_details.map((em, i) => (
+                        <div key={i} style={{ color: '#fca5a5', padding: '2px 0' }}>
+                          • {em.sender_email} — "{em.subject}"
+                        </div>
+                      ))}
+                      <div style={{ color: '#94a3b8', marginTop: '4px', fontSize: '11px' }}>
+                        Add these emails as aliases above, or send from your registered email.
+                      </div>
+                    </div>
+                  )}
+                  {debugResult.log && (
+                    <details style={{ marginTop: '8px' }}>
+                      <summary style={{ cursor: 'pointer', color: '#94a3b8', fontSize: '11px', fontWeight: 600 }}>Full Debug Log ({debugResult.log.length} entries)</summary>
+                      <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: '11px', color: '#94a3b8', marginTop: '6px', maxHeight: '200px', overflow: 'auto' }}>
+                        {debugResult.log.join('\n')}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

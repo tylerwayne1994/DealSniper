@@ -622,26 +622,40 @@ def _sync_inbox_core() -> dict:
 
     Returns a summary dict. Does NOT raise HTTPException (safe for background use).
     """
+    print("[AutoPipeline-Sync] Starting _sync_inbox_core()...")
     mail = get_imap_connection()
     if not mail:
-        return {"error": "IMAP not configured", "synced": 0}
+        print("[AutoPipeline-Sync] ❌ IMAP connection returned None — INBOUND_GMAIL_ADDRESS or INBOUND_GMAIL_APP_PASSWORD not set!")
+        print(f"[AutoPipeline-Sync]   INBOUND_GMAIL_ADDRESS={os.getenv('INBOUND_GMAIL_ADDRESS', '(not set)')!r}")
+        print(f"[AutoPipeline-Sync]   INBOUND_GMAIL_APP_PASSWORD set: {bool(os.getenv('INBOUND_GMAIL_APP_PASSWORD'))}")
+        return {"error": "IMAP not configured — check INBOUND_GMAIL_ADDRESS and INBOUND_GMAIL_APP_PASSWORD env vars", "synced": 0}
+
+    print("[AutoPipeline-Sync] ✅ IMAP connected successfully")
 
     try:
         folders_to_check = ["INBOX", "[Gmail]/Spam"]
         since_date = (datetime.utcnow() - timedelta(days=7)).strftime("%d-%b-%Y")
+        print(f"[AutoPipeline-Sync] Scanning since {since_date}")
 
         all_uid_folder_pairs = []
         for folder in folders_to_check:
             try:
                 st, _ = mail.select(folder)
                 if st != "OK":
+                    print(f"[AutoPipeline-Sync]   Folder {folder}: select failed (status={st})")
                     continue
                 status, data = mail.uid("search", None, f"(SINCE {since_date})")
                 if status == "OK" and data[0]:
-                    for uid_bytes in data[0].split():
+                    uids = data[0].split()
+                    print(f"[AutoPipeline-Sync]   Folder {folder}: {len(uids)} emails found")
+                    for uid_bytes in uids:
                         all_uid_folder_pairs.append((uid_bytes, folder))
-            except Exception:
-                pass
+                else:
+                    print(f"[AutoPipeline-Sync]   Folder {folder}: 0 emails")
+            except Exception as e:
+                print(f"[AutoPipeline-Sync]   Folder {folder}: ERROR: {e}")
+
+        print(f"[AutoPipeline-Sync] Total emails to check: {len(all_uid_folder_pairs)}")
 
         sb = get_supabase()
         synced = 0
@@ -661,6 +675,7 @@ def _sync_inbox_core() -> dict:
             mail.select(folder)
             st, msg_data = mail.uid("fetch", uid_bytes, "(RFC822.HEADER)")
             if st != "OK" or not msg_data or not msg_data[0]:
+                print(f"[AutoPipeline-Sync]   UID {uid_str}: fetch header failed (status={st})")
                 continue
 
             header_bytes = msg_data[0][1] if isinstance(msg_data[0], tuple) else msg_data[0]
@@ -681,6 +696,8 @@ def _sync_inbox_core() -> dict:
             email_match = re.search(r"<([^>]+)>", from_raw)
             sender_email = (email_match.group(1) if email_match else from_raw).strip().lower()
 
+            print(f"[AutoPipeline-Sync]   NEW email UID={uid_str} from={sender_email} subject={subject[:60]}")
+
             # Match sender to user profile
             matched_user_id = None
             try:
@@ -688,14 +705,16 @@ def _sync_inbox_core() -> dict:
                 res = sb.table("profiles").select("id, email").ilike("email", sender_email).execute()
                 if res.data:
                     matched_user_id = res.data[0]["id"]
+                    print(f"[AutoPipeline-Sync]     ✅ Matched via profiles.email → user {matched_user_id}")
                 else:
                     # Secondary: email_aliases
                     try:
                         alias_res = sb.table("profiles").select("id").contains("email_aliases", [sender_email]).execute()
                         if alias_res.data:
                             matched_user_id = alias_res.data[0]["id"]
-                    except Exception:
-                        pass
+                            print(f"[AutoPipeline-Sync]     ✅ Matched via email_aliases → user {matched_user_id}")
+                    except Exception as alias_err:
+                        print(f"[AutoPipeline-Sync]     Alias lookup error: {alias_err}")
 
                 if not matched_user_id:
                     # Fallback: broad scan
@@ -705,15 +724,23 @@ def _sync_inbox_core() -> dict:
                         row_aliases = [a.strip().lower() for a in (row.get("email_aliases") or []) if a]
                         if row_email == sender_email or sender_email in row_aliases:
                             matched_user_id = row["id"]
+                            print(f"[AutoPipeline-Sync]     ✅ Matched via broad_scan → user {matched_user_id}")
                             break
+                    if not matched_user_id:
+                        all_emails = [(r.get("email",""), r.get("email_aliases",[])) for r in (broad.data or [])]
+                        print(f"[AutoPipeline-Sync]     ❌ NO MATCH for sender={sender_email}")
+                        print(f"[AutoPipeline-Sync]     Available profiles: {all_emails}")
             except Exception as e:
                 log.warning("[AutoPipeline] Profile lookup failed for %s: %s", sender_email, e)
+                print(f"[AutoPipeline-Sync]     ❌ Profile lookup EXCEPTION: {e}")
 
             if not matched_user_id:
                 skipped_no_user += 1
+                print(f"[AutoPipeline-Sync]     SKIPPING — no user match for {sender_email}")
                 continue
 
             # Create raw_email + job
+            print(f"[AutoPipeline-Sync]     Creating raw_email + job for user={matched_user_id}")
             email_data = {
                 "user_id": matched_user_id,
                 "provider_message_id": dedup_key,
@@ -727,6 +754,7 @@ def _sync_inbox_core() -> dict:
             }
             insert_result = sb.table("raw_emails").insert(email_data).execute()
             raw_email_id = (insert_result.data or [{}])[0].get("id")
+            print(f"[AutoPipeline-Sync]     raw_email created: id={raw_email_id}")
 
             try:
                 job_record = {
@@ -744,18 +772,24 @@ def _sync_inbox_core() -> dict:
                 job_id = (job_insert.data or [{}])[0].get("id")
                 if job_id:
                     new_job_ids.append(job_id)
+                    print(f"[AutoPipeline-Sync]     ✅ Job created: id={job_id}")
+                else:
+                    print(f"[AutoPipeline-Sync]     ⚠️ Job insert returned no id")
             except Exception as e:
                 log.warning("[AutoPipeline] Failed to create job: %s", e)
+                print(f"[AutoPipeline-Sync]     ❌ Failed to create job: {e}")
 
             synced += 1
 
         mail.logout()
-        return {
+        result = {
             "synced": synced,
             "already_known": already_known,
             "skipped_no_user": skipped_no_user,
             "new_job_ids": new_job_ids,
         }
+        print(f"[AutoPipeline-Sync] ✅ Sync complete: synced={synced} already_known={already_known} skipped_no_user={skipped_no_user} new_jobs={len(new_job_ids)}")
+        return result
     except Exception as e:
         try:
             mail.logout()
@@ -1144,7 +1178,9 @@ Return ONLY valid JSON, no markdown or explanation.'''
 
 def _run_auto_pipeline():
     """Single run of the full pipeline: sync → process → parse."""
-    print("[AutoPipeline] Running auto-pipeline cycle...")
+    print("=" * 80)
+    print(f"[AutoPipeline] ═══ Running auto-pipeline cycle at {datetime.utcnow().isoformat()} ═══")
+    print("=" * 80)
     log.info("[AutoPipeline] Running auto-pipeline cycle...")
 
     # Step 1: Sync inbox
@@ -1227,10 +1263,16 @@ def _auto_pipeline_loop():
     """Background thread loop — runs the pipeline every N seconds."""
     global _last_run_time, _last_run_result
     log.info("[AutoPipeline] Background worker started (interval=%ds)", _AUTO_PIPELINE_INTERVAL)
-    print(f"[AutoPipeline] Background worker started (interval={_AUTO_PIPELINE_INTERVAL}s)")
+    print("=" * 80)
+    print(f"[AutoPipeline] ═══ Background worker STARTED (interval={_AUTO_PIPELINE_INTERVAL}s) ═══")
+    print(f"[AutoPipeline] INBOUND_GMAIL_ADDRESS={os.getenv('INBOUND_GMAIL_ADDRESS', '(not set)')!r}")
+    print(f"[AutoPipeline] INBOUND_GMAIL_APP_PASSWORD set: {bool(os.getenv('INBOUND_GMAIL_APP_PASSWORD'))}")
+    print("=" * 80)
 
     # Wait 30 seconds on startup before first run (let the app fully initialize)
+    print("[AutoPipeline] Waiting 30s for app to initialize...")
     time.sleep(30)
+    print("[AutoPipeline] Initial wait complete, starting first cycle...")
 
     while True:
         try:
@@ -1273,4 +1315,237 @@ async def pipeline_status():
         "interval_seconds": _AUTO_PIPELINE_INTERVAL,
         "last_run_time": _last_run_time,
         "last_run_result": _last_run_result,
+    }
+
+
+@router.get("/debug-pipeline")
+async def debug_pipeline():
+    """Full diagnostic endpoint — tests IMAP, scans inbox, shows matching details.
+
+    Call this manually to diagnose why emails aren't being processed.
+    """
+    debug_log = []
+
+    def dbg(msg):
+        debug_log.append(msg)
+        print(f"[DEBUG-PIPELINE] {msg}")
+
+    # ── Step 1: Check env vars ──
+    addr = os.getenv("INBOUND_GMAIL_ADDRESS")
+    pwd = os.getenv("INBOUND_GMAIL_APP_PASSWORD")
+    dbg(f"INBOUND_GMAIL_ADDRESS set: {bool(addr)} (value: {addr!r})")
+    dbg(f"INBOUND_GMAIL_APP_PASSWORD set: {bool(pwd)} (length: {len(pwd) if pwd else 0})")
+
+    if not addr or not pwd:
+        dbg("❌ IMAP credentials missing — pipeline CANNOT work!")
+        return {"status": "error", "reason": "IMAP credentials not configured", "log": debug_log}
+
+    # ── Step 2: Test IMAP connection ──
+    try:
+        import imaplib
+        mail = imaplib.IMAP4_SSL("imap.gmail.com")
+        mail.login(addr, pwd)
+        dbg("✅ IMAP login successful")
+    except Exception as e:
+        dbg(f"❌ IMAP login FAILED: {e}")
+        return {"status": "error", "reason": f"IMAP login failed: {e}", "log": debug_log}
+
+    # ── Step 3: Scan folders ──
+    folders_to_check = ["INBOX", "[Gmail]/Spam"]
+    since_date = (datetime.utcnow() - timedelta(days=7)).strftime("%d-%b-%Y")
+    all_emails = []
+
+    for folder in folders_to_check:
+        try:
+            st, _ = mail.select(folder)
+            if st != "OK":
+                dbg(f"  Folder {folder}: could not select (status={st})")
+                continue
+            status, data = mail.uid("search", None, f"(SINCE {since_date})")
+            if status == "OK" and data[0]:
+                uids = data[0].split()
+                dbg(f"  Folder {folder}: {len(uids)} emails since {since_date}")
+
+                # Show details of each email
+                for uid_bytes in uids:
+                    uid_str = uid_bytes.decode()
+                    dedup_key = f"{folder}:{uid_str}"
+                    try:
+                        mail.select(folder)
+                        st2, msg_data = mail.uid("fetch", uid_bytes, "(RFC822.HEADER)")
+                        if st2 == "OK" and msg_data and msg_data[0]:
+                            header_bytes = msg_data[0][1] if isinstance(msg_data[0], tuple) else msg_data[0]
+                            msg = email_mod.message_from_bytes(header_bytes)
+                            from_raw = _safe_decode_header(msg.get("From", ""))
+                            subject = _safe_decode_header(msg.get("Subject", ""))
+                            date_str = msg.get("Date", "")
+
+                            email_match = re.search(r"<([^>]+)>", from_raw)
+                            sender_email = (email_match.group(1) if email_match else from_raw).strip().lower()
+
+                            all_emails.append({
+                                "folder": folder,
+                                "uid": uid_str,
+                                "dedup_key": dedup_key,
+                                "from": from_raw,
+                                "sender_email": sender_email,
+                                "subject": subject,
+                                "date": date_str,
+                            })
+                            dbg(f"    UID {uid_str}: from={sender_email} subject={subject[:60]}")
+                    except Exception as e:
+                        dbg(f"    UID {uid_str}: fetch error: {e}")
+            else:
+                dbg(f"  Folder {folder}: 0 emails since {since_date}")
+        except Exception as e:
+            dbg(f"  Folder {folder}: error: {e}")
+
+    try:
+        mail.logout()
+    except Exception:
+        pass
+
+    dbg(f"Total emails found in last 7 days: {len(all_emails)}")
+
+    # ── Step 4: Check which are already known ──
+    sb = get_supabase()
+    new_emails = []
+    known_emails = []
+    for em in all_emails:
+        try:
+            existing = sb.table("raw_emails").select("id").eq("provider_message_id", em["dedup_key"]).execute()
+            if existing.data:
+                known_emails.append(em)
+            else:
+                new_emails.append(em)
+        except Exception as e:
+            dbg(f"  Dedup check error for {em['dedup_key']}: {e}")
+
+    dbg(f"Already known (deduplicated): {len(known_emails)}")
+    dbg(f"NEW emails to process: {len(new_emails)}")
+
+    # ── Step 5: Check sender→profile matching for NEW emails ──
+    matched_emails = []
+    unmatched_emails = []
+    for em in new_emails:
+        sender = em["sender_email"]
+        matched_user_id = None
+        match_method = None
+        try:
+            res = sb.table("profiles").select("id, email").ilike("email", sender).execute()
+            if res.data:
+                matched_user_id = res.data[0]["id"]
+                match_method = "profiles.email"
+            else:
+                try:
+                    alias_res = sb.table("profiles").select("id").contains("email_aliases", [sender]).execute()
+                    if alias_res.data:
+                        matched_user_id = alias_res.data[0]["id"]
+                        match_method = "email_aliases"
+                except Exception:
+                    pass
+
+            if not matched_user_id:
+                broad = sb.table("profiles").select("id, email, email_aliases").execute()
+                for row in (broad.data or []):
+                    row_email = (row.get("email") or "").strip().lower()
+                    row_aliases = [a.strip().lower() for a in (row.get("email_aliases") or []) if a]
+                    if row_email == sender or sender in row_aliases:
+                        matched_user_id = row["id"]
+                        match_method = "broad_scan"
+                        break
+                if not matched_user_id:
+                    dbg(f"  ❌ No profile match for sender: {sender}")
+                    dbg(f"     Available profiles: {[(r.get('email',''), r.get('email_aliases',[])) for r in (broad.data or [])]}")
+                    unmatched_emails.append(em)
+        except Exception as e:
+            dbg(f"  Profile lookup error for {sender}: {e}")
+            unmatched_emails.append(em)
+            continue
+
+        if matched_user_id:
+            dbg(f"  ✅ Sender {sender} → user {matched_user_id} (via {match_method})")
+            em["matched_user_id"] = matched_user_id
+            em["match_method"] = match_method
+            matched_emails.append(em)
+
+    # ── Step 6: Check existing jobs ──
+    try:
+        all_jobs = sb.table("email_underwrite_jobs").select("id, status, from_address, subject, created_at, deal_id, error_message").order("created_at", desc=True).limit(20).execute()
+        recent_jobs = all_jobs.data or []
+        dbg(f"Recent jobs in DB: {len(recent_jobs)}")
+        for j in recent_jobs:
+            dbg(f"  Job {j['id'][:8]}...: status={j['status']} from={j.get('from_address','')} subject={j.get('subject','')[:40]} error={j.get('error_message','')}")
+    except Exception as e:
+        recent_jobs = []
+        dbg(f"Failed to query jobs: {e}")
+
+    # ── Summary ──
+    return {
+        "status": "ok",
+        "imap_connected": True,
+        "total_emails_7d": len(all_emails),
+        "already_known": len(known_emails),
+        "new_unprocessed": len(new_emails),
+        "matched_to_user": len(matched_emails),
+        "unmatched_no_user": len(unmatched_emails),
+        "matched_details": matched_emails,
+        "unmatched_details": unmatched_emails,
+        "recent_jobs": recent_jobs,
+        "log": debug_log,
+    }
+
+
+@router.post("/force-sync")
+async def force_sync_pipeline():
+    """Force a single pipeline cycle right now (sync + process).
+
+    Returns the full result dict for debugging.
+    """
+    debug_log = []
+
+    def dbg(msg):
+        debug_log.append(msg)
+        print(f"[FORCE-SYNC] {msg}")
+
+    dbg("Starting forced pipeline cycle...")
+
+    # Run sync
+    dbg("Step 1: Syncing inbox...")
+    sync_result = _sync_inbox_core()
+    dbg(f"Sync result: {json.dumps(sync_result, default=str)}")
+
+    new_jobs = sync_result.get("new_job_ids", [])
+
+    # Also pick up leftover pending jobs
+    try:
+        sb = get_supabase()
+        pending = sb.table("email_underwrite_jobs").select("id").eq("status", "pending").is_("deal_id", None).limit(10).execute()
+        for row in (pending.data or []):
+            jid = row["id"]
+            if jid not in new_jobs:
+                new_jobs.append(jid)
+                dbg(f"Added leftover pending job: {jid}")
+    except Exception as e:
+        dbg(f"Failed to query pending jobs: {e}")
+
+    dbg(f"Total jobs to process: {len(new_jobs)}")
+
+    # Process each job
+    job_results = []
+    for job_id in new_jobs:
+        dbg(f"Processing job {job_id}...")
+        try:
+            result = _process_and_parse_job(job_id)
+            dbg(f"Job {job_id} result: {json.dumps(result, default=str)}")
+            job_results.append({"job_id": job_id, "result": result})
+        except Exception as e:
+            dbg(f"Job {job_id} FAILED: {e}")
+            job_results.append({"job_id": job_id, "error": str(e)})
+
+    return {
+        "sync_result": sync_result,
+        "jobs_processed": len(new_jobs),
+        "job_results": job_results,
+        "log": debug_log,
     }

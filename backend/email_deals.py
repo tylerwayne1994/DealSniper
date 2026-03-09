@@ -942,13 +942,16 @@ def get_imap_connection():
     addr = os.getenv("INBOUND_GMAIL_ADDRESS")
     pwd = os.getenv("INBOUND_GMAIL_APP_PASSWORD")
     if not addr or not pwd:
+        print(f"[IMAP] ❌ Connection failed — INBOUND_GMAIL_ADDRESS={'SET' if addr else 'MISSING'}, INBOUND_GMAIL_APP_PASSWORD={'SET' if pwd else 'MISSING'}")
         return None
     try:
         mail = imaplib.IMAP4_SSL("imap.gmail.com")
         mail.login(addr, pwd)
+        print(f"[IMAP] ✅ Connected as {addr}")
         return mail
     except Exception as e:
         log.error("[EmailDeals] IMAP login failed: %s", e)
+        print(f"[IMAP] ❌ Login failed for {addr}: {e}")
         return None
 
 
