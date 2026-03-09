@@ -562,11 +562,15 @@ async def run_platform_search(
     if BrowserSession is not None:
         try:
             # Pass executable_path so the watchdog skips its slow binary search.
-            # Also pass container-optimized args to speed up startup on Render.
+            # Disable default extensions (uBlock, cookie handler, ClearURLs,
+            # Force Background Tab) — they add ~6s of download/extract time
+            # and make Chrome initialization too heavy for Render's 15s CDP timeout.
             browser_session = BrowserSession(
                 headless=True,
                 executable_path=chromium_path,
                 chromium_sandbox=False,
+                enable_default_extensions=False,
+                disable_security=True,
                 args=[
                     "--disable-gpu",
                     "--disable-software-rasterizer",
@@ -574,7 +578,12 @@ async def run_platform_search(
                     "--disable-extensions",
                     "--disable-background-networking",
                     "--disable-default-apps",
+                    "--disable-component-update",
+                    "--disable-hang-monitor",
+                    "--disable-prompt-on-repost",
+                    "--disable-sync",
                     "--no-first-run",
+                    "--single-process",
                 ],
             )
             log.info(
