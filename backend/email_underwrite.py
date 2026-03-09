@@ -261,11 +261,64 @@ async def intake_test(payload: IntakeTestPayload):
     return {"job_id": job_id}
 
 
+def _extract_attachment_from_msg(msg) -> tuple[Optional[bytes], Optional[str]]:
+    """Extract the first PDF/Excel/CSV attachment from an email.message object.
+
+    Returns (file_bytes, filename) or (None, None).
+    """
+    allowed_exts = (".pdf", ".xlsx", ".xls", ".csv")
+
+    for part in msg.walk():
+        if part.get_content_maintype() == "multipart":
+            continue
+
+        filename = part.get_filename()
+        content_disp = str(part.get("Content-Disposition", ""))
+        content_type = part.get_content_type()
+
+        if not filename:
+            if "attachment" in content_disp or content_type == "application/pdf":
+                if content_type == "application/pdf":
+                    filename = "attachment.pdf"
+                elif content_type in ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",):
+                    filename = "attachment.xlsx"
+                elif content_type in ("application/vnd.ms-excel",):
+                    filename = "attachment.xls"
+                elif content_type == "text/csv":
+                    filename = "attachment.csv"
+                else:
+                    continue
+            else:
+                continue
+
+        # Decode RFC-2047 filename if needed
+        from email.header import decode_header
+        decoded_parts = decode_header(filename)
+        decoded_name = ""
+        for data, charset in decoded_parts:
+            if isinstance(data, bytes):
+                decoded_name += data.decode(charset or "utf-8", errors="replace")
+            else:
+                decoded_name += data
+        filename = decoded_name
+
+        ext = Path(filename).suffix.lower()
+        if ext not in allowed_exts:
+            continue
+
+        payload = part.get_payload(decode=True)
+        if payload:
+            return payload, filename
+
+    return None, None
+
+
 def _download_attachment_via_imap(uid_str: str) -> tuple[Optional[bytes], Optional[str]]:
     """Download the first PDF/Excel/CSV attachment from the inbound inbox via IMAP.
 
     Uses the system-level IMAP connection (env vars, no OAuth).
     uid_str may be a plain UID like "5" or a folder:uid key like "[Gmail]/Spam:1".
+    Falls back to [Gmail]/All Mail if the original folder/UID fails.
     Returns (file_bytes, filename) or (None, None).
     """
     mail = get_imap_connection()
@@ -284,15 +337,54 @@ def _download_attachment_via_imap(uid_str: str) -> tuple[Optional[bytes], Option
         log.info("[EmailUnderwrite] Fetching attachment: folder=%s uid=%s", folder, uid_only)
         print(f"[DEBUG] _download_attachment_via_imap: folder={folder!r} uid={uid_only!r}")
 
-        mail.select(folder)
-        st, msg_data = mail.uid("fetch", uid_only.encode(), "(RFC822)")
+        # Try the original folder first
+        msg = None
+        folders_to_try = [folder]
+        if folder != "[Gmail]/All Mail":
+            folders_to_try.append("[Gmail]/All Mail")
+        if folder != "INBOX":
+            folders_to_try.append("INBOX")
 
-        if st != "OK" or not msg_data or not msg_data[0]:
-            log.warning("[EmailUnderwrite] IMAP fetch failed for UID %s", uid_str)
+        for try_folder in folders_to_try:
+            try:
+                st_sel, _ = mail.select(try_folder)
+                if st_sel != "OK":
+                    print(f"[DEBUG] Could not select folder {try_folder}")
+                    continue
+
+                if try_folder == folder:
+                    # Use the exact UID
+                    st, msg_data = mail.uid("fetch", uid_only.encode(), "(RFC822)")
+                    if st == "OK" and msg_data and msg_data[0] and isinstance(msg_data[0], tuple):
+                        raw_bytes = msg_data[0][1]
+                        msg = email_mod.message_from_bytes(raw_bytes)
+                        print(f"[DEBUG] Found email in original folder {try_folder} UID {uid_only}")
+                        break
+                else:
+                    # Search by SINCE in the fallback folder — scan recent emails
+                    print(f"[DEBUG] Original folder failed, searching {try_folder}...")
+                    since_date = (datetime.utcnow() - timedelta(days=30)).strftime("%d-%b-%Y")
+                    st_search, search_data = mail.uid("search", None, f"(SINCE {since_date})")
+                    if st_search == "OK" and search_data[0]:
+                        # Check each UID in reverse (newest first)
+                        for fb_uid in reversed(search_data[0].split()):
+                            st_fb, fb_data = mail.uid("fetch", fb_uid, "(RFC822)")
+                            if st_fb != "OK" or not fb_data or not fb_data[0] or not isinstance(fb_data[0], tuple):
+                                continue
+                            fb_raw = fb_data[0][1]
+                            fb_msg = email_mod.message_from_bytes(fb_raw)
+                            # Check if this email has a matching attachment
+                            fb_bytes, fb_name = _extract_attachment_from_msg(fb_msg)
+                            if fb_bytes:
+                                print(f"[DEBUG] Found email with attachment in {try_folder} UID {fb_uid.decode()}: {fb_name}")
+                                return fb_bytes, fb_name
+            except Exception as e:
+                print(f"[DEBUG] Error trying folder {try_folder}: {e}")
+                continue
+
+        if not msg:
+            log.warning("[EmailUnderwrite] IMAP fetch failed for UID %s in all folders", uid_str)
             return None, None
-
-        raw_bytes = msg_data[0][1] if isinstance(msg_data[0], tuple) else msg_data[0]
-        msg = email_mod.message_from_bytes(raw_bytes)
 
         # ── DEBUG: dump all parts in the email ──
         print(f"[DEBUG] Email Subject: {msg.get('Subject', '(none)')}")
@@ -309,54 +401,8 @@ def _download_attachment_via_imap(uid_str: str) -> tuple[Optional[bytes], Option
             part_index += 1
         # ── END DEBUG ──
 
-        allowed_exts = (".pdf", ".xlsx", ".xls", ".csv")
-
-        for part in msg.walk():
-            if part.get_content_maintype() == "multipart":
-                continue
-
-            filename = part.get_filename()
-            # Also check Content-Disposition for attachment without explicit filename
-            content_disp = str(part.get("Content-Disposition", ""))
-            content_type = part.get_content_type()
-
-            if not filename:
-                # Try to derive filename from content type for unnamed attachments
-                if "attachment" in content_disp or content_type == "application/pdf":
-                    if content_type == "application/pdf":
-                        filename = "attachment.pdf"
-                    elif content_type in ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",):
-                        filename = "attachment.xlsx"
-                    elif content_type in ("application/vnd.ms-excel",):
-                        filename = "attachment.xls"
-                    elif content_type == "text/csv":
-                        filename = "attachment.csv"
-                    else:
-                        print(f"[DEBUG] Skipping unnamed part with type={content_type}")
-                        continue
-                else:
-                    continue
-
-            # Decode RFC-2047 filename if needed
-            from email.header import decode_header
-            decoded_parts = decode_header(filename)
-            decoded_name = ""
-            for data, charset in decoded_parts:
-                if isinstance(data, bytes):
-                    decoded_name += data.decode(charset or "utf-8", errors="replace")
-                else:
-                    decoded_name += data
-            filename = decoded_name
-
-            ext = Path(filename).suffix.lower()
-            if ext not in allowed_exts:
-                continue
-
-            payload = part.get_payload(decode=True)
-            if payload:
-                return payload, filename
-
-        return None, None
+        result = _extract_attachment_from_msg(msg)
+        return result
     finally:
         try:
             mail.logout()
@@ -683,9 +729,9 @@ def _sync_inbox_core() -> dict:
     print("[AutoPipeline-Sync] ✅ IMAP connected successfully")
 
     try:
-        folders_to_check = ["INBOX", "[Gmail]/Spam"]
-        since_date = (datetime.utcnow() - timedelta(days=7)).strftime("%d-%b-%Y")
-        print(f"[AutoPipeline-Sync] Scanning since {since_date}")
+        folders_to_check = ["INBOX", "[Gmail]/All Mail", "[Gmail]/Spam"]
+        since_date = (datetime.utcnow() - timedelta(days=14)).strftime("%d-%b-%Y")
+        print(f"[AutoPipeline-Sync] Scanning folders={folders_to_check} since {since_date}")
 
         all_uid_folder_pairs = []
         for folder in folders_to_check:
@@ -1298,21 +1344,29 @@ def _run_auto_pipeline():
     if sync_result.get("error"):
         print(f"[AutoPipeline] Sync ERROR: {sync_result['error']}")
 
-    # Step 2: Also pick up any leftover pending jobs (from manual sync or previous failures)
+    # Step 2: Pick up ALL pending jobs — both new (no deal_id) and reset ones (have deal_id)
     try:
         sb = get_supabase()
-        pending = sb.table("email_underwrite_jobs").select("id").eq("status", "pending").is_("deal_id", None).limit(10).execute()
-        for row in (pending.data or []):
+        all_pending = sb.table("email_underwrite_jobs").select("id, deal_id").eq("status", "pending").limit(20).execute()
+        pending_no_deal = []
+        pending_with_deal = []
+        for row in (all_pending.data or []):
             jid = row["id"]
-            if jid not in new_jobs:
+            if jid in new_jobs:
+                continue  # Already queued from sync
+            if row.get("deal_id"):
+                pending_with_deal.append(jid)
+            else:
+                pending_no_deal.append(jid)
                 new_jobs.append(jid)
-                print(f"[AutoPipeline] Added leftover pending job: {jid}")
+        print(f"[AutoPipeline] Leftover pending jobs: {len(pending_no_deal)} new (no deal), {len(pending_with_deal)} with existing deals")
     except Exception as e:
+        pending_with_deal = []
         print(f"[AutoPipeline] Failed to query pending jobs: {e}")
 
     # Step 2b: Pick up "done" jobs whose deals were never actually parsed
     # (created by the old process-pending endpoint with metadata-only stubs)
-    reprocess_jobs = []
+    reprocess_jobs = list(pending_with_deal)  # Include pending jobs that already have deals
     try:
         done_jobs = (
             sb.table("email_underwrite_jobs")
@@ -1325,22 +1379,28 @@ def _run_auto_pipeline():
         for row in (done_jobs.data or []):
             deal_id = row["deal_id"]
             # Check if the deal has real parsed data
-            deal_res = sb.table("deals").select("deal_id, parsed_data, units, purchase_price").eq("deal_id", deal_id).single().execute()
-            deal = getattr(deal_res, "data", None)
+            try:
+                deal_res = sb.table("deals").select("deal_id, parsed_data, units, purchase_price").eq("deal_id", deal_id).single().execute()
+                deal = getattr(deal_res, "data", None)
+            except Exception:
+                deal = None
             if deal:
                 pd = deal.get("parsed_data") or {}
                 has_property = isinstance(pd.get("property"), dict) and pd["property"].get("address")
                 has_units = deal.get("units") is not None
                 if not has_property and not has_units:
                     # Deal was created with metadata only — needs full parsing
-                    print(f"[AutoPipeline] Found unparsed done job {row['id']} (deal={deal_id}) — will reprocess")
-                    reprocess_jobs.append(row["id"])
+                    if row["id"] not in reprocess_jobs:
+                        print(f"[AutoPipeline] Found unparsed done job {row['id']} (deal={deal_id}) — will reprocess")
+                        reprocess_jobs.append(row["id"])
     except Exception as e:
         print(f"[AutoPipeline] Failed to check done-but-unparsed jobs: {e}")
 
     if not new_jobs and not reprocess_jobs:
         print("[AutoPipeline] No new jobs to process.")
         return
+
+    print(f"[AutoPipeline] Processing {len(new_jobs)} new jobs + {len(reprocess_jobs)} reprocess jobs")
 
     # Step 3: Process each NEW job (create deal + download + parse)
     for job_id in new_jobs:
@@ -1352,10 +1412,10 @@ def _run_auto_pipeline():
             print(f"[AutoPipeline] Unexpected error processing job {job_id}: {e}")
             log.exception("[AutoPipeline] Unexpected error processing job %s: %s", job_id, e)
 
-    # Step 4: Reprocess "done" jobs that have empty deals
+    # Step 4: Reprocess jobs that have existing deals but need attachment parsing
     for job_id in reprocess_jobs:
         try:
-            print(f"[AutoPipeline] Re-processing unparsed job {job_id}...")
+            print(f"[AutoPipeline] Re-processing job with existing deal {job_id}...")
             result = _reprocess_existing_job(job_id)
             print(f"[AutoPipeline] Re-process job {job_id} result: {result}")
         except Exception as e:
@@ -1459,8 +1519,8 @@ async def debug_pipeline():
         return {"status": "error", "reason": f"IMAP login failed: {e}", "log": debug_log}
 
     # ── Step 3: Scan folders ──
-    folders_to_check = ["INBOX", "[Gmail]/Spam"]
-    since_date = (datetime.utcnow() - timedelta(days=7)).strftime("%d-%b-%Y")
+    folders_to_check = ["INBOX", "[Gmail]/All Mail", "[Gmail]/Spam"]
+    since_date = (datetime.utcnow() - timedelta(days=14)).strftime("%d-%b-%Y")
     all_emails = []
 
     for folder in folders_to_check:
@@ -1625,24 +1685,30 @@ async def force_sync_pipeline():
 
     new_jobs = sync_result.get("new_job_ids", [])
 
-    # Also pick up leftover pending jobs
+    # Pick up ALL pending jobs — both new (no deal_id) and reset ones (have deal_id)
+    reprocess_jobs = []
     try:
         sb = get_supabase()
-        pending = sb.table("email_underwrite_jobs").select("id").eq("status", "pending").is_("deal_id", None).limit(10).execute()
-        for row in (pending.data or []):
+        all_pending = sb.table("email_underwrite_jobs").select("id, deal_id").eq("status", "pending").limit(20).execute()
+        for row in (all_pending.data or []):
             jid = row["id"]
-            if jid not in new_jobs:
+            if jid in new_jobs:
+                continue
+            if row.get("deal_id"):
+                reprocess_jobs.append(jid)
+                dbg(f"Added pending job WITH deal_id for reprocess: {jid}")
+            else:
                 new_jobs.append(jid)
-                dbg(f"Added leftover pending job: {jid}")
+                dbg(f"Added pending job (no deal): {jid}")
     except Exception as e:
         dbg(f"Failed to query pending jobs: {e}")
 
-    dbg(f"Total jobs to process: {len(new_jobs)}")
+    dbg(f"Total: {len(new_jobs)} new jobs + {len(reprocess_jobs)} reprocess jobs")
 
-    # Process each job
+    # Process new jobs (no deal yet)
     job_results = []
     for job_id in new_jobs:
-        dbg(f"Processing job {job_id}...")
+        dbg(f"Processing NEW job {job_id}...")
         try:
             result = _process_and_parse_job(job_id)
             dbg(f"Job {job_id} result: {json.dumps(result, default=str)}")
@@ -1651,9 +1717,20 @@ async def force_sync_pipeline():
             dbg(f"Job {job_id} FAILED: {e}")
             job_results.append({"job_id": job_id, "error": str(e)})
 
+    # Reprocess jobs with existing deals
+    for job_id in reprocess_jobs:
+        dbg(f"Re-processing job {job_id} (has existing deal)...")
+        try:
+            result = _reprocess_existing_job(job_id)
+            dbg(f"Reprocess job {job_id} result: {json.dumps(result, default=str)}")
+            job_results.append({"job_id": job_id, "result": result, "type": "reprocess"})
+        except Exception as e:
+            dbg(f"Reprocess job {job_id} FAILED: {e}")
+            job_results.append({"job_id": job_id, "error": str(e), "type": "reprocess"})
+
     return {
         "sync_result": sync_result,
-        "jobs_processed": len(new_jobs),
+        "jobs_processed": len(new_jobs) + len(reprocess_jobs),
         "job_results": job_results,
         "log": debug_log,
     }
