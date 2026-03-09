@@ -494,7 +494,11 @@ async def run_platform_search(
     """
     try:
         from browser_use import Agent
-        from langchain_anthropic import ChatAnthropic
+        # browser-use 0.12.x has its own ChatAnthropic with custom ainvoke()
+        # that handles output_format via tool calling and returns
+        # ChatInvokeCompletion. Using langchain's ChatAnthropic does NOT work
+        # because it doesn't understand output_format and returns AIMessage.
+        from browser_use.llm.anthropic.chat import ChatAnthropic as BrowserUseChatAnthropic
         # browser-use 0.12.x uses BrowserSession instead of BrowserConfig
         try:
             from browser_use import BrowserSession
@@ -518,34 +522,15 @@ async def run_platform_search(
 
     log.info("[DEBUG] Starting browser-use agent for platform=%s download_dir=%s", platform_id, download_dir)
 
-    # browser-use monkey-patches attributes onto the LLM (e.g. provider, ainvoke)
-    # and reads attributes like model_name that ChatAnthropic doesn't have.
-    # This subclass handles both:
-    #   __setattr__: rejected attrs fall back to __dict__
-    #   __getattr__: maps model_name -> model, and checks __dict__ for patched attrs
-    class _FlexibleLLM(ChatAnthropic):
-        def __setattr__(self, name, value):
-            try:
-                super().__setattr__(name, value)
-            except (ValueError, AttributeError):
-                self.__dict__[name] = value
-
-        def __getattr__(self, name):
-            # browser-use reads model_name but ChatAnthropic calls it 'model'
-            if name == 'model_name':
-                return self.model
-            # Check __dict__ for attrs set via the __setattr__ fallback
-            if name in self.__dict__:
-                return self.__dict__[name]
-            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
-
-    llm = _FlexibleLLM(
+    # Use browser-use's own ChatAnthropic — it handles output_format via
+    # Anthropic tool calls and returns ChatInvokeCompletion with .completion attr.
+    llm = BrowserUseChatAnthropic(
         model="claude-sonnet-4-20250514",
         api_key=ANTHROPIC_API_KEY,
         temperature=0.0,
     )
-    llm.provider = 'anthropic'
-    log.info("[DEBUG] _FlexibleLLM initialized (provider=%s)", getattr(llm, 'provider', 'unset'))
+    log.info("[DEBUG] BrowserUseChatAnthropic initialized (provider=%s, model=%s)",
+             llm.provider, llm.model)
 
     # Configure browser with explicit Chromium path to avoid uvx dependency
     chromium_path = _ensure_chromium()
@@ -583,7 +568,6 @@ async def run_platform_search(
                     "--disable-prompt-on-repost",
                     "--disable-sync",
                     "--no-first-run",
-                    "--single-process",
                 ],
             )
             log.info(
