@@ -998,26 +998,31 @@ async def discover_city_zoning(request_body: dict = Body(...)):
         raise HTTPException(status_code=400, detail="City name must be 3-100 characters")
 
     try:
-        from zoning_agent import process_city, city_slug, get_cached_legend
+        from zoning_agent import process_city, city_slug, get_cached_legend, get_cached_geojson_path
 
         slug = city_slug(city)
 
-        # Check if already cached
+        # Check if fully cached (legend + GeoJSON both exist)
         cached = get_cached_legend(slug)
         if cached:
-            from zoning_agent import get_cached_geojson_path
             gj_path = get_cached_geojson_path(slug)
-            return {
-                "status": "cached",
-                "city": cached.get("city", city),
-                "slug": slug,
-                "legend_codes": len(cached.get("legend_mapping", {})),
-                "wms_tile_url": cached.get("wms_tile_url"),
-                "has_geojson": gj_path is not None,
-                "zoning_field": cached.get("zoning_field_name", "ZONING"),
-                "data_source_url": cached.get("data_source_url", ""),
-                "notes": cached.get("notes", ""),
-            }
+            if gj_path is not None:
+                # Fully cached — return immediately
+                return {
+                    "status": "cached",
+                    "city": cached.get("city", city),
+                    "slug": slug,
+                    "legend_codes": len(cached.get("legend_mapping", {})),
+                    "wms_tile_url": cached.get("wms_tile_url"),
+                    "has_geojson": True,
+                    "zoning_field": cached.get("zoning_field_name", "ZONING"),
+                    "data_source_url": cached.get("data_source_url", ""),
+                    "notes": cached.get("notes", ""),
+                }
+            else:
+                # Legend cached but GeoJSON missing (previous partial failure)
+                # Re-run the full pipeline to try again with fallback logic
+                print(f"[ZoningAgent] Re-discovering {city} (legend cached but GeoJSON missing)")
 
         # Run the agent in a thread pool (it does sync HTTP + LLM calls)
         loop = asyncio.get_event_loop()
