@@ -2501,14 +2501,14 @@ function DashboardMapTab() {
                 <div style={{ fontSize: '9px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.8px', color: '#94a3b8', marginBottom: '5px' }}>Data Layers</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                   {[
-                    { label: 'Developments', active: devPipelineEnabled, color: '#f59e0b', icon: '🏗️', count: devPipelineEnabled ? filteredPipeline.length : null, toggle: () => setDevPipelineEnabled(v => !v) },
-                    { label: 'Absorption', active: absorptionEnabled, color: '#059669', icon: '📊', count: absorptionEnabled ? filteredAbsorption.length : null, toggle: () => setAbsorptionEnabled(v => !v) },
-                    { label: 'County', active: countyOverlay, color: '#6366f1', icon: '🗺️', toggle: () => setCountyOverlay(v => !v) },
-                    { label: 'ZIP Points', active: zipOverlay, color: '#10b981', icon: '📍', toggle: () => setZipOverlay(v => !v) },
-                    { label: 'ZIP Heat', active: zipHeatmap, color: '#7c3aed', icon: '🔥', toggle: () => setZipHeatmap(v => !v) },
-                    { label: 'Zoning', active: zoningEnabled, color: '#3b82f6', icon: '📐', toggle: () => { setZoningEnabled(v => { if (v) { setZoningServiceKey(''); setZoningFilter(''); } return !v; }); } },
-                    { label: 'Parcels', active: parcelOverlay, color: '#e11d48', icon: '📦', toggle: () => setParcelOverlay(v => !v) },
-                  ].map(({ label, active, color, icon, count, toggle }) => (
+                    { label: 'Developments', active: devPipelineEnabled, color: '#f59e0b', count: devPipelineEnabled ? filteredPipeline.length : null, toggle: () => setDevPipelineEnabled(v => !v) },
+                    { label: 'Absorption', active: absorptionEnabled, color: '#059669', count: absorptionEnabled ? filteredAbsorption.length : null, toggle: () => setAbsorptionEnabled(v => !v) },
+                    { label: 'County', active: countyOverlay, color: '#6366f1', toggle: () => setCountyOverlay(v => !v) },
+                    { label: 'ZIP Points', active: zipOverlay, color: '#10b981', toggle: () => setZipOverlay(v => !v) },
+                    { label: 'ZIP Heat', active: zipHeatmap, color: '#7c3aed', toggle: () => setZipHeatmap(v => !v) },
+                    { label: 'Zoning', active: zoningEnabled, color: '#3b82f6', toggle: () => { setZoningEnabled(v => { if (v) { setZoningServiceKey(''); setZoningFilter(''); } return !v; }); } },
+                    { label: 'Parcels', active: parcelOverlay, color: '#e11d48', toggle: () => setParcelOverlay(v => !v) },
+                  ].map(({ label, active, color, count, toggle }) => (
                     <button key={label} onClick={toggle}
                       style={{
                         display: 'inline-flex', alignItems: 'center', gap: '4px',
@@ -2521,7 +2521,10 @@ function DashboardMapTab() {
                         transition: 'all 0.15s ease',
                         lineHeight: 1,
                       }}>
-                      <span style={{ fontSize: '11px' }}>{icon}</span>
+                      <span style={{
+                        width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+                        backgroundColor: active ? color : '#cbd5e1',
+                      }} />
                       {label}
                       {count != null && <span style={{
                         fontSize: '9px', fontWeight: '700', color: 'white',
