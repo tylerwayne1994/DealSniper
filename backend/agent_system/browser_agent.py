@@ -326,190 +326,135 @@ def _parse_int(val) -> Optional[int]:
 # Find the Playwright-installed Chromium binary
 # ============================================================================
 
-# File written at build-time by render.yaml buildCommand
+# Persistent browser dir INSIDE the project so it survives Render build→runtime.
+# Set via PLAYWRIGHT_BROWSERS_PATH env var in render.yaml.
+_PROJECT_BROWSERS_DIR = os.path.join(os.path.dirname(__file__), "..", ".browsers")
 _CHROMIUM_PATH_FILE = os.path.join(os.path.dirname(__file__), "..", ".chromium_path")
 
 
 def _find_chromium_binary() -> Optional[str]:
-    """
-    Locate the Playwright Chromium binary on the system.
-    Tries multiple strategies in order of reliability.
-    """
+    """Locate the Playwright-installed Chromium binary."""
     home = os.path.expanduser("~")
-    log.info("[CHROMIUM] Search starting — HOME=%s, cwd=%s", home, os.getcwd())
+    log.info("[CHROMIUM] Search — HOME=%s  cwd=%s  PLAYWRIGHT_BROWSERS_PATH=%s",
+             home, os.getcwd(), os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "<unset>"))
 
-    # ── Strategy 0: Build-time saved path file ──────────────────────────
+    # ── 0. Build-time saved path ────────────────────────────────────────
     if os.path.isfile(_CHROMIUM_PATH_FILE):
-        with open(_CHROMIUM_PATH_FILE) as f:
-            saved = f.read().strip()
+        saved = open(_CHROMIUM_PATH_FILE).read().strip()
         if saved and os.path.isfile(saved):
-            log.info("[CHROMIUM] Found via build-time path file: %s", saved)
+            log.info("[CHROMIUM] ✅ Found via .chromium_path file: %s", saved)
             return saved
-        log.info("[CHROMIUM] Build-time path file exists but path invalid: '%s'", saved)
+        log.info("[CHROMIUM] .chromium_path exists but invalid: '%s'", saved)
 
-    # ── Strategy 1: CHROME_PATH env var ─────────────────────────────────
-    env_path = os.environ.get("CHROME_PATH") or os.environ.get("CHROMIUM_PATH")
-    if env_path and os.path.isfile(env_path):
-        log.info("[CHROMIUM] Found via env var: %s", env_path)
-        return env_path
+    # ── 1. CHROME_PATH env var ──────────────────────────────────────────
+    for var in ("CHROME_PATH", "CHROMIUM_PATH"):
+        p = os.environ.get(var, "")
+        if p and os.path.isfile(p):
+            log.info("[CHROMIUM] ✅ Found via $%s: %s", var, p)
+            return p
 
-    # ── Strategy 2: Playwright package registry (browsers.json) ─────────
-    # The installed playwright module contains browsers.json with the exact
-    # chromium revision.  We compute the expected binary path from that.
-    try:
-        import importlib.util as _ilu
-        pw_spec = _ilu.find_spec("playwright")
-        if pw_spec and pw_spec.origin:
-            pw_pkg = os.path.dirname(pw_spec.origin)
-            browsers_json = os.path.join(pw_pkg, "driver", "package", "browsers.json")
-            log.info("[CHROMIUM] Checking Playwright registry: %s (exists=%s)",
-                     browsers_json, os.path.isfile(browsers_json))
-            if os.path.isfile(browsers_json):
-                import json as _json
-                with open(browsers_json) as _f:
-                    registry = _json.load(_f)
-                for entry in registry.get("browsers", []):
-                    if entry.get("name") == "chromium":
-                        rev = entry.get("revision", "")
-                        log.info("[CHROMIUM] Registry revision: %s", rev)
-                        base_dirs = [
-                            os.environ.get("PLAYWRIGHT_BROWSERS_PATH", ""),
-                            os.path.join(home, ".cache", "ms-playwright"),
-                            "/opt/render/.cache/ms-playwright",
-                            "/home/render/.cache/ms-playwright",
-                            "/root/.cache/ms-playwright",
-                        ]
-                        for base in base_dirs:
-                            if not base or not os.path.isdir(base):
-                                continue
-                            # Try standard chromium path
-                            for dirname, binname in [
-                                (f"chromium-{rev}", "chrome"),
-                                (f"chromium_headless_shell-{rev}", "headless_shell"),
-                            ]:
-                                candidate = os.path.join(base, dirname, "chrome-linux", binname)
-                                if os.path.isfile(candidate):
-                                    log.info("[CHROMIUM] Found via registry: %s", candidate)
-                                    return candidate
-                        # Log what's in each base dir for debugging
-                        for base in base_dirs:
-                            if base and os.path.isdir(base):
-                                try:
-                                    contents = os.listdir(base)
-                                    log.info("[CHROMIUM]   base=%s contents=%s", base, contents[:20])
-                                except Exception:
-                                    pass
-    except Exception as e:
-        log.warning("[CHROMIUM] Registry strategy error: %s", e)
-
-    # ── Strategy 3: Walk all plausible ms-playwright directories ────────
-    ms_pw_roots = set()
-    for d in [
+    # ── 2. Walk candidate directories for 'chrome' binary ──────────────
+    candidate_roots = []
+    pw_env = os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "")
+    if pw_env:
+        candidate_roots.append(pw_env)
+    candidate_roots.extend([
+        os.path.abspath(_PROJECT_BROWSERS_DIR),
         os.path.join(home, ".cache", "ms-playwright"),
+        "/opt/render/project/src/backend/.browsers",
         "/opt/render/.cache/ms-playwright",
         "/home/render/.cache/ms-playwright",
         "/root/.cache/ms-playwright",
-    ]:
-        if os.path.isdir(d):
-            ms_pw_roots.add(d)
-    # Also check PLAYWRIGHT_BROWSERS_PATH
-    pw_env = os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "")
-    if pw_env and os.path.isdir(pw_env):
-        for sub in os.listdir(pw_env):
-            full = os.path.join(pw_env, sub)
-            if os.path.isdir(full) and "ms-playwright" in sub:
-                ms_pw_roots.add(full)
-        # The env might point directly at the browsers dir
-        ms_pw_roots.add(pw_env)
+    ])
+    # Dedupe while preserving order
+    seen = set()
+    unique_roots = []
+    for r in candidate_roots:
+        if r not in seen:
+            seen.add(r)
+            unique_roots.append(r)
 
-    for ms_pw in sorted(ms_pw_roots):
-        log.info("[CHROMIUM] Walking ms-playwright dir: %s", ms_pw)
+    for root_dir in unique_roots:
+        if not os.path.isdir(root_dir):
+            log.info("[CHROMIUM]   skip %s (not a dir)", root_dir)
+            continue
+        log.info("[CHROMIUM]   walking %s  contents=%s",
+                 root_dir, os.listdir(root_dir)[:15])
         try:
-            for root, dirs, files in os.walk(ms_pw):
-                # Prefer full 'chrome' over 'headless_shell'
-                if "chrome" in files:
-                    candidate = os.path.join(root, "chrome")
-                    if os.access(candidate, os.X_OK):
-                        log.info("[CHROMIUM] Found via os.walk: %s", candidate)
-                        return candidate
-                if "headless_shell" in files:
-                    candidate = os.path.join(root, "headless_shell")
-                    if os.access(candidate, os.X_OK):
-                        log.info("[CHROMIUM] Found headless_shell via os.walk: %s", candidate)
-                        return candidate
+            for dirpath, dirnames, filenames in os.walk(root_dir):
+                if "chrome" in filenames:
+                    p = os.path.join(dirpath, "chrome")
+                    if os.access(p, os.X_OK):
+                        log.info("[CHROMIUM] ✅ Found via walk: %s", p)
+                        return p
+                if "headless_shell" in filenames:
+                    p = os.path.join(dirpath, "headless_shell")
+                    if os.access(p, os.X_OK):
+                        log.info("[CHROMIUM] ✅ Found headless_shell: %s", p)
+                        return p
         except Exception as e:
-            log.debug("[CHROMIUM] os.walk(%s) error: %s", ms_pw, e)
+            log.warning("[CHROMIUM]   walk error %s: %s", root_dir, e)
 
-    # ── Strategy 4: Glob patterns ──────────────────────────────────────
-    playwright_patterns = [
-        f"{home}/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
-        "/opt/render/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
-        "/home/render/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
-        "/root/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
-        "/opt/render/project/src/.venv/**/ms-playwright/chromium-*/chrome-linux/chrome",
-    ]
-    for pattern in playwright_patterns:
-        matches = sorted(glob.glob(pattern, recursive=True))
-        if matches:
-            log.info("[CHROMIUM] Found via glob %s: %s", pattern, matches[-1])
-            return matches[-1]
+    # ── 3. shutil.which ─────────────────────────────────────────────────
+    for name in ("chromium", "chromium-browser", "google-chrome", "google-chrome-stable"):
+        p = shutil.which(name)
+        if p:
+            log.info("[CHROMIUM] ✅ Found via which(%s): %s", name, p)
+            return p
 
-    # ── Strategy 5: shutil.which for system browsers ────────────────────
-    for name in ["chromium", "chromium-browser", "google-chrome", "google-chrome-stable"]:
-        path = shutil.which(name)
-        if path:
-            log.info("[CHROMIUM] Found via which(%s): %s", name, path)
-            return path
-
-    # ── Strategy 6: Ask playwright CLI ──────────────────────────────────
-    try:
-        result = subprocess.run(
-            ["python", "-m", "playwright", "install", "--dry-run", "chromium"],
-            capture_output=True, text=True, timeout=10,
-        )
-        log.info("[CHROMIUM] playwright dry-run stdout=%s stderr=%s",
-                 result.stdout[:300], result.stderr[:300])
-        for line in (result.stdout + result.stderr).splitlines():
-            stripped = line.strip()
-            if "chrome" in stripped.lower() and os.path.isfile(stripped):
-                log.info("[CHROMIUM] Found via dry-run: %s", stripped)
-                return stripped
-    except Exception as e:
-        log.debug("[CHROMIUM] playwright dry-run failed: %s", e)
-
-    # ── Strategy 7: brute-force find ────────────────────────────────────
-    try:
-        result = subprocess.run(
-            ["find", "/opt", "/home", "/root", "-maxdepth", "8",
-             "-name", "chrome", "-path", "*ms-playwright*", "-type", "f"],
-            capture_output=True, text=True, timeout=20,
-        )
-        for line in result.stdout.strip().splitlines():
-            p = line.strip()
-            if os.path.isfile(p) and os.access(p, os.X_OK):
-                log.info("[CHROMIUM] Found via find: %s", p)
-                return p
-    except Exception as e:
-        log.debug("[CHROMIUM] find failed: %s", e)
-
-    log.warning("[CHROMIUM] Could not find Chromium binary anywhere!")
+    log.warning("[CHROMIUM] ❌ Could not find Chromium binary anywhere!")
     return None
 
 
+def _ensure_chromium() -> Optional[str]:
+    """
+    Find chromium binary.  If not found, install it at runtime into the
+    project .browsers directory, then search again.
+    """
+    path = _find_chromium_binary()
+    if path:
+        return path
+
+    # Runtime install fallback — use the project-local .browsers dir
+    browsers_dir = os.path.abspath(_PROJECT_BROWSERS_DIR)
+    os.makedirs(browsers_dir, exist_ok=True)
+    log.warning("[CHROMIUM] Binary not found — installing at runtime to %s", browsers_dir)
+
+    env = os.environ.copy()
+    env["PLAYWRIGHT_BROWSERS_PATH"] = browsers_dir
+
+    try:
+        result = subprocess.run(
+            ["python", "-m", "playwright", "install", "chromium"],
+            capture_output=True, text=True, timeout=120, env=env,
+        )
+        log.info("[CHROMIUM] Runtime install stdout: %s", result.stdout[-500:] if result.stdout else "")
+        log.info("[CHROMIUM] Runtime install stderr: %s", result.stderr[-500:] if result.stderr else "")
+        if result.returncode != 0:
+            log.error("[CHROMIUM] Runtime install failed (rc=%d)", result.returncode)
+    except Exception as e:
+        log.error("[CHROMIUM] Runtime install exception: %s", e)
+
+    # Search again after install
+    path = _find_chromium_binary()
+    if path:
+        log.info("[CHROMIUM] ✅ Found after runtime install: %s", path)
+    else:
+        log.error("[CHROMIUM] ❌ Still not found after runtime install!")
+    return path
+
+
 def _set_chromium_env(binary_path: Optional[str]):
-    """
-    Set environment variables so browser-use's internal watchdog can find
-    the Chromium binary without falling back to uvx.
-    """
+    """Set env vars so browser-use's watchdog finds the binary."""
     if not binary_path:
         return
     os.environ["CHROME_PATH"] = binary_path
-    ms_pw_idx = binary_path.find("ms-playwright")
-    if ms_pw_idx != -1:
-        pw_path = binary_path[:ms_pw_idx + len("ms-playwright")]
-        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = os.path.dirname(pw_path)
-        log.info("[CHROMIUM] Set PLAYWRIGHT_BROWSERS_PATH=%s", os.path.dirname(pw_path))
-    log.info("[CHROMIUM] Set CHROME_PATH=%s", binary_path)
+    # Also put chrome's directory on PATH so shutil.which("chrome") works
+    chrome_dir = os.path.dirname(binary_path)
+    current_path = os.environ.get("PATH", "")
+    if chrome_dir not in current_path:
+        os.environ["PATH"] = chrome_dir + os.pathsep + current_path
+    log.info("[CHROMIUM] Set CHROME_PATH=%s  Added %s to PATH", binary_path, chrome_dir)
 
 
 # ============================================================================
@@ -582,10 +527,16 @@ async def run_platform_search(
     log.info("[DEBUG] _FlexibleLLM initialized (provider=%s)", getattr(llm, 'provider', 'unset'))
 
     # Configure browser with explicit Chromium path to avoid uvx dependency
-    chromium_path = _find_chromium_binary()
+    chromium_path = _ensure_chromium()
     log.info("[DEBUG] Chromium binary path: %s", chromium_path)
     # Set env vars so browser-use's internal watchdog also finds the binary
     _set_chromium_env(chromium_path)
+
+    if not chromium_path:
+        raise RuntimeError(
+            "Chromium binary not found and runtime install failed. "
+            "Check PLAYWRIGHT_BROWSERS_PATH and build logs."
+        )
 
     if BrowserSession is not None:
         try:
