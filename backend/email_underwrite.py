@@ -37,6 +37,17 @@ INBOUND_EMAIL = os.getenv("INBOUND_GMAIL_ADDRESS", "dealsniperinbound@gmail.com"
 router = APIRouter(prefix="/api/email-underwrite", tags=["Email Underwrite"])
 
 
+def _imap_select(mail, folder: str):
+    """Select an IMAP folder, properly quoting names with spaces/brackets.
+
+    Gmail folders like [Gmail]/All Mail MUST be quoted for IMAP.
+    Returns (status, response) from mail.select().
+    """
+    # Always quote the folder name to handle spaces and special chars
+    quoted = f'"{folder}"'
+    return mail.select(quoted)
+
+
 class AttachmentIn(BaseModel):
     filename: str
     mime_type: Optional[str] = None
@@ -347,7 +358,7 @@ def _download_attachment_via_imap(uid_str: str) -> tuple[Optional[bytes], Option
 
         for try_folder in folders_to_try:
             try:
-                st_sel, _ = mail.select(try_folder)
+                st_sel, _ = _imap_select(mail, try_folder)
                 if st_sel != "OK":
                     print(f"[DEBUG] Could not select folder {try_folder}")
                     continue
@@ -736,7 +747,7 @@ def _sync_inbox_core() -> dict:
         all_uid_folder_pairs = []
         for folder in folders_to_check:
             try:
-                st, _ = mail.select(folder)
+                st, _ = _imap_select(mail, folder)
                 if st != "OK":
                     print(f"[AutoPipeline-Sync]   Folder {folder}: select failed (status={st})")
                     continue
@@ -768,7 +779,7 @@ def _sync_inbox_core() -> dict:
                 already_known += 1
                 continue
 
-            mail.select(folder)
+            _imap_select(mail, folder)
             st, msg_data = mail.uid("fetch", uid_bytes, "(RFC822.HEADER)")
             if st != "OK" or not msg_data or not msg_data[0]:
                 print(f"[AutoPipeline-Sync]   UID {uid_str}: fetch header failed (status={st})")
@@ -803,7 +814,7 @@ def _sync_inbox_core() -> dict:
                 print(f"[AutoPipeline-Sync]     Sender is inbound address — checking for forwarded sender...")
                 try:
                     # Download full message to inspect body/headers
-                    mail.select(folder)
+                    _imap_select(mail, folder)
                     st_full, full_data = mail.uid("fetch", uid_bytes, "(RFC822)")
                     if st_full == "OK" and full_data and full_data[0]:
                         full_bytes = full_data[0][1] if isinstance(full_data[0], tuple) else full_data[0]
@@ -1525,7 +1536,8 @@ async def debug_pipeline():
 
     for folder in folders_to_check:
         try:
-            st, _ = mail.select(folder)
+            quoted_folder = f'"{folder}"'
+            st, _ = mail.select(quoted_folder)
             if st != "OK":
                 dbg(f"  Folder {folder}: could not select (status={st})")
                 continue
@@ -1539,7 +1551,7 @@ async def debug_pipeline():
                     uid_str = uid_bytes.decode()
                     dedup_key = f"{folder}:{uid_str}"
                     try:
-                        mail.select(folder)
+                        mail.select(quoted_folder)
                         st2, msg_data = mail.uid("fetch", uid_bytes, "(RFC822.HEADER)")
                         if st2 == "OK" and msg_data and msg_data[0]:
                             header_bytes = msg_data[0][1] if isinstance(msg_data[0], tuple) else msg_data[0]
@@ -1666,26 +1678,17 @@ async def debug_pipeline():
 
 @router.post("/force-sync")
 async def force_sync_pipeline():
-    """Force a single pipeline cycle right now (sync + process).
-
-    Returns the full result dict for debugging.
+    """Force a pipeline cycle: sync inbox immediately, then kick off
+    job processing in a background thread so the HTTP response returns fast.
     """
-    debug_log = []
+    print("[FORCE-SYNC] Starting forced sync...")
 
-    def dbg(msg):
-        debug_log.append(msg)
-        print(f"[FORCE-SYNC] {msg}")
-
-    dbg("Starting forced pipeline cycle...")
-
-    # Run sync
-    dbg("Step 1: Syncing inbox...")
+    # Step 1: Sync inbox (fast — just IMAP header scan)
     sync_result = _sync_inbox_core()
-    dbg(f"Sync result: {json.dumps(sync_result, default=str)}")
-
     new_jobs = sync_result.get("new_job_ids", [])
+    print(f"[FORCE-SYNC] Sync complete: {json.dumps(sync_result, default=str)}")
 
-    # Pick up ALL pending jobs — both new (no deal_id) and reset ones (have deal_id)
+    # Step 2: Gather all pending jobs
     reprocess_jobs = []
     try:
         sb = get_supabase()
@@ -1696,43 +1699,41 @@ async def force_sync_pipeline():
                 continue
             if row.get("deal_id"):
                 reprocess_jobs.append(jid)
-                dbg(f"Added pending job WITH deal_id for reprocess: {jid}")
             else:
                 new_jobs.append(jid)
-                dbg(f"Added pending job (no deal): {jid}")
     except Exception as e:
-        dbg(f"Failed to query pending jobs: {e}")
+        print(f"[FORCE-SYNC] Failed to query pending jobs: {e}")
 
-    dbg(f"Total: {len(new_jobs)} new jobs + {len(reprocess_jobs)} reprocess jobs")
+    total = len(new_jobs) + len(reprocess_jobs)
+    print(f"[FORCE-SYNC] {len(new_jobs)} new + {len(reprocess_jobs)} reprocess = {total} total jobs")
 
-    # Process new jobs (no deal yet)
-    job_results = []
-    for job_id in new_jobs:
-        dbg(f"Processing NEW job {job_id}...")
-        try:
-            result = _process_and_parse_job(job_id)
-            dbg(f"Job {job_id} result: {json.dumps(result, default=str)}")
-            job_results.append({"job_id": job_id, "result": result})
-        except Exception as e:
-            dbg(f"Job {job_id} FAILED: {e}")
-            job_results.append({"job_id": job_id, "error": str(e)})
+    # Step 3: Fire off processing in a background thread so we return immediately
+    if total > 0:
+        def _bg_process():
+            for job_id in new_jobs:
+                try:
+                    print(f"[FORCE-SYNC-BG] Processing NEW job {job_id}...")
+                    result = _process_and_parse_job(job_id)
+                    print(f"[FORCE-SYNC-BG] Job {job_id} result: {result}")
+                except Exception as e:
+                    print(f"[FORCE-SYNC-BG] Job {job_id} FAILED: {e}")
+            for job_id in reprocess_jobs:
+                try:
+                    print(f"[FORCE-SYNC-BG] Re-processing job {job_id}...")
+                    result = _reprocess_existing_job(job_id)
+                    print(f"[FORCE-SYNC-BG] Reprocess {job_id} result: {result}")
+                except Exception as e:
+                    print(f"[FORCE-SYNC-BG] Reprocess {job_id} FAILED: {e}")
 
-    # Reprocess jobs with existing deals
-    for job_id in reprocess_jobs:
-        dbg(f"Re-processing job {job_id} (has existing deal)...")
-        try:
-            result = _reprocess_existing_job(job_id)
-            dbg(f"Reprocess job {job_id} result: {json.dumps(result, default=str)}")
-            job_results.append({"job_id": job_id, "result": result, "type": "reprocess"})
-        except Exception as e:
-            dbg(f"Reprocess job {job_id} FAILED: {e}")
-            job_results.append({"job_id": job_id, "error": str(e), "type": "reprocess"})
+        bg = threading.Thread(target=_bg_process, daemon=True, name="force-sync-bg")
+        bg.start()
 
     return {
         "sync_result": sync_result,
-        "jobs_processed": len(new_jobs) + len(reprocess_jobs),
-        "job_results": job_results,
-        "log": debug_log,
+        "jobs_queued": total,
+        "new_job_ids": new_jobs,
+        "reprocess_job_ids": reprocess_jobs,
+        "message": f"Synced inbox. {total} jobs queued for background processing.",
     }
 
 

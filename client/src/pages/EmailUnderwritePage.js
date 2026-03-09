@@ -58,12 +58,17 @@ function EmailUnderwritePage() {
       });
       const data = await res.json();
       const syncInfo = data.sync_result || {};
-      const jobCount = data.jobs_processed || 0;
+      const queued = data.jobs_queued || 0;
       setSyncMessage(
-        `Synced: ${syncInfo.synced || 0} new, ${syncInfo.already_known || 0} known, ${syncInfo.skipped_no_user || 0} no-match. Processed: ${jobCount} jobs.`
+        `Synced: ${syncInfo.synced || 0} new, ${syncInfo.already_known || 0} known, ${syncInfo.skipped_no_user || 0} no-match. ${queued} jobs queued for processing.`
       );
-      // Reload jobs from DB
-      setTimeout(() => loadPipeline(), 1000);
+      // Poll for job completion every 5 seconds
+      if (queued > 0) {
+        setSyncMessage(prev => prev + ' Processing in background...');
+        const pollId = setInterval(() => loadPipeline(), 5000);
+        setTimeout(() => clearInterval(pollId), 120000); // stop polling after 2 min
+      }
+      setTimeout(() => loadPipeline(), 2000);
     } catch (err) {
       console.error('Force sync error:', err);
       setSyncMessage('Sync error: ' + err.message);
