@@ -2465,128 +2465,201 @@ function DashboardMapTab() {
           )}
 
           {activeTab === 'tools' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
 
-              {/* ─── Pin Filter (inline) ─── */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Filter size={12} style={{ color: '#9ca3af', flexShrink: 0 }} />
+              {/* ─── Pin Filter Row ─── */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '6px 10px', backgroundColor: '#f8fafc',
+                borderBottom: '1px solid #f1f5f9',
+              }}>
+                <Filter size={11} style={{ color: '#94a3b8', flexShrink: 0 }} />
                 <select value={mapFilter} onChange={(e) => setMapFilter(e.target.value)}
-                  style={{ flex: 1, padding: '3px 6px', fontSize: '11px', border: '1px solid #e5e7eb', borderRadius: '5px', backgroundColor: 'white', color: '#374151', fontWeight: '500' }}>
+                  style={{
+                    flex: 1, padding: '4px 8px', fontSize: '11px', fontWeight: '500',
+                    border: '1px solid #e2e8f0', borderRadius: '6px',
+                    backgroundColor: 'white', color: '#334155',
+                    backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2394a3b8\' stroke-width=\'2\'%3E%3Cpath d=\'m6 9 6 6 6-6\'/%3E%3C/svg%3E")',
+                    backgroundRepeat: 'no-repeat', backgroundPosition: 'right 6px center',
+                    WebkitAppearance: 'none', appearance: 'none', paddingRight: '24px',
+                  }}>
                   <option value="all">All Pins</option>
-                  <option value="pipeline">Pipeline Only</option>
+                  <option value="pipeline">Developments Only</option>
                   <option value="rapidfire">Rapid Fire Only</option>
                   <option value="prospects">Prospect Cities</option>
                 </select>
-                <span style={{ fontSize: '10px', color: '#9ca3af' }}>
+                <span style={{
+                  fontSize: '10px', fontWeight: '700', color: '#64748b',
+                  backgroundColor: '#e2e8f0', padding: '2px 7px', borderRadius: '10px', minWidth: '20px', textAlign: 'center',
+                }}>
                   {customPins.filter(p => { if (mapFilter === 'all') return true; if (mapFilter === 'pipeline') return p.category === 'pipeline'; if (mapFilter === 'rapidfire') return p.category === 'rapidfire'; if (mapFilter === 'prospects') return p.category === 'prospect'; return true; }).length}
                 </span>
               </div>
 
-              {/* ─── Layer Toggles (compact 3-col grid) ─── */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px' }}>
-                {[
-                  { label: 'County', active: countyOverlay, color: '#6366f1', toggle: () => setCountyOverlay(v => !v) },
-                  { label: 'ZIP Pts', active: zipOverlay, color: '#10b981', toggle: () => setZipOverlay(v => !v) },
-                  { label: 'ZIP Heat', active: zipHeatmap, color: '#7c3aed', toggle: () => setZipHeatmap(v => !v) },
-                  { label: 'Pipeline', active: devPipelineEnabled, color: '#f59e0b', toggle: () => setDevPipelineEnabled(v => !v) },
-                  { label: 'Absorb', active: absorptionEnabled, color: '#059669', toggle: () => setAbsorptionEnabled(v => !v) },
-                  { label: 'Zoning', active: zoningEnabled, color: '#3b82f6', toggle: () => { setZoningEnabled(v => { if (v) { setZoningServiceKey(''); setZoningFilter(''); } return !v; }); } },
-                  { label: 'Parcels', active: parcelOverlay, color: '#e11d48', toggle: () => setParcelOverlay(v => !v) },
-                ].map(({ label, active, color, toggle }) => (
-                  <button key={label} onClick={toggle}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '5px',
-                      padding: '5px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                      fontSize: '11px', fontWeight: active ? '600' : '500',
-                      color: active ? color : '#6b7280',
-                      backgroundColor: active ? `${color}12` : '#f3f4f6',
-                      transition: 'all 0.15s',
-                    }}>
-                    <span style={{
-                      width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
-                      backgroundColor: active ? color : '#d1d5db',
-                      boxShadow: active ? `0 0 4px ${color}60` : 'none',
-                      transition: 'all 0.15s',
-                    }} />
-                    {label}
-                  </button>
-                ))}
+              {/* ─── Data Layers ─── */}
+              <div style={{ padding: '6px 10px 4px' }}>
+                <div style={{ fontSize: '9px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.8px', color: '#94a3b8', marginBottom: '5px' }}>Data Layers</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                  {[
+                    { label: 'Developments', active: devPipelineEnabled, color: '#f59e0b', icon: '🏗️', count: devPipelineEnabled ? filteredPipeline.length : null, toggle: () => setDevPipelineEnabled(v => !v) },
+                    { label: 'Absorption', active: absorptionEnabled, color: '#059669', icon: '📊', count: absorptionEnabled ? filteredAbsorption.length : null, toggle: () => setAbsorptionEnabled(v => !v) },
+                    { label: 'County', active: countyOverlay, color: '#6366f1', icon: '🗺️', toggle: () => setCountyOverlay(v => !v) },
+                    { label: 'ZIP Points', active: zipOverlay, color: '#10b981', icon: '📍', toggle: () => setZipOverlay(v => !v) },
+                    { label: 'ZIP Heat', active: zipHeatmap, color: '#7c3aed', icon: '🔥', toggle: () => setZipHeatmap(v => !v) },
+                    { label: 'Zoning', active: zoningEnabled, color: '#3b82f6', icon: '📐', toggle: () => { setZoningEnabled(v => { if (v) { setZoningServiceKey(''); setZoningFilter(''); } return !v; }); } },
+                    { label: 'Parcels', active: parcelOverlay, color: '#e11d48', icon: '📦', toggle: () => setParcelOverlay(v => !v) },
+                  ].map(({ label, active, color, icon, count, toggle }) => (
+                    <button key={label} onClick={toggle}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '4px',
+                        padding: '4px 10px', borderRadius: '20px',
+                        border: active ? `1.5px solid ${color}` : '1.5px solid #e2e8f0',
+                        cursor: 'pointer',
+                        fontSize: '11px', fontWeight: active ? '600' : '500',
+                        color: active ? color : '#64748b',
+                        backgroundColor: active ? `${color}10` : 'white',
+                        transition: 'all 0.15s ease',
+                        lineHeight: 1,
+                      }}>
+                      <span style={{ fontSize: '11px' }}>{icon}</span>
+                      {label}
+                      {count != null && <span style={{
+                        fontSize: '9px', fontWeight: '700', color: 'white',
+                        backgroundColor: color, borderRadius: '8px', padding: '1px 5px', marginLeft: '1px',
+                      }}>{count > 999 ? `${(count/1000).toFixed(1)}k` : count}</span>}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* ─── Settings for active layers (only if any on) ─── */}
+              {/* ─── Active Layer Settings ─── */}
               {(countyOverlay || zipOverlay || zipHeatmap || devPipelineEnabled || absorptionEnabled || zoningEnabled) && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  {countyOverlay && (
-                    <select value={countyMetric} onChange={(e) => setCountyMetric(e.target.value)}
-                      style={{ padding: '3px 6px', fontSize: '10px', border: '1px solid #e5e7eb', borderRadius: '5px', backgroundColor: 'white', color: '#374151' }}>
-                      {COUNTY_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                    </select>
-                  )}
-                  {zipOverlay && (
-                    <select value={zipMetric} onChange={(e) => setZipMetric(e.target.value)}
-                      style={{ padding: '3px 6px', fontSize: '10px', border: '1px solid #e5e7eb', borderRadius: '5px', backgroundColor: 'white', color: '#374151' }}>
-                      {ZIP_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                    </select>
-                  )}
-                  {zipHeatmap && (
-                    <select value={zipHeatmapMetric} onChange={(e) => setZipHeatmapMetric(e.target.value)}
-                      style={{ padding: '3px 6px', fontSize: '10px', border: '1px solid #e5e7eb', borderRadius: '5px', backgroundColor: 'white', color: '#374151' }}>
-                      {(() => { const g = {}; ZIP_HEATMAP_METRIC_OPTIONS.forEach(o => { if (!g[o.group]) g[o.group] = []; g[o.group].push(o); }); return Object.entries(g).map(([gr, os]) => <optgroup key={gr} label={gr}>{os.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</optgroup>); })()}
-                    </select>
-                  )}
+                <div style={{
+                  padding: '5px 10px 6px', borderTop: '1px solid #f1f5f9',
+                  display: 'flex', flexDirection: 'column', gap: '4px',
+                }}>
                   {devPipelineEnabled && (
-                    <select value={devPipelineFilter} onChange={(e) => setDevPipelineFilter(e.target.value)}
-                      style={{ padding: '3px 6px', fontSize: '10px', border: '1px solid #e5e7eb', borderRadius: '5px', backgroundColor: 'white', color: '#374151' }}>
-                      {pipelineStatuses.map(s => <option key={s} value={s}>{s === 'all' ? 'All Statuses' : s}</option>)}
-                    </select>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '9px', fontWeight: '600', color: '#f59e0b', minWidth: '36px' }}>DEV</span>
+                      <select value={devPipelineFilter} onChange={(e) => setDevPipelineFilter(e.target.value)}
+                        style={{
+                          flex: 1, padding: '3px 8px', fontSize: '10px', fontWeight: '500',
+                          border: '1px solid #e2e8f0', borderRadius: '5px',
+                          backgroundColor: 'white', color: '#334155',
+                          WebkitAppearance: 'none', appearance: 'none',
+                        }}>
+                        {pipelineStatuses.map(s => <option key={s} value={s}>{s === 'all' ? 'All Statuses' : s}</option>)}
+                      </select>
+                    </div>
                   )}
                   {absorptionEnabled && (
-                    <select value={absorptionFilter} onChange={(e) => setAbsorptionFilter(e.target.value)}
-                      style={{ padding: '3px 6px', fontSize: '10px', border: '1px solid #e5e7eb', borderRadius: '5px', backgroundColor: 'white', color: '#374151' }}>
-                      {absorptionTrends.map(t => <option key={t} value={t}>{t === 'all' ? 'All Trends' : t}</option>)}
-                    </select>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '9px', fontWeight: '600', color: '#059669', minWidth: '36px' }}>ABS</span>
+                      <select value={absorptionFilter} onChange={(e) => setAbsorptionFilter(e.target.value)}
+                        style={{
+                          flex: 1, padding: '3px 8px', fontSize: '10px', fontWeight: '500',
+                          border: '1px solid #e2e8f0', borderRadius: '5px',
+                          backgroundColor: 'white', color: '#334155',
+                          WebkitAppearance: 'none', appearance: 'none',
+                        }}>
+                        {absorptionTrends.map(t => <option key={t} value={t}>{t === 'all' ? 'All Trends' : t}</option>)}
+                      </select>
+                    </div>
+                  )}
+                  {countyOverlay && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '9px', fontWeight: '600', color: '#6366f1', minWidth: '36px' }}>CTY</span>
+                      <select value={countyMetric} onChange={(e) => setCountyMetric(e.target.value)}
+                        style={{
+                          flex: 1, padding: '3px 8px', fontSize: '10px', fontWeight: '500',
+                          border: '1px solid #e2e8f0', borderRadius: '5px',
+                          backgroundColor: 'white', color: '#334155',
+                          WebkitAppearance: 'none', appearance: 'none',
+                        }}>
+                        {COUNTY_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                    </div>
+                  )}
+                  {zipOverlay && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '9px', fontWeight: '600', color: '#10b981', minWidth: '36px' }}>ZIP</span>
+                      <select value={zipMetric} onChange={(e) => setZipMetric(e.target.value)}
+                        style={{
+                          flex: 1, padding: '3px 8px', fontSize: '10px', fontWeight: '500',
+                          border: '1px solid #e2e8f0', borderRadius: '5px',
+                          backgroundColor: 'white', color: '#334155',
+                          WebkitAppearance: 'none', appearance: 'none',
+                        }}>
+                        {ZIP_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                    </div>
+                  )}
+                  {zipHeatmap && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '9px', fontWeight: '600', color: '#7c3aed', minWidth: '36px' }}>HEAT</span>
+                      <select value={zipHeatmapMetric} onChange={(e) => setZipHeatmapMetric(e.target.value)}
+                        style={{
+                          flex: 1, padding: '3px 8px', fontSize: '10px', fontWeight: '500',
+                          border: '1px solid #e2e8f0', borderRadius: '5px',
+                          backgroundColor: 'white', color: '#334155',
+                          WebkitAppearance: 'none', appearance: 'none',
+                        }}>
+                        {(() => { const g = {}; ZIP_HEATMAP_METRIC_OPTIONS.forEach(o => { if (!g[o.group]) g[o.group] = []; g[o.group].push(o); }); return Object.entries(g).map(([gr, os]) => <optgroup key={gr} label={gr}>{os.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</optgroup>); })()}
+                      </select>
+                    </div>
                   )}
                   {zoningEnabled && (
-                    <>
-                      {zoningLoading ? <span style={{ fontSize: '10px', color: '#9ca3af' }}>Loading…</span> : (
-                        <select value={zoningServiceKey} onChange={(e) => { setZoningServiceKey(e.target.value); setZoningFilter(''); }}
-                          style={{ padding: '3px 6px', fontSize: '10px', border: '1px solid #e5e7eb', borderRadius: '5px', backgroundColor: 'white', color: '#374151' }}>
-                          <option value="">Select zoning layer</option>
-                          {(() => {
-                            const groups = {};
-                            Object.entries(zoningServices).forEach(([key, svc]) => {
-                              const region = svc.region || 'SW';
-                              if (!groups[region]) groups[region] = [];
-                              groups[region].push({ key, label: svc.label, state: svc.state });
-                            });
-                            const regionNames = { SW: 'Southwest', NW: 'Northwest', SE: 'Southeast', NE: 'Northeast' };
-                            const regionOrder = ['SW', 'SE', 'NW', 'NE'];
-                            return regionOrder.filter(r => groups[r]).map(region => {
-                              const items = groups[region];
-                              // Sub-group by state within each region
-                              const byState = {};
-                              items.forEach(item => {
-                                const st = item.state || '??';
-                                if (!byState[st]) byState[st] = [];
-                                byState[st].push(item);
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '9px', fontWeight: '600', color: '#3b82f6', minWidth: '36px' }}>ZONE</span>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        {zoningLoading ? <span style={{ fontSize: '10px', color: '#94a3b8' }}>Loading…</span> : (
+                          <select value={zoningServiceKey} onChange={(e) => { setZoningServiceKey(e.target.value); setZoningFilter(''); }}
+                            style={{
+                              width: '100%', padding: '3px 8px', fontSize: '10px', fontWeight: '500',
+                              border: '1px solid #e2e8f0', borderRadius: '5px',
+                              backgroundColor: 'white', color: '#334155',
+                              WebkitAppearance: 'none', appearance: 'none',
+                            }}>
+                            <option value="">Select zoning layer</option>
+                            {(() => {
+                              const groups = {};
+                              Object.entries(zoningServices).forEach(([key, svc]) => {
+                                const region = svc.region || 'SW';
+                                if (!groups[region]) groups[region] = [];
+                                groups[region].push({ key, label: svc.label, state: svc.state });
                               });
-                              const stateLabels = { AZ: 'AZ', CA: 'CA', NC: 'NC', SC: 'SC' };
-                              return (
-                                <optgroup key={region} label={`── ${regionNames[region] || region} (${items.length}) ──`}>
-                                  {Object.entries(byState).sort(([a],[b]) => a.localeCompare(b)).flatMap(([st, stItems]) =>
-                                    stItems.sort((a,b) => a.label.localeCompare(b.label)).map(({ key, label }) => (
-                                      <option key={key} value={key}>{label}, {stateLabels[st] || st}</option>
-                                    ))
-                                  )}
-                                </optgroup>
-                              );
-                            });
-                          })()}
-                        </select>
-                      )}
-                      {zoningServiceKey && <input type="text" placeholder="Filter zone code…" value={zoningFilter} onChange={(e) => setZoningFilter(e.target.value)}
-                        style={{ padding: '3px 6px', fontSize: '10px', border: '1px solid #e5e7eb', borderRadius: '5px', backgroundColor: 'white', color: '#374151' }} />}
-                    </>
+                              const regionNames = { SW: 'Southwest', NW: 'Northwest', SE: 'Southeast', NE: 'Northeast' };
+                              const regionOrder = ['SW', 'SE', 'NW', 'NE'];
+                              return regionOrder.filter(r => groups[r]).map(region => {
+                                const items = groups[region];
+                                const byState = {};
+                                items.forEach(item => {
+                                  const st = item.state || '??';
+                                  if (!byState[st]) byState[st] = [];
+                                  byState[st].push(item);
+                                });
+                                const stateLabels = { AZ: 'AZ', CA: 'CA', NC: 'NC', SC: 'SC' };
+                                return (
+                                  <optgroup key={region} label={`── ${regionNames[region] || region} (${items.length}) ──`}>
+                                    {Object.entries(byState).sort(([a],[b]) => a.localeCompare(b)).flatMap(([st, stItems]) =>
+                                      stItems.sort((a,b) => a.label.localeCompare(b.label)).map(({ key, label }) => (
+                                        <option key={key} value={key}>{label}, {stateLabels[st] || st}</option>
+                                      ))
+                                    )}
+                                  </optgroup>
+                                );
+                              });
+                            })()}
+                          </select>
+                        )}
+                        {zoningServiceKey && <input type="text" placeholder="Filter zone code…" value={zoningFilter} onChange={(e) => setZoningFilter(e.target.value)}
+                          style={{
+                            padding: '3px 8px', fontSize: '10px', fontWeight: '500',
+                            border: '1px solid #e2e8f0', borderRadius: '5px',
+                            backgroundColor: 'white', color: '#334155',
+                          }} />}
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
