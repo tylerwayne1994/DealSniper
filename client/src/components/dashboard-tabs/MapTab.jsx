@@ -528,6 +528,11 @@ function DashboardMapTab() {
   const [absorptionData, setAbsorptionData] = useState([]);
   const [absorptionFilter, setAbsorptionFilter] = useState('all'); // 'all' | market trend filter
 
+  // Cap Rates overlay (MSA-level)
+  const [capRateEnabled, setCapRateEnabled] = useState(false);
+  const [capRateData, setCapRateData] = useState([]);
+  const [capRateFilter, setCapRateFilter] = useState('all'); // 'all' | market tier | investor demand
+
   // Zoning overlay state
   const [zoningEnabled, setZoningEnabled] = useState(false);
   const [zoningServices, setZoningServices] = useState({}); // { key: { label } }
@@ -598,6 +603,16 @@ function DashboardMapTab() {
             rent_growth: r.YoY_Rent_Growth_Pct || '',
             absorption_rate: r.Absorption_Rate_Pct || '',
             market_trend: r.Market_Trend || '',
+            // Cap rate fields from enriched CSV
+            cap_rate_overall: r.CapRate_Overall_Market || '',
+            cap_rate_trend: r.CapRate_Trend || '',
+            cap_rate_classA_stab: r.CapRate_ClassA_Stab_Range || '',
+            cap_rate_classA_va: r.CapRate_ClassA_VA_Range || '',
+            cap_rate_classB_stab: r.CapRate_ClassB_Stab_Range || '',
+            cap_rate_classC_stab: r.CapRate_ClassC_Stab_Range || '',
+            investor_demand: r.Investor_Demand || '',
+            market_tier: r.Market_Tier || '',
+            price_per_unit: r.Typical_Price_Per_Unit_USD || '',
           };
         });
         const valid = enriched.filter(r => r.latitude && r.longitude && !isNaN(Number(r.latitude)));
@@ -631,6 +646,30 @@ function DashboardMapTab() {
       error: (err) => console.error('[Absorption] CSV parse error:', err)
     });
   }, [absorptionEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load cap rates by MSA CSV when first enabled
+  useEffect(() => {
+    if (!capRateEnabled || capRateData.length > 0) return;
+    Papa.parse('/caprates_by_msa_EXPANDED.csv', {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const enriched = results.data.map(r => {
+          const msa = r.MSA || '';
+          const coords = MSA_COORDINATES[msa];
+          return {
+            ...r,
+            latitude: coords ? coords[0] : null,
+            longitude: coords ? coords[1] : null,
+          };
+        }).filter(r => r.latitude && r.longitude);
+        setCapRateData(enriched);
+        console.log(`[CapRates] Loaded ${enriched.length} MSA cap rate data points`);
+      },
+      error: (err) => console.error('[CapRates] CSV parse error:', err)
+    });
+  }, [capRateEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load available zoning services when zoning overlay is first enabled
   useEffect(() => {
@@ -727,6 +766,36 @@ function DashboardMapTab() {
     const s = new Set(absorptionData.map(a => a.Market_Trend).filter(Boolean));
     return ['all', ...Array.from(s).sort()];
   }, [absorptionData]);
+
+  // Filtered cap rate data
+  const filteredCapRates = useMemo(() => {
+    if (!capRateEnabled) return [];
+    if (capRateFilter === 'all') return capRateData;
+    // Filter supports Market_Tier or Investor_Demand values
+    return capRateData.filter(c => c.Market_Tier === capRateFilter || c.Investor_Demand === capRateFilter);
+  }, [capRateEnabled, capRateData, capRateFilter]);
+
+  // Unique filter options for cap rates (market tiers + investor demand levels)
+  const capRateFilterOptions = useMemo(() => {
+    const tiers = new Set(capRateData.map(c => c.Market_Tier).filter(Boolean));
+    const demand = new Set(capRateData.map(c => c.Investor_Demand).filter(Boolean));
+    return [
+      'all',
+      ...Array.from(tiers).sort(),
+      '──────',
+      ...['Very High', 'High', 'Moderate', 'Low', 'Very Low'].filter(d => demand.has(d)),
+    ];
+  }, [capRateData]);
+
+  // Color by cap rate value — green = low (good for buyers), red = high
+  const capRateColor = (rate) => {
+    const r = Number(rate) || 0;
+    if (r <= 4.75) return '#22c55e'; // low / gateway
+    if (r <= 5.5) return '#10b981';  // low-mid
+    if (r <= 6.25) return '#3b82f6'; // mid
+    if (r <= 7.0) return '#f59e0b';  // mid-high
+    return '#ef4444';                // high
+  };
 
   // Color by market trend for absorption circles
   const absorptionColor = (trend) => {
@@ -994,6 +1063,8 @@ function DashboardMapTab() {
                   ${proj.occupancy_rate ? `<div><span style="color:#9ca3af;font-weight:600;font-size:10px;">OCCUPANCY</span><br/>${proj.occupancy_rate}%</div>` : ''}
                   ${proj.avg_rent ? `<div><span style="color:#9ca3af;font-weight:600;font-size:10px;">AVG RENT</span><br/>$${Number(proj.avg_rent).toLocaleString()}</div>` : ''}
                   ${proj.rent_growth ? `<div><span style="color:#9ca3af;font-weight:600;font-size:10px;">RENT GROWTH</span><br/>${proj.rent_growth}%</div>` : ''}
+                  ${proj.cap_rate_overall ? `<div><span style="color:#9ca3af;font-weight:600;font-size:10px;">CAP RATE</span><br/><strong style="color:${capRateColor(proj.cap_rate_overall)}">${proj.cap_rate_overall}%</strong></div>` : ''}
+                  ${proj.investor_demand ? `<div><span style="color:#9ca3af;font-weight:600;font-size:10px;">DEMAND</span><br/>${proj.investor_demand}</div>` : ''}
                 </div>
                 ${proj.description ? `<div style="margin-top:6px;font-size:11px;color:#6b7280;line-height:1.4;border-top:1px solid #e5e7eb;padding-top:6px;">${proj.description.substring(0, 150)}${proj.description.length > 150 ? '…' : ''}</div>` : ''}
                 ${proj.source_url ? `<a href="${proj.source_url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6;margin-top:4px;display:block;font-weight:600;">View Source →</a>` : ''}
@@ -1063,6 +1134,55 @@ function DashboardMapTab() {
         });
       }
 
+      // Cap Rate markers on 3D map
+      if (capRateEnabled) {
+        filteredCapRates.forEach(msa => {
+          const lat = Number(msa.latitude), lng = Number(msa.longitude);
+          if (!lat || !lng) return;
+          const rate = Number(msa.CapRate_Overall_Market) || 0;
+          const color = capRateColor(rate);
+          const radius = Math.max(20, Math.min(36, 20 + (rate - 4) * 3));
+          const el = document.createElement('div');
+          el.style.cursor = 'pointer';
+          el.style.width = `${radius}px`;
+          el.style.height = `${radius}px`;
+          el.innerHTML = `<div style="width:${radius}px;height:${radius}px;border-radius:50%;background:${color};opacity:0.75;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;"><span style="font-size:9px;font-weight:700;color:#fff;">${rate}%</span></div>`;
+          const popup = new maplibregl.Popup({ offset: 12, maxWidth: '400px' })
+            .setHTML(`
+              <div style="font-family:Inter,-apple-system,sans-serif;padding:10px;">
+                <div style="font-weight:700;font-size:15px;color:#111827;margin-bottom:2px;">${msa.MSA}</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+                  <span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${color}22;color:${color};">${rate}% Cap Rate</span>
+                  <span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#e0e7ff;color:#3730a3;">${msa.Market_Tier || ''}</span>
+                  ${msa.CapRate_Trend ? `<span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${msa.CapRate_Trend === 'Compressing' ? '#dcfce7' : msa.CapRate_Trend === 'Expanding' ? '#fef3c7' : '#f1f5f9'};color:${msa.CapRate_Trend === 'Compressing' ? '#166534' : msa.CapRate_Trend === 'Expanding' ? '#92400e' : '#475569'};">${msa.CapRate_Trend}</span>` : ''}
+                </div>
+                <div style="text-align:center;padding:10px;background:${color}15;border-radius:8px;margin-bottom:8px;border:1px solid ${color}30;">
+                  <div style="font-size:24px;font-weight:800;color:${color};">${rate}%</div>
+                  <div style="font-size:11px;color:#6b7280;">Overall Market Cap Rate</div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+                  ${msa.CapRate_ClassA_Stab_Range ? `<div style="padding:5px 8px;background:#f0fdf4;border-radius:6px;font-size:11px;"><div style="font-weight:600;color:#6b7280;font-size:10px;">CLASS A STAB</div><div style="font-weight:700;color:#111827;">${msa.CapRate_ClassA_Stab_Range}</div></div>` : ''}
+                  ${msa.CapRate_ClassA_VA_Range ? `<div style="padding:5px 8px;background:#eff6ff;border-radius:6px;font-size:11px;"><div style="font-weight:600;color:#6b7280;font-size:10px;">CLASS A VA</div><div style="font-weight:700;color:#111827;">${msa.CapRate_ClassA_VA_Range}</div></div>` : ''}
+                  ${msa.CapRate_ClassB_Stab_Range ? `<div style="padding:5px 8px;background:#fefce8;border-radius:6px;font-size:11px;"><div style="font-weight:600;color:#6b7280;font-size:10px;">CLASS B STAB</div><div style="font-weight:700;color:#111827;">${msa.CapRate_ClassB_Stab_Range}</div></div>` : ''}
+                  ${msa.CapRate_ClassC_Stab_Range ? `<div style="padding:5px 8px;background:#fdf2f8;border-radius:6px;font-size:11px;"><div style="font-weight:600;color:#6b7280;font-size:10px;">CLASS C STAB</div><div style="font-weight:700;color:#111827;">${msa.CapRate_ClassC_Stab_Range}</div></div>` : ''}
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:12px;color:#374151;padding-top:6px;border-top:1px solid #e5e7eb;">
+                  <div><span style="color:#9ca3af;font-weight:600;font-size:10px;">INVESTOR DEMAND</span><br/><strong>${msa.Investor_Demand || '–'}</strong></div>
+                  <div><span style="color:#9ca3af;font-weight:600;font-size:10px;">MARKET TIER</span><br/><strong>${msa.Market_Tier || '–'}</strong></div>
+                  ${msa.Typical_Price_Per_Unit_USD ? `<div><span style="color:#9ca3af;font-weight:600;font-size:10px;">PRICE/UNIT (A)</span><br/><strong>$${Number(msa.Typical_Price_Per_Unit_USD).toLocaleString()}</strong></div>` : ''}
+                  ${msa.Typical_Price_Per_Unit_ClassB_USD ? `<div><span style="color:#9ca3af;font-weight:600;font-size:10px;">PRICE/UNIT (B)</span><br/><strong>$${Number(msa.Typical_Price_Per_Unit_ClassB_USD).toLocaleString()}</strong></div>` : ''}
+                </div>
+                ${msa.CapRate_Notes ? `<div style="margin-top:6px;font-size:11px;color:#6b7280;line-height:1.4;border-top:1px solid #e5e7eb;padding-top:6px;">${msa.CapRate_Notes.substring(0, 200)}${msa.CapRate_Notes.length > 200 ? '…' : ''}</div>` : ''}
+              </div>
+            `);
+          const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+            .setLngLat([lng, lat])
+            .setPopup(popup)
+            .addTo(map);
+          maplibreMarkersRef.current.push(marker);
+        });
+      }
+
       allPins.forEach(pin => {
         let color = '#ef4444';
         if (pin.category === 'pipeline') color = '#22c55e';
@@ -1120,7 +1240,7 @@ function DashboardMapTab() {
     } else {
       map.on('load', addMarkers);
     }
-  }, [mapStyle, customPins, baseMarkers, mapFilter, devPipelineEnabled, filteredPipeline, absorptionEnabled, filteredAbsorption]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mapStyle, customPins, baseMarkers, mapFilter, devPipelineEnabled, filteredPipeline, absorptionEnabled, filteredAbsorption, capRateEnabled, filteredCapRates]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmitProperty = async (e) => {
     e.preventDefault();
@@ -1344,10 +1464,31 @@ function DashboardMapTab() {
         };
       }
 
-      // 4. Active overlay layers
+      // 4. Cap rate data summary (if layer is on)
+      if (capRateEnabled && capRateData.length > 0) {
+        const byTier = {};
+        capRateData.forEach(c => {
+          const t = c.Market_Tier || 'Unknown';
+          byTier[t] = (byTier[t] || 0) + 1;
+        });
+        mapContext.capRates = {
+          total: capRateData.length,
+          filter: capRateFilter,
+          byTier,
+          sample: capRateData.slice(0, 15).map(c => ({
+            msa: c.MSA, overallCapRate: c.CapRate_Overall_Market, trend: c.CapRate_Trend,
+            tier: c.Market_Tier, demand: c.Investor_Demand,
+            classAStab: c.CapRate_ClassA_Stab_Range, classAVA: c.CapRate_ClassA_VA_Range,
+            pricePerUnit: c.Typical_Price_Per_Unit_USD
+          }))
+        };
+      }
+
+      // 5. Active overlay layers
       mapContext.activeLayers = [];
       if (devPipelineEnabled) mapContext.activeLayers.push('Developments');
       if (absorptionEnabled) mapContext.activeLayers.push('Absorption');
+      if (capRateEnabled) mapContext.activeLayers.push('Cap Rates');
       if (countyOverlay) mapContext.activeLayers.push('County (' + countyMetric + ')');
       if (zipOverlay) mapContext.activeLayers.push('ZIP Points (' + zipMetric + ')');
       if (zipHeatmap) mapContext.activeLayers.push('ZIP Heatmap (' + zipHeatmapMetric + ')');
@@ -1389,8 +1530,8 @@ function DashboardMapTab() {
       setChat(prev => ({ ...prev, loading: false, messages: [...prev.messages, { role: 'assistant', content: 'Error contacting Max.' }] }));
     }
   }, [chat, userId, customPins, devPipelineEnabled, devPipelineData, devPipelineFilter,
-      absorptionEnabled, absorptionData, absorptionFilter, countyOverlay, countyMetric,
-      zipOverlay, zipMetric, zipHeatmap, zipHeatmapMetric, zoningEnabled]);
+      absorptionEnabled, absorptionData, absorptionFilter, capRateEnabled, capRateData, capRateFilter,
+      countyOverlay, countyMetric, zipOverlay, zipMetric, zipHeatmap, zipHeatmapMetric, zoningEnabled]);
 
   // Render assistant content with simple markdown-ish formatting and collapse
   const FormattedMessage = ({ text }) => {
@@ -2307,6 +2448,7 @@ function DashboardMapTab() {
                       {[
                         { label: 'Developments', active: devPipelineEnabled, color: '#f59e0b', count: devPipelineEnabled ? filteredPipeline.length : null, toggle: () => setDevPipelineEnabled(v => !v) },
                         { label: 'Absorption', active: absorptionEnabled, color: '#059669', count: absorptionEnabled ? filteredAbsorption.length : null, toggle: () => setAbsorptionEnabled(v => !v) },
+                        { label: 'Cap Rates', active: capRateEnabled, color: '#ec4899', count: capRateEnabled ? filteredCapRates.length : null, toggle: () => setCapRateEnabled(v => !v) },
                         { label: 'County', active: countyOverlay, color: '#6366f1', toggle: () => setCountyOverlay(v => !v) },
                         { label: 'ZIP Points', active: zipOverlay, color: '#10b981', toggle: () => setZipOverlay(v => !v) },
                         { label: 'ZIP Heat', active: zipHeatmap, color: '#3b82f6', toggle: () => setZipHeatmap(v => !v) },
@@ -2330,7 +2472,7 @@ function DashboardMapTab() {
                   </div>
 
                   {/* Active Layer Settings */}
-                  {(countyOverlay || zipOverlay || zipHeatmap || devPipelineEnabled || absorptionEnabled || zoningEnabled) && (
+                  {(countyOverlay || zipOverlay || zipHeatmap || devPipelineEnabled || absorptionEnabled || capRateEnabled || zoningEnabled) && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 5, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                       {devPipelineEnabled && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -2351,6 +2493,17 @@ function DashboardMapTab() {
                             backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
                           }}>
                             {absorptionTrends.map(t => <option key={t} value={t} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{t === 'all' ? 'All Trends' : t}</option>)}
+                          </select>
+                        </div>
+                      )}
+                      {capRateEnabled && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 9, fontWeight: 600, color: '#ec4899', minWidth: 36 }}>CAP</span>
+                          <select value={capRateFilter} onChange={(e) => setCapRateFilter(e.target.value)} style={{
+                            flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
+                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
+                          }}>
+                            {capRateFilterOptions.map(o => <option key={o} value={o} disabled={o === '──────'} style={{ backgroundColor: '#1e293b', color: o === '──────' ? '#475569' : '#e2e8f0' }}>{o === 'all' ? 'All Markets' : o}</option>)}
                           </select>
                         </div>
                       )}
@@ -2896,7 +3049,31 @@ function DashboardMapTab() {
                           <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>AVG RENT</span><br/>
                             <span style={{ color: '#374151' }}>${Number(proj.avg_rent).toLocaleString()}</span></div>
                         )}
+                        {proj.cap_rate_overall && (
+                          <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>CAP RATE</span><br/>
+                            <span style={{ fontWeight: 700, color: capRateColor(proj.cap_rate_overall) }}>{proj.cap_rate_overall}%</span></div>
+                        )}
+                        {proj.investor_demand && (
+                          <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>INVESTOR DEMAND</span><br/>
+                            <span style={{ color: '#374151' }}>{proj.investor_demand}</span></div>
+                        )}
+                        {proj.price_per_unit && (
+                          <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>PRICE/UNIT</span><br/>
+                            <span style={{ color: '#374151' }}>${Number(proj.price_per_unit).toLocaleString()}</span></div>
+                        )}
                       </div>
+
+                      {/* Cap rate detail (when available) */}
+                      {proj.cap_rate_overall && (
+                        <div style={{ marginTop: 8, padding: '6px 8px', background: '#fdf2f8', borderRadius: 6, fontSize: 11 }}>
+                          <div style={{ fontWeight: 600, color: '#9ca3af', fontSize: 10, marginBottom: 2 }}>MSA CAP RATES</div>
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', color: '#374151' }}>
+                            {proj.cap_rate_classA_stab && <span>A Stab: <strong>{proj.cap_rate_classA_stab}</strong></span>}
+                            {proj.cap_rate_classA_va && <span>A VA: <strong>{proj.cap_rate_classA_va}</strong></span>}
+                            {proj.cap_rate_classB_stab && <span>B Stab: <strong>{proj.cap_rate_classB_stab}</strong></span>}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Description */}
                       {proj.description && (
@@ -2977,6 +3154,110 @@ function DashboardMapTab() {
                       {msa.Market_Commentary && (
                         <div style={{ marginTop: 8, fontSize: 11, color: '#6b7280', lineHeight: 1.4,
                           borderTop: '1px solid #f3f4f6', paddingTop: 6 }}>{msa.Market_Commentary}</div>
+                      )}
+                    </div>
+                  </Popup>
+                </CircleMarker>
+              );
+            })}
+
+            {/* Cap Rate markers (MSA-level) */}
+            {capRateEnabled && filteredCapRates.map((msa, idx) => {
+              const lat = Number(msa.latitude), lng = Number(msa.longitude);
+              if (!lat || !lng) return null;
+              const rate = Number(msa.CapRate_Overall_Market) || 0;
+              const color = capRateColor(rate);
+              const radius = Math.max(10, Math.min(24, 10 + (rate - 4) * 3));
+              return (
+                <CircleMarker
+                  key={`cap-${idx}`}
+                  center={[lat, lng]}
+                  radius={radius}
+                  pathOptions={{ fillColor: color, fillOpacity: 0.7, color: '#fff', weight: 2, opacity: 0.9 }}
+                >
+                  <Popup maxWidth={400}>
+                    <div style={{ fontFamily: 'Inter, -apple-system, sans-serif', minWidth: 320, padding: 4 }}>
+                      {/* Header */}
+                      <div style={{ fontWeight: 700, fontSize: 15, color: '#111827', marginBottom: 2 }}>
+                        {msa.MSA}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                        <span style={{
+                          padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600,
+                          background: `${color}20`, color: color, border: `1px solid ${color}40`
+                        }}>{rate}% Cap Rate</span>
+                        <span style={{
+                          padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600,
+                          background: '#e0e7ff', color: '#3730a3', border: '1px solid #c7d2fe'
+                        }}>{msa.Market_Tier || 'Unknown'}</span>
+                        {msa.CapRate_Trend && (
+                          <span style={{
+                            padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600,
+                            background: msa.CapRate_Trend === 'Compressing' ? '#dcfce7' : msa.CapRate_Trend === 'Expanding' ? '#fef3c7' : '#f1f5f9',
+                            color: msa.CapRate_Trend === 'Compressing' ? '#166534' : msa.CapRate_Trend === 'Expanding' ? '#92400e' : '#475569',
+                          }}>{msa.CapRate_Trend}</span>
+                        )}
+                      </div>
+
+                      {/* Main cap rate display */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 0', marginBottom: 10, background: `${color}10`, borderRadius: 10, border: `1px solid ${color}30` }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 28, fontWeight: 800, color: color }}>{rate}%</div>
+                          <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>Overall Market Cap Rate</div>
+                        </div>
+                      </div>
+
+                      {/* Cap rate breakdown grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 10 }}>
+                        {msa.CapRate_ClassA_Stab_Range && (
+                          <div style={{ padding: '6px 8px', background: '#f0fdf4', borderRadius: 6, fontSize: 11 }}>
+                            <div style={{ fontWeight: 600, color: '#6b7280', fontSize: 10 }}>CLASS A STABILIZED</div>
+                            <div style={{ fontWeight: 700, color: '#111827' }}>{msa.CapRate_ClassA_Stab_Range}</div>
+                          </div>
+                        )}
+                        {msa.CapRate_ClassA_VA_Range && (
+                          <div style={{ padding: '6px 8px', background: '#eff6ff', borderRadius: 6, fontSize: 11 }}>
+                            <div style={{ fontWeight: 600, color: '#6b7280', fontSize: 10 }}>CLASS A VALUE-ADD</div>
+                            <div style={{ fontWeight: 700, color: '#111827' }}>{msa.CapRate_ClassA_VA_Range}</div>
+                          </div>
+                        )}
+                        {msa.CapRate_ClassB_Stab_Range && (
+                          <div style={{ padding: '6px 8px', background: '#fefce8', borderRadius: 6, fontSize: 11 }}>
+                            <div style={{ fontWeight: 600, color: '#6b7280', fontSize: 10 }}>CLASS B STABILIZED</div>
+                            <div style={{ fontWeight: 700, color: '#111827' }}>{msa.CapRate_ClassB_Stab_Range}</div>
+                          </div>
+                        )}
+                        {msa.CapRate_ClassC_Stab_Range && (
+                          <div style={{ padding: '6px 8px', background: '#fdf2f8', borderRadius: 6, fontSize: 11 }}>
+                            <div style={{ fontWeight: 600, color: '#6b7280', fontSize: 10 }}>CLASS C STABILIZED</div>
+                            <div style={{ fontWeight: 700, color: '#111827' }}>{msa.CapRate_ClassC_Stab_Range}</div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Detail grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: 12, borderTop: '1px solid #f3f4f6', paddingTop: 8 }}>
+                        <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>INVESTOR DEMAND</span><br/>
+                          <span style={{ fontWeight: 600, color: msa.Investor_Demand === 'Very High' || msa.Investor_Demand === 'High' ? '#059669' : msa.Investor_Demand === 'Low' || msa.Investor_Demand === 'Very Low' ? '#dc2626' : '#374151' }}>{msa.Investor_Demand || '–'}</span></div>
+                        <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>MARKET TIER</span><br/>
+                          <span style={{ color: '#374151' }}>{msa.Market_Tier || '–'}</span></div>
+                        {msa.Typical_Price_Per_Unit_USD && (
+                          <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>PRICE / UNIT (A)</span><br/>
+                            <span style={{ fontWeight: 600, color: '#111827' }}>${Number(msa.Typical_Price_Per_Unit_USD).toLocaleString()}</span></div>
+                        )}
+                        {msa.Typical_Price_Per_Unit_ClassB_USD && (
+                          <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>PRICE / UNIT (B)</span><br/>
+                            <span style={{ fontWeight: 600, color: '#111827' }}>${Number(msa.Typical_Price_Per_Unit_ClassB_USD).toLocaleString()}</span></div>
+                        )}
+                      </div>
+
+                      {/* Notes */}
+                      {msa.CapRate_Notes && (
+                        <div style={{ marginTop: 8, fontSize: 11, color: '#6b7280', lineHeight: 1.4,
+                          borderTop: '1px solid #f3f4f6', paddingTop: 6 }}>{msa.CapRate_Notes}</div>
+                      )}
+                      {msa.CapRate_Data_Source && (
+                        <div style={{ marginTop: 4, fontSize: 10, color: '#9ca3af' }}>Source: {msa.CapRate_Data_Source}</div>
                       )}
                     </div>
                   </Popup>
