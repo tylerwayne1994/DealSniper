@@ -359,39 +359,54 @@ function createDivIcon({ bgClass, borderClass = 'border-white/60', icon: Icon, i
   });
 }
 
-// Create traditional pin-shaped marker (teardrop style) for properties
-function createPinIcon(color = '#ef4444', label = '') {
+// Create clean Airbnb-style bubble marker showing unit count
+function createBubbleIcon(color = '#ef4444', textColor = '#fff', units = null) {
+  const displayText = units != null && units !== '' && units !== '?' ? `${units}u` : '—';
+  const width = displayText.length > 3 ? 52 : displayText.length > 2 ? 44 : 38;
   return L.divIcon({
-    className: 'custom-pin-icon',
+    className: 'bubble-marker-icon',
     html: `
-      <div style="position: relative; width: 32px; height: 42px;">
-        <svg width="32" height="42" viewBox="0 0 32 42" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <filter id="pin-shadow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
-              <feOffset dx="0" dy="2" result="offsetblur"/>
-              <feComponentTransfer>
-                <feFuncA type="linear" slope="0.3"/>
-              </feComponentTransfer>
-              <feMerge>
-                <feMergeNode/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-          </defs>
-          <path d="M16 0C9.4 0 4 5.4 4 12c0 8 12 30 12 30s12-22 12-30c0-6.6-5.4-12-12-12z" 
-                fill="${color}" 
-                stroke="#fff" 
-                stroke-width="2" 
-                filter="url(#pin-shadow)"/>
-          <circle cx="16" cy="12" r="6" fill="#fff" opacity="0.9"/>
-          ${label ? `<text x="16" y="16" text-anchor="middle" font-size="10" fill="${color}" font-weight="bold">${label}</text>` : ''}
-        </svg>
+      <div style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: ${width}px;
+        height: 32px;
+        padding: 0 10px;
+        background: ${color};
+        border-radius: 16px;
+        border: 2.5px solid #fff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.28), 0 0 0 1px rgba(0,0,0,0.08);
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        position: relative;
+      ">
+        <span style="
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          font-size: 13px;
+          font-weight: 700;
+          color: ${textColor};
+          letter-spacing: 0.2px;
+          white-space: nowrap;
+          line-height: 1;
+        ">${displayText}</span>
+        <div style="
+          position: absolute;
+          bottom: -6px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 0;
+          height: 0;
+          border-left: 6px solid transparent;
+          border-right: 6px solid transparent;
+          border-top: 6px solid ${color};
+          filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15));
+        "></div>
       </div>
     `,
-    iconSize: [32, 42],
-    iconAnchor: [16, 42],
-    popupAnchor: [0, -42]
+    iconSize: [width, 38],
+    iconAnchor: [width / 2, 38],
+    popupAnchor: [0, -38]
   });
 }
 
@@ -816,7 +831,8 @@ function DashboardMapTab() {
         position: [d.latitude, d.longitude],
         insight: `${d.units || '?'} units • $${(d.purchasePrice || 0).toLocaleString()}`,
         source: 'pipeline',
-        dealId: d.dealId
+        dealId: d.dealId,
+        units: d.units || null
       }));
       
       console.log('🔍 Pipeline pins created:', pipelinePins);
@@ -1137,7 +1153,8 @@ function DashboardMapTab() {
           position: [latlng.lat, latlng.lng],
           insight: units != null ? `${units} units` : (form.notes || 'Manual research note'),
           dbId: insertedPin?.id,
-          source: 'manual'
+          source: 'manual',
+          units: units || null
         };
         setCustomPins((prev) => [...prev, newPin]);
         setForm({ name: '', address: '', units: '', notes: '' });
@@ -1171,28 +1188,23 @@ function DashboardMapTab() {
   const tileUrl = (tileConfigs[mapStyle] || tileConfigs['streets']).url;
   const attribution = (tileConfigs[mapStyle] || tileConfigs['streets']).attribution;
 
-  // Marker styles by category
-  const categoryIcon = (cat, source) => {
-    let color, label;
+  // Marker styles by category — clean bubble markers showing unit count
+  const categoryIcon = (cat, source, units) => {
+    let color;
     
     if (source === 'uploaded' || cat === 'uploaded') {
       color = '#3b82f6'; // Blue for uploaded properties
-      label = '📊';
     } else if (cat === 'pipeline') {
       color = '#22c55e'; // Green
-      label = '📋';
     } else if (cat === 'rapidfire') {
       color = '#ef4444'; // Red
-      label = '🔥';
     } else if (cat === 'prospect') {
-      color = '#ef4444'; // Red
-      label = '🏠';
+      color = '#f59e0b'; // Amber
     } else {
       color = '#ef4444'; // Red default
-      label = '📍';
     }
     
-    return createPinIcon(color, label);
+    return createBubbleIcon(color, '#fff', units);
   };
 
   // Command executor inside the map
@@ -1224,7 +1236,8 @@ function DashboardMapTab() {
                     category: 'custom', 
                     position: [lat, lng], 
                     insight: notes || 'From MAX',
-                    dbId: data?.id
+                    dbId: data?.id,
+                    units: null
                   };
                   addPin(newPin);
                 })
@@ -1735,7 +1748,8 @@ function DashboardMapTab() {
               position: [latlng.lat, latlng.lng], 
               insight: item.units != null ? `${item.units} units` : 'Rapid Fire',
               source: 'rapid_fire',
-              dbId: insertedPin?.id
+              dbId: insertedPin?.id,
+              units: item.units || null
             };
             setCustomPins(prev => [...prev, pin]);
             
@@ -1796,7 +1810,8 @@ function DashboardMapTab() {
           position: [latlng.lat, latlng.lng], 
           insight: units != null ? `${units} units` : 'Prospect', 
           source: 'prospect_upload',
-          dbId: insertedPin?.id
+          dbId: insertedPin?.id,
+          units: units || null
         };
         setCustomPins(prev => [...prev, pin]);
       } catch (error) {
@@ -1866,7 +1881,8 @@ function DashboardMapTab() {
           position: [r.lat, r.lng], 
           insight: r.units != null ? `${r.units} units` : (r.source || 'Saved Property'), 
           dbId: r.id,
-          source: 'saved'
+          source: 'saved',
+          units: r.units || null
         }));
         
         console.log('🔍 Saved prospect pins created:', pins);
@@ -2088,7 +2104,8 @@ function DashboardMapTab() {
         insight: 'Uploaded Property',
         source: 'uploaded',
         dbId: record.id,
-        propertyData: record.property_data
+        propertyData: record.property_data,
+        units: record.property_data?.units || record.property_data?.total_units || null
       }));
 
       setCustomPins(prev => [...prev, ...newPins]);
@@ -2152,7 +2169,8 @@ function DashboardMapTab() {
             insight: 'Uploaded Property',
             source: 'uploaded',
             dbId: record.id,
-            propertyData: record.property_data
+            propertyData: record.property_data,
+            units: record.property_data?.units || record.property_data?.total_units || null
           }));
 
           setCustomPins(prev => {
@@ -2639,7 +2657,7 @@ function DashboardMapTab() {
 
           {/* Base categorized markers */}
           {baseMarkers.map((m) => (
-            <Marker key={m.id} position={m.position} icon={categoryIcon(m.category)}>
+            <Marker key={m.id} position={m.position} icon={categoryIcon(m.category, m.source, m.units)}>
               <Popup>
                 <div style={{ minWidth: '220px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>{m.name}</div>
@@ -2652,7 +2670,7 @@ function DashboardMapTab() {
 
           {/* Custom pins — filtered by visibility toggles */}
           {visiblePins.map((p) => (
-            <Marker key={p.id} position={p.position} icon={categoryIcon(p.category, p.source)}>
+            <Marker key={p.id} position={p.position} icon={categoryIcon(p.category, p.source, p.units)}>
               <Popup maxWidth={350}>
                 <div style={{ 
                   minWidth: '280px', 

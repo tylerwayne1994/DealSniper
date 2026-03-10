@@ -6,3 +6,13 @@
 body { @apply bg-slate-50; }
 
 .atlasai-divicon { /* container for leaflet divIcon */ }
+
+/* Clean bubble marker — strip Leaflet default divIcon styles */
+.bubble-marker-icon {
+  background: none !important;
+  border: none !important;
+}
+.bubble-marker-icon:hover > div {
+  transform: scale(1.08);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35), 0 0 0 2px rgba(255,255,255,0.9) !important;
+}
