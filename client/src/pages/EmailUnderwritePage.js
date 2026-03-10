@@ -598,12 +598,13 @@ function EmailUnderwritePage() {
             <div style={{ marginTop: '8px', fontSize: '13px', color: '#4b5563', lineHeight: 1.6 }}>
               <ol style={{ paddingLeft: '18px', margin: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <li>
-                  Forward your broker emails with OMs, T12s, and rent rolls to:
+                  Send or forward your broker emails with OMs, T12s, and rent rolls to:
                   <br />
-                  <strong style={{ color: '#0f172a', fontSize: '14px' }}>dealsniperinbound@gmail.com</strong>
+                  <strong style={{ color: '#0f172a', fontSize: '14px' }}>deals@deals.dealsniper.org</strong>
+                  <span style={{ fontSize: '11px', color: '#9ca3af', marginLeft: '6px' }}>(instant processing)</span>
                 </li>
                 <li>
-                  Send from the <strong>same email you signed up with</strong> so we can match it to your account.
+                  Send from the <strong>same email you signed up with</strong> (or add aliases below) so we can match it to your account.
                 </li>
                 <li>
                   We automatically parse the attachments, run the underwriter, and push the deal into your pipeline.

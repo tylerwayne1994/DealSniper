@@ -1,0 +1,7 @@
+name = "dealsniper-email-worker"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+BACKEND_URL = "https://dealsniper-oh9v.onrender.com/api/email-underwrite/inbound-webhook"
+# Set WEBHOOK_SECRET via `wrangler secret put WEBHOOK_SECRET`

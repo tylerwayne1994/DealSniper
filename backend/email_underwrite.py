@@ -34,6 +34,9 @@ log = logging.getLogger("email_underwrite")
 
 INBOUND_EMAIL = os.getenv("INBOUND_GMAIL_ADDRESS", "dealsniperinbound@gmail.com").strip().lower()
 
+# SendGrid Inbound Parse webhook domain
+INBOUND_DOMAIN = os.getenv("INBOUND_EMAIL_DOMAIN", "deals.dealsniper.org")
+
 router = APIRouter(prefix="/api/email-underwrite", tags=["Email Underwrite"])
 
 
@@ -61,6 +64,372 @@ class IntakeTestPayload(BaseModel):
     thread_id: Optional[str] = None
     provider_message_id: Optional[str] = None
     attachments: List[AttachmentIn] = []
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# INBOUND WEBHOOK — receives raw email from Cloudflare Email Workers
+# No IMAP. No polling. Instant. Attachments included in the POST.
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Shared secret to verify webhook calls (set in Cloudflare Worker + Render env)
+WEBHOOK_SECRET = os.getenv("EMAIL_WEBHOOK_SECRET", "")
+
+
+def _parse_attachment_from_bytes(file_bytes: bytes, filename: str, job_id: str, deal_id: str, user_id: str, from_addr: str, subject: str) -> dict:
+    """Parse an attachment (PDF/image) with Claude Vision and update the deal.
+
+    This is the shared parsing core used by both the webhook and IMAP pipelines.
+    No IMAP involved — takes raw file bytes directly.
+    """
+    sb = get_supabase()
+    now = datetime.utcnow().isoformat
+
+    from anthropic import Anthropic
+    from v2_underwriter.routes import filter_pdf_pages_smart, _post_process_parsed_data
+
+    ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
+    ANTHROPIC_MODEL = "claude-sonnet-4-5-20250929"
+
+    if not ANTHROPIC_API_KEY:
+        sb.table("email_underwrite_jobs").update(
+            {"status": "error", "error_message": "No Anthropic API key", "updated_at": datetime.utcnow().isoformat()}
+        ).eq("id", job_id).execute()
+        return {"error": "Anthropic API key not configured", "deal_id": deal_id}
+
+    anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
+
+    ext = (os.path.splitext(filename)[1] if filename else ".pdf").lower()
+    mime_map = {".pdf": "application/pdf", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
+    mime = mime_map.get(ext, "application/pdf")
+
+    if mime == "application/pdf":
+        try:
+            images = filter_pdf_pages_smart(file_bytes, min_score=15, max_pages=15)
+        except Exception:
+            from pdf2image import convert_from_bytes
+            images = convert_from_bytes(file_bytes, dpi=100, first_page=1, last_page=10)
+
+        if not images:
+            sb.table("email_underwrite_jobs").update(
+                {"status": "error", "error_message": "Could not extract PDF images", "updated_at": datetime.utcnow().isoformat()}
+            ).eq("id", job_id).execute()
+            return {"error": "Could not extract PDF images", "deal_id": deal_id}
+
+        content_items = []
+        for img in images:
+            img_buf = io.BytesIO()
+            if img.mode == "RGBA":
+                img = img.convert("RGB")
+            img.save(img_buf, format="JPEG", quality=75, optimize=True)
+            file_b64 = base64.b64encode(img_buf.getvalue()).decode("utf-8")
+            content_items.append({
+                "type": "image",
+                "source": {"type": "base64", "media_type": "image/jpeg", "data": file_b64},
+            })
+    else:
+        file_b64 = base64.b64encode(file_bytes).decode("utf-8")
+        content_items = [{"type": "image", "source": {"type": "base64", "media_type": mime, "data": file_b64}}]
+
+    schema_block = '''Return JSON matching this schema:
+{
+  "property": {"property_name": "", "address": "", "city": "", "state": "", "zip": "", "units": 0, "year_built": 0, "rba_sqft": 0, "land_area_acres": 0, "property_type": "", "property_class": "", "parking_spaces": 0},
+  "pricing_financing": {"price": 0, "price_per_unit": 0, "price_per_sf": 0, "loan_amount": 0, "down_payment": 0, "interest_rate": 0, "ltv": 0, "term_years": 0, "amortization_years": 0},
+  "pnl": {"gross_potential_rent": 0, "other_income": 0, "vacancy_rate": 0, "vacancy_amount": 0, "effective_gross_income": 0, "operating_expenses": 0, "operating_expenses_t12": 0, "operating_expenses_proforma": 0, "noi": 0, "noi_t12": 0, "noi_proforma": 0, "noi_stabilized": 0, "cap_rate": 0, "cap_rate_t12": 0, "cap_rate_proforma": 0, "expense_ratio": 0},
+  "expenses": {"taxes": 0, "insurance": 0, "utilities": 0, "repairs_maintenance": 0, "management": 0, "payroll": 0, "admin": 0, "marketing": 0, "other": 0, "total": 0},
+  "underwriting": {"holding_period": 0, "exit_cap_rate": 0},
+  "unit_mix": [{"type": "", "units": 0, "mix_pct": 0, "unit_sf": 0, "rent_current": 0, "rent_psf": 0, "rent_market": 0}],
+  "broker_info": {"broker_name": "", "broker_company": "", "broker_phone": "", "broker_email": ""}
+}
+Return ONLY valid JSON, no markdown or explanation.'''
+
+    content_items.append({
+        "type": "text",
+        "text": f"Extract ONLY numerical data from this real estate offering memorandum. Focus on property details, pricing/financing terms, income statements, expense breakdowns, underwriting assumptions, and unit mix.\n\n{schema_block}",
+    })
+
+    print(f"[WebhookParse] Sending {len(content_items)-1} images to Claude for job {job_id}...")
+    response = anthropic_client.messages.create(
+        model=ANTHROPIC_MODEL,
+        max_tokens=8000,
+        messages=[{"role": "user", "content": content_items}],
+    )
+
+    text = response.content[0].text.strip()
+    if text.startswith("```"):
+        text = text.split("```", 2)[1]
+        if text.startswith("json"):
+            text = text[4:].strip()
+
+    parsed_data = json.loads(text)
+
+    try:
+        parsed_data = _post_process_parsed_data(parsed_data)
+    except Exception as e:
+        log.warning("[WebhookParse] Post-process failed (non-fatal): %s", e)
+
+    prop = parsed_data.get("property", {})
+    pricing = parsed_data.get("pricing_financing", {})
+    broker = parsed_data.get("broker_info", {})
+
+    address = (
+        prop.get("address")
+        or ", ".join(filter(None, [prop.get("city"), prop.get("state")]))
+        or subject or "Email OM"
+    )
+
+    update_payload = {
+        "parsed_data": parsed_data,
+        "scenario_data": parsed_data,
+        "address": address,
+        "units": prop.get("units"),
+        "purchase_price": pricing.get("price"),
+        "broker_name": broker.get("broker_name"),
+        "broker_phone": broker.get("broker_phone"),
+        "broker_email": broker.get("broker_email"),
+        "updated_at": datetime.utcnow().isoformat(),
+    }
+
+    sb.table("deals").update(update_payload).eq("deal_id", deal_id).execute()
+
+    sb.table("email_underwrite_jobs").update(
+        {"deal_id": deal_id, "status": "done", "updated_at": datetime.utcnow().isoformat()}
+    ).eq("id", job_id).execute()
+
+    print(f"[WebhookParse] Job {job_id} DONE — deal {deal_id}: {address}")
+    return {"success": True, "deal_id": deal_id, "address": address}
+
+
+def _process_webhook_email(raw_mime: bytes):
+    """Process a raw MIME email from the inbound webhook.
+
+    Extracts sender, subject, attachments and runs the full underwrite pipeline.
+    Runs in a background thread — does not block the webhook response.
+    """
+    try:
+        msg = email_mod.message_from_bytes(raw_mime)
+
+        # Extract sender
+        from_raw = _safe_decode_header(msg.get("From", ""))
+        email_match = re.search(r"<([^>]+)>", from_raw)
+        sender_email = (email_match.group(1) if email_match else from_raw).strip().lower()
+
+        subject = _safe_decode_header(msg.get("Subject", ""))
+        message_id = msg.get("Message-ID", "")
+        to_raw = _safe_decode_header(msg.get("To", ""))
+
+        print(f"[Webhook] Processing email from={sender_email} subject={subject[:80]}")
+
+        sb = get_supabase()
+
+        # Dedup by Message-ID
+        if message_id:
+            existing = sb.table("raw_emails").select("id").eq("provider_message_id", f"webhook:{message_id}").execute()
+            if existing.data:
+                print(f"[Webhook] Duplicate email (Message-ID={message_id}), skipping")
+                return
+
+        # Match sender to user profile
+        matched_user_id = _match_sender_to_user(sb, sender_email)
+        if not matched_user_id:
+            # Last resort: assign to most recent active user
+            try:
+                recent = sb.table("email_underwrite_jobs").select("user_id").order("created_at", desc=True).limit(1).execute()
+                if recent.data:
+                    matched_user_id = recent.data[0]["user_id"]
+                    print(f"[Webhook] No profile match for {sender_email}, assigned to last active user {matched_user_id}")
+            except Exception:
+                pass
+        if not matched_user_id:
+            # Final fallback: get any user from profiles
+            try:
+                any_user = sb.table("profiles").select("id").limit(1).execute()
+                if any_user.data:
+                    matched_user_id = any_user.data[0]["id"]
+                    print(f"[Webhook] Fallback: assigned to first profile user {matched_user_id}")
+            except Exception:
+                pass
+        if not matched_user_id:
+            print(f"[Webhook] SKIPPING — no user found for {sender_email}")
+            return
+
+        # Extract PDF/image attachments
+        attachments = []
+        for part in msg.walk():
+            content_disp = part.get("Content-Disposition", "")
+            if "attachment" in content_disp or part.get_content_type() == "application/pdf":
+                filename = part.get_filename() or "attachment.pdf"
+                payload = part.get_payload(decode=True)
+                if payload and len(payload) > 1000:  # skip tiny files
+                    ext = os.path.splitext(filename)[1].lower()
+                    if ext in (".pdf", ".png", ".jpg", ".jpeg", ".xlsx", ".xls"):
+                        attachments.append((filename, payload))
+                        print(f"[Webhook] Found attachment: {filename} ({len(payload)} bytes)")
+
+        if not attachments:
+            print(f"[Webhook] No valid attachments found in email from {sender_email}")
+
+        # Create raw_email record
+        now = datetime.utcnow().isoformat()
+        received_at = None
+        try:
+            received_at = parsedate_to_datetime(msg.get("Date", "")).isoformat()
+        except Exception:
+            received_at = now
+
+        raw_email_data = {
+            "user_id": matched_user_id,
+            "provider_message_id": f"webhook:{message_id}" if message_id else f"webhook:{uuid.uuid4()}",
+            "thread_id": message_id,
+            "from_address": from_raw,
+            "subject": subject,
+            "snippet": "",
+            "received_at": received_at,
+            "raw_payload": {},
+            "processed": False,
+        }
+        raw_insert = sb.table("raw_emails").insert(raw_email_data).execute()
+        raw_email_id = (raw_insert.data or [{}])[0].get("id")
+
+        # Process each attachment as a separate job
+        for filename, file_bytes in attachments:
+            try:
+                # Create job
+                job_record = {
+                    "user_id": matched_user_id,
+                    "raw_email_id": raw_email_id,
+                    "from_address": from_raw,
+                    "to_address": to_raw,
+                    "subject": subject,
+                    "thread_id": message_id,
+                    "provider_message_id": f"webhook:{message_id}",
+                    "attachments": [{"filename": filename, "size": len(file_bytes)}],
+                    "status": "processing",
+                }
+                job_insert = sb.table("email_underwrite_jobs").insert(job_record).execute()
+                job_id = (job_insert.data or [{}])[0].get("id")
+                if not job_id:
+                    print(f"[Webhook] Failed to create job for {filename}")
+                    continue
+
+                # Create deal stub
+                deal_id = str(uuid.uuid4())
+                deal_record = {
+                    "deal_id": deal_id,
+                    "user_id": matched_user_id,
+                    "address": subject or f"Email OM - {filename}",
+                    "units": None,
+                    "purchase_price": None,
+                    "deal_structure": "Email OM",
+                    "parsed_data": {"source": "email_webhook", "status": "parsing", "email_from": from_raw, "email_subject": subject},
+                    "scenario_data": None,
+                    "market_cap_rate": None,
+                    "rentcast_data": None,
+                    "costseg_data": None,
+                    "images": [],
+                    "broker_name": None,
+                    "broker_phone": None,
+                    "broker_email": None,
+                    "notes": f"Auto-created from email webhook. From: {from_raw}.",
+                    "latitude": None,
+                    "longitude": None,
+                    "pipeline_status": "pipeline",
+                    "created_at": now,
+                    "updated_at": now,
+                }
+                sb.table("deals").insert(deal_record).execute()
+                sb.table("email_underwrite_jobs").update(
+                    {"deal_id": deal_id, "status": "processing", "updated_at": now}
+                ).eq("id", job_id).execute()
+
+                print(f"[Webhook] Created deal {deal_id}, job {job_id} — parsing {filename}...")
+
+                # Parse with Claude Vision — directly from bytes, no IMAP download needed
+                result = _parse_attachment_from_bytes(
+                    file_bytes=file_bytes,
+                    filename=filename,
+                    job_id=job_id,
+                    deal_id=deal_id,
+                    user_id=matched_user_id,
+                    from_addr=from_raw,
+                    subject=subject,
+                )
+                print(f"[Webhook] Job {job_id} result: {result}")
+
+            except Exception as e:
+                print(f"[Webhook] Error processing attachment {filename}: {e}")
+                import traceback
+                traceback.print_exc()
+                try:
+                    sb.table("email_underwrite_jobs").update(
+                        {"status": "error", "error_message": str(e)[:500], "updated_at": datetime.utcnow().isoformat()}
+                    ).eq("id", job_id).execute()
+                except Exception:
+                    pass
+
+        # If no attachments, create a job noting that
+        if not attachments:
+            job_record = {
+                "user_id": matched_user_id,
+                "raw_email_id": raw_email_id,
+                "from_address": from_raw,
+                "subject": subject,
+                "provider_message_id": f"webhook:{message_id}",
+                "attachments": [],
+                "status": "done",
+                "error_message": "No PDF/image attachment found",
+            }
+            sb.table("email_underwrite_jobs").insert(job_record).execute()
+
+        print(f"[Webhook] Finished processing email from {sender_email}: {len(attachments)} attachments")
+
+    except Exception as e:
+        print(f"[Webhook] FATAL error processing webhook email: {e}")
+        import traceback
+        traceback.print_exc()
+
+
+@router.post("/inbound-webhook")
+async def inbound_email_webhook(request: Request):
+    """Receive inbound emails from Cloudflare Email Workers.
+
+    The Worker POSTs the raw MIME email as the request body.
+    Processing happens in a background thread — returns 200 immediately.
+    """
+    # Verify webhook secret
+    auth_header = request.headers.get("X-Webhook-Secret", "")
+    if WEBHOOK_SECRET and auth_header != WEBHOOK_SECRET:
+        print(f"[Webhook] Unauthorized request (bad secret)")
+        raise HTTPException(status_code=401, detail="Invalid webhook secret")
+
+    # Read raw MIME body
+    raw_body = await request.body()
+    if not raw_body:
+        raise HTTPException(status_code=400, detail="Empty request body")
+
+    content_type = request.headers.get("content-type", "")
+    print(f"[Webhook] Received {len(raw_body)} bytes, content-type={content_type}")
+
+    # If it's multipart form data (SendGrid-style), extract the 'email' field
+    if "multipart/form-data" in content_type:
+        try:
+            form = await request.form()
+            raw_email = form.get("email")
+            if raw_email:
+                if isinstance(raw_email, str):
+                    raw_body = raw_email.encode("utf-8")
+                else:
+                    raw_body = await raw_email.read() if hasattr(raw_email, "read") else raw_email
+        except Exception as e:
+            print(f"[Webhook] Form parse error: {e}")
+
+    # Process in background thread — return 200 immediately
+    def _bg():
+        _process_webhook_email(raw_body)
+
+    t = threading.Thread(target=_bg, daemon=True, name=f"webhook-{uuid.uuid4().hex[:8]}")
+    t.start()
+
+    return {"status": "accepted", "message": "Email received, processing in background."}
 
 
 def _find_user_id_by_email(from_address: str) -> str:
