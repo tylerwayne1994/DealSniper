@@ -76,9 +76,12 @@ function EmailUnderwritePage() {
             setSyncing(false);
             if (pollData.status === 'done') {
               const s = pollData.sync || {};
-              setSyncMessage(
-                `Done! Synced: ${s.synced || 0} new, ${s.already_known || 0} known. Processed: ${pollData.jobs_processed || 0} jobs, ${pollData.jobs_errors || 0} errors.`
-              );
+              const parts = [];
+              parts.push(`Synced: ${s.synced || 0} new, ${s.already_known || 0} known`);
+              if (pollData.reset_stuck) parts.push(`Reset ${pollData.reset_stuck} stuck`);
+              if (pollData.orphans_created) parts.push(`Recovered ${pollData.orphans_created} orphans`);
+              parts.push(`Processed: ${pollData.jobs_processed || 0} jobs, ${pollData.jobs_errors || 0} errors`);
+              setSyncMessage(`Done! ${parts.join('. ')}.`);
             } else {
               setSyncMessage(`Sync error: ${pollData.error || 'unknown'}`);
             }
@@ -130,7 +133,7 @@ function EmailUnderwritePage() {
           } catch (e) {
             // keep polling
           }
-          if (polls >= 40) { // ~2 minutes
+          if (polls >= 60) { // ~3 minutes
             clearInterval(pollId);
             setDebugResult({ error: 'Diagnostics timed out. Check server logs.' });
             setDebugging(false);

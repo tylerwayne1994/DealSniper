@@ -1693,19 +1693,95 @@ async def debug_pipeline_result():
 
 
 def _run_force_sync_bg():
-    """Run full sync + process cycle in background thread."""
+    """Run full sync + process cycle in background thread.
+
+    Steps:
+    1. Sync inbox (IMAP scan, create raw_emails + jobs for NEW emails)
+    2. Reset stuck "processing" jobs → pending
+    3. Find orphaned raw_emails (no job) and create jobs for them
+    4. Process all pending jobs
+    """
     global _sync_result, _sync_running
     _sync_running = True
     try:
-        print("[FORCE-SYNC-BG] Starting inbox sync...")
+        sb = get_supabase()
+
+        # ── Step 1: IMAP sync ──
+        print("[FORCE-SYNC-BG] Step 1: Starting inbox sync...")
         sync_result = _sync_inbox_core()
-        new_jobs = sync_result.get("new_job_ids", [])
+        new_jobs = list(sync_result.get("new_job_ids", []))
         print(f"[FORCE-SYNC-BG] Sync complete: synced={sync_result.get('synced',0)}, already_known={sync_result.get('already_known',0)}")
 
+        # ── Step 2: Auto-reset stuck "processing" jobs ──
+        reset_count = 0
+        try:
+            stuck = sb.table("email_underwrite_jobs").select("id").eq("status", "processing").execute()
+            now_str = datetime.utcnow().isoformat()
+            for row in (stuck.data or []):
+                sb.table("email_underwrite_jobs").update({
+                    "status": "pending",
+                    "error_message": f"Auto-reset from processing at {now_str}",
+                    "updated_at": now_str,
+                }).eq("id", row["id"]).execute()
+                reset_count += 1
+            if reset_count:
+                print(f"[FORCE-SYNC-BG] Step 2: Reset {reset_count} stuck processing jobs")
+        except Exception as e:
+            print(f"[FORCE-SYNC-BG] Step 2 error resetting stuck jobs: {e}")
+
+        # ── Step 3: Find orphaned raw_emails without jobs ──
+        orphan_count = 0
+        try:
+            # Get all raw_emails
+            all_raw = sb.table("raw_emails").select("id, user_id, from_address, subject, provider_message_id, thread_id").order("created_at", desc=True).limit(50).execute()
+            # Get all job raw_email_ids
+            all_jobs_raw = sb.table("email_underwrite_jobs").select("raw_email_id").execute()
+            job_raw_ids = set(r["raw_email_id"] for r in (all_jobs_raw.data or []) if r.get("raw_email_id"))
+
+            for raw in (all_raw.data or []):
+                raw_id = raw["id"]
+                if raw_id in job_raw_ids:
+                    continue  # already has a job
+                # This raw_email has no job — create one
+                user_id = raw.get("user_id")
+                if not user_id:
+                    # Try to match from the most recent user
+                    recent = sb.table("email_underwrite_jobs").select("user_id").order("created_at", desc=True).limit(1).execute()
+                    user_id = (recent.data[0]["user_id"] if recent.data else None)
+                if not user_id:
+                    print(f"[FORCE-SYNC-BG] Step 3: Orphan raw_email {raw_id} has no user_id — skipping")
+                    continue
+                try:
+                    job_record = {
+                        "user_id": user_id,
+                        "raw_email_id": raw_id,
+                        "from_address": raw.get("from_address", ""),
+                        "to_address": None,
+                        "subject": raw.get("subject", ""),
+                        "thread_id": raw.get("thread_id", ""),
+                        "provider_message_id": raw.get("provider_message_id", ""),
+                        "attachments": [],
+                        "status": "pending",
+                    }
+                    ins = sb.table("email_underwrite_jobs").insert(job_record).execute()
+                    jid = (ins.data or [{}])[0].get("id")
+                    if jid:
+                        new_jobs.append(jid)
+                        orphan_count += 1
+                        print(f"[FORCE-SYNC-BG] Step 3: Created job {jid} for orphan raw_email {raw_id}")
+                except Exception as e:
+                    print(f"[FORCE-SYNC-BG] Step 3: Failed to create job for orphan {raw_id}: {e}")
+            if orphan_count:
+                print(f"[FORCE-SYNC-BG] Step 3: Created {orphan_count} jobs for orphaned raw_emails")
+            else:
+                print(f"[FORCE-SYNC-BG] Step 3: No orphaned raw_emails found")
+        except Exception as e:
+            print(f"[FORCE-SYNC-BG] Step 3 error finding orphans: {e}")
+
+        # ── Step 4: Gather ALL pending jobs and process ──
         reprocess_jobs = []
         try:
-            sb = get_supabase()
-            all_pending = sb.table("email_underwrite_jobs").select("id, deal_id").eq("status", "pending").limit(20).execute()
+            all_pending = sb.table("email_underwrite_jobs").select("id, deal_id").eq("status", "pending").limit(30).execute()
             for row in (all_pending.data or []):
                 jid = row["id"]
                 if jid in new_jobs:
@@ -1715,10 +1791,10 @@ def _run_force_sync_bg():
                 else:
                     new_jobs.append(jid)
         except Exception as e:
-            print(f"[FORCE-SYNC-BG] Failed to query pending jobs: {e}")
+            print(f"[FORCE-SYNC-BG] Step 4: Failed to query pending jobs: {e}")
 
         total = len(new_jobs) + len(reprocess_jobs)
-        print(f"[FORCE-SYNC-BG] {len(new_jobs)} new + {len(reprocess_jobs)} reprocess = {total} total jobs")
+        print(f"[FORCE-SYNC-BG] Step 4: {len(new_jobs)} new + {len(reprocess_jobs)} reprocess = {total} total jobs to process")
 
         processed = 0
         errors = 0
@@ -1744,6 +1820,8 @@ def _run_force_sync_bg():
         _sync_result = {
             "status": "done",
             "sync": sync_result,
+            "reset_stuck": reset_count,
+            "orphans_created": orphan_count,
             "jobs_total": total,
             "jobs_processed": processed,
             "jobs_errors": errors,
@@ -1751,7 +1829,7 @@ def _run_force_sync_bg():
             "reprocess_job_ids": reprocess_jobs,
             "finished_at": datetime.utcnow().isoformat(),
         }
-        print(f"[FORCE-SYNC-BG] Complete: processed={processed}, errors={errors}")
+        print(f"[FORCE-SYNC-BG] Complete: reset={reset_count}, orphans={orphan_count}, processed={processed}, errors={errors}")
     except Exception as e:
         print(f"[FORCE-SYNC-BG] FATAL ERROR: {e}")
         import traceback
