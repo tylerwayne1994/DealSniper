@@ -1570,7 +1570,44 @@ def _reprocess_existing_job(job_id: str) -> dict:
             return {"error": "No provider_message_id", "deal_id": deal_id}
 
         print(f"[AutoPipeline-Reprocess] Downloading attachment for job {job_id}, msg_id={msg_id}")
-        file_bytes, filename = _download_attachment_via_imap(msg_id)
+
+        file_bytes = None
+        filename = None
+
+        # Webhook jobs: msg_id = "webhook:<actual-message-id>" — search IMAP by Message-ID header
+        if msg_id.startswith("webhook:"):
+            actual_message_id = msg_id[len("webhook:"):]
+            print(f"[AutoPipeline-Reprocess] Webhook job — searching IMAP by Message-ID: {actual_message_id}")
+            try:
+                _mail = get_imap_connection()
+                if _mail:
+                    for _folder in ["INBOX", "[Gmail]/All Mail"]:
+                        try:
+                            st_sel, _ = _imap_select(_mail, _folder)
+                            if st_sel != "OK":
+                                continue
+                            # Search by Message-ID header
+                            st_s, s_data = _mail.uid("search", None, f'(HEADER Message-ID "{actual_message_id}")')
+                            if st_s == "OK" and s_data[0]:
+                                uids = s_data[0].split()
+                                if uids:
+                                    st_f, f_data = _mail.uid("fetch", uids[-1], "(RFC822)")
+                                    if st_f == "OK" and f_data and f_data[0] and isinstance(f_data[0], tuple):
+                                        _msg = email_mod.message_from_bytes(f_data[0][1])
+                                        file_bytes, filename = _extract_attachment_from_msg(_msg)
+                                        if file_bytes:
+                                            print(f"[AutoPipeline-Reprocess] Found webhook email in {_folder}: {filename} ({len(file_bytes)} bytes)")
+                                            break
+                        except Exception as e:
+                            print(f"[AutoPipeline-Reprocess] Error searching {_folder}: {e}")
+                    try:
+                        _mail.logout()
+                    except Exception:
+                        pass
+            except Exception as e:
+                print(f"[AutoPipeline-Reprocess] IMAP search failed: {e}")
+        else:
+            file_bytes, filename = _download_attachment_via_imap(msg_id)
         if not file_bytes:
             sb.table("deals").update({
                 "parsed_data": {"source": "email_underwrite", "status": "no_attachment", "email_from": from_addr, "email_subject": subject},
