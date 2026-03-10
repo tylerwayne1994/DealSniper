@@ -35,7 +35,7 @@ log = logging.getLogger("email_underwrite")
 INBOUND_EMAIL = os.getenv("INBOUND_GMAIL_ADDRESS", "dealsniperinbound@gmail.com").strip().lower()
 
 # SendGrid Inbound Parse webhook domain
-INBOUND_DOMAIN = os.getenv("INBOUND_EMAIL_DOMAIN", "deals.dealsniper.org")
+INBOUND_DOMAIN = os.getenv("INBOUND_EMAIL_DOMAIN", "dealsniper.org")
 
 router = APIRouter(prefix="/api/email-underwrite", tags=["Email Underwrite"])
 

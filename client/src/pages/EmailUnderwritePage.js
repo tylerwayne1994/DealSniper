@@ -600,7 +600,7 @@ function EmailUnderwritePage() {
                 <li>
                   Send or forward your broker emails with OMs, T12s, and rent rolls to:
                   <br />
-                  <strong style={{ color: '#0f172a', fontSize: '14px' }}>deals@deals.dealsniper.org</strong>
+                  <strong style={{ color: '#0f172a', fontSize: '14px' }}>deals@dealsniper.org</strong>
                   <span style={{ fontSize: '11px', color: '#9ca3af', marginLeft: '6px' }}>(instant processing)</span>
                 </li>
                 <li>
