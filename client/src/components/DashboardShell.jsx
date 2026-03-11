@@ -13,7 +13,10 @@ import {
   Mail,
   FileText,
   Bot,
+  Menu,
+  X,
 } from 'lucide-react';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 const SIDEBAR_WIDTH = 200;
 
@@ -182,6 +185,8 @@ const tabs = [
 
 function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }) {
   const navigate = useNavigate();
+  const { isMobile, isTablet } = useIsMobile();
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
 
   const defaultHandleTabClick = (tabId) => {
     if (tabId === 'pipeline') {
@@ -201,7 +206,6 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
     } else if (tabId === 'contract') {
       navigate('/contract');
     } else if (tabId === 'home') {
-      // Home tab shows the map view
       navigate('/dashboard');
     } else {
       navigate('/dashboard');
@@ -209,6 +213,8 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
   };
 
   const handleTabClick = (tabId) => {
+    // Close mobile drawer on navigation
+    if (isMobile) setDrawerOpen(false);
     if (onTabClick) {
       onTabClick(tabId, defaultHandleTabClick);
     } else {
@@ -218,57 +224,131 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
 
   const initial = title && title.length > 0 ? title[0].toUpperCase() : 'D';
 
+  // ── Sidebar content (shared between desktop fixed + mobile drawer) ──
+  const sidebarContent = (
+    <>
+      {/* Logo */}
+      <div style={dashboardStyles.logoBoxOuter}>
+        <div style={dashboardStyles.logoBoxInner} />
+        <span style={{ color: '#ffffff', fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em' }}>DealSniper</span>
+      </div>
+
+      {/* Main section */}
+      {tabs.filter(t => t.section === 'main').map((tab) => (
+        <SidebarItem
+          key={tab.id}
+          icon={tab.icon}
+          label={tab.label}
+          active={activeTab === tab.id}
+          onClick={() => handleTabClick(tab.id)}
+        />
+      ))}
+
+      {/* Deals section */}
+      <div style={dashboardStyles.sidebarSection}>Deals</div>
+      {tabs.filter(t => t.section === 'deals').map((tab) => (
+        <SidebarItem
+          key={tab.id}
+          icon={tab.icon}
+          label={tab.label}
+          active={activeTab === tab.id}
+          onClick={() => handleTabClick(tab.id)}
+        />
+      ))}
+
+      {/* Analysis section */}
+      <div style={dashboardStyles.sidebarSection}>Analysis</div>
+      {tabs.filter(t => t.section === 'analysis').map((tab) => (
+        <SidebarItem
+          key={tab.id}
+          icon={tab.icon}
+          label={tab.label}
+          active={activeTab === tab.id}
+          onClick={() => handleTabClick(tab.id)}
+        />
+      ))}
+    </>
+  );
+
   return (
     <div style={dashboardStyles.page}>
       <div style={dashboardStyles.appCard}>
-        {/* Left sidebar with labels */}
-        <div style={dashboardStyles.iconSidebar}>
-          {/* Logo */}
-          <div style={dashboardStyles.logoBoxOuter}>
-            <div style={dashboardStyles.logoBoxInner} />
-            <span style={{ color: '#ffffff', fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em' }}>DealSniper</span>
+
+        {/* ─── Desktop / Tablet sidebar (hidden on mobile) ─── */}
+        {!isMobile && (
+          <div style={dashboardStyles.iconSidebar}>
+            {sidebarContent}
           </div>
+        )}
 
-          {/* Main section */}
-          {tabs.filter(t => t.section === 'main').map((tab) => (
-            <SidebarItem
-              key={tab.id}
-              icon={tab.icon}
-              label={tab.label}
-              active={activeTab === tab.id}
-              onClick={() => handleTabClick(tab.id)}
-            />
-          ))}
-
-          {/* Deals section */}
-          <div style={dashboardStyles.sidebarSection}>Deals</div>
-          {tabs.filter(t => t.section === 'deals').map((tab) => (
-            <SidebarItem
-              key={tab.id}
-              icon={tab.icon}
-              label={tab.label}
-              active={activeTab === tab.id}
-              onClick={() => handleTabClick(tab.id)}
-            />
-          ))}
-
-          {/* Analysis section */}
-          <div style={dashboardStyles.sidebarSection}>Analysis</div>
-          {tabs.filter(t => t.section === 'analysis').map((tab) => (
-            <SidebarItem
-              key={tab.id}
-              icon={tab.icon}
-              label={tab.label}
-              active={activeTab === tab.id}
-              onClick={() => handleTabClick(tab.id)}
-            />
-          ))}
-        </div>
+        {/* ─── Mobile drawer overlay ─── */}
+        {isMobile && drawerOpen && (
+          <div className="mobile-sidebar-backdrop" onClick={() => setDrawerOpen(false)}>
+            <div
+              className="mobile-sidebar-drawer"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                ...dashboardStyles.iconSidebar,
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                bottom: 0,
+                width: 260,
+                minWidth: 260,
+                zIndex: 10001,
+                boxShadow: '4px 0 24px rgba(0,0,0,0.4)',
+              }}
+            >
+              {/* Close button */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 12px 8px' }}>
+                <button
+                  onClick={() => setDrawerOpen(false)}
+                  style={{
+                    background: 'rgba(255,255,255,0.08)',
+                    border: 'none',
+                    borderRadius: 8,
+                    width: 36,
+                    height: 36,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: '#94a3b8',
+                  }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              {sidebarContent}
+            </div>
+          </div>
+        )}
 
         {/* Main content area */}
         <div style={dashboardStyles.main}>
           {/* Top bar */}
-          <div style={dashboardStyles.topBar}>
+          <div style={{
+            ...dashboardStyles.topBar,
+            padding: isMobile ? '0 12px' : '0 24px',
+          }}>
+            {/* Hamburger on mobile */}
+            {isMobile && (
+              <button
+                onClick={() => setDrawerOpen(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#374151',
+                  marginRight: 10,
+                  padding: 4,
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <Menu size={22} />
+              </button>
+            )}
             <div style={dashboardStyles.topBarLogo}>
               <div style={dashboardStyles.topLogoMark}>
                 <span style={{ color: '#ffffff', fontSize: 11, fontWeight: 700 }}>{initial}</span>
@@ -282,7 +362,9 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
 
           <div style={{
             ...dashboardStyles.content,
-            ...(activeTab === 'home' ? { padding: 0, overflow: 'hidden' } : {})
+            ...(activeTab === 'home' ? { padding: 0, overflow: 'hidden' } : {}),
+            ...(isMobile && activeTab !== 'home' ? { padding: '16px 12px 16px' } : {}),
+            ...(isTablet && activeTab !== 'home' ? { padding: '20px 20px 24px' } : {}),
           }}>
             {children}
           </div>

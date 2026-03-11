@@ -25,6 +25,7 @@ import {
 import { loadProfile, saveProfile } from '../lib/dealsService';
 import { supabase } from '../lib/supabase';
 import { API_ENDPOINTS } from '../config/api';
+import { useIsMobile } from '../hooks/useIsMobile';
 import RapidFirePage from './RapidFirePage';
 import DashboardShell from '../components/DashboardShell';
 import DashboardMapTab from '../components/dashboard-tabs/MapTab';
@@ -147,6 +148,7 @@ function ChangePasswordCard({ cardStyle, inputStyle, labelStyle }) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const { isMobile: isMobilePw } = useIsMobile();
   const [passwords, setPasswords] = useState({
     newPassword: '',
     confirmPassword: ''
@@ -234,7 +236,7 @@ function ChangePasswordCard({ cardStyle, inputStyle, labelStyle }) {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobilePw ? '1fr' : '1fr 1fr', gap: isMobilePw ? '12px' : '20px' }}>
         <div style={{ position: 'relative' }}>
           <label style={labelStyle}>New Password</label>
           <input
@@ -300,6 +302,7 @@ function ChangePasswordCard({ cardStyle, inputStyle, labelStyle }) {
 
 function DashboardPage() {
   const navigate = useNavigate();
+  const { isMobile } = useIsMobile();
   const [activeTab, setActiveTab] = useState('home');
   const [saveMessage, setSaveMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -644,8 +647,8 @@ function DashboardPage() {
             {/* Token Stats Cards */}
             <div style={{ 
               display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: '16px'
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+              gap: isMobile ? '10px' : '16px'
             }}>
               {/* Monthly Limit */}
               <div style={{ 
@@ -688,7 +691,7 @@ function DashboardPage() {
               <div style={{ fontSize: '13px', fontWeight: '700', color: '#4338ca', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 🎯 Token Usage
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px', fontSize: '14px' }}>
                 <div style={{ color: '#374151' }}>
                   <span style={{ fontWeight: '600' }}>LOI Generation:</span>
                   <span style={{ color: '#6366f1', fontWeight: '700', marginLeft: '6px' }}>1 token</span>
@@ -809,7 +812,7 @@ function DashboardPage() {
           </h3>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '12px' : '20px' }}>
           <div>
             <label style={labelStyle}>First Name</label>
             <input
@@ -877,7 +880,7 @@ function DashboardPage() {
           </h3>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '12px' : '20px' }}>
           <div>
             <label style={labelStyle}>Company</label>
             <input
@@ -990,7 +993,7 @@ function DashboardPage() {
           <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0d9488', marginBottom: 12 }}>
             Buy More Tokens
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: isMobile ? '12px' : '20px' }}>
             <TokenPackageCard
               name="$25- 14 token pack"
               tokens={14}

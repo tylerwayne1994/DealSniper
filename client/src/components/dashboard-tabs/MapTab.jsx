@@ -10,6 +10,7 @@ import { supabase } from '../../lib/supabase';
 import { loadPipelineDeals } from '../../lib/dealsService';
 import MapOverlayLayers, { COUNTY_METRIC_OPTIONS, ZIP_METRIC_OPTIONS, ZIP_HEATMAP_METRIC_OPTIONS } from './MapOverlayLayers';
 import MSA_COORDINATES from '../../data/msaCoordinates';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import {
   MessageSquare,
   Download,
@@ -19,7 +20,8 @@ import {
   Eye,
   EyeOff,
   Layers,
-  Plus
+  Plus,
+  X
 } from 'lucide-react';
 
 // ─── Zone color by prefix ────────────────
@@ -486,6 +488,7 @@ function DashboardMapTab() {
   // Default map center (centered on US)
   const defaultCenter = [39.8283, -98.5795]; // Geographic center of US
   const defaultZoom = 5;
+  const { isMobile, isTablet } = useIsMobile();
 
   const [customPins, setCustomPins] = useState([]);
   const [form, setForm] = useState({ name: '', address: '', units: '', notes: '' });
@@ -500,8 +503,8 @@ function DashboardMapTab() {
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // Collapsible map panel state
-  const [panelOpen, setPanelOpen] = useState(true);
+  // Collapsible map panel state — default collapsed on mobile
+  const [panelOpen, setPanelOpen] = useState(() => window.innerWidth >= 768);
   const [panelTab, setPanelTab] = useState('layers'); // 'layers' | 'pins' | 'upload' | 'add'
 
   // Pin visibility toggles
@@ -2354,12 +2357,12 @@ function DashboardMapTab() {
         {/* ─── Floating Collapsible Panel (left side, inside map) ─── */}
         <div style={{
           position: 'absolute',
-          top: 12,
-          left: 12,
+          top: isMobile ? 8 : 12,
+          left: isMobile ? 8 : 12,
           zIndex: 1000,
-          width: panelOpen ? 320 : 44,
-          maxHeight: 'calc(100% - 24px)',
-          backgroundColor: 'rgba(15, 23, 42, 0.92)',
+          width: panelOpen ? (isMobile ? 'calc(100% - 16px)' : 320) : 44,
+          maxHeight: isMobile ? 'calc(100% - 60px)' : 'calc(100% - 24px)',
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
           backdropFilter: 'blur(16px)',
           borderRadius: 12,
           border: '1px solid rgba(255,255,255,0.08)',
@@ -2774,18 +2777,23 @@ function DashboardMapTab() {
 
         {/* ─── Floating Map Style Switcher (top-right) ─── */}
         <div style={{
-          position: 'absolute', top: 12, right: 12, zIndex: 1000,
+          position: 'absolute',
+          top: isMobile ? 8 : 12,
+          right: isMobile ? 8 : 12,
+          zIndex: 1000,
           display: 'flex', borderRadius: 8, overflow: 'hidden',
           boxShadow: '0 2px 8px rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)',
         }}>
           {[
-            { key: 'satellite', label: 'Satellite' },
+            { key: 'satellite', label: isMobile ? 'Sat' : 'Satellite' },
             { key: 'voyager', label: 'Base' },
-            { key: 'streets', label: 'Hybrid' },
+            { key: 'streets', label: isMobile ? 'Hyb' : 'Hybrid' },
             { key: '3d', label: '3D' },
           ].map(({ key, label }, i) => (
             <button key={key} onClick={() => setMapStyle(key)} style={{
-              padding: '6px 14px', fontSize: 12, fontWeight: mapStyle === key ? 700 : 500,
+              padding: isMobile ? '6px 8px' : '6px 14px',
+              fontSize: isMobile ? 11 : 12,
+              fontWeight: mapStyle === key ? 700 : 500,
               cursor: 'pointer', border: 'none',
               borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none',
               color: mapStyle === key ? '#fff' : '#cbd5e1',
@@ -3296,10 +3304,86 @@ function DashboardMapTab() {
       </div>
 
       {/* ═══════════════ MAX AI SIDEBAR (right side) ═══════════════ */}
+      {/* On mobile: floating button + overlay panel. On desktop: fixed sidebar. */}
+      {isMobile ? (
+        <>
+          {/* Floating AI button (bottom-right) */}
+          {isChatMinimized && (
+            <button
+              onClick={() => setIsChatMinimized(false)}
+              style={{
+                position: 'fixed', bottom: 20, right: 16, zIndex: 1001,
+                width: 48, height: 48, borderRadius: '50%',
+                backgroundColor: '#2563eb', border: 'none', color: '#fff',
+                boxShadow: '0 4px 16px rgba(37,99,235,0.4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <MessageSquare size={22} />
+            </button>
+          )}
+          {/* Full-screen chat overlay */}
+          {!isChatMinimized && (
+            <div style={{
+              position: 'fixed', inset: 0, zIndex: 2000,
+              display: 'flex', flexDirection: 'column',
+              backgroundColor: '#0f172a',
+            }}>
+              <div style={{
+                padding: '10px 14px',
+                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                fontSize: 14, fontWeight: 700, color: '#f1f5f9',
+              }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
+                  Max AI
+                </span>
+                <button onClick={() => setIsChatMinimized(true)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8', padding: 4 }}>
+                  <X size={20} />
+                </button>
+              </div>
+              <div style={{ flex: 1, padding: '12px 14px', overflowY: 'auto', minHeight: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 8, color: '#94a3b8' }}>
+                  Ask Max about property clusters, market trends, or new investment markets.
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {chat.messages.map((msg, idx) => (
+                    <div key={idx} style={{
+                      marginBottom: 8, padding: '10px 12px', borderRadius: 8,
+                      backgroundColor: msg.role === 'user' ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.04)',
+                      color: '#e2e8f0', fontSize: 13, lineHeight: 1.5,
+                      border: msg.role === 'user' ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(255,255,255,0.06)',
+                    }}>
+                      {msg.role === 'assistant' ? <FormattedMessage text={msg.content} /> : msg.content}
+                    </div>
+                  ))}
+                  {chat.loading && (
+                    <div style={{ padding: '10px 12px', borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.04)', color: '#94a3b8', fontSize: 13, fontStyle: 'italic', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      Max is thinking...
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div style={{ padding: '12px 14px', borderTop: '1px solid rgba(255,255,255,0.06)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input style={{ flex: 1, padding: '10px 12px', fontSize: 14, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', outline: 'none' }}
+                    placeholder="Ask about markets, trends, or map commands..."
+                    value={chat.input} onChange={(e) => setChat({ ...chat, input: e.target.value })}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMaxMessage(chat.input); } }} />
+                  <button style={{ padding: '10px 16px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: chat.loading ? 0.6 : 1 }}
+                    disabled={chat.loading} onClick={() => sendMaxMessage(chat.input)}>Send</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
       <div style={{
-        width: isChatMinimized ? 40 : 380,
-        minWidth: isChatMinimized ? 40 : 380,
-        maxWidth: isChatMinimized ? 40 : 380,
+        width: isChatMinimized ? 40 : (isTablet ? 320 : 380),
+        minWidth: isChatMinimized ? 40 : (isTablet ? 320 : 380),
+        maxWidth: isChatMinimized ? 40 : (isTablet ? 320 : 380),
         height: '100%',
         flexShrink: 0,
         borderLeft: '1px solid rgba(255,255,255,0.06)',
@@ -3434,6 +3518,7 @@ function DashboardMapTab() {
         </div>
         )}
       </div>
+      )}
 
       {/* Property Sheet Preview Modal */}
       {showPreviewModal && sheetPreview && (
@@ -3452,11 +3537,11 @@ function DashboardMapTab() {
         }}>
           <div style={{
             backgroundColor: 'white',
-            borderRadius: '16px',
-            padding: '28px',
+            borderRadius: isMobile ? '12px' : '16px',
+            padding: isMobile ? '16px' : '28px',
             maxWidth: '900px',
-            maxHeight: '85vh',
-            width: '90%',
+            maxHeight: isMobile ? '95vh' : '85vh',
+            width: isMobile ? '96%' : '90%',
             display: 'flex',
             flexDirection: 'column',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'

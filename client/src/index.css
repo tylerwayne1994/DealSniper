@@ -16,3 +16,63 @@ body { @apply bg-slate-50; }
   transform: scale(1.08);
   box-shadow: 0 4px 14px rgba(0,0,0,0.35), 0 0 0 2px rgba(255,255,255,0.9) !important;
 }
+
+/* ═══ Mobile / Tablet responsive ═══════════════════════════════════ */
+
+/* Leaflet popup max-width on small screens */
+@media (max-width: 767px) {
+  .leaflet-popup-content-wrapper {
+    max-width: 85vw !important;
+  }
+  .leaflet-popup-content {
+    max-width: 78vw !important;
+    margin: 10px 12px !important;
+    font-size: 12px !important;
+  }
+  /* MapLibre popups */
+  .maplibregl-popup-content {
+    max-width: 85vw !important;
+    font-size: 12px !important;
+  }
+  /* Bigger tap targets on mobile */
+  button, [role="button"], select, input {
+    min-height: 36px;
+  }
+  /* Safe area insets for iPhone notch / home indicator */
+  body {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+}
+
+@media (max-width: 1023px) {
+  /* Slightly smaller popups on tablet */
+  .leaflet-popup-content-wrapper {
+    max-width: 70vw !important;
+  }
+  .maplibregl-popup-content {
+    max-width: 70vw !important;
+  }
+}
+
+/* Sidebar drawer backdrop overlay (mobile) */
+.mobile-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Slide-in sidebar animation */
+.mobile-sidebar-drawer {
+  animation: slideIn 0.25s cubic-bezier(.4,0,.2,1);
+}
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
