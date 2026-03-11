@@ -3871,5 +3871,195 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8010")))
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+#  T-12 Monthly Extraction & Audit
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.post("/api/t12/extract-and-audit")
+async def t12_extract_and_audit(request: Request):
+    """
+    Extract monthly T-12 line items from OCR markdown AND audit them for
+    anomalies.  Returns structured monthly data + ranked findings.
+    """
+    body = await request.json()
+    raw_markdown = body.get("raw_markdown", "")
+    scenario_data = body.get("scenarioData", {})
+
+    if not raw_markdown and not scenario_data:
+        raise HTTPException(status_code=400, detail="raw_markdown or scenarioData required")
+
+    # Build context from scenarioData for guidance
+    pnl = scenario_data.get("pnl", {})
+    expenses = scenario_data.get("expenses", {})
+    property_info = scenario_data.get("property", {})
+    units = property_info.get("units", 0)
+
+    context_lines = []
+    if property_info.get("address"):
+        context_lines.append(f"Property: {property_info['address']}, {property_info.get('city', '')}, {property_info.get('state', '')}")
+    if units:
+        context_lines.append(f"Total Units: {units}")
+    if pnl.get("gross_potential_rent"):
+        context_lines.append(f"Annual GPR: ${pnl['gross_potential_rent']:,.0f}")
+    if pnl.get("noi"):
+        context_lines.append(f"Annual NOI: ${pnl['noi']:,.0f}")
+    if pnl.get("operating_expenses"):
+        context_lines.append(f"Annual OpEx: ${pnl['operating_expenses']:,.0f}")
+
+    context_block = "\n".join(context_lines) if context_lines else "No additional context."
+
+    prompt = f"""You are an expert real estate underwriter performing a Trailing 12-Month (T-12) financial analysis.
+
+PROPERTY CONTEXT:
+{context_block}
+
+DOCUMENT TEXT (OCR):
+{raw_markdown[:120000] if raw_markdown else 'No OCR text available. Generate realistic monthly breakdown from the annual data provided.'}
+
+YOUR TASK: Extract AND audit the T-12 operating statement.
+
+═══ PART 1: MONTHLY DATA EXTRACTION ═══
+
+Extract every income and expense line item with monthly values (Mo 1 through Mo 12).
+Look for:
+- Operating statements, income statements, P&L statements, T-12 reports
+- Tables with monthly columns (may be labeled Month 1-12, Jan-Dec, or dates)
+- GL code numbers (e.g., 5000-0100, 6000-0200)
+
+If the document contains an actual T-12 with monthly data, extract it EXACTLY as shown.
+If no monthly data exists in the document, generate a REALISTIC monthly breakdown based on:
+- Annual totals from the property context above
+- Typical seasonal patterns (higher vacancy in winter, higher utility costs in summer/winter)
+- Add realistic month-to-month variation (±3-8% random fluctuation)
+
+═══ PART 2: AUDIT / ANOMALY DETECTION ═══
+
+After extracting the monthly data, analyze it for:
+1. **Unusual spikes or drops** — Any month where a line item deviates more than 2x from the median
+2. **Negative amounts** — Credits, reversals, or negative expenses that may inflate NOI
+3. **One-time items** — Non-recurring charges that distort trailing averages
+4. **NOI continuity** — Month-over-month NOI swings greater than 20%
+5. **Seasonal anomalies** — Patterns inconsistent with property type
+6. **Expense manipulation** — Suspiciously low R&M, deferred maintenance, missing line items
+7. **Revenue red flags** — Concession spikes, vacancy jumps, rent collection issues
+
+Rank findings by severity (1 = most critical).
+
+Return a JSON object with this EXACT structure:
+{{
+  "monthly_data": {{
+    "months": ["Mo 1", "Mo 2", "Mo 3", "Mo 4", "Mo 5", "Mo 6", "Mo 7", "Mo 8", "Mo 9", "Mo 10", "Mo 11", "Mo 12"],
+    "sections": [
+      {{
+        "name": "Rental Income",
+        "lines": [
+          {{
+            "code": "5000-0100",
+            "description": "Apartment Rent",
+            "values": [297034, 299594, 279700, 279700, 282260, 288914, 288915, 286515, 286515, 292425, 292425, 0],
+            "annual_total": 0
+          }}
+        ],
+        "subtotal_label": "Total Rental Income",
+        "subtotal_values": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      }},
+      {{
+        "name": "Financial Income",
+        "lines": [],
+        "subtotal_label": "Total Financial Income",
+        "subtotal_values": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      }},
+      {{
+        "name": "Other Rental Income",
+        "lines": [],
+        "subtotal_label": "Total Other Income",
+        "subtotal_values": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      }},
+      {{
+        "name": "Operating Expenses",
+        "lines": [],
+        "subtotal_label": "Total Operating Expenses",
+        "subtotal_values": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      }}
+    ],
+    "noi_values": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "is_extracted": true,
+    "source_description": "Extracted from T-12 operating statement on pages X-Y"
+  }},
+  "audit_findings": [
+    {{
+      "severity": 1,
+      "title": "Short finding title",
+      "description": "Detailed description with specific cell references (e.g., Month 11, Row 17). Include dollar amounts and context.",
+      "affected_months": [11],
+      "affected_line": "5000-0500 - Concessions",
+      "impact": "Drives Total Rental Income down to $X in Month 11 vs $Y average",
+      "recommendation": "What the underwriter should do about this"
+    }}
+  ],
+  "summary": {{
+    "total_findings": 0,
+    "critical_count": 0,
+    "data_source": "extracted_from_document OR generated_from_annuals",
+    "overall_data_quality": "high/medium/low"
+  }}
+}}
+
+CRITICAL RULES:
+- Include ALL income categories: Rental Income, Loss/Gain to Lease, Concessions, Employee Discounts, Model/Storage, Vacancy Loss, Financial Income, Other Income
+- Include ALL expense categories: Payroll, Repairs & Maintenance, Utilities, Insurance, Taxes, Management, Marketing, Admin, Turnover, Contract Services, etc.
+- Line item codes (e.g., 5000-0100) are optional — use them if found in the document
+- All 12 months MUST have values (use 0 if truly zero)
+- annual_total should be the sum of the 12 monthly values
+- Subtotal values should be the sum of all lines in that section per month
+- NOI = Total Income - Total Operating Expenses per month
+- Set "is_extracted" to true if data came from the document, false if generated
+- Audit findings should reference specific months and line items
+- Rank findings by financial impact (largest impact = severity 1)
+
+Return ONLY the JSON object."""
+
+    try:
+        response = anthropic_client.messages.create(
+            model=ANTHROPIC_MODEL,
+            max_tokens=16384,
+            temperature=0,
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        response_text = response.content[0].text.strip()
+        response_text = response_text.replace("```json", "").replace("```", "")
+
+        import re as _re
+        match = _re.search(r'\{.*\}', response_text, _re.DOTALL)
+        json_str = match.group() if match else response_text
+
+        try:
+            result = json.loads(json_str)
+        except json.JSONDecodeError:
+            # Repair truncated JSON
+            repaired = json_str.rstrip()
+            if repaired.endswith(','):
+                repaired = repaired[:-1]
+            open_braces = repaired.count('{') - repaired.count('}')
+            open_brackets = repaired.count('[') - repaired.count(']')
+            repaired += ']' * max(0, open_brackets)
+            repaired += '}' * max(0, open_braces)
+            result = json.loads(repaired)
+
+        return JSONResponse(content={
+            "ok": True,
+            "t12_data": result.get("monthly_data", {}),
+            "audit_findings": result.get("audit_findings", []),
+            "summary": result.get("summary", {}),
+        })
+
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=502, detail=f"Failed to parse T-12 response: {str(e)}")
+    except Exception as e:
+        log.error(f"T-12 extraction failed: {str(e)}")
+        raise HTTPException(status_code=502, detail=f"T-12 extraction failed: {str(e)}")
+
+
 
 

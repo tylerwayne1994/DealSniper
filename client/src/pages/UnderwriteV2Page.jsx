@@ -431,6 +431,15 @@ function UnderwriteV2Page() {
       
       // Initialize verifiedData as editable copy with default financing
       const parsedCopy = JSON.parse(JSON.stringify(data.parsed));
+
+      // Stash the raw OCR markdown for T-12 monthly extraction later
+      if (data.raw_markdown) {
+        parsedCopy._raw_markdown = data.raw_markdown;
+      }
+      // Store source filename   
+      if (file?.name) {
+        parsedCopy.source_filename = file.name;
+      }
       
       // ===== Bridge operating expenses & NOI fields for wizard =====
       // Backend post-processing should handle this, but double-check on frontend too
