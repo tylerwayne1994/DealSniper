@@ -17,7 +17,6 @@ from cors_config import install_cors
 from pypdf import PdfReader, PdfWriter
 from dotenv import load_dotenv
 
-from mistralai import Mistral
 from anthropic import Anthropic
 
 # from protected_routes import router as protected_router  # Moved to after startup
@@ -33,12 +32,10 @@ except Exception:
 
 # Always load the backend .env regardless of the process working directory.
 load_dotenv(dotenv_path=Path(__file__).resolve().with_name(".env"), override=True)
-MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
 
-# Global LLM client placeholders (set in startup)
-MISTRAL = None
+# Global LLM client placeholder (set in startup)
 ANTHROPIC = None
 
 # Import spreadsheet AI module
@@ -231,9 +228,9 @@ try:
     from market_analysis import market_analysis_endpoint, MarketAnalysisRequest
     log.info("[MARKET ANALYSIS] Module imported successfully")
     
-    # Inject LLM clients for fallback
+    # Inject LLM client for fallback
     market_analysis.ANTHROPIC_CLIENT = ANTHROPIC
-    market_analysis.MISTRAL_CLIENT = MISTRAL
+    market_analysis.MISTRAL_CLIENT = None
     log.info("[MARKET ANALYSIS] LLM clients injected for fallback")
     
     @app.post("/api/market-analysis")
@@ -504,19 +501,9 @@ async def get_checkout_session(session_id: str):
 
 @app.on_event("startup")
 async def _init_clients():
-    global MISTRAL, ANTHROPIC
+    global ANTHROPIC
 
-    log.info(f"MISTRAL_API_KEY exists: {bool(MISTRAL_API_KEY)}")
     log.info(f"ANTHROPIC_API_KEY exists: {bool(ANTHROPIC_API_KEY)}")
-    
-    if MISTRAL_API_KEY:
-        try:
-            MISTRAL = Mistral(api_key=MISTRAL_API_KEY)
-            log.info("MISTRAL client initialized successfully")
-        except Exception as e:
-            log.exception("Failed to init Mistral: %s", e)
-    else:
-        log.warning("MISTRAL_API_KEY missing")
 
     if ANTHROPIC_API_KEY:
         try:
@@ -593,20 +580,64 @@ def _as_number(v):
     except Exception:
         return None
 
-# ---------------- OCR + Claude ----------------
+# ---------------- OCR (Claude native PDF / vision) ----------------
 def _call_mistral_ocr(doc_bytes: bytes, mime: str) -> dict:
-    if MISTRAL is None:
-        raise HTTPException(status_code=503, detail="Mistral not configured")
-    
+    """Extract text from PDF/images using Claude's native document support.
+    Returns same shape as legacy: {pages: [{markdown: ...}]}
+    """
+    if ANTHROPIC is None:
+        raise HTTPException(status_code=503, detail="Anthropic client not configured")
     try:
-        resp = MISTRAL.ocr.process(
-            model=OCR_MODEL,
-            document={"type": "document_url", "document_url": _to_data_url(doc_bytes, mime)},
-            include_image_base64=False,
-        )
-        return json.loads(resp.model_dump_json())
+        pages_out = []
+
+        if mime == "application/pdf":
+            pdf_b64 = base64.b64encode(doc_bytes).decode("utf-8")
+            resp = ANTHROPIC.messages.create(
+                model=ANTHROPIC_MODEL,
+                max_tokens=16000,
+                messages=[{"role": "user", "content": [
+                    {"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": pdf_b64}},
+                    {"type": "text", "text": (
+                        "Extract ALL text from every page of this PDF document. "
+                        "Preserve tables as markdown tables. "
+                        "Separate each page with a line: --- PAGE N --- (where N is the page number starting at 1). "
+                        "Return ONLY the extracted text with page separators, no commentary."
+                    )},
+                ]}],
+            )
+            full_text = resp.content[0].text
+            # Split by page markers
+            import re
+            parts = re.split(r'---\s*PAGE\s+\d+\s*---', full_text)
+            for part in parts:
+                stripped = part.strip()
+                if stripped:
+                    pages_out.append({"markdown": stripped})
+            if not pages_out:
+                pages_out.append({"markdown": full_text})
+
+        elif mime.startswith("image/"):
+            img_b64 = base64.b64encode(doc_bytes).decode("utf-8")
+            media_type = mime if mime in ("image/png", "image/jpeg", "image/webp", "image/gif") else "image/png"
+            resp = ANTHROPIC.messages.create(
+                model=ANTHROPIC_MODEL,
+                max_tokens=4096,
+                messages=[{"role": "user", "content": [
+                    {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": img_b64}},
+                    {"type": "text", "text": "Extract ALL text from this document image. Preserve tables as markdown tables. Return ONLY the extracted text."},
+                ]}],
+            )
+            pages_out.append({"markdown": resp.content[0].text})
+
+        else:
+            raise HTTPException(status_code=415, detail=f"Unsupported MIME for OCR: {mime}")
+
+        return {"pages": pages_out}
+
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Mistral OCR call failed: {e}")
+        raise HTTPException(status_code=502, detail=f"OCR extraction failed: {e}")
 
 def _call_claude_parse_from_markdown(ocr_text: str, financing_params: Optional[Dict] = None) -> Dict[str, Any]:
     financing_lines = []
@@ -1135,7 +1166,7 @@ def _validate_and_enrich(data: Dict[str, Any]) -> Dict[str, Any]:
         "warnings": warnings,
         "calculations_performed": calc,
         "parser_strategy": PARSER_STRATEGY_DEFAULT,
-        "ocr_engine": "mistral-ocr",
+        "ocr_engine": "claude-native-pdf",
     })
     return data
 
@@ -1686,7 +1717,7 @@ def health():
         "version": "9.1.0-census-fix",
         "parser_default": "parser_v4",
         "clients": {
-            "mistral": MISTRAL is not None,
+            "ocr": "claude-native-pdf",
             "anthropic": ANTHROPIC is not None,
         }
     }

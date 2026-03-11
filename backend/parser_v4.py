@@ -4,21 +4,17 @@ import base64
 import hashlib
 from typing import Dict, Any, Optional, List
 from pathlib import Path
-from mistralai import Mistral
 from anthropic import Anthropic
 from dotenv import load_dotenv
-import fitz  # PyMuPDF
 
 load_dotenv()
 
 # API Configuration
-MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
 
-if not MISTRAL_API_KEY or not CLAUDE_API_KEY:
-    raise ValueError("Both MISTRAL_API_KEY and either CLAUDE_API_KEY or ANTHROPIC_API_KEY must be set in .env file")
+if not CLAUDE_API_KEY:
+    raise ValueError("CLAUDE_API_KEY or ANTHROPIC_API_KEY must be set in .env file")
 
-mistral_client = Mistral(api_key=MISTRAL_API_KEY)
 anthropic_client = Anthropic(api_key=CLAUDE_API_KEY)
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
 
@@ -26,7 +22,6 @@ class RealEstateParser:
     """Parser for real estate offering memorandums and financial documents"""
     
     def __init__(self):
-        self.mistral = mistral_client
         self.anthropic = anthropic_client
     
     def file_to_base64_url(self, file_path: str) -> str:
@@ -51,39 +46,64 @@ class RealEstateParser:
         return f"data:{mime_type};base64,{b64}"
     
     def extract_text_with_ocr(self, file_path: str) -> Dict[str, Any]:
-        """Extract text from document using Mistral OCR"""
+        """Extract text from document using Claude's native PDF document support"""
         try:
-            # Convert file to data URL
-            data_url = self.file_to_base64_url(file_path)
-            
-            # Call Mistral OCR
-            response = self.mistral.ocr.process(
-                model="mistral-ocr-latest",
-                document={
-                    "type": "document_url",
-                    "document_url": data_url
-                },
-                include_image_base64=False
+            import re
+            with open(file_path, "rb") as f:
+                file_bytes = f.read()
+
+            ext = Path(file_path).suffix.lower()
+            mime_map = {
+                '.pdf': 'application/pdf',
+                '.png': 'image/png',
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+            }
+            mime_type = mime_map.get(ext, 'application/pdf')
+            b64_data = base64.b64encode(file_bytes).decode('utf-8')
+
+            if mime_type == 'application/pdf':
+                content_block = {"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": b64_data}}
+            else:
+                content_block = {"type": "image", "source": {"type": "base64", "media_type": mime_type, "data": b64_data}}
+
+            resp = self.anthropic.messages.create(
+                model=ANTHROPIC_MODEL,
+                max_tokens=16000,
+                messages=[{"role": "user", "content": [
+                    content_block,
+                    {"type": "text", "text": (
+                        "Extract ALL text from every page of this document. "
+                        "Preserve tables as markdown tables. "
+                        "Separate each page with a line: --- PAGE N --- (where N is the page number starting at 1). "
+                        "Return ONLY the extracted text with page separators, no commentary."
+                    )},
+                ]}],
             )
-            
-            # Convert response to dict
-            ocr_result = json.loads(response.model_dump_json())
-            
-            # Extract markdown text from pages
+            full_text = resp.content[0].text
+
+            # Split by page markers into pages list
+            parts = re.split(r'---\s*PAGE\s+\d+\s*---', full_text)
+            pages = []
+            for part in parts:
+                stripped = part.strip()
+                if stripped:
+                    pages.append({"markdown": stripped})
+            if not pages:
+                pages.append({"markdown": full_text})
+
             markdown_text = ""
-            if "pages" in ocr_result:
-                for idx, page in enumerate(ocr_result["pages"], 1):
-                    if isinstance(page, dict) and "markdown" in page:
-                        markdown_text += f"\n\n--- PAGE {idx} ---\n\n"
-                        markdown_text += page["markdown"] + "\n\n"
-            
+            for idx, page in enumerate(pages, 1):
+                markdown_text += f"\n\n--- PAGE {idx} ---\n\n"
+                markdown_text += page["markdown"] + "\n\n"
+
             return {
                 "success": True,
                 "text": markdown_text,
-                "page_count": len(ocr_result.get("pages", [])),
-                "raw_ocr": ocr_result
+                "page_count": len(pages),
+                "raw_ocr": {"pages": pages}
             }
-            
+
         except Exception as e:
             return {
                 "success": False,
@@ -103,6 +123,7 @@ class RealEstateParser:
         Returns:
             List of extracted image metadata
         """
+        import fitz  # local import for image extraction utility
         images = []
         
         try:

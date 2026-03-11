@@ -7,7 +7,6 @@ supabase
 requests
 flask
 pydantic
-mistralai>=1.0.0
 anthropic
 python-multipart
 openai
