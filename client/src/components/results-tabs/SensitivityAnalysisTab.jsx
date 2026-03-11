@@ -14,6 +14,7 @@ const card = {
 };
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
+// fmtPct expects a DECIMAL (0.065 → 6.5%)
 const fmtPct = (v, decimals = 1) => `${(v * 100).toFixed(decimals)}%`;
 const fmtMoney = (v) => {
   if (Math.abs(v) >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}MM`;
@@ -21,9 +22,27 @@ const fmtMoney = (v) => {
   return `$${v.toFixed(0)}`;
 };
 
+// Guard against NaN/Infinity/diverged IRR values
+const safePct = (v) => {
+  if (v == null || !isFinite(v) || Math.abs(v) > 999) return 'N/A';
+  return `${v.toFixed(1)}%`;
+};
+
+// Normalize rate: could arrive as percentage (7.25) or decimal (0.0725)
+const normalizeRate = (val, fallback) => {
+  if (val == null || val === 0) return fallback;
+  return val > 1 ? val / 100 : val;
+};
+
+// Normalize exit cap rate (same logic as calculateFullAnalysis)
+const normalizeExitCap = (raw) => {
+  if (raw != null && raw > 0 && raw <= 0.20) raw = raw * 100;
+  if (!raw || raw <= 0 || raw > 20) raw = 7.25;
+  return raw / 100; // return decimal
+};
+
 // Color scale: green → yellow → red
 function heatColor(value, thresholds) {
-  // thresholds: { green, yellow, red } — if value >= green → green, <= red → red
   const { green, yellow, red } = thresholds;
   if (value >= green) return { bg: '#dcfce7', text: '#166534' };
   if (value >= yellow) return { bg: '#fef9c3', text: '#854d0e' };
@@ -31,17 +50,21 @@ function heatColor(value, thresholds) {
   return { bg: '#fecaca', text: '#991b1b' };
 }
 
+// IRR arrives as percentage from calculateFullAnalysis (e.g. 15.0 = 15%)
 function irrColor(irr) {
-  return heatColor(irr, { green: 0.18, yellow: 0.12, red: 0.08 });
+  if (!isFinite(irr)) return { bg: '#f3f4f6', text: '#6b7280' };
+  return heatColor(irr, { green: 18, yellow: 12, red: 8 });
 }
 function emColor(em) {
+  if (!isFinite(em)) return { bg: '#f3f4f6', text: '#6b7280' };
   return heatColor(em, { green: 2.0, yellow: 1.6, red: 1.2 });
 }
+// CoC arrives as percentage from calculateFullAnalysis (e.g. 8.0 = 8%)
 function cocColor(coc) {
-  return heatColor(coc, { green: 0.08, yellow: 0.065, red: 0.05 });
+  if (!isFinite(coc)) return { bg: '#f3f4f6', text: '#6b7280' };
+  return heatColor(coc, { green: 8, yellow: 6.5, red: 5 });
 }
 function occupancyColor(occ) {
-  // Lower occupancy needed = better (green), higher = worse (red)
   if (occ <= 0.75) return { bg: '#dcfce7', text: '#166534' };
   if (occ <= 0.85) return { bg: '#fef9c3', text: '#854d0e' };
   if (occ <= 0.95) return { bg: '#fef3c7', text: '#92400e' };
@@ -52,8 +75,9 @@ function occupancyColor(occ) {
 // ─── MAIN TAB ──────────────────────────────────────────────────────────────
 export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calculateFullAnalysisFn }) {
   const purchasePrice = scenarioData?.pricing_financing?.purchase_price || scenarioData?.pricing_financing?.price || 0;
-  const exitCapRate = scenarioData?.underwriting?.exit_cap_rate || 0.065;
-  const incomeGrowth = scenarioData?.underwriting?.income_growth_rate || 0.03;
+  // Normalize exit cap and growth rates the same way calculateFullAnalysis does
+  const exitCapRate = normalizeExitCap(scenarioData?.underwriting?.exit_cap_rate);
+  const incomeGrowth = normalizeRate(scenarioData?.underwriting?.income_growth_rate, 0.03);
   const holdingPeriod = scenarioData?.underwriting?.holding_period || 5;
   const vacancyRate = scenarioData?.pnl?.vacancy_rate || 0.05;
   const annualDebtService = fullCalcs?.financing?.annualDebtService || 0;
@@ -204,7 +228,7 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
           exitCap: `${(cap * 100).toFixed(2)}%`,
           exitCapNum: cap,
           equityMultiple: parseFloat((analysis.returns?.leveredEquityMultiple || 0).toFixed(2)),
-          irr: parseFloat(((analysis.returns?.leveredIRR || 0) * 100).toFixed(1)),
+          irr: parseFloat((analysis.returns?.leveredIRR || 0).toFixed(1)),
           isCurrent: Math.abs(cap - exitCapRate) < 0.001,
         });
       } catch {
@@ -230,7 +254,7 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
         points.push({
           rentGrowth: `${(g * 100).toFixed(1)}%`,
           rentGrowthNum: g,
-          coc: parseFloat(((analysis.year1?.cashOnCash || 0) * 100).toFixed(1)),
+          coc: parseFloat((analysis.year1?.cashOnCash || 0).toFixed(1)),
           equityMultiple: parseFloat((analysis.returns?.leveredEquityMultiple || 0).toFixed(2)),
           isCurrent: Math.abs(g - incomeGrowth) < 0.002,
         });
@@ -276,7 +300,7 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
             { label: 'Purchase Price', value: fmtMoney(purchasePrice), color: '#3b82f6' },
             { label: 'Exit Cap Rate', value: fmtPct(exitCapRate), color: '#f59e0b', sub: '(current)' },
             { label: 'Rent Growth', value: fmtPct(incomeGrowth), color: '#10b981', sub: '(current)' },
-            { label: 'Year 1 DSCR', value: fullCalcs?.year1?.dscr?.toFixed(2) + 'x' || 'N/A', color: '#6366f1' },
+            { label: 'Year 1 DSCR', value: fullCalcs?.year1?.dscr ? `${fullCalcs.year1.dscr.toFixed(2)}x` : 'N/A', color: '#6366f1' },
           ].map((m, i) => (
             <div key={i} style={{ ...card, marginBottom: 0, borderLeft: `4px solid ${m.color}`, padding: '16px 20px' }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: LB, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{m.label}</div>
@@ -351,10 +375,10 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
                                 {cell.em.toFixed(2)}x
                               </td>
                               <td style={{ ...cellStyle(false, cell.isCurrent), backgroundColor: irrc.bg, color: irrc.text }}>
-                                {(cell.irr * 100).toFixed(1)}%
+                                {safePct(cell.irr)}
                               </td>
                               <td style={{ ...cellStyle(false, cell.isCurrent), backgroundColor: cocc.bg, color: cocc.text }}>
-                                {(cell.coc * 100).toFixed(1)}%
+                                {safePct(cell.coc)}
                               </td>
                             </React.Fragment>
                           );
@@ -428,7 +452,7 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
                                 {cell.em.toFixed(2)}x
                               </td>
                               <td style={{ ...cellStyle(false, cell.isCurrent), backgroundColor: cocc.bg, color: cocc.text }}>
-                                {(cell.coc * 100).toFixed(1)}%
+                                {safePct(cell.coc)}
                               </td>
                             </React.Fragment>
                           );
