@@ -35,6 +35,7 @@ except Exception:
 load_dotenv(dotenv_path=Path(__file__).resolve().with_name(".env"), override=True)
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
 
 # Global LLM client placeholders (set in startup)
 MISTRAL = None
@@ -3866,20 +3867,16 @@ async def populate_underwriting_sheet(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8010")))
-
-
 # ─────────────────────────────────────────────────────────────────────────────
-#  T-12 Monthly Extraction & Audit
+#  OM Auditor — Full Document Audit + T-12 Extraction
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.post("/api/t12/extract-and-audit")
-async def t12_extract_and_audit(request: Request):
+async def om_extract_and_audit(request: Request):
     """
-    Extract monthly T-12 line items from OCR markdown AND audit them for
-    anomalies.  Returns structured monthly data + ranked findings.
+    Audit the ENTIRE uploaded document (OM, rent roll, T-12, financials, etc.)
+    for red flags, inconsistencies, and anomalies. Also extracts monthly T-12
+    data if present.
     """
     body = await request.json()
     raw_markdown = body.get("raw_markdown", "")
@@ -3888,62 +3885,111 @@ async def t12_extract_and_audit(request: Request):
     if not raw_markdown and not scenario_data:
         raise HTTPException(status_code=400, detail="raw_markdown or scenarioData required")
 
-    # Build context from scenarioData for guidance
+    if ANTHROPIC is None:
+        raise HTTPException(status_code=503, detail="Anthropic/Claude not configured")
+
+    # Build context from scenarioData
     pnl = scenario_data.get("pnl", {})
     expenses = scenario_data.get("expenses", {})
     property_info = scenario_data.get("property", {})
+    rent_roll = scenario_data.get("rent_roll", [])
     units = property_info.get("units", 0)
+    purchase_price = scenario_data.get("purchase_price") or scenario_data.get("asking_price", 0)
+    cap_rate = pnl.get("cap_rate", 0)
 
     context_lines = []
     if property_info.get("address"):
         context_lines.append(f"Property: {property_info['address']}, {property_info.get('city', '')}, {property_info.get('state', '')}")
     if units:
         context_lines.append(f"Total Units: {units}")
+    if purchase_price:
+        context_lines.append(f"Purchase Price: ${purchase_price:,.0f}")
+    if cap_rate:
+        context_lines.append(f"Cap Rate: {cap_rate:.2%}" if cap_rate < 1 else f"Cap Rate: {cap_rate:.2f}%")
     if pnl.get("gross_potential_rent"):
         context_lines.append(f"Annual GPR: ${pnl['gross_potential_rent']:,.0f}")
+    if pnl.get("effective_gross_income"):
+        context_lines.append(f"EGI: ${pnl['effective_gross_income']:,.0f}")
     if pnl.get("noi"):
         context_lines.append(f"Annual NOI: ${pnl['noi']:,.0f}")
     if pnl.get("operating_expenses"):
         context_lines.append(f"Annual OpEx: ${pnl['operating_expenses']:,.0f}")
+    if expenses:
+        for k, v in expenses.items():
+            if v and isinstance(v, (int, float)) and v > 0:
+                context_lines.append(f"  {k}: ${v:,.0f}")
+    if rent_roll and len(rent_roll) > 0:
+        context_lines.append(f"Rent Roll: {len(rent_roll)} units loaded")
 
     context_block = "\n".join(context_lines) if context_lines else "No additional context."
 
-    prompt = f"""You are an expert real estate underwriter performing a Trailing 12-Month (T-12) financial analysis.
+    prompt = f"""You are an elite real estate acquisitions analyst performing a comprehensive audit of an Offering Memorandum (OM) and all associated documents uploaded by the user.
 
-PROPERTY CONTEXT:
+PROPERTY CONTEXT (parsed data):
 {context_block}
 
-DOCUMENT TEXT (OCR):
-{raw_markdown[:120000] if raw_markdown else 'No OCR text available. Generate realistic monthly breakdown from the annual data provided.'}
+FULL DOCUMENT TEXT (OCR):
+{raw_markdown[:120000] if raw_markdown else 'No OCR text available. Audit based on the parsed data provided above.'}
 
-YOUR TASK: Extract AND audit the T-12 operating statement.
+═══════════════════════════════════════════════════════════════════
+YOUR TASK: Perform TWO analyses on everything above.
+═══════════════════════════════════════════════════════════════════
 
-═══ PART 1: MONTHLY DATA EXTRACTION ═══
+━━━ PART 1: T-12 MONTHLY DATA EXTRACTION ━━━
 
-Extract every income and expense line item with monthly values (Mo 1 through Mo 12).
-Look for:
-- Operating statements, income statements, P&L statements, T-12 reports
-- Tables with monthly columns (may be labeled Month 1-12, Jan-Dec, or dates)
-- GL code numbers (e.g., 5000-0100, 6000-0200)
+Extract every income and expense line item with monthly values (Mo 1–12).
+Look for operating statements, income statements, P&L, T-12 reports, or any
+table with monthly columns.
 
-If the document contains an actual T-12 with monthly data, extract it EXACTLY as shown.
-If no monthly data exists in the document, generate a REALISTIC monthly breakdown based on:
-- Annual totals from the property context above
-- Typical seasonal patterns (higher vacancy in winter, higher utility costs in summer/winter)
-- Add realistic month-to-month variation (±3-8% random fluctuation)
+If the document has actual monthly data → extract it EXACTLY.
+If no monthly data exists → generate a REALISTIC monthly breakdown from the
+annual totals using seasonal patterns and ±3-8% random monthly variation.
 
-═══ PART 2: AUDIT / ANOMALY DETECTION ═══
+━━━ PART 2: FULL-DOCUMENT AUDIT ━━━
 
-After extracting the monthly data, analyze it for:
-1. **Unusual spikes or drops** — Any month where a line item deviates more than 2x from the median
-2. **Negative amounts** — Credits, reversals, or negative expenses that may inflate NOI
-3. **One-time items** — Non-recurring charges that distort trailing averages
-4. **NOI continuity** — Month-over-month NOI swings greater than 20%
-5. **Seasonal anomalies** — Patterns inconsistent with property type
-6. **Expense manipulation** — Suspiciously low R&M, deferred maintenance, missing line items
-7. **Revenue red flags** — Concession spikes, vacancy jumps, rent collection issues
+Audit EVERYTHING in the document. Not just the T-12. Audit every section,
+every page, every claim. Categories to scrutinize:
 
-Rank findings by severity (1 = most critical).
+1. **FINANCIAL RED FLAGS** — T-12 spikes/drops (>2x median), negative amounts,
+   one-time items inflating/deflating NOI, month-over-month NOI swings >20%,
+   expense manipulation, suspiciously low R&M, deferred maintenance
+2. **RENT ROLL ISSUES** — Units significantly above/below market, lease
+   expirations clustered, month-to-month tenants, concessions hiding true
+   rent, vacancy patterns, lease-up risk, tenant creditworthiness
+3. **PRO FORMA ASSUMPTIONS** — Unrealistic rent growth (>5%/yr), expense
+   growth below inflation, aggressive vacancy assumptions (<5%), management
+   fee too low, missing capex reserves, pro forma NOI vs trailing gap
+4. **VALUATION CONCERNS** — Cap rate vs market comps, price per unit vs
+   market, price per SF anomalies, implied exit cap vs entry, GRM
+   inconsistencies, value-add premium not justified
+5. **PROPERTY CONDITION** — Deferred maintenance signals, age-related capex
+   needs, recent capex claims vs expense history mismatch, unit interior
+   condition, roof/HVAC/plumbing age, environmental concerns
+6. **MARKET / LOCATION** — Oversupply risk, new construction pipeline,
+   population/job trends contradicting growth claims, flood/disaster zone,
+   crime, school ratings, walkability claims
+7. **LEGAL / REGULATORY** — Rent control / stabilization exposure, zoning
+   non-conformance, code violations, pending litigation, HOA/association
+   issues, title concerns, environmental compliance
+8. **SELLER NARRATIVE RED FLAGS** — Vague language masking problems, cherry-
+   picked comps, "below market rents" claims without evidence, missing
+   historical data, inconsistencies between sections, math errors in the OM
+9. **DATA QUALITY** — Missing critical information, internal contradictions
+   (e.g., unit count differs between sections), stale data, unverifiable
+   claims, OCR artifacts that may indicate altered documents
+10. **DEAL STRUCTURE** — Seller financing terms, assumable debt issues,
+    partnership/JV structure concerns, earnest money terms, inspection period
+    adequacy, closing timeline risks
+
+For EACH finding, provide:
+- severity (1 = most critical, deal-killer potential)
+- category (one of the 10 above)
+- title (short)
+- description (detailed, cite specific numbers/pages/sections)
+- impact (financial or strategic impact)
+- recommendation (what the buyer should do)
+- affected_months (array of month numbers IF applicable to T-12, else empty)
+- affected_line (line item name IF applicable, else empty string)
 
 Return a JSON object with this EXACT structure:
 {{
@@ -3964,13 +4010,7 @@ Return a JSON object with this EXACT structure:
         "subtotal_values": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
       }},
       {{
-        "name": "Financial Income",
-        "lines": [],
-        "subtotal_label": "Total Financial Income",
-        "subtotal_values": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-      }},
-      {{
-        "name": "Other Rental Income",
+        "name": "Other Income",
         "lines": [],
         "subtotal_label": "Total Other Income",
         "subtotal_values": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -3984,43 +4024,46 @@ Return a JSON object with this EXACT structure:
     ],
     "noi_values": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     "is_extracted": true,
-    "source_description": "Extracted from T-12 operating statement on pages X-Y"
+    "source_description": "Extracted from T-12 on pages X-Y"
   }},
   "audit_findings": [
     {{
       "severity": 1,
+      "category": "FINANCIAL RED FLAGS",
       "title": "Short finding title",
-      "description": "Detailed description with specific cell references (e.g., Month 11, Row 17). Include dollar amounts and context.",
+      "description": "Detailed description with specific numbers, pages, sections cited.",
       "affected_months": [11],
       "affected_line": "5000-0500 - Concessions",
-      "impact": "Drives Total Rental Income down to $X in Month 11 vs $Y average",
-      "recommendation": "What the underwriter should do about this"
+      "impact": "Quantified financial or strategic impact",
+      "recommendation": "Specific action for the buyer/underwriter"
     }}
   ],
   "summary": {{
     "total_findings": 0,
     "critical_count": 0,
+    "warning_count": 0,
     "data_source": "extracted_from_document OR generated_from_annuals",
-    "overall_data_quality": "high/medium/low"
+    "overall_data_quality": "high/medium/low",
+    "overall_risk_rating": "low/moderate/high/very_high",
+    "executive_summary": "2-3 sentence overall assessment of this deal"
   }}
 }}
 
 CRITICAL RULES:
-- Include ALL income categories: Rental Income, Loss/Gain to Lease, Concessions, Employee Discounts, Model/Storage, Vacancy Loss, Financial Income, Other Income
-- Include ALL expense categories: Payroll, Repairs & Maintenance, Utilities, Insurance, Taxes, Management, Marketing, Admin, Turnover, Contract Services, etc.
-- Line item codes (e.g., 5000-0100) are optional — use them if found in the document
-- All 12 months MUST have values (use 0 if truly zero)
-- annual_total should be the sum of the 12 monthly values
-- Subtotal values should be the sum of all lines in that section per month
+- ALL 12 months MUST have values (use 0 if truly zero)
+- annual_total = sum of 12 monthly values
+- Subtotal values = sum of all lines in that section per month
 - NOI = Total Income - Total Operating Expenses per month
-- Set "is_extracted" to true if data came from the document, false if generated
-- Audit findings should reference specific months and line items
-- Rank findings by financial impact (largest impact = severity 1)
-
-Return ONLY the JSON object."""
+- is_extracted = true if monthly data came from the document, false if generated
+- Findings MUST cover the ENTIRE document, not just T-12
+- Be aggressive — flag everything that a skeptical buyer would question
+- Minimum 8-15 findings for a typical OM
+- Rank by severity: 1 = deal killer, 2 = major concern, 3 = moderate risk,
+  4 = minor note, 5 = informational
+- Return ONLY the JSON object, no other text"""
 
     try:
-        response = anthropic_client.messages.create(
+        response = ANTHROPIC.messages.create(
             model=ANTHROPIC_MODEL,
             max_tokens=16384,
             temperature=0,
@@ -4037,7 +4080,6 @@ Return ONLY the JSON object."""
         try:
             result = json.loads(json_str)
         except json.JSONDecodeError:
-            # Repair truncated JSON
             repaired = json_str.rstrip()
             if repaired.endswith(','):
                 repaired = repaired[:-1]
@@ -4055,11 +4097,13 @@ Return ONLY the JSON object."""
         })
 
     except json.JSONDecodeError as e:
-        raise HTTPException(status_code=502, detail=f"Failed to parse T-12 response: {str(e)}")
+        raise HTTPException(status_code=502, detail=f"Failed to parse audit response: {str(e)}")
     except Exception as e:
-        log.error(f"T-12 extraction failed: {str(e)}")
-        raise HTTPException(status_code=502, detail=f"T-12 extraction failed: {str(e)}")
+        log.error(f"OM audit failed: {str(e)}")
+        raise HTTPException(status_code=502, detail=f"OM audit failed: {str(e)}")
 
 
-
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8010")))
 

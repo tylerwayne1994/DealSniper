@@ -1300,7 +1300,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
   const tabs = [
     { id: 'summary', label: 'Documents', icon: FileText, accent: '#6366f1' },
     { id: 'scenario-sheet', label: 'Scenario Sheet', icon: FileSpreadsheet, accent: '#8b5cf6' },
-    { id: 't12-auditor', label: 'T-12 Auditor', icon: FileBarChart, accent: '#dc2626' },
+    { id: 't12-auditor', label: 'OM Auditor', icon: FileBarChart, accent: '#dc2626' },
     { id: 'compressed', label: 'Overview', icon: LayoutDashboard, accent: '#3b82f6' },
     { id: 'deal-structure', label: 'Deal Structure', icon: Layers, accent: '#0ea5e9' },
     { id: 'expenses-v2', label: 'Expenses', icon: FileText, accent: '#14b8a6' },
