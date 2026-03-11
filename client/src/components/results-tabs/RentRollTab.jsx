@@ -30,18 +30,21 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange, ini
 
   // Column sizing state
   const initialColumns = [
-    { key: 'type', label: 'Unit Name', align: 'left', width: 180 },
-    { key: 'unit_sf', label: 'Average Unit (SF)', align: 'right', width: 140 },
-    { key: 'occupied', label: 'Occupied Units', align: 'right', width: 130 },
-    { key: 'vacant', label: 'Vacant Units', align: 'right', width: 120 },
-    { key: 'units', label: 'Total Units', align: 'right', width: 120 },
-    { key: 'occupancy', label: 'Occupancy %', align: 'right', width: 130 },
-    { key: 'avgRent', label: 'Average Rent', align: 'right', width: 130 },
-    { key: 'avgMarket', label: 'Average Market Rent', align: 'right', width: 150 },
-    { key: 'avgRenu', label: 'Average Renu', align: 'right', width: 140 },
-    { key: 'totalMarket', label: 'Total Market Rent', align: 'right', width: 160 },
-    { key: 'totalRent', label: 'Total Rent', align: 'right', width: 130 },
-    { key: 'actions', label: '$', align: 'center', width: 60 },
+    { key: 'type', label: 'Unit Name', align: 'left', width: 160 },
+    { key: 'unit_sf', label: 'Sq Ft', align: 'right', width: 90 },
+    { key: 'units', label: '# Units', align: 'right', width: 80 },
+    { key: 'occupied', label: 'Occupied', align: 'right', width: 90 },
+    { key: 'vacant', label: 'Vacant', align: 'right', width: 80 },
+    { key: 'avgRent', label: 'Rent', align: 'right', width: 110 },
+    { key: 'avgMarket', label: 'Proforma Rent', align: 'right', width: 130 },
+    { key: 'frequency', label: 'Frequency', align: 'center', width: 90 },
+    { key: 'devPeriod', label: 'Dev Period', align: 'center', width: 90 },
+    { key: 'leaseUp', label: 'Lease-Up', align: 'center', width: 90 },
+    { key: 'vacancy', label: 'Vacancy', align: 'right', width: 80 },
+    { key: 'incPct', label: 'Increase %', align: 'right', width: 100 },
+    { key: 'incDollar', label: 'Increase $', align: 'right', width: 100 },
+    { key: 'totalRent', label: 'Total Rent', align: 'right', width: 120 },
+    { key: 'actions', label: '$', align: 'center', width: 50 },
   ];
   const [colWidths, setColWidths] = useState(initialColumns.map((c) => c.width));
   const resizingRef = useRef({ index: null, startX: 0, startWidth: 0 });
@@ -251,47 +254,56 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange, ini
                     const totalUnits = unit.units || 0;
                     const occupiedUnits = Math.round(totalUnits * 0.95);
                     const vacantUnits = totalUnits - occupiedUnits;
-                    const occupancyPct = totalUnits > 0 ? ((occupiedUnits / totalUnits) * 100).toFixed(1) : 0;
+                    const vacancyPct = totalUnits > 0 ? ((vacantUnits / totalUnits) * 100).toFixed(1) : '0.0';
                     const avgRent = unit.rent_current || 0;
                     const avgMarket = unit.rent_market || unit.rent_current || 0;
-                    const totalMarketRent = avgMarket * totalUnits;
                     const totalRent = avgRent * occupiedUnits;
+                    const increasePct = avgRent > 0 ? (((avgMarket - avgRent) / avgRent) * 100).toFixed(1) : '0.0';
+                    const increaseDollar = avgMarket - avgRent;
+                    const devPeriod = unit.development_period || 0;
+                    const leaseUpPeriod = unit.lease_up_period || 0;
+                    const rs = { padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', fontSize: 12 };
+                    const lsCell = { ...rs, textAlign: 'left' };
+                    const cCell = { ...rs, textAlign: 'center' };
+                    const incColor = increaseDollar > 0 ? '#16a34a' : increaseDollar < 0 ? '#dc2626' : '#374151';
                     return (
                       <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? 'white' : '#fafafa' }}>
-                        <td style={{ padding: '9px 10px', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>{unit.type || 'N/A'}</td>
-                        <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>{(unit.unit_sf || 0).toLocaleString()}</td>
-                        <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>{occupiedUnits}</td>
-                        <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>{vacantUnits}</td>
-                        <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>{totalUnits}</td>
-                        <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>{occupancyPct}%</td>
-                        <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>{fmtCurrency(avgRent)}</td>
-                        <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={lsCell}>{unit.type || 'N/A'}</td>
+                        <td style={rs}>{(unit.unit_sf || 0).toLocaleString()}</td>
+                        <td style={rs}>{totalUnits}</td>
+                        <td style={rs}>{occupiedUnits}</td>
+                        <td style={rs}>{vacantUnits}</td>
+                        <td style={rs}>{fmtCurrency(avgRent)}</td>
+                        <td style={rs}>
                           <input
                             type="number"
-                            style={{ width: '90px', border: '1px solid #d1d5db', padding: '4px 6px', fontSize: '12px', textAlign: 'right', borderRadius: 6 }}
+                            style={{ width: '85px', border: '1px solid #d1d5db', padding: '4px 6px', fontSize: '12px', textAlign: 'right', borderRadius: 6 }}
                             value={avgMarket}
                             onChange={(e) => handleMarketRentChange(idx, parseFloat(e.target.value) || 0)}
                           />
                         </td>
-                        <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>{fmtCurrency(avgMarket)}</td>
-                        <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>{fmtCurrency(totalMarketRent)}</td>
-                        <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>{fmtCurrency(totalRent)}</td>
+                        <td style={cCell}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: '#6366f1', backgroundColor: '#eef2ff', padding: '2px 8px', borderRadius: 4 }}>Monthly</span>
+                        </td>
+                        <td style={cCell}>{devPeriod > 0 ? `${devPeriod} mo` : '—'}</td>
+                        <td style={cCell}>{leaseUpPeriod > 0 ? `${leaseUpPeriod} mo` : '—'}</td>
+                        <td style={rs}>{vacancyPct}%</td>
+                        <td style={{ ...rs, color: incColor, fontWeight: 600 }}>{increasePct}%</td>
+                        <td style={{ ...rs, color: incColor, fontWeight: 600 }}>{fmtCurrency(increaseDollar)}</td>
+                        <td style={rs}>{fmtCurrency(totalRent)}</td>
                         <td style={{ padding: '9px 10px', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>$</td>
                       </tr>
                     );
                   })}
                   <tr style={{ backgroundColor: '#eef2ff', fontWeight: 700 }}>
                     <td style={{ padding: '9px 10px', borderRight: '1px solid #c7d2fe' }}>TOTAL</td>
-                    <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>-</td>
+                    <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>—</td>
+                    <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>{totalUnitsCount}</td>
                     <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>
                       {unitMixData.reduce((sum, u) => sum + Math.round((u.units || 0) * 0.95), 0)}
                     </td>
                     <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>
                       {unitMixData.reduce((sum, u) => sum + ((u.units || 0) - Math.round((u.units || 0) * 0.95)), 0)}
-                    </td>
-                    <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>{totalUnitsCount}</td>
-                    <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>
-                      {totalUnitsCount > 0 ? ((unitMixData.reduce((sum, u) => sum + Math.round((u.units || 0) * 0.95), 0) / totalUnitsCount) * 100).toFixed(1) : 0}%
                     </td>
                     <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>
                       {fmtCurrency(totalMonthlyRent / (unitMixData.reduce((sum, u) => sum + Math.round((u.units || 0) * 0.95), 0) || 1))}
@@ -299,11 +311,17 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange, ini
                     <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>
                       {fmtCurrency(unitMixTotalMarketMonthlyRent / totalUnitsCount || 0)}
                     </td>
+                    <td style={{ padding: '9px 10px', textAlign: 'center', borderRight: '1px solid #c7d2fe' }}>—</td>
+                    <td style={{ padding: '9px 10px', textAlign: 'center', borderRight: '1px solid #c7d2fe' }}>—</td>
+                    <td style={{ padding: '9px 10px', textAlign: 'center', borderRight: '1px solid #c7d2fe' }}>—</td>
                     <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>
-                      {fmtCurrency(unitMixTotalMarketMonthlyRent / totalUnitsCount || 0)}
+                      {totalUnitsCount > 0 ? ((unitMixData.reduce((sum, u) => sum + ((u.units || 0) - Math.round((u.units || 0) * 0.95)), 0) / totalUnitsCount) * 100).toFixed(1) : '0.0'}%
                     </td>
-                    <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>
-                      {fmtCurrency(unitMixTotalMarketMonthlyRent)}
+                    <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe', color: unitMixTotalMarketMonthlyRent > totalMonthlyRent ? '#16a34a' : '#dc2626', fontWeight: 700 }}>
+                      {totalMonthlyRent > 0 ? (((unitMixTotalMarketMonthlyRent - totalMonthlyRent) / totalMonthlyRent) * 100).toFixed(1) : '0.0'}%
+                    </td>
+                    <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe', color: unitMixTotalMarketMonthlyRent > totalMonthlyRent ? '#16a34a' : '#dc2626', fontWeight: 700 }}>
+                      {fmtCurrency(unitMixTotalMarketMonthlyRent - totalMonthlyRent)}
                     </td>
                     <td style={{ padding: '9px 10px', textAlign: 'right', borderRight: '1px solid #c7d2fe' }}>
                       {fmtCurrency(totalMonthlyRent)}

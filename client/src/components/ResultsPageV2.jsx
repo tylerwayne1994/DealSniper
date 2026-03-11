@@ -25,7 +25,8 @@ import {
   TaxAnalysisView,
   MetricCard 
 } from './AdvancedViews';
-import { calculateSensitivity } from '../utils/realEstateCalculations';
+import { calculateSensitivity, calculateFullAnalysis } from '../utils/realEstateCalculations';
+import SensitivityAnalysisTab from './results-tabs/SensitivityAnalysisTab';
 import { CostSegAnalysisView } from './CostSegAnalysis';
 import MarketResearchTab from './results-tabs/MarketResearchTab';
 import DocumentAnalysisTab from './results-tabs/DocumentAnalysisTab';
@@ -1307,6 +1308,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
     { id: 'rent-roll', label: 'Rent Roll', icon: Users, accent: '#ef4444' },
     { id: 'costseg', label: 'Cost Seg', icon: Calculator, accent: '#ec4899' },
     { id: 'waterfall', label: 'Waterfall', icon: Wallet, accent: '#6366f1' },
+    { id: 'sensitivity', label: 'Stress Test', icon: Activity, accent: '#ef4444' },
     { id: 'market-data', label: 'Market Data', icon: BarChart3, accent: '#a855f7' }
   ];
 
@@ -3031,6 +3033,15 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
           <div style={{ padding: '24px' }}>
             <CostSegAnalysisView dealId={dealId} scenarioData={scenarioData} fullCalcs={fullCalcs} />
           </div>
+        );
+
+      case 'sensitivity':
+        return (
+          <SensitivityAnalysisTab
+            scenarioData={scenarioData}
+            fullCalcs={fullCalcs}
+            calculateFullAnalysisFn={calculateFullAnalysis}
+          />
         );
 
       case 'market-data':
