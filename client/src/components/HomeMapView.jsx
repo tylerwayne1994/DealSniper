@@ -1,10 +1,14 @@
 ﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import mapboxgl from 'mapbox-gl';
+import Papa from 'papaparse';
 import { Building2, DollarSign, TrendingUp, MapPin, User, Phone, Mail, Home, GraduationCap, Hospital, Briefcase, X } from 'lucide-react';
 import { loadPipelineDeals, deleteDeal } from '../lib/dealsService';
 import { PipelineTable } from './tables';
 import 'mapbox-gl/dist/mapbox-gl.css';
+
+const API_URL = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
+const TIGERWEB_ZCTA_URL = `${API_URL}/api/tigerweb/zcta`;
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN || '';
 
@@ -43,6 +47,15 @@ function HomeMapView() {
   const markersRef = useRef([]);
   const [pipelineDeals, setPipelineDeals] = useState([]);
   const [isLoadingPipeline, setIsLoadingPipeline] = useState(true);
+
+  // SFR & MF Sales heatmap state
+  const [sfrEnabled, setSfrEnabled] = useState(false);
+  const [mfEnabled, setMfEnabled] = useState(false);
+  const sfrDataRef = useRef(null);   // { [zip5]: { price, yoy, momentum, city, state, metro } }
+  const mfDataRef = useRef(null);    // { [zip5]: { pricePerUnit, capRate, yoy, trend, city, state } }
+  const zctaGeoCache = useRef({});   // { [boundsKey]: GeoJSON features[] }
+  const sfrLayerAdded = useRef(false);
+  const mfLayerAdded = useRef(false);
 
   // Sample deals for when database is empty (matches PipelinePage)
   const sampleDeals = [
@@ -336,6 +349,319 @@ function HomeMapView() {
       }
     });
   }, [showPOIs]);
+
+  // ─── SFR / MF Heatmap helpers ───
+  const zeroZip = (z) => {
+    if (z == null) return null;
+    const s = String(z).replace(/[^0-9]/g, '');
+    return s.padStart(5, '0');
+  };
+
+  const sfrColor = (price) => {
+    if (price == null) return '#e5e7eb';
+    if (price < 150000)  return '#16a34a';
+    if (price < 250000)  return '#84cc16';
+    if (price < 400000)  return '#eab308';
+    if (price < 600000)  return '#f59e0b';
+    return '#dc2626';
+  };
+
+  const mfColor = (pricePerUnit) => {
+    if (pricePerUnit == null) return '#e5e7eb';
+    if (pricePerUnit < 60000)  return '#7dd3fc';
+    if (pricePerUnit < 100000) return '#38bdf8';
+    if (pricePerUnit < 150000) return '#0ea5e9';
+    if (pricePerUnit < 200000) return '#0284c7';
+    return '#1e3a5f';
+  };
+
+  // Load SFR CSV data
+  const loadSfrData = useCallback(() => {
+    if (sfrDataRef.current) return Promise.resolve();
+    return new Promise((resolve) => {
+      Papa.parse('/SFR_Median_Sale_Price_by_ZIP_24mo.csv', {
+        download: true, header: true, skipEmptyLines: true,
+        complete: (results) => {
+          const data = {};
+          results.data.forEach(r => {
+            const zip = zeroZip(r.ZIP_Code);
+            if (!zip) return;
+            const price = parseFloat(r.SFR_MedianSalePrice_Latest);
+            if (isNaN(price) || price <= 0) return;
+            data[zip] = {
+              price: Math.round(price),
+              yoy: parseFloat(r.SFR_YoY_PriceChange_Pct) || null,
+              twoYr: parseFloat(r.SFR_2Yr_PriceChange_Pct) || null,
+              tier: r.SFR_Price_Tier || '',
+              momentum: r.SFR_Market_Momentum || '',
+              city: r.City || '', state: r.State || '', metro: r.Metro || '',
+              county: r.CountyName || '',
+            };
+          });
+          sfrDataRef.current = data;
+          console.log(`[SFR Heatmap] Loaded ${Object.keys(data).length} ZIPs`);
+          resolve();
+        },
+        error: (err) => { console.error('[SFR] CSV parse error:', err); resolve(); }
+      });
+    });
+  }, []);
+
+  // Load MF CSV data
+  const loadMfData = useCallback(() => {
+    if (mfDataRef.current) return Promise.resolve();
+    return new Promise((resolve) => {
+      Papa.parse('/Multifamily_Sale_Metrics_by_ZIP_MF_Markets_24mo.csv', {
+        download: true, header: true, skipEmptyLines: true,
+        complete: (results) => {
+          const data = {};
+          results.data.forEach(r => {
+            const zip = zeroZip(r.ZIP_Code);
+            if (!zip) return;
+            const ppu = parseFloat(r.MF_MedianSalePrice_PerUnit_Latest);
+            if (isNaN(ppu) || ppu <= 0) return;
+            data[zip] = {
+              pricePerUnit: Math.round(ppu),
+              capRate: parseFloat(r.MF_CapRate_At_Sale_Pct) || null,
+              priceSF: parseFloat(r.MF_Price_PerSF) || null,
+              yoy: parseFloat(r.MF_YoY_PriceChange_Pct) || null,
+              twoYr: parseFloat(r.MF_24Mo_PriceChange_Pct) || null,
+              trend: r.MF_Price_Trend || '',
+              marketType: r.Market_Type || '',
+              grm: parseFloat(r.MF_GrossRentMultiplier) || null,
+              volume: parseInt(r.MF_Sale_Volume_Annual_Deals) || null,
+              avgSize: parseInt(r.MF_Avg_Building_Size_Units) || null,
+              city: r.City || '', state: r.State || '', metro: r.Metro_MSA || '',
+              county: r.County || '',
+              medianRent: parseFloat(r.Median_Gross_Rent_Monthly) || null,
+              renterShare: parseFloat(r.Renter_Share_Pct) || null,
+            };
+          });
+          mfDataRef.current = data;
+          console.log(`[MF Heatmap] Loaded ${Object.keys(data).length} ZIPs`);
+          resolve();
+        },
+        error: (err) => { console.error('[MF] CSV parse error:', err); resolve(); }
+      });
+    });
+  }, []);
+
+  // Fetch ZCTA polygon boundaries for visible map bounds
+  const fetchZctaBounds = useCallback(async (bounds) => {
+    const sw = bounds.getSouthWest();
+    const ne = bounds.getNorthEast();
+    const geom = `${sw.lng},${sw.lat},${ne.lng},${ne.lat}`;
+    if (zctaGeoCache.current[geom]) return zctaGeoCache.current[geom];
+    const params = new URLSearchParams({
+      where: '1=1', geometryType: 'esriGeometryEnvelope', geometry: geom,
+      inSR: '4326', outSR: '4326', spatialRel: 'esriSpatialRelIntersects',
+      outFields: 'GEOID,BASENAME', returnGeometry: 'true', f: 'geojson', resultRecordCount: '500',
+    });
+    try {
+      const res = await fetch(`${TIGERWEB_ZCTA_URL}?${params}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const geo = await res.json();
+      const features = geo.features || [];
+      zctaGeoCache.current[geom] = features;
+      return features;
+    } catch (err) {
+      console.error('[ZCTA fetch]', err); return [];
+    }
+  }, []);
+
+  // Build or update a heatmap layer on the Mapbox map
+  const renderHeatmapLayer = useCallback(async (layerId, dataRef, colorFn, buildPopup) => {
+    if (!map.current || !map.current.loaded()) return;
+    const zoom = map.current.getZoom();
+    if (zoom < 7) return; // too zoomed out
+    const features = await fetchZctaBounds(map.current.getBounds());
+    if (!features.length) return;
+
+    const data = dataRef.current;
+    if (!data) return;
+
+    // Enrich features with color + data
+    const enriched = features.map(f => {
+      const zip = f.properties?.GEOID || f.properties?.BASENAME || '';
+      const zip5 = zeroZip(zip);
+      const d = zip5 ? data[zip5] : null;
+      return {
+        ...f,
+        properties: {
+          ...f.properties,
+          _color: d ? colorFn(layerId === 'sfr-heatmap' ? d.price : d.pricePerUnit) : '#e5e7eb',
+          _zip: zip5 || zip,
+          _hasData: !!d,
+        }
+      };
+    });
+
+    const geojson = { type: 'FeatureCollection', features: enriched };
+    const sourceId = `${layerId}-source`;
+
+    if (map.current.getSource(sourceId)) {
+      map.current.getSource(sourceId).setData(geojson);
+    } else {
+      map.current.addSource(sourceId, { type: 'geojson', data: geojson });
+      map.current.addLayer({
+        id: layerId,
+        type: 'fill',
+        source: sourceId,
+        paint: {
+          'fill-color': ['get', '_color'],
+          'fill-opacity': 0.55,
+        },
+      });
+      map.current.addLayer({
+        id: `${layerId}-outline`,
+        type: 'line',
+        source: sourceId,
+        paint: {
+          'line-color': '#94a3b8',
+          'line-width': 0.8,
+        },
+      });
+
+      // Click popup
+      map.current.on('click', layerId, (e) => {
+        if (!e.features?.length) return;
+        const props = e.features[0].properties;
+        const zip5 = props._zip;
+        const d = dataRef.current?.[zip5];
+        if (!d) return;
+        const html = buildPopup(zip5, d);
+        new mapboxgl.Popup({ maxWidth: '360px' })
+          .setLngLat(e.lngLat)
+          .setHTML(html)
+          .addTo(map.current);
+      });
+
+      // Hover effect
+      map.current.on('mouseenter', layerId, () => {
+        map.current.getCanvas().style.cursor = 'pointer';
+      });
+      map.current.on('mouseleave', layerId, () => {
+        map.current.getCanvas().style.cursor = '';
+      });
+    }
+  }, [fetchZctaBounds]);
+
+  // SFR popup builder
+  const buildSfrPopup = (zip, d) => `
+    <div style="font-family:Inter,-apple-system,sans-serif;padding:10px;min-width:260px">
+      <div style="font-weight:700;font-size:15px;color:#111827;margin-bottom:2px">ZIP ${zip}</div>
+      <div style="font-size:12px;color:#6b7280;margin-bottom:10px">${d.city}${d.state ? ', ' + d.state : ''}${d.metro ? ' · ' + d.metro : ''}</div>
+      <div style="text-align:center;padding:12px;background:${sfrColor(d.price)}15;border-radius:10px;border:1px solid ${sfrColor(d.price)}40;margin-bottom:10px">
+        <div style="font-size:24px;font-weight:800;color:${sfrColor(d.price)}">${d.price ? '$' + d.price.toLocaleString() : 'N/A'}</div>
+        <div style="font-size:11px;color:#6b7280">Median SFR Sale Price</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">
+        <div><span style="color:#9ca3af;font-weight:600;font-size:10px">YoY CHANGE</span><br/><strong style="color:${(d.yoy || 0) >= 0 ? '#059669' : '#dc2626'}">${d.yoy != null ? (d.yoy >= 0 ? '+' : '') + d.yoy.toFixed(1) + '%' : 'N/A'}</strong></div>
+        <div><span style="color:#9ca3af;font-weight:600;font-size:10px">2-YR CHANGE</span><br/><strong style="color:${(d.twoYr || 0) >= 0 ? '#059669' : '#dc2626'}">${d.twoYr != null ? (d.twoYr >= 0 ? '+' : '') + d.twoYr.toFixed(1) + '%' : 'N/A'}</strong></div>
+        <div><span style="color:#9ca3af;font-weight:600;font-size:10px">PRICE TIER</span><br/><strong>${d.tier || '–'}</strong></div>
+        <div><span style="color:#9ca3af;font-weight:600;font-size:10px">MOMENTUM</span><br/><strong>${d.momentum || '–'}</strong></div>
+      </div>
+      ${d.county ? '<div style="margin-top:6px;font-size:11px;color:#9ca3af">' + d.county + '</div>' : ''}
+    </div>`;
+
+  // MF popup builder
+  const buildMfPopup = (zip, d) => `
+    <div style="font-family:Inter,-apple-system,sans-serif;padding:10px;min-width:280px">
+      <div style="font-weight:700;font-size:15px;color:#111827;margin-bottom:2px">ZIP ${zip}</div>
+      <div style="font-size:12px;color:#6b7280;margin-bottom:10px">${d.city}${d.state ? ', ' + d.state : ''}${d.metro ? ' · ' + d.metro : ''}</div>
+      <div style="text-align:center;padding:12px;background:${mfColor(d.pricePerUnit)}15;border-radius:10px;border:1px solid ${mfColor(d.pricePerUnit)}40;margin-bottom:10px">
+        <div style="font-size:24px;font-weight:800;color:${mfColor(d.pricePerUnit)}">${d.pricePerUnit ? '$' + d.pricePerUnit.toLocaleString() : 'N/A'}</div>
+        <div style="font-size:11px;color:#6b7280">Median Price Per Unit</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="text-align:center;padding:6px;background:#f0fdf4;border-radius:8px">
+          <div style="font-size:10px;color:#6b7280;font-weight:600">CAP RATE</div>
+          <div style="font-size:16px;font-weight:700;color:#111827">${d.capRate != null ? d.capRate + '%' : '–'}</div>
+        </div>
+        <div style="text-align:center;padding:6px;background:#eff6ff;border-radius:8px">
+          <div style="font-size:10px;color:#6b7280;font-weight:600">GRM</div>
+          <div style="font-size:16px;font-weight:700;color:#111827">${d.grm != null ? d.grm.toFixed(1) + 'x' : '–'}</div>
+        </div>
+        <div style="text-align:center;padding:6px;background:#fefce8;border-radius:8px">
+          <div style="font-size:10px;color:#6b7280;font-weight:600">$/SF</div>
+          <div style="font-size:16px;font-weight:700;color:#111827">${d.priceSF != null ? '$' + Math.round(d.priceSF) : '–'}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">
+        <div><span style="color:#9ca3af;font-weight:600;font-size:10px">YoY CHANGE</span><br/><strong style="color:${(d.yoy || 0) >= 0 ? '#059669' : '#dc2626'}">${d.yoy != null ? (d.yoy >= 0 ? '+' : '') + d.yoy.toFixed(1) + '%' : 'N/A'}</strong></div>
+        <div><span style="color:#9ca3af;font-weight:600;font-size:10px">TREND</span><br/><strong>${d.trend || '–'}</strong></div>
+        <div><span style="color:#9ca3af;font-weight:600;font-size:10px">MARKET TYPE</span><br/><strong>${d.marketType || '–'}</strong></div>
+        <div><span style="color:#9ca3af;font-weight:600;font-size:10px">ANNUAL DEALS</span><br/><strong>${d.volume != null ? d.volume : '–'}</strong></div>
+        ${d.medianRent ? '<div><span style="color:#9ca3af;font-weight:600;font-size:10px">MEDIAN RENT</span><br/><strong>$' + Math.round(d.medianRent).toLocaleString() + '</strong></div>' : ''}
+        ${d.renterShare ? '<div><span style="color:#9ca3af;font-weight:600;font-size:10px">RENTER %</span><br/><strong>' + d.renterShare + '%</strong></div>' : ''}
+      </div>
+      ${d.county ? '<div style="margin-top:6px;font-size:11px;color:#9ca3af">' + d.county + '</div>' : ''}
+    </div>`;
+
+  // Remove heatmap layer from map
+  const removeHeatmapLayer = useCallback((layerId) => {
+    if (!map.current) return;
+    const sourceId = `${layerId}-source`;
+    if (map.current.getLayer(`${layerId}-outline`)) map.current.removeLayer(`${layerId}-outline`);
+    if (map.current.getLayer(layerId)) map.current.removeLayer(layerId);
+    if (map.current.getSource(sourceId)) map.current.removeSource(sourceId);
+  }, []);
+
+  // SFR heatmap toggle
+  useEffect(() => {
+    if (!mapReady || !map.current) return;
+    if (!sfrEnabled) {
+      removeHeatmapLayer('sfr-heatmap');
+      sfrLayerAdded.current = false;
+      return;
+    }
+    let cancelled = false;
+    const init = async () => {
+      await loadSfrData();
+      if (cancelled) return;
+      await renderHeatmapLayer('sfr-heatmap', sfrDataRef, sfrColor, buildSfrPopup);
+      sfrLayerAdded.current = true;
+      // Re-render on map move
+      const onMove = () => renderHeatmapLayer('sfr-heatmap', sfrDataRef, sfrColor, buildSfrPopup);
+      map.current.on('moveend', onMove);
+      // Store cleanup ref
+      sfrLayerAdded.current = onMove;
+    };
+    init();
+    return () => {
+      cancelled = true;
+      if (map.current && typeof sfrLayerAdded.current === 'function') {
+        map.current.off('moveend', sfrLayerAdded.current);
+      }
+    };
+  }, [sfrEnabled, mapReady]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // MF heatmap toggle
+  useEffect(() => {
+    if (!mapReady || !map.current) return;
+    if (!mfEnabled) {
+      removeHeatmapLayer('mf-heatmap');
+      mfLayerAdded.current = false;
+      return;
+    }
+    let cancelled = false;
+    const init = async () => {
+      await loadMfData();
+      if (cancelled) return;
+      await renderHeatmapLayer('mf-heatmap', mfDataRef, mfColor, buildMfPopup);
+      mfLayerAdded.current = true;
+      const onMove = () => renderHeatmapLayer('mf-heatmap', mfDataRef, mfColor, buildMfPopup);
+      map.current.on('moveend', onMove);
+      mfLayerAdded.current = onMove;
+    };
+    init();
+    return () => {
+      cancelled = true;
+      if (map.current && typeof mfLayerAdded.current === 'function') {
+        map.current.off('moveend', mfLayerAdded.current);
+      }
+    };
+  }, [mfEnabled, mapReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Add markers when properties change AND map is ready
   useEffect(() => {
@@ -734,6 +1060,95 @@ function HomeMapView() {
           )}
         </div>
       )}
+
+      {/* Data Layer Toggles */}
+      <div style={{
+        position: 'absolute',
+        top: '20px',
+        left: '20px',
+        zIndex: 100,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+      }}>
+        <div style={{
+          backgroundColor: 'rgba(15,23,42,0.88)',
+          backdropFilter: 'blur(8px)',
+          borderRadius: '12px',
+          padding: '10px 14px',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+        }}>
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#64748b', marginBottom: 6 }}>Data Layers</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {[
+              { label: 'SFR Sales', active: sfrEnabled, color: '#f59e0b', toggle: () => setSfrEnabled(v => !v) },
+              { label: 'MF Sales', active: mfEnabled, color: '#3b82f6', toggle: () => setMfEnabled(v => !v) },
+            ].map(({ label, active, color, toggle }) => (
+              <button key={label} onClick={toggle} style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                padding: '5px 12px', borderRadius: 20,
+                border: active ? `1.5px solid ${color}` : '1.5px solid rgba(255,255,255,0.15)',
+                cursor: 'pointer', fontSize: 12, fontWeight: active ? 600 : 500,
+                color: active ? color : '#94a3b8',
+                backgroundColor: active ? `${color}18` : 'transparent',
+                transition: 'all 0.15s', lineHeight: 1,
+              }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, backgroundColor: active ? color : '#475569' }} />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* SFR Legend */}
+        {sfrEnabled && (
+          <div style={{
+            backgroundColor: 'rgba(15,23,42,0.88)',
+            backdropFilter: 'blur(8px)',
+            borderRadius: '10px',
+            padding: '8px 12px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#f59e0b', marginBottom: 4 }}>SFR Median Sale Price</div>
+            <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              {['#16a34a','#84cc16','#eab308','#f59e0b','#dc2626'].map((c, i) => (
+                <div key={i} style={{ flex: 1, height: 8, backgroundColor: c, borderRadius: i === 0 ? '4px 0 0 4px' : i === 4 ? '0 4px 4px 0' : 0 }} />
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: '#9ca3af', marginTop: 2 }}>
+              <span>&lt;$150k</span><span>$600k+</span>
+            </div>
+          </div>
+        )}
+
+        {/* MF Legend */}
+        {mfEnabled && (
+          <div style={{
+            backgroundColor: 'rgba(15,23,42,0.88)',
+            backdropFilter: 'blur(8px)',
+            borderRadius: '10px',
+            padding: '8px 12px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#3b82f6', marginBottom: 4 }}>MF Price Per Unit</div>
+            <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              {['#7dd3fc','#38bdf8','#0ea5e9','#0284c7','#1e3a5f'].map((c, i) => (
+                <div key={i} style={{ flex: 1, height: 8, backgroundColor: c, borderRadius: i === 0 ? '4px 0 0 4px' : i === 4 ? '0 4px 4px 0' : 0 }} />
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: '#9ca3af', marginTop: 2 }}>
+              <span>&lt;$60k</span><span>$200k+</span>
+            </div>
+          </div>
+        )}
+
+        {/* Zoom hint */}
+        {(sfrEnabled || mfEnabled) && (
+          <div style={{ fontSize: 10, color: '#94a3b8', textAlign: 'center', backgroundColor: 'rgba(15,23,42,0.7)', borderRadius: 6, padding: '3px 8px' }}>
+            Zoom in to see ZIP polygons (zoom ≥ 7)
+          </div>
+        )}
+      </div>
 
       {/* Map Legend */}
       <div style={{
