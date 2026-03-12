@@ -8,7 +8,7 @@ import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
 import { loadPipelineDeals } from '../../lib/dealsService';
-import MapOverlayLayers, { COUNTY_METRIC_OPTIONS, ZIP_METRIC_OPTIONS, ZIP_HEATMAP_METRIC_OPTIONS } from './MapOverlayLayers';
+import MapOverlayLayers, { COUNTY_METRIC_OPTIONS, ZIP_METRIC_OPTIONS, ZIP_HEATMAP_METRIC_OPTIONS, SfrSalesLegend, MfSalesLegend } from './MapOverlayLayers';
 import MSA_COORDINATES from '../../data/msaCoordinates';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import {
@@ -542,6 +542,10 @@ function DashboardMapTab() {
   const [zoningServiceKey, setZoningServiceKey] = useState('');
   const [zoningFilter, setZoningFilter] = useState(''); // text filter by zone code
   const [zoningLoading, setZoningLoading] = useState(false);
+
+  // SFR Sales & MF Sales overlay state
+  const [sfrSalesEnabled, setSfrSalesEnabled] = useState(false);
+  const [mfSalesEnabled, setMfSalesEnabled] = useState(false);
 
   // AI Agent zoning discovery state
   const [agentCities, setAgentCities] = useState([]); // cached city slugs from backend
@@ -2456,6 +2460,8 @@ function DashboardMapTab() {
                         { label: 'ZIP Points', active: zipOverlay, color: '#10b981', toggle: () => setZipOverlay(v => !v) },
                         { label: 'ZIP Heat', active: zipHeatmap, color: '#3b82f6', toggle: () => setZipHeatmap(v => !v) },
                         { label: 'Zoning', active: zoningEnabled, color: '#0ea5e9', toggle: () => { setZoningEnabled(v => { if (v) { setZoningServiceKey(''); setZoningFilter(''); } return !v; }); } },
+                        { label: 'SFR Sales', active: sfrSalesEnabled, color: '#f59e0b', toggle: () => setSfrSalesEnabled(v => !v) },
+                        { label: 'MF Sales', active: mfSalesEnabled, color: '#3b82f6', toggle: () => setMfSalesEnabled(v => !v) },
                       ].map(({ label, active, color, count, toggle }) => (
                         <button key={label} onClick={toggle} style={{
                           display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -2475,7 +2481,7 @@ function DashboardMapTab() {
                   </div>
 
                   {/* Active Layer Settings */}
-                  {(countyOverlay || zipOverlay || zipHeatmap || devPipelineEnabled || absorptionEnabled || capRateEnabled || zoningEnabled) && (
+                  {(countyOverlay || zipOverlay || zipHeatmap || devPipelineEnabled || absorptionEnabled || capRateEnabled || zoningEnabled || sfrSalesEnabled || mfSalesEnabled) && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 5, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                       {devPipelineEnabled && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -2617,6 +2623,18 @@ function DashboardMapTab() {
                               )}
                             </div>
                           </div>
+                        </div>
+                      )}
+                      {sfrSalesEnabled && (
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                          <span style={{ fontSize: 9, fontWeight: 600, color: '#f59e0b', minWidth: 36 }}>SFR</span>
+                          <SfrSalesLegend />
+                        </div>
+                      )}
+                      {mfSalesEnabled && (
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                          <span style={{ fontSize: 9, fontWeight: 600, color: '#3b82f6', minWidth: 36 }}>MF</span>
+                          <MfSalesLegend />
                         </div>
                       )}
                     </div>
@@ -3281,6 +3299,8 @@ function DashboardMapTab() {
               zipMetric={zipMetric}
               zipHeatmapEnabled={zipHeatmap}
               zipHeatmapMetric={zipHeatmapMetric}
+              sfrSalesEnabled={sfrSalesEnabled}
+              mfSalesEnabled={mfSalesEnabled}
             />
 
             {/* Zoning overlay layer (hardcoded ArcGIS services) */}
