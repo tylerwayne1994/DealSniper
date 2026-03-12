@@ -159,6 +159,7 @@ const colorForZip = (val, metric) => {
 // 2b. ZIP Heat Map — metric definitions + color scales
 // ────────────────────────────────────────────────────────
 const TIGERWEB_ZCTA_URL = (process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com') + '/api/tigerweb/zcta';
+const CENSUS_ACS_ZCTA_URL = (process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com') + '/api/census/zcta-acs';
 
 const ZIP_HEATMAP_METRICS = {
   population:             { name: 'Population',     group: 'Demographics',       fmt: v => fmtNum(v) },
@@ -169,6 +170,12 @@ const ZIP_HEATMAP_METRICS = {
   vacancyRate:            { name: 'Vacancy Rate',   group: 'Housing & Economy',  fmt: v => fmtPct(v) },
   unemploymentRate:       { name: 'Unemployment',   group: 'Housing & Economy',  fmt: v => fmtPct(v) },
   migrationRate:          { name: 'Net Migration',  group: 'Demographics',       fmt: v => v == null ? 'N/A' : `${v > 0 ? '+' : ''}${v.toFixed(1)}‰` },
+  // Census ACS Investor Metrics
+  rentBurden:             { name: 'Rent Burden %',           group: 'Census ACS Investor', fmt: v => fmtPct(v) },
+  netInMigration:         { name: 'Net In-Migration',        group: 'Census ACS Investor', fmt: v => fmtNum(v) },
+  renterShare:            { name: 'Renter Household %',      group: 'Census ACS Investor', fmt: v => fmtPct(v) },
+  effectiveTaxRate:       { name: 'Eff. Property Tax %',     group: 'Census ACS Investor', fmt: v => fmtPct(v, 2) },
+  employmentRateACS:      { name: 'Employment Rate %',       group: 'Census ACS Investor', fmt: v => fmtPct(v) },
   fmr_0br:                { name: 'FMR Studio',     group: 'HUD Fair Market Rent', fmt: v => fmtDollar(v) },
   fmr_1br:                { name: 'FMR 1-Bed',      group: 'HUD Fair Market Rent', fmt: v => fmtDollar(v) },
   fmr_2br:                { name: 'FMR 2-Bed',      group: 'HUD Fair Market Rent', fmt: v => fmtDollar(v) },
@@ -216,6 +223,32 @@ const ZIP_HEATMAP_COLOR_SCALES = {
     { min: -Infinity, max: -10, color: '#7f1d1d' }, { min: -10, max: -5, color: '#dc2626' },
     { min: -5, max: 0, color: '#f59e0b' }, { min: 0, max: 5, color: '#84cc16' },
     { min: 5, max: 10, color: '#22c55e' }, { min: 10, max: Infinity, color: '#166534' },
+  ],
+  // Census ACS Investor Metrics
+  rentBurden: [
+    { min: -Infinity, max: 25, color: '#16a34a' }, { min: 25, max: 30, color: '#84cc16' },
+    { min: 30, max: 35, color: '#eab308' }, { min: 35, max: 40, color: '#f59e0b' },
+    { min: 40, max: Infinity, color: '#dc2626' },
+  ],
+  netInMigration: [
+    { min: -Infinity, max: 200, color: '#eff6ff' }, { min: 200, max: 1000, color: '#93c5fd' },
+    { min: 1000, max: 3000, color: '#3b82f6' }, { min: 3000, max: 8000, color: '#1d4ed8' },
+    { min: 8000, max: Infinity, color: '#1e3a5f' },
+  ],
+  renterShare: [
+    { min: -Infinity, max: 20, color: '#dc2626' }, { min: 20, max: 40, color: '#f59e0b' },
+    { min: 40, max: 60, color: '#eab308' }, { min: 60, max: 80, color: '#84cc16' },
+    { min: 80, max: Infinity, color: '#16a34a' },
+  ],
+  effectiveTaxRate: [
+    { min: -Infinity, max: 0.5, color: '#16a34a' }, { min: 0.5, max: 1.0, color: '#84cc16' },
+    { min: 1.0, max: 1.5, color: '#eab308' }, { min: 1.5, max: 2.0, color: '#f59e0b' },
+    { min: 2.0, max: Infinity, color: '#dc2626' },
+  ],
+  employmentRateACS: [
+    { min: -Infinity, max: 85, color: '#dc2626' }, { min: 85, max: 90, color: '#f59e0b' },
+    { min: 90, max: 95, color: '#eab308' }, { min: 95, max: 98, color: '#84cc16' },
+    { min: 98, max: Infinity, color: '#16a34a' },
   ],
   // HUD FMR Rents: red (low) → yellow → green (high)
   fmr_0br: [
@@ -687,6 +720,29 @@ export default function MapOverlayLayers({ countyEnabled, zipEnabled, countyMetr
         if (!zips[zip].countyName && row.county_name) zips[zip].countyName = row.county_name;
         if (!zips[zip].stateName && row.state_usps) zips[zip].stateName = row.state_usps;
       });
+
+      // Census ACS Investor Metrics — Rent Burden, Renter Share, Tax Rate, Employment, In-Migration
+      try {
+        const acsResp = await fetch(CENSUS_ACS_ZCTA_URL);
+        if (acsResp.ok) {
+          const acsData = await acsResp.json();
+          Object.entries(acsData).forEach(([zipCode, metrics]) => {
+            const zip = zeroZip(zipCode);
+            if (!zip) return;
+            zips[zip] = zips[zip] || { zip };
+            if (isNum(metrics.rentBurden))       zips[zip].rentBurden = metrics.rentBurden;
+            if (isNum(metrics.netInMigration))   zips[zip].netInMigration = metrics.netInMigration;
+            if (isNum(metrics.renterShare))      zips[zip].renterShare = metrics.renterShare;
+            if (isNum(metrics.effectiveTaxRate)) zips[zip].effectiveTaxRate = metrics.effectiveTaxRate;
+            if (isNum(metrics.employmentRate))   zips[zip].employmentRateACS = metrics.employmentRate;
+          });
+          console.log('[Overlay] Census ACS investor metrics loaded:', Object.keys(acsData).length, 'zips');
+        } else {
+          console.warn('[Overlay] Census ACS fetch failed:', acsResp.status);
+        }
+      } catch (acsErr) {
+        console.warn('[Overlay] Census ACS fetch error (non-fatal):', acsErr.message);
+      }
 
       zipHeatmapDataRef.current = zips;
       setZipHeatmapLoaded(true);

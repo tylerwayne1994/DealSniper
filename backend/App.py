@@ -76,6 +76,79 @@ async def tigerweb_zcta_proxy(request: Request):
         log.error(f"[TIGERweb proxy] Error: {e}")
         raise HTTPException(status_code=502, detail=f"TIGERweb proxy error: {str(e)}")
 
+# ─── Census ACS 5-Year ZCTA Metrics ──────────────────────────
+# Fetches Rent Burden, Renter Share, Effective Tax Rate, Employment Rate, Net In-Migration
+# for all ZCTAs from Census ACS 5-Year API and caches the result.
+CENSUS_ACS_API = "https://api.census.gov/data/2023/acs/acs5"
+CENSUS_API_KEY = os.environ.get('CENSUS_API_KEY', 'a58ee4f1fa1db660eb306d9eb39390aa1ae6c6c8')
+_census_zcta_cache = None
+
+@app.get("/api/census/zcta-acs")
+async def census_zcta_acs():
+    """Fetch 5 Census ACS ZCTA-level metrics for heatmap overlays."""
+    global _census_zcta_cache
+    if _census_zcta_cache:
+        return JSONResponse(content=_census_zcta_cache, status_code=200)
+
+    import httpx
+    variables = "NAME,B25071_001E,B25003_001E,B25003_003E,B25103_001E,B25077_001E,B23025_003E,B23025_004E,B07003_007E,B07003_010E"
+    url = f"{CENSUS_ACS_API}?get={variables}&for=zip%20code%20tabulation%20area:*&key={CENSUS_API_KEY}"
+
+    try:
+        async with httpx.AsyncClient(timeout=90.0) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            data = resp.json()
+
+        if not data or len(data) < 2:
+            raise HTTPException(status_code=502, detail="Empty Census API response")
+
+        headers = data[0]
+        result = {}
+
+        def safe_float(v):
+            if v is None or v == '' or str(v).strip() in ('-666666666', '-222222222', '-999999999', '-888888888'):
+                return None
+            try:
+                return float(v)
+            except (ValueError, TypeError):
+                return None
+
+        for row in data[1:]:
+            record = dict(zip(headers, row))
+            zip_code = str(record.get('zip code tabulation area', '')).zfill(5)
+            if not zip_code or zip_code == '00000':
+                continue
+
+            rent_burden = safe_float(record.get('B25071_001E'))
+            renter_occ = safe_float(record.get('B25003_003E'))
+            total_occ = safe_float(record.get('B25003_001E'))
+            re_taxes = safe_float(record.get('B25103_001E'))
+            home_value = safe_float(record.get('B25077_001E'))
+            employed = safe_float(record.get('B23025_004E'))
+            labor_force = safe_float(record.get('B23025_003E'))
+            from_diff_county = safe_float(record.get('B07003_007E'))
+            from_abroad = safe_float(record.get('B07003_010E'))
+
+            result[zip_code] = {
+                'rentBurden': round(rent_burden, 1) if rent_burden is not None else None,
+                'renterShare': round(renter_occ / total_occ * 100, 1) if renter_occ and total_occ and total_occ > 0 else None,
+                'effectiveTaxRate': round(re_taxes / home_value * 100, 2) if re_taxes and home_value and home_value > 0 else None,
+                'employmentRate': round(employed / labor_force * 100, 1) if employed and labor_force and labor_force > 0 else None,
+                'netInMigration': int(from_diff_county + from_abroad) if from_diff_county is not None and from_abroad is not None else None,
+            }
+
+        _census_zcta_cache = result
+        log.info(f"[Census ACS] Loaded {len(result)} ZCTAs")
+        return JSONResponse(content=result, status_code=200)
+
+    except httpx.HTTPError as e:
+        log.error(f"[Census ACS] HTTP error: {e}")
+        raise HTTPException(status_code=502, detail=f"Census API error: {str(e)}")
+    except Exception as e:
+        log.error(f"[Census ACS] Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Census ACS error: {str(e)}")
+
 # ─── Flood Zone Lookup ────────────────────────────────────────
 FEMA_NFHL_URL = "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query"
 CENSUS_GEOCODER_URL = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
