@@ -95,7 +95,12 @@ async def get_agent(request: Request):
     """Get the current user's agent configuration (credentials redacted)."""
     user_id = _get_user_id(request)
     log.info("[DEBUG] GET /config — user_id=%s", user_id)
-    config = get_agent_config_by_user(user_id)
+    try:
+        config = get_agent_config_by_user(user_id)
+    except Exception as e:
+        log.error("[DEBUG] Error fetching agent config for user %s: %s", user_id, e)
+        # Table may not exist yet — return gracefully instead of 500
+        return JSONResponse(status_code=200, content={"config": None, "error": str(e)[:200]})
     if not config:
         log.info("[DEBUG] No agent config found for user %s", user_id)
         return JSONResponse(status_code=200, content={"config": None})

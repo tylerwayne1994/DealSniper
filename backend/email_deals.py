@@ -496,7 +496,7 @@ async def sync_email_deals(request: Request):
                 }
                 supabase.table('email_underwrite_jobs').insert(job_record).execute()
             except Exception as job_err:
-                log.warning(f"[EmailDeals] Failed to create email_underwrite_job for msg %s: %s", msg_id, job_err)
+                log.warning("[EmailDeals] Failed to create email_underwrite_job for msg %s: %s", msg_id, job_err)
 
             synced += 1
         
@@ -504,7 +504,7 @@ async def sync_email_deals(request: Request):
         supabase.table('email_integrations').update({
             'last_sync_at': datetime.utcnow().isoformat(),
             'updated_at': datetime.utcnow().isoformat()
-        }).eq('user_id', user_id).eq('provider', 'gmail').execute()
+        }).eq('user_id', admin_user_id).eq('provider', 'gmail').execute()
         
         # Process unprocessed emails and extract links
         links_extracted = await process_unprocessed_emails(user_id)

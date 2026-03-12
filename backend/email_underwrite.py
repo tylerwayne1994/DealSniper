@@ -1748,11 +1748,46 @@ Return ONLY valid JSON, no markdown or explanation.'''
 
 
 def _run_auto_pipeline():
-    """Single run of the full pipeline: sync → process → parse."""
+    """Single run of the full pipeline: sync → auto-reset stuck → process → parse."""
     print("=" * 80)
     print(f"[AutoPipeline] ═══ Running auto-pipeline cycle at {datetime.utcnow().isoformat()} ═══")
     print("=" * 80)
     log.info("[AutoPipeline] Running auto-pipeline cycle...")
+
+    # Step 0: Auto-reset stuck "processing" jobs older than 10 minutes (max 3 retries)
+    try:
+        sb0 = get_supabase()
+        stuck = sb0.table("email_underwrite_jobs").select("id, updated_at, error_message").eq("status", "processing").execute()
+        cutoff = datetime.utcnow() - timedelta(minutes=10)
+        now_str = datetime.utcnow().isoformat()
+        reset_count = 0
+        for row in (stuck.data or []):
+            try:
+                updated = datetime.fromisoformat(row.get("updated_at", "2000-01-01").replace("Z", "+00:00").replace("+00:00", ""))
+                if updated > cutoff:
+                    continue
+            except Exception:
+                pass
+            err_msg = row.get("error_message") or ""
+            retry_count = err_msg.count("Auto-reset")
+            if retry_count >= 3:
+                sb0.table("email_underwrite_jobs").update({
+                    "status": "error",
+                    "error_message": f"Failed after {retry_count} retries. Last: {err_msg[:200]}",
+                    "updated_at": now_str,
+                }).eq("id", row["id"]).execute()
+                print(f"[AutoPipeline] Job {row['id']} exceeded max retries — marked as error")
+                continue
+            sb0.table("email_underwrite_jobs").update({
+                "status": "pending",
+                "error_message": f"Auto-reset from processing at {now_str}" + (f" | {err_msg}" if err_msg else ""),
+                "updated_at": now_str,
+            }).eq("id", row["id"]).execute()
+            reset_count += 1
+        if reset_count:
+            print(f"[AutoPipeline] Step 0: Auto-reset {reset_count} stuck processing jobs (>10 min)")
+    except Exception as e:
+        print(f"[AutoPipeline] Step 0 error: {e}")
 
     # Step 1: Sync inbox
     sync_result = _sync_inbox_core()
@@ -1762,15 +1797,30 @@ def _run_auto_pipeline():
         print(f"[AutoPipeline] Sync ERROR: {sync_result['error']}")
 
     # Step 2: Pick up ALL pending jobs — both new (no deal_id) and reset ones (have deal_id)
+    # Skip jobs that have been auto-reset 3+ times (they keep failing)
     try:
         sb = get_supabase()
-        all_pending = sb.table("email_underwrite_jobs").select("id, deal_id").eq("status", "pending").limit(20).execute()
+        all_pending = sb.table("email_underwrite_jobs").select("id, deal_id, error_message").eq("status", "pending").limit(20).execute()
         pending_no_deal = []
         pending_with_deal = []
         for row in (all_pending.data or []):
             jid = row["id"]
             if jid in new_jobs:
                 continue  # Already queued from sync
+            # Skip jobs that have exceeded retry limit
+            err_msg = row.get("error_message") or ""
+            if err_msg.count("Auto-reset") >= 3:
+                print(f"[AutoPipeline] Skipping job {jid} — exceeded retry limit ({err_msg[:80]})")
+                # Mark as permanent error
+                try:
+                    sb.table("email_underwrite_jobs").update({
+                        "status": "error",
+                        "error_message": f"Failed after 3+ retries. {err_msg[:300]}",
+                        "updated_at": datetime.utcnow().isoformat(),
+                    }).eq("id", jid).execute()
+                except Exception:
+                    pass
+                continue
             if row.get("deal_id"):
                 pending_with_deal.append(jid)
             else:
@@ -2118,20 +2168,41 @@ def _run_force_sync_bg():
         new_jobs = list(sync_result.get("new_job_ids", []))
         print(f"[FORCE-SYNC-BG] Sync complete: synced={sync_result.get('synced',0)}, already_known={sync_result.get('already_known',0)}")
 
-        # ── Step 2: Auto-reset stuck "processing" jobs ──
+        # ── Step 2: Auto-reset stuck "processing" jobs (older than 10 min, max 3 retries) ──
         reset_count = 0
+        skipped_max_retries = 0
         try:
-            stuck = sb.table("email_underwrite_jobs").select("id").eq("status", "processing").execute()
+            stuck = sb.table("email_underwrite_jobs").select("id, updated_at, error_message").eq("status", "processing").execute()
             now_str = datetime.utcnow().isoformat()
+            cutoff = datetime.utcnow() - timedelta(minutes=10)
             for row in (stuck.data or []):
+                # Only reset if stuck for >10 minutes
+                try:
+                    updated = datetime.fromisoformat(row.get("updated_at", "2000-01-01").replace("Z", "+00:00").replace("+00:00", ""))
+                    if updated > cutoff:
+                        continue  # Still recent — let it finish
+                except Exception:
+                    pass  # Bad date — reset it
+                # Check retry count (count 'Auto-reset' occurrences in error_message)
+                err_msg = row.get("error_message") or ""
+                retry_count = err_msg.count("Auto-reset")
+                if retry_count >= 3:
+                    # Max retries reached — mark as permanent error
+                    sb.table("email_underwrite_jobs").update({
+                        "status": "error",
+                        "error_message": f"Failed after {retry_count} retries. Last: {err_msg[:200]}",
+                        "updated_at": now_str,
+                    }).eq("id", row["id"]).execute()
+                    skipped_max_retries += 1
+                    continue
                 sb.table("email_underwrite_jobs").update({
                     "status": "pending",
-                    "error_message": f"Auto-reset from processing at {now_str}",
+                    "error_message": f"Auto-reset from processing at {now_str}" + (f" | {err_msg}" if err_msg else ""),
                     "updated_at": now_str,
                 }).eq("id", row["id"]).execute()
                 reset_count += 1
-            if reset_count:
-                print(f"[FORCE-SYNC-BG] Step 2: Reset {reset_count} stuck processing jobs")
+            if reset_count or skipped_max_retries:
+                print(f"[FORCE-SYNC-BG] Step 2: Reset {reset_count} stuck jobs, {skipped_max_retries} exceeded max retries")
         except Exception as e:
             print(f"[FORCE-SYNC-BG] Step 2 error resetting stuck jobs: {e}")
 
@@ -2274,23 +2345,48 @@ async def force_sync_result():
 async def reset_stuck_jobs():
     """Reset jobs stuck in 'processing' status back to 'pending'.
 
-    Also clears old error messages so they can be retried.
+    Only resets jobs that have been processing for >10 minutes.
+    Caps retries at 3 — after that, marks as permanent 'error'.
     """
     sb = get_supabase()
     now = datetime.utcnow().isoformat()
+    cutoff = datetime.utcnow() - timedelta(minutes=10)
 
     # Find stuck processing jobs (older than 10 minutes)
     stuck = sb.table("email_underwrite_jobs").select("id, status, error_message, updated_at").eq("status", "processing").execute()
     reset_count = 0
+    skipped_recent = 0
+    failed_max_retries = 0
     for row in (stuck.data or []):
+        # Time check: only reset if stuck >10 minutes
+        try:
+            updated = datetime.fromisoformat(row.get("updated_at", "2000-01-01").replace("Z", "+00:00").replace("+00:00", ""))
+            if updated > cutoff:
+                skipped_recent += 1
+                continue
+        except Exception:
+            pass
+        # Retry limit: count previous 'Auto-reset' resets
+        err_msg = row.get("error_message") or ""
+        retry_count = err_msg.count("Auto-reset")
+        if retry_count >= 3:
+            sb.table("email_underwrite_jobs").update({
+                "status": "error",
+                "error_message": f"Failed after {retry_count} retries. Last: {err_msg[:200]}",
+                "updated_at": now,
+            }).eq("id", row["id"]).execute()
+            failed_max_retries += 1
+            continue
         sb.table("email_underwrite_jobs").update({
             "status": "pending",
-            "error_message": f"Reset from processing at {now}",
+            "error_message": f"Auto-reset from processing at {now}" + (f" | {err_msg}" if err_msg else ""),
             "updated_at": now,
         }).eq("id", row["id"]).execute()
         reset_count += 1
 
     return {
         "reset_count": reset_count,
-        "message": f"Reset {reset_count} stuck jobs to pending status",
+        "skipped_recent": skipped_recent,
+        "failed_max_retries": failed_max_retries,
+        "message": f"Reset {reset_count} stuck jobs, {skipped_recent} still recent, {failed_max_retries} exceeded max retries",
     }

@@ -362,6 +362,8 @@ function AgentPage() {
   // Run history & deals state
   const [agentRuns, setAgentRuns] = useState([]);
   const [agentDeals, setAgentDeals] = useState([]);
+  const [systemHealth, setSystemHealth] = useState(null);
+  const [configError, setConfigError] = useState(null);
 
   // Section collapse state
   const [expandedSections, setExpandedSections] = useState({
@@ -436,11 +438,24 @@ function AgentPage() {
 
   const loadAgentConfig = async (uid) => {
     try {
+      // Fetch health status in parallel with config
+      const healthPromise = fetch(API_ENDPOINTS.agentHealth).then(r => r.ok ? r.json() : null).catch(() => null);
+
       const resp = await fetch(API_ENDPOINTS.agentConfig, {
         headers: { 'X-User-ID': uid },
       });
-      if (!resp.ok) return;
+
+      const health = await healthPromise;
+      if (health) setSystemHealth(health);
+
+      if (!resp.ok) {
+        setConfigError(`Server returned ${resp.status}. The agent system may not be configured yet.`);
+        return;
+      }
       const data = await resp.json();
+      if (data.error) {
+        setConfigError(`Backend error: ${data.error}. The agent database tables may need to be created.`);
+      }
       const cfg = data.config;
       if (!cfg) return;
 
@@ -506,6 +521,7 @@ function AgentPage() {
 
     } catch (err) {
       console.error('Error loading agent config:', err);
+      setConfigError(`Failed to connect to agent system: ${err.message}`);
     }
   };
 
@@ -806,6 +822,44 @@ function AgentPage() {
           </div>
         </div>
       </div>
+
+      {/* System Status Banner */}
+      {(configError || (systemHealth && (!systemHealth.playwright_installed || !systemHealth.browser_use_installed || !systemHealth.encryption_key_set))) && (
+        <div style={{
+          backgroundColor: configError ? '#fef2f2' : '#fffbeb',
+          border: `1px solid ${configError ? '#fecaca' : '#fde68a'}`,
+          borderRadius: '8px', padding: '14px 18px', marginBottom: '16px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: configError ? 0 : 8 }}>
+            <AlertCircle size={16} color={configError ? '#dc2626' : '#d97706'} />
+            <span style={{ fontSize: '13px', fontWeight: '600', color: configError ? '#dc2626' : '#92400e' }}>
+              {configError ? 'Agent System Error' : 'Agent System — Missing Dependencies'}
+            </span>
+          </div>
+          {configError && (
+            <p style={{ margin: '6px 0 0 24px', fontSize: '12px', color: '#991b1b' }}>{configError}</p>
+          )}
+          {systemHealth && !configError && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginLeft: '24px' }}>
+              {[
+                { ok: systemHealth.database, label: 'Database' },
+                { ok: systemHealth.encryption_key_set, label: 'Encryption Key' },
+                { ok: systemHealth.playwright_installed, label: 'Playwright' },
+                { ok: systemHealth.browser_use_installed, label: 'Browser-Use' },
+                { ok: systemHealth.openai_key_set, label: 'OpenAI Key' },
+              ].map(({ ok, label }) => (
+                <span key={label} style={{
+                  fontSize: '11px', fontWeight: '500', padding: '2px 8px', borderRadius: '4px',
+                  backgroundColor: ok ? '#dcfce7' : '#fee2e2',
+                  color: ok ? '#166534' : '#991b1b',
+                }}>
+                  {ok ? '✓' : '✗'} {label}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Save Toast */}
       {saveMessage && (
