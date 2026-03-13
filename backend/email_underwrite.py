@@ -1880,8 +1880,245 @@ Return ONLY valid JSON, no markdown or explanation.'''
         return {"error": str(e), "job_id": job_id}
 
 
+def _backfill_unparsed_deals(max_jobs: int = 10) -> dict:
+    """Backfill: re-download full emails for jobs that completed but never parsed a PDF.
+
+    Finds 'done' jobs whose deals lack real parsed data (no property address, no units),
+    re-downloads the full email via IMAP, extracts any PDF attachment, and parses inline.
+    This catches emails that were synced by the old header-only code but never had their
+    attachments extracted.
+
+    Returns summary dict.
+    """
+    print(f"[Backfill] Checking for done jobs with unparsed deals (max={max_jobs})...")
+    sb = get_supabase()
+    backfilled = 0
+    skipped_no_pdf = 0
+    errors = 0
+
+    try:
+        # Find done jobs that might need backfilling
+        done_jobs = (
+            sb.table("email_underwrite_jobs")
+            .select("id, deal_id, provider_message_id, from_address, subject, error_message, user_id")
+            .eq("status", "done")
+            .limit(50)
+            .execute()
+        )
+
+        jobs_to_backfill = []
+        for job in (done_jobs.data or []):
+            err = job.get("error_message") or ""
+            deal_id = job.get("deal_id")
+
+            # Skip jobs already backfill-checked (prevents re-checking every cycle)
+            if err.startswith("Backfill:"):
+                continue
+
+            # Skip jobs that explicitly found no PDF (unless they used old header-only code)
+            # Old jobs with "No attachment found" might have missed PDFs because they
+            # only checked headers. Include them for re-check.
+            if "No PDF/image attachment found" in err:
+                # This was from old code — might have never downloaded the full email
+                pass
+            elif err and "No attachment" not in err:
+                # Real error — skip
+                continue
+
+            if not deal_id:
+                # Job has no deal — check if it has a provider_message_id we can re-download
+                if not job.get("provider_message_id"):
+                    continue
+                # Include it for backfill (will create a deal)
+                jobs_to_backfill.append(job)
+                continue
+
+            # Check if the deal has real parsed data
+            try:
+                deal_res = sb.table("deals").select("deal_id, parsed_data, units, purchase_price").eq("deal_id", deal_id).single().execute()
+                deal = getattr(deal_res, "data", None)
+            except Exception:
+                deal = None
+
+            if deal:
+                pd = deal.get("parsed_data") or {}
+                has_property = isinstance(pd.get("property"), dict) and pd["property"].get("address")
+                has_units = deal.get("units") is not None
+                has_price = deal.get("purchase_price") is not None
+                if has_property or (has_units and has_price):
+                    continue  # Already parsed — skip
+
+            jobs_to_backfill.append(job)
+
+        if not jobs_to_backfill:
+            print("[Backfill] No unparsed deals found — all jobs have real data.")
+            return {"backfilled": 0, "skipped_no_pdf": 0, "errors": 0}
+
+        print(f"[Backfill] Found {len(jobs_to_backfill)} jobs with unparsed deals (processing up to {max_jobs})")
+
+        # Open ONE IMAP connection for all backfill downloads
+        mail = get_imap_connection()
+        if not mail:
+            print("[Backfill] ❌ IMAP connection failed — cannot backfill")
+            return {"error": "IMAP connection failed", "backfilled": 0}
+
+        try:
+            for job in jobs_to_backfill[:max_jobs]:
+                job_id = job["id"]
+                msg_id = job.get("provider_message_id", "")
+                deal_id = job.get("deal_id")
+                user_id = job.get("user_id")
+                from_addr = job.get("from_address") or "unknown"
+                subject = job.get("subject") or "Email OM"
+
+                if not msg_id or msg_id.startswith("webhook:"):
+                    # Webhook jobs or missing msg_id — skip for IMAP backfill
+                    continue
+
+                print(f"[Backfill] Re-downloading job {job_id} (msg_id={msg_id})...")
+
+                try:
+                    # Parse folder:UID from provider_message_id
+                    if ":" in msg_id:
+                        folder, uid_only = msg_id.rsplit(":", 1)
+                    else:
+                        folder = "INBOX"
+                        uid_only = msg_id
+
+                    # Download full email
+                    _imap_select(mail, folder)
+                    st, msg_data = mail.uid("fetch", uid_only.encode(), "(RFC822)")
+                    if st != "OK" or not msg_data or not msg_data[0] or not isinstance(msg_data[0], tuple):
+                        print(f"[Backfill]   UID {uid_only} in {folder}: fetch failed (status={st})")
+                        skipped_no_pdf += 1
+                        continue
+
+                    raw_bytes = msg_data[0][1]
+                    email_msg = email_mod.message_from_bytes(raw_bytes)
+
+                    # Also extract subject from full email if it was blank
+                    if not subject or subject == "Email OM":
+                        full_subject = _safe_decode_header(email_msg.get("Subject", ""))
+                        if full_subject:
+                            subject = full_subject
+
+                    # Extract PDF/image attachments
+                    attachments = []
+                    for part in email_msg.walk():
+                        content_disp = part.get("Content-Disposition", "")
+                        ct = part.get_content_type()
+                        if "attachment" in str(content_disp) or ct == "application/pdf":
+                            filename = part.get_filename() or "attachment.pdf"
+                            try:
+                                from email.header import decode_header as _dh
+                                decoded_parts = _dh(filename)
+                                decoded_name = ""
+                                for data, charset in decoded_parts:
+                                    if isinstance(data, bytes):
+                                        decoded_name += data.decode(charset or "utf-8", errors="replace")
+                                    else:
+                                        decoded_name += data
+                                filename = decoded_name
+                            except Exception:
+                                pass
+                            payload = part.get_payload(decode=True)
+                            if payload and len(payload) > 1000:
+                                ext = os.path.splitext(filename)[1].lower()
+                                if ext in (".pdf", ".png", ".jpg", ".jpeg", ".xlsx", ".xls"):
+                                    attachments.append((filename, payload))
+                                    print(f"[Backfill]   📎 Found: {filename} ({len(payload):,} bytes)")
+
+                    if not attachments:
+                        print(f"[Backfill]   No PDF found in email — updating job")
+                        sb.table("email_underwrite_jobs").update({
+                            "error_message": "Backfill: No PDF/image attachment in email",
+                            "updated_at": datetime.utcnow().isoformat(),
+                        }).eq("id", job_id).execute()
+                        skipped_no_pdf += 1
+                        continue
+
+                    # Process each attachment
+                    for att_filename, att_bytes in attachments:
+                        now = datetime.utcnow().isoformat()
+
+                        # Create deal if needed
+                        if not deal_id:
+                            deal_id = str(uuid.uuid4())
+                            deal_record = {
+                                "deal_id": deal_id,
+                                "user_id": user_id,
+                                "address": subject or f"Email OM - {att_filename}",
+                                "units": None,
+                                "purchase_price": None,
+                                "deal_structure": "Email OM",
+                                "parsed_data": {"source": "email_backfill", "status": "parsing"},
+                                "scenario_data": None,
+                                "images": [],
+                                "pipeline_status": "pipeline",
+                                "created_at": now,
+                                "updated_at": now,
+                            }
+                            sb.table("deals").insert(deal_record).execute()
+
+                        # Update job status
+                        sb.table("email_underwrite_jobs").update({
+                            "deal_id": deal_id,
+                            "status": "processing",
+                            "subject": subject,
+                            "updated_at": now,
+                        }).eq("id", job_id).execute()
+
+                        print(f"[Backfill]   🚀 Parsing {att_filename} for deal {deal_id}...")
+
+                        result = _parse_attachment_from_bytes(
+                            file_bytes=att_bytes,
+                            filename=att_filename,
+                            job_id=job_id,
+                            deal_id=deal_id,
+                            user_id=user_id,
+                            from_addr=from_addr,
+                            subject=subject,
+                        )
+
+                        if result.get("success"):
+                            backfilled += 1
+                            print(f"[Backfill]   ✅ Parsed: {result.get('address', att_filename)}")
+                        else:
+                            print(f"[Backfill]   ⚠️ Parse result: {result}")
+                            errors += 1
+
+                        break  # Only process first attachment per job
+
+                except Exception as job_err:
+                    print(f"[Backfill]   ❌ Error backfilling job {job_id}: {job_err}")
+                    errors += 1
+                    try:
+                        sb.table("email_underwrite_jobs").update({
+                            "error_message": f"Backfill error: {str(job_err)[:300]}",
+                            "updated_at": datetime.utcnow().isoformat(),
+                        }).eq("id", job_id).execute()
+                    except Exception:
+                        pass
+
+        finally:
+            try:
+                mail.logout()
+            except Exception:
+                pass
+
+    except Exception as e:
+        print(f"[Backfill] FATAL: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e), "backfilled": 0}
+
+    summary = {"backfilled": backfilled, "skipped_no_pdf": skipped_no_pdf, "errors": errors}
+    print(f"[Backfill] Complete: {summary}")
+    return summary
+
+
 def _run_auto_pipeline():
-    """Single run of the full pipeline: sync → auto-reset stuck → process → parse."""
+    """Single run of the full pipeline: sync → auto-reset stuck → backfill → process."""
     print("=" * 80)
     print(f"[AutoPipeline] ═══ Running auto-pipeline cycle at {datetime.utcnow().isoformat()} ═══")
     print("=" * 80)
@@ -1994,31 +2231,42 @@ def _run_auto_pipeline():
     except Exception as e:
         print(f"[AutoPipeline] Failed to check done-but-unparsed jobs: {e}")
 
-    if not pending_no_deal and not reprocess_jobs:
-        print("[AutoPipeline] No leftover jobs to process.")
-        return
+    if pending_no_deal or reprocess_jobs:
+        print(f"[AutoPipeline] Processing {len(pending_no_deal)} leftover pending + {len(reprocess_jobs)} reprocess jobs")
 
-    print(f"[AutoPipeline] Processing {len(pending_no_deal)} leftover pending + {len(reprocess_jobs)} reprocess jobs")
+        # Step 3: Process leftover pending jobs (legacy/retry — need second IMAP download)
+        for job_id in pending_no_deal:
+            try:
+                print(f"[AutoPipeline] Processing leftover pending job {job_id}...")
+                result = _process_and_parse_job(job_id)
+                print(f"[AutoPipeline] Job {job_id} result: {result}")
+            except Exception as e:
+                print(f"[AutoPipeline] Unexpected error processing job {job_id}: {e}")
+                log.exception("[AutoPipeline] Unexpected error processing job %s: %s", job_id, e)
 
-    # Step 3: Process leftover pending jobs (legacy/retry — need second IMAP download)
-    for job_id in pending_no_deal:
-        try:
-            print(f"[AutoPipeline] Processing leftover pending job {job_id}...")
-            result = _process_and_parse_job(job_id)
-            print(f"[AutoPipeline] Job {job_id} result: {result}")
-        except Exception as e:
-            print(f"[AutoPipeline] Unexpected error processing job {job_id}: {e}")
-            log.exception("[AutoPipeline] Unexpected error processing job %s: %s", job_id, e)
+        # Step 4: Reprocess jobs that have existing deals but need attachment parsing
+        for job_id in reprocess_jobs:
+            try:
+                print(f"[AutoPipeline] Re-processing job with existing deal {job_id}...")
+                result = _reprocess_existing_job(job_id)
+                print(f"[AutoPipeline] Re-process job {job_id} result: {result}")
+            except Exception as e:
+                print(f"[AutoPipeline] Unexpected error re-processing job {job_id}: {e}")
+                log.exception("[AutoPipeline] Unexpected error re-processing job %s: %s", job_id, e)
+    else:
+        print("[AutoPipeline] No leftover pending/reprocess jobs.")
 
-    # Step 4: Reprocess jobs that have existing deals but need attachment parsing
-    for job_id in reprocess_jobs:
-        try:
-            print(f"[AutoPipeline] Re-processing job with existing deal {job_id}...")
-            result = _reprocess_existing_job(job_id)
-            print(f"[AutoPipeline] Re-process job {job_id} result: {result}")
-        except Exception as e:
-            print(f"[AutoPipeline] Unexpected error re-processing job {job_id}: {e}")
-            log.exception("[AutoPipeline] Unexpected error re-processing job %s: %s", job_id, e)
+    # Step 5: Backfill — re-download full emails for done jobs that never had PDFs parsed
+    # This catches emails synced by the old header-only code that missed attachments
+    try:
+        backfill_result = _backfill_unparsed_deals(max_jobs=5)
+        bf_count = backfill_result.get("backfilled", 0)
+        if bf_count > 0:
+            print(f"[AutoPipeline] ✅ Backfill: parsed {bf_count} previously-missed PDFs")
+        else:
+            print(f"[AutoPipeline] Backfill: {backfill_result}")
+    except Exception as e:
+        print(f"[AutoPipeline] Backfill error: {e}")
 
 
 _last_run_time = None
@@ -2425,6 +2673,18 @@ def _run_force_sync_bg():
                 print(f"[FORCE-SYNC-BG] Reprocess {job_id} FAILED: {e}")
                 errors += 1
 
+        # Step 5: Backfill — re-download full emails for done jobs that never parsed PDFs
+        try:
+            backfill_result = _backfill_unparsed_deals(max_jobs=5)
+            backfill_count = backfill_result.get("backfilled", 0)
+            if backfill_count > 0:
+                print(f"[FORCE-SYNC-BG] ✅ Backfill: parsed {backfill_count} previously-missed PDFs")
+            else:
+                print(f"[FORCE-SYNC-BG] Backfill: {backfill_result}")
+        except Exception as e:
+            print(f"[FORCE-SYNC-BG] Backfill error: {e}")
+            backfill_count = 0
+
         _sync_result = {
             "status": "done",
             "sync": sync_result,
@@ -2433,11 +2693,12 @@ def _run_force_sync_bg():
             "jobs_total": total,
             "jobs_processed": processed,
             "jobs_errors": errors,
+            "backfilled": backfill_count,
             "new_job_ids": new_jobs,
             "reprocess_job_ids": reprocess_jobs,
             "finished_at": datetime.utcnow().isoformat(),
         }
-        print(f"[FORCE-SYNC-BG] Complete: reset={reset_count}, orphans={orphan_count}, processed={processed}, errors={errors}")
+        print(f"[FORCE-SYNC-BG] Complete: reset={reset_count}, orphans={orphan_count}, processed={processed}, errors={errors}, backfilled={backfill_count}")
     except Exception as e:
         print(f"[FORCE-SYNC-BG] FATAL ERROR: {e}")
         import traceback
