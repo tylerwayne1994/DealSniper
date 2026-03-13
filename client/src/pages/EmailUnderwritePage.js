@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   Mail,
   Building2,
-  DollarSign,
   TrendingUp,
   Clock,
   RefreshCw,
@@ -342,6 +341,7 @@ function EmailUnderwritePage() {
     // Auto-refresh every 30 seconds to pick up background pipeline results
     pollTimer = setInterval(loadData, 30000);
     return () => clearInterval(pollTimer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // loadPipeline alias for force-sync callback
