@@ -1971,29 +1971,65 @@ def _backfill_unparsed_deals(max_jobs: int = 10) -> dict:
                 from_addr = job.get("from_address") or "unknown"
                 subject = job.get("subject") or "Email OM"
 
-                if not msg_id or msg_id.startswith("webhook:"):
-                    # Webhook jobs or missing msg_id — skip for IMAP backfill
+                if not msg_id:
+                    # No provider_message_id at all — can't re-download, mark it
+                    print(f"[Backfill] Job {job_id}: no provider_message_id — marking as checked")
+                    sb.table("email_underwrite_jobs").update({
+                        "error_message": "Backfill: no provider_message_id to re-download",
+                        "updated_at": datetime.utcnow().isoformat(),
+                    }).eq("id", job_id).execute()
+                    skipped_no_pdf += 1
                     continue
 
                 print(f"[Backfill] Re-downloading job {job_id} (msg_id={msg_id})...")
 
                 try:
-                    # Parse folder:UID from provider_message_id
-                    if ":" in msg_id:
-                        folder, uid_only = msg_id.rsplit(":", 1)
-                    else:
-                        folder = "INBOX"
-                        uid_only = msg_id
+                    raw_bytes = None
 
-                    # Download full email
-                    _imap_select(mail, folder)
-                    st, msg_data = mail.uid("fetch", uid_only.encode(), "(RFC822)")
-                    if st != "OK" or not msg_data or not msg_data[0] or not isinstance(msg_data[0], tuple):
-                        print(f"[Backfill]   UID {uid_only} in {folder}: fetch failed (status={st})")
+                    if msg_id.startswith("webhook:"):
+                        # Webhook job — search IMAP by Message-ID header
+                        actual_message_id = msg_id[len("webhook:"):]
+                        print(f"[Backfill]   Webhook job — searching IMAP by Message-ID: {actual_message_id}")
+                        for search_folder in ["INBOX", "[Gmail]/All Mail"]:
+                            try:
+                                st_sel, _ = _imap_select(mail, search_folder)
+                                if st_sel != "OK":
+                                    continue
+                                st_s, s_data = mail.uid("search", None, f'(HEADER Message-ID "{actual_message_id}")')
+                                if st_s == "OK" and s_data[0]:
+                                    uids = s_data[0].split()
+                                    if uids:
+                                        st_f, f_data = mail.uid("fetch", uids[-1], "(RFC822)")
+                                        if st_f == "OK" and f_data and f_data[0] and isinstance(f_data[0], tuple):
+                                            raw_bytes = f_data[0][1]
+                                            print(f"[Backfill]   Found webhook email in {search_folder}")
+                                            break
+                            except Exception as e:
+                                print(f"[Backfill]   Error searching {search_folder}: {e}")
+                    else:
+                        # IMAP job — parse folder:UID
+                        if ":" in msg_id:
+                            folder, uid_only = msg_id.rsplit(":", 1)
+                        else:
+                            folder = "INBOX"
+                            uid_only = msg_id
+
+                        _imap_select(mail, folder)
+                        st, msg_data = mail.uid("fetch", uid_only.encode(), "(RFC822)")
+                        if st == "OK" and msg_data and msg_data[0] and isinstance(msg_data[0], tuple):
+                            raw_bytes = msg_data[0][1]
+                        else:
+                            print(f"[Backfill]   UID {uid_only} in {folder}: fetch failed (status={st})")
+
+                    if not raw_bytes:
+                        print(f"[Backfill]   Could not download email — marking as checked")
+                        sb.table("email_underwrite_jobs").update({
+                            "error_message": "Backfill: email not found in IMAP",
+                            "updated_at": datetime.utcnow().isoformat(),
+                        }).eq("id", job_id).execute()
                         skipped_no_pdf += 1
                         continue
 
-                    raw_bytes = msg_data[0][1]
                     email_msg = email_mod.message_from_bytes(raw_bytes)
 
                     # Also extract subject from full email if it was blank
