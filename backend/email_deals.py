@@ -396,8 +396,8 @@ class SyncResponse(BaseModel):
 async def sync_email_deals(request: Request):
     """Sync deal emails from Gmail.
     
-    The connected Gmail account is a shared inbound inbox
-    (e.g. dealsniperinbound@gmail.com).  Multiple users send OMs there.
+    The shared inbound inbox is deals@dealsniper.org.
+    Multiple users forward OMs there.
     We match each sender to a registered user in the ``profiles`` table
     and create the underwrite job under *that* user's account.
     """
@@ -929,30 +929,27 @@ async def disconnect_gmail(request: Request):
 # System-level Inbound Inbox via IMAP + App Password
 # ============================================================================
 
-# Gmail address used only for IMAP transport (Cloudflare routes deals@dealsniper.org here)
-INBOUND_GMAIL = os.getenv("INBOUND_GMAIL_ADDRESS", "dealsniperinbound@gmail.com")
-INBOUND_APP_PASSWORD = os.getenv("INBOUND_GMAIL_APP_PASSWORD", "")
+INBOUND_EMAIL = "deals@dealsniper.org"
 
 
 def get_imap_connection():
-    """Connect to the inbound Gmail inbox via IMAP + App Password.
+    """Connect to the deals@dealsniper.org inbox via IMAP.
 
-    Requires env vars INBOUND_GMAIL_ADDRESS and INBOUND_GMAIL_APP_PASSWORD.
     Returns an authenticated IMAP4_SSL connection or None.
     """
     addr = os.getenv("INBOUND_GMAIL_ADDRESS")
     pwd = os.getenv("INBOUND_GMAIL_APP_PASSWORD")
     if not addr or not pwd:
-        print(f"[IMAP] ❌ Connection failed — INBOUND_GMAIL_ADDRESS={'SET' if addr else 'MISSING'}, INBOUND_GMAIL_APP_PASSWORD={'SET' if pwd else 'MISSING'}")
+        print("[IMAP] ❌ Connection failed — mail server credentials not configured")
         return None
     try:
         mail = imaplib.IMAP4_SSL("imap.gmail.com")
         mail.login(addr, pwd)
-        print(f"[IMAP] ✅ Connected as {addr}")
+        print(f"[IMAP] ✅ Connected to {INBOUND_EMAIL} inbox")
         return mail
     except Exception as e:
         log.error("[EmailDeals] IMAP login failed: %s", e)
-        print(f"[IMAP] ❌ Login failed for {addr}: {e}")
+        print(f"[IMAP] ❌ Mail server login failed: {e}")
         return None
 
 
@@ -972,16 +969,15 @@ def _safe_decode_header(raw):
 
 @router.get("/sync-inbound")
 async def sync_inbound_inbox():
-    """Sync the shared inbound inbox via IMAP + App Password.
+    """Sync the deals@dealsniper.org inbound inbox.
 
-    No OAuth needed. Uses INBOUND_GMAIL_ADDRESS and INBOUND_GMAIL_APP_PASSWORD
-    env vars. Matches each sender to a user profile and creates underwrite jobs.
+    Matches each sender to a user profile and creates underwrite jobs.
     """
     mail = get_imap_connection()
     if not mail:
         raise HTTPException(
             status_code=500,
-            detail="Inbound inbox not configured. Set INBOUND_GMAIL_ADDRESS and INBOUND_GMAIL_APP_PASSWORD env vars on Render.",
+            detail="Inbound inbox (deals@dealsniper.org) not configured. Check mail server credentials on Render.",
         )
 
     try:
