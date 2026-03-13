@@ -1093,7 +1093,11 @@ def _match_sender_to_user(sb, sender_email: str) -> Optional[str]:
 
 
 def _sync_inbox_core() -> dict:
-    """Core IMAP sync logic — scans inbox + spam, matches senders, creates jobs.
+    """Core IMAP sync: scans inbox, downloads full emails, extracts PDFs, and auto-underwrites.
+
+    Single-pass: for each new email, downloads the full RFC822, extracts any PDF/image
+    attachment, creates the deal, and parses with Claude Vision immediately.
+    No second IMAP download needed.
 
     Returns a summary dict. Does NOT raise HTTPException (safe for background use).
     """
@@ -1135,6 +1139,7 @@ def _sync_inbox_core() -> dict:
         already_known = 0
         skipped_no_user = 0
         new_job_ids = []
+        parsed_count = 0
 
         for uid_bytes, folder in all_uid_folder_pairs:
             uid_str = uid_bytes.decode()
@@ -1145,19 +1150,21 @@ def _sync_inbox_core() -> dict:
                 already_known += 1
                 continue
 
+            # ── Download FULL email (not just headers) so we can grab attachments ──
             _imap_select(mail, folder)
-            st, msg_data = mail.uid("fetch", uid_bytes, "(RFC822.HEADER)")
+            st, msg_data = mail.uid("fetch", uid_bytes, "(RFC822)")
             if st != "OK" or not msg_data or not msg_data[0]:
-                print(f"[AutoPipeline-Sync]   UID {uid_str}: fetch header failed (status={st})")
+                print(f"[AutoPipeline-Sync]   UID {uid_str}: fetch FULL message failed (status={st})")
                 continue
 
-            header_bytes = msg_data[0][1] if isinstance(msg_data[0], tuple) else msg_data[0]
-            msg = email_mod.message_from_bytes(header_bytes)
+            raw_bytes = msg_data[0][1] if isinstance(msg_data[0], tuple) else msg_data[0]
+            msg = email_mod.message_from_bytes(raw_bytes)
 
             from_raw = _safe_decode_header(msg.get("From", ""))
             subject = _safe_decode_header(msg.get("Subject", ""))
             date_str = msg.get("Date", "")
             message_id_header = msg.get("Message-ID", "")
+            to_raw = _safe_decode_header(msg.get("To", ""))
 
             received_at = None
             try:
@@ -1172,99 +1179,79 @@ def _sync_inbox_core() -> dict:
             print(f"[AutoPipeline-Sync]   NEW email UID={uid_str} from={sender_email} subject={subject[:60]}")
 
             # ── Handle forwarded emails (From = inbound address) ──
-            # When someone forwards to the inbound, Gmail may rewrite From
-            # to the inbound address. We need to find the ORIGINAL sender.
             original_sender = None
             forwarded_subject = None
             if sender_email == INBOUND_EMAIL:
                 print(f"[AutoPipeline-Sync]     Sender is inbound address ({sender_email}) — checking for forwarded sender...")
                 try:
-                    # Download full message to inspect body/headers
-                    _imap_select(mail, folder)
-                    st_full, full_data = mail.uid("fetch", uid_bytes, "(RFC822)")
-                    if st_full == "OK" and full_data and full_data[0]:
-                        full_bytes = full_data[0][1] if isinstance(full_data[0], tuple) else full_data[0]
-                        full_msg = email_mod.message_from_bytes(full_bytes)
-
-                        # Check headers: X-Forwarded-For, Reply-To, Return-Path
-                        for hdr in ["X-Forwarded-For", "Reply-To", "Return-Path", "X-Original-Sender"]:
-                            hdr_val = full_msg.get(hdr, "")
-                            if hdr_val:
-                                hm = re.search(r"[\w.+-]+@[\w.-]+", hdr_val)
-                                if hm:
-                                    candidate = hm.group(0).strip().lower()
-                                    if candidate != INBOUND_EMAIL:
-                                        original_sender = candidate
-                                        print(f"[AutoPipeline-Sync]     Found original sender via {hdr}: {original_sender}")
-                                        break
-
-                        # Check email body for forwarded message pattern
-                        if not original_sender:
-                            body_text = ""
-                            for part in full_msg.walk():
-                                ct = part.get_content_type()
-                                if ct in ("text/plain", "text/html"):
-                                    try:
-                                        payload = part.get_payload(decode=True)
-                                        if payload:
-                                            body_text += payload.decode("utf-8", errors="replace")
-                                    except Exception:
-                                        pass
-
-                            # Pattern: "From: Name <email>" or "From: email" in forwarded block
-                            fwd_from = re.search(r"(?:From|De|Von):\s*(?:.*?<)?([\w.+-]+@[\w.-]+)", body_text)
-                            if fwd_from:
-                                candidate = fwd_from.group(1).strip().lower()
+                    # Check headers: X-Forwarded-For, Reply-To, Return-Path
+                    for hdr in ["X-Forwarded-For", "Reply-To", "Return-Path", "X-Original-Sender"]:
+                        hdr_val = msg.get(hdr, "")
+                        if hdr_val:
+                            hm = re.search(r"[\w.+-]+@[\w.-]+", hdr_val)
+                            if hm:
+                                candidate = hm.group(0).strip().lower()
                                 if candidate != INBOUND_EMAIL:
                                     original_sender = candidate
-                                    print(f"[AutoPipeline-Sync]     Found original sender in body: {original_sender}")
+                                    print(f"[AutoPipeline-Sync]     Found original sender via {hdr}: {original_sender}")
+                                    break
 
-                            # Extract forwarded subject from body
-                            if not subject:
-                                fwd_subj = re.search(r"Subject:\s*(.+?)(?:\r?\n|$)", body_text)
-                                if fwd_subj:
-                                    forwarded_subject = fwd_subj.group(1).strip()[:200]
-                                    print(f"[AutoPipeline-Sync]     Extracted forwarded subject: {forwarded_subject}")
-                except Exception as fwd_err:
-                    print(f"[AutoPipeline-Sync]     Error extracting forwarded sender: {fwd_err}")
-
-            # ── If subject is STILL empty (e.g. Cloudflare Email Routing strips it),
-            #    download full body and try to extract subject from forwarded block ──
-            if not subject and not forwarded_subject and sender_email != INBOUND_EMAIL:
-                print(f"[AutoPipeline-Sync]     Subject is empty — downloading body to extract forwarded subject...")
-                try:
-                    _imap_select(mail, folder)
-                    st_full2, full_data2 = mail.uid("fetch", uid_bytes, "(RFC822)")
-                    if st_full2 == "OK" and full_data2 and full_data2[0]:
-                        full_bytes2 = full_data2[0][1] if isinstance(full_data2[0], tuple) else full_data2[0]
-                        full_msg2 = email_mod.message_from_bytes(full_bytes2)
-                        body_text2 = ""
-                        for part in full_msg2.walk():
+                    # Check email body for forwarded message pattern
+                    if not original_sender:
+                        body_text = ""
+                        for part in msg.walk():
                             ct = part.get_content_type()
                             if ct in ("text/plain", "text/html"):
                                 try:
                                     payload = part.get_payload(decode=True)
                                     if payload:
-                                        body_text2 += payload.decode("utf-8", errors="replace")
+                                        body_text += payload.decode("utf-8", errors="replace")
                                 except Exception:
                                     pass
-                        # Try "Subject: ..." line in forwarded block
-                        fwd_subj2 = re.search(r"Subject:\s*(.+?)(?:\r?\n|$)", body_text2)
-                        if fwd_subj2:
-                            subject = fwd_subj2.group(1).strip()[:200]
-                            print(f"[AutoPipeline-Sync]     Extracted subject from body: {subject}")
-                        # Fallback: use first attachment filename as subject hint
+
+                        fwd_from = re.search(r"(?:From|De|Von):\s*(?:.*?<)?([\w.+-]+@[\w.-]+)", body_text)
+                        if fwd_from:
+                            candidate = fwd_from.group(1).strip().lower()
+                            if candidate != INBOUND_EMAIL:
+                                original_sender = candidate
+                                print(f"[AutoPipeline-Sync]     Found original sender in body: {original_sender}")
+
                         if not subject:
-                            for part in full_msg2.walk():
-                                fn = part.get_filename()
-                                if fn:
-                                    subject = f"OM: {fn}"
-                                    print(f"[AutoPipeline-Sync]     Using attachment filename as subject: {subject}")
-                                    break
+                            fwd_subj = re.search(r"Subject:\s*(.+?)(?:\r?\n|$)", body_text)
+                            if fwd_subj:
+                                forwarded_subject = fwd_subj.group(1).strip()[:200]
+                                print(f"[AutoPipeline-Sync]     Extracted forwarded subject: {forwarded_subject}")
+                except Exception as fwd_err:
+                    print(f"[AutoPipeline-Sync]     Error extracting forwarded sender: {fwd_err}")
+
+            # ── If subject is empty, try to extract from body ──
+            if not subject and not forwarded_subject and sender_email != INBOUND_EMAIL:
+                print(f"[AutoPipeline-Sync]     Subject is empty — extracting from body...")
+                try:
+                    body_text2 = ""
+                    for part in msg.walk():
+                        ct = part.get_content_type()
+                        if ct in ("text/plain", "text/html"):
+                            try:
+                                payload = part.get_payload(decode=True)
+                                if payload:
+                                    body_text2 += payload.decode("utf-8", errors="replace")
+                            except Exception:
+                                pass
+                    fwd_subj2 = re.search(r"Subject:\s*(.+?)(?:\r?\n|$)", body_text2)
+                    if fwd_subj2:
+                        subject = fwd_subj2.group(1).strip()[:200]
+                        print(f"[AutoPipeline-Sync]     Extracted subject from body: {subject}")
+                    if not subject:
+                        for part in msg.walk():
+                            fn = part.get_filename()
+                            if fn:
+                                subject = f"OM: {fn}"
+                                print(f"[AutoPipeline-Sync]     Using attachment filename as subject: {subject}")
+                                break
                 except Exception as subj_err:
                     print(f"[AutoPipeline-Sync]     Error extracting subject from body: {subj_err}")
 
-            # Use original sender if found, otherwise keep header sender
             lookup_email = original_sender or sender_email
             if forwarded_subject and not subject:
                 subject = forwarded_subject
@@ -1275,13 +1262,9 @@ def _sync_inbox_core() -> dict:
             try:
                 matched_user_id = _match_sender_to_user(sb, lookup_email)
 
-                # If original sender didn't match but we have a forwarded email,
-                # try the header sender too
                 if not matched_user_id and original_sender and original_sender != sender_email:
                     matched_user_id = _match_sender_to_user(sb, sender_email)
 
-                # LAST RESORT: If sender is the inbound address and we still
-                # can't match, assign to the most recently active user
                 if not matched_user_id and sender_email == INBOUND_EMAIL:
                     print(f"[AutoPipeline-Sync]     Trying last-resort: assign to most recent active user...")
                     try:
@@ -1289,6 +1272,16 @@ def _sync_inbox_core() -> dict:
                         if recent_job.data:
                             matched_user_id = recent_job.data[0]["user_id"]
                             print(f"[AutoPipeline-Sync]     ✅ Assigned to most recent user: {matched_user_id}")
+                    except Exception:
+                        pass
+
+                if not matched_user_id:
+                    # Final fallback: assign to any profile
+                    try:
+                        any_user = sb.table("profiles").select("id").limit(1).execute()
+                        if any_user.data:
+                            matched_user_id = any_user.data[0]["id"]
+                            print(f"[AutoPipeline-Sync]     Fallback: assigned to first profile user {matched_user_id}")
                     except Exception:
                         pass
 
@@ -1306,8 +1299,38 @@ def _sync_inbox_core() -> dict:
                 print(f"[AutoPipeline-Sync]     SKIPPING — no user match for {sender_email}")
                 continue
 
-            # Create raw_email + job
-            print(f"[AutoPipeline-Sync]     Creating raw_email + job for user={matched_user_id}")
+            # ── Extract PDF/image attachments from the full message ──
+            attachments = []
+            for part in msg.walk():
+                content_disp = part.get("Content-Disposition", "")
+                ct = part.get_content_type()
+                if "attachment" in str(content_disp) or ct == "application/pdf":
+                    filename = part.get_filename() or "attachment.pdf"
+                    # Decode RFC-2047 filename if needed
+                    try:
+                        from email.header import decode_header as _dh
+                        decoded_parts = _dh(filename)
+                        decoded_name = ""
+                        for data, charset in decoded_parts:
+                            if isinstance(data, bytes):
+                                decoded_name += data.decode(charset or "utf-8", errors="replace")
+                            else:
+                                decoded_name += data
+                        filename = decoded_name
+                    except Exception:
+                        pass
+                    payload = part.get_payload(decode=True)
+                    if payload and len(payload) > 1000:  # skip tiny files
+                        ext = os.path.splitext(filename)[1].lower()
+                        if ext in (".pdf", ".png", ".jpg", ".jpeg", ".xlsx", ".xls"):
+                            attachments.append((filename, payload))
+                            print(f"[AutoPipeline-Sync]     📎 Found attachment: {filename} ({len(payload):,} bytes)")
+
+            has_pdf = any(fn.lower().endswith('.pdf') for fn, _ in attachments)
+            print(f"[AutoPipeline-Sync]     Attachments found: {len(attachments)} (has_pdf={has_pdf})")
+
+            # ── Create raw_email record ──
+            now = datetime.utcnow().isoformat()
             email_data = {
                 "user_id": matched_user_id,
                 "provider_message_id": dedup_key,
@@ -1315,7 +1338,7 @@ def _sync_inbox_core() -> dict:
                 "from_address": from_raw,
                 "subject": subject,
                 "snippet": "",
-                "received_at": received_at,
+                "received_at": received_at or now,
                 "raw_payload": {},
                 "processed": False,
             }
@@ -1323,28 +1346,104 @@ def _sync_inbox_core() -> dict:
             raw_email_id = (insert_result.data or [{}])[0].get("id")
             print(f"[AutoPipeline-Sync]     raw_email created: id={raw_email_id}")
 
-            try:
-                job_record = {
-                    "user_id": matched_user_id,
-                    "raw_email_id": raw_email_id,
-                    "from_address": from_raw,
-                    "to_address": None,
-                    "subject": subject,
-                    "thread_id": message_id_header,
-                    "provider_message_id": dedup_key,
-                    "attachments": [],
-                    "status": "pending",
-                }
-                job_insert = sb.table("email_underwrite_jobs").insert(job_record).execute()
-                job_id = (job_insert.data or [{}])[0].get("id")
-                if job_id:
-                    new_job_ids.append(job_id)
-                    print(f"[AutoPipeline-Sync]     ✅ Job created: id={job_id}")
-                else:
-                    print(f"[AutoPipeline-Sync]     ⚠️ Job insert returned no id")
-            except Exception as e:
-                log.warning("[AutoPipeline] Failed to create job: %s", e)
-                print(f"[AutoPipeline-Sync]     ❌ Failed to create job: {e}")
+            # ── If we have attachments, create deal + job + parse immediately ──
+            if attachments:
+                for att_filename, att_bytes in attachments:
+                    try:
+                        # Create job
+                        job_record = {
+                            "user_id": matched_user_id,
+                            "raw_email_id": raw_email_id,
+                            "from_address": from_raw,
+                            "to_address": to_raw,
+                            "subject": subject,
+                            "thread_id": message_id_header,
+                            "provider_message_id": dedup_key,
+                            "attachments": [{"filename": att_filename, "size": len(att_bytes)}],
+                            "status": "processing",
+                        }
+                        job_insert = sb.table("email_underwrite_jobs").insert(job_record).execute()
+                        job_id = (job_insert.data or [{}])[0].get("id")
+                        if not job_id:
+                            print(f"[AutoPipeline-Sync]     ⚠️ Failed to create job for {att_filename}")
+                            continue
+
+                        # Create deal stub
+                        deal_id = str(uuid.uuid4())
+                        deal_record = {
+                            "deal_id": deal_id,
+                            "user_id": matched_user_id,
+                            "address": subject or f"Email OM - {att_filename}",
+                            "units": None,
+                            "purchase_price": None,
+                            "deal_structure": "Email OM",
+                            "parsed_data": {"source": "email_auto", "status": "parsing", "email_from": from_raw, "email_subject": subject},
+                            "scenario_data": None,
+                            "market_cap_rate": None,
+                            "rentcast_data": None,
+                            "costseg_data": None,
+                            "images": [],
+                            "broker_name": None,
+                            "broker_phone": None,
+                            "broker_email": None,
+                            "notes": f"Auto-created from email. From: {from_raw}.",
+                            "latitude": None,
+                            "longitude": None,
+                            "pipeline_status": "pipeline",
+                            "created_at": now,
+                            "updated_at": now,
+                        }
+                        sb.table("deals").insert(deal_record).execute()
+                        sb.table("email_underwrite_jobs").update(
+                            {"deal_id": deal_id, "status": "processing", "updated_at": now}
+                        ).eq("id", job_id).execute()
+
+                        print(f"[AutoPipeline-Sync]     🚀 Created deal {deal_id}, job {job_id} — parsing {att_filename}...")
+
+                        # Parse with Claude Vision — immediately from bytes, NO second download
+                        result = _parse_attachment_from_bytes(
+                            file_bytes=att_bytes,
+                            filename=att_filename,
+                            job_id=job_id,
+                            deal_id=deal_id,
+                            user_id=matched_user_id,
+                            from_addr=from_raw,
+                            subject=subject,
+                        )
+                        if result.get("success"):
+                            parsed_count += 1
+                            print(f"[AutoPipeline-Sync]     ✅ Parsed & underwritten: {result.get('address', att_filename)}")
+                        else:
+                            print(f"[AutoPipeline-Sync]     ⚠️ Parse result: {result}")
+
+                        new_job_ids.append(job_id)
+
+                    except Exception as att_err:
+                        print(f"[AutoPipeline-Sync]     ❌ Error processing attachment {att_filename}: {att_err}")
+                        import traceback
+                        traceback.print_exc()
+            else:
+                # No attachment — create a job noting that
+                try:
+                    job_record = {
+                        "user_id": matched_user_id,
+                        "raw_email_id": raw_email_id,
+                        "from_address": from_raw,
+                        "to_address": to_raw,
+                        "subject": subject,
+                        "thread_id": message_id_header,
+                        "provider_message_id": dedup_key,
+                        "attachments": [],
+                        "status": "done",
+                        "error_message": "No PDF/image attachment found",
+                    }
+                    job_insert = sb.table("email_underwrite_jobs").insert(job_record).execute()
+                    job_id = (job_insert.data or [{}])[0].get("id")
+                    if job_id:
+                        new_job_ids.append(job_id)
+                        print(f"[AutoPipeline-Sync]     ✅ Job created (no attachment): id={job_id}")
+                except Exception as e:
+                    print(f"[AutoPipeline-Sync]     ❌ Failed to create job: {e}")
 
             synced += 1
 
@@ -1354,8 +1453,9 @@ def _sync_inbox_core() -> dict:
             "already_known": already_known,
             "skipped_no_user": skipped_no_user,
             "new_job_ids": new_job_ids,
+            "parsed": parsed_count,
         }
-        print(f"[AutoPipeline-Sync] ✅ Sync complete: synced={synced} already_known={already_known} skipped_no_user={skipped_no_user} new_jobs={len(new_job_ids)}")
+        print(f"[AutoPipeline-Sync] ✅ Sync complete: synced={synced} parsed={parsed_count} already_known={already_known} skipped_no_user={skipped_no_user}")
         return result
     except Exception as e:
         try:
@@ -1822,15 +1922,16 @@ def _run_auto_pipeline():
     except Exception as e:
         print(f"[AutoPipeline] Step 0 error: {e}")
 
-    # Step 1: Sync inbox
+    # Step 1: Sync inbox — now downloads full emails and parses PDFs inline
     sync_result = _sync_inbox_core()
     new_jobs = sync_result.get("new_job_ids", [])
-    print(f"[AutoPipeline] Sync done: synced={sync_result.get('synced', 0)} already_known={sync_result.get('already_known', 0)} skipped_no_user={sync_result.get('skipped_no_user', 0)} new_jobs={len(new_jobs)}")
+    parsed_inline = sync_result.get("parsed", 0)
+    print(f"[AutoPipeline] Sync done: synced={sync_result.get('synced', 0)} parsed_inline={parsed_inline} already_known={sync_result.get('already_known', 0)} skipped_no_user={sync_result.get('skipped_no_user', 0)}")
     if sync_result.get("error"):
         print(f"[AutoPipeline] Sync ERROR: {sync_result['error']}")
 
-    # Step 2: Pick up ALL pending jobs — both new (no deal_id) and reset ones (have deal_id)
-    # Skip jobs that have been auto-reset 3+ times (they keep failing)
+    # Step 2: Pick up leftover pending jobs (from auto-reset or legacy)
+    # New sync handles parsing inline, so these are only retries/legacy
     try:
         sb = get_supabase()
         all_pending = sb.table("email_underwrite_jobs").select("id, deal_id, error_message").eq("status", "pending").limit(20).execute()
@@ -1838,13 +1939,10 @@ def _run_auto_pipeline():
         pending_with_deal = []
         for row in (all_pending.data or []):
             jid = row["id"]
-            if jid in new_jobs:
-                continue  # Already queued from sync
             # Skip jobs that have exceeded retry limit
             err_msg = row.get("error_message") or ""
             if err_msg.count("Auto-reset") >= 3:
                 print(f"[AutoPipeline] Skipping job {jid} — exceeded retry limit ({err_msg[:80]})")
-                # Mark as permanent error
                 try:
                     sb.table("email_underwrite_jobs").update({
                         "status": "error",
@@ -1858,9 +1956,9 @@ def _run_auto_pipeline():
                 pending_with_deal.append(jid)
             else:
                 pending_no_deal.append(jid)
-                new_jobs.append(jid)
         print(f"[AutoPipeline] Leftover pending jobs: {len(pending_no_deal)} new (no deal), {len(pending_with_deal)} with existing deals")
     except Exception as e:
+        pending_no_deal = []
         pending_with_deal = []
         print(f"[AutoPipeline] Failed to query pending jobs: {e}")
 
@@ -1896,16 +1994,16 @@ def _run_auto_pipeline():
     except Exception as e:
         print(f"[AutoPipeline] Failed to check done-but-unparsed jobs: {e}")
 
-    if not new_jobs and not reprocess_jobs:
-        print("[AutoPipeline] No new jobs to process.")
+    if not pending_no_deal and not reprocess_jobs:
+        print("[AutoPipeline] No leftover jobs to process.")
         return
 
-    print(f"[AutoPipeline] Processing {len(new_jobs)} new jobs + {len(reprocess_jobs)} reprocess jobs")
+    print(f"[AutoPipeline] Processing {len(pending_no_deal)} leftover pending + {len(reprocess_jobs)} reprocess jobs")
 
-    # Step 3: Process each NEW job (create deal + download + parse)
-    for job_id in new_jobs:
+    # Step 3: Process leftover pending jobs (legacy/retry — need second IMAP download)
+    for job_id in pending_no_deal:
         try:
-            print(f"[AutoPipeline] Processing NEW job {job_id}...")
+            print(f"[AutoPipeline] Processing leftover pending job {job_id}...")
             result = _process_and_parse_job(job_id)
             print(f"[AutoPipeline] Job {job_id} result: {result}")
         except Exception as e:
