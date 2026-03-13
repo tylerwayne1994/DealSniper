@@ -929,7 +929,8 @@ async def disconnect_gmail(request: Request):
 # System-level Inbound Inbox via IMAP + App Password
 # ============================================================================
 
-INBOUND_EMAIL = os.getenv("INBOUND_GMAIL_ADDRESS", "dealsniperinbound@gmail.com")
+# Gmail address used only for IMAP transport (Cloudflare routes deals@dealsniper.org here)
+INBOUND_GMAIL = os.getenv("INBOUND_GMAIL_ADDRESS", "dealsniperinbound@gmail.com")
 INBOUND_APP_PASSWORD = os.getenv("INBOUND_GMAIL_APP_PASSWORD", "")
 
 

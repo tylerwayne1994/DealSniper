@@ -85,6 +85,8 @@ const ResultsPageV2 = ({
   const [autoSaveStatus, setAutoSaveStatus] = useState(null); // null | 'saving' | 'saved' | 'error'
   const autoSaveTimerRef = useRef(null);
   const scenarioSnapshotRef = useRef(null);
+  const marketDataFetchedRef = useRef(false);
+  const aiAnalysisStartedRef = useRef(false);
 
   // Check if deal is already in pipeline on mount
   useEffect(() => {
@@ -182,11 +184,12 @@ const ResultsPageV2 = ({
     }
   }, [scenarioData]);
   
-  // Automatically trigger AI underwriting AND market analysis when results page loads
+  // Automatically trigger AI underwriting when results page loads (run once)
   useEffect(() => {
+    if (!dealId || !scenarioData || underwritingResult || aiAnalysisStartedRef.current) return;
+    aiAnalysisStartedRef.current = true;
+    
     const runAIAnalysis = async () => {
-      if (!dealId || !scenarioData || underwritingResult || isRunningAI) return;
-      
       setIsRunningAI(true);
       try {
         const API_BASE = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
@@ -206,18 +209,22 @@ const ResultsPageV2 = ({
         }
       } catch (error) {
         console.error('Auto AI underwriting error:', error);
-        // Silently fail - user can still see the deal data
       } finally {
         setIsRunningAI(false);
       }
     };
     
-    // Run both in parallel
     runAIAnalysis();
-    if (!marketData) {
-      fetchMarketData();
-    }
-  }, [dealId, scenarioData, marketData, underwritingResult, isRunningAI, fetchMarketData]); // Only run when dependencies change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dealId]);
+
+  // Automatically fetch market data once when results page loads
+  useEffect(() => {
+    if (!scenarioData || marketData || marketDataFetchedRef.current) return;
+    marketDataFetchedRef.current = true;
+    fetchMarketData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scenarioData]);
   
   // AI-recommended deal structure (from DealStructureTab)
   const [recommendedStructure, setRecommendedStructure] = useState(null);

@@ -32,7 +32,14 @@ from email_deals import get_supabase, get_imap_connection  # IMAP-based helpers
 
 log = logging.getLogger("email_underwrite")
 
-INBOUND_EMAIL = os.getenv("INBOUND_GMAIL_ADDRESS", "dealsniperinbound@gmail.com").strip().lower()
+# Public-facing inbound address (what users see / forward to)
+INBOUND_EMAIL = "deals@dealsniper.org"
+
+# Gmail address used only for IMAP transport (Cloudflare routes deals@dealsniper.org here)
+INBOUND_GMAIL = os.getenv("INBOUND_GMAIL_ADDRESS", "dealsniperinbound@gmail.com").strip().lower()
+
+# Set of ALL addresses that count as "us" — used for forwarded-email detection
+INBOUND_ADDRESSES = {INBOUND_EMAIL, INBOUND_GMAIL}
 
 # SendGrid Inbound Parse webhook domain
 INBOUND_DOMAIN = os.getenv("INBOUND_EMAIL_DOMAIN", "dealsniper.org")
@@ -1101,8 +1108,8 @@ def _sync_inbox_core() -> dict:
     print("[AutoPipeline-Sync] Starting _sync_inbox_core()...")
     mail = get_imap_connection()
     if not mail:
-        print("[AutoPipeline-Sync] ❌ IMAP connection returned None — INBOUND_GMAIL_ADDRESS or INBOUND_GMAIL_APP_PASSWORD not set!")
-        print(f"[AutoPipeline-Sync]   INBOUND_GMAIL_ADDRESS={os.getenv('INBOUND_GMAIL_ADDRESS', '(not set)')!r}")
+        print("[AutoPipeline-Sync] ❌ IMAP connection returned None — Gmail IMAP transport not configured!")
+        print(f"[AutoPipeline-Sync]   IMAP transport configured: {bool(os.getenv('INBOUND_GMAIL_ADDRESS'))}")
         print(f"[AutoPipeline-Sync]   INBOUND_GMAIL_APP_PASSWORD set: {bool(os.getenv('INBOUND_GMAIL_APP_PASSWORD'))}")
         return {"error": "IMAP not configured — check INBOUND_GMAIL_ADDRESS and INBOUND_GMAIL_APP_PASSWORD env vars", "synced": 0}
 
@@ -1179,8 +1186,8 @@ def _sync_inbox_core() -> dict:
             # to the inbound address. We need to find the ORIGINAL sender.
             original_sender = None
             forwarded_subject = None
-            if sender_email == INBOUND_EMAIL:
-                print(f"[AutoPipeline-Sync]     Sender is inbound address — checking for forwarded sender...")
+            if sender_email in INBOUND_ADDRESSES:
+                print(f"[AutoPipeline-Sync]     Sender is inbound address ({sender_email}) — checking for forwarded sender...")
                 try:
                     # Download full message to inspect body/headers
                     _imap_select(mail, folder)
@@ -1196,7 +1203,7 @@ def _sync_inbox_core() -> dict:
                                 hm = re.search(r"[\w.+-]+@[\w.-]+", hdr_val)
                                 if hm:
                                     candidate = hm.group(0).strip().lower()
-                                    if candidate != INBOUND_EMAIL:
+                                    if candidate not in INBOUND_ADDRESSES:
                                         original_sender = candidate
                                         print(f"[AutoPipeline-Sync]     Found original sender via {hdr}: {original_sender}")
                                         break
@@ -1218,7 +1225,7 @@ def _sync_inbox_core() -> dict:
                             fwd_from = re.search(r"(?:From|De|Von):\s*(?:.*?<)?([\w.+-]+@[\w.-]+)", body_text)
                             if fwd_from:
                                 candidate = fwd_from.group(1).strip().lower()
-                                if candidate != INBOUND_EMAIL:
+                                if candidate not in INBOUND_ADDRESSES:
                                     original_sender = candidate
                                     print(f"[AutoPipeline-Sync]     Found original sender in body: {original_sender}")
 
@@ -1230,6 +1237,42 @@ def _sync_inbox_core() -> dict:
                                     print(f"[AutoPipeline-Sync]     Extracted forwarded subject: {forwarded_subject}")
                 except Exception as fwd_err:
                     print(f"[AutoPipeline-Sync]     Error extracting forwarded sender: {fwd_err}")
+
+            # ── If subject is STILL empty (e.g. Cloudflare Email Routing strips it),
+            #    download full body and try to extract subject from forwarded block ──
+            if not subject and not forwarded_subject and sender_email not in INBOUND_ADDRESSES:
+                print(f"[AutoPipeline-Sync]     Subject is empty — downloading body to extract forwarded subject...")
+                try:
+                    _imap_select(mail, folder)
+                    st_full2, full_data2 = mail.uid("fetch", uid_bytes, "(RFC822)")
+                    if st_full2 == "OK" and full_data2 and full_data2[0]:
+                        full_bytes2 = full_data2[0][1] if isinstance(full_data2[0], tuple) else full_data2[0]
+                        full_msg2 = email_mod.message_from_bytes(full_bytes2)
+                        body_text2 = ""
+                        for part in full_msg2.walk():
+                            ct = part.get_content_type()
+                            if ct in ("text/plain", "text/html"):
+                                try:
+                                    payload = part.get_payload(decode=True)
+                                    if payload:
+                                        body_text2 += payload.decode("utf-8", errors="replace")
+                                except Exception:
+                                    pass
+                        # Try "Subject: ..." line in forwarded block
+                        fwd_subj2 = re.search(r"Subject:\s*(.+?)(?:\r?\n|$)", body_text2)
+                        if fwd_subj2:
+                            subject = fwd_subj2.group(1).strip()[:200]
+                            print(f"[AutoPipeline-Sync]     Extracted subject from body: {subject}")
+                        # Fallback: use first attachment filename as subject hint
+                        if not subject:
+                            for part in full_msg2.walk():
+                                fn = part.get_filename()
+                                if fn:
+                                    subject = f"OM: {fn}"
+                                    print(f"[AutoPipeline-Sync]     Using attachment filename as subject: {subject}")
+                                    break
+                except Exception as subj_err:
+                    print(f"[AutoPipeline-Sync]     Error extracting subject from body: {subj_err}")
 
             # Use original sender if found, otherwise keep header sender
             lookup_email = original_sender or sender_email
@@ -1249,7 +1292,7 @@ def _sync_inbox_core() -> dict:
 
                 # LAST RESORT: If sender is the inbound address and we still
                 # can't match, assign to the most recently active user
-                if not matched_user_id and sender_email == INBOUND_EMAIL:
+                if not matched_user_id and sender_email in INBOUND_ADDRESSES:
                     print(f"[AutoPipeline-Sync]     Trying last-resort: assign to most recent active user...")
                     try:
                         recent_job = sb.table("email_underwrite_jobs").select("user_id").order("created_at", desc=True).limit(1).execute()
@@ -1900,7 +1943,8 @@ def _auto_pipeline_loop():
     log.info("[AutoPipeline] Background worker started (interval=%ds)", _AUTO_PIPELINE_INTERVAL)
     print("=" * 80)
     print(f"[AutoPipeline] ═══ Background worker STARTED (interval={_AUTO_PIPELINE_INTERVAL}s) ═══")
-    print(f"[AutoPipeline] INBOUND_GMAIL_ADDRESS={os.getenv('INBOUND_GMAIL_ADDRESS', '(not set)')!r}")
+    print(f"[AutoPipeline] Inbound email: {INBOUND_EMAIL}")
+    print(f"[AutoPipeline] IMAP transport configured: {bool(os.getenv('INBOUND_GMAIL_ADDRESS'))}")
     print(f"[AutoPipeline] INBOUND_GMAIL_APP_PASSWORD set: {bool(os.getenv('INBOUND_GMAIL_APP_PASSWORD'))}")
     print("=" * 80)
 
@@ -1973,8 +2017,9 @@ def _run_debug_pipeline_bg():
 
         addr = os.getenv("INBOUND_GMAIL_ADDRESS")
         pwd = os.getenv("INBOUND_GMAIL_APP_PASSWORD")
-        dbg(f"INBOUND_GMAIL_ADDRESS set: {bool(addr)} (value: {addr!r})")
-        dbg(f"INBOUND_GMAIL_APP_PASSWORD set: {bool(pwd)} (length: {len(pwd) if pwd else 0})")
+        dbg(f"Inbound email: {INBOUND_EMAIL}")
+        dbg(f"IMAP transport (Gmail) configured: {bool(addr)}")
+        dbg(f"IMAP password set: {bool(pwd)} (length: {len(pwd) if pwd else 0})")
 
         if not addr or not pwd:
             dbg("IMAP credentials missing — pipeline CANNOT work!")
