@@ -161,7 +161,7 @@ export default function CashFlowTab({ scenarioData, fullCalcs }) {
               <td style={{ padding: '8px', paddingLeft: 24 }}>Utilities</td>
               <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>$0</td>
               {expenseProjections.map((exp, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(exp.utilities || 0)}</td>
+                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency((exp.waterSewer || 0) + (exp.electric || 0) + (exp.gas || 0) + (exp.trashRemoval || 0))}</td>
               ))}
             </tr>
             <tr style={{ background: '#f9fafb' }}>
@@ -175,14 +175,14 @@ export default function CashFlowTab({ scenarioData, fullCalcs }) {
               <td style={{ padding: '8px', paddingLeft: 24 }}>Management Fee</td>
               <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>$0</td>
               {expenseProjections.map((exp, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(exp.propertyManagement || 0)}</td>
+                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(exp.managementFee || 0)}</td>
               ))}
             </tr>
             <tr style={{ background: '#f9fafb' }}>
               <td style={{ padding: '8px', paddingLeft: 24 }}>Other</td>
               <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>$0</td>
               {expenseProjections.map((exp, i) => {
-                const other = (exp.totalExpenses || 0) - (exp.realEstateTaxes || 0) - (exp.propertyInsurance || 0) - (exp.utilities || 0) - (exp.repairsMaintenance || 0) - (exp.propertyManagement || 0);
+                const other = (exp.totalExpenses || 0) - (exp.realEstateTaxes || 0) - (exp.propertyInsurance || 0) - ((exp.waterSewer || 0) + (exp.electric || 0) + (exp.gas || 0) + (exp.trashRemoval || 0)) - (exp.repairsMaintenance || 0) - (exp.managementFee || 0);
                 return (
                   <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(Math.max(0, other))}</td>
                 );

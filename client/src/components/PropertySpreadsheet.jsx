@@ -175,7 +175,7 @@ const PropertySpreadsheet = ({ initialData }) => {
               <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb' }}>$0</td>
               {expenseProjections.map((exp, i) => (
                 <td key={i} style={{ padding: '8px', textAlign: 'right', borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
-                  {calc.formatCurrency(exp.utilities || 0)}
+                  {calc.formatCurrency((exp.waterSewer || 0) + (exp.electric || 0) + (exp.gas || 0) + (exp.trashRemoval || 0))}
                 </td>
               ))}
             </tr>
@@ -193,7 +193,7 @@ const PropertySpreadsheet = ({ initialData }) => {
               <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb' }}>$0</td>
               {expenseProjections.map((exp, i) => (
                 <td key={i} style={{ padding: '8px', textAlign: 'right', borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
-                  {calc.formatCurrency(exp.propertyManagement || 0)}
+                  {calc.formatCurrency(exp.managementFee || 0)}
                 </td>
               ))}
             </tr>
@@ -201,7 +201,7 @@ const PropertySpreadsheet = ({ initialData }) => {
               <td style={{ padding: '8px', paddingLeft: '24px', borderRight: '1px solid #e5e7eb', position: 'sticky', left: 0, backgroundColor: '#f9fafb', zIndex: 5 }}>Other</td>
               <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb' }}>$0</td>
               {expenseProjections.map((exp, i) => {
-                const other = (exp.totalExpenses || 0) - (exp.realEstateTaxes || 0) - (exp.propertyInsurance || 0) - (exp.utilities || 0) - (exp.repairsMaintenance || 0) - (exp.propertyManagement || 0);
+                const other = (exp.totalExpenses || 0) - (exp.realEstateTaxes || 0) - (exp.propertyInsurance || 0) - ((exp.waterSewer || 0) + (exp.electric || 0) + (exp.gas || 0) + (exp.trashRemoval || 0)) - (exp.repairsMaintenance || 0) - (exp.managementFee || 0);
                 return (
                   <td key={i} style={{ padding: '8px', textAlign: 'right', borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
                     {calc.formatCurrency(Math.max(0, other))}
@@ -214,7 +214,7 @@ const PropertySpreadsheet = ({ initialData }) => {
               <td style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderRight: '1px solid #dc2626' }}>$0</td>
               {expenseProjections.map((exp, i) => (
                 <td key={i} style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderRight: i < 9 ? '1px solid #dc2626' : 'none' }}>
-                  {calc.formatCurrency(exp.totalOperatingExpenses)}
+                  {calc.formatCurrency(exp.totalExpenses)}
                 </td>
               ))}
             </tr>
