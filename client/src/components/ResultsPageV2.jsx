@@ -39,6 +39,8 @@ import CompressedTab from './results-tabs/CompressedTab';
 import UnderwritingTablePage from '../pages/UnderwritingTablePage';
 import { saveDeal, updateDeal, loadDeal } from '../lib/dealsService';
 import ScenarioSheet from './ScenarioSheet';
+import { supabase } from '../lib/supabase';
+import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 
 const ResultsPageV2 = ({ 
   dealId,
@@ -3088,9 +3090,48 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
         const handleRentcastFetch = async () => {
           setRentcastLoading(true);
           try {
-            const response = await fetch(`https://dealsniper-oh9v.onrender.com/v2/deals/${dealId}/rentcast`, {
+            // Get profile ID for token deduction
+            let profileId = null;
+            try {
+              const userRes = await supabase.auth.getUser();
+              profileId = userRes?.data?.user?.id;
+            } catch {}
+
+            // Check token balance first
+            if (profileId) {
+              try {
+                const tokenCheck = await fetch(`${API_BASE_URL}/api/tokens/check`, {
+                  method: 'POST',
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Profile-ID': profileId
+                  },
+                  body: JSON.stringify({ operation_type: 'rentcast_fetch' })
+                });
+                const tokenData = await tokenCheck.json();
+                if (!tokenData.has_tokens) {
+                  alert(`Insufficient tokens. You need ${tokenData.tokens_required} token(s) but have ${tokenData.token_balance}. Check your Dashboard Profile to upgrade.`);
+                  setRentcastLoading(false);
+                  return;
+                }
+                const userConfirmed = window.confirm(
+                  `Fetch RentCast market data?\n\nCost: ${tokenData.tokens_required} token\nYour balance: ${tokenData.token_balance} tokens\n\nContinue?`
+                );
+                if (!userConfirmed) {
+                  setRentcastLoading(false);
+                  return;
+                }
+              } catch (err) {
+                console.warn('Token check failed for rentcast:', err);
+              }
+            }
+
+            const response = await fetch(`${API_BASE_URL}/v2/deals/${dealId}/rentcast`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' }
+              headers: { 
+                'Content-Type': 'application/json',
+                ...(profileId ? { 'X-Profile-ID': profileId } : {})
+              }
             });
             const data = await response.json();
             console.log('RentCast response:', data);

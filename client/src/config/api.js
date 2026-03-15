@@ -19,6 +19,7 @@ export const API_ENDPOINTS = {
   // Tokens
   tokensCheck: `${API_BASE_URL}/api/tokens/check`,
   tokensBalance: `${API_BASE_URL}/api/tokens/balance`,
+  tokensUse: `${API_BASE_URL}/api/tokens/use`,
   createTokenCheckout: `${API_BASE_URL}/api/create-token-checkout`,
   creditTokens: `${API_BASE_URL}/api/credit-tokens`,
   

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../config/api';
 
 const styles = {
   container: {
@@ -232,7 +233,7 @@ function DealDetailPage() {
   const handleGeneratePitchDeck = async () => {
     // Check token balance first
     try {
-      const tokenCheck = await fetch('http://localhost:8010/api/tokens/check', {
+      const tokenCheck = await fetch(`${API_BASE_URL}/api/tokens/check`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ operation_type: 'pitch_deck_generation' })

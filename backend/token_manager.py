@@ -24,7 +24,9 @@ SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 TOKEN_COSTS = {
     "loi_generation": 1,
     "contract_generation": 1,
-    "pitch_deck_generation": 1,
+    "pitch_deck_generation": 2,
+    "document_analysis": 2,
+    "rentcast_fetch": 1,
     "market_research_results": 1,
     "market_research_dashboard": 1,
     "deal_structure_analysis": 1,

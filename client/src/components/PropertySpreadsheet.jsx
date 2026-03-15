@@ -235,19 +235,22 @@ const PropertySpreadsheet = ({ initialData }) => {
               <td style={{ padding: '8px', textAlign: 'right', borderRight: '1px solid #e5e7eb' }}>$0</td>
               {cashFlowProjections.map((cf, i) => (
                 <td key={i} style={{ padding: '8px', textAlign: 'right', borderRight: i < 9 ? '1px solid #e5e7eb' : 'none' }}>
-                  {calc.formatCurrency(cf.totalDebtService).replace('$', '')}
+                  {cf.totalDebtService ? `-${calc.formatCurrency(cf.totalDebtService).replace('$', '')}` : calc.formatCurrency(0).replace('$', '')}
                 </td>
               ))}
             </tr>
 
-            <tr style={{ backgroundColor: '#dbeafe', borderTop: '2px solid #2563eb', borderBottom: '2px solid #2563eb' }}>
-              <td style={{ padding: '10px 8px', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #2563eb', position: 'sticky', left: 0, backgroundColor: '#dbeafe', zIndex: 5 }}>CASH FLOW AFTER FINANCING</td>
-              <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #2563eb' }}>$0</td>
-              {cashFlowProjections.map((cf, i) => (
-                <td key={i} style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: i < 9 ? '2px solid #2563eb' : 'none' }}>
-                  {cf.dscr != null ? `${cf.dscr.toFixed(2)}x` : '-'}
+            <tr style={{ backgroundColor: '#fce4ec', borderTop: '2px solid #e53935', borderBottom: '2px solid #e53935' }}>
+              <td style={{ padding: '10px 8px', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #e53935', position: 'sticky', left: 0, backgroundColor: '#fce4ec', zIndex: 5 }}>CASH FLOW AFTER FINANCING</td>
+              <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', borderRight: '2px solid #e53935' }}>$0</td>
+              {cashFlowProjections.map((cf, i) => {
+                const cashFlow = cf.beforeTaxCashFlow != null ? cf.beforeTaxCashFlow : (cf.noi != null && cf.totalDebtService != null ? cf.noi - cf.totalDebtService : null);
+                return (
+                <td key={i} style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: '12px', color: cashFlow != null && cashFlow < 0 ? '#e53935' : '#1b5e20', borderRight: i < 9 ? '2px solid #e53935' : 'none' }}>
+                  {cashFlow != null ? calc.formatCurrency(cashFlow) : '-'}
                 </td>
-              ))}
+                );
+              })}
             </tr>
 
             <tr style={{ backgroundColor: '#fef9c3' }}>

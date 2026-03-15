@@ -2535,9 +2535,53 @@ async def get_rentcast_data(deal_id: str, request: Request):
     Fetch market rent data from RentCast API for the deal's address.
     User must explicitly request this - not automatic.
     Accepts address/city/state/zip in POST body as primary source.
+    REQUIRES 1 TOKEN (rentcast_fetch).
     """
     import httpx
-    
+
+    # ----- Token check -----
+    profile_id = None
+    profile = None
+    get_token_supabase = None
+    try:
+        import sys
+        import os as _os
+        sys.path.insert(0, _os.path.dirname(_os.path.dirname(__file__)))
+        from token_manager import (
+            get_current_profile_id,
+            get_profile,
+            reset_tokens_if_needed,
+            TOKEN_COSTS,
+            get_supabase as get_token_supabase,
+        )
+
+        profile_id = get_current_profile_id(request)
+        profile = get_profile(profile_id)
+        profile = reset_tokens_if_needed(profile)
+
+        tokens_required = TOKEN_COSTS.get("rentcast_fetch", 1)
+
+        if profile["token_balance"] < tokens_required:
+            raise HTTPException(
+                status_code=402,
+                detail=(
+                    f"Insufficient tokens. You need {tokens_required} token(s) "
+                    f"but have {profile['token_balance']}. Upgrade your plan to continue."
+                ),
+            )
+    except HTTPException as he:
+        if he.status_code == 402:
+            raise
+        log.warning(f"Token check failed (rentcast): {he.detail}. Allowing for backward compat.")
+        profile_id = None
+        profile = None
+        get_token_supabase = None
+    except Exception as e:
+        log.warning(f"Token check error (rentcast): {e}. Allowing for backward compat.")
+        profile_id = None
+        profile = None
+        get_token_supabase = None
+
     RENTCAST_API_KEY = "a4a69093ad93468e8ffc6aa804dff4ce"
     
     log.info(f"[V2] RentCast request for deal: {deal_id}")
@@ -2670,6 +2714,25 @@ async def get_rentcast_data(deal_id: str, request: Request):
                     log.warning(f"[V2] Could not fetch comparables: {comp_err}")
                     rent_data["comparables"] = []
                 
+                # ----- Deduct token on success -----
+                if profile_id and profile and get_token_supabase:
+                    try:
+                        token_supabase = get_token_supabase()
+                        tokens_required = TOKEN_COSTS.get("rentcast_fetch", 1)
+                        new_balance = max(0, profile["token_balance"] - tokens_required)
+                        token_supabase.table("profiles").update({"token_balance": new_balance}).eq("id", profile_id).execute()
+                        token_supabase.table("token_usage").insert({
+                            "profile_id": profile_id,
+                            "operation_type": "rentcast_fetch",
+                            "tokens_used": tokens_required,
+                            "deal_id": deal_id,
+                            "deal_name": address,
+                            "location": f"{city}, {state} {zipcode}".strip(", "),
+                        }).execute()
+                        log.info(f"[V2] Deducted {tokens_required} token for rentcast, new balance: {new_balance}")
+                    except Exception as e:
+                        log.error(f"[V2] Failed to deduct token for rentcast: {e}")
+
                 return JSONResponse({
                     "success": True,
                     "data": rent_data,
@@ -4345,7 +4408,7 @@ STABILIZATION & EXIT:
         if profile_id and profile and get_token_supabase:
             try:
                 token_supabase = get_token_supabase()
-                tokens_required = 1
+                tokens_required = TOKEN_COSTS.get("pitch_deck_generation", 2)
                 new_balance = max(0, profile["token_balance"] - tokens_required)
                 token_supabase.table("profiles").update({"token_balance": new_balance}).eq("id", profile_id).execute()
                 token_supabase.table("token_usage").insert({

@@ -20,6 +20,8 @@ import {
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { loadDeal } from '../lib/dealsService';
+import { API_BASE_URL } from '../config/api';
+import { supabase } from '../lib/supabase';
 
 // ============================================================================
 // Signature Modal Component (DocuSign-style)
@@ -286,6 +288,18 @@ function LOIPage() {
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
+  const [profileId, setProfileId] = useState(null);
+  
+  // Load auth user id for token deduction
+  useEffect(() => {
+    (async () => {
+      try {
+        const userRes = await supabase.auth.getUser();
+        const uid = userRes?.data?.user?.id;
+        if (uid) setProfileId(uid);
+      } catch {}
+    })();
+  }, []);
   
   // Signature state
   const [showSignatureModal, setShowSignatureModal] = useState(false);
@@ -392,9 +406,12 @@ function LOIPage() {
     
     // Check token balance first
     try {
-      const tokenCheck = await fetch('http://localhost:8010/api/tokens/check', {
+      const tokenCheck = await fetch(`${API_BASE_URL}/api/tokens/check`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(profileId ? { 'X-Profile-ID': profileId } : {})
+        },
         body: JSON.stringify({ operation_type: 'loi_generation' })
       });
       
@@ -433,9 +450,12 @@ function LOIPage() {
     setSignedDate(null);
     
     try {
-      const response = await fetch('http://localhost:8010/v2/generate-loi', {
+      const response = await fetch(`${API_BASE_URL}/v2/generate-loi`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(profileId ? { 'X-Profile-ID': profileId } : {})
+        },
         body: JSON.stringify({
           deal: {
             address: deal.address,

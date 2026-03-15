@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Sparkles, Download, Users, Building2, ChevronLeft, ChevronRight, Maximize2, Minimize2, Layers, Edit3, Eye, Code, Undo2, Redo2, Trash2, Copy, ArrowUp, ArrowDown, Check, X } from 'lucide-react';
 import DashboardShell from '../components/DashboardShell';
 import { loadDeal } from '../lib/dealsService';
+import { supabase } from '../lib/supabase';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -168,6 +169,18 @@ function PitchDeckPage() {
   const [pitchDeckSignature, setPitchDeckSignature] = useState(null);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [generationStage, setGenerationStage] = useState('');   // NEW — progress label
+  const [profileId, setProfileId] = useState(null);
+
+  // Load auth user id for token deduction
+  useEffect(() => {
+    (async () => {
+      try {
+        const userRes = await supabase.auth.getUser();
+        const uid = userRes?.data?.user?.id;
+        if (uid) setProfileId(uid);
+      } catch {}
+    })();
+  }, []);
   const [showSourceData, setShowSourceData] = useState(false);
   const [showThumbnails, setShowThumbnails] = useState(true);   // NEW — thumbnail strip
   const slideContainerRef = useRef(null);                       // NEW — for PDF capture
@@ -570,7 +583,10 @@ function PitchDeckPage() {
       console.log('[PitchDeck] Calling API:', `${API_BASE}/v2/deals/${selectedDeal.dealId}/pitch-deck`);
       const response = await fetch(`${API_BASE}/v2/deals/${selectedDeal.dealId}/pitch-deck`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(profileId ? { 'X-Profile-ID': profileId } : {})
+        },
         body: JSON.stringify(requestBody),
       });
 
