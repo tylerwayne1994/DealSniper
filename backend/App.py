@@ -317,13 +317,18 @@ except Exception as e:
 
 # ── Treasury Bond Rates endpoint (FRED API) ──
 try:
-    from fred_api import fetch_treasury_rates
+    from fred_api import fetch_treasury_rates, fetch_fred_macro_data
     log.info("[FRED] Treasury rates endpoint ready")
 
     @app.get("/api/treasury-rates")
     async def treasury_rates_route():
         """Fetch current Treasury bond yields for 2, 3, 5, 7, 10 year terms."""
         return fetch_treasury_rates()
+
+    @app.get("/api/fred-macro")
+    async def fred_macro_route():
+        """Fetch FRED macro environment indicators (mortgage rates, fed funds, GDP, etc.)."""
+        return fetch_fred_macro_data()
 except Exception as e:
     log.warning(f"[FRED] Treasury rates endpoint unavailable: {e}")
 

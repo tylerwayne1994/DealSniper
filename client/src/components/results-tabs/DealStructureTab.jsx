@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import {
   DollarSign, Calculator,
   Wallet, Plus, X, Trash2,
-  BarChart3, Edit3
+  BarChart3, Edit3, TrendingUp, Globe
 } from 'lucide-react';
 
 const calcMonthlyPayment = (principal, annualRate, amortMonths) => {
@@ -178,6 +178,48 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
   const netProceeds=exitVal-exitCosts-(structure?.totalLoanAmt||0);
 
   /* Investment criteria moved to Templates page */
+
+  // ═══ FRED Treasury Rates & Macro Data ═══
+  const [treasuryRates, setTreasuryRates] = useState([]);
+  const [treasuryAsOf, setTreasuryAsOf] = useState(null);
+  const [treasuryLoading, setTreasuryLoading] = useState(false);
+  const [macroData, setMacroData] = useState({});
+  const [spread, setSpread] = useState(financing.spread ?? 1.5);
+
+  useEffect(() => {
+    (async () => {
+      setTreasuryLoading(true);
+      try {
+        const apiBase = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
+        const resp = await fetch(`${apiBase}/api/treasury-rates`);
+        if (resp.ok) {
+          const data = await resp.json();
+          setTreasuryRates(data.rates || []);
+          setTreasuryAsOf(data.as_of || null);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch treasury rates:', err);
+      } finally {
+        setTreasuryLoading(false);
+      }
+    })();
+  }, []);
+
+  // Fetch FRED macro indicators
+  useEffect(() => {
+    (async () => {
+      try {
+        const apiBase = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
+        const resp = await fetch(`${apiBase}/api/fred-macro`);
+        if (resp.ok) {
+          const data = await resp.json();
+          setMacroData(data.macro_environment || data || {});
+        }
+      } catch (err) {
+        console.warn('Failed to fetch FRED macro data:', err);
+      }
+    })();
+  }, []);
 
   useEffect(()=>{
     if(!structure)return;
@@ -464,6 +506,150 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
          * - State setter: setExitF(field, value)
          * - Computed values: exitCap, exitVal, exitCosts, netProceeds
          */}
+
+        {/* ═══ TREASURY RATE REFERENCE ═══ */}
+        <div style={SC}>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:20}}>
+            <TrendingUp size={20} color="#6366f1"/>
+            <div>
+              <h3 style={{margin:0,fontSize:16,fontWeight:700,color:VL,textTransform:'uppercase',letterSpacing:'0.04em'}}>Loan Interest Rate Options</h3>
+              <p style={{margin:0,fontSize:12,color:LB,marginTop:2}}>Live Treasury yields from the Federal Reserve (FRED) — select a term to set your rate</p>
+            </div>
+          </div>
+
+          {treasuryLoading ? (
+            <div style={{padding:20,textAlign:'center',color:'#9ca3af',fontSize:13}}>Loading Treasury rates...</div>
+          ) : treasuryRates.length > 0 ? (
+            <>
+              <div style={{overflowX:'auto'}}>
+                <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
+                  <thead>
+                    <tr style={{borderBottom:`2px solid ${B}`}}>
+                      <th style={{width:40,padding:'10px 8px'}}/>
+                      <th style={{padding:'10px 12px',textAlign:'center',fontWeight:700,color:'#374151',fontSize:12,textTransform:'uppercase'}}>Term (Years)</th>
+                      <th style={{padding:'10px 12px',textAlign:'center',fontWeight:700,color:'#374151',fontSize:12,textTransform:'uppercase'}}>Treasury Bond</th>
+                      <th style={{padding:'10px 4px',textAlign:'center',color:'#9ca3af',fontSize:14,fontWeight:600}}>+</th>
+                      <th style={{padding:'10px 12px',textAlign:'center',fontWeight:700,color:'#374151',fontSize:12,textTransform:'uppercase'}}>Spread</th>
+                      <th style={{padding:'10px 4px',textAlign:'center',color:'#9ca3af',fontSize:14,fontWeight:600}}>=</th>
+                      <th style={{padding:'10px 12px',textAlign:'center',fontWeight:700,color:'#374151',fontSize:12,textTransform:'uppercase'}}>Total Rate</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {treasuryRates.map(tr => {
+                      const seniorLoan = loans.find(l => l.type === 'Senior Loan');
+                      const currentRate = seniorLoan ? Number(seniorLoan.rate) : 0;
+                      const totalRate = (tr.rate + spread).toFixed(2);
+                      const isSelected = Math.abs(currentRate - parseFloat(totalRate)) < 0.01;
+                      return (
+                        <tr key={tr.term} style={{borderBottom:`1px solid #f3f4f6`,background:isSelected?'#f5f3ff':'transparent'}}>
+                          <td style={{padding:'10px 8px',textAlign:'center'}}>
+                            <div
+                              onClick={() => {
+                                const senior = loans.find(l => l.type === 'Senior Loan');
+                                if (senior) {
+                                  updateLoanFields(senior.id, { rate: parseFloat(totalRate), term: tr.term });
+                                }
+                              }}
+                              style={{
+                                width:20,height:20,borderRadius:'50%',cursor:'pointer',
+                                border:isSelected?'6px solid #4f46e5':'2px solid #d1d5db',
+                                background:'#fff',transition:'all .15s',
+                              }}
+                            />
+                          </td>
+                          <td style={{padding:'10px 12px',textAlign:'center',fontWeight:500,color:VL}}>{tr.term}</td>
+                          <td style={{padding:'10px 12px',textAlign:'center',color:'#374151'}}>{tr.rate.toFixed(2)}%</td>
+                          <td/>
+                          <td style={{padding:'10px 12px',textAlign:'center'}}>
+                            <div style={{display:'inline-flex',alignItems:'center',gap:2}}>
+                              <input
+                                type="number"
+                                step="0.1"
+                                value={spread}
+                                onChange={(e) => {
+                                  const newSpread = parseFloat(e.target.value) || 0;
+                                  setSpread(newSpread);
+                                  // If this row is selected, auto-update the senior loan rate
+                                  const senior = loans.find(l => l.type === 'Senior Loan');
+                                  if (senior && Math.abs(Number(senior.rate) - (tr.rate + spread)) < 0.01) {
+                                    updateLoanField(senior.id, 'rate', parseFloat((tr.rate + newSpread).toFixed(2)));
+                                  }
+                                }}
+                                style={{
+                                  width:64,padding:'6px 8px',borderRadius:6,textAlign:'center',
+                                  border:`1px solid #d1d5db`,fontSize:13,outline:'none',
+                                  background:'#f9fafb',
+                                }}
+                              />
+                              <span style={{fontSize:13,color:'#9ca3af'}}>%</span>
+                            </div>
+                          </td>
+                          <td/>
+                          <td style={{padding:'10px 12px',textAlign:'center',fontWeight:700,color:isSelected?'#4f46e5':'#374151'}}>{totalRate}%</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {treasuryAsOf && (
+                <div style={{textAlign:'right',fontSize:11,color:'#9ca3af',marginTop:6}}>
+                  Treasury rates as of {treasuryAsOf}
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{padding:'14px 18px',borderRadius:8,background:'#e0e7ff',border:'1px solid #c7d2fe',fontSize:12,color:'#3730a3'}}>
+              Treasury rates unavailable — you can still set the interest rate manually above.
+            </div>
+          )}
+        </div>
+
+        {/* ═══ FRED MACRO ENVIRONMENT ═══ */}
+        {macroData && Object.keys(macroData).length > 1 && (
+          <div style={SC}>
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:20}}>
+              <Globe size={20} color="#6366f1"/>
+              <div>
+                <h3 style={{margin:0,fontSize:16,fontWeight:700,color:VL,textTransform:'uppercase',letterSpacing:'0.04em'}}>Macro Environment</h3>
+                <p style={{margin:0,fontSize:12,color:LB,marginTop:2}}>
+                  Real-time economic indicators from the Federal Reserve (FRED)
+                  {macroData.as_of && <span style={{marginLeft:4}}>· as of {new Date(macroData.as_of).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>}
+                </p>
+              </div>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12}}>
+              {[
+                {key:'mortgage_30yr',icon:'🏠',label:'30-Yr Mortgage',bg:'#eff6ff',border:'#dbeafe',color:'#1d4ed8'},
+                {key:'treasury_10yr',icon:'📈',label:'10-Yr Treasury',bg:'#ecfdf5',border:'#d1fae5',color:'#047857'},
+                {key:'fed_funds_rate',icon:'💵',label:'Fed Funds Rate',bg:'#faf5ff',border:'#e9d5ff',color:'#7c3aed'},
+                {key:'unemployment_rate',icon:'👥',label:'Unemployment',bg:'#fffbeb',border:'#fde68a',color:'#92400e'},
+                {key:'gdp_growth',icon:'📊',label:'GDP Growth',bg:'#f0fdf4',border:'#bbf7d0',color:'#15803d'},
+                {key:'cpi_rent_yoy',icon:'🏘️',label:'Rent CPI (YoY)',bg:'#fef2f2',border:'#fecaca',color:'#b91c1c'},
+                {key:'housing_starts',icon:'🏗️',label:'Housing Starts',bg:'#ecfeff',border:'#cffafe',color:'#0e7490'},
+                {key:'consumer_sentiment',icon:'😊',label:'Consumer Sentiment',bg:'#eef2ff',border:'#c7d2fe',color:'#4338ca'},
+              ].filter(item => macroData[item.key]).map(({key,icon,label,bg,border,color:c}) => {
+                const d = macroData[key];
+                const isPercent = d.unit === '%';
+                const displayVal = isPercent ? `${d.value}%` : d.unit === 'K' ? `${Math.round(d.value).toLocaleString()}K` : d.value?.toLocaleString();
+                return (
+                  <div key={key} style={{padding:'14px 12px',borderRadius:12,backgroundColor:bg,border:`1px solid ${border}`}}>
+                    <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:6}}>
+                      <span style={{fontSize:16}}>{icon}</span>
+                      <span style={{fontSize:10,fontWeight:700,color:LB,textTransform:'uppercase',letterSpacing:'0.04em'}}>{label}</span>
+                    </div>
+                    <div style={{fontSize:20,fontWeight:800,color:c}}>{displayVal}</div>
+                    {d.date && (
+                      <div style={{fontSize:10,color:'#9ca3af',marginTop:4}}>
+                        {new Date(d.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* ═══ 4. CAPITAL STACK & DEBT SERVICE ═══ */}
         {structure&&(

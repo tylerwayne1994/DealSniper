@@ -289,6 +289,25 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
   const [countyCensusData, setCountyCensusData] = useState({}); // FIPS -> { income, empRate, rent, totalHousing, occupied, vacant, vacancyRate, population, medianHomeValue }
   const mapRef = useRef(null);
 
+  // Treasury rates for yield curve display
+  const [treasuryRates, setTreasuryRates] = useState([]);
+  const [treasuryAsOf, setTreasuryAsOf] = useState(null);
+  useEffect(() => {
+    (async () => {
+      try {
+        const apiBase = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
+        const resp = await fetch(`${apiBase}/api/treasury-rates`);
+        if (resp.ok) {
+          const data = await resp.json();
+          setTreasuryRates(data.rates || []);
+          setTreasuryAsOf(data.as_of || null);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch treasury rates:', err);
+      }
+    })();
+  }, []);
+
   const zipCode = property_location?.zip || propertyLocation?.zip;
 
   // Get property county FIPS - try multiple sources
@@ -1549,6 +1568,43 @@ function MarketResearchTab({ marketData, propertyLocation = {}, loading = false,
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Treasury Yield Curve */}
+      {treasuryRates.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center border border-emerald-100">
+              <TrendingUp size={20} className="text-emerald-600" />
+            </div>
+            <div>
+              <div className="text-base font-bold text-gray-900">Treasury Yield Curve</div>
+              <div className="text-xs text-gray-500">
+                Current U.S. Treasury bond yields by term
+                {treasuryAsOf && <span className="ml-1">· as of {new Date(treasuryAsOf).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-5 gap-3">
+            {treasuryRates.map(tr => (
+              <div key={tr.term} className="rounded-lg p-3 text-center" style={{ backgroundColor: '#ecfdf5', border: '1px solid #d1fae5' }}>
+                <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">{tr.term}-Year</div>
+                <div className="text-xl font-bold text-emerald-700">{tr.rate.toFixed(2)}%</div>
+                {tr.date && (
+                  <div className="text-[10px] text-gray-400 mt-1">
+                    {new Date(tr.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {/* Typical spread guidance */}
+          <div className="mt-3 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+            <div className="text-xs text-indigo-700">
+              <span className="font-semibold">💡 Typical CRE Spreads:</span> Agency (Fannie/Freddie): +1.25–1.75% | Bank/CMBS: +1.75–2.50% | Bridge: +3.00–5.00%
+            </div>
           </div>
         </div>
       )}
