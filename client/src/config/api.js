@@ -78,18 +78,6 @@ export const API_ENDPOINTS = {
   parcels: `${API_BASE_URL}/api/parcels`,
   parcelsIndex: `${API_BASE_URL}/api/parcels/index`,
 
-  // AI Agents
-  agentConfig: `${API_BASE_URL}/api/agents/config`,
-  agentConfigById: (agentId) => `${API_BASE_URL}/api/agents/config/${agentId}`,
-  agentRun: (agentId) => `${API_BASE_URL}/api/agents/config/${agentId}/run`,
-  agentPause: (agentId) => `${API_BASE_URL}/api/agents/config/${agentId}/pause`,
-  agentResume: (agentId) => `${API_BASE_URL}/api/agents/config/${agentId}/resume`,
-  agentRuns: `${API_BASE_URL}/api/agents/runs`,
-  agentCancelRun: (runId) => `${API_BASE_URL}/api/agents/runs/${runId}/cancel`,
-  agentDeals: `${API_BASE_URL}/api/agents/deals`,
-  agentNotifications: `${API_BASE_URL}/api/agents/notifications`,
-  agentHealth: `${API_BASE_URL}/api/agents/health`,
-
   // Health
   health: `${API_BASE_URL}/health`,
 };

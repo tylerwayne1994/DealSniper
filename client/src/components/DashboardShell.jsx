@@ -12,7 +12,6 @@ import {
   Shield,
   Mail,
   FileText,
-  Bot,
   Menu,
   X,
 } from 'lucide-react';
@@ -175,7 +174,6 @@ const tabs = [
   { id: 'pipeline', label: 'Pipeline', icon: Layers, section: 'deals' },
   { id: 'underwrite', label: 'Underwrite', icon: FileSpreadsheet, section: 'deals' },
   { id: 'rapid-fire', label: 'Rapid Fire', icon: Zap, section: 'deals' },
-  { id: 'agents', label: 'AI Agents', icon: Bot, section: 'deals' },
   { id: 'email-underwrite', label: 'Email Underwrite', icon: Mail, section: 'deals' },
   { id: 'templates', label: 'Templates', icon: FileText, section: 'deals' },
   { id: 'market', label: 'Market Research', icon: BarChart3, section: 'analysis' },
@@ -193,8 +191,6 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
       navigate('/pipeline');
     } else if (tabId === 'underwrite') {
       navigate('/underwrite');
-    } else if (tabId === 'agents') {
-      navigate('/agents');
     } else if (tabId === 'email-underwrite') {
       navigate('/email-underwrite');
     } else if (tabId === 'templates') {

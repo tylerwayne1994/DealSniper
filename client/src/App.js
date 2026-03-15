@@ -22,7 +22,6 @@ import ManualEntryPage from './pages/ManualEntryPage'; // Manual Entry
 import PitchDeckPage from './pages/PitchDeckPage'; // Pitch Deck Generator
 import ContractPage from './pages/ContractPage'; // Contract Generator
 import MapViewPage from './pages/MapViewPage'; // Map View
-import AgentPage from './pages/AgentPage'; // AI Agents
 
 function App() {
   return (
@@ -50,7 +49,6 @@ function App() {
         <Route path="/email-deals" element={<EmailDealsPage />} /> {/* Email Deal Screener */}
         <Route path="/email-underwrite" element={<EmailUnderwritePage />} /> {/* Email Underwrite Pipeline */}
         <Route path="/templates" element={<TemplatesPage />} /> {/* Deal Templates */}
-        <Route path="/agents" element={<AgentPage />} /> {/* AI Agents */}
       </Routes>
     </Router>
   );

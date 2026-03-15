@@ -1,21 +1,37 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Check, FileText, Calculator, TrendingUp, ClipboardList, Download, Layers } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronUp,
+  Check,
+  FileText,
+  Calculator,
+  TrendingUp,
+  ClipboardList,
+  Download,
+  Layers,
+  Mail,
+  Zap,
+  Shield,
+  BarChart3,
+  Star,
+  ArrowRight,
+  Target,
+  Brain,
+  Clock,
+  DollarSign,
+} from 'lucide-react';
 
 // ============================================================================
-// Landing Page - Conversion-Optimized
+// Landing Page - Premium Redesign
 // ============================================================================
 
 function LandingPage() {
   const navigate = useNavigate();
   const [expandedFaq, setExpandedFaq] = useState(null);
 
-  // -------------------------------------------------------------------------
-  // Tracking Events (lightweight, no external libs)
-  // -------------------------------------------------------------------------
   const trackEvent = (eventName, data = {}) => {
     console.log(`[TRACK] ${eventName}`, data);
-    // Future: send to analytics endpoint
     if (window.gtag) {
       window.gtag('event', eventName, data);
     }
@@ -37,412 +53,1394 @@ function LandingPage() {
   };
 
   // -------------------------------------------------------------------------
-  // Styles
-  // -------------------------------------------------------------------------
-  const section = {
-    padding: '80px 40px',
-    maxWidth: '1200px',
-    margin: '0 auto'
-  };
-
-  const sectionDark = {
-    ...section,
-    maxWidth: '100%',
-    backgroundColor: '#0f172a',
-    padding: '80px 40px'
-  };
-
-  const sectionLight = {
-    ...section,
-    maxWidth: '100%',
-    backgroundColor: '#f8fafc',
-    padding: '80px 40px'
-  };
-
-  const heading2 = {
-    fontSize: '36px',
-    fontWeight: '800',
-    color: '#111827',
-    textAlign: 'center',
-    marginBottom: '16px',
-    letterSpacing: '-1px'
-  };
-
-  const heading2Light = {
-    ...heading2,
-    color: '#ffffff'
-  };
-
-  const subheading = {
-    fontSize: '18px',
-    color: '#6b7280',
-    textAlign: 'center',
-    maxWidth: '700px',
-    margin: '0 auto 48px',
-    lineHeight: '1.6'
-  };
-
-  const subheadingLight = {
-    ...subheading,
-    color: '#94a3b8'
-  };
-
-  const cardStyle = {
-    backgroundColor: '#ffffff',
-    borderRadius: '16px',
-    padding: '32px',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-    border: '1px solid #e5e7eb'
-  };
-
-  const primaryBtn = {
-    padding: '18px 40px',
-    backgroundColor: '#10b981',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '12px',
-    fontSize: '17px',
-    fontWeight: '700',
-    cursor: 'pointer',
-    boxShadow: '0 8px 24px rgba(16, 185, 129, 0.35)',
-    transition: 'all 0.2s'
-  };
-
-  const secondaryLink = {
-    color: '#10b981',
-    fontSize: '15px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    textDecoration: 'underline',
-    background: 'none',
-    border: 'none'
-  };
-
-  // -------------------------------------------------------------------------
   // FAQ Data
   // -------------------------------------------------------------------------
   const faqs = [
     {
       id: 'lender-quote',
       q: 'Is this a lender quote?',
-      a: 'No. Deal Sniper is an underwriting tool, not a lender. We help you model financing structures and cash flows so you can confidently approach lenders with accurate numbers.'
+      a: 'No. Deal Sniper is an underwriting tool, not a lender. We help you model financing structures and cash flows so you can confidently approach lenders with accurate numbers.',
     },
     {
       id: 'missing-data',
       q: 'What if the OM is missing data?',
-      a: 'We flag every missing input with a clear "Missing Input" badge instead of showing blank dashes. You will know exactly what is incomplete and where to find it.'
-    },
-    {
-      id: 'email-credentials',
-      q: 'Do you store my email credentials?',
-      a: 'We use secure OAuth connections for email integrations. Your credentials are never stored on our servers-only temporary access tokens with limited scope.'
+      a: 'We flag every missing input with a clear "Missing Input" badge instead of showing blank dashes. You know exactly what is incomplete and where to find it.',
     },
     {
       id: 'accuracy',
       q: 'How accurate are the calculations?',
-      a: 'Our engine uses institutional-grade formulas for DSCR, cash-on-cash, cap rate, amortization, and IRR. All calculations are transparent and auditable in each tab.'
+      a: 'Our engine uses institutional-grade formulas for DSCR, cash-on-cash, cap rate, amortization, and IRR. All calculations are transparent and auditable in each tab.',
     },
     {
       id: 'equity-partner',
       q: 'Can I model equity partners?',
-      a: 'Yes. The Equity Partner structure supports preferred returns, deferred returns, and refi-based buyout scenarios. It calculates whether your refi proceeds cover the partner buyout.'
+      a: 'Yes. The Equity Partner structure supports preferred returns, deferred returns, and refi-based buyout scenarios. It calculates whether your refi proceeds cover the partner buyout.',
+    },
+    {
+      id: 'email-flow',
+      q: 'How does the email underwriting work?',
+      a: 'Forward any broker email with an OM PDF to deals@dealsniper.org. Our AI reads the PDF, extracts financials, and creates a full underwrite automatically \u2014 no uploads, no data entry.',
     },
     {
       id: 'export',
       q: 'Can I export or share my analysis?',
-      a: 'Export to CSV and PDF is available. Share links and Google Sheets integration are on the roadmap.'
-    }
+      a: 'Export to CSV and PDF is available. Share links and Google Sheets integration are on the roadmap.',
+    },
   ];
 
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
   return (
-    <div style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', backgroundColor: '#ffffff' }}>
+    <div
+      style={{
+        fontFamily:
+          'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        backgroundColor: '#ffffff',
+        overflowX: 'hidden',
+      }}
+    >
+      {/* =================================================================
+          HERO SECTION
+      ================================================================= */}
+      <section
+        style={{
+          minHeight: '100vh',
+          backgroundImage:
+            'url(/Gemini_Generated_Image_h1bn6ch1bn6ch1bn.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Overlay */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background:
+              'linear-gradient(160deg, rgba(2, 6, 23, 0.92) 0%, rgba(15, 23, 42, 0.85) 50%, rgba(6, 78, 59, 0.7) 100%)',
+            zIndex: 1,
+          }}
+        />
 
-      {/* ===================================================================
-          HERO SECTION (Above the Fold) - With Background Image
-      =================================================================== */}
-      <section style={{
-        minHeight: '100vh',
-        backgroundImage: 'url(/Gemini_Generated_Image_fw8pkofw8pkofw8p.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        {/* Dark overlay for readability */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.8) 100%)',
-          zIndex: 1
-        }} />
-        
-        {/* Minimal Nav */}
-        <nav style={{ padding: '24px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 2 }}>
-          <div style={{ fontSize: '28px', fontWeight: '900', color: '#ffffff', letterSpacing: '-1px' }}>
+        {/* Nav */}
+        <nav
+          style={{
+            padding: '20px 48px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            position: 'relative',
+            zIndex: 2,
+          }}
+        >
+          <div
+            style={{
+              fontSize: '30px',
+              fontWeight: '900',
+              color: '#ffffff',
+              letterSpacing: '-1.5px',
+            }}
+          >
             DEAL<span style={{ color: '#10b981' }}>SNIPER</span>
           </div>
-          <div style={{ display: 'flex', gap: '16px' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <button
+              onClick={() => onClickSeeHowItWorks()}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: 'transparent',
+                color: '#94a3b8',
+                border: 'none',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+              }}
+            >
+              Features
+            </button>
+            <button
+              onClick={() =>
+                document
+                  .getElementById('testimonials')
+                  ?.scrollIntoView({ behavior: 'smooth' })
+              }
+              style={{
+                padding: '10px 20px',
+                backgroundColor: 'transparent',
+                color: '#94a3b8',
+                border: 'none',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+              }}
+            >
+              Testimonials
+            </button>
             <button
               onClick={() => navigate('/login')}
-              style={{ padding: '10px 24px', backgroundColor: 'transparent', color: '#ffffff', border: '2px solid rgba(255,255,255,0.3)', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}
+              style={{
+                padding: '10px 24px',
+                backgroundColor: 'transparent',
+                color: '#ffffff',
+                border: '1.5px solid rgba(255,255,255,0.25)',
+                borderRadius: '10px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.borderColor = 'rgba(255,255,255,0.5)';
+                e.target.style.backgroundColor = 'rgba(255,255,255,0.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.borderColor = 'rgba(255,255,255,0.25)';
+                e.target.style.backgroundColor = 'transparent';
+              }}
             >
               Log In
             </button>
             <button
               onClick={() => onClickPrimaryCTA('nav')}
-              style={{ padding: '10px 24px', backgroundColor: '#10b981', color: '#ffffff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}
+              style={{
+                padding: '10px 24px',
+                backgroundColor: '#10b981',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '10px',
+                fontSize: '14px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                boxShadow: '0 4px 16px rgba(16, 185, 129, 0.3)',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#059669';
+                e.target.style.boxShadow =
+                  '0 6px 24px rgba(16, 185, 129, 0.45)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = '#10b981';
+                e.target.style.boxShadow =
+                  '0 4px 16px rgba(16, 185, 129, 0.3)';
+              }}
             >
-              Start Free
+              Get Started Free
             </button>
           </div>
         </nav>
 
         {/* Hero Content */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', padding: '0 40px', maxWidth: '900px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
-          
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            textAlign: 'center',
+            padding: '0 40px',
+            maxWidth: '1000px',
+            margin: '0 auto',
+            position: 'relative',
+            zIndex: 2,
+          }}
+        >
+          {/* Badge */}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 20px',
+              backgroundColor: 'rgba(16, 185, 129, 0.12)',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+              borderRadius: '100px',
+              marginBottom: '28px',
+            }}
+          >
+            <Zap size={14} color="#10b981" />
+            <span
+              style={{
+                color: '#10b981',
+                fontSize: '13px',
+                fontWeight: '600',
+                letterSpacing: '0.3px',
+              }}
+            >
+              AI-Powered Commercial Real Estate Underwriting
+            </span>
+          </div>
+
           {/* Headline */}
-          <h1 style={{ fontSize: '56px', fontWeight: '900', color: '#ffffff', lineHeight: '1.1', marginBottom: '20px', letterSpacing: '-2px' }}>
-            Know if a deal works<br/>
-            <span style={{ color: '#10b981' }}>before you waste a week on it</span>
+          <h1
+            style={{
+              fontSize: '64px',
+              fontWeight: '900',
+              color: '#ffffff',
+              lineHeight: '1.05',
+              marginBottom: '24px',
+              letterSpacing: '-3px',
+            }}
+          >
+            Underwrite any deal
+            <br />
+            <span
+              style={{
+                background: 'linear-gradient(135deg, #10b981, #34d399)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
+              in minutes, not days
+            </span>
           </h1>
 
           {/* Subheadline */}
-          <p style={{ fontSize: '20px', color: '#94a3b8', lineHeight: '1.6', marginBottom: '32px', maxWidth: '700px' }}>
-            For multifamily investors who need to screen deals fast, compare financing structures, and get a clear execution plan-without building another spreadsheet.
+          <p
+            style={{
+              fontSize: '20px',
+              color: '#cbd5e1',
+              lineHeight: '1.7',
+              marginBottom: '36px',
+              maxWidth: '680px',
+            }}
+          >
+            Forward a broker email, upload an OM, or paste a link. Our AI
+            extracts every number, compares financing structures, and delivers an
+            institutional-quality underwrite &mdash; automatically.
           </p>
 
-          {/* 3 Bullet Benefits */}
-          <div style={{ display: 'flex', gap: '32px', marginBottom: '40px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          {/* Bullet Benefits */}
+          <div
+            style={{
+              display: 'flex',
+              gap: '28px',
+              marginBottom: '44px',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+            }}
+          >
             {[
+              'Email an OM \u2192 get a full underwrite back',
               'Compare 7 financing structures side-by-side',
-              'See cash required, DSCR, and refi feasibility instantly',
-              'Get a step-by-step execution playbook per structure'
+              'AI-powered market research & comps',
             ].map((benefit, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Check size={14} color="#10b981" />
-                </div>
-                <span style={{ color: '#e2e8f0', fontSize: '15px', fontWeight: '500' }}>{benefit}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Primary CTA */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-            <button
-              onClick={() => onClickPrimaryCTA('hero')}
-              style={primaryBtn}
-              onMouseEnter={e => { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 12px 32px rgba(16, 185, 129, 0.45)'; }}
-              onMouseLeave={e => { e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 8px 24px rgba(16, 185, 129, 0.35)'; }}
-            >
-              Start Free - No Credit Card
-            </button>
-            <button onClick={onClickSeeHowItWorks} style={secondaryLink}>
-              See how it works
-            </button>
-          </div>
-        </div>
-
-        {/* Trust Row */}
-        <div style={{ padding: '32px 40px', borderTop: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
-          <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '16px', fontWeight: '500' }}>
-            Used by investors analyzing <span style={{ color: '#10b981', fontWeight: '700' }}>50+ deals/week</span>
-          </p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '48px', opacity: 0.5 }}>
-            {/* Logo placeholders */}
-            {['Investor Group A', 'Capital Partners', 'Syndicator Pro'].map((name, i) => (
-              <div key={i} style={{ padding: '8px 24px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '8px', color: '#94a3b8', fontSize: '13px', fontWeight: '600' }}>
-                {name}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===================================================================
-          WHAT DEAL SNIPER DOES (Site-specific flow)
-      =================================================================== */}
-      <section id="what-it-does" style={{ ...sectionLight, maxWidth: '100%' }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-          <h2 style={heading2}>What Deal Sniper Does</h2>
-          <p style={subheading}>
-            From raw deal inputs to execution-ready playbook in minutes-not days.
-          </p>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {[
-              { icon: <FileText size={24} color="#10b981" />, title: 'Ingest deal inputs', desc: 'Paste a Crexi link, upload an OM PDF, or forward an email. We extract property data, rent rolls, and financials automatically.' },
-              { icon: <Layers size={24} color="#10b981" />, title: 'Compare 5 financing structures', desc: 'Traditional bank, seller finance, equity partner, seller carry (bank + 2nd), and lease option. See cash required, DSCR, and cash flow for each.' },
-              { icon: <Calculator size={24} color="#10b981" />, title: 'Flag missing inputs-not blank dashes', desc: 'Every incomplete field shows a clear "Missing Input" badge so you know exactly what to chase before making an offer.' },
-              { icon: <TrendingUp size={24} color="#10b981" />, title: 'Plan value-add and stabilization', desc: 'Model rent bumps, expense cuts, and capital improvements. See the resulting stabilized value and NOI without building a second spreadsheet.' },
-              { icon: <Calculator size={24} color="#10b981" />, title: 'Validate refi and buyout feasibility', desc: 'Value-Add outputs feed directly into Deal Execution. See if your refi covers the original loan, seller payoff, or equity partner buyout.' },
-              { icon: <ClipboardList size={24} color="#10b981" />, title: 'Get a step-by-step execution playbook', desc: 'Each financing structure has its own checklist of steps and required documents-so you know exactly what to do after you get the deal under contract.' },
-              { icon: <Download size={24} color="#10b981" />, title: 'Export and share', desc: 'Download CSV or PDF. Share links coming soon. No double-entry-everything flows from one source of truth.' }
-            ].map((step, i) => (
-              <div key={i} style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', padding: '20px 24px', backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  {step.icon}
-                </div>
-                <div>
-                  <div style={{ fontSize: '16px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>{step.title}</div>
-                  <div style={{ fontSize: '14px', color: '#6b7280', lineHeight: '1.5' }}>{step.desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ marginTop: '40px', textAlign: 'center', padding: '24px', backgroundColor: '#f0fdf4', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
-            <p style={{ fontSize: '15px', color: '#166534', fontWeight: '600', margin: 0 }}>
-              No double-calcs. Read-only sourcing between tabs. Clear execution steps.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ===================================================================
-          WHY IT IS DIFFERENT (Positioning)
-      =================================================================== */}
-      <section style={{ ...section }}>
-        <h2 style={heading2}>Why It Is Different</h2>
-        <p style={subheading}>
-          Most underwriting tools make you build everything from scratch. We do not.
-        </p>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
-            {[ 
-            { title: 'Structure-first underwriting', desc: 'Compare 5 financing structures instantly. See which one requires the least cash and highest returns-before you waste time on one path.' },
-            { title: 'Execution playbooks', desc: 'Each structure has its own step-by-step checklist and required documents. Know exactly what to do from LOI to close.' },
-            { title: 'Value-add to refi validation', desc: 'Your stabilized value and refi loan amount flow directly into the execution tab. See if refi covers payoffs and buyouts-no copy-paste.' }
-          ].map((card, i) => (
-            <div key={i} style={cardStyle}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
-                <Check size={24} color="#10b981" />
-              </div>
-              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#111827', marginBottom: '8px' }}>{card.title}</h3>
-              <p style={{ fontSize: '14px', color: '#6b7280', lineHeight: '1.6', margin: 0 }}>{card.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ===================================================================
-          PROOF (Trust + Credibility)
-      =================================================================== */}
-      <section style={sectionDark}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-          <h2 style={heading2Light}>What Investors Are Saying</h2>
-          <p style={subheadingLight}>
-            Placeholder testimonials-replace with real quotes.
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '48px' }}>
-            {[
-              { quote: 'Cut my deal screening time from 2 hours to 15 minutes. I can finally keep up with my broker deal flow.', name: 'J. Martinez', role: 'Multifamily Syndicator' },
-              { quote: 'The execution playbook saved me from missing a critical doc on my last closing.', name: 'S. Thompson', role: 'Creative Finance Investor' },
-              { quote: 'Finally, a tool that shows equity partner buyout feasibility without a custom Excel model.', name: 'K. Patel', role: 'LP/GP Hybrid Investor' }
-            ].map((t, i) => (
-              <div key={i} style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '24px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <p style={{ fontSize: '15px', color: '#e2e8f0', lineHeight: '1.6', marginBottom: '16px', fontStyle: 'italic' }}>"{t.quote}"</p>
-                <div>
-                  <div style={{ fontSize: '14px', fontWeight: '700', color: '#ffffff' }}>{t.name}</div>
-                  <div style={{ fontSize: '13px', color: '#94a3b8' }}>{t.role}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Metrics Strip */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '64px', padding: '32px', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-            {[
-              { value: '15 min', label: 'Avg time saved per deal' },
-              { value: '50+', label: 'Deals screened per week' },
-              { value: '6', label: 'Structures compared instantly' }
-            ].map((m, i) => (
-              <div key={i} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '32px', fontWeight: '800', color: '#10b981' }}>{m.value}</div>
-                <div style={{ fontSize: '13px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{m.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===================================================================
-          FAQ (Objection Handling)
-      =================================================================== */}
-      <section style={{ ...section }}>
-        <h2 style={heading2}>Frequently Asked Questions</h2>
-        <p style={subheading}>
-          Quick answers to common questions.
-        </p>
-
-        <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {faqs.map((faq) => (
-            <div
-              key={faq.id}
-              style={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e5e7eb', overflow: 'hidden' }}
-            >
-              <button
-                onClick={() => onClickFAQExpand(faq.id)}
+              <div
+                key={i}
                 style={{
-                  width: '100%',
-                  padding: '20px 24px',
                   display: 'flex',
-                  justifyContent: 'space-between',
                   alignItems: 'center',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  textAlign: 'left'
+                  gap: '10px',
                 }}
               >
-                <span style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>{faq.q}</span>
-                {expandedFaq === faq.id ? <ChevronUp size={20} color="#6b7280" /> : <ChevronDown size={20} color="#6b7280" />}
-              </button>
-              {expandedFaq === faq.id && (
-                <div style={{ padding: '0 24px 20px', fontSize: '15px', color: '#6b7280', lineHeight: '1.6' }}>
-                  {faq.a}
+                <div
+                  style={{
+                    width: '22px',
+                    height: '22px',
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Check size={12} color="#10b981" />
                 </div>
-              )}
-            </div>
-          ))}
+                <span
+                  style={{
+                    color: '#e2e8f0',
+                    fontSize: '15px',
+                    fontWeight: '500',
+                  }}
+                >
+                  {benefit}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* CTAs */}
+          <div
+            style={{
+              display: 'flex',
+              gap: '16px',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+            }}
+          >
+            <button
+              onClick={() => onClickPrimaryCTA('hero')}
+              style={{
+                padding: '18px 44px',
+                backgroundColor: '#10b981',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '14px',
+                fontSize: '17px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                boxShadow: '0 8px 32px rgba(16, 185, 129, 0.4)',
+                transition: 'all 0.25s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow =
+                  '0 12px 40px rgba(16, 185, 129, 0.5)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow =
+                  '0 8px 32px rgba(16, 185, 129, 0.4)';
+              }}
+            >
+              Start Free &mdash; No Credit Card
+              <ArrowRight size={18} />
+            </button>
+            <button
+              onClick={onClickSeeHowItWorks}
+              style={{
+                padding: '18px 32px',
+                backgroundColor: 'rgba(255,255,255,0.08)',
+                color: '#ffffff',
+                border: '1.5px solid rgba(255,255,255,0.2)',
+                borderRadius: '14px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = 'rgba(255,255,255,0.12)';
+                e.target.style.borderColor = 'rgba(255,255,255,0.35)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'rgba(255,255,255,0.08)';
+                e.target.style.borderColor = 'rgba(255,255,255,0.2)';
+              }}
+            >
+              See How It Works
+            </button>
+          </div>
+        </div>
+
+        {/* Stats Bar */}
+        <div
+          style={{
+            padding: '28px 48px',
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            position: 'relative',
+            zIndex: 2,
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '64px',
+              flexWrap: 'wrap',
+            }}
+          >
+            {[
+              { value: '2 min', label: 'Average underwrite time' },
+              { value: '7', label: 'Financing structures compared' },
+              { value: '500+', label: 'Deals underwritten' },
+              { value: '100%', label: 'Automated from email' },
+            ].map((stat, i) => (
+              <div key={i} style={{ textAlign: 'center' }}>
+                <div
+                  style={{
+                    fontSize: '28px',
+                    fontWeight: '800',
+                    color: '#10b981',
+                    marginBottom: '4px',
+                  }}
+                >
+                  {stat.value}
+                </div>
+                <div
+                  style={{
+                    fontSize: '12px',
+                    color: '#64748b',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                    fontWeight: '600',
+                  }}
+                >
+                  {stat.label}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ===================================================================
-          FINAL CTA SECTION
-      =================================================================== */}
-      <section style={{ ...sectionDark, textAlign: 'center' }}>
+      {/* =================================================================
+          HOW IT WORKS - 3-Step Flow
+      ================================================================= */}
+      <section
+        id="what-it-does"
+        style={{
+          padding: '100px 48px',
+          backgroundColor: '#ffffff',
+        }}
+      >
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '64px' }}>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '6px 16px',
+                backgroundColor: '#ecfdf5',
+                borderRadius: '100px',
+                marginBottom: '16px',
+              }}
+            >
+              <Target size={14} color="#059669" />
+              <span
+                style={{
+                  color: '#059669',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                How It Works
+              </span>
+            </div>
+            <h2
+              style={{
+                fontSize: '42px',
+                fontWeight: '800',
+                color: '#0f172a',
+                letterSpacing: '-1.5px',
+                marginBottom: '16px',
+              }}
+            >
+              Three ways in. One institutional-quality underwrite out.
+            </h2>
+            <p
+              style={{
+                fontSize: '18px',
+                color: '#64748b',
+                maxWidth: '650px',
+                margin: '0 auto',
+                lineHeight: '1.6',
+              }}
+            >
+              No matter how a deal lands on your desk, Deal Sniper handles it.
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '32px',
+            }}
+          >
+            {[
+              {
+                step: '01',
+                icon: <Mail size={28} color="#10b981" />,
+                title: 'Forward the Email',
+                desc: 'Got a broker blast with an OM PDF? Forward it to deals@dealsniper.org. Our AI reads every page, extracts rent rolls, financials, and property details \u2014 then builds a full underwrite automatically.',
+              },
+              {
+                step: '02',
+                icon: <FileText size={28} color="#10b981" />,
+                title: 'Upload or Paste a Link',
+                desc: 'Drop an OM PDF directly or paste a Crexi/LoopNet link. Deal Sniper pulls the data, identifies missing fields, and builds your model \u2014 no manual data entry needed.',
+              },
+              {
+                step: '03',
+                icon: <Layers size={28} color="#10b981" />,
+                title: 'Compare & Execute',
+                desc: 'Instantly see 7 financing structures side-by-side: traditional bank, seller finance, equity partner, creative combos, and more. Each comes with a step-by-step execution playbook.',
+              },
+            ].map((item, i) => (
+              <div
+                key={i}
+                style={{
+                  position: 'relative',
+                  padding: '40px 32px',
+                  backgroundColor: '#fafafa',
+                  borderRadius: '20px',
+                  border: '1px solid #e5e7eb',
+                  transition: 'all 0.3s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow =
+                    '0 20px 40px rgba(0,0,0,0.08)';
+                  e.currentTarget.style.borderColor = '#10b981';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                  e.currentTarget.style.borderColor = '#e5e7eb';
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '48px',
+                    fontWeight: '900',
+                    color: '#f0fdf4',
+                    position: 'absolute',
+                    top: '16px',
+                    right: '24px',
+                    lineHeight: 1,
+                  }}
+                >
+                  {item.step}
+                </div>
+                <div
+                  style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '16px',
+                    backgroundColor: '#ecfdf5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '20px',
+                  }}
+                >
+                  {item.icon}
+                </div>
+                <h3
+                  style={{
+                    fontSize: '20px',
+                    fontWeight: '700',
+                    color: '#0f172a',
+                    marginBottom: '12px',
+                  }}
+                >
+                  {item.title}
+                </h3>
+                <p
+                  style={{
+                    fontSize: '15px',
+                    color: '#64748b',
+                    lineHeight: '1.65',
+                    margin: 0,
+                  }}
+                >
+                  {item.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* =================================================================
+          FEATURES DEEP-DIVE
+      ================================================================= */}
+      <section
+        style={{
+          padding: '100px 48px',
+          backgroundColor: '#0f172a',
+        }}
+      >
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '64px' }}>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '6px 16px',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderRadius: '100px',
+                marginBottom: '16px',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+              }}
+            >
+              <Zap size={14} color="#10b981" />
+              <span
+                style={{
+                  color: '#10b981',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                Platform Features
+              </span>
+            </div>
+            <h2
+              style={{
+                fontSize: '42px',
+                fontWeight: '800',
+                color: '#ffffff',
+                letterSpacing: '-1.5px',
+                marginBottom: '16px',
+              }}
+            >
+              Everything you need to underwrite with confidence
+            </h2>
+            <p
+              style={{
+                fontSize: '18px',
+                color: '#94a3b8',
+                maxWidth: '650px',
+                margin: '0 auto',
+                lineHeight: '1.6',
+              }}
+            >
+              From deal intake to execution playbook &mdash; all powered by AI, all in
+              one place.
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '24px',
+            }}
+          >
+            {[
+              {
+                icon: <Brain size={24} color="#10b981" />,
+                title: 'AI PDF Extraction',
+                desc: 'Claude Vision reads your OM PDFs page by page \u2014 rent rolls, T12 financials, expense breakdowns, cap rates. No manual data entry.',
+              },
+              {
+                icon: <Layers size={24} color="#10b981" />,
+                title: '7 Financing Structures',
+                desc: 'Traditional bank, seller finance, equity partner, seller carry + bank 2nd, lease option, and more. See cash required, DSCR, and returns for each.',
+              },
+              {
+                icon: <Mail size={24} color="#10b981" />,
+                title: 'Email-to-Underwrite',
+                desc: 'Forward broker emails to deals@dealsniper.org. PDFs are extracted, parsed, and underwritten automatically. Deals appear in your pipeline within minutes.',
+              },
+              {
+                icon: <BarChart3 size={24} color="#10b981" />,
+                title: 'Market Research AI',
+                desc: 'Automated comp pulls, demographic analysis, rent trends, and submarket scoring. Know the market before you make an offer.',
+              },
+              {
+                icon: <TrendingUp size={24} color="#10b981" />,
+                title: 'Value-Add Modeling',
+                desc: 'Model rent bumps, expense cuts, and capital improvements. See stabilized NOI, refi feasibility, and equity partner buyout in real time.',
+              },
+              {
+                icon: <ClipboardList size={24} color="#10b981" />,
+                title: 'Execution Playbooks',
+                desc: 'Each financing structure has its own step-by-step checklist with required documents. Know exactly what to do from LOI to close.',
+              },
+              {
+                icon: <Calculator size={24} color="#10b981" />,
+                title: 'Institutional Calculations',
+                desc: 'DSCR, cash-on-cash, cap rate, IRR, amortization \u2014 all transparent and auditable. No hidden formulas, no black boxes.',
+              },
+              {
+                icon: <Shield size={24} color="#10b981" />,
+                title: 'Contract & LOI Generator',
+                desc: 'Generate Letters of Intent and purchase contracts directly from your underwrite. Pre-filled with deal terms \u2014 ready to send.',
+              },
+              {
+                icon: <Download size={24} color="#10b981" />,
+                title: 'Pitch Deck Builder',
+                desc: 'Turn any underwrite into an investor-ready pitch deck. Export to PDF with financials, market data, and deal structure baked in.',
+              },
+            ].map((feature, i) => (
+              <div
+                key={i}
+                style={{
+                  padding: '28px',
+                  backgroundColor: 'rgba(255,255,255,0.04)',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  transition: 'all 0.25s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor =
+                    'rgba(255,255,255,0.07)';
+                  e.currentTarget.style.borderColor =
+                    'rgba(16, 185, 129, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor =
+                    'rgba(255,255,255,0.04)';
+                  e.currentTarget.style.borderColor =
+                    'rgba(255,255,255,0.08)';
+                }}
+              >
+                <div
+                  style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '12px',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '16px',
+                  }}
+                >
+                  {feature.icon}
+                </div>
+                <h3
+                  style={{
+                    fontSize: '17px',
+                    fontWeight: '700',
+                    color: '#ffffff',
+                    marginBottom: '8px',
+                  }}
+                >
+                  {feature.title}
+                </h3>
+                <p
+                  style={{
+                    fontSize: '14px',
+                    color: '#94a3b8',
+                    lineHeight: '1.6',
+                    margin: 0,
+                  }}
+                >
+                  {feature.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* =================================================================
+          WHAT SETS US APART
+      ================================================================= */}
+      <section style={{ padding: '100px 48px', backgroundColor: '#ffffff' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '64px' }}>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '6px 16px',
+                backgroundColor: '#ecfdf5',
+                borderRadius: '100px',
+                marginBottom: '16px',
+              }}
+            >
+              <Target size={14} color="#059669" />
+              <span
+                style={{
+                  color: '#059669',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                Why Deal Sniper
+              </span>
+            </div>
+            <h2
+              style={{
+                fontSize: '42px',
+                fontWeight: '800',
+                color: '#0f172a',
+                letterSpacing: '-1.5px',
+                marginBottom: '16px',
+              }}
+            >
+              What sets us apart from every other underwriting tool
+            </h2>
+            <p
+              style={{
+                fontSize: '18px',
+                color: '#64748b',
+                maxWidth: '700px',
+                margin: '0 auto',
+                lineHeight: '1.6',
+              }}
+            >
+              Most tools give you a blank spreadsheet and wish you luck. We
+              built something different.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {[
+              {
+                icon: <Clock size={24} color="#10b981" />,
+                title: 'Zero data entry',
+                desc: 'Other tools make you type in every number from the OM. Deal Sniper reads the PDF with AI Vision and fills everything in \u2014 rent rolls, T12 expenses, cap rates, unit mixes. You review, not re-type.',
+                highlight: 'What used to take 2 hours takes 2 minutes.',
+              },
+              {
+                icon: <Layers size={24} color="#10b981" />,
+                title: 'Structure-first underwriting',
+                desc: "Most platforms give you one financing structure and call it a day. Deal Sniper models 7 structures simultaneously \u2014 traditional bank, seller finance, equity partner, creative combos \u2014 so you can see which path gets you the best returns before you commit to one.",
+                highlight: 'Compare every financing path in one screen.',
+              },
+              {
+                icon: <Mail size={24} color="#10b981" />,
+                title: 'Fully automated email pipeline',
+                desc: "No other underwriting tool lets you forward a broker email and get a complete underwrite back without lifting a finger. Forward to deals@dealsniper.org and the deal shows up in your pipeline, fully modeled, within minutes.",
+                highlight: "Your broker doesn't even know you're using AI.",
+              },
+              {
+                icon: <DollarSign size={24} color="#10b981" />,
+                title: 'Value-add flows into execution',
+                desc: "Model your renovation, rent bumps, and expense cuts in the Value-Add tab. The stabilized NOI automatically feeds into the Deal Execution tab \u2014 showing refi feasibility, seller payoff coverage, and equity partner buyout math. No copy-paste between tabs.",
+                highlight: 'One source of truth from acquisition to exit.',
+              },
+              {
+                icon: <ClipboardList size={24} color="#10b981" />,
+                title: 'Execution playbooks, not just numbers',
+                desc: 'Every financing structure comes with a step-by-step playbook: what documents to prepare, what to send to the lender, when to engage attorneys, and how to structure the close. You get a plan, not just a spreadsheet.',
+                highlight: 'Know what to do next \u2014 not just what the numbers say.',
+              },
+            ].map((item, i) => (
+              <div
+                key={i}
+                style={{
+                  display: 'flex',
+                  gap: '24px',
+                  padding: '32px',
+                  backgroundColor: '#fafafa',
+                  borderRadius: '16px',
+                  border: '1px solid #e5e7eb',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#10b981';
+                  e.currentTarget.style.boxShadow =
+                    '0 8px 24px rgba(16,185,129,0.08)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#e5e7eb';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                <div
+                  style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '14px',
+                    backgroundColor: '#ecfdf5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  {item.icon}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h3
+                    style={{
+                      fontSize: '19px',
+                      fontWeight: '700',
+                      color: '#0f172a',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    {item.title}
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: '15px',
+                      color: '#64748b',
+                      lineHeight: '1.65',
+                      margin: '0 0 12px 0',
+                    }}
+                  >
+                    {item.desc}
+                  </p>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '6px 14px',
+                      backgroundColor: '#ecfdf5',
+                      borderRadius: '8px',
+                    }}
+                  >
+                    <Zap size={13} color="#059669" />
+                    <span
+                      style={{
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        color: '#059669',
+                      }}
+                    >
+                      {item.highlight}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* =================================================================
+          TESTIMONIALS
+      ================================================================= */}
+      <section
+        id="testimonials"
+        style={{
+          padding: '100px 48px',
+          backgroundColor: '#0f172a',
+        }}
+      >
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '64px' }}>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '6px 16px',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderRadius: '100px',
+                marginBottom: '16px',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+              }}
+            >
+              <Star size={14} color="#10b981" />
+              <span
+                style={{
+                  color: '#10b981',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                Testimonials
+              </span>
+            </div>
+            <h2
+              style={{
+                fontSize: '42px',
+                fontWeight: '800',
+                color: '#ffffff',
+                letterSpacing: '-1.5px',
+                marginBottom: '16px',
+              }}
+            >
+              Investors are closing faster with Deal Sniper
+            </h2>
+            <p
+              style={{
+                fontSize: '18px',
+                color: '#94a3b8',
+                maxWidth: '600px',
+                margin: '0 auto',
+                lineHeight: '1.6',
+              }}
+            >
+              Hear from real estate investors who use Deal Sniper to screen,
+              underwrite, and execute deals.
+            </p>
+          </div>
+
+          {/* Testimonial Cards */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '24px',
+              marginBottom: '48px',
+            }}
+          >
+            {[
+              {
+                quote:
+                  "I used to spend 3-4 hours per deal building a custom spreadsheet for each OM. Now I forward the broker email and have a full underwrite in my pipeline before my coffee gets cold. It's completely changed how I screen deal flow.",
+                name: 'James R.',
+                role: 'Multifamily Syndicator, 200+ Units',
+                stars: 5,
+              },
+              {
+                quote:
+                  "The financing structure comparison is what sold me. I was only looking at traditional bank debt on every deal. Deal Sniper showed me a seller-carry + bank 2nd structure on a 24-unit that saved me $180K in cash at closing. I would have missed it completely.",
+                name: 'Maria L.',
+                role: 'Value-Add Investor, TX & AZ',
+                stars: 5,
+              },
+              {
+                quote:
+                  "As a broker, I use Deal Sniper to quickly underwrite listings for my investor clients. I can turn around a full analysis within an hour of getting the OM. My clients think I have a team of analysts \u2014 it's just me and Deal Sniper.",
+                name: 'David K.',
+                role: 'Commercial RE Broker',
+                stars: 5,
+              },
+              {
+                quote:
+                  "The email pipeline is insane. I set up a rule in Gmail to auto-forward any email with 'OM' or 'offering memorandum' to deals@dealsniper.org. Now every deal that hits my inbox is automatically underwritten before I even see it.",
+                name: 'Rachel T.',
+                role: 'LP/GP Hybrid, Midwest Markets',
+                stars: 5,
+              },
+              {
+                quote:
+                  "We were using a $50K/year enterprise underwriting platform. Deal Sniper does everything it does and more \u2014 the AI extraction alone saves my team 20+ hours per week. The execution playbooks are something our old tool never had.",
+                name: 'Michael S.',
+                role: 'Director of Acquisitions, PE Fund',
+                stars: 5,
+              },
+              {
+                quote:
+                  "I'm a newer investor and was intimidated by underwriting. Deal Sniper doesn't just crunch numbers \u2014 it tells me what to do next. The step-by-step playbooks for each financing structure gave me the confidence to put in my first LOI.",
+                name: 'Priya N.',
+                role: 'First-Time Multifamily Investor',
+                stars: 5,
+              },
+            ].map((t, i) => (
+              <div
+                key={i}
+                style={{
+                  backgroundColor: 'rgba(255,255,255,0.04)',
+                  borderRadius: '16px',
+                  padding: '28px',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor =
+                    'rgba(16, 185, 129, 0.3)';
+                  e.currentTarget.style.backgroundColor =
+                    'rgba(255,255,255,0.06)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor =
+                    'rgba(255,255,255,0.08)';
+                  e.currentTarget.style.backgroundColor =
+                    'rgba(255,255,255,0.04)';
+                }}
+              >
+                {/* Stars */}
+                <div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '3px',
+                      marginBottom: '16px',
+                    }}
+                  >
+                    {Array.from({ length: t.stars }).map((_, si) => (
+                      <Star
+                        key={si}
+                        size={16}
+                        color="#fbbf24"
+                        fill="#fbbf24"
+                      />
+                    ))}
+                  </div>
+                  <p
+                    style={{
+                      fontSize: '15px',
+                      color: '#e2e8f0',
+                      lineHeight: '1.65',
+                      marginBottom: '20px',
+                    }}
+                  >
+                    &ldquo;{t.quote}&rdquo;
+                  </p>
+                </div>
+                <div
+                  style={{
+                    borderTop: '1px solid rgba(255,255,255,0.08)',
+                    paddingTop: '16px',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '15px',
+                      fontWeight: '700',
+                      color: '#ffffff',
+                    }}
+                  >
+                    {t.name}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '13px',
+                      color: '#10b981',
+                      fontWeight: '500',
+                    }}
+                  >
+                    {t.role}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Metrics */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '48px',
+              padding: '32px',
+              backgroundColor: 'rgba(16, 185, 129, 0.08)',
+              borderRadius: '16px',
+              border: '1px solid rgba(16, 185, 129, 0.15)',
+              flexWrap: 'wrap',
+            }}
+          >
+            {[
+              { value: '95%', label: 'Time saved vs manual underwriting' },
+              { value: '20+ hrs', label: 'Saved per week per team' },
+              { value: '3x', label: 'More deals screened' },
+              { value: '4.9/5', label: 'Average user rating' },
+            ].map((m, i) => (
+              <div key={i} style={{ textAlign: 'center', minWidth: '140px' }}>
+                <div
+                  style={{
+                    fontSize: '30px',
+                    fontWeight: '800',
+                    color: '#10b981',
+                  }}
+                >
+                  {m.value}
+                </div>
+                <div
+                  style={{
+                    fontSize: '12px',
+                    color: '#94a3b8',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    fontWeight: '600',
+                  }}
+                >
+                  {m.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* =================================================================
+          FAQ
+      ================================================================= */}
+      <section style={{ padding: '100px 48px', backgroundColor: '#ffffff' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+            <h2
+              style={{
+                fontSize: '42px',
+                fontWeight: '800',
+                color: '#0f172a',
+                letterSpacing: '-1.5px',
+                marginBottom: '16px',
+              }}
+            >
+              Frequently Asked Questions
+            </h2>
+            <p
+              style={{
+                fontSize: '18px',
+                color: '#64748b',
+                lineHeight: '1.6',
+              }}
+            >
+              Quick answers to common questions.
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+            }}
+          >
+            {faqs.map((faq) => (
+              <div
+                key={faq.id}
+                style={{
+                  backgroundColor: '#fafafa',
+                  borderRadius: '14px',
+                  border: '1px solid #e5e7eb',
+                  overflow: 'hidden',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <button
+                  onClick={() => onClickFAQExpand(faq.id)}
+                  style={{
+                    width: '100%',
+                    padding: '20px 24px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#0f172a',
+                    }}
+                  >
+                    {faq.q}
+                  </span>
+                  {expandedFaq === faq.id ? (
+                    <ChevronUp size={20} color="#64748b" />
+                  ) : (
+                    <ChevronDown size={20} color="#64748b" />
+                  )}
+                </button>
+                {expandedFaq === faq.id && (
+                  <div
+                    style={{
+                      padding: '0 24px 20px',
+                      fontSize: '15px',
+                      color: '#64748b',
+                      lineHeight: '1.65',
+                    }}
+                  >
+                    {faq.a}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* =================================================================
+          FINAL CTA
+      ================================================================= */}
+      <section
+        style={{
+          padding: '100px 48px',
+          background:
+            'linear-gradient(135deg, #0f172a 0%, #064e3b 100%)',
+          textAlign: 'center',
+        }}
+      >
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-          <h2 style={{ ...heading2Light, marginBottom: '16px' }}>Ready to screen deals faster?</h2>
-          <p style={{ ...subheadingLight, marginBottom: '32px' }}>
-            Start free. No credit card required. Cancel anytime.
+          <h2
+            style={{
+              fontSize: '48px',
+              fontWeight: '900',
+              color: '#ffffff',
+              letterSpacing: '-2px',
+              marginBottom: '20px',
+              lineHeight: '1.1',
+            }}
+          >
+            Stop building spreadsheets.
+            <br />
+            <span
+              style={{
+                background: 'linear-gradient(135deg, #10b981, #34d399)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
+              Start closing deals.
+            </span>
+          </h2>
+          <p
+            style={{
+              fontSize: '18px',
+              color: '#94a3b8',
+              lineHeight: '1.6',
+              marginBottom: '40px',
+            }}
+          >
+            Join investors who are screening more deals, building better models,
+            and closing faster &mdash; all without touching a spreadsheet.
           </p>
           <button
             onClick={() => onClickPrimaryCTA('footer')}
-            style={{ ...primaryBtn, padding: '20px 48px', fontSize: '18px' }}
-            onMouseEnter={e => { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 12px 32px rgba(16, 185, 129, 0.45)'; }}
-            onMouseLeave={e => { e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 8px 24px rgba(16, 185, 129, 0.35)'; }}
+            style={{
+              padding: '20px 52px',
+              backgroundColor: '#10b981',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '14px',
+              fontSize: '18px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              boxShadow: '0 8px 32px rgba(16, 185, 129, 0.4)',
+              transition: 'all 0.25s',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '10px',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow =
+                '0 12px 40px rgba(16, 185, 129, 0.55)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow =
+                '0 8px 32px rgba(16, 185, 129, 0.4)';
+            }}
           >
-            Start Free - No Credit Card
+            Start Free &mdash; No Credit Card
+            <ArrowRight size={18} />
           </button>
-          <p style={{ marginTop: '16px', fontSize: '13px', color: '#64748b' }}>
-            Questions? Email <a href="mailto:support@dealsniper.io" style={{ color: '#10b981' }}>support@dealsniper.io</a>
+          <p
+            style={{
+              marginTop: '20px',
+              fontSize: '14px',
+              color: '#64748b',
+            }}
+          >
+            Questions?{' '}
+            <a
+              href="mailto:support@dealsniper.org"
+              style={{ color: '#10b981', textDecoration: 'none', fontWeight: '600' }}
+            >
+              support@dealsniper.org
+            </a>
           </p>
         </div>
       </section>
 
-      {/* ===================================================================
+      {/* =================================================================
           FOOTER
-      =================================================================== */}
-      <footer style={{ padding: '24px 40px', backgroundColor: '#0f172a', borderTop: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
-        <p style={{ color: '#64748b', fontSize: '13px', margin: 0 }}>
-          2025 Deal Sniper. Built for investors who move fast.
+      ================================================================= */}
+      <footer
+        style={{
+          padding: '24px 48px',
+          backgroundColor: '#020617',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          textAlign: 'center',
+        }}
+      >
+        <p style={{ color: '#475569', fontSize: '13px', margin: 0 }}>
+          &copy; {new Date().getFullYear()} Deal Sniper. Built for investors who
+          move fast.
         </p>
       </footer>
     </div>
