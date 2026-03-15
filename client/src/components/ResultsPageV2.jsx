@@ -1375,7 +1375,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
         return (
           <div style={{ padding: '16px', backgroundColor: '#f9fafb' }}>
             <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-              <ScenarioSheet scenarioData={scenarioData} calculations={fullCalcs} />
+              <ScenarioSheet scenarioData={scenarioData} calculations={fullCalcs} marketData={marketData} />
             </div>
           </div>
         );

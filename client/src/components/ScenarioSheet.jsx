@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 const currency0 = (n) => `$${Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 const pct = (n) => `${(Number(n || 0)).toFixed(2)}%`;
 
@@ -48,12 +48,34 @@ function Table({ columns, rows, footer }) {
   );
 }
 
-export default function ScenarioSheet({ scenarioData, calculations }) {
+export default function ScenarioSheet({ scenarioData, calculations, marketData }) {
   const sd = scenarioData || {};
   const pnl = sd.pnl || {};
   const unitMix = useMemo(() => Array.isArray(sd.unit_mix) ? sd.unit_mix : [], [sd.unit_mix]);
   const expenses = sd.expenses || {};
   const full = (calculations && (calculations.fullAnalysis || calculations)) || {};
+
+  // FRED macro environment from marketData (passed from /api/market-analysis)
+  const macroEnv = marketData?.macro_environment || {};
+
+  // Treasury rates (fetch directly)
+  const [treasuryRates, setTreasuryRates] = useState([]);
+  const [treasuryAsOf, setTreasuryAsOf] = useState(null);
+  useEffect(() => {
+    (async () => {
+      try {
+        const apiBase = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
+        const resp = await fetch(`${apiBase}/api/treasury-rates`);
+        if (resp.ok) {
+          const data = await resp.json();
+          setTreasuryRates(data.rates || []);
+          setTreasuryAsOf(data.as_of || null);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch treasury rates:', err);
+      }
+    })();
+  }, []);
 
   const totalUnits = sd.property?.units || unitMix.reduce((s,u)=> s + (u.units||0), 0) || 0;
 
@@ -263,8 +285,66 @@ export default function ScenarioSheet({ scenarioData, calculations }) {
     { key: 'value', label: 'Value', align: 'right' }
   ];
 
+  // FRED macro indicator definitions
+  const macroIndicators = [
+    { key: 'mortgage_30yr', icon: '🏠', color: '#1d4ed8', bg: '#eff6ff', border: '#dbeafe' },
+    { key: 'treasury_10yr', icon: '📈', color: '#047857', bg: '#ecfdf5', border: '#d1fae5' },
+    { key: 'fed_funds_rate', icon: '💵', color: '#7c3aed', bg: '#faf5ff', border: '#e9d5ff' },
+    { key: 'unemployment_rate', icon: '👥', color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
+    { key: 'gdp_growth', icon: '📊', color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
+    { key: 'cpi_rent_yoy', icon: '🏘️', color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' },
+    { key: 'housing_starts', icon: '🏗️', color: '#0e7490', bg: '#ecfeff', border: '#cffafe' },
+    { key: 'consumer_sentiment', icon: '😊', color: '#4338ca', bg: '#eef2ff', border: '#c7d2fe' },
+  ].filter(i => macroEnv[i.key]);
+
   return (
     <div style={{ padding: '16px' }}>
+
+      {/* ═══ FRED MACRO ENVIRONMENT ═══ */}
+      {macroIndicators.length > 0 && (
+        <>
+          <SectionTitle>Macro Environment (FRED)</SectionTitle>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 14 }}>
+            {macroIndicators.map(({ key, icon, color, bg, border }) => {
+              const d = macroEnv[key];
+              const isPercent = d.unit === '%';
+              const displayVal = isPercent ? `${d.value}%` : d.unit === 'K' ? `${Math.round(d.value).toLocaleString()}K` : d.value?.toLocaleString();
+              return (
+                <div key={key} style={{ padding: '12px', borderRadius: 10, backgroundColor: bg, border: `1px solid ${border}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <span style={{ fontSize: 16 }}>{icon}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{d.label}</span>
+                  </div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color }}>{displayVal}</div>
+                  {d.date && <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 2 }}>{new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>}
+                </div>
+              );
+            })}
+          </div>
+          {macroEnv.as_of && <div style={{ fontSize: 10, color: '#9ca3af', textAlign: 'right', marginBottom: 14 }}>Source: Federal Reserve FRED · as of {new Date(macroEnv.as_of).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>}
+        </>
+      )}
+
+      {/* ═══ TREASURY YIELD CURVE ═══ */}
+      {treasuryRates.length > 0 && (
+        <>
+          <SectionTitle>Treasury Yield Curve</SectionTitle>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 8 }}>
+            {treasuryRates.map(tr => (
+              <div key={tr.term} style={{ padding: '12px', borderRadius: 10, backgroundColor: '#ecfdf5', border: '1px solid #d1fae5', textAlign: 'center' }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', marginBottom: 4 }}>{tr.term}-Year</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: '#047857' }}>{tr.rate.toFixed(2)}%</div>
+                {tr.date && <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 2 }}>{new Date(tr.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>}
+              </div>
+            ))}
+          </div>
+          <div style={{ padding: '10px 12px', backgroundColor: '#eef2ff', borderRadius: 8, border: '1px solid #c7d2fe', fontSize: 11, color: '#3730a3', marginBottom: 14 }}>
+            <strong>💡 Typical CRE Spreads:</strong> Agency (Fannie/Freddie): +1.25–1.75% · Bank/CMBS: +1.75–2.50% · Bridge: +3.00–5.00%
+          </div>
+          {treasuryAsOf && <div style={{ fontSize: 10, color: '#9ca3af', textAlign: 'right', marginBottom: 14 }}>Treasury rates as of {treasuryAsOf}</div>}
+        </>
+      )}
+
       <SectionTitle>Unit Mix & Scheduled Income</SectionTitle>
       <Table columns={headerColumnsUM} rows={unitMixRows.rows} footer={unitMixRows.footer} />
 
