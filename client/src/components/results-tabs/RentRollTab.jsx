@@ -262,8 +262,9 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange, ini
               <div style={{ fontSize: '12px', color: '#9ca3af' }}>{unitMixData.length} unit types</div>
               <div style={{ marginLeft: 'auto', fontSize: '12px', color: '#9ca3af' }}>↔ Resize columns by dragging between headers.</div>
             </div>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ minWidth: '1200px', width: '100%', borderCollapse: 'collapse', fontSize: '12px', whiteSpace: 'nowrap' }}>
+            <div className="unit-mix-scroll" style={{ overflowX: 'scroll', paddingBottom: '4px' }}>
+              <style>{`.unit-mix-scroll::-webkit-scrollbar { height: 10px; } .unit-mix-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 5px; } .unit-mix-scroll::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 5px; } .unit-mix-scroll::-webkit-scrollbar-thumb:hover { background: #64748b; }`}</style>
+              <table style={{ minWidth: '1600px', borderCollapse: 'collapse', fontSize: '12px', whiteSpace: 'nowrap' }}>
                 <colgroup>
                   {colWidths.map((w, i) => <col key={i} style={{ width: w }} />)}
                 </colgroup>
