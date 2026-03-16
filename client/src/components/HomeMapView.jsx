@@ -51,6 +51,12 @@ function HomeMapView() {
   // SFR & MF Sales heatmap state
   const [sfrEnabled, setSfrEnabled] = useState(false);
   const [mfEnabled, setMfEnabled] = useState(false);
+
+  // Data Centers layer state
+  const [dataCentersEnabled, setDataCentersEnabled] = useState(false);
+  const [dataCenters, setDataCenters] = useState([]);
+  const dcMarkersRef = useRef([]);
+  const dcPopupRef = useRef(null);
   const sfrDataRef = useRef(null);   // { [zip5]: { price, yoy, momentum, city, state, metro } }
   const mfDataRef = useRef(null);    // { [zip5]: { pricePerUnit, capRate, yoy, trend, city, state } }
   const zctaGeoCache = useRef({});   // { [boundsKey]: GeoJSON features[] }
@@ -663,6 +669,138 @@ function HomeMapView() {
     };
   }, [mfEnabled, mapReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Load data centers JSON on mount
+  useEffect(() => {
+    fetch('/data_centers.json')
+      .then(res => res.json())
+      .then(data => {
+        console.log(`[Data Centers] Loaded ${data.length} records`);
+        setDataCenters(data);
+      })
+      .catch(err => console.error('[Data Centers] Failed to load:', err));
+  }, []);
+
+  // Data Centers layer toggle – add/remove markers
+  useEffect(() => {
+    // Clean up existing DC markers
+    dcMarkersRef.current.forEach(m => m.remove());
+    dcMarkersRef.current = [];
+    if (dcPopupRef.current) { dcPopupRef.current.remove(); dcPopupRef.current = null; }
+
+    if (!dataCentersEnabled || !mapReady || !map.current || dataCenters.length === 0) return;
+
+    dataCenters.forEach(dc => {
+      const lat = parseFloat(dc.Latitude);
+      const lng = parseFloat(dc.Longitude);
+      if (isNaN(lat) || isNaN(lng)) return;
+
+      // Create custom marker element
+      const el = document.createElement('div');
+      el.style.width = '28px';
+      el.style.height = '28px';
+      el.style.backgroundColor = '#8b5cf6';
+      el.style.borderRadius = '50%';
+      el.style.display = 'flex';
+      el.style.alignItems = 'center';
+      el.style.justifyContent = 'center';
+      el.style.border = '2.5px solid white';
+      el.style.boxShadow = '0 2px 8px rgba(139,92,246,0.5)';
+      el.style.cursor = 'pointer';
+      el.style.transition = 'transform 0.15s';
+      el.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>`;
+      el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.25)'; });
+      el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)'; });
+
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (dcPopupRef.current) dcPopupRef.current.remove();
+
+        const fmt = (val) => (val != null && val !== '' && val !== 'N/A') ? val : '–';
+        const fmtMoney = (val) => {
+          if (val == null || val === '') return '–';
+          const n = parseFloat(val);
+          return isNaN(n) ? val : `$${n}B`;
+        };
+
+        const html = `
+          <div style="font-family:Inter,-apple-system,sans-serif;padding:12px;min-width:300px;max-width:380px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <div style="width:32px;height:32px;border-radius:8px;background:#8b5cf6;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+              </div>
+              <div>
+                <div style="font-weight:700;font-size:14px;color:#111827;line-height:1.2">${fmt(dc['Project Name'])}</div>
+                <div style="font-size:11px;color:#6b7280">${fmt(dc['Operator / Developer'])}</div>
+              </div>
+            </div>
+            <div style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;margin-bottom:8px;
+              background:${dc.Status?.includes('Operational') ? '#dcfce7' : dc.Status?.includes('Under Construction') ? '#fef3c7' : '#e0e7ff'};
+              color:${dc.Status?.includes('Operational') ? '#166534' : dc.Status?.includes('Under Construction') ? '#92400e' : '#3730a3'}">
+              ${fmt(dc.Status)}
+            </div>
+            <div style="font-size:12px;color:#374151;margin-bottom:8px">
+              <div style="margin-bottom:2px">📍 ${fmt(dc['Full Address'] || (dc.City + ', ' + dc.State))}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;margin-bottom:6px">
+              <div style="padding:6px 8px;background:#f5f3ff;border-radius:6px">
+                <div style="color:#8b5cf6;font-weight:600;font-size:9px;text-transform:uppercase">Parent Company</div>
+                <div style="font-weight:600;color:#111827">${fmt(dc['Parent Company'])}</div>
+              </div>
+              <div style="padding:6px 8px;background:#fef3c7;border-radius:6px">
+                <div style="color:#92400e;font-weight:600;font-size:9px;text-transform:uppercase">Investment</div>
+                <div style="font-weight:600;color:#111827">${fmtMoney(dc['Investment ($B)'])}</div>
+              </div>
+              <div style="padding:6px 8px;background:#e0f2fe;border-radius:6px">
+                <div style="color:#0369a1;font-weight:600;font-size:9px;text-transform:uppercase">Capacity</div>
+                <div style="font-weight:600;color:#111827">${fmt(dc['Capacity (MW)'])}${dc['Capacity (MW)'] && dc['Capacity (MW)'] !== '–' ? ' MW' : ''}</div>
+              </div>
+              <div style="padding:6px 8px;background:#dcfce7;border-radius:6px">
+                <div style="color:#166534;font-weight:600;font-size:9px;text-transform:uppercase">Site Size</div>
+                <div style="font-weight:600;color:#111827">${fmt(dc['Site Size (Acres)'])}${dc['Site Size (Acres)'] ? ' acres' : ''}</div>
+              </div>
+              <div style="padding:6px 8px;background:#fff7ed;border-radius:6px">
+                <div style="color:#9a3412;font-weight:600;font-size:9px;text-transform:uppercase">Est. Completion</div>
+                <div style="font-weight:600;color:#111827">${fmt(dc['Est. Completion'])}</div>
+              </div>
+              <div style="padding:6px 8px;background:#fdf2f8;border-radius:6px">
+                <div style="color:#9d174d;font-weight:600;font-size:9px;text-transform:uppercase">Power Source</div>
+                <div style="font-weight:600;color:#111827">${fmt(dc['Power Source Notes'])}</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;margin-bottom:6px">
+              <div style="padding:4px 8px;background:#f9fafb;border-radius:4px">
+                <span style="color:#6b7280;font-size:9px;font-weight:600">CONSTRUCTION JOBS</span><br/>
+                <strong style="color:#111827">${fmt(dc['Jobs (Construction)'])}</strong>
+              </div>
+              <div style="padding:4px 8px;background:#f9fafb;border-radius:4px">
+                <span style="color:#6b7280;font-size:9px;font-weight:600">OPERATIONAL JOBS</span><br/>
+                <strong style="color:#111827">${fmt(dc['Jobs (Operational)'])}</strong>
+              </div>
+            </div>
+            ${dc['Key Tenant / Use'] ? `<div style="font-size:11px;padding:4px 8px;background:#f0fdf4;border-radius:4px;margin-bottom:4px"><span style="color:#6b7280;font-weight:600;font-size:9px">KEY TENANT / USE</span><br/><strong style="color:#111827">${dc['Key Tenant / Use']}</strong></div>` : ''}
+            ${dc.Notes ? `<div style="font-size:11px;color:#6b7280;border-top:1px solid #e5e7eb;padding-top:6px;margin-top:4px">${dc.Notes}</div>` : ''}
+          </div>`;
+
+        const popup = new mapboxgl.Popup({ maxWidth: '400px', offset: 15 })
+          .setLngLat([lng, lat])
+          .setHTML(html)
+          .addTo(map.current);
+        dcPopupRef.current = popup;
+      });
+
+      const marker = new mapboxgl.Marker({ element: el })
+        .setLngLat([lng, lat])
+        .addTo(map.current);
+      dcMarkersRef.current.push(marker);
+    });
+
+    return () => {
+      dcMarkersRef.current.forEach(m => m.remove());
+      dcMarkersRef.current = [];
+      if (dcPopupRef.current) { dcPopupRef.current.remove(); dcPopupRef.current = null; }
+    };
+  }, [dataCentersEnabled, dataCenters, mapReady]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Add markers when properties change AND map is ready
   useEffect(() => {
     console.log('🎯 Markers useEffect triggered, properties:', properties.length, 'mapReady:', mapReady, 'map exists:', !!map.current);
@@ -1083,6 +1221,7 @@ function HomeMapView() {
             {[
               { label: 'SFR Sales', active: sfrEnabled, color: '#f59e0b', toggle: () => setSfrEnabled(v => !v) },
               { label: 'MF Sales', active: mfEnabled, color: '#3b82f6', toggle: () => setMfEnabled(v => !v) },
+              { label: 'Data Centers', active: dataCentersEnabled, color: '#8b5cf6', toggle: () => setDataCentersEnabled(v => !v) },
             ].map(({ label, active, color, toggle }) => (
               <button key={label} onClick={toggle} style={{
                 display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -1146,6 +1285,25 @@ function HomeMapView() {
         {(sfrEnabled || mfEnabled) && (
           <div style={{ fontSize: 10, color: '#94a3b8', textAlign: 'center', backgroundColor: 'rgba(15,23,42,0.7)', borderRadius: 6, padding: '3px 8px' }}>
             Zoom in to see ZIP polygons (zoom ≥ 7)
+          </div>
+        )}
+
+        {/* Data Centers Legend */}
+        {dataCentersEnabled && (
+          <div style={{
+            backgroundColor: 'rgba(15,23,42,0.88)',
+            backdropFilter: 'blur(8px)',
+            borderRadius: '10px',
+            padding: '8px 12px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#8b5cf6', marginBottom: 4 }}>US Data Centers ({dataCenters.length})</div>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 9, color: '#9ca3af' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#8b5cf6', display: 'inline-block' }} />
+                Click pin for details
+              </div>
+            </div>
           </div>
         )}
       </div>
