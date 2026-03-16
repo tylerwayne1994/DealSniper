@@ -263,7 +263,7 @@ export default function RentRollTab({ scenarioData, dealId, onUnitMixChange, ini
               <div style={{ marginLeft: 'auto', fontSize: '12px', color: '#9ca3af' }}>↔ Resize columns by dragging between headers.</div>
             </div>
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', tableLayout: 'fixed', whiteSpace: 'nowrap' }}>
+              <table style={{ minWidth: '1200px', width: '100%', borderCollapse: 'collapse', fontSize: '12px', whiteSpace: 'nowrap' }}>
                 <colgroup>
                   {colWidths.map((w, i) => <col key={i} style={{ width: w }} />)}
                 </colgroup>
