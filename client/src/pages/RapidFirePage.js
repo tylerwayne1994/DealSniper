@@ -572,40 +572,6 @@ function RapidFirePage() {
         console.warn('Check if your spreadsheet has these columns:', data.debug.matched_headers);
       }
       
-      // Deduct tokens AFTER successful results (only if AI was used)
-      if (usingAI && data.deals && data.deals.length > 0) {
-        try {
-          console.log('🪙 Deducting token after successful AI analysis...');
-          const deductResponse = await fetch(`${API_BASE}/api/tokens/use`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Profile-ID': profileId },
-            credentials: 'include',
-            body: JSON.stringify({
-              operation_type: 'rapid_fire_ai',
-              deal_name: `Rapid Fire - ${selectedFile.name}`,
-              location: `${data.deals.length} properties analyzed`
-            })
-          });
-          
-          if (!deductResponse.ok) {
-            console.error('⚠️ Token deduction failed but results were successful');
-            showToast('Token deduction failed. Please refresh.', 'warning');
-          } else {
-            const deductData = await deductResponse.json();
-            console.log('✅ Token deducted:', deductData);
-            if (deductData.success) {
-              showToast(`1 token deducted. New balance: ${deductData.new_balance}`);
-            } else {
-              showToast('Token deduction failed. Please refresh.', 'warning');
-            }
-          }
-        } catch (tokenError) {
-          console.error('💥 Token deduction error:', tokenError);
-          // Don't block the results just because token deduction failed
-          showToast('Token deduction error. Please refresh.', 'warning');
-        }
-      }
-      
       setDeals(Array.isArray(data.deals) ? data.deals : []);
       setIsModalOpen(false);
       console.log('✅ Modal closed, deals set');
@@ -621,70 +587,9 @@ function RapidFirePage() {
     }
   };
 
-  // Handler to continue after user confirms token use
-  const handleConfirmTokenAndRun = async () => {
+  // Token confirm handler (no longer needed - rapid fire is free)
+  const handleConfirmTokenAndRun = () => {
     setIsTokenConfirmOpen(false);
-    // Proceed as if usingAI=false block had just run
-    setIsSubmitting(true);
-    setIsLoadingResults(true);
-
-    try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('settings', JSON.stringify(settings));
-      formData.append('sourceType', 'reonomy');
-
-      const response = await fetch(`${API_BASE}/v2/rapid-fire/underwrite`, {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Rapid fire endpoint error: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
-
-      // Deduct one token now that results succeeded
-      if (data.deals && data.deals.length > 0) {
-        try {
-          const deductResponse = await fetch(`${API_BASE}/api/tokens/use`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Profile-ID': profileId },
-            credentials: 'include',
-            body: JSON.stringify({
-              operation_type: 'rapid_fire_ai',
-              deal_name: `Rapid Fire - ${selectedFile.name}`,
-              location: `${data.deals.length} properties analyzed`
-            })
-          });
-          if (!deductResponse.ok) {
-            console.error('⚠️ Token deduction failed but results were successful');
-            showToast('Token deduction failed. Please refresh.', 'warning');
-          }
-          else {
-            const dd = await deductResponse.json();
-            if (dd?.success) showToast(`1 token deducted. New balance: ${dd.new_balance}`);
-            else showToast('Token deduction failed. Please refresh.', 'warning');
-          }
-        } catch (e) {
-          console.error('💥 Token deduction error:', e);
-          showToast('Token deduction error. Please refresh.', 'warning');
-        }
-      }
-
-      setDeals(Array.isArray(data.deals) ? data.deals : []);
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error('💥 Rapid fire underwriting failed:', error);
-      alert(`Failed to run rapid fire: ${error.message}`);
-      setDeals([]);
-      setIsModalOpen(false);
-    } finally {
-      setIsSubmitting(false);
-      setIsLoadingResults(false);
-    }
   };
 
   const handleSort = (field) => {

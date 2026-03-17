@@ -420,9 +420,8 @@ export default function DocumentAnalysisTab({
       );
       if (!userConfirmed) return;
     } catch (err) {
-      console.error('Token check failed:', err);
-      setError('Failed to check token balance. Please try again.');
-      return;
+      console.error('Token check failed, proceeding anyway (backend will enforce):', err);
+      // Don't block — backend has its own token check
     }
 
     setIsGenerating(true);
@@ -797,7 +796,7 @@ export default function DocumentAnalysisTab({
                     onMouseEnter={(e) => { e.target.style.transform = 'translateY(-1px)'; e.target.style.boxShadow = '0 6px 20px rgba(37,99,235,0.45)'; }}
                     onMouseLeave={(e) => { e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 4px 14px rgba(37,99,235,0.35)'; }}
                   >
-                    Generate Analysis (1 Token)
+                    Generate Analysis (2 Tokens)
                   </button>
                   <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '8px' }}>
                     Takes 30-60 seconds • Uses Claude AI + Perplexity

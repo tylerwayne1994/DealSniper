@@ -4538,13 +4538,6 @@ async def generate_document_analysis(deal_id: str, request: Request):
         profile = None
         get_token_supabase = None
 
-    # --- Get deal data ---
-    deal = storage.get_deal(deal_id)
-    if not deal:
-        raise HTTPException(status_code=404, detail="Deal not found")
-    
-    parsed_data = deal.parsed_json or {}
-    
     # --- Parse request body ---
     try:
         body = await request.json()
@@ -4555,6 +4548,19 @@ async def generate_document_analysis(deal_id: str, request: Request):
     force_refresh = body.get("force_refresh", False)
     # Allow passing scenario_data directly from the frontend (overrides stored deal)
     scenario_data_override = body.get("scenario_data", None)
+
+    # --- Get deal data ---
+    deal = storage.get_deal(deal_id)
+    if deal:
+        parsed_data = deal.parsed_json or {}
+    elif scenario_data_override:
+        # Deal not in backend storage but frontend sent scenario_data — use it
+        log.info(f"[V2] Deal {deal_id} not in storage, using scenario_data from request body")
+        parsed_data = scenario_data_override
+        scenario_data_override = None  # Already used
+    else:
+        raise HTTPException(status_code=404, detail="Deal not found")
+    
     if scenario_data_override:
         parsed_data = scenario_data_override
     
