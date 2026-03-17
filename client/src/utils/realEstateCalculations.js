@@ -489,7 +489,8 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   }
   // Apply defaults and sanity bounds
   if (!rawExitCap || rawExitCap <= 0 || rawExitCap > 20) {
-    rawExitCap = 7.25;
+    // Default: going-in cap rate + 50bps spread (matches UI display)
+    rawExitCap = capRate > 0 ? capRate + 0.5 : 7.25;
   }
 
   const exitCapRate = rawExitCap / 100;
@@ -1003,6 +1004,7 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
       unleveredEquityMultiple: unleveredEquityMultiple,
       leveredIRR: leveredIRR,
       leveredEquityMultiple: leveredEquityMultiple,
+      exitCapRate: exitCapRate * 100,
       avgCashOnCash: avgCashOnCash,
       avgFreeAndClearReturn: avgFreeAndClearReturn,
       minDSCR: minDSCR,

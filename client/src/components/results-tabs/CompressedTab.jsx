@@ -413,7 +413,7 @@ export default function CompressedTab({
   const totalProjectCost = purchasePrice + closingCosts + capitalImprovements + acquisitionFee + loanFees + financingFees;
   const loanTermYears = seniorLoan?.term || scenarioData?.pricing_financing?.term_years || 30;
   const amortYears = seniorLoan?.amort || scenarioData?.pricing_financing?.amortization_years || 30;
-  const exitCapRate = fullCalcs?.returns?.exitCapRate || selectedScenario?.exitCapRate || (capRateVal + 0.5);
+  const exitCapRate = fullCalcs?.returns?.exitCapRate || fullCalcs?.returns?.terminalCapRate || selectedScenario?.exitCapRate || (capRateVal + 0.5);
   const noiAtSale = exitProj?.noi || (startingNOI * Math.pow(1.03, holdingPeriod));
 
   // ── Stress Test: current slider values (normalized to %) ──
