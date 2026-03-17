@@ -1316,16 +1316,20 @@ function DashboardMapTab() {
     },
     satellite: {
       url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      attribution: '&copy; Esri, Maxar, Earthstar Geographics'
+      attribution: '&copy; Esri, Maxar, Earthstar Geographics',
+      labelsUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'
     },
-    streets: {
-      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      attribution: '&copy; OpenStreetMap contributors'
+    topo: {
+      url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+      attribution: '&copy; OpenTopoMap, &copy; OpenStreetMap contributors',
+      maxNativeZoom: 17,
+      className: 'dark-topo-tiles'
     }
   };
 
-  const tileUrl = (tileConfigs[mapStyle] || tileConfigs['streets']).url;
-  const attribution = (tileConfigs[mapStyle] || tileConfigs['streets']).attribution;
+  const currentTile = tileConfigs[mapStyle] || tileConfigs['satellite'];
+  const tileUrl = currentTile.url;
+  const attribution = currentTile.attribution;
 
   // Marker styles by category — clean bubble markers showing unit count
   const categoryIcon = (cat, source, units) => {
@@ -2367,6 +2371,16 @@ function DashboardMapTab() {
 
   return (
     <div style={{ display: 'flex', height: '100%', backgroundColor: '#0f172a', overflow: 'hidden' }}>
+      {/* Dark topo tile filter + satellite label styles */}
+      <style>{`
+        .dark-topo-tiles {
+          filter: brightness(0.35) contrast(1.6) saturate(1.8);
+        }
+        .leaflet-tile-pane .leaflet-layer:last-child img {
+          /* Keep label overlays crisp */
+          image-rendering: auto;
+        }
+      `}</style>
       {/* ═══════════════ MAIN MAP AREA (takes full space) ═══════════════ */}
       <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
 
@@ -2818,7 +2832,7 @@ function DashboardMapTab() {
           {[
             { key: 'satellite', label: isMobile ? 'Sat' : 'Satellite' },
             { key: 'voyager', label: 'Base' },
-            { key: 'streets', label: isMobile ? 'Hyb' : 'Hybrid' },
+            { key: 'topo', label: 'Topo' },
             { key: '3d', label: '3D' },
           ].map(({ key, label }, i) => (
             <button key={key} onClick={() => setMapStyle(key)} style={{
@@ -2844,7 +2858,22 @@ function DashboardMapTab() {
         {/* Leaflet 2D Map */}
         {mapStyle !== '3d' && (
         <MapContainer center={defaultCenter} zoom={defaultZoom} style={{ width: '100%', height: '100%' }}>
-          <TileLayer url={tileUrl} attribution={attribution} />
+          <TileLayer
+            url={tileUrl}
+            attribution={attribution}
+            maxZoom={22}
+            {...(currentTile.maxNativeZoom ? { maxNativeZoom: currentTile.maxNativeZoom } : {})}
+            {...(currentTile.className ? { className: currentTile.className } : {})}
+          />
+          {/* Esri Reference Labels overlay for satellite */}
+          {currentTile.labelsUrl && (
+            <TileLayer
+              url={currentTile.labelsUrl}
+              maxZoom={22}
+              attribution=""
+              pane="overlayPane"
+            />
+          )}
           <CommandExecutor commands={pendingCommands} onDone={() => setPendingCommands([])} addPin={addPinFromCommand} />
 
           {/* Base categorized markers */}
