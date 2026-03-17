@@ -26,13 +26,13 @@ TOKEN_COSTS = {
     "contract_generation": 1,
     "pitch_deck_generation": 2,
     "document_analysis": 2,
-    "rentcast_fetch": 1,
-    "market_research_results": 1,
-    "market_research_dashboard": 1,
-    "deal_structure_analysis": 1,
-    "deal_summary": 0,  # Hold off - tracking only
-    "wizard_ai_analysis": 0,  # Hold off - tracking only
-    "rapid_fire_ai": 1,  # 1 token per 150 properties
+    "rentcast_fetch": 0,             # Free
+    "market_research_results": 0,    # Free
+    "market_research_dashboard": 0,  # Free
+    "deal_structure_analysis": 0,    # Free
+    "deal_summary": 0,               # Free - tracking only
+    "wizard_ai_analysis": 0,         # Free - tracking only
+    "rapid_fire_ai": 0,              # Free
 }
 
 # Subscription tiers and monthly limits

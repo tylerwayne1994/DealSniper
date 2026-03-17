@@ -533,50 +533,6 @@ function RapidFirePage() {
 
     console.log('✅ Starting rapid fire underwriting...');
     
-    // Check if using Reonomy (AI analysis will be used)
-    const usingAI = sourceType === 'reonomy';
-    const tokensRequired = usingAI ? 1 : 0;
-    
-    // Check token balance if AI will be used
-    if (usingAI) {
-      try {
-        console.log('🪙 Checking token balance...');
-        if (!profileId) {
-          alert('Please sign in to use AI underwriting.');
-          return;
-        }
-        const tokenCheckResponse = await fetch(API_ENDPOINTS.tokensBalance, {
-          method: 'GET',
-          headers: { 'X-Profile-ID': profileId },
-          credentials: 'include',
-        });
-        
-        if (!tokenCheckResponse.ok) {
-          console.error('❌ Token check failed');
-          alert('Failed to check token balance. Please try again.');
-          return;
-        }
-        
-        const tokenData = await tokenCheckResponse.json();
-        console.log('🪙 Token balance:', tokenData);
-        
-        if (!tokenData.has_tokens || tokenData.token_balance < tokensRequired) {
-          alert(`Insufficient tokens! You need ${tokensRequired} token but have ${tokenData.token_balance}. AI-powered analysis for Reonomy files requires tokens.`);
-          return;
-        }
-
-        // Open confirmation modal instead of native confirm
-        setPendingTokenInfo({ required: tokensRequired, balance: tokenData });
-        setIsTokenConfirmOpen(true);
-        // Pause here; onConfirm handler continues the flow
-        return;
-      } catch (error) {
-        console.error('💥 Token check failed:', error);
-        alert(`Failed to check tokens: ${error.message}`);
-        return;
-      }
-    }
-    // If not using AI, continue directly
     setIsSubmitting(true);
     setIsLoadingResults(true);
 
