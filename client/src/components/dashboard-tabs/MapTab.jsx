@@ -547,6 +547,10 @@ function DashboardMapTab() {
   const [sfrSalesEnabled, setSfrSalesEnabled] = useState(false);
   const [mfSalesEnabled, setMfSalesEnabled] = useState(false);
 
+  // Data Centers overlay state
+  const [dataCentersEnabled, setDataCentersEnabled] = useState(false);
+  const [dataCentersData, setDataCentersData] = useState([]);
+
   // AI Agent zoning discovery state
   const [agentCities, setAgentCities] = useState([]); // cached city slugs from backend
   const [agentSelectedSlug, setAgentSelectedSlug] = useState('');
@@ -565,6 +569,14 @@ function DashboardMapTab() {
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [selectedProperties, setSelectedProperties] = useState([]);  // Track selected property indices
   const [geocodingResults, setGeocodingResults] = useState({ results: [], failed: [] }); // Store geocoding results
+
+  // Load data centers JSON on mount
+  useEffect(() => {
+    fetch('/data_centers.json')
+      .then(res => res.json())
+      .then(data => { console.log(`[Data Centers] Loaded ${data.length} records`); setDataCentersData(data); })
+      .catch(err => console.error('[Data Centers] Load error:', err));
+  }, []);
 
   // Load development pipeline CSV when first enabled — uses the rich national pipeline CSV
   useEffect(() => {
@@ -2462,6 +2474,7 @@ function DashboardMapTab() {
                         { label: 'Zoning', active: zoningEnabled, color: '#0ea5e9', toggle: () => { setZoningEnabled(v => { if (v) { setZoningServiceKey(''); setZoningFilter(''); } return !v; }); } },
                         { label: 'SFR Sales', active: sfrSalesEnabled, color: '#f59e0b', toggle: () => setSfrSalesEnabled(v => !v) },
                         { label: 'MF Sales', active: mfSalesEnabled, color: '#3b82f6', toggle: () => setMfSalesEnabled(v => !v) },
+                        { label: 'Data Centers', active: dataCentersEnabled, color: '#8b5cf6', count: dataCentersEnabled ? dataCentersData.length : null, toggle: () => setDataCentersEnabled(v => !v) },
                       ].map(({ label, active, color, count, toggle }) => (
                         <button key={label} onClick={toggle} style={{
                           display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -3285,6 +3298,54 @@ function DashboardMapTab() {
                       {msa.CapRate_Data_Source && (
                         <div style={{ marginTop: 4, fontSize: 10, color: '#9ca3af' }}>Source: {msa.CapRate_Data_Source}</div>
                       )}
+                    </div>
+                  </Popup>
+                </CircleMarker>
+              );
+            })}
+
+            {/* Data Centers markers */}
+            {dataCentersEnabled && dataCentersData.map((dc, idx) => {
+              const lat = parseFloat(dc.Latitude), lng = parseFloat(dc.Longitude);
+              if (isNaN(lat) || isNaN(lng)) return null;
+              const fmt = (v) => (v != null && v !== '' && v !== 'N/A') ? v : '–';
+              const statusColor = dc.Status?.includes('Operational') ? '#16a34a' : dc.Status?.includes('Under Construction') ? '#d97706' : '#6366f1';
+              return (
+                <CircleMarker
+                  key={`dc-${idx}`}
+                  center={[lat, lng]}
+                  radius={8}
+                  pathOptions={{ fillColor: '#8b5cf6', fillOpacity: 0.9, color: '#fff', weight: 2 }}
+                >
+                  <Popup maxWidth={400}>
+                    <div style={{ fontFamily: 'Inter, -apple-system, sans-serif', minWidth: 300, padding: 4 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                        <div style={{ width: 30, height: 30, borderRadius: 8, background: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: '#111827', lineHeight: 1.2 }}>{fmt(dc['Project Name'])}</div>
+                          <div style={{ fontSize: 11, color: '#6b7280' }}>{fmt(dc['Operator / Developer'])}</div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                        <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 10, fontWeight: 600, background: `${statusColor}20`, color: statusColor, border: `1px solid ${statusColor}40` }}>{fmt(dc.Status)}</span>
+                        {dc['Parent Company'] && dc['Parent Company'] !== '–' && (
+                          <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 10, fontWeight: 600, background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ddd6fe' }}>{dc['Parent Company']}</span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#374151', marginBottom: 8 }}>📍 {fmt(dc['Full Address'] || `${dc.City}, ${dc.State}`)}</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: 12 }}>
+                        {dc['Investment ($B)'] && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>INVESTMENT</span><br/><span style={{ fontWeight: 700, color: '#111827' }}>${typeof dc['Investment ($B)'] === 'number' ? `$${dc['Investment ($B)']}B` : dc['Investment ($B)']}</span></div>}
+                        {dc['Capacity (MW)'] && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>CAPACITY</span><br/><span style={{ fontWeight: 700, color: '#111827' }}>{dc['Capacity (MW)']} MW</span></div>}
+                        {dc['Site Size (Acres)'] && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>SITE SIZE</span><br/><span style={{ fontWeight: 700, color: '#111827' }}>{dc['Site Size (Acres)']} acres</span></div>}
+                        {dc['Est. Completion'] && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>EST. COMPLETION</span><br/><span style={{ fontWeight: 600, color: '#374151' }}>{dc['Est. Completion']}</span></div>}
+                        {dc['Power Source Notes'] && dc['Power Source Notes'] !== 'TBD' && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>POWER SOURCE</span><br/><span style={{ fontWeight: 600, color: '#374151' }}>{dc['Power Source Notes']}</span></div>}
+                        {dc['Jobs (Construction)'] && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>CONSTRUCTION JOBS</span><br/><span style={{ fontWeight: 600, color: '#374151' }}>{dc['Jobs (Construction)']}</span></div>}
+                        {dc['Jobs (Operational)'] && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>OPERATIONAL JOBS</span><br/><span style={{ fontWeight: 600, color: '#374151' }}>{dc['Jobs (Operational)']}</span></div>}
+                        {dc['Key Tenant / Use'] && <div style={{ gridColumn: '1 / -1' }}><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>KEY TENANT / USE</span><br/><span style={{ fontWeight: 600, color: '#374151' }}>{dc['Key Tenant / Use']}</span></div>}
+                      </div>
+                      {dc.Notes && <div style={{ marginTop: 8, fontSize: 11, color: '#6b7280', lineHeight: 1.4, borderTop: '1px solid #f3f4f6', paddingTop: 6 }}>{dc.Notes}</div>}
                     </div>
                   </Popup>
                 </CircleMarker>
