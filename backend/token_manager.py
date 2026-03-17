@@ -54,6 +54,8 @@ class TokenCheckResponse(BaseModel):
     subscription_tier: str
     monthly_limit: int
     tokens_reset_at: str
+    subscription_status: Optional[str] = "active"
+    trial_ends_at: Optional[str] = None
 
 class TokenUsageRequest(BaseModel):
     operation_type: str
@@ -142,7 +144,9 @@ async def get_token_balance(request: Request):
             tokens_required=1,
             subscription_tier=profile.get("subscription_tier", "free"),
             monthly_limit=profile.get("monthly_token_limit", 30),
-            tokens_reset_at=profile["tokens_reset_at"]
+            tokens_reset_at=profile["tokens_reset_at"],
+            subscription_status=profile.get("subscription_status", "active"),
+            trial_ends_at=profile.get("trial_ends_at")
         )
     except HTTPException:
         raise

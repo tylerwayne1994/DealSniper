@@ -548,6 +548,9 @@ async def create_checkout_session(request: Request):
                 "quantity": 1,
             }],
             mode="subscription",
+            subscription_data={
+                "trial_period_days": 7,
+            },
             customer_email=email,
             metadata={
                 "email": email,

@@ -45,12 +45,16 @@ export default function PaymentSuccessRedirect() {
 
         if (authData?.user) {
           const monthly = plan === 'pro' ? 55 : 25; // align with backend limits
+          // Calculate trial end date (7 days from now)
+          const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
           const { error: profileError } = await supabase
             .from('profiles')
             .update({
               subscription_tier: plan,
               token_balance: monthly,
-              monthly_token_limit: monthly
+              monthly_token_limit: monthly,
+              subscription_status: 'trialing',
+              trial_ends_at: trialEndsAt
             })
             .eq('id', authData.user.id);
 

@@ -734,6 +734,82 @@ function DashboardPage() {
         )}
       </div>
 
+      {/* Trial Countdown Card */}
+      {tokenBalance?.subscription_status === 'trialing' && tokenBalance?.trial_ends_at && (() => {
+        const trialEnd = new Date(tokenBalance.trial_ends_at);
+        const now = new Date();
+        const msLeft = trialEnd - now;
+        const daysLeft = Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24)));
+        const hoursLeft = Math.max(0, Math.floor((msLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)));
+        const isUrgent = daysLeft <= 2;
+        const isExpired = msLeft <= 0;
+
+        return (
+          <div style={{
+            ...cardStyle,
+            background: isExpired ? 'linear-gradient(135deg, #fef2f2, #fee2e2)'
+              : isUrgent ? 'linear-gradient(135deg, #fffbeb, #fef3c7)'
+              : 'linear-gradient(135deg, #ecfdf5, #d1fae5)',
+            border: isExpired ? '2px solid #fca5a5'
+              : isUrgent ? '2px solid #fcd34d'
+              : '2px solid #6ee7b7'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{
+                width: '40px', height: '40px', borderRadius: '10px',
+                backgroundColor: isExpired ? '#fecaca' : isUrgent ? '#fde68a' : '#a7f3d0',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '12px'
+              }}>
+                <span style={{ fontSize: '20px' }}>{isExpired ? '⏰' : isUrgent ? '⚠️' : '🎉'}</span>
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: isExpired ? '#dc2626' : '#111827' }}>
+                  {isExpired ? 'Trial Expired' : 'Free Trial Active'}
+                </h3>
+                <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#6b7280' }}>
+                  {isExpired
+                    ? 'Your free trial has ended. Your subscription will now begin.'
+                    : `Your card won't be charged until the trial ends`}
+                </p>
+              </div>
+            </div>
+
+            {!isExpired && (
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                <div style={{
+                  textAlign: 'center', padding: '16px 24px',
+                  backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: '12px',
+                  minWidth: '80px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                }}>
+                  <div style={{ fontSize: '36px', fontWeight: '800', color: isUrgent ? '#d97706' : '#059669', lineHeight: 1 }}>
+                    {daysLeft}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', marginTop: '4px' }}>
+                    {daysLeft === 1 ? 'DAY' : 'DAYS'}
+                  </div>
+                </div>
+                <div style={{
+                  textAlign: 'center', padding: '16px 24px',
+                  backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: '12px',
+                  minWidth: '80px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                }}>
+                  <div style={{ fontSize: '36px', fontWeight: '800', color: isUrgent ? '#d97706' : '#059669', lineHeight: 1 }}>
+                    {hoursLeft}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', marginTop: '4px' }}>
+                    HOURS
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div style={{ marginTop: '12px', textAlign: 'center', fontSize: '12px', color: '#6b7280' }}>
+              Trial {isExpired ? 'ended' : 'ends'}: {trialEnd.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+            </div>
+          </div>
+        );
+      })()}
+
                    
           <div style={cardStyle}>
             <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '700', color: '#dc2626' }}>

@@ -163,8 +163,11 @@ function SignUpPage() {
         <div style={{ width: '100%', maxWidth: '500px' }}>
           <div style={{ marginBottom: '32px', textAlign: 'center' }}>
             <h2 style={{ fontSize: '28px', fontWeight: '700', color: '#f1f5f9', marginBottom: '8px', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
-              Create your account
+              Start Your 7-Day Free Trial
             </h2>
+            <p style={{ color: '#10b981', fontSize: '15px', fontWeight: '600', marginBottom: '4px', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+              Full access for 7 days — cancel anytime before your trial ends
+            </p>
             <p style={{ color: '#94a3b8', fontSize: '14px', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
               Already have an account?{' '}
               <Link to="/login" style={{ color: '#10b981', fontWeight: '600', textDecoration: 'none' }}>
@@ -209,14 +212,17 @@ function SignUpPage() {
             {/* Subscription Plan Selection */}
             <div style={{ marginBottom: '20px' }}>
               <label style={{ ...labelStyle, marginBottom: 8 }}>Choose your plan *</label>
+              <p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 10px 0' }}>
+                Your card will be charged after the 7-day free trial. Cancel anytime.
+              </p>
               <div style={{ display: 'flex', gap: 16 }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', background: plan === 'base' ? '#10b98122' : '#1e293b', border: plan === 'base' ? '2px solid #10b981' : '1px solid #334155', borderRadius: 8, padding: '10px 18px', fontWeight: 600 }}>
                   <input type="radio" name="plan" value="base" checked={plan === 'base'} onChange={() => setPlan('base')} style={{ accentColor: '#10b981' }} />
-                  Base ($39.99/mo, 10 tokens)
+                  Base ($39.99/mo, 25 tokens)
                 </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', background: plan === 'pro' ? '#10b98122' : '#1e293b', border: plan === 'pro' ? '2px solid #10b981' : '1px solid #334155', borderRadius: 8, padding: '10px 18px', fontWeight: 600 }}>
                   <input type="radio" name="plan" value="pro" checked={plan === 'pro'} onChange={() => setPlan('pro')} style={{ accentColor: '#10b981' }} />
-                  Pro ($49.99/mo, 35 tokens, discounted token purchases)
+                  Pro ($49.99/mo, 55 tokens)
                 </label>
               </div>
             </div>
@@ -394,7 +400,7 @@ function SignUpPage() {
                 boxShadow: loading ? 'none' : '0 4px 14px rgba(16, 185, 129, 0.3)'
               }}
             >
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading ? 'Creating Account...' : 'Start Free Trial'}
             </button>
           </form>
         </div>

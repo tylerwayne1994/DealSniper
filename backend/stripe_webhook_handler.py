@@ -53,7 +53,7 @@ def get_supabase() -> Client:
 # Helper Functions
 # ============================================================================
 
-def update_subscription_tier(stripe_customer_id: str, subscription_tier: str, stripe_subscription_id: str):
+def update_subscription_tier(stripe_customer_id: str, subscription_tier: str, stripe_subscription_id: str, subscription_status: str = "active"):
     """Update user's subscription tier in Supabase profiles table."""
     supabase = get_supabase()
     
@@ -69,7 +69,8 @@ def update_subscription_tier(stripe_customer_id: str, subscription_tier: str, st
         "monthly_token_limit": monthly_limit,
         "token_balance": monthly_limit,  # Grant full month of tokens immediately
         "tokens_reset_at": tokens_reset_at.isoformat(),
-        "stripe_subscription_id": stripe_subscription_id
+        "stripe_subscription_id": stripe_subscription_id,
+        "subscription_status": subscription_status
     }).eq("stripe_customer_id", stripe_customer_id).execute()
     
     if result.data:
@@ -85,7 +86,8 @@ def cancel_subscription(stripe_customer_id: str):
     
     result = supabase.table("profiles").update({
         "token_balance": 0,
-        "stripe_subscription_id": None
+        "stripe_subscription_id": None,
+        "subscription_status": "canceled"
     }).eq("stripe_customer_id", stripe_customer_id).execute()
     
     if result.data:
@@ -173,6 +175,11 @@ async def stripe_webhook(request: Request):
             price_id = subscription["items"]["data"][0]["price"]["id"]
             tier = STRIPE_PRICE_TO_TIER.get(price_id, "base")
             
+            # Determine trial status
+            sub_status = subscription.get("status", "active")  # "trialing", "active", etc.
+            trial_end_ts = subscription.get("trial_end")  # Unix timestamp or None
+            trial_ends_at = datetime.fromtimestamp(trial_end_ts).isoformat() if trial_end_ts else None
+            
             # Get metadata from session
             metadata = session.get("metadata", {})
             user_id = metadata.get("user_id")
@@ -185,31 +192,41 @@ async def stripe_webhook(request: Request):
                 # Update profile with Stripe info and token balance
                 monthly = 55 if plan == "pro" else 25
                 
-                supabase.table("profiles").update({
+                update_data = {
                     "stripe_customer_id": customer_id,
                     "subscription_tier": plan,
                     "token_balance": monthly,
                     "monthly_token_limit": monthly,
-                    "stripe_subscription_id": subscription_id
-                }).eq("id", user_id).execute()
+                    "stripe_subscription_id": subscription_id,
+                    "subscription_status": sub_status,
+                }
+                if trial_ends_at:
+                    update_data["trial_ends_at"] = trial_ends_at
                 
-                log.info(f"✅ SUBSCRIPTION ACTIVATED: User {user_id} | Plan: {plan} | Tokens: {monthly}")
+                supabase.table("profiles").update(update_data).eq("id", user_id).execute()
+                
+                log.info(f"✅ SUBSCRIPTION ACTIVATED: User {user_id} | Plan: {plan} | Tokens: {monthly} | Status: {sub_status}")
             else:
                 # Fallback: try to find profile by email
                 customer_email = session.get("customer_email") or session.get("customer_details", {}).get("email")
                 
                 if customer_email:
-                    result = supabase.table("profiles").update({
+                    update_data = {
                         "stripe_customer_id": customer_id,
                         "subscription_tier": tier,
-                        "stripe_subscription_id": subscription_id
-                    }).eq("email", customer_email).execute()
+                        "stripe_subscription_id": subscription_id,
+                        "subscription_status": sub_status,
+                    }
+                    if trial_ends_at:
+                        update_data["trial_ends_at"] = trial_ends_at
+                    
+                    result = supabase.table("profiles").update(update_data).eq("email", customer_email).execute()
                     
                     if not result.data:
                         log.error(f"❌ No profile found for email: {customer_email}")
             
             # Update subscription tier
-            update_subscription_tier(customer_id, tier, subscription_id)
+            update_subscription_tier(customer_id, tier, subscription_id, sub_status)
     
     elif event["type"] == "customer.subscription.updated":
         subscription = event["data"]["object"]
@@ -217,9 +234,10 @@ async def stripe_webhook(request: Request):
         subscription_id = subscription.get("id")
         price_id = subscription["items"]["data"][0]["price"]["id"]
         tier = STRIPE_PRICE_TO_TIER.get(price_id, "base")
+        sub_status = subscription.get("status", "active")
         
         if customer_id:
-            update_subscription_tier(customer_id, tier, subscription_id)
+            update_subscription_tier(customer_id, tier, subscription_id, sub_status)
     
     elif event["type"] == "customer.subscription.deleted":
         subscription = event["data"]["object"]
@@ -227,6 +245,12 @@ async def stripe_webhook(request: Request):
         
         if customer_id:
             cancel_subscription(customer_id)
+    
+    elif event["type"] == "customer.subscription.trial_will_end":
+        # Trial ending soon (fires 3 days before trial ends)
+        subscription = event["data"]["object"]
+        customer_id = subscription.get("customer")
+        log.info(f"⏰ TRIAL ENDING SOON for customer {customer_id}")
     
     elif event["type"] == "invoice.payment_succeeded":
         # Recurring payment successful - grant monthly tokens (rollover adds to balance)
