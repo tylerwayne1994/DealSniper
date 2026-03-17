@@ -84,6 +84,8 @@ export default function CompressedTab({
   const rentalIncome = fullCalcs?.year1?.potentialGrossIncome || 0;
   const otherIncome = fullCalcs?.year1?.otherIncome || 0;
   const grossOperatingIncome = rentalIncome + otherIncome;
+  const vacancyLossYear1 = fullCalcs?.year1?.vacancyLoss || 0;
+  const effectiveGrossIncomeYear1 = fullCalcs?.year1?.effectiveGrossIncome || (grossOperatingIncome - vacancyLossYear1);
   const totalOperatingExpenses = fullCalcs?.year1?.totalOperatingExpenses || 0;
   const capitalReserve = scenarioData?.expenses?.capital_reserve || scenarioData?.expenses?.reserves || 0;
   const capitalExpenditure = fullCalcs?.acquisition?.upfrontCapEx || 0;
@@ -1013,6 +1015,15 @@ export default function CompressedTab({
             <h3 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: VL }}>Financials</h3>
             <p style={{ margin: '4px 0 0', fontSize: 13, color: LB }}>Income & Expenses</p>
           </div>
+          {/* Expense ratio warning: typical multifamily 35-50%; below 25% is suspicious */}
+          {expenseRatio > 0 && expenseRatio < 25 && (
+            <div style={{ background: '#fffbeb', border: '1px solid #f59e0b', borderRadius: 8, padding: '8px 12px', marginBottom: 8, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+              <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
+              <span style={{ fontSize: 11, color: '#92400e', lineHeight: 1.4 }}>
+                <strong>Low Expense Ratio ({expenseRatio.toFixed(0)}%)</strong> — Typical multifamily is 35-50%. The parsed expenses may be incomplete or reflect pro forma projections. Verify against the source document.
+              </span>
+            </div>
+          )}
           <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
             <thead>
               <tr style={{ borderBottom: `2px solid ${B}` }}>
@@ -1025,9 +1036,11 @@ export default function CompressedTab({
               <FinRow label="Rental Income" monthly={rentalIncome / 12} yearly={rentalIncome} dot="#22c55e" />
               <FinRow label="Other Income" monthly={otherIncome / 12} yearly={otherIncome} dot="#06b6d4" />
               <FinRow label="Gross Operating Income (GOI)" monthly={grossOperatingIncome / 12} yearly={grossOperatingIncome} bold color={AC} dot={AC} />
-              <FinRow label="Capital Reserve" monthly={capitalReserve / 12} yearly={capitalReserve} dot="#8b5cf6" />
+              {vacancyLossYear1 > 0 && <FinRow label="Less: Vacancy Loss" monthly={-vacancyLossYear1 / 12} yearly={-vacancyLossYear1} dot="#f59e0b" />}
+              {vacancyLossYear1 > 0 && <FinRow label="Effective Gross Income (EGI)" monthly={effectiveGrossIncomeYear1 / 12} yearly={effectiveGrossIncomeYear1} bold color="#6366f1" dot="#6366f1" />}
               <FinRow label="Operating Expenses" monthly={totalOperatingExpenses / 12} yearly={totalOperatingExpenses} dot="#ef4444" />
-              <FinRow label="Capital Expenditure" monthly={capitalExpenditure / 12} yearly={capitalExpenditure} dot="#f97316" />
+              {capitalReserve > 0 && <FinRow label="Capital Reserve" monthly={capitalReserve / 12} yearly={capitalReserve} dot="#8b5cf6" />}
+              {capitalExpenditure > 0 && <FinRow label="Capital Expenditure" monthly={capitalExpenditure / 12} yearly={capitalExpenditure} dot="#f97316" />}
               {vaRentUpside > 0 && <FinRow label="+ Rent Optimization (Value-Add)" monthly={vaRentUpside / 12} yearly={vaRentUpside} dot="#4f46e5" />}
               {vaRubsRecovery > 0 && <FinRow label="+ RUBS Recovery (Value-Add)" monthly={vaRubsRecovery / 12} yearly={vaRubsRecovery} dot="#0ea5e9" />}
               {vaOtherIncome > 0 && <FinRow label="+ Other Income (Value-Add)" monthly={vaOtherIncome / 12} yearly={vaOtherIncome} dot="#8b5cf6" />}

@@ -403,7 +403,7 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   // Previously we used the backend noi_t12 override, but that created mismatches
   // when the itemized expenses didn't sum to the same total the backend used.
   // Only fall back to the backend NOI when we have no EGI or OpEx to compute from.
-  const noiBackend = pnl.noi_t12 != null ? pnl.noi_t12 : (pnl.noi != null ? pnl.noi : 0);
+  const noiBackend = (pnl.noi_t12 > 0) ? pnl.noi_t12 : ((pnl.noi > 0) ? pnl.noi : 0);
   let noi;
   if (effectiveGrossIncome > 0 && totalOperatingExpenses > 0) {
     noi = effectiveGrossIncome - totalOperatingExpenses;
