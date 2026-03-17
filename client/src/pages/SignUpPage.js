@@ -26,7 +26,7 @@ function SignUpPage() {
     city: '',
     state: ''
   });
-  const [plan, setPlan] = useState('base');
+  const [plan] = useState('standard');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -209,21 +209,24 @@ function SignUpPage() {
           )}
 
           <form onSubmit={handleSubmit}>
-            {/* Subscription Plan Selection */}
+            {/* Subscription Plan Info */}
             <div style={{ marginBottom: '20px' }}>
-              <label style={{ ...labelStyle, marginBottom: 8 }}>Choose your plan *</label>
-              <p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 10px 0' }}>
-                Your card will be charged after the 7-day free trial. Cancel anytime.
-              </p>
-              <div style={{ display: 'flex', gap: 16 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', background: plan === 'base' ? '#10b98122' : '#1e293b', border: plan === 'base' ? '2px solid #10b981' : '1px solid #334155', borderRadius: 8, padding: '10px 18px', fontWeight: 600 }}>
-                  <input type="radio" name="plan" value="base" checked={plan === 'base'} onChange={() => setPlan('base')} style={{ accentColor: '#10b981' }} />
-                  Base ($39.99/mo, 25 tokens)
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', background: plan === 'pro' ? '#10b98122' : '#1e293b', border: plan === 'pro' ? '2px solid #10b981' : '1px solid #334155', borderRadius: 8, padding: '10px 18px', fontWeight: 600 }}>
-                  <input type="radio" name="plan" value="pro" checked={plan === 'pro'} onChange={() => setPlan('pro')} style={{ accentColor: '#10b981' }} />
-                  Pro ($49.99/mo, 55 tokens)
-                </label>
+              <div style={{
+                background: 'linear-gradient(135deg, #10b98122, #0f172a)',
+                border: '2px solid #10b981',
+                borderRadius: '12px',
+                padding: '20px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '28px', fontWeight: '800', color: '#f1f5f9', marginBottom: '4px' }}>
+                  $100<span style={{ fontSize: '16px', fontWeight: '500', color: '#94a3b8' }}>/month</span>
+                </div>
+                <div style={{ color: '#10b981', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
+                  55 AI Tokens per month
+                </div>
+                <div style={{ color: '#64748b', fontSize: '12px' }}>
+                  Your card will be charged after the 7-day free trial. Cancel anytime.
+                </div>
               </div>
             </div>
             {/* Email & Password */}

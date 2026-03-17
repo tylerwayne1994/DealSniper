@@ -35,10 +35,11 @@ TOKEN_COSTS = {
     "rapid_fire_ai": 0,              # Free
 }
 
-# Subscription tiers and monthly limits
+# Single plan: $100/month with 55 tokens
 SUBSCRIPTION_TIERS = {
-    "base": 25,   # $39.99/month - 25 tokens
-    "pro": 55,    # $49.99/month - 55 tokens
+    "standard": 55,   # $100/month - 55 tokens
+    "base": 55,       # Legacy fallback
+    "pro": 55,        # Legacy fallback
 }
 
 router = APIRouter(prefix="/api/tokens", tags=["Token Management"])

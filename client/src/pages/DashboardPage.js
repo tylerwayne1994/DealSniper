@@ -610,11 +610,7 @@ function DashboardPage() {
               {/* Plan Badge */}
               <div style={{ 
                 padding: '12px 24px',
-                background: (() => {
-                  const tier = (tokenBalance.subscription_tier || 'base').toLowerCase();
-                  if (tier === 'pro') return 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                  return 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
-                })(),
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                 color: 'white',
                 borderRadius: '12px',
                 fontSize: '18px',
@@ -624,7 +620,7 @@ function DashboardPage() {
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                 display: 'inline-block'
               }}>
-                {tokenBalance.subscription_tier === 'pro' ? '⚡ PRO' : '🔥 BASE'} MEMBER
+                🎯 MEMBER
               </div>
 
               {/* Token Counter */}

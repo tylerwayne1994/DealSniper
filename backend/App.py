@@ -235,9 +235,8 @@ async def flood_zone_lookup(lat: float = None, lng: float = None, address: str =
 
 import stripe
 
-# Price IDs: prefer env vars, fallback to known test IDs
-PRICE_ID_PRO = os.getenv("PRICE_ID_PRO", "price_1SfA2SRRD0SJQZk3q6Zujrw0")
-PRICE_ID_BASE = os.getenv("PRICE_ID_BASE", "price_1SfA11RRD0SJQZk3dTP5HIHa")
+# Price ID: single $100/month plan - prefer env var, fallback to known ID
+PRICE_ID = os.getenv("STRIPE_PRICE_ID", "price_1SfA2SRRD0SJQZk3q6Zujrw0")
 
 # Debug endpoint for env vars (dev only)
 @app.get("/debug/env")
@@ -527,17 +526,11 @@ async def create_checkout_session(request: Request):
     city = data.get("city", "")
     state = data.get("state", "")
     
-    if not email or not plan or not password:
-        raise HTTPException(status_code=400, detail="Missing required fields: email, plan, password")
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="Missing required fields: email, password")
 
-    # Map plan to Stripe price ID
-    price_id = None
-    if plan == "pro":
-        price_id = PRICE_ID_PRO
-    elif plan == "base":
-        price_id = PRICE_ID_BASE
-    else:
-        raise HTTPException(status_code=400, detail="Invalid plan")
+    # Single plan at $100/month
+    price_id = PRICE_ID
 
     try:
         stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
@@ -562,7 +555,7 @@ async def create_checkout_session(request: Request):
                 "title": title,
                 "city": city,
                 "state": state,
-                "plan": plan
+                "plan": "standard"
             },
             success_url=os.getenv("FRONTEND_URL", "http://localhost:3000") + f"/payment-success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=os.getenv("FRONTEND_URL", "http://localhost:3000") + "/signup?canceled=true",

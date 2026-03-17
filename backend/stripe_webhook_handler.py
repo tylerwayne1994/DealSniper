@@ -23,18 +23,16 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 stripe.api_key = STRIPE_SECRET_KEY
 
-# Subscription tier token limits
+# Single plan: $100/month with 55 tokens
 TIER_TOKEN_LIMITS = {
-    "base": 25,   # $39.99/month - 25 tokens
-    "pro": 55,    # $49.99/month - 55 tokens
+    "standard": 55,   # $100/month - 55 tokens
+    "base": 55,       # Legacy fallback
+    "pro": 55,        # Legacy fallback
 }
 
-# Map Stripe price IDs to subscription tiers
-# These should match the PRICE_ID_BASE and PRICE_ID_PRO in App.py
-# Update in your .env file or here directly with your Stripe Dashboard price IDs
+# Map Stripe price ID to subscription tier
 STRIPE_PRICE_TO_TIER = {
-    os.getenv("PRICE_ID_BASE", "price_1SfA11RRD0SJQZk3dTP5HIHa"): "base",     # Base plan ($39.99/25 tokens)
-    os.getenv("PRICE_ID_PRO", "price_1SfA2SRRD0SJQZk3q6Zujrw0"): "pro",       # Pro plan ($49.99/55 tokens)
+    os.getenv("STRIPE_PRICE_ID", "price_1SfA2SRRD0SJQZk3q6Zujrw0"): "standard",
 }
 
 router = APIRouter(prefix="/webhook", tags=["Stripe Webhooks"])
