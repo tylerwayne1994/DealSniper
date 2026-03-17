@@ -387,8 +387,45 @@ export default function DocumentAnalysisTab({
   }, [existingAnalysis]);
   
   const handleGenerate = useCallback(async () => {
-    setIsGenerating(true);
     setError(null);
+
+    // Check token balance and confirm before spending
+    try {
+      const API_BASE_CHECK = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
+      const tokenCheck = await fetch(`${API_BASE_CHECK}/api/tokens/check`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(profileId ? { 'X-Profile-ID': profileId } : {})
+        },
+        body: JSON.stringify({ operation_type: 'document_analysis' })
+      });
+      const tokenData = await tokenCheck.json();
+
+      if (!tokenData.has_tokens) {
+        window.confirm(
+          `This will use AI to generate a Due Diligence Report.\n\n` +
+          `Cost: ${tokenData.tokens_required} tokens\n` +
+          `Your balance: ${tokenData.token_balance} tokens\n\n` +
+          `You need more tokens. Check your Dashboard Profile to upgrade.`
+        );
+        return;
+      }
+
+      const userConfirmed = window.confirm(
+        `This will use AI to generate a Due Diligence Report.\n\n` +
+        `Cost: ${tokenData.tokens_required} tokens\n` +
+        `Your balance: ${tokenData.token_balance} tokens\n\n` +
+        `Continue?`
+      );
+      if (!userConfirmed) return;
+    } catch (err) {
+      console.error('Token check failed:', err);
+      setError('Failed to check token balance. Please try again.');
+      return;
+    }
+
+    setIsGenerating(true);
     setGenerationProgress('Preparing analysis data...');
     
     try {
