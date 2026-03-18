@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, CircleMarker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker, GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -8,6 +8,7 @@ import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
 import { loadPipelineDeals } from '../../lib/dealsService';
+import { batchFetchParcels } from '../../utils/parcelEndpoints';
 import MapOverlayLayers, { COUNTY_METRIC_OPTIONS, ZIP_METRIC_OPTIONS, ZIP_HEATMAP_METRIC_OPTIONS, SfrSalesLegend, MfSalesLegend } from './MapOverlayLayers';
 import MSA_COORDINATES from '../../data/msaCoordinates';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -569,6 +570,29 @@ function DashboardMapTab() {
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [selectedProperties, setSelectedProperties] = useState([]);  // Track selected property indices
   const [geocodingResults, setGeocodingResults] = useState({ results: [], failed: [] }); // Store geocoding results
+
+  // Parcel polygon state
+  const [parcelPolygons, setParcelPolygons] = useState([]); // Array of GeoJSON features
+  const [showParcelPolygons, setShowParcelPolygons] = useState(true);
+  const [parcelProgress, setParcelProgress] = useState({ current: 0, total: 0, found: 0 });
+  const [isFetchingParcels, setIsFetchingParcels] = useState(false);
+  const parcelKeyRef = useRef(0); // Force GeoJSON re-render
+
+  // Toast notification state
+  const [toasts, setToasts] = useState([]);
+  const toastIdRef = useRef(0);
+
+  const addToast = useCallback((message, type = 'success', duration = 6000) => {
+    const id = ++toastIdRef.current;
+    setToasts(prev => [...prev, { id, message, type, exiting: false }]);
+    setTimeout(() => {
+      setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t));
+      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 400);
+    }, duration);
+  }, []);
+
+  // Background processing state
+  const [bgProcessing, setBgProcessing] = useState(null); // { fileName, stage, geocoded, total, parcelsFound }
 
   // Load data centers JSON on mount
   useEffect(() => {
@@ -2275,13 +2299,68 @@ function DashboardMapTab() {
       setCustomPins(prev => [...prev, ...newPins]);
       setUploadedSheets(prev => [...prev, { ...sheetPreview, properties: data }]);
       
+      const uploadName = sheetPreview?.name || 'upload';
       setShowPreviewModal(false);
       setSheetPreview(null);
       
-      alert(`Successfully added ${newPins.length} properties to the map!`);
+      addToast(`✅ ${newPins.length} properties added to map!`, 'success');
+
+      // ── Background: Fetch parcel polygons ──
+      if (data.length > 0) {
+        setIsFetchingParcels(true);
+        setBgProcessing({ fileName: uploadName, stage: 'parcels', geocoded: data.length, total: data.length, parcelsFound: 0 });
+        
+        const propsForParcels = data.map(record => {
+          // Extract state from the address or property data
+          const row = record.property_data || {};
+          const keys = Object.keys(row);
+          const stateKey = keys.find(k => k.toLowerCase().includes('state'));
+          const stateRaw = stateKey ? row[stateKey] : '';
+          // Also try to parse state from address string
+          const addressParts = (record.address || '').split(',').map(s => s.trim());
+          const stateFromAddr = addressParts.length >= 3 ? addressParts[addressParts.length - 2] : '';
+          
+          return {
+            latitude: record.latitude,
+            longitude: record.longitude,
+            state: stateRaw || stateFromAddr || '',
+            address: record.address,
+            originalData: record.property_data,
+            pinId: `upload-${record.id}`,
+          };
+        });
+
+        try {
+          await batchFetchParcels(propsForParcels, {
+            batchSize: 5,
+            delayMs: 300,
+            onProgress: (current, total, found) => {
+              setParcelProgress({ current, total, found });
+              setBgProcessing(prev => prev ? { ...prev, parcelsFound: found } : null);
+            },
+            onParcelFound: (prop, geojsonFeature) => {
+              setParcelPolygons(prev => [...prev, geojsonFeature]);
+              parcelKeyRef.current++;
+            },
+          });
+
+          setBgProcessing(null);
+          setIsFetchingParcels(false);
+          const finalFound = parcelProgress.found || 0;
+          if (finalFound > 0) {
+            addToast(`🗺️ ${finalFound} parcel boundaries drawn on map`, 'info');
+          } else {
+            addToast(`ℹ️ No parcel boundaries found for these properties`, 'warning', 5000);
+          }
+        } catch (err) {
+          console.error('[Parcel] Batch fetch error:', err);
+          setBgProcessing(null);
+          setIsFetchingParcels(false);
+        }
+      }
     } catch (error) {
       console.error('Error saving properties:', error);
-      alert('Failed to save properties. Please try again.');
+      addToast('❌ Failed to save properties. Please try again.', 'error');
     }
   };
 
@@ -2302,7 +2381,7 @@ function DashboardMapTab() {
     );
 
     if (successful.length === 0) {
-      alert('No properties could be geocoded successfully.');
+      addToast('No properties could be geocoded successfully.', 'error');
       return;
     }
 
@@ -2677,6 +2756,7 @@ function DashboardMapTab() {
                     { label: 'Pipeline Deals', enabled: showPipelinePins, toggle: () => setShowPipelinePins(v => !v), color: '#22c55e', count: customPins.filter(p => p.category === 'pipeline').length },
                     { label: 'Rapid Fire', enabled: showRapidFirePins, toggle: () => setShowRapidFirePins(v => !v), color: '#ef4444', count: customPins.filter(p => p.category === 'rapidfire').length },
                     { label: 'Uploaded Properties', enabled: showUploadedPins, toggle: () => setShowUploadedPins(v => !v), color: '#3b82f6', count: customPins.filter(p => p.source === 'uploaded').length },
+                    { label: 'Parcel Boundaries', enabled: showParcelPolygons, toggle: () => setShowParcelPolygons(v => !v), color: '#f97316', count: parcelPolygons.length },
                     { label: 'Prospect Cities', enabled: showProspectPins, toggle: () => setShowProspectPins(v => !v), color: '#f59e0b', count: customPins.filter(p => p.category === 'prospect').length },
                   ].map(({ label, enabled, toggle, color, count }) => (
                     <div key={label} onClick={toggle} style={{
@@ -3407,6 +3487,29 @@ function DashboardMapTab() {
               zoneFilter={zoningFilter}
             />
 
+            {/* ─── Parcel Boundary Polygons ─── */}
+            {showParcelPolygons && parcelPolygons.length > 0 && (
+              <GeoJSON
+                key={parcelKeyRef.current}
+                data={{ type: 'FeatureCollection', features: parcelPolygons }}
+                style={() => ({
+                  color: '#f97316',
+                  weight: 2,
+                  fillColor: '#f97316',
+                  fillOpacity: 0.15,
+                })}
+                onEachFeature={(feature, layer) => {
+                  const d = feature.properties?._uploadedData || {};
+                  const entries = Object.entries(d).filter(([, v]) => v !== null && v !== undefined && v !== '');
+                  if (entries.length === 0) return;
+                  const rows = entries.map(([k, v]) => `<tr><td style="padding:2px 8px 2px 0;font-weight:600;white-space:nowrap;color:#c2c2c2">${k}</td><td style="padding:2px 0;color:#fff">${v}</td></tr>`).join('');
+                  layer.bindPopup(
+                    `<div style="max-height:300px;overflow-y:auto;background:#1e1e2e;padding:8px;border-radius:6px"><table style="font-size:12px;border-collapse:collapse">${rows}</table></div>`,
+                    { maxWidth: 400, className: 'parcel-popup-dark' }
+                  );
+                }}
+              />
+            )}
 
           </MapContainer>
           )}
@@ -3826,18 +3929,69 @@ function DashboardMapTab() {
                     alert('Please select at least one property');
                     return;
                   }
-                  const { results, failed } = await geocodeSheetProperties();
-                  // Store results in state for potential retry
-                  setGeocodingResults({ results, failed });
                   
-                  // If some failed, show error modal; otherwise save immediately
-                  if (failed.length > 0) {
-                    // Error modal will be shown by geocodeSheetProperties setting showGeocodeErrors
-                    // Do nothing here - let user decide via modal
-                  } else if (results.length > 0) {
+                  // Close modal immediately — everything runs in background
+                  const previewSnapshot = { ...sheetPreview };
+                  const selectedSnapshot = [...selectedProperties];
+                  setShowPreviewModal(false);
+                  
+                  addToast(`⏳ Processing ${selectedSnapshot.length} properties in background...`, 'info', 4000);
+                  setBgProcessing({ fileName: previewSnapshot.name, stage: 'geocoding', geocoded: 0, total: selectedSnapshot.length, parcelsFound: 0 });
+
+                  // Run geocoding in background
+                  const selectedProps = previewSnapshot.properties.filter((_, idx) => selectedSnapshot.includes(idx));
+                  setIsGeocoding(true);
+                  setGeocodingProgress({ current: 0, total: selectedProps.length, failed: [] });
+                  
+                  const results = [];
+                  const failed = [];
+
+                  for (let i = 0; i < selectedProps.length; i++) {
+                    const prop = selectedProps[i];
+                    setGeocodingProgress(prev => ({ ...prev, current: i + 1 }));
+                    setBgProcessing(prev => prev ? { ...prev, geocoded: i + 1 } : null);
+
+                    if (!prop.address) {
+                      failed.push({ ...prop, reason: 'No address found' });
+                      continue;
+                    }
+
+                    try {
+                      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(prop.address)}&addressdetails=1&limit=1`;
+                      const res = await fetch(url, { headers: { 'User-Agent': 'DealSniper/1.0' } });
+                      const data = await res.json();
+
+                      if (data && data.length > 0) {
+                        results.push({
+                          ...prop,
+                          latitude: parseFloat(data[0].lat),
+                          longitude: parseFloat(data[0].lon),
+                          geocodeStatus: 'success'
+                        });
+                      } else {
+                        failed.push({ ...prop, reason: 'Address not found' });
+                      }
+                      await new Promise(resolve => setTimeout(resolve, 1000));
+                    } catch (error) {
+                      failed.push({ ...prop, reason: error.message });
+                    }
+                  }
+
+                  setIsGeocoding(false);
+                  setGeocodingResults({ results, failed });
+
+                  if (results.length > 0) {
+                    // Temporarily restore sheetPreview for saveUploadedProperties
+                    setSheetPreview(previewSnapshot);
                     await saveUploadedProperties(results);
+                    setSheetPreview(null);
                   } else {
-                    alert('No properties could be geocoded successfully.');
+                    setBgProcessing(null);
+                    addToast('❌ No properties could be geocoded.', 'error');
+                  }
+
+                  if (failed.length > 0) {
+                    addToast(`⚠️ ${failed.length} properties could not be geocoded`, 'warning', 8000);
                   }
                 }}
                 disabled={isGeocoding || selectedProperties.length === 0}
@@ -3853,7 +4007,7 @@ function DashboardMapTab() {
                   boxShadow: isGeocoding || selectedProperties.length === 0 ? 'none' : '0 4px 6px -1px rgba(59, 130, 246, 0.3)'
                 }}
               >
-                {isGeocoding ? `⏳ Geocoding (${geocodingProgress.current}/${geocodingProgress.total})` : `✓ Geocode & Add to Map (${selectedProperties.length})`}
+                {isGeocoding ? `⏳ Geocoding (${geocodingProgress.current}/${geocodingProgress.total})` : `✓ Process & Add to Map (${selectedProperties.length})`}
               </button>
             </div>
           </div>
@@ -3946,6 +4100,84 @@ function DashboardMapTab() {
           </div>
         </div>
       )}
+
+      {/* ═══════════════ BACKGROUND PROCESSING INDICATOR ═══════════════ */}
+      {bgProcessing && (
+        <div style={{
+          position: 'fixed', bottom: 20, left: 20, zIndex: 10001,
+          background: 'linear-gradient(135deg, #1e293b, #0f172a)', border: '1px solid #334155',
+          borderRadius: 10, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.5)', minWidth: 220,
+        }}>
+          <div style={{
+            width: 10, height: 10, borderRadius: '50%', background: '#3b82f6',
+            animation: 'pulse 1.5s ease-in-out infinite',
+          }} />
+          <div>
+            <div style={{ color: '#e2e8f0', fontSize: 12, fontWeight: 600 }}>{bgProcessing.label}</div>
+            {bgProcessing.progress && (
+              <div style={{ color: '#94a3b8', fontSize: 11 }}>{bgProcessing.progress}</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════ TOAST NOTIFICATIONS ═══════════════ */}
+      {toasts.length > 0 && (
+        <div style={{
+          position: 'fixed', top: 20, right: 20, zIndex: 10002,
+          display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 360,
+        }}>
+          {toasts.map(t => {
+            const colors = {
+              success: { bg: '#065f46', border: '#10b981', icon: '✓' },
+              info:    { bg: '#1e3a5f', border: '#3b82f6', icon: 'ℹ' },
+              warning: { bg: '#78350f', border: '#f59e0b', icon: '⚠' },
+              error:   { bg: '#7f1d1d', border: '#ef4444', icon: '✕' },
+            };
+            const c = colors[t.type] || colors.info;
+            return (
+              <div key={t.id} style={{
+                background: c.bg, border: `1px solid ${c.border}`, borderRadius: 8,
+                padding: '10px 14px', display: 'flex', alignItems: 'flex-start', gap: 8,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+                animation: 'slideInRight 0.3s ease-out',
+              }}>
+                <span style={{ color: c.border, fontWeight: 700, fontSize: 14, lineHeight: '18px' }}>{c.icon}</span>
+                <div style={{ color: '#e2e8f0', fontSize: 12, lineHeight: '18px', flex: 1 }}>{t.message}</div>
+                <button
+                  onClick={() => setToasts(prev => prev.filter(x => x.id !== t.id))}
+                  style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 14, padding: 0, lineHeight: '18px' }}
+                >×</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Toast + pulse animations */}
+      <style>{`
+        @keyframes slideInRight {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
+        }
+        .parcel-popup-dark .leaflet-popup-content-wrapper {
+          background: #1e1e2e !important;
+          color: #fff !important;
+          border-radius: 8px !important;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+        }
+        .parcel-popup-dark .leaflet-popup-tip {
+          background: #1e1e2e !important;
+        }
+        .parcel-popup-dark .leaflet-popup-close-button {
+          color: #94a3b8 !important;
+        }
+      `}</style>
     </div>
   );
 }
