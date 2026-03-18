@@ -1256,7 +1256,17 @@ function DashboardMapTab() {
           pin.source === 'uploaded' ? '#1e40af' :
           pin.category === 'rapidfire' ? '#991b1b' : '#92400e';
 
-        const popup = new maplibregl.Popup({ offset: 25, maxWidth: '300px' })
+        // Build property data rows for uploaded pins
+        const propDataHtml = (pin.source === 'uploaded' && pin.propertyData && typeof pin.propertyData === 'object')
+          ? Object.entries(pin.propertyData)
+              .filter(([, v]) => v !== null && v !== undefined && v !== '')
+              .map(([k, v]) => `<div style="display:flex;justify-content:space-between;padding:4px 6px;background:#fff;border-radius:4px;border:1px solid #e5e7eb;margin-bottom:4px;">
+                <span style="font-weight:600;color:#6b7280;font-size:11px;">${k}</span>
+                <span style="color:#111827;font-weight:500;font-size:11px;text-align:right;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v}</span>
+              </div>`).join('')
+          : '';
+
+        const popup = new maplibregl.Popup({ offset: 25, maxWidth: '350px' })
           .setHTML(`
             <div style="font-family: Inter, -apple-system, sans-serif; padding: 8px;">
               <div style="font-weight: 700; font-size: 14px; color: #111827; margin-bottom: 6px;">
@@ -1266,6 +1276,10 @@ function DashboardMapTab() {
               <div style="display: inline-flex; padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: ${badgeBg}; color: ${badgeColor};">
                 ${categoryLabel}
               </div>
+              ${propDataHtml ? `<div style="margin-top:8px;max-height:200px;overflow-y:auto;padding:8px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
+                <div style="font-weight:700;font-size:12px;color:#111827;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Property Details</div>
+                ${propDataHtml}
+              </div>` : ''}
             </div>
           `);
 
@@ -2320,6 +2334,7 @@ function DashboardMapTab() {
       }));
 
       setCustomPins(prev => [...prev, ...newPins]);
+      console.log('[Save] Pins created. Sample propertyData:', newPins[0]?.propertyData);
       setShowPreviewModal(false);
       setSheetPreview(null);
       
@@ -3084,7 +3099,7 @@ function DashboardMapTab() {
                     <FloodZoneCard lat={p.position[0]} lng={p.position[1]} />
 
                     {/* Property Data Table */}
-                    {p.source === 'uploaded' && p.propertyData && (
+                    {p.source === 'uploaded' && p.propertyData && Object.keys(p.propertyData).length > 0 && (
                       <div style={{
                         borderRadius: '10px',
                         padding: '12px',
@@ -3103,7 +3118,9 @@ function DashboardMapTab() {
                           letterSpacing: '0.5px'
                         }}>Property Details</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {Object.entries(p.propertyData).map(([key, value]) => (
+                          {Object.entries(p.propertyData)
+                            .filter(([, v]) => v !== null && v !== undefined && v !== '')
+                            .map(([key, value]) => (
                             <div key={key} style={{ 
                               display: 'flex', 
                               justifyContent: 'space-between',
@@ -3125,10 +3142,24 @@ function DashboardMapTab() {
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap'
-                              }}>{value || 'N/A'}</span>
+                              }}>{String(value)}</span>
                             </div>
                           ))}
                         </div>
+                      </div>
+                    )}
+                    {/* Debug: show if propertyData is missing */}
+                    {p.source === 'uploaded' && (!p.propertyData || Object.keys(p.propertyData).length === 0) && (
+                      <div style={{
+                        borderRadius: '10px',
+                        padding: '12px',
+                        backgroundColor: '#fef3c7',
+                        fontSize: '12px',
+                        border: '1px solid #fde68a',
+                        color: '#92400e'
+                      }}>
+                        ⚠️ No spreadsheet data found for this property.
+                        {console.log('[Popup Debug] Pin data:', p.id, 'propertyData:', p.propertyData)}
                       </div>
                     )}
                     {(p.category === 'rapidfire' || p.category === 'prospect' || p.category === 'custom' || p.source === 'uploaded') && (
