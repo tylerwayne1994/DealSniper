@@ -364,7 +364,37 @@ function createDivIcon({ bgClass, borderClass = 'border-white/60', icon: Icon, i
 
 // Create clean Airbnb-style bubble marker showing unit count
 function createBubbleIcon(color = '#ef4444', textColor = '#fff', units = null) {
-  const displayText = units != null && units !== '' && units !== '?' ? `${units}u` : '—';
+  const hasUnits = units != null && units !== '' && units !== '?' && units !== 0;
+  
+  if (!hasUnits) {
+    // ── 4-pointed star / sparkle icon for pins without units ──
+    return L.divIcon({
+      className: 'sparkle-marker-icon',
+      html: `
+        <div style="
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 28px;
+          height: 28px;
+          cursor: pointer;
+          position: relative;
+          filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));
+        ">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 0 L17 10.5 L28 14 L17 17.5 L14 28 L11 17.5 L0 14 L11 10.5 Z" 
+                  fill="${color}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      `,
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
+      popupAnchor: [0, -16]
+    });
+  }
+
+  // ── Rounded bubble with unit count ──
+  const displayText = `${units}u`;
   const width = displayText.length > 3 ? 52 : displayText.length > 2 ? 44 : 38;
   return L.divIcon({
     className: 'bubble-marker-icon',
@@ -374,19 +404,18 @@ function createBubbleIcon(color = '#ef4444', textColor = '#fff', units = null) {
         align-items: center;
         justify-content: center;
         min-width: ${width}px;
-        height: 32px;
+        height: 30px;
         padding: 0 10px;
         background: ${color};
         border-radius: 16px;
-        border: 2.5px solid #fff;
+        border: 2px solid #fff;
         box-shadow: 0 2px 8px rgba(0,0,0,0.28), 0 0 0 1px rgba(0,0,0,0.08);
         cursor: pointer;
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
         position: relative;
       ">
         <span style="
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 700;
           color: ${textColor};
           letter-spacing: 0.2px;
@@ -400,16 +429,16 @@ function createBubbleIcon(color = '#ef4444', textColor = '#fff', units = null) {
           transform: translateX(-50%);
           width: 0;
           height: 0;
-          border-left: 6px solid transparent;
-          border-right: 6px solid transparent;
+          border-left: 5px solid transparent;
+          border-right: 5px solid transparent;
           border-top: 6px solid ${color};
           filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15));
         "></div>
       </div>
     `,
-    iconSize: [width, 38],
-    iconAnchor: [width / 2, 38],
-    popupAnchor: [0, -38]
+    iconSize: [width, 36],
+    iconAnchor: [width / 2, 36],
+    popupAnchor: [0, -36]
   });
 }
 
@@ -1229,7 +1258,7 @@ function DashboardMapTab() {
       allPins.forEach(pin => {
         let color = '#ef4444';
         if (pin.category === 'pipeline') color = '#22c55e';
-        else if (pin.source === 'uploaded') color = '#3b82f6';
+        else if (pin.source === 'uploaded') color = '#06b6d4';
         else if (pin.category === 'prospect') color = '#8b5cf6';
 
         const el = document.createElement('div');
@@ -1249,11 +1278,11 @@ function DashboardMapTab() {
           pin.category === 'rapidfire' ? '🔥 Rapid Fire' : '🏘️ Prospect';
 
         const badgeBg = pin.category === 'pipeline' ? '#d1fae5' :
-          pin.source === 'uploaded' ? '#dbeafe' :
+          pin.source === 'uploaded' ? '#cffafe' :
           pin.category === 'rapidfire' ? '#fecaca' : '#fef3c7';
 
         const badgeColor = pin.category === 'pipeline' ? '#065f46' :
-          pin.source === 'uploaded' ? '#1e40af' :
+          pin.source === 'uploaded' ? '#0e7490' :
           pin.category === 'rapidfire' ? '#991b1b' : '#92400e';
 
         // Build property data rows for uploaded pins
@@ -1374,7 +1403,7 @@ function DashboardMapTab() {
     let color;
     
     if (source === 'uploaded' || cat === 'uploaded') {
-      color = '#3b82f6'; // Blue for uploaded properties
+      color = '#06b6d4'; // Cyan for uploaded properties
     } else if (cat === 'pipeline') {
       color = '#22c55e'; // Green
     } else if (cat === 'rapidfire') {
@@ -2791,7 +2820,7 @@ function DashboardMapTab() {
                   {[
                     { label: 'Pipeline Deals', enabled: showPipelinePins, toggle: () => setShowPipelinePins(v => !v), color: '#22c55e', count: customPins.filter(p => p.category === 'pipeline').length },
                     { label: 'Rapid Fire', enabled: showRapidFirePins, toggle: () => setShowRapidFirePins(v => !v), color: '#ef4444', count: customPins.filter(p => p.category === 'rapidfire').length },
-                    { label: 'Uploaded Properties', enabled: showUploadedPins, toggle: () => setShowUploadedPins(v => !v), color: '#3b82f6', count: customPins.filter(p => p.source === 'uploaded').length },
+                    { label: 'Uploaded Properties', enabled: showUploadedPins, toggle: () => setShowUploadedPins(v => !v), color: '#06b6d4', count: customPins.filter(p => p.source === 'uploaded').length },
                     { label: 'Parcel Boundaries', enabled: showParcelPolygons, toggle: () => setShowParcelPolygons(v => !v), color: '#f97316', count: parcelPolygons.length },
                     { label: 'Prospect Cities', enabled: showProspectPins, toggle: () => setShowProspectPins(v => !v), color: '#f59e0b', count: customPins.filter(p => p.category === 'prospect').length },
                   ].map(({ label, enabled, toggle, color, count }) => (
@@ -3050,13 +3079,13 @@ function DashboardMapTab() {
                         textTransform: 'uppercase',
                         letterSpacing: '0.5px',
                         backgroundColor: 
-                          p.source === 'uploaded' ? '#dbeafe' :
+                          p.source === 'uploaded' ? '#cffafe' :
                           p.category === 'pipeline' ? '#d1fae5' :
                           p.category === 'rapidfire' ? '#fecaca' : 
                           p.category === 'prospect' ? '#fef3c7' : 
                           '#fce7f3',
                         color:
-                          p.source === 'uploaded' ? '#1e40af' :
+                          p.source === 'uploaded' ? '#0e7490' :
                           p.category === 'pipeline' ? '#065f46' :
                           p.category === 'rapidfire' ? '#991b1b' : 
                           p.category === 'prospect' ? '#92400e' : 
@@ -3080,13 +3109,13 @@ function DashboardMapTab() {
                         fontWeight: '500',
                         color: '#374151',
                         background: 
-                          p.source === 'uploaded' ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)' :
+                          p.source === 'uploaded' ? 'linear-gradient(135deg, #ecfeff 0%, #cffafe 100%)' :
                           p.category === 'pipeline' ? 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)' :
                           p.category === 'rapidfire' ? 'linear-gradient(135deg, #fef2f2 0%, #fecaca 100%)' : 
                           'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
                         border: '1px solid',
                         borderColor:
-                          p.source === 'uploaded' ? '#bfdbfe' :
+                          p.source === 'uploaded' ? '#a5f3fc' :
                           p.category === 'pipeline' ? '#a7f3d0' :
                           p.category === 'rapidfire' ? '#fca5a5' : 
                           '#fcd34d'
