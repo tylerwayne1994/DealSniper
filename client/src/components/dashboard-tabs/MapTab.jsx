@@ -2100,29 +2100,41 @@ function DashboardMapTab() {
 
   // NEW: Handle uploaded property sheet file
   const handleUploadedSheetFile = async (file) => {
-    if (!file) return;
+    console.log('[Upload] handleUploadedSheetFile called, file:', file?.name, file?.type, file?.size);
+    if (!file) {
+      console.warn('[Upload] No file provided, returning early');
+      return;
+    }
     
     const isCsv = file.name.toLowerCase().endsWith('.csv');
     let rows = [];
 
     try {
+      console.log('[Upload] Parsing file as', isCsv ? 'CSV' : 'XLSX');
       if (isCsv) {
         await new Promise((resolve, reject) => {
           Papa.parse(file, {
             header: true,
             skipEmptyLines: true,
             complete: (results) => {
+              console.log('[Upload] CSV parsed, rows:', results.data?.length);
               rows = results.data;
               resolve();
             },
-            error: reject
+            error: (err) => {
+              console.error('[Upload] CSV parse error:', err);
+              reject(err);
+            }
           });
         });
       } else {
         const buf = await file.arrayBuffer();
+        console.log('[Upload] ArrayBuffer size:', buf.byteLength);
         const wb = XLSX.read(buf, { type: 'array' });
+        console.log('[Upload] XLSX sheets:', wb.SheetNames);
         const ws = wb.Sheets[wb.SheetNames[0]];
         rows = XLSX.utils.sheet_to_json(ws);
+        console.log('[Upload] XLSX parsed, rows:', rows.length);
       }
 
       // Limit to 2000 properties
@@ -2132,11 +2144,13 @@ function DashboardMapTab() {
       }
 
       if (rows.length === 0) {
+        console.warn('[Upload] No data found in file');
         alert('No data found in file');
         return;
       }
 
       // Prepare sheet preview
+      console.log('[Upload] Building preview for', rows.length, 'properties');
       const sheetData = {
         id: `sheet-${Date.now()}`,
         name: file.name,
@@ -2148,12 +2162,14 @@ function DashboardMapTab() {
         }))
       };
 
+      console.log('[Upload] Setting preview modal, addresses sample:', sheetData.properties.slice(0, 3).map(p => p.address));
       setSheetPreview(sheetData);
       setSelectedProperties(rows.map((_, idx) => idx)); // Select all by default
       setShowPreviewModal(true);
+      console.log('[Upload] Modal should be open now');
     } catch (error) {
-      console.error('Error parsing file:', error);
-      alert('Failed to parse file. Please check the format.');
+      console.error('[Upload] Error parsing file:', error);
+      alert('Failed to parse file: ' + (error.message || error));
     }
   };
 
@@ -2257,9 +2273,11 @@ function DashboardMapTab() {
   };
 
   // NEW: Save geocoded properties to Supabase and show on map
-  const saveUploadedProperties = async (properties) => {
+  const saveUploadedProperties = async (properties, uploadName = 'upload') => {
+    console.log('[Save] saveUploadedProperties called, count:', properties.length, 'uploadName:', uploadName);
     if (!userId) {
-      alert('You must be logged in to save properties');
+      console.error('[Save] No userId, cannot save');
+      addToast('❌ You must be logged in to save properties', 'error');
       return;
     }
 
@@ -2267,8 +2285,8 @@ function DashboardMapTab() {
       // Insert into uploaded_properties table
       const records = properties.map(prop => ({
         user_id: userId,
-        upload_name: sheetPreview.name,
-        property_name: prop.originalData.Name || prop.originalData.name || null,
+        upload_name: uploadName,
+        property_name: prop.originalData?.Name || prop.originalData?.name || null,
         address: prop.address,
         latitude: prop.latitude,
         longitude: prop.longitude,
@@ -2276,12 +2294,17 @@ function DashboardMapTab() {
         geocode_status: 'success'
       }));
 
+      console.log('[Save] Inserting', records.length, 'records into Supabase');
       const { data, error } = await supabase
         .from('uploaded_properties')
         .insert(records)
         .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[Save] Supabase insert error:', error);
+        throw error;
+      }
+      console.log('[Save] Supabase insert success, returned', data.length, 'records');
 
       // Add blue pins to map
       const newPins = data.map(record => ({
@@ -2297,9 +2320,6 @@ function DashboardMapTab() {
       }));
 
       setCustomPins(prev => [...prev, ...newPins]);
-      setUploadedSheets(prev => [...prev, { ...sheetPreview, properties: data }]);
-      
-      const uploadName = sheetPreview?.name || 'upload';
       setShowPreviewModal(false);
       setSheetPreview(null);
       
@@ -2331,7 +2351,7 @@ function DashboardMapTab() {
         });
 
         try {
-          await batchFetchParcels(propsForParcels, {
+          const parcelResult = await batchFetchParcels(propsForParcels, {
             batchSize: 5,
             delayMs: 300,
             onProgress: (current, total, found) => {
@@ -2346,7 +2366,8 @@ function DashboardMapTab() {
 
           setBgProcessing(null);
           setIsFetchingParcels(false);
-          const finalFound = parcelProgress.found || 0;
+          const finalFound = parcelResult?.found || 0;
+          console.log('[Parcel] Batch complete. Found:', finalFound);
           if (finalFound > 0) {
             addToast(`🗺️ ${finalFound} parcel boundaries drawn on map`, 'info');
           } else {
@@ -2385,7 +2406,7 @@ function DashboardMapTab() {
       return;
     }
 
-    await saveUploadedProperties(successful);
+    await saveUploadedProperties(successful, sheetPreview?.name || 'upload');
   };
 
   // NEW: Load uploaded properties from Supabase on mount
@@ -2805,7 +2826,18 @@ function DashboardMapTab() {
                       color: '#60a5fa', fontSize: 11, fontWeight: 600,
                     }}>
                       <UploadCloud size={14} /> Upload File
-                      <input type="file" accept=".csv,.xlsx,.xls" onChange={(e) => handleUploadedSheetFile(e.target.files?.[0])} style={{ display: 'none' }} />
+                      <input type="file" accept=".csv,.xlsx,.xls" onChange={(e) => {
+                        console.log('[Upload] File input onChange fired, files:', e.target.files?.length);
+                        const f = e.target.files?.[0];
+                        if (f) {
+                          console.log('[Upload] Selected file:', f.name, f.size, 'bytes');
+                          handleUploadedSheetFile(f);
+                        } else {
+                          console.warn('[Upload] No file in event target');
+                        }
+                        // Reset input so same file can be re-selected
+                        e.target.value = '';
+                      }} style={{ display: 'none' }} />
                     </label>
                   </div>
                   {/* Rapid Fire Upload */}
@@ -3981,10 +4013,7 @@ function DashboardMapTab() {
                   setGeocodingResults({ results, failed });
 
                   if (results.length > 0) {
-                    // Temporarily restore sheetPreview for saveUploadedProperties
-                    setSheetPreview(previewSnapshot);
-                    await saveUploadedProperties(results);
-                    setSheetPreview(null);
+                    await saveUploadedProperties(results, previewSnapshot.name || 'upload');
                   } else {
                     setBgProcessing(null);
                     addToast('❌ No properties could be geocoded.', 'error');
@@ -4114,10 +4143,18 @@ function DashboardMapTab() {
             animation: 'pulse 1.5s ease-in-out infinite',
           }} />
           <div>
-            <div style={{ color: '#e2e8f0', fontSize: 12, fontWeight: 600 }}>{bgProcessing.label}</div>
-            {bgProcessing.progress && (
-              <div style={{ color: '#94a3b8', fontSize: 11 }}>{bgProcessing.progress}</div>
-            )}
+            <div style={{ color: '#e2e8f0', fontSize: 12, fontWeight: 600 }}>
+              {bgProcessing.stage === 'geocoding' ? `Geocoding ${bgProcessing.fileName || ''}` : 
+               bgProcessing.stage === 'parcels' ? `Fetching parcels for ${bgProcessing.fileName || ''}` :
+               bgProcessing.fileName || 'Processing...'}
+            </div>
+            <div style={{ color: '#94a3b8', fontSize: 11 }}>
+              {bgProcessing.stage === 'geocoding' 
+                ? `${bgProcessing.geocoded || 0} / ${bgProcessing.total || 0} addresses`
+                : bgProcessing.stage === 'parcels'
+                ? `${bgProcessing.parcelsFound || 0} boundaries found (${bgProcessing.geocoded || 0} properties)`
+                : ''}
+            </div>
           </div>
         </div>
       )}
