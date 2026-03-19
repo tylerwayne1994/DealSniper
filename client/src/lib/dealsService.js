@@ -225,7 +225,8 @@ export async function loadPipelineDeals() {
         longitude,
         deal_stage,
         stage_changed_at,
-        death_reason
+        death_reason,
+        images
       `;
   let query = supabase
     .from('deals')
@@ -265,6 +266,8 @@ export async function loadPipelineDeals() {
     deal_stage: deal.deal_stage || 'underwritten',
     stage_changed_at: deal.stage_changed_at,
     death_reason: deal.death_reason,
+    // Property images
+    images: deal.images || [],
     // Keep full data for view/LOI
     fullScenarioData: deal.scenario_data,
     fullParsedData: deal.parsed_data

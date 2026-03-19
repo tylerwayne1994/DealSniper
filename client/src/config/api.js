@@ -28,6 +28,8 @@ export const API_ENDPOINTS = {
   dealRentcast: (dealId) => `${API_BASE_URL}/v2/deals/${dealId}/rentcast`,
   dealCostseg: (dealId) => `${API_BASE_URL}/v2/deals/${dealId}/costseg`,
   dealPitchDeck: (dealId) => `${API_BASE_URL}/v2/deals/${dealId}/pitch-deck`,
+  dealUploadImages: (dealId) => `${API_BASE_URL}/v2/deals/${dealId}/upload-images`,
+  dealDeleteImage: (dealId) => `${API_BASE_URL}/v2/deals/${dealId}/images`,
   
   // Market Research
   marketResearchStatus: (dealId) => `${API_BASE_URL}/v2/deals/${dealId}/market_research/status`,

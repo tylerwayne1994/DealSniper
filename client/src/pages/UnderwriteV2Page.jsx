@@ -442,6 +442,12 @@ function UnderwriteV2Page() {
         parsedCopy.source_filename = file.name;
       }
       
+      // Store extracted images from PDF (uploaded to Supabase by backend)
+      if (data.images && data.images.length > 0) {
+        parsedCopy.images = data.images;
+        console.log(`[IMAGES] ${data.images.length} images extracted from PDF`);
+      }
+      
       // ===== Bridge operating expenses & NOI fields for wizard =====
       // Backend post-processing should handle this, but double-check on frontend too
       if (parsedCopy.pnl) {

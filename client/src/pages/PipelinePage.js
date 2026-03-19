@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { loadPipelineDeals as loadDealsFromSupabase, loadRapidFireDeals as loadRapidFireDealsFromSupabase, deleteDeal, updateDeal } from '../lib/dealsService';
 import DealComparisonModal from '../components/DealComparisonModal';
+import DealPhotoGallery, { DealThumbnail } from '../components/DealPhotoGallery';
 
 // ============================================================================
 // Helper Functions
@@ -250,6 +251,7 @@ function PipelinePage() {
   const [collapsedGroups, setCollapsedGroups] = useState({});
   const [showFilters, setShowFilters] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
+  const [photoGalleryDeal, setPhotoGalleryDeal] = useState(null);
 
   const handleViewDeal = (deal) => navigate(`/underwrite?viewDeal=${deal.dealId}`);
 
@@ -631,6 +633,7 @@ function PipelinePage() {
                   <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1800px' }}>
                     <thead>
                       <tr>
+                        <th style={{ ...thStyle, width: '50px', textAlign: 'center' }}></th>
                         <th style={{ ...thStyle, textAlign: 'center', width: '40px' }}>
                           <input type="checkbox"
                             checked={getSortedAndFilteredDeals().length > 0 && getSortedAndFilteredDeals().every(d => selectedDealIds.includes(d.dealId))}
@@ -666,7 +669,7 @@ function PipelinePage() {
                           <React.Fragment key={group.stage}>
                             {/* Group header row */}
                             <tr>
-                              <td colSpan={20} style={{ padding: 0 }}>
+                              <td colSpan={21} style={{ padding: 0 }}>
                                 <div onClick={() => setCollapsedGroups(prev => ({ ...prev, [group.stage]: !prev[group.stage] }))}
                                   style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', cursor: 'pointer', backgroundColor: '#fff', borderBottom: '1px solid #e6e9ef', userSelect: 'none' }}>
                                   {isCollapsed ? <ChevronRight size={16} color={group.color} /> : <ChevronDown size={16} color={group.color} />}
@@ -696,8 +699,12 @@ function PipelinePage() {
                                   onMouseEnter={e => { if (!isSelected) e.currentTarget.style.backgroundColor = '#f7f8fa'; }}
                                   onMouseLeave={e => { if (!isSelected) e.currentTarget.style.backgroundColor = '#fff'; }}
                                 >
-                                  {/* Checkbox with left color border */}
-                                  <td style={{ ...cs, textAlign: 'center', borderLeft: `4px solid ${group.color}`, paddingLeft: '8px' }}>
+                                  {/* Photo thumbnail */}
+                                  <td style={{ ...cs, padding: '6px 4px 6px 8px', borderLeft: `4px solid ${group.color}`, width: '50px' }}>
+                                    <DealThumbnail images={deal.images} onClick={() => setPhotoGalleryDeal(deal)} />
+                                  </td>
+                                  {/* Checkbox */}
+                                  <td style={{ ...cs, textAlign: 'center', paddingLeft: '4px' }}>
                                     <input type="checkbox" checked={isSelected}
                                       onChange={e => e.target.checked ? setSelectedDealIds(prev => [...prev, deal.dealId]) : setSelectedDealIds(prev => prev.filter(id => id !== deal.dealId))}
                                       style={{ accentColor: '#579bfc' }}
@@ -992,6 +999,28 @@ function PipelinePage() {
         onClose={() => setShowComparison(false)}
         deals={pipelineDeals.filter(d => selectedDealIds.includes(d.dealId))}
       />
+
+      {/* ================================================================ */}
+      {/* Photo Gallery Modal */}
+      {/* ================================================================ */}
+      {photoGalleryDeal && (
+        <DealPhotoGallery
+          deal={photoGalleryDeal}
+          images={photoGalleryDeal.images || []}
+          onClose={() => setPhotoGalleryDeal(null)}
+          onImagesUpdated={(updatedImages) => {
+            // Update in local state
+            setPipelineDeals(prev => prev.map(d =>
+              d.dealId === photoGalleryDeal.dealId ? { ...d, images: updatedImages } : d
+            ));
+            setPhotoGalleryDeal(prev => prev ? { ...prev, images: updatedImages } : null);
+            // Persist to Supabase
+            updateDeal(photoGalleryDeal.dealId, { images: updatedImages }).catch(err =>
+              console.error('Failed to persist images:', err)
+            );
+          }}
+        />
+      )}
 
       <style>{`
         @keyframes spin {

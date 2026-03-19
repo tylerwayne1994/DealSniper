@@ -1551,6 +1551,112 @@ def _post_process_parsed_data(data: dict) -> dict:
     return data
 
 
+def _extract_and_upload_pdf_images(pdf_bytes: bytes, deal_id: str) -> list:
+    """Extract images from PDF bytes using PyMuPDF and upload to Supabase Storage.
+    
+    Returns list of uploaded image metadata dicts with public URLs.
+    Skips small images (<15KB) which are typically logos/icons.
+    Prioritizes large images (likely building/property photos).
+    """
+    import tempfile
+    import hashlib
+    
+    try:
+        import fitz  # PyMuPDF
+    except ImportError:
+        log.warning("[Images] PyMuPDF (fitz) not installed — skipping image extraction")
+        return []
+    
+    try:
+        from token_manager import get_supabase as _get_supabase
+        sb = _get_supabase()
+    except Exception as e:
+        log.warning(f"[Images] Supabase init failed, skipping image upload: {e}")
+        return []
+    
+    bucket = "deal-images"
+    
+    # Ensure bucket exists
+    try:
+        existing_buckets = sb.storage.list_buckets()
+        bucket_names = [b.name if hasattr(b, 'name') else b.get('name', '') for b in existing_buckets]
+        if bucket not in bucket_names:
+            sb.storage.create_bucket(bucket, options={"public": True})
+        else:
+            try:
+                sb.storage.update_bucket(bucket, options={"public": True})
+            except Exception:
+                pass
+    except Exception as e:
+        log.warning(f"[Images] Bucket check warning: {e}")
+    
+    uploaded = []
+    seen_hashes = set()
+    
+    try:
+        pdf_doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        
+        for page_num in range(len(pdf_doc)):
+            page = pdf_doc[page_num]
+            image_list = page.get_images(full=True)
+            
+            for img_idx, img in enumerate(image_list):
+                try:
+                    xref = img[0]
+                    base_image = pdf_doc.extract_image(xref)
+                    image_bytes = base_image["image"]
+                    image_ext = base_image["ext"]
+                    
+                    # Skip small images (logos, icons, decorations)
+                    if len(image_bytes) < 15000:  # 15KB threshold
+                        continue
+                    
+                    # Deduplicate by hash (same image can appear on multiple pages)
+                    img_hash = hashlib.md5(image_bytes).hexdigest()[:12]
+                    if img_hash in seen_hashes:
+                        continue
+                    seen_hashes.add(img_hash)
+                    
+                    # Build storage path
+                    filename = f"page_{page_num + 1}_img_{img_idx + 1}_{img_hash}.{image_ext}"
+                    storage_path = f"{deal_id}/{filename}"
+                    
+                    # Upload to Supabase Storage
+                    ct = f"image/{image_ext}" if image_ext != "jpg" else "image/jpeg"
+                    sb.storage.from_(bucket).upload(
+                        path=storage_path,
+                        file=image_bytes,
+                        file_options={"content-type": ct, "upsert": "true"},
+                    )
+                    
+                    public_url = sb.storage.from_(bucket).get_public_url(storage_path)
+                    
+                    uploaded.append({
+                        "url": public_url,
+                        "filename": filename,
+                        "storage_path": storage_path,
+                        "page_number": page_num + 1,
+                        "size_bytes": len(image_bytes),
+                        "format": image_ext,
+                    })
+                    
+                except Exception as e:
+                    log.debug(f"[Images] Skip img {img_idx} on page {page_num + 1}: {e}")
+                    continue
+        
+        pdf_doc.close()
+        
+        # Sort by size descending — largest images first (building photos are usually biggest)
+        uploaded.sort(key=lambda x: x.get("size_bytes", 0), reverse=True)
+        
+        log.info(f"[Images] Extracted {len(uploaded)} images from PDF for deal {deal_id}")
+        
+    except Exception as e:
+        log.warning(f"[Images] PDF image extraction error: {e}")
+    
+    return uploaded
+
+
 @router.post("/deals/parse")
 async def parse_deal_v2(file: UploadFile = File(...)):
     log.info(f"[V2] Parse request for file: {file.filename}")
@@ -1826,9 +1932,29 @@ NET OPERATING INCOME EXTRACTION — THIS IS CRITICAL, DO NOT SKIP:
         log.info(f"  - NOI: {deal.summary_noi}")
         log.info(f"  - Cap Rate: {deal.summary_cap_rate}")
         
+        # ===== EXTRACT IMAGES FROM PDF & UPLOAD TO SUPABASE =====
+        uploaded_images = []
+        if mime == "application/pdf":
+            try:
+                uploaded_images = _extract_and_upload_pdf_images(data, deal.id)
+                log.info(f"[V2] Extracted and uploaded {len(uploaded_images)} images for deal {deal.id}")
+                # Save images array to deal in Supabase
+                if uploaded_images:
+                    try:
+                        from token_manager import get_supabase as _get_sb
+                        _sb = _get_sb()
+                        _sb.table("deals").update({"images": uploaded_images}).eq("deal_id", deal.id).execute()
+                        log.info(f"[V2] Saved {len(uploaded_images)} images to deal record")
+                    except Exception as db_err:
+                        log.warning(f"[V2] Failed to save images to deal: {db_err}")
+            except Exception as img_err:
+                log.warning(f"[V2] Image extraction failed (non-fatal): {img_err}")
+        
         return JSONResponse({
             "deal_id": deal.id,
             "parsed": parsed_json,
+            "images": uploaded_images,
+            "image_count": len(uploaded_images),
             "summary": {
                 "address": deal.summary_address,
                 "units": deal.summary_units,
