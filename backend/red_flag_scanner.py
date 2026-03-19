@@ -3,7 +3,7 @@ Red Flag Scanner — Quick-screen a Crexi / LoopNet / broker listing URL
 before the user uploads an OM.  Returns a letter grade + red flags.
 """
 
-import os, json, re, logging
+import os, json, re, logging, asyncio
 from typing import Optional
 
 import httpx
@@ -58,46 +58,44 @@ GRADE_COLORS = {
 _HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+    "Sec-Ch-Ua": '"Chromium";v="131", "Not_A Brand";v="24"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"Windows"',
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Upgrade-Insecure-Requests": "1",
 }
 
-async def _fetch_listing_page(url: str) -> str:
-    """Fetch listing page and return text content. Handles JS-rendered pages gracefully."""
-    async with httpx.AsyncClient(
-        follow_redirects=True,
-        timeout=httpx.Timeout(25.0),
-        headers=_HEADERS,
-    ) as client:
-        resp = await client.get(url)
-        resp.raise_for_status()
-        html = resp.text
 
-    # Strip excessive HTML + keep text / meta / JSON-LD
-    # Remove scripts/styles but keep their JSON-LD content
+def _extract_page_content(html: str) -> str:
+    """Extract structured data + text from raw HTML."""
+    # Grab JSON-LD structured data
     json_ld_blocks = re.findall(
         r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',
         html, re.DOTALL | re.IGNORECASE
     )
-
-    # Also grab OpenGraph / meta tags
+    # Grab OpenGraph / meta tags
     meta_tags = re.findall(
         r'<meta[^>]*(?:property|name)=["\']([^"\']*)["\'][^>]*content=["\']([^"\']*)["\'][^>]*>',
         html, re.IGNORECASE
     )
-
-    # Strip all tags for body text
+    # Strip tags for body text
     text_only = re.sub(r'<script[^>]*>.*?</script>', ' ', html, flags=re.DOTALL | re.IGNORECASE)
     text_only = re.sub(r'<style[^>]*>.*?</style>', ' ', text_only, flags=re.DOTALL | re.IGNORECASE)
     text_only = re.sub(r'<[^>]+>', ' ', text_only)
     text_only = re.sub(r'\s+', ' ', text_only).strip()
 
-    # Truncate to ~30k chars to fit context window
     MAX_CHARS = 30000
     if len(text_only) > MAX_CHARS:
         text_only = text_only[:MAX_CHARS] + " ... [TRUNCATED]"
 
-    # Build combined payload for LLM
     parts = []
     if json_ld_blocks:
         parts.append("=== JSON-LD STRUCTURED DATA ===")
@@ -109,8 +107,99 @@ async def _fetch_listing_page(url: str) -> str:
             parts.append(f"{name}: {content}")
     parts.append("\n=== PAGE TEXT CONTENT ===")
     parts.append(text_only)
-
     return "\n".join(parts)
+
+
+async def _fetch_with_playwright(url: str) -> str:
+    """Use headless Chromium via Playwright to bypass Cloudflare / bot protection."""
+    try:
+        from playwright.async_api import async_playwright
+    except ImportError:
+        log.warning("[RED FLAG] Playwright not installed, skipping browser fetch")
+        return None
+
+    log.info(f"[RED FLAG] Fetching with Playwright: {url}")
+    try:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True, args=[
+                "--no-sandbox",
+                "--disable-blink-features=AutomationControlled",
+                "--disable-dev-shm-usage",
+            ])
+            context = await browser.new_context(
+                user_agent=_HEADERS["User-Agent"],
+                viewport={"width": 1920, "height": 1080},
+                locale="en-US",
+            )
+            page = await context.new_page()
+
+            # Remove webdriver detection flags
+            await page.add_init_script("""
+                Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+                window.chrome = { runtime: {} };
+            """)
+
+            response = await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+            if response and response.status >= 400:
+                log.warning(f"[RED FLAG] Playwright got HTTP {response.status}")
+                await browser.close()
+                return None
+
+            # Wait for content to render (JS-heavy SPAs like Crexi)
+            await page.wait_for_timeout(3000)
+
+            # Try waiting for common listing selectors
+            for sel in [".listing-detail", "[data-testid]", ".property-details", "main", "article"]:
+                try:
+                    await page.wait_for_selector(sel, timeout=3000)
+                    break
+                except:
+                    continue
+
+            html = await page.content()
+            await browser.close()
+
+            if len(html) < 500:
+                log.warning("[RED FLAG] Playwright returned very short page, likely blocked")
+                return None
+
+            return _extract_page_content(html)
+    except Exception as e:
+        log.warning(f"[RED FLAG] Playwright fetch failed: {e}")
+        return None
+
+
+async def _fetch_with_httpx(url: str) -> str:
+    """Standard httpx fetch with full browser headers."""
+    log.info(f"[RED FLAG] Fetching with httpx: {url}")
+    async with httpx.AsyncClient(
+        follow_redirects=True,
+        timeout=httpx.Timeout(25.0),
+        headers=_HEADERS,
+        http2=True,
+    ) as client:
+        resp = await client.get(url)
+        resp.raise_for_status()
+        html = resp.text
+
+    if len(html) < 500:
+        raise ValueError("Page returned too little content")
+
+    return _extract_page_content(html)
+
+
+async def _fetch_listing_page(url: str) -> str:
+    """Fetch listing page — tries Playwright (real browser) first, falls back to httpx."""
+
+    # Try Playwright first for sites that block bots (Crexi, LoopNet, etc.)
+    result = await _fetch_with_playwright(url)
+    if result and len(result) > 200:
+        log.info(f"[RED FLAG] Playwright fetch succeeded ({len(result)} chars)")
+        return result
+
+    # Fallback to httpx
+    log.info("[RED FLAG] Falling back to httpx")
+    return await _fetch_with_httpx(url)
 
 
 # ── Analysis prompt ──
