@@ -23,6 +23,7 @@ export default function CompressedTab({
   vaRubsRecovery = 0,
   vaOtherIncome = 0,
   vaExpenseSavings = 0,
+  countyTaxEntry,
 }) {
   const navigate = useNavigate();
 
@@ -1147,6 +1148,59 @@ export default function CompressedTab({
           )}
         </div>
       </div>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          COUNTY PROPERTY TAX IMPACT — side-by-side current vs reassessed
+          ═══════════════════════════════════════════════════════════════ */}
+      {countyTaxEntry && purchasePrice > 0 && (() => {
+        const currentTax = Number(scenarioData?.expenses?.taxes) || 0;
+        const reassessedTax = Math.round(purchasePrice * countyTaxEntry.effectiveTaxRate);
+        const delta = reassessedTax - currentTax;
+        const deltaPct = currentTax > 0 ? ((delta / currentTax) * 100).toFixed(1) : null;
+        const noiImpact = currentTax > 0 ? -delta : 0;
+        const isIncrease = delta > 0;
+        return (
+          <div style={{ ...card, border: '1px solid #fbbf24', background: '#fffbeb' }}>
+            <SectionHead title="County Property Tax Impact" color="#92400e" />
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'stretch' }}>
+              {/* Current */}
+              <div style={{ flex: 1, minWidth: 160, padding: '14px 16px', borderRadius: 12, background: '#fff', border: `1px solid ${B}` }}>
+                <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: LB, marginBottom: 6 }}>Current (OM / T12)</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: VL }}>{fmt(currentTax)}</div>
+                {purchasePrice > 0 && currentTax > 0 && (
+                  <div style={{ fontSize: 11, color: LB, marginTop: 4 }}>{(currentTax / purchasePrice * 100).toFixed(3)}% of price</div>
+                )}
+              </div>
+              {/* Arrow */}
+              <div style={{ display: 'flex', alignItems: 'center', fontSize: 24, color: isIncrease ? '#ef4444' : '#10b981', fontWeight: 800 }}>→</div>
+              {/* Reassessed */}
+              <div style={{ flex: 1, minWidth: 160, padding: '14px 16px', borderRadius: 12, background: isIncrease ? '#fef2f2' : '#ecfdf5', border: `1px solid ${isIncrease ? '#fecaca' : '#a7f3d0'}` }}>
+                <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: isIncrease ? '#b91c1c' : '#047857', marginBottom: 6 }}>Reassessed at Purchase</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: isIncrease ? '#b91c1c' : '#047857' }}>{fmt(reassessedTax)}</div>
+                <div style={{ fontSize: 11, color: isIncrease ? '#dc2626' : '#059669', marginTop: 4 }}>
+                  {isIncrease ? '▲' : delta < 0 ? '▼' : '—'} {fmt(Math.abs(delta))}
+                  {deltaPct && <span> ({isIncrease ? '+' : ''}{deltaPct}%)</span>}
+                </div>
+              </div>
+              {/* NOI Impact */}
+              {noiImpact !== 0 && (
+                <div style={{ flex: 1, minWidth: 160, padding: '14px 16px', borderRadius: 12, background: noiImpact > 0 ? '#ecfdf5' : '#fef2f2', border: `1px solid ${noiImpact > 0 ? '#a7f3d0' : '#fecaca'}` }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: noiImpact > 0 ? '#047857' : '#b91c1c', marginBottom: 6 }}>NOI Impact (Year 1)</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: noiImpact > 0 ? '#047857' : '#b91c1c' }}>{noiImpact > 0 ? '+' : ''}{fmt(noiImpact)}</div>
+                  <div style={{ fontSize: 11, color: LB, marginTop: 4 }}>If taxes are reassessed</div>
+                </div>
+              )}
+            </div>
+            {/* County source badge */}
+            <div style={{ marginTop: 12, display: 'flex', gap: 16, fontSize: 11, color: LB, background: '#f0fdf4', padding: '8px 14px', borderRadius: 8, border: '1px solid #bbf7d0', flexWrap: 'wrap' }}>
+              <span>📍 <strong style={{ color: VL }}>{countyTaxEntry.fullName}</strong></span>
+              <span>Effective Rate: <strong>{countyTaxEntry.taxRatePercent.toFixed(3)}%</strong></span>
+              <span>Median Tax: <strong>{fmt(countyTaxEntry.medianTaxesPaid)}</strong></span>
+              <span>Median Home: <strong>{fmt(countyTaxEntry.medianHomeValue)}</strong></span>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ═══════════════════════════════════════════════════════════════
           3. KEY OPERATING RATIOS + LOAN + MORTGAGE (3-column)

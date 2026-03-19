@@ -8,7 +8,7 @@ import { calculateAmortizationSchedule } from '../../utils/realEstateCalculation
 //       → NOI (navy row) → CAPEX → Debt Service (red, clickable)
 //       → Net Income (navy row) → metrics strip (plain text)
 // ──────────────────────────────────────────────────────────────────
-export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange }) {
+export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange, countyTaxEntry }) {
   const expenses = scenarioData?.expenses || {};
   const optimized = scenarioData?.value_add?.optimized_expenses || {};
   const pnl = scenarioData?.pnl || {};
@@ -25,12 +25,16 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
   // ── Tax reassessment estimate ──
   const [taxRatePct, setTaxRatePct] = useState(() => {
     if (scenarioData?.value_add?.tax_rate_pct) return Number(scenarioData.value_add.tax_rate_pct);
+    // Prefer county CSV rate if available
+    if (countyTaxEntry?.taxRatePercent > 0) return parseFloat(countyTaxEntry.taxRatePercent.toFixed(4));
     // Estimate from current taxes: taxRate = currentTaxes / price * 100
     const currentTax = Number(expenses.taxes) || 0;
     if (currentTax > 0 && price > 0) return parseFloat((currentTax / price * 100).toFixed(3));
     return 1.25; // Default
   });
   const reassessedTax = price > 0 ? Math.round(price * taxRatePct / 100) : 0;
+  const currentTaxAmt = Number(expenses.taxes) || 0;
+  const taxDelta = reassessedTax - currentTaxAmt;
 
   // ── Financing state — multi-loan Cactus-style system ──
   // Each loan is an object: { id, type, enabled, loanAmtMode, ltvOrPct, rate, term, amort, io, fees, ... }
@@ -597,25 +601,68 @@ export default function ExpenseV2Tab({ scenarioData, fullCalcs, onFieldChange })
                   {/* Tax reassessment hint row after Property Taxes */}
                   {row.key === 'taxes' && price > 0 && (
                     <tr style={{ background: '#fffbeb' }}>
-                      <td colSpan={5} style={{ padding: '4px 10px 4px 28px', borderBottom: `1px solid ${B}`, fontSize: 11 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                          <span style={{ color: '#92400e', fontWeight: 600 }}>⚠ Est. Reassessed Tax:</span>
-                          <span style={{ fontWeight: 700, color: '#92400e' }}>{fmt(reassessedTax)}</span>
-                          <span style={{ color: '#b45309' }}>@ </span>
-                          <input type="number" step="0.01" value={taxRatePct}
-                            onChange={e => {
-                              const v = parseFloat(e.target.value) || 0;
-                              setTaxRatePct(v);
-                              handleChange('value_add.tax_rate_pct', v);
-                            }}
-                            style={{ width: 60, padding: '2px 6px', border: '1px solid #fbbf24', borderRadius: 4, fontSize: 11, textAlign: 'center', background: '#fffbeb', fontWeight: 700, color: '#92400e' }} />
-                          <span style={{ color: '#b45309', fontSize: 10 }}>% of purchase price ({fmt(price)})</span>
-                          <button onClick={() => {
-                            handleChange('value_add.optimized_expenses.taxes', reassessedTax);
-                          }} style={{ cursor: 'pointer', padding: '2px 8px', border: '1px solid #fbbf24', borderRadius: 4, fontSize: 10, fontWeight: 700, color: '#92400e', background: '#fef3c7', marginLeft: 4 }}>
-                            Use as VA →
-                          </button>
+                      <td colSpan={5} style={{ padding: '8px 10px 8px 16px', borderBottom: `1px solid ${B}`, fontSize: 11 }}>
+                        {/* ── Side-by-side: Current vs Reassessed ── */}
+                        <div style={{ display: 'flex', gap: 12, alignItems: 'stretch', flexWrap: 'wrap' }}>
+                          {/* Current (OM) taxes */}
+                          <div style={{ flex: 1, minWidth: 140, padding: '8px 12px', borderRadius: 8, background: '#f9fafb', border: '1px solid #e5e7eb' }}>
+                            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: '#6b7280', marginBottom: 4 }}>Current (OM/T12)</div>
+                            <div style={{ fontSize: 16, fontWeight: 800, color: '#111827' }}>{fmt(currentTaxAmt)}</div>
+                            {price > 0 && currentTaxAmt > 0 && (
+                              <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>
+                                {(currentTaxAmt / price * 100).toFixed(3)}% of price
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Arrow */}
+                          <div style={{ display: 'flex', alignItems: 'center', fontSize: 16, color: taxDelta > 0 ? '#ef4444' : taxDelta < 0 ? '#10b981' : '#6b7280' }}>→</div>
+
+                          {/* Reassessed at purchase */}
+                          <div style={{ flex: 1, minWidth: 140, padding: '8px 12px', borderRadius: 8, background: taxDelta > 0 ? '#fef2f2' : '#ecfdf5', border: `1px solid ${taxDelta > 0 ? '#fecaca' : '#a7f3d0'}` }}>
+                            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: taxDelta > 0 ? '#b91c1c' : '#047857', marginBottom: 4 }}>Reassessed at Purchase</div>
+                            <div style={{ fontSize: 16, fontWeight: 800, color: taxDelta > 0 ? '#b91c1c' : '#047857' }}>{fmt(reassessedTax)}</div>
+                            <div style={{ fontSize: 10, color: taxDelta > 0 ? '#dc2626' : '#059669', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span>{taxDelta > 0 ? '▲' : taxDelta < 0 ? '▼' : '—'} {fmt(Math.abs(taxDelta))}</span>
+                              {currentTaxAmt > 0 && <span>({taxDelta > 0 ? '+' : ''}{((taxDelta / currentTaxAmt) * 100).toFixed(1)}%)</span>}
+                            </div>
+                          </div>
+
+                          {/* Rate input + Use VA button */}
+                          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span style={{ fontSize: 10, color: '#92400e' }}>Rate:</span>
+                              <input type="number" step="0.01" value={taxRatePct}
+                                onChange={e => {
+                                  const v = parseFloat(e.target.value) || 0;
+                                  setTaxRatePct(v);
+                                  handleChange('value_add.tax_rate_pct', v);
+                                }}
+                                style={{ width: 55, padding: '2px 5px', border: '1px solid #fbbf24', borderRadius: 4, fontSize: 11, textAlign: 'center', background: '#fffbeb', fontWeight: 700, color: '#92400e' }} />
+                              <span style={{ fontSize: 10, color: '#b45309' }}>%</span>
+                            </div>
+                            {countyTaxEntry && (
+                              <div style={{ fontSize: 9, color: '#6b7280' }}>
+                                {countyTaxEntry.fullName}: {countyTaxEntry.taxRatePercent.toFixed(3)}%
+                              </div>
+                            )}
+                            <button onClick={() => {
+                              handleChange('value_add.optimized_expenses.taxes', reassessedTax);
+                            }} style={{ cursor: 'pointer', padding: '3px 8px', border: '1px solid #fbbf24', borderRadius: 4, fontSize: 10, fontWeight: 700, color: '#92400e', background: '#fef3c7' }}>
+                              Use as VA →
+                            </button>
+                          </div>
                         </div>
+
+                        {/* County data badge */}
+                        {countyTaxEntry && (
+                          <div style={{ marginTop: 6, display: 'flex', gap: 12, fontSize: 10, color: '#6b7280', background: '#f0fdf4', padding: '4px 10px', borderRadius: 6, border: '1px solid #bbf7d0' }}>
+                            <span>📍 <strong style={{ color: '#111827' }}>{countyTaxEntry.fullName}</strong></span>
+                            <span>Effective Rate: <strong>{countyTaxEntry.taxRatePercent.toFixed(3)}%</strong></span>
+                            <span>Median Tax: <strong>{fmt(countyTaxEntry.medianTaxesPaid)}</strong></span>
+                            <span>Median Home: <strong>{fmt(countyTaxEntry.medianHomeValue)}</strong></span>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   )}

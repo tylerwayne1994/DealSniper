@@ -42,6 +42,7 @@ import { saveDeal, updateDeal, loadDeal } from '../lib/dealsService';
 import ScenarioSheet from './ScenarioSheet';
 import { supabase } from '../lib/supabase';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
+import { loadCountyTaxData, lookupFromScenario, computeTaxComparison } from '../utils/countyTaxLookup';
 
 const ResultsPageV2 = ({ 
   dealId,
@@ -69,6 +70,7 @@ const ResultsPageV2 = ({
   const [activeTab, setActiveTab] = useState('summary');
 
   const [countyTaxData, setCountyTaxData] = useState([]);
+  const [countyTaxEntry, setCountyTaxEntry] = useState(null);
   const [countySearch, setCountySearch] = useState('');
   const [showCountyDropdown, setShowCountyDropdown] = useState(false);
   const [isRunningAI, setIsRunningAI] = useState(false);
@@ -318,34 +320,22 @@ const ResultsPageV2 = ({
     };
   }, [isDragging, dragOffset]);
   
-  // Load county tax data from CSV
+  // Load county tax data from new CSV utility
   useEffect(() => {
-    fetch('/Property Taxes by State and County, 2025  Tax Foundation Maps.csv')
-      .then(response => response.text())
-      .then(csvText => {
-        const lines = csvText.split('\n');
-        const data = [];
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i];
-          if (!line.trim()) continue;
-          // Parse CSV with quoted fields
-          const matches = line.match(/("([^"]*)"|[^,]+)/g);
-          if (matches && matches.length >= 5) {
-            const state = matches[0].replace(/"/g, '').trim();
-            const county = matches[1].replace(/"/g, '').trim();
-            const taxRate = matches[4].replace(/"/g, '').replace('%', '').trim();
-            data.push({
-              state,
-              county,
-              taxRate: parseFloat(taxRate) || 0,
-              fullName: `${county}, ${state}`
-            });
-          }
-        }
-        setCountyTaxData(data);
-      })
-      .catch(err => console.error('Error loading county tax data:', err));
+    loadCountyTaxData().then(map => {
+      // Build legacy array for any downstream county-search dropdowns
+      const arr = [];
+      map.forEach(entry => arr.push({ state: entry.state, county: entry.county, taxRate: entry.taxRatePercent, fullName: entry.fullName }));
+      setCountyTaxData(arr);
+    }).catch(err => console.error('Error loading county tax data:', err));
   }, []);
+
+  // Auto-detect county tax entry from scenarioData
+  useEffect(() => {
+    if (countyTaxData.length === 0) return; // CSV not loaded yet
+    const entry = lookupFromScenario(scenarioData);
+    setCountyTaxEntry(entry);
+  }, [scenarioData?.property_county, scenarioData?.property?.state, scenarioData?.property?.county, countyTaxData]);
   
   // Auto-trigger Max deal analysis on mount
   useEffect(() => {
@@ -2306,6 +2296,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
             scenarioData={scenarioData}
             fullCalcs={fullCalcs}
             onFieldChange={handleFieldChange}
+            countyTaxEntry={countyTaxEntry}
           />
         );
 
@@ -2900,6 +2891,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
             setSelectedHoldPeriod={setSelectedHoldPeriod}
             onFieldChange={handleFieldChange}
             onTabChange={setActiveTab}
+            countyTaxEntry={countyTaxEntry}
             vaRentUpside={scenarioData?.value_add?.apply_rent_upside ? vaAnnualRentUpside : 0}
             vaRubsRecovery={scenarioData?.value_add?.apply_rubs ? vaAnnualRubsRecovery : 0}
             vaOtherIncome={scenarioData?.value_add?.apply_other_income ? (scenarioData?.value_add?.annual_other_income || 0) : 0}
