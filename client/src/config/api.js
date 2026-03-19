@@ -30,6 +30,7 @@ export const API_ENDPOINTS = {
   dealPitchDeck: (dealId) => `${API_BASE_URL}/v2/deals/${dealId}/pitch-deck`,
   dealUploadImages: (dealId) => `${API_BASE_URL}/v2/deals/${dealId}/upload-images`,
   dealDeleteImage: (dealId) => `${API_BASE_URL}/v2/deals/${dealId}/images`,
+  dealCapexEstimate: (dealId) => `${API_BASE_URL}/v2/deals/${dealId}/capex-estimate`,
   
   // Market Research
   marketResearchStatus: (dealId) => `${API_BASE_URL}/v2/deals/${dealId}/market_research/status`,

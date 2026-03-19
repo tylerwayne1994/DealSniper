@@ -3858,6 +3858,310 @@ Generate a complete, professional LOI ready for submission. Include appropriate 
 
 
 # =============================================================================
+# AI CAPEX ESTIMATOR FROM PHOTOS — Claude Vision
+# Analyzes property photos to estimate capital expenditure needs
+# =============================================================================
+
+CAPEX_VISION_SYSTEM_PROMPT = """You are an expert commercial real estate inspector and capital expenditure (CapEx) estimator. You have 25+ years of experience inspecting multifamily, retail, and commercial properties.
+
+You are analyzing property photos to estimate CapEx needs. For each photo, identify:
+1. What you can see (roof, exterior, interior, parking, HVAC, common areas, etc.)
+2. Estimated condition and age based on visual clues
+3. Specific CapEx items needed with cost estimates
+
+RESPOND ONLY IN VALID JSON matching this exact schema:
+{
+  "property_condition_grade": "A|B|C|D|F",
+  "condition_summary": "One paragraph overall assessment",
+  "total_capex_estimate_per_unit": 0,
+  "total_capex_estimate_total": 0,
+  "confidence_level": "high|medium|low",
+  "capex_items": [
+    {
+      "category": "Roof|Exterior|Interior|HVAC|Plumbing|Electrical|Parking|Windows|Landscaping|Common Areas|Appliances|Flooring|Other",
+      "item": "Short description of what needs work",
+      "observation": "What you actually see in the photos that triggered this estimate",
+      "urgency": "immediate|1-2 years|3-5 years|cosmetic",
+      "cost_per_unit": 0,
+      "total_cost": 0,
+      "notes": "Any relevant details about scope, materials, or approach"
+    }
+  ],
+  "deferred_maintenance_items": [
+    {
+      "item": "Description of deferred maintenance spotted",
+      "severity": "critical|moderate|minor",
+      "estimated_cost": 0
+    }
+  ],
+  "renovation_opportunities": [
+    {
+      "item": "Value-add opportunity spotted",
+      "description": "What could be upgraded and the expected rent premium",
+      "cost_per_unit": 0,
+      "estimated_rent_increase_per_unit": 0,
+      "roi_estimate": "Xmo payback"
+    }
+  ],
+  "photo_analysis": [
+    {
+      "photo_index": 1,
+      "description": "What this photo shows",
+      "condition_notes": "Specific conditions observed",
+      "items_identified": ["list of CapEx items from this photo"]
+    }
+  ]
+}
+
+COST ESTIMATION GUIDELINES (2024-2026 pricing):
+- Roof replacement (flat/TPO): $6,000-12,000/unit depending on building size
+- Roof replacement (shingle): $4,000-8,000/unit
+- Exterior paint/siding: $2,000-4,000/unit
+- Parking lot seal/stripe: $1,500-3,000/unit
+- Parking lot full repave: $4,000-8,000/unit
+- HVAC replacement: $4,000-7,000/unit
+- Water heater: $1,200-2,500/unit
+- Plumbing (repipe): $3,000-6,000/unit
+- Electrical panel upgrade: $2,000-4,000/unit
+- Windows replacement: $3,000-6,000/unit
+- Interior full renovation: $10,000-25,000/unit (depends on scope)
+- Kitchen update (cosmetic): $3,000-5,000/unit
+- Kitchen full reno: $8,000-15,000/unit
+- Bathroom update: $2,000-4,000/unit
+- Flooring (LVP): $2,000-3,500/unit
+- Paint interior: $1,000-2,000/unit
+- Appliance package: $2,000-4,000/unit
+- Landscaping overhaul: $500-1,500/unit
+- Common area renovation: $1,000-3,000/unit
+- Security/access control: $500-1,500/unit
+- Elevator modernization: $50,000-150,000/elevator
+
+IMPORTANT RULES:
+- Be specific about what you SEE, not what you guess
+- If you can't see something clearly, note "not visible in photos" and mark confidence as "low"
+- Differentiate between needed repairs and value-add opportunities
+- If property details (units, price) are provided, calculate total costs accordingly
+- Always err slightly conservative (higher) on cost estimates — better to over-budget than under
+- Round costs to nearest $500
+"""
+
+
+@router.post("/deals/{deal_id}/capex-estimate")
+async def estimate_capex_from_photos(deal_id: str, request: Request):
+    """Analyze property photos with Claude Vision to estimate CapEx needs.
+    
+    Uses the deal's stored images (from OM extraction or user uploads).
+    Optionally accepts override image URLs in request body.
+    
+    Request body (optional):
+    {
+        "image_urls": ["url1", "url2", ...],  // Override: use these URLs instead
+        "units": 50,       // Property units for total cost calculation
+        "price": 5000000   // Purchase price for context
+    }
+    """
+    import base64
+    import httpx
+    
+    log.info(f"[CapEx] Estimate request for deal: {deal_id}")
+    
+    ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
+    if not ANTHROPIC_API_KEY:
+        raise HTTPException(status_code=503, detail="Anthropic API key not configured")
+    
+    # Parse optional body
+    try:
+        body = await request.json()
+    except:
+        body = {}
+    
+    override_urls = body.get("image_urls", [])
+    units_override = body.get("units")
+    price_override = body.get("price")
+    
+    # Get deal data from Supabase
+    try:
+        from token_manager import get_supabase as _get_supabase
+        sb = _get_supabase()
+        deal_resp = sb.table("deals").select("images, units, purchase_price, address, scenario_data, parsed_data").eq("deal_id", deal_id).single().execute()
+        deal_data = deal_resp.data or {}
+    except Exception as e:
+        log.warning(f"[CapEx] Could not load deal: {e}")
+        deal_data = {}
+    
+    # Determine which images to analyze
+    image_urls = override_urls if override_urls else [img.get("url") for img in (deal_data.get("images") or []) if img.get("url")]
+    
+    if not image_urls:
+        raise HTTPException(status_code=400, detail="No images available for this deal. Upload property photos first.")
+    
+    # Cap at 15 images to stay within token limits
+    image_urls = image_urls[:15]
+    
+    # Extract property context
+    units = units_override or deal_data.get("units")
+    price = price_override or deal_data.get("purchase_price")
+    address = deal_data.get("address", "Unknown")
+    
+    # Try to get more context from parsed/scenario data
+    parsed = deal_data.get("parsed_data") or deal_data.get("scenario_data") or {}
+    if not units:
+        units = (parsed.get("property") or {}).get("units")
+    if not price:
+        price = (parsed.get("pricing_financing") or {}).get("price")
+    year_built = (parsed.get("property") or {}).get("year_built")
+    prop_type = (parsed.get("property") or {}).get("property_type", "multifamily")
+    
+    log.info(f"[CapEx] Analyzing {len(image_urls)} images for {address} ({units} units, ${price})")
+    
+    # Download images and convert to base64 for Claude Vision
+    content_items = []
+    
+    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as http_client:
+        for i, url in enumerate(image_urls):
+            try:
+                resp = await http_client.get(url)
+                if resp.status_code != 200:
+                    log.debug(f"[CapEx] Could not download image {i+1}: HTTP {resp.status_code}")
+                    continue
+                
+                img_bytes = resp.content
+                if len(img_bytes) < 5000:  # skip tiny/broken images
+                    continue
+                
+                # Detect content type
+                ct = resp.headers.get("content-type", "image/jpeg")
+                if "png" in ct:
+                    media_type = "image/png"
+                elif "webp" in ct:
+                    media_type = "image/webp"
+                else:
+                    media_type = "image/jpeg"
+                
+                b64 = base64.b64encode(img_bytes).decode("utf-8")
+                
+                content_items.append({
+                    "type": "text",
+                    "text": f"--- Photo {i+1} of {len(image_urls)} ---"
+                })
+                content_items.append({
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": media_type,
+                        "data": b64
+                    }
+                })
+            except Exception as e:
+                log.debug(f"[CapEx] Error downloading image {i+1}: {e}")
+                continue
+    
+    if not any(item.get("type") == "image" for item in content_items):
+        raise HTTPException(status_code=400, detail="Could not load any images for analysis. Check image URLs.")
+    
+    # Build context text
+    context_parts = [f"Property: {address}"]
+    if units:
+        context_parts.append(f"Units: {units}")
+    if price:
+        context_parts.append(f"Purchase Price: ${price:,.0f}" if isinstance(price, (int, float)) else f"Purchase Price: {price}")
+    if year_built:
+        context_parts.append(f"Year Built: {year_built}")
+    context_parts.append(f"Property Type: {prop_type}")
+    
+    context_text = "\n".join(context_parts)
+    
+    content_items.append({
+        "type": "text",
+        "text": f"""Analyze ALL photos above and provide a comprehensive CapEx estimate.
+
+PROPERTY CONTEXT:
+{context_text}
+
+Examine every photo carefully. Look for:
+- Roof condition (age clues: discoloration, sagging, patching, moss/algae)
+- Exterior condition (siding, paint, brick, stucco condition)
+- Parking lot/driveways (cracking, potholes, faded striping)
+- Windows (style indicates age, foggy glass = seal failure, wood rot)
+- HVAC equipment visible (age, rust, model numbers)
+- Interior finishes (cabinets, countertops, fixtures = decade indicators)
+- Flooring type and condition
+- Plumbing fixtures (faucets, toilets indicate age)
+- Common areas (lobbies, hallways, laundry rooms)
+- Landscaping and curb appeal
+- Structural concerns (settling, cracks, water stains)
+
+{"Calculate all total_cost fields using " + str(units) + " units." if units else "If units are not specified, provide per-unit costs only and set total costs to per-unit values."}
+
+Return ONLY valid JSON. No markdown, no code blocks, no explanations outside the JSON."""
+    })
+    
+    # Call Claude Vision
+    from anthropic import Anthropic
+    anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
+    
+    try:
+        response = anthropic_client.messages.create(
+            model="claude-sonnet-4-5-20250929",  # Need Sonnet for quality vision analysis
+            max_tokens=6000,
+            system=CAPEX_VISION_SYSTEM_PROMPT,
+            messages=[{
+                "role": "user",
+                "content": content_items
+            }]
+        )
+        
+        text = response.content[0].text.strip()
+        log.info(f"[CapEx] Claude response length: {len(text)} chars")
+        
+        # Parse JSON
+        if text.startswith("```"):
+            text = text.split("```", 2)[1]
+            if text.startswith("json"):
+                text = text[4:].strip()
+        
+        capex_result = json.loads(text)
+        
+        # Ensure totals are calculated if units provided
+        if units and capex_result.get("total_capex_estimate_per_unit"):
+            if not capex_result.get("total_capex_estimate_total"):
+                capex_result["total_capex_estimate_total"] = capex_result["total_capex_estimate_per_unit"] * int(units)
+        
+        # Save CapEx estimate to deal record
+        try:
+            sb.table("deals").update({
+                "scenario_data": {
+                    **(deal_data.get("scenario_data") or {}),
+                    "capex_estimate": capex_result
+                }
+            }).eq("deal_id", deal_id).execute()
+            log.info(f"[CapEx] Saved estimate to deal {deal_id}")
+        except Exception as save_err:
+            log.warning(f"[CapEx] Failed to save estimate to deal: {save_err}")
+        
+        return JSONResponse({
+            "success": True,
+            "deal_id": deal_id,
+            "images_analyzed": sum(1 for item in content_items if item.get("type") == "image"),
+            "property_context": {
+                "address": address,
+                "units": units,
+                "price": price,
+                "year_built": year_built,
+                "property_type": prop_type,
+            },
+            "estimate": capex_result,
+        })
+        
+    except json.JSONDecodeError as je:
+        log.error(f"[CapEx] JSON parse error: {je}\nRaw: {text[:500]}")
+        raise HTTPException(status_code=500, detail="Failed to parse CapEx analysis response")
+    except Exception as e:
+        log.exception(f"[CapEx] Vision analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=f"CapEx analysis failed: {str(e)}")
+
+
+# =============================================================================
 # PITCH DECK GENERATION ENDPOINT — TWO-STAGE ROCKET
 # Stage 1: Claude (The Analyst) → Structured Deal Summary
 # Stage 2: Claude Fallback / Manus (The Designer) → Visual HTML Slides
