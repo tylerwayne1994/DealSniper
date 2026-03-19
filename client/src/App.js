@@ -50,7 +50,7 @@ function App() {
         <Route path="/email-deals" element={<EmailDealsPage />} /> {/* Email Deal Screener */}
         <Route path="/email-underwrite" element={<EmailUnderwritePage />} /> {/* Email Underwrite Pipeline */}
         <Route path="/templates" element={<TemplatesPage />} /> {/* Deal Templates */}
-        <Route path="/red-flag-scanner" element={<RedFlagScannerPage />} /> {/* AI Red Flag Scanner */
+        <Route path="/red-flag-scanner" element={<RedFlagScannerPage />} /> {/* AI Red Flag Scanner */}
       </Routes>
     </Router>
   );
