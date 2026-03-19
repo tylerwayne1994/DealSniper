@@ -18,7 +18,8 @@ import {
   ChevronRight,
   Filter,
   ArrowUpDown,
-  Columns
+  Columns,
+  Wrench
 } from 'lucide-react';
 import { loadPipelineDeals as loadDealsFromSupabase, loadRapidFireDeals as loadRapidFireDealsFromSupabase, deleteDeal, updateDeal } from '../lib/dealsService';
 import DealComparisonModal from '../components/DealComparisonModal';
@@ -529,22 +530,25 @@ function PipelinePage() {
                 Clear All
               </button>
             )}
-            {/* Compare button — appears when 2+ deals selected */}
-            {selectedDealIds.length >= 2 && (
-              <>
-                <div style={{ width: '1px', height: '20px', backgroundColor: '#e6e9ef', margin: '0 4px' }} />
-                <button onClick={() => setShowComparison(true)} style={{
-                  display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: '700', cursor: 'pointer',
-                  border: '1px solid #a25ddc', backgroundColor: '#f3e8ff', color: '#7e22ce',
-                  transition: 'all 0.15s',
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#e9d5ff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#f3e8ff'; }}
-                >
-                  <Columns size={14} />
-                  Compare ({selectedDealIds.length})
-                </button>
-              </>
+            {/* Compare button — always visible */}
+            <div style={{ width: '1px', height: '20px', backgroundColor: '#e6e9ef', margin: '0 4px' }} />
+            {selectedDealIds.length >= 2 ? (
+              <button onClick={() => setShowComparison(true)} style={{
+                display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: '700', cursor: 'pointer',
+                border: '1px solid #a25ddc', backgroundColor: '#f3e8ff', color: '#7e22ce',
+                transition: 'all 0.15s',
+              }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#e9d5ff'; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#f3e8ff'; }}
+              >
+                <Columns size={14} />
+                Compare ({selectedDealIds.length})
+              </button>
+            ) : (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: '600', color: '#c3c6d4', border: '1px solid #e6e9ef', backgroundColor: '#fafbfc' }}>
+                <Columns size={14} />
+                Compare {selectedDealIds.length === 1 ? '(select 1 more)' : '(select 2+ deals)'}
+              </span>
             )}
           </div>
 
@@ -774,6 +778,7 @@ function PipelinePage() {
                                       <button onClick={() => handleDueDiligence(deal)} title="Due diligence" style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 8px', backgroundColor: '#fdab3d', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}><ClipboardCheck size={11} />DD</button>
                                       <button onClick={() => navigate(`/pitch-deck?dealId=${deal.dealId}`)} title="Pitch deck" style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 8px', backgroundColor: '#579bfc', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}><Presentation size={11} />Pitch</button>
                                       <button onClick={() => navigate(`/contract?dealId=${deal.dealId}`)} title="Contracts" style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 8px', backgroundColor: '#0d9488', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}><FileText size={11} />Contract</button>
+                                      <button onClick={() => setPhotoGalleryDeal(deal)} title="AI CapEx Estimator — analyze photos" style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 8px', background: 'linear-gradient(135deg, #f97316, #ea580c)', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}><Wrench size={11} />CapEx AI</button>
                                       <button onClick={() => handleDeleteDeal(deal.dealId)} title="Remove" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#ffefef', color: '#d83a52', border: 'none', borderRadius: '6px', cursor: 'pointer' }}><Trash2 size={12} /></button>
                                     </div>
                                   </td>
