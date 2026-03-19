@@ -1,0 +1,289 @@
+"""
+Red Flag Scanner — Quick-screen a Crexi / LoopNet / broker listing URL
+before the user uploads an OM.  Returns a letter grade + red flags.
+"""
+
+import os, json, re, logging
+from typing import Optional
+
+import httpx
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+
+log = logging.getLogger("red_flag_scanner")
+
+router = APIRouter(prefix="/api/red-flag", tags=["Red Flag Scanner"])
+
+# ── Anthropic client (injected from App.py at startup) ──
+ANTHROPIC_CLIENT = None
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
+
+# ── Fallback: use haiku for speed (30-second screen) ──
+FAST_MODEL = "claude-3-haiku-20240307"
+
+# ── Request / Response schemas ──
+
+class ScanRequest(BaseModel):
+    url: str
+    notes: Optional[str] = None          # optional user context ("Broker says 95% occ")
+
+class RedFlag(BaseModel):
+    flag: str           # e.g. "Cap Rate Below Market"
+    severity: str       # "critical" | "warning" | "info"
+    detail: str
+
+class ScanResult(BaseModel):
+    grade: str                         # A+ → F
+    grade_color: str                   # hex
+    headline: str                      # 1-liner verdict
+    listing_data: dict                 # extracted metrics
+    red_flags: list[RedFlag]
+    market_context: dict               # market comparables used
+    recommendation: str                # full paragraph
+    raw_url: str
+
+
+# ── Grade → color mapping ──
+GRADE_COLORS = {
+    "A+": "#00c875", "A": "#00c875", "A-": "#00c875",
+    "B+": "#579bfc", "B": "#579bfc", "B-": "#579bfc",
+    "C+": "#fdab3d", "C": "#fdab3d", "C-": "#fdab3d",
+    "D+": "#e2445c", "D": "#e2445c", "D-": "#e2445c",
+    "F": "#7f1d1d",
+}
+
+
+# ── Fetch page HTML ──
+
+_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
+async def _fetch_listing_page(url: str) -> str:
+    """Fetch listing page and return text content. Handles JS-rendered pages gracefully."""
+    async with httpx.AsyncClient(
+        follow_redirects=True,
+        timeout=httpx.Timeout(25.0),
+        headers=_HEADERS,
+    ) as client:
+        resp = await client.get(url)
+        resp.raise_for_status()
+        html = resp.text
+
+    # Strip excessive HTML + keep text / meta / JSON-LD
+    # Remove scripts/styles but keep their JSON-LD content
+    json_ld_blocks = re.findall(
+        r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',
+        html, re.DOTALL | re.IGNORECASE
+    )
+
+    # Also grab OpenGraph / meta tags
+    meta_tags = re.findall(
+        r'<meta[^>]*(?:property|name)=["\']([^"\']*)["\'][^>]*content=["\']([^"\']*)["\'][^>]*>',
+        html, re.IGNORECASE
+    )
+
+    # Strip all tags for body text
+    text_only = re.sub(r'<script[^>]*>.*?</script>', ' ', html, flags=re.DOTALL | re.IGNORECASE)
+    text_only = re.sub(r'<style[^>]*>.*?</style>', ' ', text_only, flags=re.DOTALL | re.IGNORECASE)
+    text_only = re.sub(r'<[^>]+>', ' ', text_only)
+    text_only = re.sub(r'\s+', ' ', text_only).strip()
+
+    # Truncate to ~30k chars to fit context window
+    MAX_CHARS = 30000
+    if len(text_only) > MAX_CHARS:
+        text_only = text_only[:MAX_CHARS] + " ... [TRUNCATED]"
+
+    # Build combined payload for LLM
+    parts = []
+    if json_ld_blocks:
+        parts.append("=== JSON-LD STRUCTURED DATA ===")
+        for block in json_ld_blocks[:5]:
+            parts.append(block.strip())
+    if meta_tags:
+        parts.append("\n=== META TAGS ===")
+        for name, content in meta_tags[:30]:
+            parts.append(f"{name}: {content}")
+    parts.append("\n=== PAGE TEXT CONTENT ===")
+    parts.append(text_only)
+
+    return "\n".join(parts)
+
+
+# ── Analysis prompt ──
+
+SYSTEM_PROMPT = """You are DealSniper Red Flag Scanner — an expert CRE (commercial real estate) 
+multifamily acquisition analyst. The user pastes a listing URL and you analyze it for red flags 
+BEFORE they waste time uploading an OM.
+
+Your job: extract every metric visible on the listing page, compare against market norms, 
+and give a brutal, honest letter grade (A+ to F) with specific red flags.
+
+ALWAYS return valid JSON with this exact structure:
+{
+  "grade": "C-",
+  "headline": "Overpriced by ~30% — broker cap rate masks soft rents and rising expenses",
+  "listing_data": {
+    "address": "...",
+    "city": "...",
+    "state": "...",
+    "county": "...",
+    "units": 0,
+    "asking_price": 0,
+    "price_per_unit": 0,
+    "broker_cap_rate": 0,
+    "broker_noi": 0,
+    "year_built": 0,
+    "occupancy": 0,
+    "property_type": "Multifamily",
+    "gross_income": 0,
+    "operating_expenses": 0,
+    "square_footage": 0,
+    "lot_size": "",
+    "other_notes": ""
+  },
+  "red_flags": [
+    {
+      "flag": "Cap Rate Below Market",
+      "severity": "critical",
+      "detail": "Broker shows 4.2% cap but market avg for this submarket is 5.5-6%. Price should be ~$X to hit market cap."
+    }
+  ],
+  "market_context": {
+    "estimated_market_cap_rate": "5.0-6.0%",
+    "estimated_price_per_unit_market": "$90K-$120K",
+    "estimated_expense_ratio": "40-50%",
+    "market_rent_range": "$800-$1,100/unit",
+    "market_vacancy": "5-7%",
+    "market_trends": "..."
+  },
+  "recommendation": "Full paragraph with verdict and whether to upload or pass."
+}
+
+GRADING RUBRIC:
+- A+ / A / A-: Strong deal, metrics align with or beat market. Few/no red flags. Worth deep-diving.
+- B+ / B / B-: Decent deal with minor concerns. Worth uploading for full underwrite.
+- C+ / C / C-: Mediocre. Multiple yellow flags. Proceed with caution.
+- D+ / D / D-: Bad deal. Major red flags. Overpriced, distressed metrics, or misleading broker data.
+- F: Walk away. Numbers don't work at any reasonable assumption.
+
+RED FLAG CATEGORIES (flag every one that applies):
+- Cap Rate vs Market (broker cap below submarket average)
+- Price Per Unit vs Market (above comps)
+- Expense Ratio (below 35% = likely pro forma / understated, above 55% = management issues)
+- NOI Integrity (does income - expenses actually equal stated NOI?)
+- Vacancy (unrealistic occupancy assumptions)
+- Age / Deferred Maintenance risk (pre-1970 = CapEx risk)
+- Debt Service Coverage (will it cash flow at current rates?)
+- Market Fundamentals (population decline, rent growth stagnation)
+- "Pro Forma" / "Projected" income (not actual T12)
+- Seller Motivation (why selling at this price?)
+
+SEVERITY:
+- "critical": Deal-killer. Numbers fundamentally don't work.
+- "warning": Significant concern but could be addressed in underwriting.
+- "info": Worth noting but not disqualifying.
+
+Use your deep knowledge of CRE markets across the US. Be SPECIFIC about market comparables.
+Even if the page has limited data, use what's available + your market knowledge to grade it.
+If you can't extract a field, use null or 0 and note it in red flags as "Limited Data Available".
+
+IMPORTANT: Return ONLY the JSON object, no markdown, no code fences, no extra text."""
+
+
+# ── Endpoint ──
+
+@router.post("/scan", response_model=ScanResult)
+async def red_flag_scan(req: ScanRequest):
+    """
+    Quick-screen a listing URL: fetch page, extract data, run AI red flag analysis.
+    Returns grade + red flags in < 30 seconds.
+    """
+    if not req.url or not req.url.startswith("http"):
+        raise HTTPException(status_code=400, detail="Please provide a valid URL starting with http:// or https://")
+
+    if ANTHROPIC_CLIENT is None:
+        raise HTTPException(status_code=503, detail="AI service not configured")
+
+    # 1️⃣ Fetch listing page
+    try:
+        page_content = await _fetch_listing_page(req.url)
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=422, detail=f"Could not fetch listing page (HTTP {e.response.status_code}). The site may block automated access.")
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=422, detail="Listing page took too long to load. Try again or paste the listing details manually.")
+    except Exception as e:
+        log.error(f"[RED FLAG] Fetch error: {e}")
+        raise HTTPException(status_code=422, detail=f"Could not load listing page: {str(e)}")
+
+    # 2️⃣ Build analysis prompt
+    user_message = f"""Analyze this CRE listing page for red flags.
+
+LISTING URL: {req.url}
+
+--- PAGE CONTENT START ---
+{page_content}
+--- PAGE CONTENT END ---"""
+
+    if req.notes:
+        user_message += f"\n\nUSER NOTES: {req.notes}"
+
+    # 3️⃣ Call Claude for analysis
+    try:
+        response = ANTHROPIC_CLIENT.messages.create(
+            model=FAST_MODEL,
+            max_tokens=4000,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": user_message}],
+        )
+        raw_text = response.content[0].text.strip()
+    except Exception as e:
+        log.error(f"[RED FLAG] LLM error: {e}")
+        raise HTTPException(status_code=500, detail="AI analysis failed. Please try again.")
+
+    # 4️⃣ Parse JSON response
+    try:
+        # Strip markdown fences if present
+        cleaned = re.sub(r'^```(?:json)?\s*', '', raw_text)
+        cleaned = re.sub(r'\s*```$', '', cleaned)
+        data = json.loads(cleaned)
+    except json.JSONDecodeError:
+        # Try to extract JSON from response
+        match = re.search(r'\{[\s\S]*\}', raw_text)
+        if match:
+            try:
+                data = json.loads(match.group())
+            except:
+                log.error(f"[RED FLAG] JSON parse failed. Raw: {raw_text[:500]}")
+                raise HTTPException(status_code=500, detail="Failed to parse AI analysis. Please try again.")
+        else:
+            log.error(f"[RED FLAG] No JSON in response. Raw: {raw_text[:500]}")
+            raise HTTPException(status_code=500, detail="AI returned invalid analysis. Please try again.")
+
+    # 5️⃣ Build structured result
+    grade = data.get("grade", "C")
+    listing_data = data.get("listing_data", {})
+    red_flags_raw = data.get("red_flags", [])
+    market_context = data.get("market_context", {})
+
+    red_flags = []
+    for rf in red_flags_raw:
+        red_flags.append(RedFlag(
+            flag=rf.get("flag", "Unknown"),
+            severity=rf.get("severity", "info"),
+            detail=rf.get("detail", ""),
+        ))
+
+    return ScanResult(
+        grade=grade,
+        grade_color=GRADE_COLORS.get(grade, "#676879"),
+        headline=data.get("headline", "Analysis complete"),
+        listing_data=listing_data,
+        red_flags=red_flags,
+        market_context=market_context,
+        recommendation=data.get("recommendation", ""),
+        raw_url=req.url,
+    )

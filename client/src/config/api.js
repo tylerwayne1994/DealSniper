@@ -81,6 +81,9 @@ export const API_ENDPOINTS = {
 
   // Health
   health: `${API_BASE_URL}/health`,
+
+  // Red Flag Scanner
+  redFlagScan: `${API_BASE_URL}/api/red-flag/scan`,
 };
 
 export default API_BASE_URL;

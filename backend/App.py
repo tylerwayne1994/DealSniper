@@ -294,6 +294,16 @@ except Exception as _agent_err:
     import traceback
     traceback.print_exc()
 
+# Red Flag Scanner: Quick-screen listing URLs before upload
+try:
+    import red_flag_scanner
+    red_flag_scanner.ANTHROPIC_CLIENT = ANTHROPIC
+    from red_flag_scanner import router as red_flag_router
+    app.include_router(red_flag_router)
+    log.info("[RED FLAG SCANNER] Router loaded successfully")
+except Exception as _rfs_err:
+    log.error("[RED FLAG SCANNER] Failed to load: %s", _rfs_err)
+
 # Market Analysis: Drive-time isochrones & census aggregation
 try:
     import market_analysis
@@ -583,6 +593,12 @@ async def _init_clients():
         try:
             ANTHROPIC = Anthropic(api_key=ANTHROPIC_API_KEY)
             log.info(f"ANTHROPIC client initialized successfully: {ANTHROPIC is not None}")
+            # Inject into modules that need it
+            try:
+                import red_flag_scanner
+                red_flag_scanner.ANTHROPIC_CLIENT = ANTHROPIC
+            except Exception:
+                pass
         except Exception as e:
             log.exception("Failed to init Anthropic: %s", e)
     else:
