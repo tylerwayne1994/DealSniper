@@ -4,8 +4,9 @@ import { supabase } from '../lib/supabase';
 import {
   FileText, Save, Check, ChevronDown, ChevronUp,
   DollarSign, TrendingUp, Target, Mail, Upload,
-  Plus, Trash2, Info, Hammer
+  Plus, Trash2, Info, Hammer, Zap
 } from 'lucide-react';
+import { getLoanPresets, LOAN_CATEGORIES } from '../utils/loanPrograms';
 
 /* ───────────────────────── Default template shapes ───────────────────────── */
 
@@ -192,7 +193,7 @@ function TemplatesPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [collapsed, setCollapsed] = useState({ financing: false, exit: false, renovation: false, criteria: false });
+  const [collapsed, setCollapsed] = useState({ financing: false, loanPresets: true, exit: false, renovation: false, criteria: false });
   const [treasuryRates, setTreasuryRates] = useState([]);
   const [treasuryAsOf, setTreasuryAsOf] = useState(null);
   const [treasuryLoading, setTreasuryLoading] = useState(false);
@@ -546,6 +547,100 @@ function TemplatesPage() {
                     Treasury rates unavailable — you can still set the interest rate manually above.
                   </div>
                 )}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* ══════════ LOAN PROGRAM PRESETS ══════════ */}
+        <div style={s.section}>
+          <div style={s.sectionHeader} onClick={() => toggle('loanPresets')}>
+            <div style={s.sectionTitle}>
+              <div style={{ ...s.sectionIcon, background: '#fef3c7' }}>
+                <Zap size={18} style={{ color: '#d97706' }} />
+              </div>
+              Loan Program Presets
+              <span style={s.badge('yellow')}>Quick Apply</span>
+            </div>
+            {collapsed.loanPresets ? <ChevronDown size={18} color="#9ca3af" /> : <ChevronUp size={18} color="#9ca3af" />}
+          </div>
+
+          {!collapsed.loanPresets && (
+            <>
+              <div style={{ fontSize: 13, color: '#6b7280', marginTop: 12, marginBottom: 16 }}>
+                Select a loan program to auto-fill financing defaults. You can still edit any field after applying.
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                {getLoanPresets().map(preset => {
+                  const catMeta = LOAN_CATEGORIES[preset.category] || {};
+                  return (
+                    <div
+                      key={preset.id}
+                      style={{
+                        padding: '16px 18px',
+                        borderRadius: 12,
+                        border: `1px solid ${catMeta.border || '#e5e7eb'}`,
+                        background: catMeta.bg || '#f9fafb',
+                        cursor: 'pointer',
+                        transition: 'all .15s',
+                        position: 'relative',
+                      }}
+                      onClick={() => {
+                        const fin = preset.financing;
+                        setTemplates(prev => ({
+                          ...prev,
+                          [activeSlot]: {
+                            ...prev[activeSlot],
+                            financing: {
+                              ...prev[activeSlot].financing,
+                              ltv: fin.ltv,
+                              interest_rate: fin.interest_rate,
+                              loan_term_years: fin.loan_term_years,
+                              amortization_years: fin.amortization_years,
+                              io_years: fin.io_years,
+                              loan_fees_percent: fin.loan_fees_percent,
+                            },
+                          },
+                        }));
+                        setSaved(false);
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = catMeta.color || '#6366f1'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = catMeta.border || '#e5e7eb'; e.currentTarget.style.transform = 'none'; }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                        <span style={{ fontSize: 20 }}>{preset.icon}</span>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{preset.name}</div>
+                          <div style={{ fontSize: 11, color: '#6b7280' }}>{preset.description}</div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                        {[
+                          { label: 'LTV', value: `${preset.financing.ltv}%` },
+                          { label: 'Rate', value: `${preset.financing.interest_rate}%` },
+                          { label: 'Term', value: `${preset.financing.loan_term_years}yr` },
+                          { label: 'Amort', value: `${preset.financing.amortization_years}yr` },
+                          { label: 'IO', value: `${preset.financing.io_years}yr` },
+                          { label: 'Fees', value: `${preset.financing.loan_fees_percent}%` },
+                        ].map(({ label, value }) => (
+                          <div key={label} style={{ textAlign: 'center', padding: '4px 6px', borderRadius: 6, background: 'rgba(255,255,255,0.7)' }}>
+                            <div style={{ fontSize: 9, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase' }}>{label}</div>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: catMeta.color || '#111827' }}>{value}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{
+                        marginTop: 10, padding: '6px 12px', borderRadius: 8,
+                        background: catMeta.color || '#4f46e5', color: '#fff',
+                        fontSize: 11, fontWeight: 700, textAlign: 'center',
+                        opacity: 0.9,
+                      }}>
+                        Apply to Template
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </>
           )}

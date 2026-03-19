@@ -1,0 +1,1960 @@
+US County Parcel Boundary REST API Endpoints
+
+A comprehensive reference of publicly accessible ArcGIS REST API and GeoJSON endpoints for parcel/property boundary data across the United States. All endpoints listed are publicly accessible (no authentication required) unless noted otherwise.
+
+How to query any endpoint: Append /query?where=1%3D1&outFields=*&geometry=<lon,lat>&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outSR=4326&f=geojson to the base URL to retrieve the parcel polygon at a given coordinate.
+
+
+
+
+Alabama
+
+Statewide Endpoint: https://services7.arcgis.com/jF2q3LPxL7PETdYk/arcgis/rest/services/Alabama_Counties/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=json
+
+County
+Endpoint URL
+Auth Required
+Notes
+Alabama
+https://services7.arcgis.com/jF2q3LPxL7PETdYk/arcgis/rest/services/Alabama_Counties/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=json
+no
+Statewide county boundaries, not parcel, boundaries
+
+
+
+
+
+
+
+Alaska
+
+County
+Endpoint URL
+Auth Required
+Notes
+Anchorage Municipality
+https://services2.arcgis.com/Ce3DhLRthdwbHlfF/ArcGIS/rest/services/PropertyInformation_Hosted/FeatureServer/0
+no
+Supports JSON, GeoJSON, PBF query formats. Geometry type: esriGeometryPolygon.
+Denali Borough
+https://arcgis.dnr.alaska.gov/arcgis/rest/services/OpenData/Administrative_BoroughParcels/FeatureServer/1
+no
+Supports JSON, GeoJSON, PBF query formats. Geometry type: esriGeometryPolygon.
+Bristol Bay Borough
+https://services8.arcgis.com/MqzStQjDmKoNl0E6/ArcGIS/rest/services/TaxParcels_Related/FeatureServer/0
+no
+Supports JSON, GeoJSON, PBF query formats. Geometry type: esriGeometryPolygon.
+City of Dillingham
+https://services3.arcgis.com/gdLTz4xpy5IxwbSz/arcgis/rest/services/ParcelsOnline/FeatureServer/0
+no
+Supports JSON, GeoJSON, PBF query formats. Geometry type: esriGeometryPolygon.
+Fairbanks North Star Borough
+https://services.arcgis.com/f4rR7WnIfGBdVYFd/ArcGIS/rest/services/Tax_Parcels/FeatureServer/0
+no
+Supports JSON, GeoJSON, PBF query formats. Geometry type: esriGeometryPolygon.
+Haines Borough
+https://services3.arcgis.com/pMlUMMROURtJLUZt/ArcGIS/rest/services/ParcelsOnline/FeatureServer/0
+no
+Supports JSON, GeoJSON, PBF query formats. Geometry type: esriGeometryPolygon.
+Juneau City & Borough
+https://services.arcgis.com/kpMKjjLr8H1rZ4XO/arcgis/rest/services/Juneau_Parcel_Viewer/FeatureServer/0
+no
+Supports JSON, GeoJSON, PBF query formats. Geometry type: esriGeometryPolygon.
+Kenai Peninsula Borough
+https://services.arcgis.com/ba4DH9pIcqkXJVfl/ArcGIS/rest/services/Redacted_Parcels_view/FeatureServer/0
+no
+Supports JSON, GeoJSON, PBF query formats. Geometry type: esriGeometryPolygon.
+Ketchikan Borough
+https://services2.arcgis.com/65jtiGuzdaRB5FxF/ArcGIS/rest/services/KetchikanAKFeatures/FeatureServer/0
+no
+Supports JSON, GeoJSON, PBF query formats. Geometry type: esriGeometryPolygon.
+Kodiak Island Borough
+https://services1.arcgis.com/R5BNizttyFKxRSMm/arcgis/rest/services/KIB_Parcels/FeatureServer/0
+no
+Supports JSON, GeoJSON, PBF query formats. Geometry type: esriGeometryPolygon.
+City of Nome
+https://services9.arcgis.com/Oi9vFzXc8ZcONgM6/arcgis/rest/services/Parcels_Joined_with_Taxroll_Symbolized_by_Exempt/FeatureServer/0
+no
+Supports JSON, GeoJSON, PBF query formats. Geometry type: esriGeometryPolygon.
+North Slope Borough
+https://gis-public.north-slope.org/server/rest/services/Lama/Parcels_sql/FeatureServer/9
+no
+Supports JSON, GeoJSON, PBF query formats. Geometry type: esriGeometryPolygon.
+Petersburg Borough
+https://services7.arcgis.com/RqATEQTpM1W1xU9c/ArcGIS/rest/services/Lots/FeatureServer/0
+no
+Supports JSON, GeoJSON, PBF query formats. Geometry type: esriGeometryPolygon.
+Sitka City & Borough
+https://services7.arcgis.com/EozEvrS4g3SEhtG3/ArcGIS/rest/services/Sitka_Parcels_2022/FeatureServer/0
+no
+Supports JSON, GeoJSON, PBF query formats. Geometry type: esriGeometryPolygon.
+Wrangell City & Borough
+https://services7.arcgis.com/7cBSaoaaRaH5ojZy/arcgis/rest/services/Parcels/FeatureServer/0
+no
+Supports JSON, GeoJSON, PBF query formats. Geometry type: esriGeometryPolygon.
+City of Unalaska
+https://services7.arcgis.com/XYRnCwZ037YZHYH0/ArcGIS/rest/services/Parcels/FeatureServer/0
+no
+Supports JSON, GeoJSON, PBF query formats. Geometry type: esriGeometryPolygon.
+City of Valdez
+https://services5.arcgis.com/pDiwEHErgACQrcA3/ArcGIS/rest/services/Parcels2/FeatureServer/0
+no
+Supports JSON, GeoJSON, PBF query formats. Geometry type: esriGeometryPolygon.
+
+
+
+
+
+
+
+Arizona
+
+Statewide Endpoint: https://server.azgeo.az.gov/arcgis/rest/services/az911/AZ911_Parcel_Provisioning_Boundary/MapServer
+
+County
+Endpoint URL
+Auth Required
+Notes
+La Paz County
+https://azwatermaps.azwater.gov/arcgis/rest/services/General/Parcels_for_TEST/MapServer/4
+no
+This is an inclusive set of all of LaPaz county parcel data.
+
+
+
+
+
+
+
+Arkansas
+
+Statewide Endpoint: https://gis.arkansas.gov/arcgis/rest/services/FEATURESERVICES/Planning_Cadastre/FeatureServer/6
+
+County
+Endpoint URL
+Auth Required
+Notes
+Arkansas
+https://gis.arkansas.gov/arcgis/rest/services/FEATURESERVICES/Planning_Cadastre/FeatureServer/6
+no
+Statewide parcel data, includes individual county data. Counties covered: Arkansas, Ashley, Baxter, ...
+
+
+
+
+
+
+
+California
+
+County
+Endpoint URL
+Auth Required
+Notes
+Monterey County
+https://maps.co.monterey.ca.us/server/rest/services/Land_Records/Parcels/FeatureServer/0
+no
+Notes
+Kern County
+https://gis.shafter.com/server/rest/services/Parcels_2025_F_SMC/FeatureServer
+no
+This FeatureServer contains parcel boundaries for Kern County, California. It does not include miner...
+
+
+
+
+
+
+
+Colorado
+
+Statewide Endpoint: https://gis.colorado.gov/public/rest/services/Address_and_Parcel/Colorado_Public_Parcels/FeatureServer/0
+
+County
+Endpoint URL
+Auth Required
+Notes
+Adams County
+https://services3.arcgis.com/4PNQOtAivErR7nbT/arcgis/rest/services/Parcels/FeatureServer/0
+no
+
+
+Elbert County
+https://maps.elbertcounty-co.gov/data/rest/services/Tax_Parcels_of_Elbert_County_Colorado/FeatureServer/14
+no
+
+
+Colorado Statewide
+https://gis.colorado.gov/public/rest/services/Address_and_Parcel/Colorado_Public_Parcels/FeatureServer/0
+no
+Statewide parcel data, aggregated from counties
+
+
+
+
+
+
+
+Connecticut
+
+Statewide Endpoint: https://cteco.uconn.edu/ctmaps/rest/services/Parcels/Parcels/FeatureServer
+
+
+
+
+Delaware
+
+Statewide Endpoint: https://enterprise.firstmaptest.delaware.gov/arcgis/rest/services/PlanningCadastre/DE_StateParcels/FeatureServer/0
+
+County
+Endpoint URL
+Auth Required
+Notes
+Kent County
+https://gis.kentcountyde.gov/server/rest/services/Parcels/Parcels/FeatureServer/0
+no
+GeoJSON output available via f=geojson parameter.
+Sussex County
+https://map.sussexcountyde.gov/trdserver/rest/services/Geographic_Information_Office/Parcels_PIN/MapServer/0
+no
+MapServer with Tax Parcels layer (ID: 0 ). GeoJSON output likely available.
+
+
+
+
+
+
+
+Florida
+
+Statewide Endpoint: https://services9.arcgis.com/Gh9awoU677aKree0/arcgis/rest/services/Florida_Statewide_Cadastral/FeatureServer
+
+County
+Endpoint URL
+Auth Required
+Notes
+Lake County
+https://gis.lakecountyfl.gov/lakegis/rest/services/InteractiveMap/MapServer/20
+no
+Supports GeoJSON, query by parcel number, parcel number, owner name, address
+Collier County (City of Naples )
+https://g.naplesgov.com/arcgis/rest/services/City/Parcels/FeatureServer
+no
+Data re-published from Collier County Property Appraiser
+
+
+
+
+
+
+
+Georgia
+
+County
+Endpoint URL
+Auth Required
+Notes
+Liberty County
+https://maps.crc.ga.gov/crcarcgis/rest/services/Liberty/Parcels/MapServer
+no
+MapServer, supports JSON, AMF, geoJSON query formats.
+Glynn County
+https://gis-web.glynncounty-ga.gov/gis-server/rest/services/Parcels/Parcels/FeatureServer
+no
+FeatureServer, supports JSON query format.
+DeKalb County
+https://dcgis.dekalbcountyga.gov/hosted/rest/services/Parcels/MapServer
+no
+MapServer, supports JSON, geoJSON, PBF query formats.
+
+
+
+
+
+
+
+Hawaii
+
+Statewide Endpoint: https://geodata.hawaii.gov/arcgis/rest/services/ParcelsZoning/MapServer/25
+
+County
+Endpoint URL
+Auth Required
+Notes
+Hawaii County
+https://geodata.hawaii.gov/arcgis/rest/services/ParcelsZoning/MapServer/5
+no
+Supported Query Formats: JSON, geoJSON, PBF, Supports Advanced Queries: true, Supports Statistics: t...
+
+
+
+
+
+
+
+Idaho
+
+Statewide Endpoint: https://gis.idwr.idaho.gov/hosting/rest/services/Reference/Parcels/FeatureServer
+
+County
+Endpoint URL
+Auth Required
+Notes
+Bear Lake County
+https://services.arcgis.com/91hXl6NfvLGEi8x5/ArcGIS/rest/services/Bear_Lake_County/FeatureServer/0
+no
+Contains parcel data.
+Benewah County
+https://services.arcgis.com/91hXl6NfvLGEi8x5/ArcGIS/rest/services/Benewah_County_Mask/FeatureServer/0
+no
+Max Record Count: 2000, Masked data, contains parcel polygons
+Boise County
+https://services.arcgis.com/91hXl6NfvLGEi8x5/ArcGIS/rest/services/Boise_County_Mask/FeatureServer/0
+no
+Max Record Count: 2000, Masked data, contains parcel polygons
+Camas County
+https://services.arcgis.com/91hXl6NfvLGEi8x5/ArcGIS/rest/services/Camas_County_Mask/FeatureServer/0
+no
+Max Record Count: 2000, Masked data, contains parcel polygons
+Elmore County
+https://services.arcgis.com/91hXl6NfvLGEi8x5/ArcGIS/rest/services/Elmore_County_Mask/FeatureServer/4
+no
+Max Record Count: 2000, Masked data, contains parcel polygons
+Franklin County
+https://services.arcgis.com/91hXl6NfvLGEi8x5/ArcGIS/rest/services/Franklin_County_Mask/FeatureServer/0
+no
+Max Record Count: 2000, Masked data, contains parcel polygons
+Gem County
+https://services.arcgis.com/91hXl6NfvLGEi8x5/ArcGIS/rest/services/Gem_County_Mask/FeatureServer/0
+no
+Max Record Count: 2000, Masked data, contains parcel polygons
+
+
+
+
+
+
+
+Illinois
+
+County
+Endpoint URL
+Auth Required
+Notes
+Rock Island County
+https://services9.arcgis.com/6FnscPPlUa9DXXOk/ArcGIS/rest/services/Parcels/FeatureServer/0
+no
+GeoJSON, PBF supported
+Lake County
+https://services3.arcgis.com/HESxeTbDliKKvec2/ArcGIS/rest/services/OpenData_ParcelPolygons/FeatureServer/0
+no
+GeoJSON, PBF supported
+DuPage County
+https://gis.dupageco.org/arcgis/rest/services/ParcelSearch/DuPageAssessmentParcelViewer/MapServer
+no
+GeoJSON, PBF supported
+
+
+
+
+
+
+
+Indiana
+
+Statewide Endpoint: https://gisdata.in.gov/server/rest/services/Hosted/Parcel_Boundaries_of_Indiana_Current/FeatureServer/0
+
+County
+Endpoint URL
+Auth Required
+Notes
+Marion
+https://gis.indy.gov/server/rest/services/WebServices/IndyWS_GIS/MapServer/0
+no
+Returns GeoJSON for Marion County parcels
+
+
+
+
+
+
+
+Iowa
+
+Statewide Endpoint: https://services3.arcgis.com/kd9gaiUExYqUbnoq/arcgis/rest/services/Iowa_Parcels_2017/FeatureServer|deprecated and outdated (2017 data )
+
+County
+Endpoint URL
+Auth Required
+Notes
+Linn County
+https://services.arcgis.com/XORNS2fPFySPlBgy/arcgis/rest/services/Linn_County_Real_Estate_Parcel/FeatureServer/0
+no
+Linn County, Iowa parcel geometry joined to County tax system information.
+
+
+
+
+
+
+
+Kansas
+
+County
+Endpoint URL
+Auth Required
+Notes
+Wyandotte County
+https://gisweb.wycokck.org/arcgis/rest/services/GISPUB/Vacant_Parcels/MapServer/0
+no
+Vacant parcels only, supports GeoJSON
+Douglas County
+https://gis2.lawrenceks.org/arcgis/rest/services/Parcels/MapServer/0
+no
+Supports GeoJSON
+Osage County
+https://services9.arcgis.com/vyfEIyeUgm6rTXSN/arcgis/rest/services/OS_Parcels/FeatureServer/0
+no
+Supports GeoJSON
+
+
+
+
+
+
+
+Kentucky
+
+County
+Endpoint URL
+Auth Required
+Notes
+Webster County
+https://kygisserver.ky.gov/arcgis/rest/services/WGS84WM_Services/Ky_PVA_Webster_Parcels_WGS84WM/MapServer/1/query?outFields=*&where=1%3D1&f=geojson
+no
+GeoJSON endpoint for parcel data
+Jefferson County
+https://gis.lojic.org/maps/rest/services/LojicSolutions/OpenDataPVA/MapServer/1
+no
+ArcGIS GeoService
+Lexington-Fayette County
+https://services1.arcgis.com/Mg7DLdfYcSWIaDnu/arcgis/rest/services/Parcel/FeatureServer/0
+no
+ArcGIS FeatureServer
+
+
+
+
+
+
+
+Louisiana
+
+County
+Endpoint URL
+Auth Required
+Notes
+East Baton Rouge Parish
+https://maps.brla.gov/gis/rest/services/Cadastral/Tax_Parcel/MapServer
+no
+Polygon geometry with attributes displaying tax parcels. Supports JSON, GeoJSON, PBF query formats.
+
+
+
+
+
+
+
+Maine
+
+Statewide Endpoint: https://services1.arcgis.com/RbMX0mRVOFNTdLzd/arcgis/rest/services/Maine_Parcels_Merged/FeatureServer
+
+
+
+
+Maryland
+
+Statewide Endpoint: https://mdgeodata.md.gov/imap/rest/services/PlanningCadastre/MD_ParcelBoundaries/MapServer/0
+
+County
+Endpoint URL
+Auth Required
+Notes
+Worcester County
+https://wcg-gisweb.co.worcester.md.us/arcgis/rest/services/Parcel_Boundaries/FeatureServer/15
+no
+Parcel polygons
+Anne Arundel County
+https://gis.aacounty.org/arcgis/rest/services/Hosted/Development_Policy_Areas_Overlays_12042020/FeatureServer/1
+no
+Property layer
+
+
+
+
+
+
+
+Massachusetts
+
+Statewide Endpoint: https://services1.arcgis.com/hGdibHYSPO59RG1h/arcgis/rest/services/L3_TAXPAR_POLY_ASSESS_gdb/FeatureServer
+
+County
+Endpoint URL
+Auth Required
+Notes
+Massachusetts Statewide
+https://services1.arcgis.com/hGdibHYSPO59RG1h/arcgis/rest/services/L3_TAXPAR_POLY_ASSESS_gdb/FeatureServer
+no
+Statewide FeatureServer for property tax parcels. Contains data for all 351 cities and towns. Queryi...
+
+
+
+
+
+
+
+Michigan
+
+County
+Endpoint URL
+Auth Required
+Notes
+Ottawa County
+https://gis.miottawa.org/arcgis/rest/services/HostedServices/Parcels/MapServer/1
+no
+Supports GeoJSON, PBF
+Kent County
+https://gis.kentcountymi.gov/agisprod/rest/services/ParcelsWithCondos/FeatureServer/0
+no
+Supports GeoJSON
+
+
+
+
+
+
+
+Minnesota
+
+Statewide Endpoint: https://pca-gis02.pca.state.mn.us/arcgis/rest/services/base/parcels_open_data_counties/MapServer
+
+County
+Endpoint URL
+Auth Required
+Notes
+Grant County
+https://gis.co.grant.mn.us/arcgis/rest/services/Assessor/TaxParcels_public/FeatureServer
+no
+A collection of features that represent a published version of parcel information. These features ar...
+Pope County
+https://gis.popecountymn.gov/arcgis/rest/services/ParcelFabric/ParcelFabric/FeatureServer
+no
+This service contains a Parcel Fabric from Pope County, Minnesota. It includes layers for Tax Parcel...
+Anoka County
+https://gisservices.co.anoka.mn.us/anoka_gis/rest/services/Parcels/FeatureServer
+no
+Contains a single layer: GIS_APPS.SDE.Parcels.
+Aitkin County
+https://gisweb.co.aitkin.mn.us/arcgis/rest/services/ParcelSearch/MapServer
+no
+Mapping service for AGOL, contains a 'Parcels' layer. Supports JSON and GeoJSON query formats.
+
+
+
+
+
+
+
+Mississippi
+
+Statewide Endpoint: https://gis.waggonereng.com/server/rest/services/Hosted/Mississippi_Parcels_Staewide/FeatureServer, https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer
+
+County
+Endpoint URL
+Auth Required
+Notes
+Adams
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/1
+no
+
+
+Amite
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/2
+no
+
+
+Bolivar
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/3
+no
+
+
+Carroll
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/4
+no
+
+
+Claiborne
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/5
+no
+
+
+Coahoma
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/6
+no
+
+
+Copiah
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/7
+no
+
+
+DeSoto
+https://services6.arcgis.com/4Zxj9BGpFPVGgwpo/arcgis/rest/services/Parcels_2025/FeatureServer/11
+no
+DeSoto County landroll parcels for tax year 2025.
+Franklin
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/9
+no
+
+
+Grenada
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/10
+no
+
+
+Hinds
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/11
+no
+
+
+Holmes
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/12
+no
+
+
+Humphreys
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/13
+no
+
+
+Issaquena
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/14
+no
+
+
+Jefferson Davis
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/15
+no
+
+
+Jefferson
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/16
+no
+
+
+Lawrence
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/17
+no
+
+
+Leflore
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/18
+no
+
+
+Lincoln
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/19
+no
+
+
+Madison
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/20
+no
+
+
+Marion
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/21
+no
+
+
+Montgomery
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/22
+no
+
+
+Panola
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/23
+no
+
+
+Pike
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/24
+no
+
+
+Quitman
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/25
+no
+
+
+Rankin
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/26
+no
+
+
+Sharkey
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/27
+no
+
+
+Simpson
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/28
+no
+
+
+Sunflower
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/29
+no
+
+
+Tate
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/30
+no
+
+
+Tunica
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/32
+no
+
+
+Warren
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/33
+no
+
+
+Washington
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/34
+no
+
+
+Wilkinson
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/35
+no
+
+
+Yalobusha
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/36
+no
+
+
+Yazoo
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/37
+no
+
+
+Alcorn
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/38
+no
+
+
+Attala
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/39
+no
+
+
+Benton
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/40
+no
+
+
+Calhoun
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/41
+no
+
+
+Chickasaw
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/42
+no
+
+
+Choctaw
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/43
+no
+
+
+Clarke
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/44
+no
+
+
+Clay
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/45
+no
+
+
+Covington
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/46
+no
+
+
+Forrest
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/47
+no
+
+
+George
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/48
+no
+
+
+Greene
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/49
+no
+
+
+Hancock
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/50
+no
+
+
+Harrison
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/51
+no
+
+
+Itawamba
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/52
+no
+
+
+Jasper
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/54
+no
+
+
+Jones
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/55
+no
+
+
+Kemper
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/56
+no
+
+
+Lafayette
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/57
+no
+
+
+Lamar
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/58
+no
+
+
+Lauderdale
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/59
+no
+
+
+Leake
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/60
+no
+
+
+Lee
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/61
+no
+
+
+Lowndes
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/62
+no
+
+
+Marshall
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/63
+no
+
+
+Monroe
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/64
+no
+
+
+Neshoba
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/65
+no
+
+
+Newton
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/66
+no
+
+
+Noxubee
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/67
+no
+
+
+Oktibbeha
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/68
+no
+
+
+Pearlriver
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/69
+no
+
+
+Perry
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/70
+no
+
+
+Pontotoc
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/71
+no
+
+
+Prentiss
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/72
+no
+
+
+Scott
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/73
+no
+
+
+Smith
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/74
+no
+
+
+Stone
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/75
+no
+
+
+Tippah
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/76
+no
+
+
+Tishomingo
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/77
+no
+
+
+Union
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/78
+no
+
+
+Wayne
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/79
+no
+
+
+Webster
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/80
+no
+
+
+Winston
+https://gis.mississippi.edu/server/rest/services/Cadastral/MS_Parcels_Aprl2024/MapServer/81
+no
+
+
+
+
+
+
+
+
+
+Missouri
+
+County
+Endpoint URL
+Auth Required
+Notes
+Clay County
+https://services7.arcgis.com/3c8lLdmDNevrTlaV/ArcGIS/rest/services/ClayCountyParcelService/FeatureServer/0
+no
+Supports query, geoJSON
+St. Louis City
+https://maps8.stlouis-mo.gov/arcgis/rest/services/ASSESSOR/Assessor_Public_Parcels/MapServer
+no
+Supports query
+St. Charles County
+https://gis.sccmo.org/arcgis/rest/services/viewers/Public_Viewer/MapServer/1
+no
+Supports query
+
+
+
+
+
+
+
+Montana
+
+Statewide Endpoint: https://gisservicemt.gov/arcgis/rest/services/MSDI_Framework/Parcels/MapServer
+
+County
+Endpoint URL
+Auth Required
+Notes
+Flathead County
+https://maps.flatheadcounty.gov/server/rest/services/IMA/Property/MapServer/54
+no
+Flathead County parcel data.
+
+
+
+
+
+
+
+Nebraska
+
+Statewide Endpoint: https://giscat.ne.gov/enterprise/rest/services/StatewideParcelsExternal/MapServer/0
+
+County
+Endpoint URL
+Auth Required
+Notes
+Adams County
+https://gis.adamscounty.org/arcgis/rest/services/land_use/MapServer/4
+no
+ArcGIS MapServer with a 'Parcels' layer.
+
+
+
+
+
+
+
+Nevada
+
+County
+Endpoint URL
+Auth Required
+Notes
+Churchill County
+https://services2.arcgis.com/uPb1UC2HwTkBAlth/arcgis/rest/services/Churchill_County_Tax_Parcels/FeatureServer/0
+no
+Supports GeoJSON, query by address attributes like ADDNUMB, ADDSTNAME, FULLADD.
+Clark County
+https://maps.clarkcountynv.gov/arcgis/rest/services/Assessor/BOE_Parcels/FeatureServer/0
+no
+Supports JSON, query by attributes.
+Douglas County
+https://apps.douglas.co.us/gisod/rest/services/Parcels/MapServer/4
+no
+Supports JSON, GeoJSON, PBF, query by attributes like TAXROLL_APN.
+Washoe County
+https://gisenterprise.washoecounty.gov/server/rest/services/WashoeGIS/Parcels/FeatureServer/0
+no
+Supports JSON, query by attributes.
+
+
+
+
+
+
+
+New Hampshire
+
+Statewide Endpoint: https://nhgeodata.unh.edu/hosting/rest/services/Hosted/CAD_ParcelMosaic/FeatureServer/1
+
+
+
+
+New Jersey
+
+Statewide Endpoint: https://maps.nj.gov/arcgis/rest/services/Basemap/Parcels_NJ/MapServer
+
+County
+Endpoint URL
+Auth Required
+Notes
+Cumberland County
+https://services3.arcgis.com/n57TaxATizczF7nd/arcgis/rest/services/Cumberland_County_Parcels_2022/FeatureServer/0
+no
+2022 Parcels
+Passaic County
+https://gis.passaiccountynj.org/arcgis/rest/services/Hosted/PC_Public_Parcel/FeatureServer/0
+no
+Public Parcel Data
+Union County
+https://services1.arcgis.com/ze0XBzU1FXj94DJq/arcgis/rest/services/UnionCountyParcels/FeatureServer
+no
+Union County Parcels
+
+
+
+
+
+
+
+New Mexico
+
+Statewide Endpoint: https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer
+
+County
+Endpoint URL
+Auth Required
+Notes
+Bernalillo County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/0
+no
+Statewide MapServer layer
+Catron County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/1
+no
+Statewide MapServer layer
+Chaves County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/2
+no
+Statewide MapServer layer
+Cibola County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/3
+no
+Statewide MapServer layer
+Colfax County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/4
+no
+Statewide MapServer layer
+Curry County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/5
+no
+Statewide MapServer layer
+De Baca County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/6
+no
+Statewide MapServer layer
+a AnaCounty
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/7
+no
+Statewide MapServer layer
+Eddy County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/8
+no
+Statewide MapServer layer
+Grant County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/9
+no
+Statewide MapServer layer
+Guadalupe County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/10
+no
+Statewide MapServer layer
+Harding County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/11
+no
+Statewide MapServer layer
+Hidalgo County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/12
+no
+Statewide MapServer layer
+Lea County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/13
+no
+Statewide MapServer layer
+Lincoln County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/14
+no
+Statewide MapServer layer
+Los Alamos County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/15
+no
+Statewide MapServer layer
+Luna County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/16
+no
+Statewide MapServer layer
+McKinley County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/17
+no
+Statewide MapServer layer
+Mora County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/18
+no
+Statewide MapServer layer
+Otero County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/19
+no
+Statewide MapServer layer
+Quay County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/20
+no
+Statewide MapServer layer
+Rio Arriba County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/21
+no
+Statewide MapServer layer
+Roosevelt County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/22
+no
+Statewide MapServer layer
+Sandoval County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/23
+no
+Statewide MapServer layer
+San Juan County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/24
+no
+Statewide MapServer layer
+San Miguel County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/25
+no
+Statewide MapServer layer
+Santa Fe County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/26
+no
+Statewide MapServer layer
+Sierra County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/27
+no
+Statewide MapServer layer
+Socorro County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/28
+no
+Statewide MapServer layer
+Taos County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/29
+no
+Statewide MapServer layer
+Torrance County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/30
+no
+Statewide MapServer layer
+Union County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/31
+no
+Statewide MapServer layer
+Valencia County
+https://gis.ose.nm.gov/server_s/rest/services/Parcels/County_Parcels_2025/MapServer/32
+no
+Statewide MapServer layer
+
+
+
+
+
+
+
+New York
+
+Statewide Endpoint: https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+
+County
+Endpoint URL
+Auth Required
+Notes
+Albany
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Cayuga
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Chautauqua
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Cortland
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Erie
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Genesee
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Greene
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Hamilton
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Lewis
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Livingston
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Montgomery
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Bronx (NYC )
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service; NYC data from NYC MapPluto
+Kings (Brooklyn ) (NYC)
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service; NYC data from NYC MapPluto
+New York (Manhattan ) (NYC)
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service; NYC data from NYC MapPluto
+Queens (NYC )
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service; NYC data from NYC MapPluto
+Richmond (Staten Island ) (NYC)
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service; NYC data from NYC MapPluto
+Onondaga
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Oneida
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Ontario
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Orange
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Oswego
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Otsego
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Putnam
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Rensselaer
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Rockland
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Schuyler
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+St Lawrence
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Steuben
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Suffolk
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Sullivan
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Tioga
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Tompkins
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Ulster
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Warren
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Wayne
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Westchester
+https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer
+no
+Data available through statewide service
+Sullivan
+https://gis.sullivanny.us/arcgis/rest/services/Parcels/FeatureServer
+no
+Direct county FeatureServer
+
+
+
+
+
+
+
+North Carolina
+
+Statewide Endpoint: https://services.nconemap.gov/secure/rest/services/NC1Map_Parcels/FeatureServer/1
+
+County
+Endpoint URL
+Auth Required
+Notes
+NC OneMap
+https://services.nconemap.gov/secure/rest/services/NC1Map_Parcels/FeatureServer/1
+yes
+Statewide parcel data, authentication likely required for direct API access
+
+
+
+
+
+
+
+North Dakota
+
+Statewide Endpoint: https://services1.arcgis.com/GOcSXpzwBHyk2nog/arcgis/rest/services/NDGISHUB_Parcels/FeatureServer/0
+
+
+
+
+Ohio
+
+Statewide Endpoint: https://maps.ohio.gov/arcgis/rest/services/Statewide_Parcels_2022/MapServer
+
+County
+Endpoint URL
+Auth Required
+Notes
+Holmes County
+https://gis.co.holmes.oh.us/server/rest/services/Parcels/MapServer
+no
+supports GeoJSON
+Tuscarawas County
+https://gis.co.tuscarawas.oh.us/arcgis/rest/services/CountyWebServices/Parcels/MapServer
+no
+supports GeoJSON
+
+
+
+
+
+
+
+Oklahoma
+
+County
+Endpoint URL
+Auth Required
+Notes
+Oklahoma County
+https://services8.arcgis.com/euhkr1dAJeQBIjV0/arcgis/rest/services/TaxParcelsPublics_view/FeatureServer/0
+no
+none
+
+
+
+
+
+
+
+Oregon
+
+Statewide Endpoint: https://maps.dsl.state.or.us/arcgis/rest/services/SlisPublic/FeatureServer/0
+
+County
+Endpoint URL
+Auth Required
+Notes
+Umatilla County
+https://services3.arcgis.com/tNPgIZWOB0Efvm0g/ArcGIS/rest/services/Tax_Lots/FeatureServer/0
+no
+notes
+Baker County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/0
+no
+Oregon Department of Forestry Taxlot Data
+Benton County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/1
+no
+Oregon Department of Forestry Taxlot Data
+Clackamas County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/2
+no
+Oregon Department of Forestry Taxlot Data
+Clatsop County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/3
+no
+Oregon Department of Forestry Taxlot Data
+Columbia County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/4
+no
+Oregon Department of Forestry Taxlot Data
+Coos County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/5
+no
+Oregon Department of Forestry Taxlot Data
+Crook County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/6
+no
+Oregon Department of Forestry Taxlot Data
+Curry County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/7
+no
+Oregon Department of Forestry Taxlot Data
+Deschutes County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/8
+no
+Oregon Department of Forestry Taxlot Data
+Douglas County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/9
+no
+Oregon Department of Forestry Taxlot Data
+Gilliam County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/10
+no
+Oregon Department of Forestry Taxlot Data
+Grant County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/11
+no
+Oregon Department of Forestry Taxlot Data
+Harney County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/12
+no
+Oregon Department of Forestry Taxlot Data
+Hood River County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/13
+no
+Oregon Department of Forestry Taxlot Data
+Jackson County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/14
+no
+Oregon Department of Forestry Taxlot Data
+Jefferson County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/15
+no
+Oregon Department of Forestry Taxlot Data
+Josephine County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/16
+no
+Oregon Department of Forestry Taxlot Data
+Klamath County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/17
+no
+Oregon Department of Forestry Taxlot Data
+Lake County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/18
+no
+Oregon Department of Forestry Taxlot Data
+Lane County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/19
+no
+Oregon Department of Forestry Taxlot Data
+Lincoln County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/20
+no
+Oregon Department of Forestry Taxlot Data
+Linn County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/21
+no
+Oregon Department of Forestry Taxlot Data
+Malheur County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/22
+no
+Oregon Department of Forestry Taxlot Data
+Marion County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/23
+no
+Oregon Department of Forestry Taxlot Data
+Morrow County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/24
+no
+Oregon Department of Forestry Taxlot Data
+Multnomah County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/25
+no
+Oregon Department of Forestry Taxlot Data
+Polk County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/26
+no
+Oregon Department of Forestry Taxlot Data
+Sherman County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/27
+no
+Oregon Department of Forestry Taxlot Data
+Tillamook County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/28
+no
+Oregon Department of Forestry Taxlot Data
+Umatilla County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/29
+no
+Oregon Department of Forestry Taxlot Data
+Union County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/30
+no
+Oregon Department of Forestry Taxlot Data
+Wallowa County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/31
+no
+Oregon Department of Forestry Taxlot Data
+Wasco County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/32
+no
+Oregon Department of Forestry Taxlot Data
+Washington County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/33
+no
+Oregon Department of Forestry Taxlot Data
+Wheeler County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/34
+no
+Oregon Department of Forestry Taxlot Data
+Yamhill County
+https://gis.odf.oregon.gov/ags1/rest/services/WebMercator/TaxlotsDisplay/MapServer/35
+no
+Oregon Department of Forestry Taxlot Data
+
+
+
+
+
+
+
+Pennsylvania
+
+Statewide Endpoint: https://gis.dep.pa.gov/depgisprd/rest/services/Parcels/PA_Parcels/MapServer
+
+County
+Endpoint URL
+Auth Required
+Notes
+Adams County
+https://mapping.adamscountypa.gov/arcgis/rest/services/AGOL/Parcel_Owners/MapServer
+no
+depicting parcel lines and limited tax information, supports JSON, GeoJSON, PBF query formats
+Greene County
+https://services7.arcgis.com/0JhPFgxDlwicqVHq/arcgis/rest/services/TaxParcels/FeatureServer
+no
+Tax Parcels for Greene County Pennsylvania, supports JSON query format
+Lancaster County
+https://arcgis.lancastercountypa.gov/arcgis/rest/services/parcel_poly/FeatureServer
+no
+Polygon layer representing real Lancaster County property, supports JSON query format
+Allegheny County
+https://mapservices.pasda.psu.edu/server/rest/services/pasda/AlleghenyCounty/MapServer
+no
+Boundary outlines of individual properties in Allegheny County, supports REST API
+
+
+
+
+
+
+
+Rhode Island
+
+Statewide Endpoint: https://risegis.ri.gov/hosting/rest/services/RIDEM/Tax_Parcels/MapServer
+
+County
+Endpoint URL
+Auth Required
+Notes
+Providence
+https://webgis.providenceri.gov/server/rest/services/Parcels/PVD_Parcel_Boundaries/MapServer
+no
+Supported Query Formats: JSON, geoJSON, PBF
+
+
+
+
+
+
+
+South Carolina
+
+Statewide Endpoint: https://gis.scdot.org/hosting/rest/services/SC_Parcels/MapServer
+
+County
+Endpoint URL
+Auth Required
+Notes
+Charleston County
+https://gisccapps.charlestoncounty.org/arcgis/rest/services/GIS_VIEWER/Public_Search/MapServer/4
+no
+Provides assessor-maintained parcels for Charleston County.
+
+
+
+
+
+
+
+South Dakota
+
+County
+Endpoint URL
+Auth Required
+Notes
+Minnehaha County
+https://gis.minnehahacounty.org/minnemap/rest/services/Parcels/MapServer/0
+no
+
+
+
+
+
+
+
+
+
+Tennessee
+
+Statewide Endpoint: https://tiles.arcgis.com/tiles/YuVBSS7Y1of2Qud1/arcgis/rest/services/Property_Boundaries_86_Counties/VectorTileServer
+
+County
+Endpoint URL
+Auth Required
+Notes
+Shelby County
+https://gis.shelbycountytn.gov/arcgis/rest/services/Parcel/CERT_Parcel/MapServer
+no
+query by lat_lon supported, address search supported
+Murfreesboro
+https://maps.murfreesborotn.gov/server/rest/services/Cityworks/ParcelsD/FeatureServer/layers
+no
+query by lat_lon supported, address search supported
+
+
+
+
+
+
+
+Texas
+
+Statewide Endpoint: https://feature.tnris.org/arcgis/rest/services/Parcels/stratmap19_land_parcels_48/MapServer
+
+County
+Endpoint URL
+Auth Required
+Notes
+Bexar County
+https://maps.bexar.org/arcgis/rest/services/Parcels/MapServer
+no
+Provides parcel data for Bexar County, updated annually.
+Denton County
+https://geo.dentoncad.com/arcgis/rest/services/Public/2019_Parcels/FeatureServer
+no
+Provides a snapshot of tax parcels in Denton County, TX.
+Wylie (Collin, Dallas, Rockwall Counties )
+https://gisapp.wylietexas.gov/portalserver/rest/services/Planning/OwnerParcels/FeatureServer
+no
+Combined parcel file for Wylie, TX, covering parts of Collin, Dallas, and Rockwall Counties.
+Harris County
+https://www.gis.hctx.net/arcgis/rest/services/HCAD/Parcels/MapServer
+no
+Provides parcel data for Harris County.
+Dallas (Dallas, Collin, Denton, Kaufman, Rockwall Counties )
+https://egis.dallascityhall.com/arcgis/rest/services/Basemap/DallasTaxParcels/MapServer
+no
+Tax parcels from Dallas, Collin, Denton, Kaufman and Rockwall county appraisal districts. Includes C...
+
+
+
+
+
+
+
+Utah
+
+Statewide Endpoint: https://services1.arcgis.com/99lidPhWCzftIe9K/arcgis/rest/services/Parcels_Utah_LIR/FeatureServer/0
+
+County
+Endpoint URL
+Auth Required
+Notes
+Utah County
+https://maps.utahcounty.gov/arcgis/rest/services/Parcels/Parcel_Live_Abst/MapServer/2
+no
+Supports GeoJSON output, query by SERIAL (parcel ID ) and spatial queries.
+
+
+
+
+
+
+
+Vermont
+
+Statewide Endpoint: https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_OPENDATA_Cadastral_VTPARCELS_poly_standardized_parcels_SP_v1/FeatureServer/0
+
+County
+Endpoint URL
+Auth Required
+Notes
+Burlington
+https://maps.burlingtonvt.gov/arcgis/rest/services/Assessor/Parcels/FeatureServer
+no
+
+
+
+
+
+
+
+
+
+Virginia
+
+Statewide Endpoint: https://vginmaps.vdem.virginia.gov/arcgis/rest/services/VA_Base_Layers/VA_Parcels/FeatureServer
+
+County
+Endpoint URL
+Auth Required
+Notes
+Fairfax County
+https://services1.arcgis.com/ioennV6PpG5Xodq0/ArcGIS/rest/services/OpenData_A6/FeatureServer/1
+no
+Updated weekly, contains Tax Administration's Real Estate - Parcel Data.
+Loudoun County
+https://gis.leesburgva.gov/arcgis/rest/services/Cloud/PARCELS/FeatureServer
+no
+Contains all parcel boundaries for Loudoun County, VA.
+Prince William County
+https://gisweb.pwcva.gov/arcgis/rest/services/OpenData/OpenData/MapServer/0
+no
+MapServer with Parcels layer at index 0, supports JSON and GeoJSON query formats.
+
+
+
+
+
+
+
+Washington
+
+Statewide Endpoint: https://wisaard.dahp.wa.gov/server/rest/services/County_Parcels/MapServer/0
+
+County
+Endpoint URL
+Auth Required
+Notes
+King County
+https://gisdata.kingcounty.gov/arcgis/rest/services/OpenDataPortal/property__parcel_area/FeatureServer
+no
+Tax parcels in King County. Supports JSON query format.
+Snohomish County
+https://services6.arcgis.com/h65OdekHK2g4RWMZ/arcgis/rest/services/allparcels/FeatureServer
+no
+Thematic layer depicting past, present and future tax year real property parcel boundaries. Supports...
+
+
+
+
+
+
+
+West Virginia
+
+Statewide Endpoint: https://services.wvgis.wvu.edu/arcgis/rest/services/Planning_Cadastre/WV_Parcels/MapServer
+
+
+
+
+Wisconsin
+
+Statewide Endpoint: https://services3.arcgis.com/n6uYoouQZW75n5WI/arcgis/rest/services/Wisconsin_Statewide_Parcels/FeatureServer/0
+
+County
+Endpoint URL
+Auth Required
+Notes
+Marathon County
+https://gis2.co.marathon.wi.us/arcgis/rest/services/Parcels_LRS_View/MapServer/0
+no
+Supports JSON, geoJSON query formats.
+Lincoln County
+https://maps.co.lincoln.wi.us/arcgis/rest/services/WebMerc_ParBase_Js/MapServer/0
+no
+Lincoln County WI Parcel Base Map Layers, supports JSON, geoJSON, PBF query formats.
+Fond du Lac County
+https://gisweb.fdlco.wi.gov/server/rest/services/VectorMapLayers_HTML5/FeatureServer/93
+no
+Parcels are updated at the end of each calendar year. Supports JSON query format.
+
+
+
+
+
+
+
+Wyoming
+
+Statewide Endpoint: https://services7.arcgis.com/IRwObajcV9nxQIrC/ArcGIS/rest/services/WyomingParcels/FeatureServer/0
+
+
+
+
+Summary
+
+•
+Total states covered: 50
+
+•
+States with statewide endpoint: 38
+
+•
+Total county-level endpoints: 287
+
+•
+Total endpoints (all types ): 325
+
+How to Use These Endpoints in Leaflet
+
+To fetch a parcel polygon for a specific lat/lon coordinate and render it on a Leaflet map:
+
+JavaScript
+
+
+async function getParcelPolygon(lat, lon, featureServerUrl) {
+  const query = new URLSearchParams({
+    where: '1=1',
+    geometry: `${lon},${lat}`,
+    geometryType: 'esriGeometryPoint',
+    inSR: '4326',
+    spatialRel: 'esriSpatialRelIntersects',
+    outFields: '*',
+    outSR: '4326',
+    f: 'geojson'
+  });
+  const res = await fetch(`${featureServerUrl}/query?${query}`);
+  const geojson = await res.json();
+  if (geojson.features && geojson.features.length > 0) {
+    L.geoJSON(geojson, {
+      style: { color: '#ff7800', weight: 2, fillOpacity: 0.3 }
+    }).addTo(map);
+  }
+}
+
+
+

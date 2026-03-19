@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import {
   DollarSign, Calculator,
   Wallet, Plus, X, Trash2,
-  BarChart3, Edit3, TrendingUp, Globe
+  BarChart3, Edit3, TrendingUp, Globe, Zap, ChevronDown, ChevronUp, Shield, Check, AlertTriangle
 } from 'lucide-react';
+import { matchLoanPrograms, LOAN_CATEGORIES } from '../../utils/loanPrograms';
 
 const calcMonthlyPayment = (principal, annualRate, amortMonths) => {
   if (principal <= 0 || amortMonths <= 0) return 0;
@@ -185,6 +186,22 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
   const [treasuryLoading, setTreasuryLoading] = useState(false);
   const [macroData, setMacroData] = useState({});
   const [spread, setSpread] = useState(financing.spread ?? 1.5);
+
+  // ═══ DEBT QUOTES / LOAN MATCHING ═══
+  const [debtQuotesExpanded, setDebtQuotesExpanded] = useState(true);
+  const [debtQuoteFilter, setDebtQuoteFilter] = useState('all');
+  const debtQuotes = useMemo(() => {
+    if (pp <= 0) return [];
+    const units = scenarioData?.property?.units || scenarioData?.property?.total_units || 0;
+    const propertyType = scenarioData?.property?.type || scenarioData?.property?.property_type || 'multifamily';
+    return matchLoanPrograms({
+      purchasePrice: pp,
+      noi,
+      units,
+      propertyType,
+      desiredLTV: financing.ltv || 75,
+    });
+  }, [pp, noi, scenarioData?.property, financing.ltv]);
 
   useEffect(() => {
     (async () => {
@@ -604,6 +621,190 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
             </div>
           )}
         </div>
+
+        {/* ═══ REAL-TIME DEBT QUOTES ═══ */}
+        {pp > 0 && (
+          <div style={SC}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:debtQuotesExpanded?20:0,cursor:'pointer'}} onClick={()=>setDebtQuotesExpanded(p=>!p)}>
+              <div style={{display:'flex',alignItems:'center',gap:10}}>
+                <div style={{width:36,height:36,borderRadius:10,background:'linear-gradient(135deg,#f59e0b,#d97706)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                  <Zap size={18} color="#fff"/>
+                </div>
+                <div>
+                  <h3 style={{margin:0,fontSize:16,fontWeight:700,color:VL,textTransform:'uppercase',letterSpacing:'0.04em'}}>Real-Time Debt Quotes</h3>
+                  <p style={{margin:0,fontSize:12,color:LB,marginTop:2}}>
+                    {debtQuotes.length} loan programs matched for this deal
+                  </p>
+                </div>
+              </div>
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                {debtQuotes.length > 0 && (
+                  <span style={{fontSize:11,fontWeight:700,padding:'4px 10px',borderRadius:99,background:'#fef3c7',color:'#92400e'}}>
+                    Best: {debtQuotes[0]?.program?.name}
+                  </span>
+                )}
+                {debtQuotesExpanded ? <ChevronUp size={18} color="#9ca3af"/> : <ChevronDown size={18} color="#9ca3af"/>}
+              </div>
+            </div>
+
+            {debtQuotesExpanded && debtQuotes.length > 0 && (
+              <>
+                {/* Category filter pills */}
+                <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:16}}>
+                  <button onClick={()=>setDebtQuoteFilter('all')}
+                    style={{padding:'6px 14px',borderRadius:99,border:debtQuoteFilter==='all'?'2px solid #4f46e5':'1px solid #d1d5db',background:debtQuoteFilter==='all'?'#eef2ff':'#fff',color:debtQuoteFilter==='all'?'#4f46e5':'#6b7280',fontSize:11,fontWeight:600,cursor:'pointer'}}>
+                    All ({debtQuotes.length})
+                  </button>
+                  {[...new Set(debtQuotes.map(q=>q.program.category))].map(cat=>{
+                    const catMeta = LOAN_CATEGORIES[cat] || {};
+                    const count = debtQuotes.filter(q=>q.program.category===cat).length;
+                    const active = debtQuoteFilter === cat;
+                    return (
+                      <button key={cat} onClick={()=>setDebtQuoteFilter(cat)}
+                        style={{padding:'6px 14px',borderRadius:99,border:active?`2px solid ${catMeta.color||'#4f46e5'}`:'1px solid #d1d5db',background:active?(catMeta.bg||'#eef2ff'):'#fff',color:active?(catMeta.color||'#4f46e5'):'#6b7280',fontSize:11,fontWeight:600,cursor:'pointer'}}>
+                        {catMeta.icon||'💰'} {catMeta.label||cat} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Debt quotes cards */}
+                <div style={{display:'grid',gap:12}}>
+                  {debtQuotes
+                    .filter(q => debtQuoteFilter === 'all' || q.program.category === debtQuoteFilter)
+                    .slice(0, 8)
+                    .map((match, idx) => {
+                      const { program: prog, quote, score, matchReasons, warnings } = match;
+                      const catMeta = LOAN_CATEGORIES[prog.category] || {};
+                      const isTop = idx === 0 && debtQuoteFilter === 'all';
+                      return (
+                        <div key={prog.id} style={{
+                          border: isTop ? `2px solid ${prog.color}` : `1px solid ${B}`,
+                          borderRadius: 14,
+                          padding: '18px 20px',
+                          background: isTop ? `${prog.color}06` : '#fff',
+                          position: 'relative',
+                          transition: 'all .15s',
+                        }}>
+                          {isTop && (
+                            <div style={{position:'absolute',top:-10,right:16,background:prog.color,color:'#fff',fontSize:10,fontWeight:700,padding:'3px 10px',borderRadius:99,textTransform:'uppercase',letterSpacing:'0.05em'}}>
+                              Best Match
+                            </div>
+                          )}
+
+                          {/* Header row */}
+                          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+                            <div style={{display:'flex',alignItems:'center',gap:10}}>
+                              <span style={{fontSize:22}}>{prog.icon}</span>
+                              <div>
+                                <div style={{fontSize:14,fontWeight:700,color:VL}}>{prog.name}</div>
+                                <div style={{fontSize:11,color:LB}}>{prog.description}</div>
+                              </div>
+                            </div>
+                            <div style={{display:'flex',alignItems:'center',gap:8}}>
+                              <div style={{textAlign:'center'}}>
+                                <div style={{fontSize:10,color:LB,fontWeight:600,textTransform:'uppercase'}}>Score</div>
+                                <div style={{fontSize:16,fontWeight:800,color:score>=70?'#10b981':score>=50?'#f59e0b':'#ef4444'}}>{score}</div>
+                              </div>
+                              <div style={{width:40,height:40,borderRadius:'50%',border:`3px solid ${score>=70?'#10b981':score>=50?'#f59e0b':'#ef4444'}`,display:'flex',alignItems:'center',justifyContent:'center',background:`${score>=70?'#10b981':score>=50?'#f59e0b':'#ef4444'}10`}}>
+                                <span style={{fontSize:12,fontWeight:800,color:score>=70?'#10b981':score>=50?'#f59e0b':'#ef4444'}}>{score}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Quote metrics */}
+                          <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:8,marginBottom:12}}>
+                            {[
+                              {label:'Rate',value:`${quote.rate.toFixed(2)}%`,sub:prog.rateType},
+                              {label:'LTV',value:`${quote.ltv}%`,sub:`${fmt(quote.loanAmount)}`},
+                              {label:'Term',value:`${quote.term}yr`,sub:`${quote.amort>0?quote.amort+'yr amort':'IO'}`},
+                              {label:'DSCR',value:`${quote.dscr.toFixed(2)}x`,sub:quote.dscr>=1.25?'✓ Strong':quote.dscr>=1.0?'⚠ Tight':'✗ Low'},
+                              {label:'Cashflow',value:fmt(quote.cashflow),sub:`${fmt(quote.cashflow/12)}/mo`},
+                              {label:'CoC',value:`${quote.cashOnCash.toFixed(1)}%`,sub:`${fmt(quote.cashOutOfPocket)} equity`},
+                            ].map(({label,value,sub})=>(
+                              <div key={label} style={{textAlign:'center',padding:'8px 4px',borderRadius:8,background:'#f9fafb',border:`1px solid #f3f4f6`}}>
+                                <div style={{fontSize:9,fontWeight:700,color:LB,textTransform:'uppercase',marginBottom:2}}>{label}</div>
+                                <div style={{fontSize:13,fontWeight:700,color:VL}}>{value}</div>
+                                <div style={{fontSize:9,color:'#9ca3af',marginTop:1}}>{sub}</div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Tags: non-recourse, assumable, etc */}
+                          <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:10}}>
+                            {prog.nonRecourse && (
+                              <span style={{display:'inline-flex',alignItems:'center',gap:3,padding:'3px 8px',borderRadius:6,background:'#dcfce7',color:'#166534',fontSize:10,fontWeight:600}}>
+                                <Shield size={10}/> Non-Recourse
+                              </span>
+                            )}
+                            {prog.assumable && (
+                              <span style={{padding:'3px 8px',borderRadius:6,background:'#dbeafe',color:'#1e40af',fontSize:10,fontWeight:600}}>Assumable</span>
+                            )}
+                            <span style={{padding:'3px 8px',borderRadius:6,background:catMeta.bg||'#f3f4f6',color:catMeta.color||'#6b7280',fontSize:10,fontWeight:600}}>
+                              {catMeta.label||prog.category}
+                            </span>
+                            <span style={{padding:'3px 8px',borderRadius:6,background:'#f3f4f6',color:'#6b7280',fontSize:10,fontWeight:600}}>
+                              ⏱ {prog.processingTime}
+                            </span>
+                          </div>
+
+                          {/* Match reasons & warnings */}
+                          {(matchReasons.length > 0 || warnings.length > 0) && (
+                            <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:12}}>
+                              {matchReasons.slice(0,3).map((r,i)=>(
+                                <span key={i} style={{display:'inline-flex',alignItems:'center',gap:3,fontSize:10,color:'#166534'}}>
+                                  <Check size={10}/> {r}
+                                </span>
+                              ))}
+                              {warnings.slice(0,2).map((w,i)=>(
+                                <span key={i} style={{display:'inline-flex',alignItems:'center',gap:3,fontSize:10,color:'#b45309'}}>
+                                  <AlertTriangle size={10}/> {w}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Apply button */}
+                          <button
+                            onClick={(e)=>{
+                              e.stopPropagation();
+                              const senior = loans.find(l => l.type === 'Senior Loan');
+                              if (senior) {
+                                updateLoanFields(senior.id, {
+                                  ltv: quote.ltv,
+                                  rate: quote.rate,
+                                  term: quote.term,
+                                  amort: quote.amort,
+                                  io: quote.io,
+                                  fees: quote.fees,
+                                  loanAmtMode: 'ltv',
+                                });
+                              }
+                            }}
+                            style={{
+                              width:'100%',padding:'10px 16px',borderRadius:10,border:'none',cursor:'pointer',
+                              background:`linear-gradient(135deg, ${prog.color}, ${prog.color}dd)`,
+                              color:'#fff',fontSize:13,fontWeight:700,
+                              display:'flex',alignItems:'center',justifyContent:'center',gap:6,
+                              transition:'all .15s',
+                            }}
+                          >
+                            <Zap size={14}/> Apply to Senior Loan
+                          </button>
+                        </div>
+                      );
+                    })}
+                </div>
+              </>
+            )}
+
+            {debtQuotesExpanded && debtQuotes.length === 0 && (
+              <div style={{padding:'20px 24px',borderRadius:10,background:'#fef3c7',border:'1px solid #fde68a',fontSize:13,color:'#92400e',textAlign:'center'}}>
+                No loan programs matched this deal. Adjust the purchase price or property details to see quotes.
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ═══ FRED MACRO ENVIRONMENT ═══ */}
         {macroData && Object.keys(macroData).length > 1 && (

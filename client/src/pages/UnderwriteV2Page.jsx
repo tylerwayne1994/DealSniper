@@ -14,6 +14,7 @@ import PropertyDetailsWizardTab from '../components/wizard/PropertyDetailsWizard
 import FinancialDataWizardTab from '../components/wizard/FinancialDataWizardTab';
 import PDFViewerModal from '../components/PDFViewerModal';
 import { loadTemplate, applyFinancingTemplate } from '../lib/templateService';
+import { getLoanPresets, LOAN_CATEGORIES } from '../utils/loanPrograms';
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8010";
 
@@ -1100,6 +1101,83 @@ function UnderwriteV2Page() {
                 <div>
                   <h3 style={{ fontSize: 18, fontWeight: 800, color: '#111827', margin: 0 }}>Financing Assumptions</h3>
                   <p style={{ fontSize: 13, color: '#6b7280', margin: '2px 0 0 0' }}>Configure your loan terms to calculate debt service & cash flow</p>
+                </div>
+              </div>
+
+              {/* ── Loan Program Presets ── */}
+              <div style={{ marginBottom: 24, padding: '18px 20px', borderRadius: 14, background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)', border: '1px solid #fde68a' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <span style={{ fontSize: 18 }}>⚡</span>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#92400e' }}>Quick Start: Loan Program Presets</div>
+                    <div style={{ fontSize: 12, color: '#b45309' }}>Select a program to auto-fill financing assumptions, or configure manually below</div>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                  {/* Save Template option */}
+                  {uwTemplate && (
+                    <div
+                      style={{
+                        padding: '10px 12px', borderRadius: 10,
+                        border: '2px solid #4f46e5', background: '#eef2ff',
+                        cursor: 'pointer', textAlign: 'center', transition: 'all .15s',
+                      }}
+                      onClick={() => {
+                        const fin = uwTemplate.financing || {};
+                        setVerifiedData(prev => ({
+                          ...prev,
+                          financing: {
+                            ...prev.financing,
+                            ltv: fin.ltv || prev.financing?.ltv || 75,
+                            interest_rate: fin.interest_rate || prev.financing?.interest_rate || 6.0,
+                            loan_term_years: fin.loan_term_years || prev.financing?.loan_term_years || 10,
+                            amortization_years: fin.amortization_years || prev.financing?.amortization_years || 30,
+                            io_years: fin.io_years ?? prev.financing?.io_years ?? 0,
+                            loan_fees_percent: fin.loan_fees_percent || prev.financing?.loan_fees_percent || 1.5,
+                          },
+                        }));
+                      }}
+                    >
+                      <div style={{ fontSize: 16, marginBottom: 4 }}>⭐</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#4f46e5' }}>My Template</div>
+                      <div style={{ fontSize: 9, color: '#6366f1', marginTop: 2 }}>Saved defaults</div>
+                    </div>
+                  )}
+                  {getLoanPresets().slice(0, uwTemplate ? 7 : 8).map(preset => {
+                    const catMeta = LOAN_CATEGORIES[preset.category] || {};
+                    return (
+                      <div
+                        key={preset.id}
+                        style={{
+                          padding: '10px 12px', borderRadius: 10,
+                          border: `1px solid ${catMeta.border || '#e5e7eb'}`,
+                          background: catMeta.bg || '#f9fafb',
+                          cursor: 'pointer', textAlign: 'center', transition: 'all .15s',
+                        }}
+                        onClick={() => {
+                          const fin = preset.financing;
+                          setVerifiedData(prev => ({
+                            ...prev,
+                            financing: {
+                              ...prev.financing,
+                              ltv: fin.ltv,
+                              interest_rate: fin.interest_rate,
+                              loan_term_years: fin.loan_term_years,
+                              amortization_years: fin.amortization_years,
+                              io_years: fin.io_years,
+                              loan_fees_percent: fin.loan_fees_percent,
+                            },
+                          }));
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = catMeta.color || '#6366f1'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = catMeta.border || '#e5e7eb'; }}
+                      >
+                        <div style={{ fontSize: 16, marginBottom: 4 }}>{preset.icon}</div>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: catMeta.color || '#111827', lineHeight: 1.2 }}>{preset.name}</div>
+                        <div style={{ fontSize: 9, color: '#9ca3af', marginTop: 2 }}>{preset.financing.interest_rate}% · {preset.financing.ltv}% LTV</div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
