@@ -17,9 +17,11 @@ import {
   ChevronDown,
   ChevronRight,
   Filter,
-  ArrowUpDown
+  ArrowUpDown,
+  Columns
 } from 'lucide-react';
 import { loadPipelineDeals as loadDealsFromSupabase, loadRapidFireDeals as loadRapidFireDealsFromSupabase, deleteDeal, updateDeal } from '../lib/dealsService';
+import DealComparisonModal from '../components/DealComparisonModal';
 
 // ============================================================================
 // Helper Functions
@@ -247,6 +249,7 @@ function PipelinePage() {
   const [deathReason, setDeathReason] = useState('');
   const [collapsedGroups, setCollapsedGroups] = useState({});
   const [showFilters, setShowFilters] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
 
   const handleViewDeal = (deal) => navigate(`/underwrite?viewDeal=${deal.dealId}`);
 
@@ -523,6 +526,23 @@ function PipelinePage() {
                 style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', backgroundColor: '#ffefef', color: '#d83a52', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
                 Clear All
               </button>
+            )}
+            {/* Compare button — appears when 2+ deals selected */}
+            {selectedDealIds.length >= 2 && (
+              <>
+                <div style={{ width: '1px', height: '20px', backgroundColor: '#e6e9ef', margin: '0 4px' }} />
+                <button onClick={() => setShowComparison(true)} style={{
+                  display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: '700', cursor: 'pointer',
+                  border: '1px solid #a25ddc', backgroundColor: '#f3e8ff', color: '#7e22ce',
+                  transition: 'all 0.15s',
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#e9d5ff'; }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#f3e8ff'; }}
+                >
+                  <Columns size={14} />
+                  Compare ({selectedDealIds.length})
+                </button>
+              </>
             )}
           </div>
 
@@ -963,6 +983,15 @@ function PipelinePage() {
           </div>
         </div>
       )}
+
+      {/* ================================================================ */}
+      {/* Deal Comparison Modal */}
+      {/* ================================================================ */}
+      <DealComparisonModal
+        isOpen={showComparison}
+        onClose={() => setShowComparison(false)}
+        deals={pipelineDeals.filter(d => selectedDealIds.includes(d.dealId))}
+      />
 
       <style>{`
         @keyframes spin {
