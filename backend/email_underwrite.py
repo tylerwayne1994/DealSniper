@@ -1110,7 +1110,9 @@ def _sync_inbox_core() -> dict:
     print("[AutoPipeline-Sync] ✅ IMAP connected successfully")
 
     try:
-        folders_to_check = ["INBOX", "[Gmail]/All Mail", "[Gmail]/Spam"]
+        # Only scan [Gmail]/All Mail — it contains INBOX + Spam + everything.
+        # Scanning multiple folders caused duplicate deals (same email, different UIDs per folder).
+        folders_to_check = ["[Gmail]/All Mail"]
         since_date = (datetime.utcnow() - timedelta(days=14)).strftime("%d-%b-%Y")
         print(f"[AutoPipeline-Sync] Scanning folders={folders_to_check} since {since_date}")
 
@@ -1165,6 +1167,14 @@ def _sync_inbox_core() -> dict:
             date_str = msg.get("Date", "")
             message_id_header = msg.get("Message-ID", "")
             to_raw = _safe_decode_header(msg.get("To", ""))
+
+            # ── Cross-folder dedup: check by Message-ID header ──
+            # Same email in different folders has different UIDs but same Message-ID
+            if message_id_header:
+                msg_id_check = sb.table("raw_emails").select("id").eq("thread_id", message_id_header).execute()
+                if msg_id_check.data:
+                    already_known += 1
+                    continue
 
             received_at = None
             try:
@@ -2406,7 +2416,8 @@ def _run_debug_pipeline_bg():
             _debug_result = {"status": "error", "reason": f"IMAP login failed: {e}", "log": debug_log}
             return
 
-        folders_to_check = ["INBOX", "[Gmail]/All Mail", "[Gmail]/Spam"]
+        # Only scan All Mail — it contains INBOX + Spam + everything (avoids duplicates)
+        folders_to_check = ["[Gmail]/All Mail"]
         since_date = (datetime.utcnow() - timedelta(days=14)).strftime("%d-%b-%Y")
         all_emails = []
 
