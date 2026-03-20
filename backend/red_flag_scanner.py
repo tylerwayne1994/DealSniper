@@ -53,153 +53,133 @@ GRADE_COLORS = {
 }
 
 
-# ── Fetch page HTML ──
+# ── Fetch page content ──
+# Strategy: Jina Reader API (free, renders JS, bypasses Cloudflare)
+#   → Google Webcache fallback → direct httpx last resort
 
 _HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Cache-Control": "no-cache",
-    "Pragma": "no-cache",
-    "Sec-Ch-Ua": '"Chromium";v="131", "Not_A Brand";v="24"',
-    "Sec-Ch-Ua-Mobile": "?0",
-    "Sec-Ch-Ua-Platform": '"Windows"',
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "none",
-    "Sec-Fetch-User": "?1",
-    "Upgrade-Insecure-Requests": "1",
 }
 
 
 def _extract_page_content(html: str) -> str:
     """Extract structured data + text from raw HTML."""
-    # Grab JSON-LD structured data
     json_ld_blocks = re.findall(
         r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',
         html, re.DOTALL | re.IGNORECASE
     )
-    # Grab OpenGraph / meta tags
     meta_tags = re.findall(
         r'<meta[^>]*(?:property|name)=["\']([^"\']*)["\'][^>]*content=["\']([^"\']*)["\'][^>]*>',
         html, re.IGNORECASE
     )
-    # Strip tags for body text
     text_only = re.sub(r'<script[^>]*>.*?</script>', ' ', html, flags=re.DOTALL | re.IGNORECASE)
     text_only = re.sub(r'<style[^>]*>.*?</style>', ' ', text_only, flags=re.DOTALL | re.IGNORECASE)
     text_only = re.sub(r'<[^>]+>', ' ', text_only)
     text_only = re.sub(r'\s+', ' ', text_only).strip()
-
-    MAX_CHARS = 30000
-    if len(text_only) > MAX_CHARS:
-        text_only = text_only[:MAX_CHARS] + " ... [TRUNCATED]"
-
+    MAX = 30000
+    if len(text_only) > MAX:
+        text_only = text_only[:MAX] + " ... [TRUNCATED]"
     parts = []
     if json_ld_blocks:
         parts.append("=== JSON-LD STRUCTURED DATA ===")
-        for block in json_ld_blocks[:5]:
-            parts.append(block.strip())
+        for b in json_ld_blocks[:5]:
+            parts.append(b.strip())
     if meta_tags:
         parts.append("\n=== META TAGS ===")
-        for name, content in meta_tags[:30]:
-            parts.append(f"{name}: {content}")
+        for n, c in meta_tags[:30]:
+            parts.append(f"{n}: {c}")
     parts.append("\n=== PAGE TEXT CONTENT ===")
     parts.append(text_only)
     return "\n".join(parts)
 
 
-async def _fetch_with_playwright(url: str) -> str:
-    """Use headless Chromium via Playwright to bypass Cloudflare / bot protection."""
+async def _fetch_via_jina(url: str) -> str:
+    """Use Jina Reader API — free, renders JS, bypasses Cloudflare. Returns markdown text."""
+    jina_url = f"https://r.jina.ai/{url}"
+    log.info(f"[RED FLAG] Fetching via Jina Reader: {jina_url}")
     try:
-        from playwright.async_api import async_playwright
-    except ImportError:
-        log.warning("[RED FLAG] Playwright not installed, skipping browser fetch")
-        return None
-
-    log.info(f"[RED FLAG] Fetching with Playwright: {url}")
-    try:
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True, args=[
-                "--no-sandbox",
-                "--disable-blink-features=AutomationControlled",
-                "--disable-dev-shm-usage",
-            ])
-            context = await browser.new_context(
-                user_agent=_HEADERS["User-Agent"],
-                viewport={"width": 1920, "height": 1080},
-                locale="en-US",
-            )
-            page = await context.new_page()
-
-            # Remove webdriver detection flags
-            await page.add_init_script("""
-                Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-                window.chrome = { runtime: {} };
-            """)
-
-            response = await page.goto(url, wait_until="domcontentloaded", timeout=30000)
-            if response and response.status >= 400:
-                log.warning(f"[RED FLAG] Playwright got HTTP {response.status}")
-                await browser.close()
-                return None
-
-            # Wait for content to render (JS-heavy SPAs like Crexi)
-            await page.wait_for_timeout(3000)
-
-            # Try waiting for common listing selectors
-            for sel in [".listing-detail", "[data-testid]", ".property-details", "main", "article"]:
-                try:
-                    await page.wait_for_selector(sel, timeout=3000)
-                    break
-                except:
-                    continue
-
-            html = await page.content()
-            await browser.close()
-
-            if len(html) < 500:
-                log.warning("[RED FLAG] Playwright returned very short page, likely blocked")
-                return None
-
-            return _extract_page_content(html)
+        async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
+            resp = await client.get(jina_url, headers={
+                "Accept": "text/plain",
+                "X-Return-Format": "text",
+            })
+            if resp.status_code == 200 and len(resp.text) > 200:
+                log.info(f"[RED FLAG] Jina Reader success: {len(resp.text)} chars")
+                return resp.text
+            log.warning(f"[RED FLAG] Jina returned HTTP {resp.status_code}, len={len(resp.text)}")
     except Exception as e:
-        log.warning(f"[RED FLAG] Playwright fetch failed: {e}")
-        return None
+        log.warning(f"[RED FLAG] Jina Reader failed: {e}")
+    return None
 
 
-async def _fetch_with_httpx(url: str) -> str:
-    """Standard httpx fetch with full browser headers."""
-    log.info(f"[RED FLAG] Fetching with httpx: {url}")
-    async with httpx.AsyncClient(
-        follow_redirects=True,
-        timeout=httpx.Timeout(25.0),
-        headers=_HEADERS,
-        http2=True,
-    ) as client:
-        resp = await client.get(url)
-        resp.raise_for_status()
-        html = resp.text
+async def _fetch_via_google_cache(url: str) -> str:
+    """Try Google's webcache version of the page."""
+    from urllib.parse import quote
+    cache_url = f"https://webcache.googleusercontent.com/search?q=cache:{quote(url, safe='')}"
+    log.info(f"[RED FLAG] Trying Google cache")
+    try:
+        async with httpx.AsyncClient(
+            follow_redirects=True,
+            timeout=httpx.Timeout(15.0),
+            headers=_HEADERS,
+        ) as client:
+            resp = await client.get(cache_url)
+            if resp.status_code == 200 and len(resp.text) > 500:
+                log.info(f"[RED FLAG] Google cache hit: {len(resp.text)} chars")
+                return _extract_page_content(resp.text)
+    except Exception as e:
+        log.warning(f"[RED FLAG] Google cache failed: {e}")
+    return None
 
-    if len(html) < 500:
-        raise ValueError("Page returned too little content")
 
-    return _extract_page_content(html)
+async def _fetch_via_httpx(url: str) -> str:
+    """Direct httpx fetch — works for non-Cloudflare sites."""
+    log.info(f"[RED FLAG] Direct httpx fetch: {url}")
+    try:
+        async with httpx.AsyncClient(
+            follow_redirects=True,
+            timeout=httpx.Timeout(20.0),
+            headers={
+                **_HEADERS,
+                "Accept-Encoding": "gzip, deflate, br",
+                "Sec-Fetch-Dest": "document",
+                "Sec-Fetch-Mode": "navigate",
+                "Sec-Fetch-Site": "none",
+                "Sec-Fetch-User": "?1",
+                "Upgrade-Insecure-Requests": "1",
+            },
+        ) as client:
+            resp = await client.get(url)
+            if resp.status_code == 200 and len(resp.text) > 500:
+                return _extract_page_content(resp.text)
+            log.warning(f"[RED FLAG] httpx got HTTP {resp.status_code}")
+    except Exception as e:
+        log.warning(f"[RED FLAG] httpx failed: {e}")
+    return None
 
 
 async def _fetch_listing_page(url: str) -> str:
-    """Fetch listing page — tries Playwright (real browser) first, falls back to httpx."""
+    """Fetch listing page content using multiple strategies."""
 
-    # Try Playwright first for sites that block bots (Crexi, LoopNet, etc.)
-    result = await _fetch_with_playwright(url)
+    # 1) Jina Reader API — best option, renders JS, bypasses Cloudflare, free
+    result = await _fetch_via_jina(url)
     if result and len(result) > 200:
-        log.info(f"[RED FLAG] Playwright fetch succeeded ({len(result)} chars)")
         return result
 
-    # Fallback to httpx
-    log.info("[RED FLAG] Falling back to httpx")
-    return await _fetch_with_httpx(url)
+    # 2) Google webcache
+    result = await _fetch_via_google_cache(url)
+    if result and len(result) > 200:
+        return result
+
+    # 3) Direct fetch — works for simple sites
+    result = await _fetch_via_httpx(url)
+    if result and len(result) > 200:
+        return result
+
+    raise ValueError("All fetch strategies failed — site has strong bot protection")
 
 
 # ── Analysis prompt ──
@@ -290,23 +270,37 @@ async def red_flag_scan(req: ScanRequest):
     """
     Quick-screen a listing URL: fetch page, extract data, run AI red flag analysis.
     Returns grade + red flags in < 30 seconds.
+    Also supports notes-only mode: if URL fetch fails but notes are provided, analyze notes.
     """
-    if not req.url or not req.url.startswith("http"):
+    has_url = req.url and req.url.startswith("http")
+    has_notes = req.notes and len(req.notes.strip()) > 50
+
+    if not has_url and not has_notes:
         raise HTTPException(status_code=400, detail="Please provide a valid URL starting with http:// or https://")
 
     if ANTHROPIC_CLIENT is None:
         raise HTTPException(status_code=503, detail="AI service not configured")
 
     # 1️⃣ Fetch listing page
-    try:
-        page_content = await _fetch_listing_page(req.url)
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=422, detail=f"Could not fetch listing page (HTTP {e.response.status_code}). The site may block automated access.")
-    except httpx.TimeoutException:
-        raise HTTPException(status_code=422, detail="Listing page took too long to load. Try again or paste the listing details manually.")
-    except Exception as e:
-        log.error(f"[RED FLAG] Fetch error: {e}")
-        raise HTTPException(status_code=422, detail=f"Could not load listing page: {str(e)}")
+    page_content = None
+    fetch_error = None
+
+    if has_url:
+        try:
+            page_content = await _fetch_listing_page(req.url)
+        except Exception as e:
+            log.warning(f"[RED FLAG] Fetch failed: {e}")
+            fetch_error = str(e)
+
+    # If URL fetch failed but user provided notes, use notes as content
+    if not page_content and has_notes:
+        log.info("[RED FLAG] URL fetch failed, using user-provided notes for analysis")
+        page_content = f"USER-PROVIDED LISTING DETAILS:\n{req.notes}"
+        fetch_error = None  # Clear error since we have notes to work with
+
+    if not page_content:
+        detail = fetch_error or "Could not fetch listing page"
+        raise HTTPException(status_code=422, detail=f"{detail}. Try pasting the listing text in the notes field.")
 
     # 2️⃣ Build analysis prompt
     user_message = f"""Analyze this CRE listing page for red flags.

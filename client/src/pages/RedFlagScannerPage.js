@@ -188,21 +188,24 @@ export default function RedFlagScannerPage() {
             </button>
           </div>
 
-          {/* Optional notes */}
+          {/* Notes / paste listing text */}
           <div style={{ marginTop: 12 }}>
-            <input
-              type="text"
-              placeholder="Optional: broker notes, context (e.g. 'Broker says 95% occupied, asking price firm')"
+            <textarea
+              placeholder="Paste listing details here (address, units, price, cap rate, NOI, year built, occupancy, etc.) — works as fallback if URL fetch is blocked by the site"
               value={notes}
               onChange={e => setNotes(e.target.value)}
               disabled={isScanning}
+              rows={3}
               style={{
                 width: '100%', padding: '10px 14px', fontSize: 13,
                 background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 8, color: 'rgba(255,255,255,0.7)', outline: 'none',
-                boxSizing: 'border-box',
+                boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit',
               }}
             />
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>
+              Tip: If the URL scan fails, paste the listing text above — AI will analyze whatever you provide
+            </div>
           </div>
 
           {/* Supported sites */}
