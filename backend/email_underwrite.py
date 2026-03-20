@@ -1308,14 +1308,6 @@ def _sync_inbox_core() -> dict:
                                 print(f"[AutoPipeline-Sync]     Fallback: assigned to most active user {matched_user_id}")
                     except Exception:
                         pass
-                    if not matched_user_id:
-                        try:
-                            any_user = sb.table("profiles").select("id").limit(1).execute()
-                            if any_user.data:
-                                matched_user_id = any_user.data[0]["id"]
-                                print(f"[AutoPipeline-Sync]     Fallback: assigned to first profile user {matched_user_id}")
-                        except Exception:
-                            pass
 
                 if not matched_user_id:
                     broad = sb.table("profiles").select("id, email, email_aliases").execute()
@@ -2509,24 +2501,20 @@ def _run_debug_pipeline_bg():
             matched_user_id = None
             match_method = None
 
-            # If sender is our own inbound/relay address, treat as forwarded — assign to any user
+            # If sender is our own inbound/relay address, treat as forwarded — assign to most active user
             if _is_inbound_address(sender):
-                dbg(f"  Sender {sender} is inbound relay — auto-assigning to first available user")
+                dbg(f"  Sender {sender} is inbound relay — auto-assigning to most active user")
                 try:
-                    any_user = sb.table("profiles").select("id").limit(1).execute()
-                    if any_user.data:
-                        matched_user_id = any_user.data[0]["id"]
-                        match_method = "inbound_relay_auto"
+                    recent_jobs = sb.table("email_underwrite_jobs").select("user_id").neq("user_id", "null").order("created_at", desc=True).limit(10).execute()
+                    if recent_jobs.data:
+                        from collections import Counter
+                        uid_counts = Counter(r["user_id"] for r in recent_jobs.data if r.get("user_id"))
+                        if uid_counts:
+                            matched_user_id = uid_counts.most_common(1)[0][0]
+                            match_method = "inbound_relay_most_active"
+                            dbg(f"  ✅ Assigned to most active user: {matched_user_id}")
                 except Exception:
                     pass
-                if not matched_user_id:
-                    try:
-                        recent = sb.table("email_underwrite_jobs").select("user_id").order("created_at", desc=True).limit(1).execute()
-                        if recent.data:
-                            matched_user_id = recent.data[0]["user_id"]
-                            match_method = "inbound_relay_recent_user"
-                    except Exception:
-                        pass
             else:
                 try:
                     res = sb.table("profiles").select("id, email").ilike("email", sender).execute()
