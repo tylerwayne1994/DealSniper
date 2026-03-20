@@ -49,6 +49,7 @@ export default function RedFlagScannerPage() {
   const [scanTime, setScanTime] = useState(0);
   const inputRef = useRef(null);
   const timerRef = useRef(null);
+  const startRef = useRef(0);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -62,9 +63,8 @@ export default function RedFlagScannerPage() {
     setResult(null);
     setScanTime(0);
 
-    // Start timer
-    const start = Date.now();
-    timerRef.current = setInterval(() => setScanTime(Math.floor((Date.now() - start) / 1000)), 100);
+    startRef.current = Date.now();
+    timerRef.current = setInterval(() => setScanTime(Math.floor((Date.now() - startRef.current) / 1000)), 100);
 
     try {
       const resp = await fetch(API_ENDPOINTS.redFlagScan, {
@@ -83,7 +83,7 @@ export default function RedFlagScannerPage() {
     } finally {
       setIsScanning(false);
       clearInterval(timerRef.current);
-      setScanTime(Math.floor((Date.now() - start) / 1000));
+      setScanTime(Math.floor((Date.now() - startRef.current) / 1000));
     }
   };
 
@@ -95,6 +95,7 @@ export default function RedFlagScannerPage() {
   };
 
   const gs = result ? (gradeStyles[result.grade] || gradeStyles['C']) : null;
+  const listingImage = result?.listing_data?.image_url || null;
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f6f7fb', fontFamily: 'Figtree, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
@@ -223,7 +224,7 @@ export default function RedFlagScannerPage() {
         {/* Error */}
         {error && (
           <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '16px 20px', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
-            <XCircle size={20} color="#e2445c" />
+            <XCircle size={20} color="#dc2626" />
             <div>
               <div style={{ fontWeight: 700, color: '#991b1b', fontSize: 14 }}>Scan Failed</div>
               <div style={{ color: '#b91c1c', fontSize: 13, marginTop: 2 }}>{error}</div>
@@ -265,39 +266,52 @@ export default function RedFlagScannerPage() {
           </div>
         )}
 
-        {/* Results */}
+        {/* ═══════════════ RESULTS ═══════════════ */}
         {result && !isScanning && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-            {/* Grade Card */}
+            {/* Grade Card — with optional listing image */}
             <div style={{
-              background: '#fff', borderRadius: 14, padding: '28px 32px',
+              background: '#fff', borderRadius: 14, overflow: 'hidden',
               border: '1px solid #e6e9ef', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-              display: 'flex', alignItems: 'center', gap: 28,
+              display: 'flex', flexDirection: 'row',
             }}>
-              {/* Grade circle */}
-              <div style={{
-                width: 96, height: 96, borderRadius: '50%',
-                border: `4px solid ${gs.ring}`, display: 'flex',
-                alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                background: gs.bg, boxShadow: `0 0 20px ${gs.ring}20`,
-              }}>
-                <span style={{ fontSize: 34, fontWeight: 900, color: gs.text, lineHeight: 1 }}>
-                  {result.grade}
-                </span>
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 18, fontWeight: 800, color: '#1e1e2e', marginBottom: 6 }}>
-                  {result.headline}
+              {/* Listing photo (if available) */}
+              {listingImage && (
+                <div style={{ width: 220, minHeight: 180, flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
+                  <img
+                    src={listingImage}
+                    alt="Listing"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={e => { e.target.style.display = 'none'; }}
+                  />
                 </div>
-                <div style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.65 }}>
-                  {result.recommendation}
+              )}
+              <div style={{ padding: '28px 32px', display: 'flex', alignItems: 'center', gap: 28, flex: 1 }}>
+                {/* Grade circle */}
+                <div style={{
+                  width: 96, height: 96, borderRadius: '50%',
+                  border: `4px solid ${gs.ring}`, display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  background: gs.bg, boxShadow: `0 0 20px ${gs.ring}20`,
+                }}>
+                  <span style={{ fontSize: 34, fontWeight: 900, color: gs.text, lineHeight: 1 }}>
+                    {result.grade}
+                  </span>
                 </div>
-                <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <a href={result.raw_url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: '#3b82f6', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 500 }}>
-                    <ExternalLink size={12} /> View Original Listing
-                  </a>
-                  <span style={{ fontSize: 11, color: '#9ca3af' }}>Scanned in {scanTime}s</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#1e1e2e', marginBottom: 6 }}>
+                    {result.headline}
+                  </div>
+                  <div style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.65 }}>
+                    {result.recommendation}
+                  </div>
+                  <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <a href={result.raw_url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: '#3b82f6', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 500 }}>
+                      <ExternalLink size={12} /> View Original Listing
+                    </a>
+                    <span style={{ fontSize: 11, color: '#9ca3af' }}>Scanned in {scanTime}s</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -415,7 +429,10 @@ export default function RedFlagScannerPage() {
                     const sev = severityConfig[rf.severity] || severityConfig.info;
                     const SevIcon = sev.icon;
                     return (
-                      <div key={i} style={{ display: 'flex', gap: 14, padding: '14px 18px', borderRadius: 12, background: sev.bg, border: `1px solid ${sev.border}` }}>
+                      <div key={i} style={{
+                        display: 'flex', gap: 14, padding: '14px 18px', borderRadius: 12,
+                        background: sev.bg, border: `1px solid ${sev.border}`,
+                      }}>
                         <div style={{ flexShrink: 0, marginTop: 2 }}>
                           <SevIcon size={18} color={sev.color} />
                         </div>
@@ -430,25 +447,30 @@ export default function RedFlagScannerPage() {
                               {sev.label}
                             </span>
                           </div>
-                          <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.6 }}>{rf.detail}</div>
+                          <div style={{ fontSize: 13, color: '#4b5563', lineHeight: 1.6 }}>{rf.detail}</div>
                         </div>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <div style={{ textAlign: 'center', padding: 24, color: '#10b981', fontWeight: 700 }}>
+                <div style={{ textAlign: 'center', padding: 24, color: '#10b981' }}>
                   <CheckCircle size={28} style={{ marginBottom: 8 }} />
-                  <div>No red flags detected! This deal looks clean.</div>
+                  <div style={{ fontWeight: 700 }}>No red flags detected! This deal looks clean.</div>
                 </div>
               )}
             </div>
 
             {/* Action buttons */}
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', paddingBottom: 24 }}>
               <button
                 onClick={() => { setResult(null); setUrl(''); setNotes(''); setError(''); inputRef.current?.focus(); }}
-                style={{ padding: '12px 24px', borderRadius: 10, border: '1px solid #e6e9ef', background: '#fff', color: '#323338', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                style={{
+                  padding: '12px 24px', borderRadius: 10, border: '1px solid #e6e9ef',
+                  background: '#fff', color: '#323338', fontSize: 14, fontWeight: 600,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                }}
               >
                 <Zap size={16} />
                 Scan Another Deal
@@ -456,7 +478,13 @@ export default function RedFlagScannerPage() {
               {['A+', 'A', 'A-', 'B+', 'B', 'B-'].includes(result.grade) && (
                 <button
                   onClick={() => navigate('/underwrite')}
-                  style={{ padding: '12px 24px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #00c875 0%, #00a86b 100%)', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 16px rgba(0,200,117,0.3)' }}
+                  style={{
+                    padding: '12px 24px', borderRadius: 10, border: 'none',
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    boxShadow: '0 2px 8px rgba(16,185,129,0.25)',
+                  }}
                 >
                   <Send size={16} />
                   Upload OM for Full Underwrite
@@ -469,30 +497,45 @@ export default function RedFlagScannerPage() {
         {/* Empty state */}
         {!result && !isScanning && !error && (
           <div style={{
-            background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-            borderRadius: 16, padding: '48px 36px', textAlign: 'center',
-            border: '1px solid rgba(255,255,255,0.05)',
+            background: '#fff', borderRadius: 14, padding: '48px 36px', textAlign: 'center',
+            border: '1px solid #e6e9ef', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
           }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 72, height: 72, borderRadius: 18, background: 'rgba(226,68,92,0.1)', marginBottom: 20, border: '1px solid rgba(226,68,92,0.2)' }}>
-              <Shield size={36} color="#e2445c" />
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 72, height: 72, borderRadius: 18, background: '#fef2f2',
+              marginBottom: 20, border: '1px solid #fecaca',
+            }}>
+              <Shield size={36} color="#dc2626" />
             </div>
-            <h3 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 800, color: '#fff' }}>Screen Deals in 30 Seconds</h3>
-            <p style={{ margin: '0 auto', maxWidth: 500, fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 800, color: '#1e1e2e' }}>Screen Deals in 30 Seconds</h3>
+            <p style={{ margin: '0 auto', maxWidth: 500, fontSize: 14, color: '#6b7280', lineHeight: 1.6 }}>
               Paste any listing URL and get an instant AI analysis — cap rate vs market, price per unit benchmarks,
               expense ratio flags, and a letter grade. Know if a deal is worth uploading before wasting your time.
             </p>
             <div style={{ marginTop: 28, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, maxWidth: 600, margin: '28px auto 0' }}>
               {[
-                { icon: '🎯', title: 'Cap Rate Check', desc: 'Compare broker cap vs market avg' },
-                { icon: '💰', title: 'Price / Unit', desc: 'Compare against submarket comps' },
-                { icon: '📊', title: 'Expense Audit', desc: 'Flag unrealistic expense ratios' },
-              ].map((f, i) => (
-                <div key={i} style={{ padding: '20px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <div style={{ fontSize: 28, marginBottom: 8 }}>{f.icon}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{f.title}</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{f.desc}</div>
-                </div>
-              ))}
+                { icon: TrendingUp, title: 'Cap Rate Check', desc: 'Compare broker cap vs market avg', color: '#3b82f6', bg: '#eff6ff' },
+                { icon: DollarSign, title: 'Price / Unit', desc: 'Compare against submarket comps', color: '#10b981', bg: '#ecfdf5' },
+                { icon: BarChart3, title: 'Expense Audit', desc: 'Flag unrealistic expense ratios', color: '#8b5cf6', bg: '#f5f3ff' },
+              ].map((f, i) => {
+                const Icon = f.icon;
+                return (
+                  <div key={i} style={{
+                    padding: '24px 16px', borderRadius: 12, background: '#f8f9fc',
+                    border: '1px solid #eef0f4',
+                  }}>
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12, background: f.bg,
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      marginBottom: 12,
+                    }}>
+                      <Icon size={22} color={f.color} />
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#1e1e2e', marginBottom: 4 }}>{f.title}</div>
+                    <div style={{ fontSize: 11, color: '#9ca3af' }}>{f.desc}</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

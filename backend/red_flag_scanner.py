@@ -18,8 +18,8 @@ router = APIRouter(prefix="/api/red-flag", tags=["Red Flag Scanner"])
 ANTHROPIC_CLIENT = None
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
 
-# ── Fallback: use haiku for speed (30-second screen) ──
-FAST_MODEL = "claude-3-haiku-20240307"
+# ── Fallback: use Sonnet for accuracy (Haiku gets cap rate math wrong) ──
+FAST_MODEL = "claude-sonnet-4-5-20250929"
 
 # ── Request / Response schemas ──
 
@@ -94,6 +94,44 @@ def _extract_page_content(html: str) -> str:
     parts.append("\n=== PAGE TEXT CONTENT ===")
     parts.append(text_only)
     return "\n".join(parts)
+
+
+def _extract_hero_image(content: str) -> Optional[str]:
+    """Try to extract the first/hero property photo URL from page content or Jina markdown."""
+    # 1) OG image from meta tags
+    og_match = re.search(r'og:image:\s*(https?://[^\s"\'<>]+)', content, re.IGNORECASE)
+    if not og_match:
+        og_match = re.search(r'og:image["\s:]+\s*(https?://[^\s"\'<>]+)', content, re.IGNORECASE)
+    if og_match:
+        url = og_match.group(1).strip()
+        if _is_valid_image_url(url):
+            return url
+
+    # 2) Jina markdown image syntax: ![alt](url)
+    md_images = re.findall(r'!\[[^\]]*\]\((https?://[^)]+)\)', content)
+    for url in md_images[:10]:
+        if _is_valid_image_url(url):
+            return url
+
+    # 3) Direct image URLs in content
+    img_urls = re.findall(r'(https?://[^\s"\'<>]+\.(?:jpg|jpeg|png|webp)(?:\?[^\s"\'<>]*)?)', content, re.IGNORECASE)
+    for url in img_urls[:10]:
+        if _is_valid_image_url(url):
+            return url
+
+    return None
+
+
+def _is_valid_image_url(url: str) -> bool:
+    """Filter out icons, logos, tracking pixels, etc."""
+    lower = url.lower()
+    skip = ['logo', 'icon', 'favicon', 'pixel', 'tracking', 'avatar', 'badge',
+            'sprite', 'arrow', '1x1', 'spacer', 'blank', 'placeholder']
+    if any(s in lower for s in skip):
+        return False
+    if len(url) < 20 or len(url) > 1000:
+        return False
+    return True
 
 
 async def _fetch_via_jina(url: str) -> str:
@@ -191,6 +229,14 @@ BEFORE they waste time uploading an OM.
 Your job: extract every metric visible on the listing page, compare against market norms, 
 and give a brutal, honest letter grade (A+ to F) with specific red flags.
 
+CRITICAL — CAP RATE & PRICING MATH (DO NOT GET THIS BACKWARDS):
+- Cap Rate = NOI / Price. HIGHER cap rate = LOWER price relative to income = CHEAPER = BETTER for buyer.
+- If broker cap (e.g. 7%) is ABOVE market cap (e.g. 5-6%), the property is priced BELOW market — that is a GOOD sign, not a red flag.
+- If broker cap is BELOW market cap, the property is OVERPRICED — that IS a red flag.
+- Price Per Unit: if listing shows $39K/unit and market is $90K-$120K/unit, the listing is BELOW market (cheap), NOT above.
+- ALWAYS double-check: is the number ABOVE or BELOW the comparison? State the direction correctly.
+- A low price per unit relative to market could be a positive (underpriced deal) OR a yellow flag (why so cheap — deferred maintenance? Bad area?). Analyze which.
+
 ALWAYS return valid JSON with this exact structure:
 {
   "grade": "C-",
@@ -212,6 +258,7 @@ ALWAYS return valid JSON with this exact structure:
     "operating_expenses": 0,
     "square_footage": 0,
     "lot_size": "",
+    "image_url": "https://... (first/hero property photo URL from the listing, or null if not found)",
     "other_notes": ""
   },
   "red_flags": [
@@ -240,21 +287,28 @@ GRADING RUBRIC:
 - F: Walk away. Numbers don't work at any reasonable assumption.
 
 RED FLAG CATEGORIES (flag every one that applies):
-- Cap Rate vs Market (broker cap below submarket average)
-- Price Per Unit vs Market (above comps)
+- Cap Rate vs Market: Flag ONLY if broker cap is BELOW market (meaning overpriced). If broker cap is above market, that's potentially a positive — note it but don't flag as red.
+- Price Per Unit vs Market: Flag if ABOVE comps (overpriced). If below comps, investigate WHY (could be good deal OR hidden problems).
 - Expense Ratio (below 35% = likely pro forma / understated, above 55% = management issues)
 - NOI Integrity (does income - expenses actually equal stated NOI?)
 - Vacancy (unrealistic occupancy assumptions)
-- Age / Deferred Maintenance risk (pre-1970 = CapEx risk)
+- Age / Deferred Maintenance risk (pre-1970 = CapEx risk, unknown age = flag)
 - Debt Service Coverage (will it cash flow at current rates?)
 - Market Fundamentals (population decline, rent growth stagnation)
 - "Pro Forma" / "Projected" income (not actual T12)
 - Seller Motivation (why selling at this price?)
+- Low Price Per Unit (if significantly below market, flag as INFO — could indicate deferred maintenance, bad location, or opportunity)
 
 SEVERITY:
 - "critical": Deal-killer. Numbers fundamentally don't work.
 - "warning": Significant concern but could be addressed in underwriting.
 - "info": Worth noting but not disqualifying.
+
+ACCURACY CHECK — Before returning, verify:
+1. Every numerical comparison states the correct direction (above/below)
+2. Cap rate math: higher cap = cheaper for buyer
+3. Price per unit: compare correctly — $39K vs $90K means $39K is BELOW, not above
+4. Grade matches the overall analysis — don't give D+ to a deal that's actually priced below market
 
 Use your deep knowledge of CRE markets across the US. Be SPECIFIC about market comparables.
 Even if the page has limited data, use what's available + your market knowledge to grade it.
@@ -284,10 +338,16 @@ async def red_flag_scan(req: ScanRequest):
     # 1️⃣ Fetch listing page
     page_content = None
     fetch_error = None
+    hero_image = None
 
     if has_url:
         try:
             page_content = await _fetch_listing_page(req.url)
+            # Try to extract hero image from fetched content
+            if page_content:
+                hero_image = _extract_hero_image(page_content)
+                if hero_image:
+                    log.info(f"[RED FLAG] Found hero image: {hero_image[:80]}...")
         except Exception as e:
             log.warning(f"[RED FLAG] Fetch failed: {e}")
             fetch_error = str(e)
@@ -351,6 +411,10 @@ LISTING URL: {req.url}
     listing_data = data.get("listing_data", {})
     red_flags_raw = data.get("red_flags", [])
     market_context = data.get("market_context", {})
+
+    # Inject hero image: prefer AI-extracted, fallback to our regex extraction
+    if not listing_data.get("image_url") and hero_image:
+        listing_data["image_url"] = hero_image
 
     red_flags = []
     for rf in red_flags_raw:
