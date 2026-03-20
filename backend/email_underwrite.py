@@ -34,7 +34,13 @@ log = logging.getLogger("email_underwrite")
 
 # The one and only inbound address — users forward OMs to this
 INBOUND_EMAIL = "deals@dealsniper.org"
+INBOUND_GMAIL = os.getenv("INBOUND_GMAIL_ADDRESS", "dealsniperinbound@gmail.com").strip().lower()
 INBOUND_DOMAIN = "dealsniper.org"
+
+def _is_inbound_address(email: str) -> bool:
+    """True if the email is our own inbound address (Cloudflare or Gmail relay)."""
+    e = email.strip().lower()
+    return e == INBOUND_EMAIL or e == INBOUND_GMAIL
 
 router = APIRouter(prefix="/api/email-underwrite", tags=["Email Underwrite"])
 
@@ -1191,7 +1197,7 @@ def _sync_inbox_core() -> dict:
             # ── Handle forwarded emails (From = inbound address) ──
             original_sender = None
             forwarded_subject = None
-            if sender_email == INBOUND_EMAIL:
+            if _is_inbound_address(sender_email):
                 print(f"[AutoPipeline-Sync]     Sender is inbound address ({sender_email}) — checking for forwarded sender...")
                 try:
                     # Check headers: X-Forwarded-For, Reply-To, Return-Path
@@ -1201,7 +1207,7 @@ def _sync_inbox_core() -> dict:
                             hm = re.search(r"[\w.+-]+@[\w.-]+", hdr_val)
                             if hm:
                                 candidate = hm.group(0).strip().lower()
-                                if candidate != INBOUND_EMAIL:
+                                if not _is_inbound_address(candidate):
                                     original_sender = candidate
                                     print(f"[AutoPipeline-Sync]     Found original sender via {hdr}: {original_sender}")
                                     break
@@ -1222,7 +1228,7 @@ def _sync_inbox_core() -> dict:
                         fwd_from = re.search(r"(?:From|De|Von):\s*(?:.*?<)?([\w.+-]+@[\w.-]+)", body_text)
                         if fwd_from:
                             candidate = fwd_from.group(1).strip().lower()
-                            if candidate != INBOUND_EMAIL:
+                            if not _is_inbound_address(candidate):
                                 original_sender = candidate
                                 print(f"[AutoPipeline-Sync]     Found original sender in body: {original_sender}")
 
@@ -1235,7 +1241,7 @@ def _sync_inbox_core() -> dict:
                     print(f"[AutoPipeline-Sync]     Error extracting forwarded sender: {fwd_err}")
 
             # ── If subject is empty, try to extract from body ──
-            if not subject and not forwarded_subject and sender_email != INBOUND_EMAIL:
+            if not subject and not forwarded_subject and not _is_inbound_address(sender_email):
                 print(f"[AutoPipeline-Sync]     Subject is empty — extracting from body...")
                 try:
                     body_text2 = ""
@@ -1275,7 +1281,7 @@ def _sync_inbox_core() -> dict:
                 if not matched_user_id and original_sender and original_sender != sender_email:
                     matched_user_id = _match_sender_to_user(sb, sender_email)
 
-                if not matched_user_id and sender_email == INBOUND_EMAIL:
+                if not matched_user_id and _is_inbound_address(sender_email):
                     print(f"[AutoPipeline-Sync]     Trying last-resort: assign to most recent active user...")
                     try:
                         recent_job = sb.table("email_underwrite_jobs").select("user_id").order("created_at", desc=True).limit(1).execute()
