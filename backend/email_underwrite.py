@@ -582,7 +582,7 @@ async def delete_job(job_id: str, request: Request):
     sb = get_supabase()
 
     # Verify the job belongs to this user
-    result = sb.table("email_underwrite_jobs").select("id, user_id, raw_email_id").eq("id", job_id).single().execute()
+    result = sb.table("email_underwrite_jobs").select("id, user_id, raw_email_id, deal_id").eq("id", job_id).single().execute()
     job = getattr(result, "data", None)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -597,6 +597,14 @@ async def delete_job(job_id: str, request: Request):
     if raw_email_id:
         try:
             sb.table("raw_emails").delete().eq("id", raw_email_id).execute()
+        except Exception:
+            pass  # non-critical
+
+    # Clean up linked deal if present
+    deal_id = job.get("deal_id")
+    if deal_id:
+        try:
+            sb.table("deals").delete().eq("deal_id", deal_id).execute()
         except Exception:
             pass  # non-critical
 
@@ -633,6 +641,49 @@ async def delete_all_jobs(request: Request):
 
     log.info("[EmailUnderwrite] Deleted %d jobs for user %s", len(jobs), user_id)
     return {"success": True, "deleted_count": len(jobs)}
+
+
+@router.delete("/jobs/bulk")
+async def delete_selected_jobs(request: Request):
+    """Delete a list of selected email underwrite jobs.
+
+    Expects JSON body: { "job_ids": ["id1", "id2", ...] }
+    Requires X-User-ID header.
+    """
+    user_id = request.headers.get("X-User-ID")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Missing X-User-ID header")
+
+    body = await request.json()
+    job_ids = body.get("job_ids", [])
+    if not job_ids:
+        raise HTTPException(status_code=400, detail="No job_ids provided")
+
+    sb = get_supabase()
+    deleted = 0
+    for jid in job_ids:
+        try:
+            result = sb.table("email_underwrite_jobs").select("id, user_id, raw_email_id, deal_id").eq("id", jid).single().execute()
+            job = getattr(result, "data", None)
+            if not job or job["user_id"] != user_id:
+                continue
+            sb.table("email_underwrite_jobs").delete().eq("id", jid).execute()
+            if job.get("raw_email_id"):
+                try:
+                    sb.table("raw_emails").delete().eq("id", job["raw_email_id"]).execute()
+                except Exception:
+                    pass
+            if job.get("deal_id"):
+                try:
+                    sb.table("deals").delete().eq("deal_id", job["deal_id"]).execute()
+                except Exception:
+                    pass
+            deleted += 1
+        except Exception as e:
+            log.warning("[EmailUnderwrite] Failed to delete job %s: %s", jid, e)
+
+    log.info("[EmailUnderwrite] Bulk deleted %d/%d jobs for user %s", deleted, len(job_ids), user_id)
+    return {"success": True, "deleted_count": deleted, "requested": len(job_ids)}
 
 
 @router.post("/intake-test")
@@ -1050,6 +1101,46 @@ def _safe_decode_header(raw: str) -> str:
     return " ".join(decoded)
 
 
+def _match_recipient_to_user(sb, to_raw: str) -> Optional[str]:
+    """Try to match the email's To/Delivered-To addresses to a user profile.
+
+    Extracts all email addresses from the To header and checks each against
+    profiles.email and email_aliases.  Returns user_id or None.
+    """
+    if not to_raw:
+        return None
+    # Extract all email addresses from the To header
+    recipients = [m.strip().lower() for m in re.findall(r"[\w.+-]+@[\w.-]+", to_raw)]
+    for recip in recipients:
+        if _is_inbound_address(recip):
+            continue  # skip our own inbound system address
+        uid = _match_sender_to_user(sb, recip)
+        if uid:
+            print(f"[AutoPipeline-Match]   ✅ Recipient {recip} matched to user → {uid}")
+            return uid
+    # If To only contains our inbound address, check who has it in aliases
+    for recip in recipients:
+        if _is_inbound_address(recip):
+            try:
+                alias_res = sb.table("profiles").select("id").contains("email_aliases", [recip]).execute()
+                if alias_res.data:
+                    uid = alias_res.data[0]["id"]
+                    print(f"[AutoPipeline-Match]   ✅ Inbound address {recip} found in aliases → {uid}")
+                    return uid
+            except Exception:
+                pass
+            # Also check for deals@dealsniper.org in aliases
+            try:
+                alias_res2 = sb.table("profiles").select("id").contains("email_aliases", [INBOUND_EMAIL]).execute()
+                if alias_res2.data:
+                    uid = alias_res2.data[0]["id"]
+                    print(f"[AutoPipeline-Match]   ✅ {INBOUND_EMAIL} found in aliases → {uid}")
+                    return uid
+            except Exception:
+                pass
+    return None
+
+
 def _match_sender_to_user(sb, sender_email: str) -> Optional[str]:
     """Try to match a sender email to a user profile ID.
 
@@ -1281,33 +1372,14 @@ def _sync_inbox_core() -> dict:
                 if not matched_user_id and original_sender and original_sender != sender_email:
                     matched_user_id = _match_sender_to_user(sb, sender_email)
 
-                if not matched_user_id and _is_inbound_address(sender_email):
-                    print(f"[AutoPipeline-Sync]     Sender is inbound relay — assigning to most active user...")
-                    try:
-                        # Find user with most recent deal activity
-                        recent_job = sb.table("email_underwrite_jobs").select("user_id").neq("user_id", "null").order("created_at", desc=True).limit(5).execute()
-                        if recent_job.data:
-                            # Prefer the user_id that appears most to avoid picking a stale/wrong user
-                            from collections import Counter
-                            uid_counts = Counter(r["user_id"] for r in recent_job.data if r.get("user_id"))
-                            if uid_counts:
-                                matched_user_id = uid_counts.most_common(1)[0][0]
-                                print(f"[AutoPipeline-Sync]     ✅ Assigned to most active user: {matched_user_id}")
-                    except Exception:
-                        pass
-
+                # If sender didn't match, try matching via the To/Delivered-To header
                 if not matched_user_id:
-                    # Final fallback: assign to user with most deals
-                    try:
-                        recent_jobs = sb.table("email_underwrite_jobs").select("user_id").neq("user_id", "null").order("created_at", desc=True).limit(20).execute()
-                        if recent_jobs.data:
-                            from collections import Counter
-                            uid_counts = Counter(r["user_id"] for r in recent_jobs.data if r.get("user_id"))
-                            if uid_counts:
-                                matched_user_id = uid_counts.most_common(1)[0][0]
-                                print(f"[AutoPipeline-Sync]     Fallback: assigned to most active user {matched_user_id}")
-                    except Exception:
-                        pass
+                    delivered_to = msg.get("Delivered-To", "") or ""
+                    all_recipients = f"{to_raw} {delivered_to}"
+                    print(f"[AutoPipeline-Sync]     Sender unmatched — trying recipient match on To: {to_raw[:80]}")
+                    matched_user_id = _match_recipient_to_user(sb, all_recipients)
+                    if matched_user_id:
+                        print(f"[AutoPipeline-Sync]     ✅ Matched via recipient header → {matched_user_id}")
 
                 if not matched_user_id:
                     broad = sb.table("profiles").select("id, email, email_aliases").execute()
@@ -2501,20 +2573,20 @@ def _run_debug_pipeline_bg():
             matched_user_id = None
             match_method = None
 
-            # If sender is our own inbound/relay address, treat as forwarded — assign to most active user
+            # If sender is our own inbound/relay address, treat as forwarded — match via aliases
             if _is_inbound_address(sender):
-                dbg(f"  Sender {sender} is inbound relay — auto-assigning to most active user")
-                try:
-                    recent_jobs = sb.table("email_underwrite_jobs").select("user_id").neq("user_id", "null").order("created_at", desc=True).limit(10).execute()
-                    if recent_jobs.data:
-                        from collections import Counter
-                        uid_counts = Counter(r["user_id"] for r in recent_jobs.data if r.get("user_id"))
-                        if uid_counts:
-                            matched_user_id = uid_counts.most_common(1)[0][0]
-                            match_method = "inbound_relay_most_active"
-                            dbg(f"  ✅ Assigned to most active user: {matched_user_id}")
-                except Exception:
-                    pass
+                dbg(f"  Sender {sender} is inbound relay — matching via aliases")
+                matched_user_id = _match_sender_to_user(sb, sender)
+                if matched_user_id:
+                    match_method = "inbound_relay_alias"
+                    dbg(f"  ✅ Matched inbound address via alias → {matched_user_id}")
+                else:
+                    # Try matching via To header if available
+                    to_hdr = em.get("to_raw", "") or ""
+                    matched_user_id = _match_recipient_to_user(sb, to_hdr)
+                    if matched_user_id:
+                        match_method = "recipient_match"
+                        dbg(f"  ✅ Matched via To header → {matched_user_id}")
             else:
                 try:
                     res = sb.table("profiles").select("id, email").ilike("email", sender).execute()

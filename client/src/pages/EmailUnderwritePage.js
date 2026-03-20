@@ -33,6 +33,7 @@ function EmailUnderwritePage() {
   const [debugResult, setDebugResult] = useState(null);
   const [debugging, setDebugging] = useState(false);
   const [resettingJobs, setResettingJobs] = useState(false);
+  const [selectedJobs, setSelectedJobs] = useState(new Set());
 
   const handleResetStuckJobs = async () => {
     setResettingJobs(true);
@@ -196,8 +197,35 @@ function EmailUnderwritePage() {
       }
       setJobs([]);
       setDealsById({});
+      setSelectedJobs(new Set());
     } catch (err) {
       console.error('Delete all error:', err);
+      alert('Failed to delete: ' + err.message);
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!userId || selectedJobs.size === 0) return;
+    if (!window.confirm(`Delete ${selectedJobs.size} selected job(s)? This will also remove their deals and cannot be undone.`)) return;
+    setDeleting('selected');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/email-underwrite/jobs/bulk`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'X-User-ID': userId },
+        body: JSON.stringify({ job_ids: Array.from(selectedJobs) }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.detail || 'Delete failed');
+      }
+      const data = await res.json();
+      setJobs(prev => prev.filter(j => !selectedJobs.has(j.id)));
+      setSelectedJobs(new Set());
+      setSyncMessage(`Deleted ${data.deleted_count} job(s).`);
+    } catch (err) {
+      console.error('Delete selected error:', err);
       alert('Failed to delete: ' + err.message);
     } finally {
       setDeleting(null);
@@ -868,26 +896,50 @@ function EmailUnderwritePage() {
               )}
             </div>
             {jobs.length > 0 && (
-              <button
-                onClick={handleDeleteAll}
-                disabled={deleting === 'all'}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '6px 14px',
-                  backgroundColor: deleting === 'all' ? '#94a3b8' : '#fee2e2',
-                  color: '#b91c1c',
-                  border: '1px solid #fecaca',
-                  borderRadius: '8px',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  cursor: deleting === 'all' ? 'not-allowed' : 'pointer',
-                }}
-              >
-                <Trash2 size={13} />
-                {deleting === 'all' ? 'Deleting…' : 'Clear All'}
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {selectedJobs.size > 0 && (
+                  <button
+                    onClick={handleDeleteSelected}
+                    disabled={deleting === 'selected'}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '6px 14px',
+                      backgroundColor: deleting === 'selected' ? '#94a3b8' : '#dc2626',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      cursor: deleting === 'selected' ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    <Trash2 size={13} />
+                    {deleting === 'selected' ? 'Deleting…' : `Delete Selected (${selectedJobs.size})`}
+                  </button>
+                )}
+                <button
+                  onClick={handleDeleteAll}
+                  disabled={deleting === 'all'}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 14px',
+                    backgroundColor: deleting === 'all' ? '#94a3b8' : '#fee2e2',
+                    color: '#b91c1c',
+                    border: '1px solid #fecaca',
+                    borderRadius: '8px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: deleting === 'all' ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  <Trash2 size={13} />
+                  {deleting === 'all' ? 'Deleting…' : 'Clear All'}
+                </button>
+              </div>
             )}
           </div>
 
@@ -895,6 +947,21 @@ function EmailUnderwritePage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
+                  <th style={{ width: 40, padding: '10px', textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={rows.length > 0 && selectedJobs.size === rows.length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedJobs(new Set(rows.map(r => r.id)));
+                        } else {
+                          setSelectedJobs(new Set());
+                        }
+                      }}
+                      style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#2563eb' }}
+                      title="Select all"
+                    />
+                  </th>
                   <th style={{ textAlign: 'left', padding: '10px', fontWeight: 600, color: '#6b7280', fontSize: '11px' }}>Status</th>
                   <th style={{ textAlign: 'left', padding: '10px', fontWeight: 600, color: '#6b7280', fontSize: '11px' }}>Property</th>
                   <th style={{ textAlign: 'left', padding: '10px', fontWeight: 600, color: '#6b7280', fontSize: '11px' }}>Units</th>
@@ -911,13 +978,28 @@ function EmailUnderwritePage() {
               <tbody>
                 {rows.length === 0 && !loading && (
                   <tr>
-                    <td colSpan={11} style={{ padding: '16px', textAlign: 'center', color: '#6b7280' }}>
+                    <td colSpan={12} style={{ padding: '16px', textAlign: 'center', color: '#6b7280' }}>
                       No deals yet. Forward an email with an OM/T12 attachment — it will be automatically parsed and underwritten.
                     </td>
                   </tr>
                 )}
                 {rows.map(row => (
-                  <tr key={row.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <tr key={row.id} style={{ borderBottom: '1px solid #f3f4f6', backgroundColor: selectedJobs.has(row.id) ? '#eff6ff' : 'transparent' }}>
+                    <td style={{ padding: '10px', verticalAlign: 'middle', textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedJobs.has(row.id)}
+                        onChange={(e) => {
+                          setSelectedJobs(prev => {
+                            const next = new Set(prev);
+                            if (e.target.checked) next.add(row.id);
+                            else next.delete(row.id);
+                            return next;
+                          });
+                        }}
+                        style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#2563eb' }}
+                      />
+                    </td>
                     <td style={{ padding: '10px', verticalAlign: 'middle' }}>
                       {renderStatusBadge(row.status, row.parsedStatus, row.isFullyParsed)}
                       {row.status === 'error' && row.errorMessage && (
