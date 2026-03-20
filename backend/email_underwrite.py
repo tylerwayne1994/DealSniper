@@ -1316,8 +1316,6 @@ def _sync_inbox_core() -> dict:
                                 print(f"[AutoPipeline-Sync]     Fallback: assigned to first profile user {matched_user_id}")
                         except Exception:
                             pass
-                    except Exception:
-                        pass
 
                 if not matched_user_id:
                     broad = sb.table("profiles").select("id, email, email_aliases").execute()
