@@ -568,6 +568,49 @@ async def remove_alias(payload: AliasPayload, request: Request):
     return {"aliases": updated, "message": f"Removed {alias}"}
 
 
+@router.delete("/jobs/bulk")
+async def delete_selected_jobs(request: Request):
+    """Delete a list of selected email underwrite jobs.
+
+    Expects JSON body: { "job_ids": ["id1", "id2", ...] }
+    Requires X-User-ID header.
+    """
+    user_id = request.headers.get("X-User-ID")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Missing X-User-ID header")
+
+    body = await request.json()
+    job_ids = body.get("job_ids", [])
+    if not job_ids:
+        raise HTTPException(status_code=400, detail="No job_ids provided")
+
+    sb = get_supabase()
+    deleted = 0
+    for jid in job_ids:
+        try:
+            result = sb.table("email_underwrite_jobs").select("id, user_id, raw_email_id, deal_id").eq("id", jid).single().execute()
+            job = getattr(result, "data", None)
+            if not job or job["user_id"] != user_id:
+                continue
+            sb.table("email_underwrite_jobs").delete().eq("id", jid).execute()
+            if job.get("raw_email_id"):
+                try:
+                    sb.table("raw_emails").delete().eq("id", job["raw_email_id"]).execute()
+                except Exception:
+                    pass
+            if job.get("deal_id"):
+                try:
+                    sb.table("deals").delete().eq("deal_id", job["deal_id"]).execute()
+                except Exception:
+                    pass
+            deleted += 1
+        except Exception as e:
+            log.warning("[EmailUnderwrite] Failed to delete job %s: %s", jid, e)
+
+    log.info("[EmailUnderwrite] Bulk deleted %d/%d jobs for user %s", deleted, len(job_ids), user_id)
+    return {"success": True, "deleted_count": deleted, "requested": len(job_ids)}
+
+
 @router.delete("/jobs/{job_id}")
 async def delete_job(job_id: str, request: Request):
     """Delete a single email underwrite job.
@@ -641,49 +684,6 @@ async def delete_all_jobs(request: Request):
 
     log.info("[EmailUnderwrite] Deleted %d jobs for user %s", len(jobs), user_id)
     return {"success": True, "deleted_count": len(jobs)}
-
-
-@router.delete("/jobs/bulk")
-async def delete_selected_jobs(request: Request):
-    """Delete a list of selected email underwrite jobs.
-
-    Expects JSON body: { "job_ids": ["id1", "id2", ...] }
-    Requires X-User-ID header.
-    """
-    user_id = request.headers.get("X-User-ID")
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Missing X-User-ID header")
-
-    body = await request.json()
-    job_ids = body.get("job_ids", [])
-    if not job_ids:
-        raise HTTPException(status_code=400, detail="No job_ids provided")
-
-    sb = get_supabase()
-    deleted = 0
-    for jid in job_ids:
-        try:
-            result = sb.table("email_underwrite_jobs").select("id, user_id, raw_email_id, deal_id").eq("id", jid).single().execute()
-            job = getattr(result, "data", None)
-            if not job or job["user_id"] != user_id:
-                continue
-            sb.table("email_underwrite_jobs").delete().eq("id", jid).execute()
-            if job.get("raw_email_id"):
-                try:
-                    sb.table("raw_emails").delete().eq("id", job["raw_email_id"]).execute()
-                except Exception:
-                    pass
-            if job.get("deal_id"):
-                try:
-                    sb.table("deals").delete().eq("deal_id", job["deal_id"]).execute()
-                except Exception:
-                    pass
-            deleted += 1
-        except Exception as e:
-            log.warning("[EmailUnderwrite] Failed to delete job %s: %s", jid, e)
-
-    log.info("[EmailUnderwrite] Bulk deleted %d/%d jobs for user %s", deleted, len(job_ids), user_id)
-    return {"success": True, "deleted_count": deleted, "requested": len(job_ids)}
 
 
 @router.post("/intake-test")

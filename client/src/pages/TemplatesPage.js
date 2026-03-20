@@ -228,7 +228,7 @@ function TemplatesPage() {
         const { data } = await supabase
           .from('profiles')
           .select('underwrite_templates')
-          .eq('user_id', user.id)
+          .eq('id', user.id)
           .single();
 
         if (data?.underwrite_templates) {
@@ -272,7 +272,7 @@ function TemplatesPage() {
       const { error } = await supabase
         .from('profiles')
         .update({ underwrite_templates: templates })
-        .eq('user_id', user.id);
+        .eq('id', user.id);
 
       if (error) throw error;
       setSaved(true);

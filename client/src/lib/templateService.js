@@ -54,11 +54,13 @@ export async function loadTemplate(slot = 'underwrite') {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { ...DEFAULTS };
 
-    const { data, error } = await supabase
+    // profiles.id = auth user ID in this app (not user_id column)
+    let data, error;
+    ({ data, error } = await supabase
       .from('profiles')
       .select('underwrite_templates')
-      .eq('user_id', user.id)
-      .single();
+      .eq('id', user.id)
+      .single());
 
     if (error || !data?.underwrite_templates?.[slot]) {
       return { ...DEFAULTS };

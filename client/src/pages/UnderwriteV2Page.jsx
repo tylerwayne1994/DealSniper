@@ -1,7 +1,7 @@
 // V2 Underwriter with Verification Wizard + Results Dashboard
 // Flow: Upload → Parse → Wizard (verify/edit) → Results + Chat (side-by-side)
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Upload, Home, Loader, AlertCircle, CheckCircle, DollarSign, 
@@ -197,6 +197,11 @@ function UnderwriteV2Page() {
   const [isSending, setIsSending] = useState(false);
   const [isChatMinimized, setIsChatMinimized] = useState(false);
 
+  // Mini-auditor modal state (for email-underwritten deals with missing fields)
+  const [showAuditor, setShowAuditor] = useState(false);
+  const [auditorFields, setAuditorFields] = useState({});
+  const [auditorMissing, setAuditorMissing] = useState([]);
+
   // Auto-scroll chat
   useEffect(() => {
     if (chatMessagesRef.current) {
@@ -278,6 +283,20 @@ function UnderwriteV2Page() {
         setModifiedFields({});
         setStep('results');
 
+        // For email-underwritten deals, check for missing critical fields
+        const isEmailDeal2 = params.get('source') === 'email';
+        if (isEmailDeal2) {
+          const missing = detectMissingFields(dealData);
+          if (missing.length > 0) {
+            setAuditorMissing(missing);
+            // Pre-fill defaults for fields that have them
+            const defaults = {};
+            missing.forEach(m => { if (m.defaultVal !== undefined) defaults[m.key] = m.defaultVal; });
+            setAuditorFields(defaults);
+            setShowAuditor(true);
+          }
+        }
+
         // Load cached RentCast data if saved with the deal
         if (saved.rentcastData) {
           setSavedRentcastData(saved.rentcastData);
@@ -338,6 +357,81 @@ function UnderwriteV2Page() {
       [path]: { original: originalValue, new: newValue }
     }));
   };
+
+  // Detect missing critical fields in email-underwritten deals
+  const detectMissingFields = useCallback((data) => {
+    const missing = [];
+    const pnl = data?.pnl || {};
+    const prop = data?.property || {};
+    const pf = data?.pricing_financing || {};
+    const unitMix = data?.unit_mix || [];
+    const expenses = data?.expenses || {};
+
+    // Check income
+    const hasIncome = (pnl.gross_potential_rent > 0) || (pnl.potential_gross_income > 0);
+    const hasUnitMixRent = unitMix.some(u => (u.rent || u.proforma_rent || u.market_rent) > 0);
+    if (!hasIncome && !hasUnitMixRent) {
+      missing.push({ key: 'gross_potential_rent', label: 'Annual Gross Rental Income', section: 'Income', path: 'pnl.gross_potential_rent', type: 'currency' });
+    }
+
+    // Check vacancy
+    if (!pnl.vacancy_rate && !pnl.vacancy_amount) {
+      missing.push({ key: 'vacancy_rate', label: 'Vacancy Rate (%)', section: 'Income', path: 'pnl.vacancy_rate', type: 'percent', defaultVal: 10 });
+    }
+
+    // Check expenses
+    const expTotal = Object.values(expenses).reduce((s, v) => typeof v === 'number' ? s + v : s, 0);
+    if (expTotal <= 0 && !pnl.operating_expenses && !pnl.operating_expenses_t12) {
+      missing.push({ key: 'operating_expenses', label: 'Annual Operating Expenses', section: 'Expenses', path: 'pnl.operating_expenses_t12', type: 'currency' });
+    }
+
+    // Check purchase price
+    if (!pf.purchase_price && !pf.price) {
+      missing.push({ key: 'purchase_price', label: 'Purchase Price', section: 'Deal', path: 'pricing_financing.purchase_price', type: 'currency' });
+    }
+
+    // Check units  
+    if (!prop.total_units || prop.total_units <= 0) {
+      missing.push({ key: 'total_units', label: 'Total Units', section: 'Property', path: 'property.total_units', type: 'number' });
+    }
+
+    // Check sq ft
+    if (!prop.net_rentable_sf && !prop.total_sf) {
+      missing.push({ key: 'net_rentable_sf', label: 'Net Rentable SF', section: 'Property', path: 'property.net_rentable_sf', type: 'number' });
+    }
+
+    return missing;
+  }, []);
+
+  // Apply auditor fields to scenarioData
+  const handleAuditorApply = useCallback(() => {
+    setScenarioData(prev => {
+      const updated = JSON.parse(JSON.stringify(prev));
+      for (const [key, value] of Object.entries(auditorFields)) {
+        if (value === '' || value === null || value === undefined) continue;
+        const numVal = Number(value);
+        if (isNaN(numVal)) continue;
+        // Find which missing field this corresponds to
+        const fieldDef = auditorMissing.find(m => m.key === key);
+        if (!fieldDef) continue;
+        const pathParts = fieldDef.path.split('.');
+        let cursor = updated;
+        for (let i = 0; i < pathParts.length - 1; i++) {
+          if (!cursor[pathParts[i]]) cursor[pathParts[i]] = {};
+          cursor = cursor[pathParts[i]];
+        }
+        cursor[pathParts[pathParts.length - 1]] = numVal;
+      }
+      // If gross_potential_rent was entered, also set potential_gross_income
+      if (auditorFields.gross_potential_rent) {
+        if (!updated.pnl) updated.pnl = {};
+        updated.pnl.potential_gross_income = Number(auditorFields.gross_potential_rent) || 0;
+      }
+      return updated;
+    });
+    setShowAuditor(false);
+    setAuditorFields({});
+  }, [auditorFields, auditorMissing]);
 
   // Live calculations based on scenarioData using comprehensive calculation engine
   const calculations = useMemo(() => {
@@ -1402,25 +1496,144 @@ function UnderwriteV2Page() {
   // STEP 3: Results + Chat (side-by-side)
   if (step === 'results') {
     return (
-      <ResultsPageV2
-        dealId={dealId}
-        scenarioData={scenarioData}
-        savedRentcastData={savedRentcastData}
-        modifiedFields={modifiedFields}
-        calculations={calculations}
-        underwritingResult={underwritingResult}
-        setUnderwritingResult={setUnderwritingResult}
-        messages={messages}
-        inputValue={inputValue}
-        setInputValue={setInputValue}
-        isSending={isSending}
-        handleSendMessage={handleSendMessage}
-        chatMessagesRef={chatMessagesRef}
-        onEditData={(path, value) => modifyScenarioField(path, value)}
-        onGoHome={() => navigate('/')}
-        isChatMinimized={isChatMinimized}
-        setIsChatMinimized={setIsChatMinimized}
-      />
+      <>
+        {/* Mini-Auditor Modal for email-underwritten deals with missing data */}
+        {showAuditor && auditorMissing.length > 0 && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <div style={{
+              backgroundColor: 'white', borderRadius: 16, width: '100%', maxWidth: 560,
+              boxShadow: '0 25px 50px rgba(0,0,0,0.25)', overflow: 'hidden',
+            }}>
+              {/* Header */}
+              <div style={{
+                padding: '20px 24px', background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                color: 'white',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <AlertCircle size={22} />
+                  <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Deal Accuracy Check</h2>
+                </div>
+                <p style={{ margin: '8px 0 0', fontSize: 13, opacity: 0.9 }}>
+                  We auto-underwritten this deal from the email OM, but some key data was missing or couldn't be parsed. Fill in the fields below to get an accurate underwrite.
+                </p>
+              </div>
+
+              {/* Fields */}
+              <div style={{ padding: '20px 24px', maxHeight: 400, overflowY: 'auto' }}>
+                {(() => {
+                  const sections = {};
+                  auditorMissing.forEach(m => {
+                    if (!sections[m.section]) sections[m.section] = [];
+                    sections[m.section].push(m);
+                  });
+                  return Object.entries(sections).map(([section, fields]) => (
+                    <div key={section} style={{ marginBottom: 16 }}>
+                      <div style={{
+                        fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+                        letterSpacing: '0.05em', color: '#6b7280', marginBottom: 8,
+                      }}>{section}</div>
+                      {fields.map(f => (
+                        <div key={f.key} style={{ marginBottom: 12 }}>
+                          <label style={{
+                            display: 'block', fontSize: 13, fontWeight: 600,
+                            color: '#1f2937', marginBottom: 4,
+                          }}>
+                            {f.label}
+                            <span style={{ color: '#ef4444', marginLeft: 2 }}>*</span>
+                          </label>
+                          <div style={{ position: 'relative' }}>
+                            {f.type === 'currency' && (
+                              <span style={{
+                                position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
+                                color: '#9ca3af', fontSize: 14, fontWeight: 600,
+                              }}>$</span>
+                            )}
+                            <input
+                              type="number"
+                              placeholder={
+                                f.type === 'currency' ? '0' :
+                                f.type === 'percent' ? 'e.g. 10' : '0'
+                              }
+                              value={auditorFields[f.key] ?? ''}
+                              onChange={e => setAuditorFields(prev => ({ ...prev, [f.key]: e.target.value }))}
+                              style={{
+                                width: '100%', padding: f.type === 'currency' ? '10px 12px 10px 24px' : '10px 12px',
+                                fontSize: 14, border: '2px solid #e5e7eb', borderRadius: 8,
+                                outline: 'none', boxSizing: 'border-box',
+                                transition: 'border-color 0.15s',
+                              }}
+                              onFocus={e => e.target.style.borderColor = '#f59e0b'}
+                              onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+                            />
+                            {f.type === 'percent' && (
+                              <span style={{
+                                position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                                color: '#9ca3af', fontSize: 14,
+                              }}>%</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ));
+                })()}
+              </div>
+
+              {/* Footer */}
+              <div style={{
+                padding: '16px 24px', borderTop: '1px solid #e5e7eb',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                backgroundColor: '#f9fafb',
+              }}>
+                <button
+                  onClick={() => setShowAuditor(false)}
+                  style={{
+                    padding: '10px 20px', fontSize: 13, fontWeight: 600,
+                    border: '1px solid #d1d5db', borderRadius: 8,
+                    backgroundColor: 'white', color: '#374151', cursor: 'pointer',
+                  }}
+                >
+                  Skip for Now
+                </button>
+                <button
+                  onClick={handleAuditorApply}
+                  style={{
+                    padding: '10px 24px', fontSize: 13, fontWeight: 700,
+                    border: 'none', borderRadius: 8,
+                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                    color: 'white', cursor: 'pointer',
+                  }}
+                >
+                  Update Underwrite
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        <ResultsPageV2
+          dealId={dealId}
+          scenarioData={scenarioData}
+          savedRentcastData={savedRentcastData}
+          modifiedFields={modifiedFields}
+          calculations={calculations}
+          underwritingResult={underwritingResult}
+          setUnderwritingResult={setUnderwritingResult}
+          messages={messages}
+          inputValue={inputValue}
+          setInputValue={setInputValue}
+          isSending={isSending}
+          handleSendMessage={handleSendMessage}
+          chatMessagesRef={chatMessagesRef}
+          onEditData={(path, value) => modifyScenarioField(path, value)}
+          onGoHome={() => navigate('/')}
+          isChatMinimized={isChatMinimized}
+          setIsChatMinimized={setIsChatMinimized}
+        />
+      </>
     );
   }
 

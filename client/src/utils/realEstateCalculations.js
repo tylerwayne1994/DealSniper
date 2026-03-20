@@ -330,8 +330,20 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   }
   
   // === REVENUE CALCULATIONS ===
-  // Prefer backend parsed data, but fall back to explicit formulas when needed
-  const potentialGrossIncome = pnl.potential_gross_income || pnl.gross_potential_rent || 0;
+  // Prefer backend parsed data, but fall back to unit_mix totals when PnL has no income
+  let potentialGrossIncome = pnl.potential_gross_income || pnl.gross_potential_rent || 0;
+  // If no income in PnL but unit_mix has rent data, derive annual income from unit_mix
+  if (potentialGrossIncome <= 0 && unit_mix && unit_mix.length > 0) {
+    let unitMixAnnualRent = 0;
+    for (const u of unit_mix) {
+      const units = Number(u.units || u.num_units || 1);
+      const rent = Number(u.proforma_rent || u.rent || u.market_rent || 0);
+      const freq = (u.frequency || 'monthly').toLowerCase();
+      const annualPerUnit = freq === 'annual' || freq === 'yearly' ? rent : rent * 12;
+      unitMixAnnualRent += units * annualPerUnit;
+    }
+    if (unitMixAnnualRent > 0) potentialGrossIncome = unitMixAnnualRent;
+  }
   const otherIncome = pnl.other_income || 0;
   const vacancyLoss = pnl.vacancy_amount || 0;
   const rawVacancyRate = pnl.vacancy_rate || 0;
