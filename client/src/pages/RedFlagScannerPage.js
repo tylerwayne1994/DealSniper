@@ -3,31 +3,31 @@ import { useNavigate } from 'react-router-dom';
 import {
   Shield, AlertTriangle, CheckCircle, Info, ExternalLink,
   ArrowLeft, Loader, Send, XCircle, TrendingUp, Building2,
-  DollarSign, BarChart3, AlertOctagon, Zap
+  DollarSign, BarChart3, AlertOctagon, Zap, Search
 } from 'lucide-react';
 import { API_ENDPOINTS } from '../config/api';
 
 // ─── Grade rendering ───
 const gradeStyles = {
-  'A+': { bg: '#ecfdf5', border: '#00c875', text: '#047857', ring: '#00c875' },
-  'A':  { bg: '#ecfdf5', border: '#00c875', text: '#047857', ring: '#00c875' },
-  'A-': { bg: '#ecfdf5', border: '#00c875', text: '#047857', ring: '#00c875' },
-  'B+': { bg: '#eff6ff', border: '#579bfc', text: '#1d4ed8', ring: '#579bfc' },
-  'B':  { bg: '#eff6ff', border: '#579bfc', text: '#1d4ed8', ring: '#579bfc' },
-  'B-': { bg: '#eff6ff', border: '#579bfc', text: '#1d4ed8', ring: '#579bfc' },
-  'C+': { bg: '#fffbeb', border: '#fdab3d', text: '#92400e', ring: '#fdab3d' },
-  'C':  { bg: '#fffbeb', border: '#fdab3d', text: '#92400e', ring: '#fdab3d' },
-  'C-': { bg: '#fffbeb', border: '#fdab3d', text: '#92400e', ring: '#fdab3d' },
-  'D+': { bg: '#fef2f2', border: '#e2445c', text: '#991b1b', ring: '#e2445c' },
-  'D':  { bg: '#fef2f2', border: '#e2445c', text: '#991b1b', ring: '#e2445c' },
-  'D-': { bg: '#fef2f2', border: '#e2445c', text: '#991b1b', ring: '#e2445c' },
+  'A+': { bg: '#ecfdf5', border: '#10b981', text: '#047857', ring: '#10b981' },
+  'A':  { bg: '#ecfdf5', border: '#10b981', text: '#047857', ring: '#10b981' },
+  'A-': { bg: '#ecfdf5', border: '#10b981', text: '#047857', ring: '#10b981' },
+  'B+': { bg: '#eff6ff', border: '#3b82f6', text: '#1d4ed8', ring: '#3b82f6' },
+  'B':  { bg: '#eff6ff', border: '#3b82f6', text: '#1d4ed8', ring: '#3b82f6' },
+  'B-': { bg: '#eff6ff', border: '#3b82f6', text: '#1d4ed8', ring: '#3b82f6' },
+  'C+': { bg: '#fef3f2', border: '#f97316', text: '#c2410c', ring: '#f97316' },
+  'C':  { bg: '#fef3f2', border: '#f97316', text: '#c2410c', ring: '#f97316' },
+  'C-': { bg: '#fef3f2', border: '#ef4444', text: '#b91c1c', ring: '#ef4444' },
+  'D+': { bg: '#fef2f2', border: '#dc2626', text: '#991b1b', ring: '#dc2626' },
+  'D':  { bg: '#fef2f2', border: '#dc2626', text: '#991b1b', ring: '#dc2626' },
+  'D-': { bg: '#fef2f2', border: '#dc2626', text: '#991b1b', ring: '#dc2626' },
   'F':  { bg: '#fef2f2', border: '#7f1d1d', text: '#7f1d1d', ring: '#7f1d1d' },
 };
 
 const severityConfig = {
-  critical: { icon: XCircle, color: '#e2445c', bg: '#fef2f2', border: '#fecaca', label: 'CRITICAL' },
-  warning:  { icon: AlertTriangle, color: '#f59e0b', bg: '#fffbeb', border: '#fde68a', label: 'WARNING' },
-  info:     { icon: Info, color: '#579bfc', bg: '#eff6ff', border: '#bfdbfe', label: 'INFO' },
+  critical: { icon: XCircle, color: '#dc2626', bg: '#fef2f2', border: '#fecaca', label: 'CRITICAL' },
+  warning:  { icon: AlertTriangle, color: '#ea580c', bg: '#fff7ed', border: '#fed7aa', label: 'WARNING' },
+  info:     { icon: Info, color: '#3b82f6', bg: '#eff6ff', border: '#bfdbfe', label: 'INFO' },
 };
 
 const fmt = (v) => {
@@ -97,22 +97,22 @@ export default function RedFlagScannerPage() {
   const gs = result ? (gradeStyles[result.grade] || gradeStyles['C']) : null;
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0f0f1a', fontFamily: 'Figtree, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f6f7fb', fontFamily: 'Figtree, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
 
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, #1e1e2e 0%, #2d2b55 100%)', padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+      <div style={{ backgroundColor: '#fff', padding: '16px 24px', borderBottom: '1px solid #e6e9ef' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <button onClick={() => navigate('/dashboard')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, color: '#e2e8f0', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+            <button onClick={() => navigate('/dashboard')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: '#f6f7fb', border: '1px solid #e6e9ef', borderRadius: 8, color: '#323338', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
               <ArrowLeft size={16} />
               Dashboard
             </button>
             <div>
-              <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Shield size={22} color="#e2445c" />
+              <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#1e1e2e', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Shield size={22} color="#dc2626" />
                 AI Red Flag Scanner
               </h1>
-              <p style={{ margin: '2px 0 0', fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
+              <p style={{ margin: '2px 0 0', fontSize: 13, color: '#676879' }}>
                 Paste a listing URL for a 30-second quick-screen before you waste time uploading
               </p>
             </div>
@@ -125,20 +125,21 @@ export default function RedFlagScannerPage() {
 
         {/* Input Section */}
         <div style={{
-          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-          borderRadius: 16, padding: '32px 36px', marginBottom: 28,
-          border: '1px solid rgba(255,255,255,0.08)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+          background: '#fff', borderRadius: 14, padding: '28px 32px', marginBottom: 24,
+          border: '1px solid #e6e9ef', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
         }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 6 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: '#1e1e2e', marginBottom: 4 }}>
             Paste Listing URL
           </div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 16 }}>
-            Crexi, LoopNet, Apartments.com, CREXi, or any commercial listing page
+          <div style={{ fontSize: 12, color: '#676879', marginBottom: 14 }}>
+            Crexi, LoopNet, Apartments.com, Zillow, Realtor.com, or any commercial listing page
           </div>
 
           <div style={{ display: 'flex', gap: 12, alignItems: 'stretch' }}>
             <div style={{ flex: 1, position: 'relative' }}>
+              <div style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+                <Search size={16} color="#9ca3af" />
+              </div>
               <input
                 ref={inputRef}
                 type="url"
@@ -148,30 +149,28 @@ export default function RedFlagScannerPage() {
                 onKeyDown={handleKeyDown}
                 disabled={isScanning}
                 style={{
-                  width: '100%', padding: '14px 16px', fontSize: 15, fontWeight: 500,
-                  background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)',
-                  borderRadius: 10, color: '#fff', outline: 'none',
-                  transition: 'border-color 0.2s',
-                  boxSizing: 'border-box',
+                  width: '100%', padding: '12px 16px 12px 40px', fontSize: 14, fontWeight: 500,
+                  background: '#fff', border: '1px solid #d0d4e4',
+                  borderRadius: 10, color: '#1e1e2e', outline: 'none',
+                  transition: 'border-color 0.2s', boxSizing: 'border-box',
                 }}
-                onFocus={e => e.target.style.borderColor = '#579bfc'}
-                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.15)'}
+                onFocus={e => e.target.style.borderColor = '#3b82f6'}
+                onBlur={e => e.target.style.borderColor = '#d0d4e4'}
               />
             </div>
             <button
               onClick={handleScan}
               disabled={!url.trim() || isScanning}
               style={{
-                display: 'flex', alignItems: 'center', gap: 8, padding: '14px 28px',
-                borderRadius: 10, border: 'none', fontSize: 15, fontWeight: 700,
+                display: 'flex', alignItems: 'center', gap: 8, padding: '12px 24px',
+                borderRadius: 10, border: 'none', fontSize: 14, fontWeight: 700,
                 cursor: !url.trim() || isScanning ? 'not-allowed' : 'pointer',
                 background: !url.trim() || isScanning
-                  ? 'rgba(255,255,255,0.08)'
-                  : 'linear-gradient(135deg, #e2445c 0%, #ff6b6b 100%)',
-                color: !url.trim() || isScanning ? 'rgba(255,255,255,0.3)' : '#fff',
-                boxShadow: url.trim() && !isScanning ? '0 4px 16px rgba(226,68,92,0.4)' : 'none',
-                transition: 'all 0.2s',
-                whiteSpace: 'nowrap',
+                  ? '#e5e7eb'
+                  : 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+                color: !url.trim() || isScanning ? '#9ca3af' : '#fff',
+                boxShadow: url.trim() && !isScanning ? '0 2px 8px rgba(220,38,38,0.25)' : 'none',
+                transition: 'all 0.2s', whiteSpace: 'nowrap',
               }}
             >
               {isScanning ? (
@@ -198,20 +197,23 @@ export default function RedFlagScannerPage() {
               rows={3}
               style={{
                 width: '100%', padding: '10px 14px', fontSize: 13,
-                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 8, color: 'rgba(255,255,255,0.7)', outline: 'none',
+                background: '#f9fafb', border: '1px solid #e6e9ef',
+                borderRadius: 8, color: '#374151', outline: 'none',
                 boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit',
+                transition: 'border-color 0.2s',
               }}
+              onFocus={e => e.target.style.borderColor = '#3b82f6'}
+              onBlur={e => e.target.style.borderColor = '#e6e9ef'}
             />
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>
+            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
               Tip: If the URL scan fails, paste the listing text above — AI will analyze whatever you provide
             </div>
           </div>
 
           {/* Supported sites */}
           <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {['Crexi', 'LoopNet', 'Apartments.com', 'CREXi', 'Zillow', 'Realtor.com', 'Any listing URL'].map(s => (
-              <span key={s} style={{ padding: '3px 10px', borderRadius: 999, fontSize: 10, fontWeight: 600, background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            {['Crexi', 'LoopNet', 'Apartments.com', 'Zillow', 'Realtor.com', 'Any listing URL'].map(s => (
+              <span key={s} style={{ padding: '3px 10px', borderRadius: 999, fontSize: 10, fontWeight: 600, background: '#f3f4f6', color: '#6b7280', border: '1px solid #e5e7eb' }}>
                 {s}
               </span>
             ))}
@@ -232,26 +234,31 @@ export default function RedFlagScannerPage() {
         {/* Loading animation */}
         {isScanning && (
           <div style={{
-            background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-            borderRadius: 16, padding: '48px 36px', textAlign: 'center',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: '#fff', borderRadius: 14, padding: '48px 36px', textAlign: 'center',
+            border: '1px solid #e6e9ef', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
           }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 64, height: 64, borderRadius: 16, background: 'rgba(226,68,92,0.15)', marginBottom: 16 }}>
-              <Shield size={32} color="#e2445c" style={{ animation: 'pulse 1.5s ease-in-out infinite' }} />
+            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 64, height: 64, borderRadius: 16, background: '#fef2f2', marginBottom: 16 }}>
+              <Shield size={32} color="#dc2626" style={{ animation: 'pulse 1.5s ease-in-out infinite' }} />
             </div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 8 }}>Analyzing Listing...</div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', maxWidth: 500, margin: '0 auto' }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#1e1e2e', marginBottom: 8 }}>Analyzing Listing...</div>
+            <div style={{ fontSize: 13, color: '#676879', maxWidth: 500, margin: '0 auto' }}>
               Fetching page data, extracting metrics, comparing against market norms, and grading the deal
             </div>
-            <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center', gap: 24, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
+            <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center', gap: 20, fontSize: 12 }}>
               {[
                 { t: 2, label: 'Fetching page...' },
                 { t: 5, label: 'Extracting metrics...' },
                 { t: 10, label: 'Market comparison...' },
                 { t: 15, label: 'Grading deal...' },
               ].map((step, i) => (
-                <span key={i} style={{ color: scanTime >= step.t ? '#579bfc' : 'rgba(255,255,255,0.2)', fontWeight: scanTime >= step.t ? 600 : 400, transition: 'all 0.3s' }}>
-                  {scanTime >= step.t ? '✓' : '○'} {step.label}
+                <span key={i} style={{
+                  color: scanTime >= step.t ? '#16a34a' : '#d1d5db',
+                  fontWeight: scanTime >= step.t ? 600 : 400,
+                  transition: 'all 0.3s',
+                  display: 'flex', alignItems: 'center', gap: 4,
+                }}>
+                  {scanTime >= step.t ? <CheckCircle size={13} color="#16a34a" /> : <div style={{ width: 13, height: 13, borderRadius: '50%', border: '2px solid #d1d5db' }} />}
+                  {step.label}
                 </span>
               ))}
             </div>
@@ -260,50 +267,54 @@ export default function RedFlagScannerPage() {
 
         {/* Results */}
         {result && !isScanning && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             {/* Grade Card */}
             <div style={{
-              background: gs.bg, border: `2px solid ${gs.border}`, borderRadius: 16,
-              padding: '28px 36px', display: 'flex', alignItems: 'center', gap: 28,
+              background: '#fff', borderRadius: 14, padding: '28px 32px',
+              border: '1px solid #e6e9ef', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+              display: 'flex', alignItems: 'center', gap: 28,
             }}>
               {/* Grade circle */}
               <div style={{
-                width: 100, height: 100, borderRadius: '50%',
+                width: 96, height: 96, borderRadius: '50%',
                 border: `4px solid ${gs.ring}`, display: 'flex',
                 alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                background: '#fff', boxShadow: `0 0 24px ${gs.ring}40`,
+                background: gs.bg, boxShadow: `0 0 20px ${gs.ring}20`,
               }}>
-                <span style={{ fontSize: 36, fontWeight: 900, color: gs.text, lineHeight: 1 }}>
+                <span style={{ fontSize: 34, fontWeight: 900, color: gs.text, lineHeight: 1 }}>
                   {result.grade}
                 </span>
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 20, fontWeight: 800, color: gs.text, marginBottom: 6 }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: '#1e1e2e', marginBottom: 6 }}>
                   {result.headline}
                 </div>
-                <div style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.6 }}>
+                <div style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.65 }}>
                   {result.recommendation}
                 </div>
-                <div style={{ marginTop: 10 }}>
-                  <a href={result.raw_url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: '#579bfc', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <a href={result.raw_url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: '#3b82f6', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 500 }}>
                     <ExternalLink size={12} /> View Original Listing
                   </a>
-                  <span style={{ fontSize: 11, color: '#ababab', marginLeft: 16 }}>Scanned in {scanTime}s</span>
+                  <span style={{ fontSize: 11, color: '#9ca3af' }}>Scanned in {scanTime}s</span>
                 </div>
               </div>
             </div>
 
             {/* Two-column: Listing Data + Market Context */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
 
               {/* Extracted Listing Data */}
-              <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #e6e9ef', padding: '24px 28px' }}>
-                <div style={{ fontSize: 16, fontWeight: 800, color: '#1e1e2e', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Building2 size={18} color="#579bfc" />
+              <div style={{
+                background: '#fff', borderRadius: 14, border: '1px solid #e6e9ef',
+                padding: '24px 28px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+              }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#1e1e2e', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Building2 size={18} color="#3b82f6" />
                   Listing Data Extracted
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   {(() => {
                     const ld = result.listing_data || {};
                     const rows = [
@@ -322,8 +333,11 @@ export default function RedFlagScannerPage() {
                       { label: 'Square Footage', value: ld.square_footage > 0 ? ld.square_footage.toLocaleString() + ' SF' : null },
                     ].filter(r => r.value);
                     return rows.map((r, i) => (
-                      <div key={i} style={{ padding: '8px 12px', borderRadius: 8, background: '#f9fafb' }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#6b7280', marginBottom: 2 }}>{r.label}</div>
+                      <div key={i} style={{
+                        padding: '10px 14px', borderRadius: 10,
+                        background: '#f8f9fc', border: '1px solid #eef0f4',
+                      }}>
+                        <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#9ca3af', marginBottom: 3 }}>{r.label}</div>
                         <div style={{ fontSize: 14, fontWeight: 700, color: '#1e1e2e' }}>{r.value}</div>
                       </div>
                     ));
@@ -332,28 +346,41 @@ export default function RedFlagScannerPage() {
               </div>
 
               {/* Market Context */}
-              <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #e6e9ef', padding: '24px 28px' }}>
-                <div style={{ fontSize: 16, fontWeight: 800, color: '#1e1e2e', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <BarChart3 size={18} color="#00c875" />
+              <div style={{
+                background: '#fff', borderRadius: 14, border: '1px solid #e6e9ef',
+                padding: '24px 28px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+              }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#1e1e2e', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <BarChart3 size={18} color="#10b981" />
                   Market Context
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {(() => {
                     const mc = result.market_context || {};
                     const rows = [
-                      { label: 'Market Cap Rate', value: mc.estimated_market_cap_rate, icon: TrendingUp },
-                      { label: 'Market Price / Unit', value: mc.estimated_price_per_unit_market, icon: DollarSign },
-                      { label: 'Typical Expense Ratio', value: mc.estimated_expense_ratio, icon: BarChart3 },
-                      { label: 'Market Rent Range', value: mc.market_rent_range, icon: Building2 },
-                      { label: 'Market Vacancy', value: mc.market_vacancy, icon: AlertTriangle },
+                      { label: 'Market Cap Rate', value: mc.estimated_market_cap_rate, icon: TrendingUp, color: '#3b82f6', bg: '#eff6ff', border: '#dbeafe' },
+                      { label: 'Market Price / Unit', value: mc.estimated_price_per_unit_market, icon: DollarSign, color: '#10b981', bg: '#ecfdf5', border: '#d1fae5' },
+                      { label: 'Typical Expense Ratio', value: mc.estimated_expense_ratio, icon: BarChart3, color: '#8b5cf6', bg: '#f5f3ff', border: '#ede9fe' },
+                      { label: 'Market Rent Range', value: mc.market_rent_range, icon: Building2, color: '#3b82f6', bg: '#eff6ff', border: '#dbeafe' },
+                      { label: 'Market Vacancy', value: mc.market_vacancy, icon: AlertTriangle, color: '#ef4444', bg: '#fef2f2', border: '#fecaca' },
                     ].filter(r => r.value);
                     return rows.map((r, i) => {
                       const Icon = r.icon;
                       return (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-                          <Icon size={16} color="#047857" />
+                        <div key={i} style={{
+                          display: 'flex', alignItems: 'center', gap: 12,
+                          padding: '12px 14px', borderRadius: 10,
+                          background: r.bg, border: `1px solid ${r.border}`,
+                        }}>
+                          <div style={{
+                            width: 34, height: 34, borderRadius: 8,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: '#fff', border: `1px solid ${r.border}`,
+                          }}>
+                            <Icon size={16} color={r.color} />
+                          </div>
                           <div>
-                            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#047857' }}>{r.label}</div>
+                            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: r.color }}>{r.label}</div>
                             <div style={{ fontSize: 14, fontWeight: 700, color: '#1e1e2e' }}>{r.value}</div>
                           </div>
                         </div>
@@ -361,7 +388,11 @@ export default function RedFlagScannerPage() {
                     });
                   })()}
                   {result.market_context?.market_trends && (
-                    <div style={{ padding: '10px 14px', borderRadius: 10, background: '#f9fafb', fontSize: 12, color: '#6b7280', lineHeight: 1.5, border: '1px solid #e5e7eb' }}>
+                    <div style={{
+                      padding: '12px 14px', borderRadius: 10,
+                      background: '#f8f9fc', fontSize: 12, color: '#6b7280',
+                      lineHeight: 1.6, border: '1px solid #eef0f4',
+                    }}>
                       <strong style={{ color: '#1e1e2e' }}>Trends:</strong> {result.market_context.market_trends}
                     </div>
                   )}
@@ -370,9 +401,12 @@ export default function RedFlagScannerPage() {
             </div>
 
             {/* Red Flags */}
-            <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #e6e9ef', padding: '24px 28px' }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: '#1e1e2e', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <AlertOctagon size={18} color="#e2445c" />
+            <div style={{
+              background: '#fff', borderRadius: 14, border: '1px solid #e6e9ef',
+              padding: '24px 28px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#1e1e2e', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <AlertOctagon size={18} color="#dc2626" />
                 Red Flags ({result.red_flags?.length || 0})
               </div>
               {result.red_flags && result.red_flags.length > 0 ? (
@@ -387,8 +421,12 @@ export default function RedFlagScannerPage() {
                         </div>
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                            <span style={{ fontSize: 14, fontWeight: 800, color: sev.color }}>{rf.flag}</span>
-                            <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 999, background: sev.color, color: '#fff' }}>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: '#1e1e2e' }}>{rf.flag}</span>
+                            <span style={{
+                              fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px',
+                              padding: '2px 8px', borderRadius: 999,
+                              background: sev.color, color: '#fff',
+                            }}>
                               {sev.label}
                             </span>
                           </div>
