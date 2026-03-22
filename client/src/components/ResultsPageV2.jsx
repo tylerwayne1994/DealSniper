@@ -1073,7 +1073,13 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
       yPos = addMetricRow('Loan Amount (80% LTV):', fmt(loanAmount), yPos);
       yPos = addMetricRow('Interest Rate:', pct(financing?.interestRate || 6.5), yPos);
       yPos = addMetricRow('Loan Term:', `${financing?.loanTermYears || 30} years`, yPos);
-      yPos = addMetricRow('Annual Debt Service:', fmt(financing?.annualDebtService || 0), yPos);
+      if (financing?.ioYears > 0) {
+        yPos = addMetricRow('IO Period:', `${financing.ioYears} years`, yPos);
+        yPos = addMetricRow('IO Debt Service:', fmt(financing?.ioAnnualDebtService || 0), yPos);
+        yPos = addMetricRow('Amortizing Debt Service:', fmt(financing?.amortizingAnnualDebtService || 0), yPos);
+      } else {
+        yPos = addMetricRow('Annual Debt Service:', fmt(financing?.annualDebtService || 0), yPos);
+      }
       yPos += 5;
       
       yPos = addSection('Year 1 Operating Performance', yPos, 12);
@@ -1948,6 +1954,11 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
                       </div>
                     </div>
                     <div>
+                      <label style={labelStyle}>IO Period (Years)</label>
+                      <input type="number" min="0" style={inputStyle} value={financing.io_years || 0} 
+                        onChange={(e) => handleFieldChange('financing.io_years', parseInt(e.target.value) || 0)} />
+                    </div>
+                    <div>
                       <label style={labelStyle}>Loan Amount</label>
                       <input type="number" style={readOnlyStyle} value={charLoanAmount || ''} readOnly />
                     </div>
@@ -2365,8 +2376,13 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
         const amortizationYears = pricing_financing?.amortization_years || scenarioData.financing?.amortization_years || loanTerm;
         
         // Calculate monthly and annual debt service
-        let monthlyDebtService = pricing_financing?.monthly_payment || fullCalcs.financing?.monthlyPayment || 0;
-        let amortAnnualDebtService = pricing_financing?.annual_debt_service || fullCalcs.financing?.annualDebtService || 0;
+        const amortIOYears = fullCalcs.financing?.ioYears || scenarioData.financing?.io_years || 0;
+        let monthlyDebtService = pricing_financing?.monthly_payment || fullCalcs.financing?.amortizingMonthlyPayment || fullCalcs.financing?.monthlyPayment || 0;
+        let amortAnnualDebtService = pricing_financing?.annual_debt_service || fullCalcs.financing?.amortizingAnnualDebtService || fullCalcs.financing?.annualDebtService || 0;
+        
+        // IO period payment
+        const ioMonthlyDS = amortLoanAmount > 0 && amortInterestRate > 0 ? (amortLoanAmount * amortInterestRate) / 12 : 0;
+        const ioAnnualDS = ioMonthlyDS * 12;
         
         // If we have loan details but no payment, calculate it
         if ((!monthlyDebtService || monthlyDebtService === 0) && amortLoanAmount > 0 && amortInterestRate > 0 && amortizationYears > 0) {
@@ -2376,11 +2392,16 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
           amortAnnualDebtService = monthlyDebtService * 12;
         }
         
+        // For display: show IO payment if currently in IO period
+        const displayMonthlyDS = amortIOYears > 0 ? ioMonthlyDS : monthlyDebtService;
+        const displayAnnualDS = amortIOYears > 0 ? ioAnnualDS : amortAnnualDebtService;
+        
         // Loan Factor Rate = Monthly Payment per $1,000 of loan amount
         const loanFactorRate = (amortLoanAmount > 0 && monthlyDebtService > 0) ? (monthlyDebtService / amortLoanAmount) * 1000 : null;
-        // DSCR for leverage insight
+        // DSCR for leverage insight — use year 1 debt service (IO if applicable)
         const capRateDecimal = capRate != null ? (capRate > 1 ? capRate / 100 : capRate) : (fullCalcs?.year1?.capRate != null ? (fullCalcs.year1.capRate > 1 ? fullCalcs.year1.capRate / 100 : fullCalcs.year1.capRate) : null);
-        const amortDSCR = (amortAnnualDebtService > 0 && fullCalcs?.year1?.noi > 0) ? (fullCalcs.year1.noi / amortAnnualDebtService) : null;
+        const y1DS = amortIOYears > 0 ? ioAnnualDS : amortAnnualDebtService;
+        const amortDSCR = (y1DS > 0 && fullCalcs?.year1?.noi > 0) ? (fullCalcs.year1.noi / y1DS) : null;
         const dscrStatus = amortDSCR != null ? (amortDSCR >= 1.25 ? 'Strong' : amortDSCR >= 1.0 ? 'Adequate' : 'Below 1.0x') : '--';
 
         // Generate amortization schedule if not available
@@ -2388,22 +2409,27 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
         if (amortSchedule.length === 0 && amortLoanAmount > 0 && amortInterestRate > 0 && amortizationYears > 0) {
           const monthlyRate = amortInterestRate / 12;
           const numPayments = amortizationYears * 12;
-          const monthlyPayment = amortLoanAmount * (monthlyRate / (1 - Math.pow(1 + monthlyRate, -numPayments)));
+          const amortMonthlyPmt = amortLoanAmount * (monthlyRate / (1 - Math.pow(1 + monthlyRate, -numPayments)));
           
           let balance = amortLoanAmount;
           let cumulativePrincipal = 0;
           
-          for (let year = 1; year <= Math.min(amortizationYears, loanTerm); year++) {
+          for (let year = 1; year <= Math.min(amortizationYears + amortIOYears, loanTerm); year++) {
             let yearlyPrincipal = 0;
             let yearlyInterest = 0;
+            const isIO = year <= amortIOYears;
             
             for (let month = 1; month <= 12; month++) {
               if (balance <= 0) break;
               const interestPayment = balance * monthlyRate;
-              const principalPayment = Math.min(monthlyPayment - interestPayment, balance);
-              yearlyPrincipal += principalPayment;
-              yearlyInterest += interestPayment;
-              balance -= principalPayment;
+              if (isIO) {
+                yearlyInterest += interestPayment;
+              } else {
+                const principalPayment = Math.min(amortMonthlyPmt - interestPayment, balance);
+                yearlyPrincipal += principalPayment;
+                yearlyInterest += interestPayment;
+                balance -= principalPayment;
+              }
             }
             
             cumulativePrincipal += yearlyPrincipal;
@@ -2414,7 +2440,8 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
               principal: Math.round(yearlyPrincipal),
               interest: Math.round(yearlyInterest),
               balance: Math.round(Math.max(0, balance)),
-              cumulativePrincipal: Math.round(cumulativePrincipal)
+              cumulativePrincipal: Math.round(cumulativePrincipal),
+              isIO
             });
           }
         }
@@ -2424,8 +2451,14 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
           { label: 'LOAN AMOUNT', value: '$' + amortLoanAmount.toLocaleString(undefined, {maximumFractionDigits: 0}), color: '#3b82f6', bg: '#eff6ff' },
           { label: 'INTEREST RATE', value: (amortInterestRate * 100).toFixed(2) + '%', color: '#8b5cf6', bg: '#f5f3ff' },
           { label: 'LOAN TERM', value: loanTerm + ' Years', color: '#06b6d4', bg: '#ecfeff' },
-          { label: 'MONTHLY DEBT SERVICE', value: '$' + monthlyDebtService.toLocaleString(undefined, {maximumFractionDigits: 0}), color: '#f59e0b', bg: '#fffbeb' },
-          { label: 'ANNUAL DEBT SERVICE', value: '$' + amortAnnualDebtService.toLocaleString(undefined, {maximumFractionDigits: 0}), color: '#ef4444', bg: '#fef2f2' },
+          ...(amortIOYears > 0 ? [
+            { label: 'IO PERIOD', value: amortIOYears + (amortIOYears === 1 ? ' Year' : ' Years'), color: '#7c3aed', bg: '#faf5ff', sub: 'Interest-Only' },
+            { label: 'IO MONTHLY PAYMENT', value: '$' + ioMonthlyDS.toLocaleString(undefined, {maximumFractionDigits: 0}), color: '#7c3aed', bg: '#faf5ff', sub: 'Yrs 1\u2013' + amortIOYears },
+            { label: 'AMORTIZING PAYMENT', value: '$' + monthlyDebtService.toLocaleString(undefined, {maximumFractionDigits: 0}) + '/mo', color: '#f59e0b', bg: '#fffbeb', sub: 'After IO' },
+          ] : [
+            { label: 'MONTHLY DEBT SERVICE', value: '$' + monthlyDebtService.toLocaleString(undefined, {maximumFractionDigits: 0}), color: '#f59e0b', bg: '#fffbeb' },
+          ]),
+          { label: 'ANNUAL DEBT SERVICE', value: '$' + displayAnnualDS.toLocaleString(undefined, {maximumFractionDigits: 0}), color: '#ef4444', bg: '#fef2f2', sub: amortIOYears > 0 ? 'Year 1 (IO)' : undefined },
           { label: 'CAP RATE', value: capRateDecimal != null ? (capRateDecimal * 100).toFixed(2) + '%' : '--', color: '#10b981', bg: '#ecfdf5' },
           { label: 'LOAN FACTOR RATE', value: loanFactorRate != null ? '$' + loanFactorRate.toFixed(2) + ' / $1K' : '--', color: '#6366f1', bg: '#eef2ff', sub: 'per $1,000 borrowed' },
           { label: 'DSCR', value: amortDSCR != null ? amortDSCR.toFixed(2) + 'x' : '--', color: amortDSCR != null && amortDSCR >= 1.25 ? '#10b981' : amortDSCR != null && amortDSCR >= 1.0 ? '#f59e0b' : '#ef4444', bg: amortDSCR != null && amortDSCR >= 1.25 ? '#ecfdf5' : amortDSCR != null && amortDSCR >= 1.0 ? '#fffbeb' : '#fef2f2', sub: dscrStatus },
@@ -2583,10 +2616,13 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
                           </thead>
                           <tbody>
                             {amortSchedule.map((row, idx) => (
-                              <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb', transition: 'background 0.15s', backgroundColor: 'white' }} 
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'} 
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}>
-                                <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: '700', color: '#111827' }}>Year {row.year}</td>
+                              <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb', transition: 'background 0.15s', backgroundColor: row.isIO ? '#faf5ff' : 'white' }} 
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = row.isIO ? '#f3e8ff' : '#f9fafb'} 
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = row.isIO ? '#faf5ff' : 'white'}>
+                                <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: '700', color: '#111827' }}>
+                                  Year {row.year}
+                                  {row.isIO && <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: '#ede9fe', color: '#7c3aed' }}>IO</span>}
+                                </td>
                                 <td style={{ padding: '16px 24px', textAlign: 'right', fontSize: '14px', fontWeight: '600', color: '#374151' }}>${row.payment.toLocaleString()}</td>
                                 <td style={{ padding: '16px 24px', textAlign: 'right', fontSize: '14px', fontWeight: '700', color: '#111827' }}>${row.principal.toLocaleString()}</td>
                                 <td style={{ padding: '16px 24px', textAlign: 'right', fontSize: '14px', fontWeight: '700', color: '#111827' }}>${row.interest.toLocaleString()}</td>

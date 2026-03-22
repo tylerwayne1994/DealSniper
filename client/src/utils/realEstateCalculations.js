@@ -307,12 +307,29 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   
   // For display only (percentage 0-100)
   const ltvDecimal = loanAmount > 0 && purchasePrice > 0 ? (loanAmount / purchasePrice) : 0;
-  const ioYears = 0;
+  const ioYears = Number(financing?.io_years) || 0;
   const loanFeesPct = 0;
   const financingFeesPct = 0;
   const loanFees = 0;
   const financingFees = 0;
   const netLoanFunding = loanAmount;
+
+  // Interest-only period debt service (interest only, no principal)
+  const ioAnnualDebtService = loanAmount > 0 && interestRate > 0
+    ? loanAmount * interestRate
+    : 0;
+  const ioMonthlyPayment = ioAnnualDebtService / 12;
+
+  // Amortizing debt service (after IO period ends)
+  // If IO period >= loan term, entire loan is IO
+  let amortizingAnnualDebtService = annualDebtService;
+  let amortizingMonthlyPayment = monthlyPayment;
+  if (ioYears > 0 && loanAmount > 0 && interestRate > 0 && amortYears > 0) {
+    // After IO period, remaining balance is still full loan amount
+    // Amortize over (amortYears) period starting after IO ends
+    amortizingMonthlyPayment = calculateMortgagePayment(loanAmount, interestRate, amortYears);
+    amortizingAnnualDebtService = amortizingMonthlyPayment * 12;
+  }
   // Total equity = down payment + closing costs + capex (what investor actually puts in)
   // If no explicit down payment, derive from price minus loan
   const rawDownPayment = downPayment > 0 ? downPayment : Math.max(purchasePrice - loanAmount, 0);
@@ -532,6 +549,8 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   let currentExpenses = totalOperatingExpenses;
   let currentTaxes = expenseItems.taxes || 0;
   let currentLoanBalance = loanAmount;
+  // Track amortizing years elapsed (for loan balance calc after IO period)
+  let amortYearsElapsed = 0;
   
   for (let year = 1; year <= 10; year++) {
     // Apply growth rates
@@ -572,12 +591,16 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
     // Cash flow from operations
     const yearCashFlowFromOps = yearNOI - totalCapEx;
     
-    // Debt service and cash flow after financing
-    const yearCashFlowAfterFinancing = yearCashFlowFromOps - annualDebtService;
+    // Debt service: interest-only during IO period, amortizing after
+    const yearDebtService = (ioYears > 0 && year <= ioYears)
+      ? ioAnnualDebtService
+      : amortizingAnnualDebtService;
+    const yearCashFlowAfterFinancing = yearCashFlowFromOps - yearDebtService;
     
     // Update loan balance
     if (year > ioYears && year <= loanTermYears) {
-      currentLoanBalance = calculateLoanBalance(loanAmount, interestRate, amortYears, year);
+      amortYearsElapsed += 1;
+      currentLoanBalance = calculateLoanBalance(loanAmount, interestRate, amortYears, amortYearsElapsed);
     }
     
     // Exit calculations (if sold in this year)
@@ -591,7 +614,7 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
     const reversionCashFlow = netSalesProceeds - loanPayoff;
     
     // Metrics
-    const yearDSCR = annualDebtService > 0 ? yearNOI / annualDebtService : 0;
+    const yearDSCR = yearDebtService > 0 ? yearNOI / yearDebtService : 0;
     const yearDebtYield = loanPayoff > 0 ? (yearNOI / loanPayoff) * 100 : 0;
     const yearCashOnCash = totalEquityRequired > 0 ? (yearCashFlowAfterFinancing / totalEquityRequired) * 100 : 0;
     
@@ -626,7 +649,8 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
       cashFlowFromOps: Math.round(yearCashFlowFromOps),
       
       // Debt
-      debtService: Math.round(annualDebtService),
+      debtService: Math.round(yearDebtService),
+      isInterestOnly: ioYears > 0 && year <= ioYears,
       loanBalance: Math.round(currentLoanBalance),
       
       // Cash Flow
@@ -768,7 +792,7 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
 
   // Debt timeline: derive from existing projections and financing inputs only.
   // We treat loanBalance as end-of-year balance and back into principal/interest
-  // using the already-computed annualDebtService.
+  // using the per-year debt service (IO or amortizing).
   const debtTimeline = [];
   if (loanAmount > 0 && projections.length > 0) {
     let beginningBalance = loanAmount;
@@ -782,7 +806,8 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
 
       const endingBalance = p.loanBalance;
       const principalPaid = Math.max(0, beginningBalance - endingBalance);
-      const interestPaid = Math.max(0, annualDebtService - principalPaid);
+      const yearDS = p.debtService;
+      const interestPaid = Math.max(0, yearDS - principalPaid);
       cumulativePrincipalPaid += principalPaid;
 
       const isExitYear = p.year === holdingPeriod;
@@ -792,11 +817,12 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
         year: p.year,
         beginningBalance: Math.round(beginningBalance),
         endingBalance: Math.round(endingBalance),
-        annualDebtService: Math.round(annualDebtService),
+        annualDebtService: Math.round(yearDS),
         principalPaid: Math.round(principalPaid),
         interestPaid: Math.round(interestPaid),
         cumulativePrincipalPaid: Math.round(cumulativePrincipalPaid),
         loanPayoff: Math.round(p.loanPayoff || 0),
+        isInterestOnly: p.isInterestOnly,
         isExitYear,
         isMaturityYear
       });
@@ -1005,8 +1031,12 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
       loanFees: Math.round(loanFees),
       financingFees: Math.round(financingFees),
       netLoanFunding: Math.round(netLoanFunding),
-      monthlyPayment: Math.round(monthlyPayment),
-      annualDebtService: Math.round(annualDebtService),
+      monthlyPayment: Math.round(ioYears > 0 ? ioMonthlyPayment : monthlyPayment),
+      annualDebtService: Math.round(ioYears > 0 ? ioAnnualDebtService : annualDebtService),
+      ioMonthlyPayment: Math.round(ioMonthlyPayment),
+      ioAnnualDebtService: Math.round(ioAnnualDebtService),
+      amortizingMonthlyPayment: Math.round(amortizingMonthlyPayment),
+      amortizingAnnualDebtService: Math.round(amortizingAnnualDebtService),
       totalEquityRequired: Math.round(totalEquityRequired)
     },
     

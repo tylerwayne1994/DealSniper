@@ -329,6 +329,16 @@ function TemplatesPage() {
     return pmt;
   }, [tpl.financing.interest_rate, tpl.financing.amortization_years]);
 
+  /* ── IO payment preview (per $100K) ── */
+  const ioMonthlyPayment = useMemo(() => {
+    const r = (tpl.financing.interest_rate / 100) / 12;
+    if (r === 0) return 0;
+    return 100000 * r;
+  }, [tpl.financing.interest_rate]);
+
+  const ioSavings = monthlyPayment - ioMonthlyPayment;
+  const hasIO = tpl.financing.io_years > 0;
+
   const toggle = (key) => setCollapsed(p => ({ ...p, [key]: !p[key] }));
 
   if (loading) {
@@ -421,18 +431,203 @@ function TemplatesPage() {
 
               <div style={s.grid2}>
                 <Field
-                  label="INTEREST ONLY (YRS)"
-                  value={tpl.financing.io_years}
-                  onChange={(v) => updateField('financing', 'io_years', v)}
-                  hint="0 = fully amortizing"
-                />
-                <Field
                   label="LOAN FEES"
                   value={tpl.financing.loan_fees_percent}
                   onChange={(v) => updateField('financing', 'loan_fees_percent', v)}
                   suffix="%"
                   hint="Origination + points"
                 />
+                <div /> {/* spacer */}
+              </div>
+
+              {/* ── Interest-Only Period Section ── */}
+              <div style={{
+                marginTop: 24, padding: 20, borderRadius: 12,
+                border: hasIO ? '2px solid #8b5cf6' : '1px solid #e5e7eb',
+                background: hasIO ? 'linear-gradient(135deg, #faf5ff 0%, #f5f3ff 100%)' : '#ffffff',
+                transition: 'all .2s',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: 8,
+                      background: hasIO ? '#8b5cf6' : '#e5e7eb',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all .2s',
+                    }}>
+                      <DollarSign size={16} style={{ color: hasIO ? '#fff' : '#9ca3af' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Interest-Only Period</div>
+                      <div style={{ fontSize: 11, color: '#6b7280' }}>
+                        Lower payments during IO — principal deferred until amortization begins
+                      </div>
+                    </div>
+                  </div>
+                  {/* Toggle */}
+                  <div
+                    onClick={() => updateField('financing', 'io_years', hasIO ? 0 : 2)}
+                    style={{
+                      width: 48, height: 26, borderRadius: 13, cursor: 'pointer',
+                      background: hasIO ? '#8b5cf6' : '#d1d5db',
+                      position: 'relative', transition: 'background .2s',
+                    }}
+                  >
+                    <div style={{
+                      width: 22, height: 22, borderRadius: '50%', background: '#fff',
+                      position: 'absolute', top: 2,
+                      left: hasIO ? 24 : 2,
+                      transition: 'left .2s',
+                      boxShadow: '0 1px 3px rgba(0,0,0,.2)',
+                    }} />
+                  </div>
+                </div>
+
+                {hasIO && (
+                  <>
+                    {/* IO years selector */}
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={s.fieldLabel}>IO PERIOD LENGTH</div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        {[1, 2, 3, 4, 5].map(yr => (
+                          <div
+                            key={yr}
+                            onClick={() => updateField('financing', 'io_years', yr)}
+                            style={{
+                              flex: 1, padding: '10px 0', borderRadius: 8,
+                              border: tpl.financing.io_years === yr ? '2px solid #8b5cf6' : '1px solid #d1d5db',
+                              background: tpl.financing.io_years === yr ? '#ede9fe' : '#fff',
+                              color: tpl.financing.io_years === yr ? '#6d28d9' : '#374151',
+                              fontSize: 14, fontWeight: 700, textAlign: 'center',
+                              cursor: 'pointer', transition: 'all .15s',
+                            }}
+                          >
+                            {yr} yr{yr > 1 ? 's' : ''}
+                          </div>
+                        ))}
+                        {/* Custom input for > 5 */}
+                        <div style={{ flex: 1, position: 'relative' }}>
+                          <input
+                            type="number"
+                            min={1}
+                            max={tpl.financing.loan_term_years}
+                            value={tpl.financing.io_years > 5 ? tpl.financing.io_years : ''}
+                            placeholder="Other"
+                            onChange={(e) => {
+                              const v = parseInt(e.target.value) || 0;
+                              if (v > 0) updateField('financing', 'io_years', Math.min(v, tpl.financing.loan_term_years));
+                            }}
+                            style={{
+                              width: '100%', padding: '10px 8px', borderRadius: 8,
+                              border: tpl.financing.io_years > 5 ? '2px solid #8b5cf6' : '1px solid #d1d5db',
+                              background: tpl.financing.io_years > 5 ? '#ede9fe' : '#fff',
+                              fontSize: 13, fontWeight: 600, textAlign: 'center',
+                              color: '#374151', outline: 'none', boxSizing: 'border-box',
+                            }}
+                            onFocus={(e) => { if (tpl.financing.io_years <= 5) e.target.style.borderColor = '#8b5cf6'; }}
+                            onBlur={(e) => { if (tpl.financing.io_years <= 5) e.target.style.borderColor = '#d1d5db'; }}
+                          />
+                        </div>
+                      </div>
+                      {tpl.financing.io_years >= tpl.financing.loan_term_years && (
+                        <div style={{ marginTop: 6, fontSize: 11, color: '#dc2626', fontWeight: 600 }}>
+                          ⚠ IO period equals or exceeds loan term — entire loan will be interest-only with balloon at maturity
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Payment comparison cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                      <div style={{
+                        padding: 14, borderRadius: 10,
+                        background: 'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)',
+                        textAlign: 'center',
+                      }}>
+                        <div style={{ fontSize: 10, fontWeight: 600, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          IO Payment
+                        </div>
+                        <div style={{ fontSize: 10, color: '#8b5cf6', marginBottom: 4 }}>per $100K · Yrs 1–{tpl.financing.io_years}</div>
+                        <div style={{ fontSize: 22, fontWeight: 800, color: '#5b21b6' }}>
+                          ${ioMonthlyPayment.toFixed(0)}
+                        </div>
+                        <div style={{ fontSize: 10, color: '#7c3aed', marginTop: 2 }}>/month</div>
+                      </div>
+                      <div style={{
+                        padding: 14, borderRadius: 10,
+                        background: 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)',
+                        textAlign: 'center',
+                      }}>
+                        <div style={{ fontSize: 10, fontWeight: 600, color: '#4f46e5', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          Amortizing Payment
+                        </div>
+                        <div style={{ fontSize: 10, color: '#6366f1', marginBottom: 4 }}>per $100K · After IO</div>
+                        <div style={{ fontSize: 22, fontWeight: 800, color: '#3730a3' }}>
+                          ${monthlyPayment.toFixed(0)}
+                        </div>
+                        <div style={{ fontSize: 10, color: '#4f46e5', marginTop: 2 }}>/month</div>
+                      </div>
+                      <div style={{
+                        padding: 14, borderRadius: 10,
+                        background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
+                        textAlign: 'center',
+                      }}>
+                        <div style={{ fontSize: 10, fontWeight: 600, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          IO Savings
+                        </div>
+                        <div style={{ fontSize: 10, color: '#22c55e', marginBottom: 4 }}>monthly cash flow boost</div>
+                        <div style={{ fontSize: 22, fontWeight: 800, color: '#15803d' }}>
+                          ${ioSavings.toFixed(0)}
+                        </div>
+                        <div style={{ fontSize: 10, color: '#16a34a', marginTop: 2 }}>/month saved</div>
+                      </div>
+                    </div>
+
+                    {/* Timeline visualization */}
+                    <div style={{ marginTop: 16 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 8 }}>LOAN TIMELINE</div>
+                      <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', height: 32 }}>
+                        <div style={{
+                          flex: tpl.financing.io_years,
+                          background: 'linear-gradient(90deg, #8b5cf6, #a78bfa)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 11, fontWeight: 700, color: '#fff',
+                          minWidth: 60,
+                        }}>
+                          IO · {tpl.financing.io_years}yr{tpl.financing.io_years > 1 ? 's' : ''}
+                        </div>
+                        {tpl.financing.loan_term_years - tpl.financing.io_years > 0 && (
+                          <div style={{
+                            flex: tpl.financing.loan_term_years - tpl.financing.io_years,
+                            background: 'linear-gradient(90deg, #6366f1, #818cf8)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 11, fontWeight: 700, color: '#fff',
+                            minWidth: 60,
+                          }}>
+                            Amortizing · {tpl.financing.loan_term_years - tpl.financing.io_years}yr{tpl.financing.loan_term_years - tpl.financing.io_years > 1 ? 's' : ''}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                        <span style={{ fontSize: 10, color: '#9ca3af' }}>Yr 0</span>
+                        <span style={{ fontSize: 10, color: '#9ca3af' }}>Yr {tpl.financing.loan_term_years}</span>
+                      </div>
+                    </div>
+
+                    {/* Info callout */}
+                    <div style={{
+                      marginTop: 14, padding: '10px 14px', borderRadius: 8,
+                      background: '#fffbeb', border: '1px solid #fde68a',
+                      display: 'flex', alignItems: 'flex-start', gap: 8,
+                    }}>
+                      <Info size={14} style={{ color: '#d97706', marginTop: 2, flexShrink: 0 }} />
+                      <div style={{ fontSize: 11, color: '#92400e', lineHeight: 1.5 }}>
+                        During the IO period, you pay only interest — no principal reduction. This maximizes cash flow
+                        early in the hold but means a larger balance remains at exit or refinance. Common in bridge loans
+                        and value-add strategies where you plan to stabilize and refi.
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Monthly payment preview */}
@@ -443,7 +638,7 @@ function TemplatesPage() {
               }}>
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 600, color: '#6366f1', textTransform: 'uppercase' }}>
-                    Est. Monthly Payment (per $100K loan)
+                    {hasIO ? 'Est. Amortizing Payment (per $100K loan)' : 'Est. Monthly Payment (per $100K loan)'}
                   </div>
                   <div style={{ fontSize: 11, color: '#818cf8', marginTop: 2 }}>
                     Based on rate &amp; amortization
