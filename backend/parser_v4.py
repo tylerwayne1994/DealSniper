@@ -302,6 +302,16 @@ Extract and structure the following information. BE EXTREMELY THOROUGH:
    - If individual line items add up to a different total than stated, report BOTH the stated total AND the sum of line items
    - ALWAYS include the page number where you found the expense data in the _confidence object
 
+3b. UTILITY RESPONSIBILITY (CRITICAL - Determine who pays each utility):
+   - Search for phrases like "tenant pays", "owner pays", "landlord responsible", "tenant responsible"
+   - Look for "RUBS" (Ratio Utility Billing System) mentions - means owner pays but bills back
+   - Check lease terms, expense notes, or utility sections
+   - Look for "sub-metered", "master-metered", "individually metered"
+   - Individually metered = tenant pays; master-metered = owner pays (RUBS opportunity)
+   - For each utility (water/sewer, electric, gas, trash), determine: "owner", "tenant", or "unknown"
+   - Set "overall" to: "owner_pays_all" if owner pays everything, "tenant_pays_all" if tenants pay everything, "split" if mixed, "unknown" if not specified
+   - Include any relevant notes about billing arrangements
+
 4. UNIT MIX (CRITICAL - Look for rent roll tables, unit breakdowns, or lease summaries):
    - SEARCH for tables showing unit types, counts, sizes, and rents
    - Look for sections labeled "Rent Roll", "Unit Mix", "Unit Summary", "Lease Schedule"
@@ -405,6 +415,14 @@ Return a JSON object with this EXACT structure:
     "taxes": 0,
     "insurance": 0,
     "utilities": 0,
+    "utilities_responsibility": {{
+      "overall": "unknown",
+      "water_sewer": "unknown",
+      "electric": "unknown",
+      "gas": "unknown",
+      "trash": "unknown",
+      "notes": ""
+    }},
     "repairs_maintenance": 0,
     "management": 0,
     "payroll": 0,

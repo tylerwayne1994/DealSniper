@@ -14,6 +14,7 @@ import {
   Rocket
 } from 'lucide-react';
 import { saveDeal } from '../../lib/dealsService';
+import { geocodeAddress } from '../../utils/geocode';
 
 // ============================================================================
 // Helper Functions
@@ -365,6 +366,20 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
   const pricePerUnit = totalUnits > 0 ? purchasePrice / totalUnits : 0;
   const valueCreation = fullCalcs?.valueCreation ?? 0;
 
+  // Pipeline metrics: user's total in pocket & post-refi cash flow
+  const initialEquity = fullCalcs?.financing?.totalEquityRequired || 0;
+  const userTotalInPocket = cashOutRefi - initialEquity;
+  const stabilizedNOI = fullCalcs?.stabilized?.noi || noiYear1;
+  const refiLoanAmount = refiValue * 0.75;
+  const refiRate = (fullCalcs?.financing?.interestRate || 6.5) / 100;
+  const refiAmort = fullCalcs?.financing?.amortYears || 30;
+  const refiMonthlyRate = refiRate / 12;
+  const refiNumPayments = refiAmort * 12;
+  const refiMonthlyPmt = refiMonthlyRate > 0
+    ? refiLoanAmount * (refiMonthlyRate * Math.pow(1 + refiMonthlyRate, refiNumPayments)) / (Math.pow(1 + refiMonthlyRate, refiNumPayments) - 1)
+    : 0;
+  const postRefiCashFlow = stabilizedNOI - (refiMonthlyPmt * 12);
+
   // Broker Info
   const brokerName = broker.name || property.listing_broker || 'Not Specified';
   const brokerPhone = broker.phone || property.broker_phone || '-';
@@ -401,6 +416,9 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
     setIsPushing(true);
     
     try {
+      // Geocode address for map pin
+      const coords = await geocodeAddress(address);
+
       // Save to Supabase with all data needed to reconstruct Results page
       await saveDeal({
         dealId,
@@ -409,6 +427,8 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
         purchasePrice,
         dealStructure,
         parsedData: scenarioData,      // Original parsed/transformed data
+        latitude: coords?.latitude,
+        longitude: coords?.longitude,
         scenarioData: {
           ...scenarioData,
           calculations: {
@@ -416,6 +436,8 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
             stabilizedCashFlow,
             refiValue,
             cashOutRefiAmount: cashOutRefi,
+            userTotalInPocket,
+            postRefiCashFlow,
             inPlaceCapRate,
             avgCashOnCash,
             dscr,

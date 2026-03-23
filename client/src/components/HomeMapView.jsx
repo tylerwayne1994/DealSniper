@@ -5,29 +5,13 @@ import Papa from 'papaparse';
 import { Building2, DollarSign, TrendingUp, MapPin, User, Phone, Mail, Home, GraduationCap, Hospital, Briefcase, X } from 'lucide-react';
 import { loadPipelineDeals, deleteDeal } from '../lib/dealsService';
 import { PipelineTable } from './tables';
+import { geocodeAddress } from '../utils/geocode';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
 const TIGERWEB_ZCTA_URL = `${API_URL}/api/tigerweb/zcta`;
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN || '';
-
-// Geocode an address to coordinates using Mapbox Geocoding API
-async function geocodeAddress(address) {
-  try {
-    const response = await fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${mapboxgl.accessToken}`
-    );
-    const data = await response.json();
-    if (data.features && data.features.length > 0) {
-      const [longitude, latitude] = data.features[0].center;
-      return { longitude, latitude };
-    }
-  } catch (error) {
-    console.error('Geocoding error:', error);
-  }
-  return null;
-}
 
 function HomeMapView() {
   const navigate = useNavigate();

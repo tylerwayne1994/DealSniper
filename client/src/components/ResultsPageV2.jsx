@@ -39,6 +39,7 @@ import ExitStrategyTab from './results-tabs/ExitStrategyTab';
 import CompressedTab from './results-tabs/CompressedTab';
 import UnderwritingTablePage from '../pages/UnderwritingTablePage';
 import { saveDeal, updateDeal, loadDeal } from '../lib/dealsService';
+import { geocodeAddress } from '../utils/geocode';
 import ScenarioSheet from './ScenarioSheet';
 import { supabase } from '../lib/supabase';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
@@ -525,6 +526,9 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
 
       const dealStructure = recommendedStructure || scenarioData?.recommended_structure || scenarioData?.deal_structure?.recommended || 'Traditional Financing';
 
+      // Geocode address for map pin
+      const coords = await geocodeAddress(address);
+
       await saveDeal({
         dealId,
         address,
@@ -532,6 +536,8 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
         purchasePrice,
         dealStructure,
         parsedData: scenarioData,
+        latitude: coords?.latitude,
+        longitude: coords?.longitude,
         scenarioData: {
           ...scenarioData,
           calculations: {

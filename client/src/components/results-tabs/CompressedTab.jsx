@@ -173,7 +173,7 @@ export default function CompressedTab({
     : (fullCalcs?.financing?.monthlyPayment || 0);
   const downPayment = hasMultiLoanStack
     ? (dsDownPayment ?? (purchasePrice - loanAmount))
-    : (purchasePrice - loanAmount);
+    : (fullCalcs?.financing?.downPayment || (purchasePrice - loanAmount));
   const downPaymentPct = purchasePrice > 0 ? ((downPayment / purchasePrice) * 100) : 0;
   const closingCostPct = purchasePrice > 0 ? ((closingCosts / purchasePrice) * 100) : 0;
   const nonFinancedCapEx = capitalExpenditure;

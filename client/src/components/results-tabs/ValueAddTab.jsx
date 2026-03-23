@@ -142,6 +142,12 @@ export default function ValueAddTab({
   const totalPropertySqft = unitMix.reduce((s, u) => s + ((u.units || 0) * (u.sqft || u.avg_sqft || 800)), 0);
   const avgSqftPerUnit = totalUnits > 0 ? totalPropertySqft / totalUnits : 800;
 
+  // Utility responsibility detection from OM parser
+  const utilResp = expenses.utilities_responsibility || {};
+  const utilRespOverall = utilResp.overall || 'unknown';
+  const utilRespByType = { water_sewer: utilResp.water_sewer || 'unknown', electric: utilResp.electric || 'unknown', gas: utilResp.gas || 'unknown', trash: utilResp.trash || 'unknown' };
+  const utilRespNotes = utilResp.notes || '';
+
   const utilityBreakdown = {};
   Object.entries(utilityProportions).forEach(([key, pct]) => {
     const customVal = rubsConfig[key]?.annual_cost;
@@ -152,7 +158,9 @@ export default function ValueAddTab({
   const rubsSchedule = Object.entries(utilityBreakdown).map(([utility, annualCost]) => {
     const cost = Number(annualCost) || 0;
     const cfg = rubsConfig[utility] || {};
-    const lineEnabled = rubsEnabled && (cfg.enabled !== false);
+    // Auto-disable RUBS for utilities tenants already pay
+    const tenantPays = utilRespByType[utility] === 'tenant';
+    const lineEnabled = rubsEnabled && !tenantPays && (cfg.enabled !== false);
     const method = cfg.split_method || 'per_unit';
     const recoveryPct = cfg.recovery_pct != null ? cfg.recovery_pct : (defaultRecovery[utility] || 90);
     const recoverableAnnual = cost * (recoveryPct / 100);
@@ -166,7 +174,7 @@ export default function ValueAddTab({
         monthlyPerUnit = occUnits > 0 ? recoverableAnnual / 12 / occUnits : 0;
       }
     }
-    return { utility, label: utilityLabels[utility] || utility.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), annualCost: cost, monthlyCost: cost / 12, perUnitMonthly: totalUnits > 0 ? cost / 12 / totalUnits : 0, enabled: lineEnabled, method, recoveryPct, ownerRetainPct: 100 - recoveryPct, recoverableAnnual: lineEnabled ? recoverableAnnual : 0, ownerRetainedAnnual: lineEnabled ? cost - recoverableAnnual : cost, monthlyPerUnit, annualRecovery: lineEnabled ? monthlyPerUnit * totalUnits * 12 : 0 };
+    return { utility, label: utilityLabels[utility] || utility.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), annualCost: cost, monthlyCost: cost / 12, perUnitMonthly: totalUnits > 0 ? cost / 12 / totalUnits : 0, enabled: lineEnabled, tenantPays, method, recoveryPct, ownerRetainPct: 100 - recoveryPct, recoverableAnnual: lineEnabled ? recoverableAnnual : 0, ownerRetainedAnnual: lineEnabled ? cost - recoverableAnnual : cost, monthlyPerUnit, annualRecovery: lineEnabled ? monthlyPerUnit * totalUnits * 12 : 0 };
   });
 
   const totalRubsRecovery = rubsSchedule.reduce((s, r) => s + r.annualRecovery, 0);
@@ -1003,14 +1011,51 @@ export default function ValueAddTab({
             </div>
           </div>
 
+          {/* Utility Responsibility Detection Banner */}
+          {utilRespOverall !== 'unknown' && (
+            <div style={{
+              margin: '12px 0 16px',
+              padding: '12px 16px',
+              borderRadius: 10,
+              background: utilRespOverall === 'tenant_pays_all' ? '#fef2f2' : utilRespOverall === 'owner_pays_all' ? '#ecfdf5' : '#fffbeb',
+              border: `1px solid ${utilRespOverall === 'tenant_pays_all' ? '#fecaca' : utilRespOverall === 'owner_pays_all' ? '#a7f3d0' : '#fde68a'}`
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <span style={{ fontSize: 14 }}>{utilRespOverall === 'tenant_pays_all' ? '🏠' : utilRespOverall === 'owner_pays_all' ? '🏢' : '↔️'}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>
+                  {utilRespOverall === 'tenant_pays_all' ? 'Tenants Pay All Utilities' :
+                   utilRespOverall === 'owner_pays_all' ? 'Owner Pays All Utilities — RUBS Opportunity' :
+                   'Split Utility Responsibility'}
+                </span>
+                <span style={{ fontSize: 10, fontWeight: 600, color: '#6b7280', background: '#f3f4f6', padding: '2px 8px', borderRadius: 4 }}>FROM OM</span>
+              </div>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                {Object.entries(utilRespByType).map(([key, who]) => (
+                  who !== 'unknown' && (
+                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#374151' }}>
+                      <span style={{
+                        width: 8, height: 8, borderRadius: '50%', display: 'inline-block',
+                        background: who === 'tenant' ? '#ef4444' : '#10b981'
+                      }} />
+                      <span style={{ fontWeight: 600 }}>{utilityLabels[key] || key}:</span>
+                      <span>{who === 'tenant' ? 'Tenant' : 'Owner'}</span>
+                    </div>
+                  )
+                ))}
+              </div>
+              {utilRespNotes && <div style={{ fontSize: 11, color: '#6b7280', marginTop: 6, fontStyle: 'italic' }}>{utilRespNotes}</div>}
+            </div>
+          )}
+
           {/* Current Utility Costs */}
           <div style={{ marginTop: 20, marginBottom: 20 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: vLB, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10 }}>Current Utility Costs</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 }}>
               {rubsSchedule.map((row) => (
-                <div key={row.utility} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', border: `1px solid ${vB}`, textAlign: 'center' }}>
+                <div key={row.utility} style={{ background: row.tenantPays ? '#fef2f2' : '#f8fafc', borderRadius: 10, padding: '12px 14px', border: `1px solid ${row.tenantPays ? '#fecaca' : vB}`, textAlign: 'center', position: 'relative' }}>
+                  {row.tenantPays && <div style={{ position: 'absolute', top: 4, right: 6, fontSize: 9, fontWeight: 700, color: '#dc2626', background: '#fee2e2', padding: '1px 6px', borderRadius: 4 }}>TENANT PAYS</div>}
                   <div style={{ fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase', marginBottom: 4 }}>{row.label}</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: vVL }}>{vFmt(row.annualCost)}<span style={{ fontSize: 10, color: vLB }}>/yr</span></div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: row.tenantPays ? '#9ca3af' : vVL, textDecoration: row.tenantPays ? 'line-through' : 'none' }}>{vFmt(row.annualCost)}<span style={{ fontSize: 10, color: vLB }}>/yr</span></div>
                   <div style={{ fontSize: 11, color: vLB, marginTop: 2 }}>{vFmt(Math.round(row.monthlyCost))}/mo</div>
                   <div style={{ fontSize: 10, color: vLB }}>{vFmt(Math.round(row.perUnitMonthly))}/unit/mo</div>
                 </div>
@@ -1045,8 +1090,11 @@ export default function ValueAddTab({
                   </thead>
                   <tbody>
                     {rubsSchedule.map((row) => (
-                      <tr key={row.utility} style={{ borderBottom: `1px solid ${vB}`, opacity: row.enabled ? 1 : 0.5 }}>
-                        <td style={{ padding: '12px 12px', fontWeight: 600, color: vVL }}>{row.label}</td>
+                      <tr key={row.utility} style={{ borderBottom: `1px solid ${vB}`, opacity: row.tenantPays ? 0.4 : (row.enabled ? 1 : 0.5) }}>
+                        <td style={{ padding: '12px 12px', fontWeight: 600, color: vVL }}>
+                          {row.label}
+                          {row.tenantPays && <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 700, color: '#dc2626', background: '#fee2e2', padding: '1px 6px', borderRadius: 4 }}>TENANT PAYS</span>}
+                        </td>
                         <td style={{ padding: '12px 12px', textAlign: 'right' }}>
                           <input type="number" value={row.annualCost} onChange={e => {
                             const v = parseFloat(e.target.value) || 0;

@@ -468,10 +468,11 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
     }
   });
   // === YEAR 1 METRICS ===
-  // Calculate from backend data only
+  // Use IO-aware debt service for year 1 when interest-only period is active
+  const year1DebtService = ioYears > 0 ? ioAnnualDebtService : annualDebtService;
   const capRate = purchasePrice > 0 && noi > 0 ? (noi / purchasePrice) * 100 : 0;
-  const cashFlowAfterDebt = noi - annualDebtService;
-  const dscr = annualDebtService > 0 && noi > 0 ? noi / annualDebtService : 0;
+  const cashFlowAfterDebt = noi - year1DebtService;
+  const dscr = year1DebtService > 0 && noi > 0 ? noi / year1DebtService : 0;
   const debtYield = loanAmount > 0 && noi > 0 ? (noi / loanAmount) * 100 : 0;
   const cashOnCash = totalEquityRequired > 0 ? (cashFlowAfterDebt / totalEquityRequired) * 100 : 0;
   const expenseRatio = effectiveGrossIncome > 0 && totalOperatingExpenses > 0 ? (totalOperatingExpenses / effectiveGrossIncome) * 100 : 0;
@@ -993,7 +994,7 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
       totalOperatingExpenses: Math.round(totalOperatingExpenses),
       noi: Math.round(noi),
       capRate: capRate,
-      debtService: Math.round(annualDebtService),
+      debtService: Math.round(year1DebtService),
       cashFlow: Math.round(cashFlowAfterDebt),
       cashFlowAfterFinancing: projections[0] ? projections[0].cashFlowAfterFinancing : Math.round(cashFlowAfterDebt),
       dscr: dscr,
@@ -1037,6 +1038,7 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
       ioAnnualDebtService: Math.round(ioAnnualDebtService),
       amortizingMonthlyPayment: Math.round(amortizingMonthlyPayment),
       amortizingAnnualDebtService: Math.round(amortizingAnnualDebtService),
+      downPayment: Math.round(rawDownPayment),
       totalEquityRequired: Math.round(totalEquityRequired)
     },
     
