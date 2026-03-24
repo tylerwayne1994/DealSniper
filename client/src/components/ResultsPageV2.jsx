@@ -26,6 +26,7 @@ import {
   MetricCard 
 } from './AdvancedViews';
 import { calculateSensitivity, calculateFullAnalysis } from '../utils/realEstateCalculations';
+import { exportToExcel } from '../utils/exportToExcel';
 import SensitivityAnalysisTab from './results-tabs/SensitivityAnalysisTab';
 import T12AuditorTab from './results-tabs/T12AuditorTab';
 import { CostSegAnalysisView } from './CostSegAnalysis';
@@ -147,6 +148,10 @@ const ResultsPageV2 = ({
       if (e.key === 'p' || e.key === 'P') {
         e.preventDefault();
         if (!isExportingPDF) handleExportPDF();
+      }
+      if (e.key === 'e' || e.key === 'E') {
+        e.preventDefault();
+        exportToExcel(scenarioData, calculations);
       }
     };
     window.addEventListener('keydown', handler);
@@ -3037,6 +3042,25 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
             >
               <Download size={14} />
               {isExportingPDF ? 'Exporting...' : 'Export to PDF'}
+            </button>
+            <button
+              onClick={() => exportToExcel(scenarioData, calculations)}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#059669',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <FileSpreadsheet size={14} />
+              Export to Excel
             </button>
             <button
               onClick={handleGeneratePitchDeck}
