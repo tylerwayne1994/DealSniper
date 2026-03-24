@@ -454,6 +454,37 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
           </div>
         </div>
 
+        {/* ═══ ACTIVE FINANCING PROGRAM CARD ═══ */}
+        {financing.selected_program && (
+          <div style={{
+            backgroundColor:'white',borderRadius:14,padding:'16px 24px',marginBottom:20,
+            border:`2px solid ${AC}40`,boxShadow:`0 2px 12px ${AC}15`,
+            display:'flex',alignItems:'center',gap:14
+          }}>
+            <div style={{
+              width:42,height:42,borderRadius:10,
+              background:`linear-gradient(135deg,${AC},#7c3aed)`,
+              display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0
+            }}>
+              <Shield size={20} color='white'/>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:11,fontWeight:600,color:LB,textTransform:'uppercase',letterSpacing:'0.06em'}}>Active Financing Program</div>
+              <div style={{fontSize:17,fontWeight:800,color:VL,marginTop:2}}>{financing.selected_program}</div>
+            </div>
+            {financing.io_years > 0 && (
+              <div style={{
+                padding:'5px 12px',borderRadius:20,fontSize:11,fontWeight:700,
+                backgroundColor:'#f3e8ff',color:'#7c3aed',border:'1px solid #e9d5ff'
+              }}>IO · {financing.io_years}yr</div>
+            )}
+            <div style={{
+              padding:'5px 12px',borderRadius:20,fontSize:11,fontWeight:700,
+              backgroundColor:`${AC}10`,color:AC,border:`1px solid ${AC}30`
+            }}>{financing.ltv || 0}% LTV</div>
+          </div>
+        )}
+
         {/* ═══ 1. FINANCING ═══ */}
         <div style={SC}>
           <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:20}}>

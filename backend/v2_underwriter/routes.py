@@ -1879,6 +1879,7 @@ NET OPERATING INCOME EXTRACTION — THIS IS CRITICAL, DO NOT SKIP:
         response = anthropic_client.messages.create(
             model=ANTHROPIC_MODEL,
             max_tokens=4000,
+            temperature=0,  # Deterministic for consistent parsing of same OM
             messages=messages
         )
 

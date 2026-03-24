@@ -849,6 +849,37 @@ function UnderwriteV2Page() {
     transformedData.financing.io_years = transformedData.financing.io_years ?? tDef.io_years;
     transformedData.financing.loan_fees_percent = transformedData.financing.loan_fees_percent || tDef.loan_fees_percent;
 
+    // ═══ CRITICAL: Push wizard financing into pricing_financing ═══
+    // The calc engine reads loan amount, debt service, interest rate, etc.
+    // from pricing_financing. Without this sync, the Overview/Mortgage cards
+    // show the OM parser's values instead of the user's template/wizard choices.
+    if (transformedData.financing && transformedData.pricing_financing?.price) {
+      const wizPrice = transformedData.pricing_financing.price;
+      const wizLtv = transformedData.financing.ltv || 75;
+      const wizRate = transformedData.financing.interest_rate || 6;
+      const wizAmort = transformedData.financing.amortization_years || 30;
+      const wizTerm = transformedData.financing.loan_term_years || 10;
+
+      const wizLoanAmt = wizPrice * wizLtv / 100;
+      const wizDown = wizPrice - wizLoanAmt;
+      const wizRateDecimal = wizRate / 100;
+      const wizN = wizAmort * 12;
+      const wizR = wizRateDecimal / 12;
+      const wizMonthly = wizR > 0
+        ? wizLoanAmt * (wizR * Math.pow(1 + wizR, wizN)) / (Math.pow(1 + wizR, wizN) - 1)
+        : (wizN > 0 ? wizLoanAmt / wizN : 0);
+
+      transformedData.pricing_financing.ltv = wizLtv;
+      transformedData.pricing_financing.loan_amount = wizLoanAmt;
+      transformedData.pricing_financing.down_payment = wizDown;
+      transformedData.pricing_financing.down_payment_pct = 100 - wizLtv;
+      transformedData.pricing_financing.interest_rate = wizRateDecimal;
+      transformedData.pricing_financing.amortization_years = wizAmort;
+      transformedData.pricing_financing.term_years = wizTerm;
+      transformedData.pricing_financing.monthly_payment = wizMonthly;
+      transformedData.pricing_financing.annual_debt_service = wizMonthly * 12;
+    }
+
     // Apply exit details + investment criteria from template
     if (uwTemplate) {
       if (!transformedData.exit_details) {
@@ -1249,6 +1280,7 @@ function UnderwriteV2Page() {
                             amortization_years: fin.amortization_years || prev.financing?.amortization_years || 30,
                             io_years: fin.io_years ?? prev.financing?.io_years ?? 0,
                             loan_fees_percent: fin.loan_fees_percent || prev.financing?.loan_fees_percent || 1.5,
+                            selected_program: 'My Template',
                           },
                         }));
                       }}
@@ -1281,6 +1313,7 @@ function UnderwriteV2Page() {
                               amortization_years: fin.amortization_years,
                               io_years: fin.io_years,
                               loan_fees_percent: fin.loan_fees_percent,
+                              selected_program: preset.name,
                             },
                           }));
                         }}
@@ -1371,16 +1404,22 @@ function UnderwriteV2Page() {
                   const P = verifiedData.pricing_financing.price * (verifiedData?.financing?.ltv || 75) / 100;
                   const r = (verifiedData?.financing?.interest_rate || 6) / 100 / 12;
                   const n = (verifiedData?.financing?.amortization_years || 30) * 12;
-                  const monthly = r > 0 ? P * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1) : (P / n);
+                  const ioYrs = verifiedData?.financing?.io_years || 0;
+                  const amortMonthly = r > 0 ? P * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1) : (P / n);
+                  const ioMonthly = P * r;
+                  const monthly = ioYrs > 0 ? ioMonthly : amortMonthly;
                   return (
                     <div style={{ marginTop: 20, padding: 16, background: '#fff', borderRadius: 10, border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: 8, background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <DollarSign size={18} color="#2563eb" />
+                        <div style={{ width: 36, height: 36, borderRadius: 8, background: ioYrs > 0 ? '#f5f3ff' : '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <DollarSign size={18} color={ioYrs > 0 ? '#7c3aed' : '#2563eb'} />
                         </div>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: '#475569' }}>Monthly Payment</span>
+                        <div>
+                          <span style={{ fontSize: 14, fontWeight: 600, color: '#475569' }}>Monthly Payment</span>
+                          {ioYrs > 0 && <span style={{ fontSize: 11, color: '#7c3aed', fontWeight: 600, marginLeft: 8 }}>IO · Yrs 1–{ioYrs}</span>}
+                        </div>
                       </div>
-                      <span style={{ fontSize: 22, fontWeight: 800, color: '#1e293b' }}>
+                      <span style={{ fontSize: 22, fontWeight: 800, color: ioYrs > 0 ? '#7c3aed' : '#1e293b' }}>
                         ${monthly.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                       </span>
                     </div>

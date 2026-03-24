@@ -2,6 +2,10 @@
 import mapboxgl from 'mapbox-gl';
 
 export async function geocodeAddress(address) {
+  // Ensure token is set even if map components haven't mounted yet
+  if (!mapboxgl.accessToken) {
+    mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN || '';
+  }
   if (!address || !mapboxgl.accessToken) return null;
   try {
     const response = await fetch(
