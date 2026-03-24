@@ -323,8 +323,15 @@ function DashboardPage() {
     company: '',
     title: '',
     city: '',
-    state: ''
+    state: '',
+    brandLogoUrl: '',
+    brandPrimaryColor: '#2563eb',
+    brandSecondaryColor: '#1A1A1A',
+    brandAccentColor: '#0052FF',
+    brandCompanyName: '',
+    brandLetterheadText: ''
   });
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   // Require an auth session; otherwise redirect to login
   useEffect(() => {
@@ -1002,6 +1009,188 @@ function DashboardPage() {
 
       {/* Change Password Card */}
       <ChangePasswordCard cardStyle={cardStyle} inputStyle={inputStyle} labelStyle={labelStyle} />
+
+      {/* White-Label Branding Card */}
+      <div style={cardStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px' }}>
+          <div style={{ 
+            width: '40px', 
+            height: '40px', 
+            borderRadius: '10px', 
+            backgroundColor: '#ede9fe', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            marginRight: '12px'
+          }}>
+            <Presentation size={20} color="#7c3aed" />
+          </div>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827' }}>
+              White-Label Branding
+            </h3>
+            <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#6b7280' }}>
+              Brand your pitch decks, LOIs, contracts, and PDF reports
+            </p>
+          </div>
+        </div>
+
+        {/* Logo Upload */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={labelStyle}>Company Logo</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            {profile.brandLogoUrl ? (
+              <div style={{ 
+                width: '80px', height: '80px', borderRadius: '8px', border: '1px solid #e5e7eb',
+                overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: '#f9fafb'
+              }}>
+                <img src={profile.brandLogoUrl} alt="Logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+              </div>
+            ) : (
+              <div style={{ 
+                width: '80px', height: '80px', borderRadius: '8px', border: '2px dashed #d1d5db',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: '#f9fafb', color: '#9ca3af', fontSize: '12px', textAlign: 'center'
+              }}>
+                No logo
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                padding: '8px 16px', backgroundColor: '#f3f4f6', border: '1px solid #d1d5db',
+                borderRadius: '6px', fontSize: '13px', fontWeight: '600', color: '#374151',
+                cursor: uploadingLogo ? 'not-allowed' : 'pointer'
+              }}>
+                {uploadingLogo ? 'Uploading...' : 'Upload Logo'}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  style={{ display: 'none' }}
+                  disabled={uploadingLogo}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 2 * 1024 * 1024) {
+                      alert('Logo must be under 2MB');
+                      return;
+                    }
+                    setUploadingLogo(true);
+                    try {
+                      const ext = file.name.split('.').pop().toLowerCase();
+                      const path = `brand-logos/${profile.id}/${Date.now()}.${ext}`;
+                      const { error: uploadError } = await supabase.storage.from('deal-images').upload(path, file, {
+                        contentType: file.type, upsert: true
+                      });
+                      if (uploadError) throw uploadError;
+                      const { data: urlData } = supabase.storage.from('deal-images').getPublicUrl(path);
+                      setProfile(prev => ({ ...prev, brandLogoUrl: urlData.publicUrl }));
+                    } catch (err) {
+                      console.error('Logo upload error:', err);
+                      alert('Failed to upload logo: ' + err.message);
+                    } finally {
+                      setUploadingLogo(false);
+                    }
+                  }}
+                />
+              </label>
+              {profile.brandLogoUrl && (
+                <button
+                  type="button"
+                  onClick={() => setProfile(prev => ({ ...prev, brandLogoUrl: '' }))}
+                  style={{ fontSize: '12px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}
+                >
+                  Remove logo
+                </button>
+              )}
+              <span style={{ fontSize: '11px', color: '#9ca3af' }}>PNG, JPG, or SVG — max 2MB</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Brand Company Name & Letterhead */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '12px' : '20px', marginBottom: '20px' }}>
+          <div>
+            <label style={labelStyle}>Brand Name (on documents)</label>
+            <input
+              type="text"
+              name="brandCompanyName"
+              value={profile.brandCompanyName}
+              onChange={handleProfileChange}
+              style={inputStyle}
+              placeholder="Acme Capital Group"
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>Letterhead Tagline</label>
+            <input
+              type="text"
+              name="brandLetterheadText"
+              value={profile.brandLetterheadText}
+              onChange={handleProfileChange}
+              style={inputStyle}
+              placeholder="Institutional-Quality Real Estate Investments"
+            />
+          </div>
+        </div>
+
+        {/* Brand Colors */}
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ ...labelStyle, marginBottom: '12px' }}>Brand Colors</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+            {[
+              { key: 'brandPrimaryColor', label: 'Primary' },
+              { key: 'brandSecondaryColor', label: 'Secondary' },
+              { key: 'brandAccentColor', label: 'Accent' }
+            ].map(({ key, label }) => (
+              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="color"
+                  value={profile[key]}
+                  onChange={(e) => setProfile(prev => ({ ...prev, [key]: e.target.value }))}
+                  style={{ width: '36px', height: '36px', border: '1px solid #d1d5db', borderRadius: '6px', cursor: 'pointer', padding: 0 }}
+                />
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>{label}</div>
+                  <div style={{ fontSize: '11px', color: '#9ca3af', fontFamily: 'monospace' }}>{profile[key]}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Live Preview */}
+        <div style={{ 
+          marginTop: '16px', padding: '20px', borderRadius: '8px', 
+          border: '1px solid #e5e7eb', backgroundColor: '#fafafa'
+        }}>
+          <div style={{ fontSize: '11px', fontWeight: '600', color: '#9ca3af', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            Preview — Document Header
+          </div>
+          <div style={{ 
+            display: 'flex', alignItems: 'center', gap: '12px', 
+            paddingBottom: '12px', borderBottom: `3px solid ${profile.brandAccentColor}`
+          }}>
+            {profile.brandLogoUrl && (
+              <img src={profile.brandLogoUrl} alt="" style={{ height: '36px', objectFit: 'contain' }} />
+            )}
+            <div>
+              <div style={{ fontSize: '16px', fontWeight: '700', color: profile.brandSecondaryColor }}>
+                {profile.brandCompanyName || profile.company || 'Your Company'}
+              </div>
+              {profile.brandLetterheadText && (
+                <div style={{ fontSize: '11px', color: '#6b7280' }}>{profile.brandLetterheadText}</div>
+              )}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+            <div style={{ width: '60px', height: '8px', borderRadius: '4px', backgroundColor: profile.brandPrimaryColor }} />
+            <div style={{ width: '40px', height: '8px', borderRadius: '4px', backgroundColor: profile.brandAccentColor }} />
+            <div style={{ width: '80px', height: '8px', borderRadius: '4px', backgroundColor: profile.brandSecondaryColor, opacity: 0.3 }} />
+          </div>
+        </div>
+      </div>
 
       {/* Save Button */}
       <button

@@ -39,7 +39,7 @@ import WaterfallTab from './results-tabs/WaterfallTab';
 import ExitStrategyTab from './results-tabs/ExitStrategyTab';
 import CompressedTab from './results-tabs/CompressedTab';
 import UnderwritingTablePage from '../pages/UnderwritingTablePage';
-import { saveDeal, updateDeal, loadDeal } from '../lib/dealsService';
+import { saveDeal, updateDeal, loadDeal, loadProfile } from '../lib/dealsService';
 import { geocodeAddress } from '../utils/geocode';
 import ScenarioSheet from './ScenarioSheet';
 import { supabase } from '../lib/supabase';
@@ -86,6 +86,23 @@ const ResultsPageV2 = ({
   const [documentAnalysis, setDocumentAnalysis] = useState(scenarioData?.document_analysis || null);
   // Track which expense fields user is entering as monthly (key -> true means monthly input mode)
   const [expenseMonthlyMode, setExpenseMonthlyMode] = useState({});
+
+  // White-label branding config for PDF export
+  const [brandConfig, setBrandConfig] = useState(null);
+  useEffect(() => {
+    loadProfile().then(p => {
+      if (p && (p.brandLogoUrl || p.brandCompanyName || p.brandAccentColor !== '#0052FF')) {
+        setBrandConfig({
+          logoUrl: p.brandLogoUrl,
+          companyName: p.brandCompanyName || p.company,
+          letterheadText: p.brandLetterheadText,
+          primaryColor: p.brandPrimaryColor,
+          secondaryColor: p.brandSecondaryColor,
+          accentColor: p.brandAccentColor
+        });
+      }
+    }).catch(() => {});
+  }, []);
 
   // â•â•â• Auto-save: track if deal is in pipeline, debounce saves â•â•â•
   const [isInPipeline, setIsInPipeline] = useState(false);
@@ -734,7 +751,8 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
         
         // Split into multiple pages if needed
         let yOffset = 0;
-        const maxPageHeight = pageHeight - (margin * 2) - 10;
+        const headerHeight = brandConfig ? 18 : 10;
+        const maxPageHeight = pageHeight - (margin * 2) - headerHeight;
         
         while (yOffset < imgHeight) {
           if (!isFirstPage) {
@@ -742,11 +760,45 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
           }
           isFirstPage = false;
           
-          // Add header with tab name
-          pdf.setFontSize(12);
-          pdf.setFontStyle('bold');
-          pdf.setTextColor(17, 24, 39);
-          pdf.text(tab.name, margin, margin + 5);
+          // Add branded header
+          if (brandConfig && (brandConfig.companyName || brandConfig.logoUrl)) {
+            // Accent color bar at top
+            const accent = brandConfig.accentColor || '#0052FF';
+            const r = parseInt(accent.slice(1, 3), 16);
+            const g = parseInt(accent.slice(3, 5), 16);
+            const b = parseInt(accent.slice(5, 7), 16);
+            pdf.setFillColor(r, g, b);
+            pdf.rect(margin, margin, contentWidth, 1.5, 'F');
+            
+            // Company name
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'bold');
+            const sec = brandConfig.secondaryColor || '#1A1A1A';
+            const sr = parseInt(sec.slice(1, 3), 16);
+            const sg = parseInt(sec.slice(3, 5), 16);
+            const sb = parseInt(sec.slice(5, 7), 16);
+            pdf.setTextColor(sr, sg, sb);
+            pdf.text(brandConfig.companyName || '', margin, margin + 6);
+            
+            // Tab name on the right
+            pdf.setFontSize(9);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(107, 114, 128);
+            pdf.text(tab.name, pageWidth - margin, margin + 6, { align: 'right' });
+            
+            // Letterhead tagline
+            if (brandConfig.letterheadText) {
+              pdf.setFontSize(7);
+              pdf.setTextColor(156, 163, 175);
+              pdf.text(brandConfig.letterheadText, margin, margin + 10);
+            }
+          } else {
+            // Default header: just tab name
+            pdf.setFontSize(12);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(17, 24, 39);
+            pdf.text(tab.name, margin, margin + 5);
+          }
           
           // Calculate how much of the image to show on this page
           const remainingHeight = imgHeight - yOffset;
@@ -776,7 +828,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
             pageImgData,
             'JPEG',
             margin,
-            margin + 10,
+            margin + headerHeight,
             imgWidth,
             heightForThisPage
           );

@@ -3676,6 +3676,24 @@ async def generate_loi(request: Request):
         raise HTTPException(status_code=400, detail="Property address required")
     if not buyer.get("name"):
         raise HTTPException(status_code=400, detail="Buyer name required")
+
+    # ----- Load branding config for letterhead -----
+    loi_brand = {"logo_url": "", "company_name": "", "letterhead_text": "", "accent_color": "#0052FF"}
+    try:
+        loi_profile_id = get_current_profile_id(request)
+        from token_manager import get_supabase as _loi_sb
+        _lsb = _loi_sb()
+        loi_brand_resp = _lsb.table("profiles").select(
+            "brand_logo_url, brand_company_name, brand_letterhead_text, brand_accent_color"
+        ).eq("id", loi_profile_id).single().execute()
+        if loi_brand_resp.data:
+            lbd = loi_brand_resp.data
+            loi_brand["logo_url"] = lbd.get("brand_logo_url") or ""
+            loi_brand["company_name"] = lbd.get("brand_company_name") or ""
+            loi_brand["letterhead_text"] = lbd.get("brand_letterhead_text") or ""
+            loi_brand["accent_color"] = lbd.get("brand_accent_color") or "#0052FF"
+    except Exception:
+        pass
     
     # Format currency values
     def fmt(val):
@@ -3774,6 +3792,16 @@ ADDITIONAL TERMS/NOTES:
 Today's Date: {datetime.now().strftime('%B %d, %Y')}
 
 Generate a complete, professional LOI ready for submission. Include appropriate sections for this {deal_structure} deal structure."""
+
+    # Inject letterhead branding into the LOI prompt
+    if loi_brand["company_name"] or loi_brand["letterhead_text"]:
+        letterhead_block = "\n\nLETTERHEAD / BRANDING:\n"
+        if loi_brand["company_name"]:
+            letterhead_block += f"- Begin the LOI with the company header: {loi_brand['company_name']}\n"
+        if loi_brand["letterhead_text"]:
+            letterhead_block += f"- Include tagline under company name: {loi_brand['letterhead_text']}\n"
+        letterhead_block += "- Place this letterhead at the top of the document before the date and recipient lines.\n"
+        user_message += letterhead_block
 
     log.info(f"[V2] Generating LOI for {deal.get('address')} - {deal_structure}")
     
@@ -4406,6 +4434,34 @@ async def generate_pitch_deck(request: Request, deal_id: str):
     structure_type = (body.get("structureType") or "jv").lower()
     generation_mode = (body.get("mode") or "claude").lower()  # "claude" or "manus"
 
+    # ----- Load branding config from profile -----
+    brand_config = {
+        "accent_color": "#0052FF",
+        "secondary_color": "#1A1A1A",
+        "primary_color": "#2563eb",
+        "logo_url": "",
+        "company_name": "",
+        "letterhead_text": "",
+    }
+    try:
+        if profile_id:
+            from token_manager import get_supabase as _brand_sb
+            _bsb = _brand_sb()
+            brand_resp = _bsb.table("profiles").select(
+                "brand_logo_url, brand_primary_color, brand_secondary_color, brand_accent_color, brand_company_name, brand_letterhead_text"
+            ).eq("id", profile_id).single().execute()
+            if brand_resp.data:
+                bd = brand_resp.data
+                brand_config["accent_color"] = bd.get("brand_accent_color") or "#0052FF"
+                brand_config["secondary_color"] = bd.get("brand_secondary_color") or "#1A1A1A"
+                brand_config["primary_color"] = bd.get("brand_primary_color") or "#2563eb"
+                brand_config["logo_url"] = bd.get("brand_logo_url") or ""
+                brand_config["company_name"] = bd.get("brand_company_name") or ""
+                brand_config["letterhead_text"] = bd.get("brand_letterhead_text") or ""
+                log.info(f"[PitchDeck] Loaded branding: accent={brand_config['accent_color']}, logo={'yes' if brand_config['logo_url'] else 'no'}")
+    except Exception as brand_err:
+        log.warning(f"[PitchDeck] Could not load branding config: {brand_err}")
+
     contact_info = body.get("contactInfo") or {}
     sponsor_name = contact_info.get("sponsorName") or "[Sponsor Name]"
     email = contact_info.get("email") or "[Email]"
@@ -4639,6 +4695,21 @@ STABILIZATION & EXIT:
         s2_prompt_tokens = 0
         s2_completion_tokens = 0
 
+        # Build branding logo instruction for prompts
+        brand_logo_instruction = ""
+        if brand_config["logo_url"]:
+            brand_logo_instruction = (
+                f'\n    *   **Branding:** On the Title Page (slide 1) and Contact slide (slide 16), include the company logo '
+                f'using `<img src="{brand_config["logo_url"]}" style="height:48px;object-fit:contain;" />` near the top-left. '
+                f'Company name: "{brand_config["company_name"] or sponsor_name}". '
+                f'Tagline: "{brand_config["letterhead_text"]}".\n'
+            )
+        elif brand_config["company_name"]:
+            brand_logo_instruction = (
+                f'\n    *   **Branding:** On the Title Page (slide 1) and Contact slide (slide 16), display the company name '
+                f'"{brand_config["company_name"]}" prominently. Tagline: "{brand_config["letterhead_text"]}".\n'
+            )
+
         if generation_mode == "manus" and manus_is_available():
             # --- MANUS PATH (Premium) ---
             log.info(f"[PitchDeck] === STAGE 2: Manus Designer ===")
@@ -4646,6 +4717,9 @@ STABILIZATION & EXIT:
                 from .manus_client import create_task, poll_until_complete, extract_slides_from_task
 
                 manus_prompt = STAGE_2_MANUS_DESIGN_PROMPT_TEMPLATE.replace("{deal_summary}", deal_summary)
+                manus_prompt = manus_prompt.replace("{brand_accent_color}", brand_config["accent_color"])
+                manus_prompt = manus_prompt.replace("{brand_secondary_color}", brand_config["secondary_color"])
+                manus_prompt = manus_prompt.replace("{brand_logo_instruction}", brand_logo_instruction)
                 task_id = create_task(manus_prompt)
                 log.info(f"[PitchDeck] Manus task created: {task_id}")
 
@@ -4662,6 +4736,9 @@ STABILIZATION & EXIT:
             log.info(f"[PitchDeck] === STAGE 2: Claude HTML Slide Generator ===")
 
             stage2_prompt = STAGE_2_CLAUDE_FALLBACK_PROMPT.replace("{deal_summary}", deal_summary)
+            stage2_prompt = stage2_prompt.replace("{brand_accent_color}", brand_config["accent_color"])
+            stage2_prompt = stage2_prompt.replace("{brand_secondary_color}", brand_config["secondary_color"])
+            stage2_prompt = stage2_prompt.replace("{brand_logo_instruction}", brand_logo_instruction)
 
             # Inject property images into prompt so Claude can embed them in slides
             if all_image_urls:
@@ -5197,6 +5274,19 @@ async def generate_contract(request: Request):
     if not entity.get("name"):
         raise HTTPException(status_code=400, detail="Entity name required")
 
+    # ----- Load branding config for contract letterhead -----
+    contract_brand = {"company_name": "", "letterhead_text": ""}
+    try:
+        if profile_id:
+            from token_manager import get_supabase as _contract_sb
+            _csb = _contract_sb()
+            cbr = _csb.table("profiles").select("brand_company_name, brand_letterhead_text").eq("id", profile_id).single().execute()
+            if cbr.data:
+                contract_brand["company_name"] = cbr.data.get("brand_company_name") or ""
+                contract_brand["letterhead_text"] = cbr.data.get("brand_letterhead_text") or ""
+    except Exception:
+        pass
+
     def fmt(val):
         if not val:
             return "TBD"
@@ -5260,6 +5350,16 @@ ADDITIONAL TERMS / NOTES:
 Today's Date: {datetime.now().strftime('%B %d, %Y')}
 
 Generate the COMPLETE contract package with ALL sections fully written out. Every placeholder must be replaced with the data above. The output must be professional, comprehensive, and ready for legal review."""
+
+    # Inject branding letterhead into contract
+    if contract_brand["company_name"] or contract_brand["letterhead_text"]:
+        brand_header = "\n\nDOCUMENT BRANDING:\n"
+        if contract_brand["company_name"]:
+            brand_header += f"- Add '{contract_brand['company_name']}' as the header on each document in the package.\n"
+        if contract_brand["letterhead_text"]:
+            brand_header += f"- Include tagline: '{contract_brand['letterhead_text']}' under the company name header.\n"
+        brand_header += "- Place this branded header at the top of each document, centered, before the document title.\n"
+        user_message += brand_header
 
     log.info(f"[V2] Generating contract {contract_package} for {deal.get('address')}")
 

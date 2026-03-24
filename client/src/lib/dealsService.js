@@ -685,7 +685,13 @@ export async function loadProfile() {
     company: data.company || '',
     title: data.title || '',
     city: data.city || '',
-    state: data.state || ''
+    state: data.state || '',
+    brandLogoUrl: data.brand_logo_url || '',
+    brandPrimaryColor: data.brand_primary_color || '#2563eb',
+    brandSecondaryColor: data.brand_secondary_color || '#1A1A1A',
+    brandAccentColor: data.brand_accent_color || '#0052FF',
+    brandCompanyName: data.brand_company_name || '',
+    brandLetterheadText: data.brand_letterhead_text || ''
   };
 }
 
@@ -711,6 +717,12 @@ export async function saveProfile(profile) {
     title: profile.title,
     city: profile.city,
     state: profile.state,
+    brand_logo_url: profile.brandLogoUrl || null,
+    brand_primary_color: profile.brandPrimaryColor || '#2563eb',
+    brand_secondary_color: profile.brandSecondaryColor || '#1A1A1A',
+    brand_accent_color: profile.brandAccentColor || '#0052FF',
+    brand_company_name: profile.brandCompanyName || null,
+    brand_letterhead_text: profile.brandLetterheadText || null,
     updated_at: new Date().toISOString()
   };
 

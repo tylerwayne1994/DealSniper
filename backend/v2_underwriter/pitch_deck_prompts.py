@@ -171,10 +171,10 @@ STAGE_2_MANUS_DESIGN_PROMPT_TEMPLATE = """
 3.  **Generate Slides:** For each slide in your outline, generate the complete, self-contained HTML and CSS code. The design must adhere strictly to the following style guide:
     *   **Aesthetic:** A professional and modern "Swiss International" design style. This means strong grid layouts, clean typography, significant use of negative space, and a focus on hierarchical information design. **Do not use** generic corporate styles, gradients, or drop shadows.
     *   **Container:** Each slide must render perfectly within a 1280x720 pixel container with no overflow.
-    *   **Colors:** Use `#FFFFFF` or `#F5F5F5` for the background, `#1A1A1A` for body text, and `#0052FF` (a strong blue) as the primary accent color for titles, highlights, and chart elements.
+    *   **Colors:** Use `#FFFFFF` or `#F5F5F5` for the background, `{brand_secondary_color}` for body text, and `{brand_accent_color}` as the primary accent color for titles, highlights, and chart elements.
     *   **Typography:** Use the 'Inter' font family from Google Fonts for all text. Establish a clear typographic scale (e.g., 48px for titles, 24px for subtitles, 16px for body).
     *   **Data Visualization:** For all financial tables and projections (e.g., Proforma, Expense Breakdown, Returns Summary), generate clean, readable data visualizations using Chart.js. Use the accent color for key data series.
-
+{brand_logo_instruction}
 4.  **Final Output:** The final deliverable must be a set of sequentially named HTML files (e.g., `slide_01.html`, `slide_02.html`, ..., `slide_16.html`). These files should be saved in the root directory of the task environment.
 
 --- DEAL SUMMARY DATA ---
@@ -194,11 +194,12 @@ You will receive a structured deal summary for a commercial real estate investme
 DESIGN REQUIREMENTS:
 - **Swiss International Style**: Strong grid layouts, clean typography, significant negative space, hierarchical information design
 - **Container**: Each slide must be exactly 1280x720 pixels, no overflow
-- **Colors**: Background `#FFFFFF` or `#F5F5F5`, body text `#1A1A1A`, accent `#0052FF`
+- **Colors**: Background `#FFFFFF` or `#F5F5F5`, body text `{brand_secondary_color}`, accent `{brand_accent_color}`
 - **Typography**: Use Inter font from Google Fonts. Scale: 48px titles, 24px subtitles, 16px body, 13px labels
-- **Charts**: Use inline SVG for any data visualizations (bar charts, pie charts). Use accent color `#0052FF` for primary data series
+- **Charts**: Use inline SVG for any data visualizations (bar charts, pie charts). Use accent color `{brand_accent_color}` for primary data series
 - **NO** gradients, drop shadows, rounded corners > 4px, or generic corporate styling
 - Each slide is a COMPLETE, self-contained HTML document with `<html>`, `<head>`, `<style>`, `<body>`
+{brand_logo_instruction}
 
 SLIDE OUTLINE (16 slides):
 1. Title Page — Property name, address, asset type, units, "Investment Opportunity" headline
