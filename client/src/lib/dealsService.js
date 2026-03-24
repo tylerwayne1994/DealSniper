@@ -725,7 +725,9 @@ export async function saveProfile(profile) {
     brand_accent_color: profile.brandAccentColor || '#0052FF',
     brand_company_name: profile.brandCompanyName || null,
     brand_letterhead_text: profile.brandLetterheadText || null,
-    google_sheet_id: profile.googleSheetId || null,
+    google_sheet_id: profile.googleSheetId
+      ? (profile.googleSheetId.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/) || [])[1] || profile.googleSheetId.trim()
+      : null,
     google_sheet_tab: profile.googleSheetTab || 'Underwriting Model',
     updated_at: new Date().toISOString()
   };

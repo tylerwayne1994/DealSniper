@@ -3,22 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { 
   User, 
   Building2, 
-  Users, 
   Save,
   CheckCircle,
-  Phone,
-  Mail,
-  MapPin,
   Briefcase,
   Layers,
-  Inbox,
   Zap,
   Lock,
-  Eye,
-  EyeOff,
   AlertCircle,
   Presentation,
-  BarChart3,
   FileSpreadsheet,
   LogOut
 } from 'lucide-react';
@@ -1038,7 +1030,7 @@ function DashboardPage() {
             style={inputStyle}
             name="googleSheetId"
             value={profile.googleSheetId}
-            onChange={handleInputChange}
+            onChange={handleProfileChange}
             placeholder="Paste your Google Sheet URL or spreadsheet ID"
           />
           <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
@@ -1051,7 +1043,7 @@ function DashboardPage() {
             style={inputStyle}
             name="googleSheetTab"
             value={profile.googleSheetTab}
-            onChange={handleInputChange}
+            onChange={handleProfileChange}
             placeholder="Underwriting Model"
           />
           <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>

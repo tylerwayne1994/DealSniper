@@ -2,11 +2,9 @@ services:
   - type: web
     name: dealsniper-backend
     runtime: python
-    buildCommand: "cd backend && pip install -r requirements.txt && export PLAYWRIGHT_BROWSERS_PATH=/opt/render/project/src/backend/.browsers && playwright install chromium --with-deps && find /opt/render/project/src/backend/.browsers -name chrome -type f | head -1 > .chromium_path && echo 'CHROMIUM_PATH saved:' && cat .chromium_path"
+    buildCommand: "cd backend && pip install -r requirements.txt"
     startCommand: "cd backend && uvicorn App:app --host 0.0.0.0 --port $PORT"
     envVars:
-      - key: PLAYWRIGHT_BROWSERS_PATH
-        value: /opt/render/project/src/backend/.browsers
       - key: MISTRAL_API_KEY
         sync: false
       - key: OPENAI_API_KEY
