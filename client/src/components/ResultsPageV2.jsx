@@ -2924,6 +2924,10 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
             scenarioData={scenarioData}
             fullCalcs={fullCalcs}
             calculateFullAnalysisFn={calculateFullAnalysis}
+            purchasePrice={purchasePrice}
+            annualDebtService={annualDebtService}
+            onFieldChange={handleFieldChange}
+            marketCapRate={marketCapRate}
           />
         );
 
