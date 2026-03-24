@@ -26,7 +26,6 @@ import {
   MetricCard 
 } from './AdvancedViews';
 import { calculateSensitivity, calculateFullAnalysis } from '../utils/realEstateCalculations';
-import { exportToExcel } from '../utils/exportToExcel';
 import SensitivityAnalysisTab from './results-tabs/SensitivityAnalysisTab';
 import T12AuditorTab from './results-tabs/T12AuditorTab';
 import { CostSegAnalysisView } from './CostSegAnalysis';
@@ -107,6 +106,38 @@ const ResultsPageV2 = ({
   // â•â•â• Auto-save: track if deal is in pipeline, debounce saves â•â•â•
   const [isInPipeline, setIsInPipeline] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState(null); // null | 'saving' | 'saved' | 'error'
+
+  // Google Sheets export state
+  const [isSheetsExporting, setIsSheetsExporting] = useState(false);
+  const [sheetsExportStatus, setSheetsExportStatus] = useState(null); // null | 'success' | 'error'
+
+  const handleExportToSheets = async () => {
+    setIsSheetsExporting(true);
+    setSheetsExportStatus(null);
+    try {
+      const API_BASE = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
+      const fullCalcsPayload = calculations?.fullAnalysis || calculations || {};
+      const response = await fetch(`${API_BASE}/api/sheets/populate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scenarioData, fullCalcs: fullCalcsPayload })
+      });
+      const result = await response.json();
+      if (result.success) {
+        setSheetsExportStatus('success');
+        window.open('https://docs.google.com/spreadsheets/d/1jZSrAJY_gIu7Rqcmdmg-cdvQc88aC6YyVwhTQ1-dwi0', '_blank');
+      } else {
+        setSheetsExportStatus('error');
+      }
+    } catch (err) {
+      console.error('Sheets export error:', err);
+      setSheetsExportStatus('error');
+    } finally {
+      setIsSheetsExporting(false);
+      setTimeout(() => setSheetsExportStatus(null), 4000);
+    }
+  };
+
   const autoSaveTimerRef = useRef(null);
   const scenarioSnapshotRef = useRef(null);
   const marketDataFetchedRef = useRef(false);
@@ -168,7 +199,7 @@ const ResultsPageV2 = ({
       }
       if (e.key === 'e' || e.key === 'E') {
         e.preventDefault();
-        exportToExcel(scenarioData, calculations);
+        handleExportToSheets();
       }
     };
     window.addEventListener('keydown', handler);
@@ -3096,23 +3127,25 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
               {isExportingPDF ? 'Exporting...' : 'Export to PDF'}
             </button>
             <button
-              onClick={() => exportToExcel(scenarioData, calculations)}
+              onClick={handleExportToSheets}
+              disabled={isSheetsExporting}
               style={{
                 padding: '8px 16px',
-                backgroundColor: '#059669',
+                backgroundColor: isSheetsExporting ? '#9ca3af' : '#059669',
                 color: 'white',
                 border: 'none',
                 borderRadius: '6px',
                 fontSize: '13px',
                 fontWeight: '600',
-                cursor: 'pointer',
+                cursor: isSheetsExporting ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '6px',
+                position: 'relative'
               }}
             >
               <FileSpreadsheet size={14} />
-              Export to Excel
+              {isSheetsExporting ? 'Sending to Sheets...' : sheetsExportStatus === 'success' ? '✓ Sent to Sheets' : sheetsExportStatus === 'error' ? 'Export Failed' : 'Export to Google Sheets'}
             </button>
             <button
               onClick={handleGeneratePitchDeck}

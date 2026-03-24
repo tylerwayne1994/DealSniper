@@ -168,6 +168,11 @@ def extract_value_from_scenario(scenario_data, calcs, input_name):
     elif input_name == "Amortization (Years)":
         return scenario_data.get('pricing_financing', {}).get('amortization_years', 30)
 
+    elif input_name == "IO Period (Years)":
+        return (scenario_data.get('financing', {}).get('io_years')
+                or scenario_data.get('pricing_financing', {}).get('io_period_years')
+                or 0)
+
     # Expenses
     elif input_name == "Property Tax":
         return (scenario_data.get('expenses', {}).get('taxes')

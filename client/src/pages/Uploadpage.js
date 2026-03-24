@@ -338,17 +338,15 @@ const EnhancedUploadPage = () => {
     if (!pricing.monthly_payment && pricing.loan_amount && pricing.interest_rate != null && pricing.amortization_years) {
       console.log("💡 DEBUG: Calculating monthly payment...");
       
-      if (financingMode === 'seller_finance' && pricing.io_period_years > 0) {
+      if (pricing.io_period_years > 0) {
         const ioMonths = pricing.io_period_years * 12;
-        const monthsPaid = (pricing.balloon_years || pricing.amortization_years) * 12;
-        if (ioMonths >= monthsPaid) {
+        const totalMonths = (financingMode === 'seller_finance' 
+          ? (pricing.balloon_years || pricing.amortization_years) 
+          : (pricing.term_years || pricing.amortization_years)) * 12;
+        if (ioMonths >= totalMonths) {
           pricing.monthly_payment = pricing.loan_amount * (pricing.interest_rate / 12);
         } else {
-          pricing.monthly_payment = calculateMonthlyPayment(
-            pricing.loan_amount,
-            pricing.interest_rate,
-            pricing.amortization_years * 12
-          );
+          pricing.monthly_payment = pricing.loan_amount * (pricing.interest_rate / 12);
         }
       } else {
         const principal = financingMode === 'subject_to' ? pricing.existing_loan_balance : pricing.loan_amount;
@@ -436,6 +434,7 @@ const EnhancedUploadPage = () => {
         if (pricing.amortization_years) fd.append("amortization_years", pricing.amortization_years);
         if (pricing.interest_rate != null) fd.append("interest_rate", pricing.interest_rate);
         if (pricing.loan_amount) fd.append("loan_amount", pricing.loan_amount);
+        if (pricing.io_period_years) fd.append("io_period_years", pricing.io_period_years);
       } else if (pricing.financing_mode === "seller_finance") {
         if (pricing.down_payment_amount != null) fd.append("down_payment_amount", pricing.down_payment_amount);
         if (pricing.interest_rate != null) fd.append("interest_rate", pricing.interest_rate);
@@ -1811,6 +1810,35 @@ const EnhancedUploadPage = () => {
                             }, setVerifiedData);
                           }}
                           placeholder="Enter amortization years"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", marginBottom: 6, fontSize: 13, color: "#6b7280", fontWeight: 900 }}>
+                          Interest-Only Period (Years)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          style={{
+                            ...styles.input,
+                            ...(verifiedData?.pricing_financing?.io_period_years ? styles.inputSuccess : {})
+                          }}
+                          value={verifiedData?.pricing_financing?.io_period_years || ""}
+                          onChange={(e) => {
+                            const ioYears = parseInt(e.target.value) || 0;
+                            setVerifiedData(prev => ({
+                              ...prev,
+                              pricing_financing: {
+                                ...prev.pricing_financing,
+                                io_period_years: ioYears
+                              }
+                            }));
+                            autoCalculateFinancing({
+                              ...verifiedData?.pricing_financing,
+                              io_period_years: ioYears
+                            }, setVerifiedData);
+                          }}
+                          placeholder="0 = fully amortizing"
                         />
                       </div>
                     </>

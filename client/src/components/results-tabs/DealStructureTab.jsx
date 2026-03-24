@@ -23,8 +23,17 @@ const buildStructureFromLoans = (loans, pp, noi) => {
   const ld = debt.map(l => {
     const amt = (l.loanAmtMode==='ltv'||l.loanAmtMode==='ltc') ? pp*(Number(l.ltv)||0)/100 : Number(l.loanDollar)||0;
     const r=(Number(l.rate)||0)/100/12, n=(Number(l.amort)||30)*12;
-    let mp=0; if(amt>0&&r>0&&n>0) mp=amt*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);
-    return {...l, loanAmt:amt, monthlyPmt:mp, fees:amt*(Number(l.fees)||0)/100, annualDS:mp*12};
+    const ioYrs = Number(l.io) || 0;
+    let mp=0;
+    if(amt>0&&r>0) {
+      if(ioYrs > 0) {
+        // During IO period: interest only
+        mp = amt * r;
+      } else if(n>0) {
+        mp=amt*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);
+      }
+    }
+    return {...l, loanAmt:amt, monthlyPmt:mp, fees:amt*(Number(l.fees)||0)/100, annualDS:mp*12, ioYears:ioYrs};
   });
   const ed = eq.map(l => {
     const pe=Number(l.loanDollar)||0, pr=(Number(l.rate)||8)/100, ap=pe*pr;
@@ -114,7 +123,15 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
     en.filter(l=>l.type!=='Equity Partner').forEach(l=>{
       const a=(l.loanAmtMode==='ltv'||l.loanAmtMode==='ltc')?pp*(Number(l.ltv)||0)/100:Number(l.loanDollar)||0;
       const r=(Number(l.rate)||0)/100/12,n=(Number(l.amort)||30)*12;
-      let p=0;if(a>0&&r>0&&n>0)p=a*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);
+      const ioYrs = Number(l.io) || 0;
+      let p=0;
+      if(a>0&&r>0) {
+        if(ioYrs > 0) {
+          p = a * r;
+        } else if(n>0) {
+          p=a*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);
+        }
+      }
       tla+=a;tmp+=p;tf+=a*(Number(l.fees)||0)/100;
     });
     en.filter(l=>l.type==='Equity Partner').forEach(l=>{
