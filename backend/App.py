@@ -284,6 +284,10 @@ app.include_router(stripe_webhook_router)
 from token_purchase_handler import router as token_purchase_router
 app.include_router(token_purchase_router)
 
+# Investor Portal: LP dashboard, distributions, K-1 uploads
+from investor_portal import router as investor_portal_router
+app.include_router(investor_portal_router)
+
 # Agent System: Browser-use AI deal scouting agents
 try:
     from agent_system.router import router as agent_router

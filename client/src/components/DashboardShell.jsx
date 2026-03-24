@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   AlertTriangle,
+  Users,
 } from 'lucide-react';
 import { useIsMobile } from '../hooks/useIsMobile';
 
@@ -181,6 +182,7 @@ const tabs = [
   { id: 'market', label: 'Market Research', icon: BarChart3, section: 'analysis' },
   { id: 'pitch-deck', label: 'Pitch Deck', icon: Presentation, section: 'analysis' },
   { id: 'contract', label: 'Contracts', icon: Shield, section: 'analysis' },
+  { id: 'investor-portal', label: 'Investor Portal', icon: Users, section: 'analysis' },
 ];
 
 function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }) {
@@ -205,6 +207,8 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
       navigate('/pitch-deck');
     } else if (tabId === 'contract') {
       navigate('/contract');
+    } else if (tabId === 'investor-portal') {
+      navigate('/investor-portal');
     } else if (tabId === 'home') {
       navigate('/dashboard');
     } else {
