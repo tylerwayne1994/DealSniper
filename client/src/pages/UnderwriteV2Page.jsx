@@ -209,6 +209,21 @@ function UnderwriteV2Page() {
     }
   }, [messages]);
 
+  // ── Keyboard shortcut: Cmd/Ctrl+U = open file picker on upload step ──
+  useEffect(() => {
+    const handler = (e) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && (e.key === 'u' || e.key === 'U')) {
+        e.preventDefault();
+        if (step === 'upload' && fileInputRef.current) {
+          fileInputRef.current.click();
+        }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [step]);
+
   // ── Load underwrite template on mount ──
   useEffect(() => {
     loadTemplate('underwrite').then(tpl => {

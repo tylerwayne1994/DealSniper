@@ -9,7 +9,8 @@ import {
   Presentation,
   Phone,
   Mail,
-  User
+  User,
+  Copy
 } from 'lucide-react';
 
 // Helper function
@@ -54,6 +55,7 @@ const PipelineTable = ({
   onGenerateLOI, 
   onDueDiligence, 
   onDeleteDeal,
+  onDuplicateDeal,
   showPitchComingSoon = false // New prop to control pitch button behavior
 }) => {
   const navigate = useNavigate();
@@ -420,6 +422,32 @@ const PipelineTable = ({
                         <Presentation size={14} />
                         Pitch
                       </button>
+                      
+                      {/* Clone Button */}
+                      {onDuplicateDeal && (
+                        <button
+                          onClick={() => onDuplicateDeal(deal)}
+                          title="Duplicate deal"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '4px',
+                            padding: '8px 10px',
+                            backgroundColor: '#eef2ff',
+                            color: '#6366f1',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            transition: 'all 0.15s'
+                          }}
+                        >
+                          <Copy size={14} />
+                          Clone
+                        </button>
+                      )}
                       
                       {/* Delete Button */}
                       {onDeleteDeal && (

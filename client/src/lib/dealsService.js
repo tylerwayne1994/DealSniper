@@ -514,6 +514,41 @@ export async function deleteDeal(dealId) {
 }
 
 /**
+ * Bulk delete multiple deals from Supabase
+ * @param {string[]} dealIds - Array of deal IDs to delete
+ */
+export async function bulkDeleteDeals(dealIds) {
+  if (!dealIds || dealIds.length === 0) return;
+  const { error } = await supabase
+    .from('deals')
+    .delete()
+    .in('deal_id', dealIds);
+
+  if (error) throw error;
+}
+
+/**
+ * Duplicate a deal — loads it and saves a copy with a new ID
+ * @param {string} dealId - The source deal ID
+ * @returns {Object} - The duplicated deal
+ */
+export async function duplicateDeal(dealId) {
+  const original = await loadDeal(dealId);
+  if (!original) throw new Error('Deal not found');
+
+  const newDealId = crypto.randomUUID();
+  const duplicatedDeal = {
+    ...original,
+    dealId: newDealId,
+    address: `${original.address || 'Deal'} (Copy)`,
+    notes: original.notes ? `Copied from ${original.dealId}\n${original.notes}` : `Copied from ${original.dealId}`,
+  };
+
+  await saveDeal(duplicatedDeal);
+  return duplicatedDeal;
+}
+
+/**
  * Update deal pipeline status
  * @param {string} dealId - The deal ID
  * @param {string} status - New status: 'pipeline', 'archived', 'closed'
@@ -698,13 +733,15 @@ export async function saveProfile(profile) {
   }
 }
 
-export default {
+const dealsServiceExports = {
   saveDeal,
   loadDeal,
   loadPipelineDeals,
   loadRapidFireDeals,
   loadDealForResults,
   deleteDeal,
+  bulkDeleteDeals,
+  duplicateDeal,
   updateDeal,
   updateDealStatus,
   updateDealNotes,
@@ -714,3 +751,4 @@ export default {
   saveProfile,
   saveRapidFireDeals
 };
+export default dealsServiceExports;

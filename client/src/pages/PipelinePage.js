@@ -19,9 +19,13 @@ import {
   Filter,
   ArrowUpDown,
   Columns,
-  Wrench
+  Wrench,
+  LayoutGrid,
+  List,
+  Copy,
+  GripVertical
 } from 'lucide-react';
-import { loadPipelineDeals as loadDealsFromSupabase, loadRapidFireDeals as loadRapidFireDealsFromSupabase, deleteDeal, updateDeal } from '../lib/dealsService';
+import { loadPipelineDeals as loadDealsFromSupabase, loadRapidFireDeals as loadRapidFireDealsFromSupabase, deleteDeal, updateDeal, bulkDeleteDeals, duplicateDeal } from '../lib/dealsService';
 import DealComparisonModal from '../components/DealComparisonModal';
 import DealPhotoGallery, { DealThumbnail } from '../components/DealPhotoGallery';
 
@@ -238,6 +242,8 @@ function PipelinePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingRapid, setIsLoadingRapid] = useState(true);
   const [viewMode, setViewMode] = useState('pipeline');
+  const [pipelineViewMode, setPipelineViewMode] = useState('table');
+  const [draggedDeal, setDraggedDeal] = useState(null);
   const [selectedRapidFireIds, setSelectedRapidFireIds] = useState([]);
   const [selectedDealIds, setSelectedDealIds] = useState([]);
 
@@ -350,6 +356,41 @@ function PipelinePage() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedDealIds.length === 0) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedDealIds.length} deal(s) from the pipeline?`)) return;
+    try {
+      const realIds = selectedDealIds.filter(id => !id.startsWith('sample-'));
+      if (realIds.length > 0) await bulkDeleteDeals(realIds);
+      setPipelineDeals(prev => prev.filter(d => !selectedDealIds.includes(d.dealId)));
+      setSelectedDealIds([]);
+      window.dispatchEvent(new Event('pipelineDealsUpdated'));
+    } catch (error) {
+      console.error('Error bulk deleting deals:', error);
+      alert('Failed to delete deals: ' + error.message);
+    }
+  };
+
+  const handleDuplicateDeal = async (deal) => {
+    try {
+      const duplicated = await duplicateDeal(deal.dealId);
+      setPipelineDeals(prev => [...prev, duplicated]);
+      window.dispatchEvent(new Event('pipelineDealsUpdated'));
+    } catch (error) {
+      console.error('Error duplicating deal:', error);
+      alert('Failed to duplicate deal: ' + error.message);
+    }
+  };
+
+  const handleKanbanDrop = (e, targetStage) => {
+    e.preventDefault();
+    const dealId = e.dataTransfer.getData('text/plain');
+    const deal = pipelineDeals.find(d => d.dealId === dealId);
+    if (!deal || (deal.deal_stage || 'underwritten') === targetStage) return;
+    handleStatusChange(deal, targetStage);
+    setDraggedDeal(null);
+  };
+
   const getSortedAndFilteredDeals = () => {
     let deals = [...filteredDeals];
     if (filterStatus.length > 0) deals = deals.filter(d => filterStatus.includes(d.deal_stage || 'underwritten'));
@@ -460,6 +501,24 @@ function PipelinePage() {
                 </button>
               ))}
             </div>
+            {/* Table / Kanban toggle */}
+            {viewMode === 'pipeline' && (
+              <div style={{ display: 'flex', backgroundColor: '#f6f7fb', borderRadius: '8px', padding: '3px', border: '1px solid #e6e9ef' }}>
+                {[{ key: 'table', icon: List, label: 'Table' }, { key: 'kanban', icon: LayoutGrid, label: 'Kanban' }].map(({ key, icon: Icon, label }) => (
+                  <button key={key} type="button" onClick={() => setPipelineViewMode(key)} style={{
+                    padding: '7px 12px', borderRadius: '6px', border: 'none', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: '5px',
+                    backgroundColor: pipelineViewMode === key ? '#fff' : 'transparent',
+                    color: pipelineViewMode === key ? '#323338' : '#676879',
+                    boxShadow: pipelineViewMode === key ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                    transition: 'all 0.15s'
+                  }}>
+                    <Icon size={14} />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
             {/* Search */}
             <div style={{ position: 'relative' }}>
               <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#676879' }} />
@@ -550,6 +609,23 @@ function PipelinePage() {
                 Compare {selectedDealIds.length === 1 ? '(select 1 more)' : '(select 2+ deals)'}
               </span>
             )}
+            {/* Bulk Delete button */}
+            {selectedDealIds.length > 0 && (
+              <>
+                <div style={{ width: '1px', height: '20px', backgroundColor: '#e6e9ef', margin: '0 4px' }} />
+                <button onClick={handleBulkDelete} style={{
+                  display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: '700', cursor: 'pointer',
+                  border: '1px solid #e2445c', backgroundColor: '#ffefef', color: '#d83a52',
+                  transition: 'all 0.15s',
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#fde2e4'; }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#ffefef'; }}
+                >
+                  <Trash2 size={14} />
+                  Delete Selected ({selectedDealIds.length})
+                </button>
+              </>
+            )}
           </div>
 
           {/* Expandable filter row */}
@@ -631,7 +707,89 @@ function PipelinePage() {
             </div>
           ) : (
             <>
-              {/* Monday-style Grouped Pipeline Table */}
+              {pipelineViewMode === 'kanban' ? (
+                /* ============================================================ */
+                /* Kanban Board View */
+                /* ============================================================ */
+                <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '12px', minHeight: '400px' }}>
+                  {['sourced', 'underwritten', 'loi', 'contract', 'financing', 'closed', 'dead'].map(stage => {
+                    const stageDeals = getSortedAndFilteredDeals().filter(d => (d.deal_stage || 'underwritten') === stage);
+                    const color = stageGroupColor[stage];
+                    return (
+                      <div key={stage}
+                        onDragOver={e => { e.preventDefault(); e.currentTarget.style.backgroundColor = `${color}10`; }}
+                        onDragLeave={e => { e.currentTarget.style.backgroundColor = '#fff'; }}
+                        onDrop={e => { e.currentTarget.style.backgroundColor = '#fff'; handleKanbanDrop(e, stage); }}
+                        style={{
+                          minWidth: '260px', maxWidth: '300px', flex: '1 0 260px',
+                          backgroundColor: '#fff', borderRadius: '10px', border: '1px solid #e6e9ef',
+                          display: 'flex', flexDirection: 'column', transition: 'background 0.15s',
+                        }}
+                      >
+                        {/* Column header */}
+                        <div style={{ padding: '14px 14px 10px', borderBottom: `3px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: color }} />
+                            <span style={{ fontSize: '13px', fontWeight: '700', color: '#323338' }}>{getStatusLabel(stage)}</span>
+                          </div>
+                          <span style={{ fontSize: '12px', color: '#676879', backgroundColor: '#f6f7fb', padding: '2px 8px', borderRadius: '999px', fontWeight: '600' }}>
+                            {stageDeals.length}
+                          </span>
+                        </div>
+                        {/* Cards */}
+                        <div style={{ padding: '8px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '80px' }}>
+                          {stageDeals.length === 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: '#c3c6d4', fontSize: '12px', fontStyle: 'italic' }}>
+                              Drop deals here
+                            </div>
+                          )}
+                          {stageDeals.map(deal => {
+                            const risk = assessStructureRisk(deal);
+                            const rColors = riskBadge(risk.level);
+                            return (
+                              <div key={deal.dealId}
+                                draggable
+                                onDragStart={e => { e.dataTransfer.setData('text/plain', deal.dealId); setDraggedDeal(deal.dealId); }}
+                                onDragEnd={() => setDraggedDeal(null)}
+                                style={{
+                                  backgroundColor: draggedDeal === deal.dealId ? '#f0f4ff' : '#fff',
+                                  border: '1px solid #e6e9ef', borderRadius: '8px', padding: '12px',
+                                  cursor: 'grab', userSelect: 'none', transition: 'box-shadow 0.15s, opacity 0.15s',
+                                  opacity: draggedDeal === deal.dealId ? 0.6 : 1,
+                                  borderLeft: `4px solid ${color}`,
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '6px' }}>
+                                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#323338', lineHeight: '1.3', flex: 1 }}>{deal.address || 'Untitled Deal'}</div>
+                                  <GripVertical size={14} color="#c3c6d4" style={{ flexShrink: 0, marginTop: '1px' }} />
+                                </div>
+                                <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
+                                  {deal.units && <span style={{ backgroundColor: '#cce5ff', color: '#0073ea', padding: '2px 8px', borderRadius: '999px', fontSize: '10px', fontWeight: '600' }}>{deal.units} units</span>}
+                                  <span style={{ backgroundColor: rColors.bg, color: rColors.text, padding: '2px 8px', borderRadius: '999px', fontSize: '10px', fontWeight: '600' }}>{risk.text}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '11px', color: '#676879' }}>
+                                  <span>{fmtCompact(deal.purchasePrice)}</span>
+                                  <span style={{ color: (deal.dayOneCashFlow || 0) >= 0 ? '#00854d' : '#d83a52', fontWeight: '600' }}>CF: {fmtCompact(deal.dayOneCashFlow)}</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
+                                  <button onClick={() => handleViewDeal(deal)} title="View" style={{ flex: 1, padding: '4px', backgroundColor: '#00854d', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}><Eye size={10} />View</button>
+                                  <button onClick={() => handleDuplicateDeal(deal)} title="Clone" style={{ flex: 1, padding: '4px', backgroundColor: '#6366f1', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}><Copy size={10} />Clone</button>
+                                  <button onClick={() => handleDeleteDeal(deal.dealId)} title="Delete" style={{ padding: '4px 6px', backgroundColor: '#ffefef', color: '#d83a52', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={10} /></button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+              /* ============================================================ */
+              /* Monday-style Grouped Pipeline Table */
+              /* ============================================================ */
               <div style={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e6e9ef', overflow: 'hidden' }}>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1800px' }}>
@@ -779,6 +937,7 @@ function PipelinePage() {
                                       <button onClick={() => navigate(`/pitch-deck?dealId=${deal.dealId}`)} title="Pitch deck" style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 8px', backgroundColor: '#579bfc', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}><Presentation size={11} />Pitch</button>
                                       <button onClick={() => navigate(`/contract?dealId=${deal.dealId}`)} title="Contracts" style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 8px', backgroundColor: '#0d9488', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}><FileText size={11} />Contract</button>
                                       <button onClick={() => setPhotoGalleryDeal(deal)} title="AI CapEx Estimator — analyze photos" style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 8px', background: 'linear-gradient(135deg, #f97316, #ea580c)', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}><Wrench size={11} />CapEx AI</button>
+                                      <button onClick={() => handleDuplicateDeal(deal)} title="Duplicate deal" style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 8px', backgroundColor: '#6366f1', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}><Copy size={11} />Clone</button>
                                       <button onClick={() => handleDeleteDeal(deal.dealId)} title="Remove" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#ffefef', color: '#d83a52', border: 'none', borderRadius: '6px', cursor: 'pointer' }}><Trash2 size={12} /></button>
                                     </div>
                                   </td>
@@ -792,6 +951,7 @@ function PipelinePage() {
                   </table>
                 </div>
               </div>
+              )}
             </>
           )
         ) : (

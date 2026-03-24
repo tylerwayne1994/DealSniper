@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import mapboxgl from 'mapbox-gl';
 import Papa from 'papaparse';
 import { Building2, DollarSign, TrendingUp, MapPin, User, Phone, Mail, Home, GraduationCap, Hospital, Briefcase, X } from 'lucide-react';
-import { loadPipelineDeals, deleteDeal } from '../lib/dealsService';
+import { loadPipelineDeals, deleteDeal, duplicateDeal } from '../lib/dealsService';
 import { PipelineTable } from './tables';
 import { geocodeAddress } from '../utils/geocode';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -1340,6 +1340,7 @@ function HomeMapView() {
             onGenerateLOI={handleGenerateLOI}
             onDueDiligence={handleDueDiligence}
             onDeleteDeal={handleDeleteDeal}
+            onDuplicateDeal={handleDuplicateDeal}
             showPitchComingSoon={false}
           />
         </div>
@@ -1361,6 +1362,18 @@ function HomeMapView() {
           alert('Failed to delete deal: ' + error.message);
         });
     }
+  }
+
+  function handleDuplicateDeal(deal) {
+    duplicateDeal(deal.dealId)
+      .then(duplicated => {
+        setPipelineDeals(prev => [...prev, duplicated]);
+        window.dispatchEvent(new Event('pipelineDealsUpdated'));
+      })
+      .catch(error => {
+        console.error('Error duplicating deal:', error);
+        alert('Failed to duplicate deal: ' + error.message);
+      });
   }
 
   function handleViewDeal(deal) {
