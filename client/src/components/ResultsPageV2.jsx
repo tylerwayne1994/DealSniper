@@ -115,17 +115,37 @@ const ResultsPageV2 = ({
     setIsSheetsExporting(true);
     setSheetsExportStatus(null);
     try {
+      // Load user's configured sheet ID from profile
+      let userSheetId = '';
+      let userSheetTab = 'Underwriting Model';
+      try {
+        const prof = await loadProfile();
+        if (prof?.googleSheetId) {
+          // Extract ID from full URL if pasted
+          const urlMatch = prof.googleSheetId.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+          userSheetId = urlMatch ? urlMatch[1] : prof.googleSheetId.trim();
+        }
+        if (prof?.googleSheetTab) userSheetTab = prof.googleSheetTab;
+      } catch {}
+
+      if (!userSheetId) {
+        setSheetsExportStatus('error');
+        alert('No Google Sheet configured. Go to Dashboard → Google Sheets Export and paste your spreadsheet URL.');
+        setIsSheetsExporting(false);
+        return;
+      }
+
       const API_BASE = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
       const fullCalcsPayload = calculations?.fullAnalysis || calculations || {};
       const response = await fetch(`${API_BASE}/api/sheets/populate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scenarioData, fullCalcs: fullCalcsPayload })
+        body: JSON.stringify({ scenarioData, fullCalcs: fullCalcsPayload, sheetId: userSheetId, sheetTab: userSheetTab })
       });
       const result = await response.json();
       if (result.success) {
         setSheetsExportStatus('success');
-        window.open('https://docs.google.com/spreadsheets/d/1jZSrAJY_gIu7Rqcmdmg-cdvQc88aC6YyVwhTQ1-dwi0', '_blank');
+        window.open(`https://docs.google.com/spreadsheets/d/${userSheetId}`, '_blank');
       } else {
         setSheetsExportStatus('error');
       }

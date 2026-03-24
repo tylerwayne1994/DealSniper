@@ -3980,7 +3980,13 @@ async def populate_underwriting_sheet(request: Request):
             raise HTTPException(status_code=400, detail="scenarioData required")
         
         full_calcs = body.get('fullCalcs')
-        result = update_google_sheet(scenario_data, full_calcs)
+        sheet_id = body.get('sheetId')
+        sheet_tab = body.get('sheetTab')
+        
+        if not sheet_id:
+            raise HTTPException(status_code=400, detail="sheetId required - configure your Google Sheet in Dashboard settings")
+        
+        result = update_google_sheet(scenario_data, full_calcs, sheet_id=sheet_id, sheet_tab=sheet_tab)
         
         if result.get('error'):
             raise HTTPException(status_code=500, detail=result['error'])

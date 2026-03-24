@@ -329,7 +329,9 @@ function DashboardPage() {
     brandSecondaryColor: '#1A1A1A',
     brandAccentColor: '#0052FF',
     brandCompanyName: '',
-    brandLetterheadText: ''
+    brandLetterheadText: '',
+    googleSheetId: '',
+    googleSheetTab: 'Underwriting Model'
   });
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
@@ -1009,6 +1011,54 @@ function DashboardPage() {
 
       {/* Change Password Card */}
       <ChangePasswordCard cardStyle={cardStyle} inputStyle={inputStyle} labelStyle={labelStyle} />
+
+      {/* Google Sheets Export Card */}
+      <div style={cardStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px' }}>
+          <div style={{ 
+            width: '40px', 
+            height: '40px', 
+            borderRadius: '10px', 
+            backgroundColor: '#dcfce7', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            marginRight: '12px' 
+          }}>
+            <FileSpreadsheet size={20} color="#059669" />
+          </div>
+          <div>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: 0 }}>Google Sheets Export</h3>
+            <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Connect your personal underwriting spreadsheet</p>
+          </div>
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>Google Sheet URL or ID *</label>
+          <input
+            style={inputStyle}
+            name="googleSheetId"
+            value={profile.googleSheetId}
+            onChange={handleInputChange}
+            placeholder="Paste your Google Sheet URL or spreadsheet ID"
+          />
+          <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+            Paste the full URL (e.g. https://docs.google.com/spreadsheets/d/abc123/edit) or just the ID. Make sure the sheet is shared with the service account.
+          </p>
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>Sheet Tab Name</label>
+          <input
+            style={inputStyle}
+            name="googleSheetTab"
+            value={profile.googleSheetTab}
+            onChange={handleInputChange}
+            placeholder="Underwriting Model"
+          />
+          <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+            The tab/sheet name within your spreadsheet where data should be written (default: "Underwriting Model")
+          </p>
+        </div>
+      </div>
 
       {/* White-Label Branding Card */}
       <div style={cardStyle}>

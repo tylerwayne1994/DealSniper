@@ -356,19 +356,23 @@ def extract_value_from_scenario(scenario_data, calcs, input_name):
     return None
 
 
-def update_google_sheet(scenario_data, full_calcs):
+def update_google_sheet(scenario_data, full_calcs, sheet_id=None, sheet_tab=None):
     """
     Update Google Sheet with parsed data using Service Account authentication.
     
     Args:
         scenario_data: Parsed OM data from underwriting
         full_calcs: Calculated financial metrics
+        sheet_id: Google Sheets spreadsheet ID (user-provided)
+        sheet_tab: Tab name within the spreadsheet
     
     Returns:
         dict: Success/error message
     """
+    target_sheet_id = sheet_id or SHEET_ID
+    target_tab = sheet_tab or SHEET_TAB_NAME
     try:
-        _dbg("Starting sheet update")
+        _dbg(f"Starting sheet update for sheet={target_sheet_id} tab={target_tab}")
         # Get service account credentials
         credentials = get_credentials()
         
@@ -377,7 +381,7 @@ def update_google_sheet(scenario_data, full_calcs):
         
         # Load mapping
         mapping, mapping_path = load_mapping()
-        _dbg(f"Loaded {len(mapping)} mapping rows; sheet: {SHEET_ID} tab: {SHEET_TAB_NAME}")
+        _dbg(f"Loaded {len(mapping)} mapping rows; sheet: {target_sheet_id} tab: {target_tab}")
         
         # Prepare batch update data
         updates = []
@@ -393,7 +397,7 @@ def update_google_sheet(scenario_data, full_calcs):
             if value is not None:
                 values_by_input[input_name] = value
                 updates.append({
-                    'range': f"'{SHEET_TAB_NAME}'!{cell}",
+                    'range': f"'{target_tab}'!{cell}",
                     'values': [[value]]
                 })
             else:
@@ -429,8 +433,8 @@ def update_google_sheet(scenario_data, full_calcs):
             debug_json_path = mapping_path.parent / f"{mapping_path.stem} - debug.json"
             with open(debug_json_path, 'w', encoding='utf-8') as dj:
                 json.dump({
-                    'sheetId': SHEET_ID,
-                    'sheetTab': SHEET_TAB_NAME,
+                    'sheetId': target_sheet_id,
+                    'sheetTab': target_tab,
                     'mappingCsv': str(mapping_path),
                     'totalMappingRows': len(mapping),
                     'totalUpdates': len(updates),
@@ -450,7 +454,7 @@ def update_google_sheet(scenario_data, full_calcs):
                 'data': updates
             }
             result = service.spreadsheets().values().batchUpdate(
-                spreadsheetId=SHEET_ID,
+                spreadsheetId=target_sheet_id,
                 body=body
             ).execute()
             
