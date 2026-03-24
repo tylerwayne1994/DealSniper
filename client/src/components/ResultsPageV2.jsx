@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import RentRollTab from './results-tabs/RentRollTab';
 import ReactMarkdown from 'react-markdown';
 import { useNavigate } from 'react-router-dom';
-import { Send, Home, DollarSign, FileText, CreditCard, BarChart3, Users, FileBarChart, TrendingUp, Calculator, PieChart, Calendar, Activity, Layers, LayoutDashboard, RefreshCw, Rocket, MessageSquare, Download, Presentation, MapPin, FileSpreadsheet, Wallet, Moon, Sun } from 'lucide-react';
+import { Send, Home, DollarSign, FileText, CreditCard, BarChart3, Users, FileBarChart, TrendingUp, Calculator, PieChart, Calendar, Activity, Layers, LayoutDashboard, RefreshCw, Rocket, MessageSquare, Download, Presentation, MapPin, FileSpreadsheet, Wallet } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Area, AreaChart } from 'recharts';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -83,8 +83,6 @@ const ResultsPageV2 = ({
   const [marketData, setMarketData] = useState(null);
   const [marketDataLoading, setMarketDataLoading] = useState(false);
   const [documentAnalysis, setDocumentAnalysis] = useState(scenarioData?.document_analysis || null);
-  // Dark mode state
-  const [darkMode, setDarkMode] = useState(false);
   // Track which expense fields user is entering as monthly (key -> true means monthly input mode)
   const [expenseMonthlyMode, setExpenseMonthlyMode] = useState({});
 
@@ -2982,54 +2980,22 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
   };
 
   return (
-    <div className={darkMode ? 'ds-dark' : ''} style={{ 
+    <div style={{ 
       display: 'flex', 
       height: 'calc(100vh - 60px)',
       width: '100vw',
       overflow: 'hidden',
-      backgroundColor: darkMode ? '#0f172a' : '#f9fafb',
+      backgroundColor: '#f9fafb',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-      position: 'relative',
-      color: darkMode ? '#e2e8f0' : 'inherit',
-      transition: 'background-color 0.3s, color 0.3s'
+      position: 'relative'
                     }}>
       
-      {/* Dark mode style overrides */}
-      {darkMode && (
-        <style>{`
-          .ds-dark * { transition: background-color 0.3s, color 0.3s, border-color 0.3s; }
-          .ds-dark div[style*="backgroundColor: white"], .ds-dark div[style*="background-color: white"],
-          .ds-dark div[style*="backgroundColor: '#fff'"], .ds-dark div[style*="background: '#fff'"] { background-color: #1e293b !important; }
-          .ds-dark div[style*="backgroundColor: #fff"] { background-color: #1e293b !important; }
-          .ds-dark div[style*="background: #fff"] { background: #1e293b !important; }
-          .ds-dark [style*="background: white"] { background: #1e293b !important; }
-          .ds-dark [style*="backgroundColor: white"] { background-color: #1e293b !important; }
-          .ds-dark [style*="color: #111827"] { color: #f1f5f9 !important; }
-          .ds-dark [style*="color: #374151"] { color: #cbd5e1 !important; }
-          .ds-dark [style*="color: #6b7280"] { color: #94a3b8 !important; }
-          .ds-dark [style*="borderBottom: 1px solid #e5e7eb"] { border-bottom-color: #334155 !important; }
-          .ds-dark [style*="border: 1px solid #e5e7eb"] { border-color: #334155 !important; }
-          .ds-dark [style*="border-color: #e5e7eb"] { border-color: #334155 !important; }
-          .ds-dark [style*="backgroundColor: #f9fafb"] { background-color: #0f172a !important; }
-          .ds-dark [style*="background: #f9fafb"] { background: #0f172a !important; }
-          .ds-dark [style*="backgroundColor: #f3f4f6"] { background-color: #1e293b !important; }
-          .ds-dark [style*="background: #f3f4f6"] { background: #1e293b !important; }
-          .ds-dark [style*="backgroundColor: #f8fafc"] { background-color: #1e293b !important; }
-          .ds-dark input, .ds-dark select, .ds-dark textarea { background-color: #1e293b !important; color: #e2e8f0 !important; border-color: #475569 !important; }
-          .ds-dark table th { background: #0f172a !important; color: #e2e8f0 !important; }
-          .ds-dark table td { color: #cbd5e1 !important; border-color: #334155 !important; }
-          .ds-dark table tr { border-color: #334155 !important; }
-          .ds-dark h2, .ds-dark h3, .ds-dark h4 { color: #f1f5f9 !important; }
-          .ds-dark p { color: #94a3b8 !important; }
-        `}</style>
-      )}
-
       {/* Main Content - Full Width */}
       <div style={{ 
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: darkMode ? '#1e293b' : 'white',
+        backgroundColor: 'white',
         minWidth: 0,
         overflow: 'hidden'
       }}>
@@ -3037,39 +3003,21 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
         {/* Header with property name */}
         <div style={{
           padding: '16px 24px',
-          borderBottom: `1px solid ${darkMode ? '#334155' : '#e5e7eb'}`,
-          backgroundColor: darkMode ? '#1e293b' : 'white',
+          borderBottom: '1px solid #e5e7eb',
+          backgroundColor: 'white',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: darkMode ? '#f1f5f9' : '#111827' }}>
+            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827' }}>
               {property.property_name || 'Deal Analysis'}
             </h2>
-            <p style={{ margin: '4px 0 0', fontSize: '13px', color: darkMode ? '#94a3b8' : '#6b7280' }}>
+            <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#6b7280' }}>
               {property.address || 'Property Address'}
             </p>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            {/* Dark Mode Toggle */}
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              style={{
-                padding: '8px',
-                backgroundColor: darkMode ? '#334155' : '#f3f4f6',
-                color: darkMode ? '#fbbf24' : '#6b7280',
-                border: `1px solid ${darkMode ? '#475569' : '#d1d5db'}`,
-                borderRadius: '6px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-              title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              {darkMode ? <Sun size={14} /> : <Moon size={14} />}
-            </button>
             <button
               onClick={handleExportPDF}
               disabled={isExportingPDF}
