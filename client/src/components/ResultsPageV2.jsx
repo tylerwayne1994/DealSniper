@@ -120,13 +120,16 @@ const ResultsPageV2 = ({
       let userSheetTab = 'Underwriting Model';
       try {
         const prof = await loadProfile();
+        console.log('[SheetsExport] Profile loaded:', prof?.googleSheetId ? 'has sheetId' : 'no sheetId');
         if (prof?.googleSheetId) {
           // Extract ID from full URL if pasted
           const urlMatch = prof.googleSheetId.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
           userSheetId = urlMatch ? urlMatch[1] : prof.googleSheetId.trim();
         }
         if (prof?.googleSheetTab) userSheetTab = prof.googleSheetTab;
-      } catch {}
+      } catch (profileErr) {
+        console.error('[SheetsExport] Failed to load profile:', profileErr);
+      }
 
       if (!userSheetId) {
         setSheetsExportStatus('error');
@@ -135,23 +138,43 @@ const ResultsPageV2 = ({
         return;
       }
 
-      const API_BASE = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
+      if (!scenarioData) {
+        setSheetsExportStatus('error');
+        alert('No deal data available to export. Please load or underwrite a deal first.');
+        setIsSheetsExporting(false);
+        return;
+      }
+
       const fullCalcsPayload = calculations?.fullAnalysis || calculations || {};
-      const response = await fetch(`${API_BASE}/api/sheets/populate`, {
+      console.log('[SheetsExport] Sending to API:', { hasScenarioData: !!scenarioData, hasCalcs: !!fullCalcsPayload, sheetId: userSheetId, sheetTab: userSheetTab });
+      const response = await fetch(`${API_BASE_URL}/api/sheets/populate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scenarioData, fullCalcs: fullCalcsPayload, sheetId: userSheetId, sheetTab: userSheetTab })
       });
+
+      if (!response.ok) {
+        const errBody = await response.json().catch(() => ({}));
+        const errMsg = errBody.detail || errBody.message || `Server error ${response.status}`;
+        console.error('[SheetsExport] API error:', response.status, errMsg);
+        setSheetsExportStatus('error');
+        alert(`Google Sheets export failed: ${errMsg}`);
+        return;
+      }
+
       const result = await response.json();
       if (result.success) {
         setSheetsExportStatus('success');
         window.open(`https://docs.google.com/spreadsheets/d/${userSheetId}`, '_blank');
       } else {
+        console.error('[SheetsExport] API returned failure:', result.message);
         setSheetsExportStatus('error');
+        alert(`Google Sheets export failed: ${result.message || 'Unknown error'}`);
       }
     } catch (err) {
-      console.error('Sheets export error:', err);
+      console.error('[SheetsExport] Exception:', err);
       setSheetsExportStatus('error');
+      alert(`Google Sheets export failed: ${err.message}`);
     } finally {
       setIsSheetsExporting(false);
       setTimeout(() => setSheetsExportStatus(null), 4000);
