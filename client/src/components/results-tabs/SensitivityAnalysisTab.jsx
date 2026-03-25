@@ -83,7 +83,7 @@ function valColor(val, purchase) {
 
 
 // ─── MAIN TAB ──────────────────────────────────────────────────────────────
-export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calculateFullAnalysisFn, purchasePrice: propPurchasePrice, annualDebtService: propADS, onFieldChange, marketCapRate }) {
+export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calculateFullAnalysisFn, purchasePrice: propPurchasePrice, annualDebtService: propADS, onFieldChange, marketCapRate, vaRentUpside = 0, vaRubsRecovery = 0, vaExpenseSavings = 0 }) {
   const purchasePrice = propPurchasePrice || scenarioData?.pricing_financing?.purchase_price || scenarioData?.pricing_financing?.price || 0;
   // Normalize exit cap and growth rates the same way calculateFullAnalysis does
   const exitCapRate = normalizeExitCap(scenarioData?.underwriting?.exit_cap_rate);
@@ -103,6 +103,10 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
   }, 0);
   const annualRentUpside = (totalMarketMonthlyRent - totalCurrentMonthlyRent) * 12;
   const totalExpenses = fullCalcs?.year1?.totalOperatingExpenses || 0;
+
+  // Stabilized NOI = current NOI + applied value-add upside
+  const stabilizedNOI = noi + (vaRentUpside || 0) + (vaRubsRecovery || 0) + (vaExpenseSavings || 0);
+  const hasValueAdd = stabilizedNOI > noi;
   const currentLTV = scenarioData?.financing?.ltv || scenarioData?.pricing_financing?.ltv || 75;
   const currentRate = scenarioData?.financing?.interest_rate || scenarioData?.pricing_financing?.interest_rate || 6;
   const currentAmort = scenarioData?.financing?.amortization_years || scenarioData?.pricing_financing?.amortization_years || 30;
@@ -295,21 +299,23 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
   const noiScenarios = useMemo(() => {
     const scenarios = [];
     // Rent bump scenarios: +$25, +$50, +$75, +$100, +$150, Market Rent
+    // Baseline is stabilized NOI (includes applied value-add items)
     const rentBumps = [0, 25, 50, 75, 100, 150];
     rentBumps.forEach(bump => {
       const addlAnnualIncome = bump * totalUnits * 12;
       scenarios.push({
-        label: bump === 0 ? 'Current' : `+$${bump}/unit`,
+        label: bump === 0 ? (hasValueAdd ? 'Stabilized' : 'Current') : `+$${bump}/unit`,
         type: 'rent',
-        newNOI: noi + addlAnnualIncome,
+        newNOI: stabilizedNOI + addlAnnualIncome,
         delta: addlAnnualIncome,
       });
     });
-    if (annualRentUpside > 0) {
+    // Only show Market Rents row if rent upside isn't already in stabilized baseline
+    if (annualRentUpside > 0 && !vaRentUpside) {
       scenarios.push({
         label: 'Market Rents',
         type: 'rent',
-        newNOI: noi + annualRentUpside,
+        newNOI: stabilizedNOI + annualRentUpside,
         delta: annualRentUpside,
         highlight: true,
       });
@@ -320,12 +326,12 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
       scenarios.push({
         label: `-${pct}% Expenses`,
         type: 'expense',
-        newNOI: noi + savings,
+        newNOI: stabilizedNOI + savings,
         delta: savings,
       });
     });
     return scenarios;
-  }, [noi, totalUnits, annualRentUpside, totalExpenses]);
+  }, [stabilizedNOI, hasValueAdd, vaRentUpside, totalUnits, annualRentUpside, totalExpenses]);
 
   const exitCapSteps = useMemo(() => {
     const caps = [];
