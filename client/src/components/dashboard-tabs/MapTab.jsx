@@ -367,29 +367,30 @@ function createBubbleIcon(color = '#ef4444', textColor = '#fff', units = null) {
   const hasUnits = units != null && units !== '' && units !== '?' && units !== 0;
   
   if (!hasUnits) {
-    // ── 4-pointed star / sparkle icon for pins without units ──
+    // ── Pin-drop marker for properties without units ──
     return L.divIcon({
-      className: 'sparkle-marker-icon',
+      className: 'bubble-marker-icon',
       html: `
         <div style="
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 28px;
-          height: 28px;
+          width: 26px;
+          height: 36px;
           cursor: pointer;
           position: relative;
           filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));
         ">
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M14 0 L17 10.5 L28 14 L17 17.5 L14 28 L11 17.5 L0 14 L11 10.5 Z" 
-                  fill="${color}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+          <svg width="26" height="36" viewBox="0 0 26 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 23 13 23s13-13.25 13-23C26 5.82 20.18 0 13 0z"
+                  fill="${color}" stroke="#fff" stroke-width="1.5"/>
+            <circle cx="13" cy="13" r="5" fill="#fff" opacity="0.9"/>
           </svg>
         </div>
       `,
-      iconSize: [28, 28],
-      iconAnchor: [14, 14],
-      popupAnchor: [0, -16]
+      iconSize: [26, 36],
+      iconAnchor: [13, 36],
+      popupAnchor: [0, -36]
     });
   }
 
