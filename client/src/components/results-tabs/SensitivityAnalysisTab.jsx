@@ -94,17 +94,9 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
   const noi = fullCalcs?.year1?.noi || 0;
 
   // ── Value-Add integration ──
-  const unitMix = scenarioData?.unit_mix || [];
   const totalUnits = scenarioData?.property?.units || scenarioData?.property?.total_units || 0;
-  const totalCurrentMonthlyRent = unitMix.reduce((s, u) => s + ((u.units || 0) * (u.rent_current || 0)), 0);
-  const totalMarketMonthlyRent = unitMix.reduce((s, u) => {
-    const mr = u.rent_market && u.rent_market > 0 ? u.rent_market : u.rent_current || 0;
-    return s + ((u.units || 0) * mr);
-  }, 0);
-  const annualRentUpside = (totalMarketMonthlyRent - totalCurrentMonthlyRent) * 12;
-  const totalExpenses = fullCalcs?.year1?.totalOperatingExpenses || 0;
 
-  // Stabilized NOI = current NOI + applied value-add upside
+  // Stabilized NOI = current NOI + all value-add income from Value-Add tab
   const stabilizedNOI = noi + (vaRentUpside || 0) + (vaRubsRecovery || 0) + (vaExpenseSavings || 0);
   const hasValueAdd = stabilizedNOI > noi;
   const currentLTV = scenarioData?.financing?.ltv || scenarioData?.pricing_financing?.ltv || 75;
@@ -298,8 +290,8 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
   // ═══════════════════════════════════════════════════════════════════════════
   const noiScenarios = useMemo(() => {
     const scenarios = [];
-    // Rent bump scenarios: +$25, +$50, +$75, +$100, +$150, Market Rent
-    // Baseline is stabilized NOI (includes applied value-add items)
+    // Baseline is stabilized NOI (current NOI + all value-add income)
+    // Additional rent bumps on top of stabilized baseline
     const rentBumps = [0, 25, 50, 75, 100, 150];
     rentBumps.forEach(bump => {
       const addlAnnualIncome = bump * totalUnits * 12;
@@ -310,28 +302,8 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
         delta: addlAnnualIncome,
       });
     });
-    // Only show Market Rents row if rent upside isn't already in stabilized baseline
-    if (annualRentUpside > 0 && !vaRentUpside) {
-      scenarios.push({
-        label: 'Market Rents',
-        type: 'rent',
-        newNOI: stabilizedNOI + annualRentUpside,
-        delta: annualRentUpside,
-        highlight: true,
-      });
-    }
-    // Expense reduction scenarios: -5%, -10%, -15%, -20%
-    [5, 10, 15, 20].forEach(pct => {
-      const savings = totalExpenses * (pct / 100);
-      scenarios.push({
-        label: `-${pct}% Expenses`,
-        type: 'expense',
-        newNOI: stabilizedNOI + savings,
-        delta: savings,
-      });
-    });
     return scenarios;
-  }, [stabilizedNOI, hasValueAdd, vaRentUpside, totalUnits, annualRentUpside, totalExpenses]);
+  }, [stabilizedNOI, hasValueAdd, totalUnits]);
 
   const exitCapSteps = useMemo(() => {
     const caps = [];
@@ -729,7 +701,7 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
             <div style={{ fontSize: 14, fontWeight: 700, color: VL }}>Value-Add Revaluation</div>
           </div>
           <div style={{ fontSize: 11, color: LB, marginBottom: 16 }}>
-            New property value if you bump rents or cut expenses, across exit cap rate scenarios
+            New property value if you bump rents, across exit cap rate scenarios
           </div>
 
           {revalMatrix.length > 0 && (
@@ -752,7 +724,7 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
                 </thead>
                 <tbody>
                   {revalMatrix.map((row, ri) => {
-                    const isCurrentRow = row.label === 'Current';
+                    const isCurrentRow = row.label === 'Current' || row.label === 'Stabilized';
                     return (
                       <tr key={ri} style={isCurrentRow ? { backgroundColor: '#f0f9ff' } : row.highlight ? { backgroundColor: '#f0fdf4' } : {}}>
                         <td style={{
@@ -830,7 +802,7 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
                 </thead>
                 <tbody>
                   {cashoutMatrix.map((row, ri) => {
-                    const isCurrentRow = row.label === 'Current';
+                    const isCurrentRow = row.label === 'Current' || row.label === 'Stabilized';
                     return (
                       <tr key={ri} style={isCurrentRow ? { backgroundColor: '#f0f9ff' } : row.highlight ? { backgroundColor: '#f0fdf4' } : {}}>
                         <td style={{
@@ -900,7 +872,7 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
                 </thead>
                 <tbody>
                   {refiCashflowMatrix.map((row, ri) => {
-                    const isCurrentRow = row.label === 'Current';
+                    const isCurrentRow = row.label === 'Current' || row.label === 'Stabilized';
                     return (
                       <tr key={ri} style={isCurrentRow ? { backgroundColor: '#f0f9ff' } : row.highlight ? { backgroundColor: '#f0fdf4' } : {}}>
                         <td style={{

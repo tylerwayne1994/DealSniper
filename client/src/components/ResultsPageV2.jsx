@@ -2928,6 +2928,9 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
             annualDebtService={annualDebtService}
             onFieldChange={handleFieldChange}
             marketCapRate={marketCapRate}
+            vaRentUpside={vaAnnualRentUpside}
+            vaRubsRecovery={vaAnnualRubsRecovery}
+            vaExpenseSavings={scenarioData?.value_add?.annual_expense_savings || 0}
           />
         );
 
