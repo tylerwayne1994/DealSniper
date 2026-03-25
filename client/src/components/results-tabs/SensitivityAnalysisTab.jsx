@@ -337,6 +337,8 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
   const activeCapIdx = selectedCapIdx != null ? selectedCapIdx : capRates.findIndex(c => Math.abs(c - exitCapRate) < 0.001);
   const activeCap = capRates[activeCapIdx >= 0 ? activeCapIdx : 0] || exitCapRate;
 
+  const existingLoan = purchasePrice * (currentLTV / 100);
+
   const cashoutRows = useMemo(() => {
     return noiScenarios.map(sc => {
       const newValue = activeCap > 0 ? sc.newNOI / activeCap : 0;
@@ -345,12 +347,13 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
         newValue,
         ltvCells: ltvSteps.map(ltv => {
           const newLoan = newValue * (ltv / 100);
-          return { ltv, newLoan };
+          const cashOut = newLoan - existingLoan;
+          return { ltv, newLoan, cashOut };
         }),
       };
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [noiScenarios, activeCap]);
+  }, [noiScenarios, activeCap, existingLoan]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // 8) POST-REFI CASHFLOW — selected cap rate × LTV → debt service & cashflow
@@ -745,14 +748,16 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
                           </div>
                         </td>
                         {row.valuations.map((v, ci) => {
+                          const baseVal = v.cap > 0 ? stabilizedNOI / v.cap : 0;
+                          const delta = v.value - baseVal;
                           const ratio = purchasePrice > 0 ? v.value / purchasePrice : 0;
                           const color = ratio >= 1.3 ? '#166534' : ratio >= 1.1 ? '#1e40af' : ratio >= 0.95 ? '#3730a3' : '#991b1b';
                           return (
                             <td key={ci} style={{ ...cellStyle(false), fontWeight: 600, color }}>
                               <div>{fmtMoney(v.value)}</div>
-                              {!isBase && purchasePrice > 0 && (
-                                <div style={{ fontSize: 10, fontWeight: 600, color: v.value > purchasePrice ? '#059669' : '#dc2626' }}>
-                                  {v.value > purchasePrice ? '+' : ''}{fmtMoney(v.value - purchasePrice)}
+                              {!isBase && delta !== 0 && (
+                                <div style={{ fontSize: 10, fontWeight: 600, color: delta > 0 ? '#059669' : '#dc2626' }}>
+                                  {delta > 0 ? '+' : ''}{fmtMoney(delta)}
                                 </div>
                               )}
                             </td>
@@ -786,7 +791,7 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
             </select>
           </div>
           <div style={{ fontSize: 11, color: LB, marginBottom: 16 }}>
-            New loan amount at each LTV based on revalued property
+            Cash out at each LTV based on revalued property (existing loan: {fmtMoney(existingLoan)} at {currentLTV}% LTV)
           </div>
 
           {cashoutRows.length > 0 && (
@@ -812,8 +817,11 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
                         </td>
                         <td style={{ ...cellStyle(false), fontWeight: 700, color: VL }}>{fmtMoney(row.newValue)}</td>
                         {row.ltvCells.map((cell, ci) => (
-                          <td key={ci} style={{ ...cellStyle(false), fontWeight: 700, color: '#166534' }}>
-                            {fmtMoney(cell.newLoan)}
+                          <td key={ci} style={{ ...cellStyle(false), fontWeight: 700 }}>
+                            <div style={{ color: VL }}>{fmtMoney(cell.newLoan)}</div>
+                            <div style={{ fontSize: 10, fontWeight: 600, color: cell.cashOut >= 0 ? '#059669' : '#dc2626' }}>
+                              {cell.cashOut >= 0 ? '+' : ''}{fmtMoney(cell.cashOut)} out
+                            </div>
                           </td>
                         ))}
                       </tr>
@@ -889,6 +897,7 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
             <div><span style={{ color: LB }}>Stabilized NOI:</span> <span style={{ fontWeight: 700, color: VL }}>{fmtMoney(stabilizedNOI)}</span></div>
             <div><span style={{ color: LB }}>Current ADS:</span> <span style={{ fontWeight: 700, color: VL }}>{fmtMoney(annualDebtService)}</span></div>
             <div><span style={{ color: LB }}>Purchase:</span> <span style={{ fontWeight: 700, color: VL }}>{fmtMoney(purchasePrice)}</span></div>
+            <div><span style={{ color: LB }}>Existing Loan:</span> <span style={{ fontWeight: 700, color: VL }}>{fmtMoney(existingLoan)} ({currentLTV}% LTV)</span></div>
           </div>
         </div>
 
