@@ -442,8 +442,8 @@ function PipelinePage() {
 
   // Monday CRM table header style
   const thStyle = {
-    padding: '10px 12px',
-    fontSize: '12px',
+    padding: '7px 6px',
+    fontSize: '11px',
     fontWeight: '600',
     color: '#676879',
     textAlign: 'left',
@@ -688,7 +688,7 @@ function PipelinePage() {
       {/* ================================================================ */}
       {/* Main Content */}
       {/* ================================================================ */}
-      <div style={{ maxWidth: '1900px', margin: '0 auto', padding: '20px 24px' }}>
+      <div style={{ margin: '0 auto', padding: '20px 16px' }}>
         {viewMode === 'pipeline' ? (
           isLoading ? (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
@@ -792,7 +792,7 @@ function PipelinePage() {
               /* ============================================================ */
               <div style={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e6e9ef', overflow: 'hidden' }}>
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1800px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1200px' }}>
                     <thead>
                       <tr>
                         <th style={{ ...thStyle, width: '50px', textAlign: 'center' }}></th>
@@ -853,7 +853,7 @@ function PipelinePage() {
                               const stColors = getStatusColor(deal.deal_stage || 'underwritten');
                               const isSelected = selectedDealIds.includes(deal.dealId);
 
-                              const cs = { padding: '10px 12px', fontSize: '13px', color: '#323338', verticalAlign: 'middle', borderBottom: '1px solid #f0f1f3' };
+                              const cs = { padding: '6px 6px', fontSize: '12px', color: '#323338', verticalAlign: 'middle', borderBottom: '1px solid #f0f1f3' };
 
                               return (
                                 <tr key={deal.dealId || idx}
@@ -873,7 +873,7 @@ function PipelinePage() {
                                     />
                                   </td>
                                   {/* Address */}
-                                  <td style={cs}><div style={{ fontWeight: '600', color: '#323338' }}>{deal.address || '-'}</div></td>
+                                  <td style={cs}><div style={{ fontWeight: '600', color: '#323338', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deal.address || '-'}</div></td>
                                   {/* Deal Structure badge */}
                                   <td style={cs}>
                                     <span style={{ display: 'inline-block', padding: '4px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: '600', backgroundColor: sColors.bg, color: sColors.text, whiteSpace: 'nowrap' }}>
@@ -930,15 +930,15 @@ function PipelinePage() {
                                   </td>
                                   {/* Actions */}
                                   <td style={{ ...cs, textAlign: 'center' }}>
-                                    <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                                      <button onClick={() => handleViewDeal(deal)} title="View underwriting" style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 8px', backgroundColor: '#00854d', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}><Eye size={11} />Underwrite</button>
-                                      <button onClick={() => handleGenerateLOI(deal)} title="Generate LOI" style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 8px', backgroundColor: '#a25ddc', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}><FileText size={11} />LOI</button>
-                                      <button onClick={() => handleDueDiligence(deal)} title="Due diligence" style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 8px', backgroundColor: '#fdab3d', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}><ClipboardCheck size={11} />DD</button>
-                                      <button onClick={() => navigate(`/pitch-deck?dealId=${deal.dealId}`)} title="Pitch deck" style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 8px', backgroundColor: '#579bfc', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}><Presentation size={11} />Pitch</button>
-                                      <button onClick={() => navigate(`/contract?dealId=${deal.dealId}`)} title="Contracts" style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 8px', backgroundColor: '#0d9488', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}><FileText size={11} />Contract</button>
-                                      <button onClick={() => setPhotoGalleryDeal(deal)} title="AI CapEx Estimator — analyze photos" style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 8px', background: 'linear-gradient(135deg, #f97316, #ea580c)', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}><Wrench size={11} />CapEx AI</button>
-                                      <button onClick={() => handleDuplicateDeal(deal)} title="Duplicate deal" style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 8px', backgroundColor: '#6366f1', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}><Copy size={11} />Clone</button>
-                                      <button onClick={() => handleDeleteDeal(deal.dealId)} title="Remove" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#ffefef', color: '#d83a52', border: 'none', borderRadius: '6px', cursor: 'pointer' }}><Trash2 size={12} /></button>
+                                    <div style={{ display: 'flex', gap: '3px', justifyContent: 'center', flexWrap: 'nowrap' }}>
+                                      <button onClick={() => handleViewDeal(deal)} title="Underwrite" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#00854d', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><Eye size={13} /></button>
+                                      <button onClick={() => handleGenerateLOI(deal)} title="Generate LOI" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#a25ddc', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><FileText size={13} /></button>
+                                      <button onClick={() => handleDueDiligence(deal)} title="Due Diligence" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#fdab3d', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><ClipboardCheck size={13} /></button>
+                                      <button onClick={() => navigate(`/pitch-deck?dealId=${deal.dealId}`)} title="Pitch Deck" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#579bfc', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><Presentation size={13} /></button>
+                                      <button onClick={() => navigate(`/contract?dealId=${deal.dealId}`)} title="Contracts" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#0d9488', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><FileText size={13} /></button>
+                                      <button onClick={() => setPhotoGalleryDeal(deal)} title="CapEx AI" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', background: 'linear-gradient(135deg, #f97316, #ea580c)', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><Wrench size={13} /></button>
+                                      <button onClick={() => handleDuplicateDeal(deal)} title="Clone" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#6366f1', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><Copy size={13} /></button>
+                                      <button onClick={() => handleDeleteDeal(deal.dealId)} title="Delete" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#ffefef', color: '#d83a52', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><Trash2 size={13} /></button>
                                     </div>
                                   </td>
                                 </tr>
