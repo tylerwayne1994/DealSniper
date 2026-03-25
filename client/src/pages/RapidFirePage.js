@@ -554,32 +554,26 @@ function RapidFirePage() {
       console.log('[RapidFire] File:', selectedFile.name, 'size:', selectedFile.size, 'type:', selectedFile.type);
       console.log('[RapidFire] Sending to:', `${API_BASE}/v2/rapid-fire/underwrite`);
 
-      // Use XMLHttpRequest for better error diagnostics on file uploads
-      const data = await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', `${API_BASE}/v2/rapid-fire/underwrite`);
-        xhr.timeout = 120000; // 2 minute timeout for large files
-        xhr.onload = () => {
-          console.log('[RapidFire] Response status:', xhr.status);
-          if (xhr.status >= 200 && xhr.status < 300) {
-            try {
-              resolve(JSON.parse(xhr.responseText));
-            } catch (e) {
-              reject(new Error('Invalid JSON response from server'));
-            }
-          } else {
-            reject(new Error(`Server error ${xhr.status}: ${xhr.responseText.substring(0, 200)}`));
-          }
-        };
-        xhr.onerror = () => {
-          console.error('[RapidFire] XHR network error. readyState:', xhr.readyState, 'status:', xhr.status);
-          reject(new Error('Network error - could not reach the server. Check your internet connection and try again.'));
-        };
-        xhr.ontimeout = () => {
-          reject(new Error('Request timed out after 2 minutes. The file may be too large or the server is busy.'));
-        };
-        xhr.send(formData);
+      const resp = await fetch(`${API_BASE}/v2/rapid-fire/underwrite`, {
+        method: 'POST',
+        mode: 'cors',
+        body: formData,
       });
+
+      console.log('[RapidFire] Response status:', resp.status);
+
+      if (!resp.ok) {
+        let errMsg = `Server error ${resp.status}`;
+        try {
+          const errBody = await resp.json();
+          errMsg = errBody.detail || errBody.message || errMsg;
+        } catch (_) {
+          try { errMsg = (await resp.text()).substring(0, 300) || errMsg; } catch (_2) {}
+        }
+        throw new Error(errMsg);
+      }
+
+      const data = await resp.json();
 
       console.log('[RapidFire] Received data:', data);
       if (data && data.debug) {

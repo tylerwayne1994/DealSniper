@@ -840,8 +840,9 @@ async def rapid_fire_underwrite(
             for col, scores in column_scores.items():
                 if col in used_cols:
                     continue  # Already assigned to a higher-priority type
-                if scores[field] > best_score:
-                    best_score = scores[field]
+                sc = scores.get(field, 0)
+                if sc > best_score:
+                    best_score = sc
                     best_col = col
             if best_score >= 5:  # Confidence threshold
                 detected[field] = best_col

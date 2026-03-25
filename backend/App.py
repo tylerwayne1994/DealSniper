@@ -53,6 +53,21 @@ MAX_BYTES = 50 * 1024 * 1024  # 50 MB
 app = FastAPI(title="Underwriting Backend", version="9.0.0")
 install_cors(app)
 
+# Global exception handler that preserves CORS headers on 500 errors
+@app.exception_handler(Exception)
+async def _cors_safe_500(request: Request, exc: Exception):
+    origin = request.headers.get("origin", "")
+    from cors_config import ALLOWED_ORIGINS
+    acao = origin if origin in ALLOWED_ORIGINS else (ALLOWED_ORIGINS[0] if ALLOWED_ORIGINS else "*")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal server error: {type(exc).__name__}: {exc}"},
+        headers={
+            "Access-Control-Allow-Origin": acao,
+            "Access-Control-Allow-Credentials": "true",
+        },
+    )
+
 import logging
 log = logging.getLogger("app")
 logging.basicConfig(level=logging.INFO)
