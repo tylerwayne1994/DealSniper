@@ -537,47 +537,66 @@ function RapidFirePage() {
     setIsLoadingResults(true);
 
     try {
+      // Quick connectivity check before uploading file
+      try {
+        const ping = await fetch(`${API_BASE}/health`, { method: 'GET', mode: 'cors' });
+        if (!ping.ok) throw new Error(`Backend returned ${ping.status}`);
+        console.log('[RapidFire] Backend health check passed');
+      } catch (pingErr) {
+        throw new Error(`Cannot reach backend server (${API_BASE}). It may be sleeping or restarting. Please wait 30 seconds and try again. Details: ${pingErr.message}`);
+      }
+
       const formData = new FormData();
       formData.append('file', selectedFile);
       formData.append('settings', JSON.stringify(settings));
       formData.append('sourceType', sourceType);
 
-      console.log('📤 Sending request to:', `${API_BASE}/v2/rapid-fire/underwrite`);
-      const response = await fetch(`${API_BASE}/v2/rapid-fire/underwrite`, {
-        method: 'POST',
-        body: formData
+      console.log('[RapidFire] File:', selectedFile.name, 'size:', selectedFile.size, 'type:', selectedFile.type);
+      console.log('[RapidFire] Sending to:', `${API_BASE}/v2/rapid-fire/underwrite`);
+
+      // Use XMLHttpRequest for better error diagnostics on file uploads
+      const data = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${API_BASE}/v2/rapid-fire/underwrite`);
+        xhr.timeout = 120000; // 2 minute timeout for large files
+        xhr.onload = () => {
+          console.log('[RapidFire] Response status:', xhr.status);
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              resolve(JSON.parse(xhr.responseText));
+            } catch (e) {
+              reject(new Error('Invalid JSON response from server'));
+            }
+          } else {
+            reject(new Error(`Server error ${xhr.status}: ${xhr.responseText.substring(0, 200)}`));
+          }
+        };
+        xhr.onerror = () => {
+          console.error('[RapidFire] XHR network error. readyState:', xhr.readyState, 'status:', xhr.status);
+          reject(new Error('Network error - could not reach the server. Check your internet connection and try again.'));
+        };
+        xhr.ontimeout = () => {
+          reject(new Error('Request timed out after 2 minutes. The file may be too large or the server is busy.'));
+        };
+        xhr.send(formData);
       });
 
-      console.log('📥 Response status:', response.status);
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Response error:', errorText);
-        throw new Error(`Rapid fire endpoint error: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      console.log('✅ Received data:', data);
+      console.log('[RapidFire] Received data:', data);
       if (data && data.debug) {
-        // Surface backend parsing details so you can see what it did
-        console.log('🔧 Rapid fire debug:', data.debug);
-        console.log('📋 Headers in spreadsheet:', data.debug.matched_headers);
-        console.log('📊 Total rows found:', data.debug.total_rows);
-        console.log('⚠️ Rows skipped:', data.debug.skipped_rows || 0);
+        console.log('[RapidFire] Debug:', data.debug);
+        console.log('[RapidFire] Headers:', data.debug.matched_headers);
+        console.log('[RapidFire] Total rows:', data.debug.total_rows);
       }
-      console.log('📊 Number of deals:', data.deals?.length || 0);
+      console.log('[RapidFire] Deals count:', data.deals?.length || 0);
       
       if (data.deals?.length === 0 && data.debug) {
-        console.warn('⚠️ No deals found! This usually means column headers did not match.');
-        console.warn('Expected headers for Reonomy: "Asking Price" or "Sale Price", "Units", "Property Name"');
-        console.warn('Check if your spreadsheet has these columns:', data.debug.matched_headers);
+        console.warn('[RapidFire] No deals found - column headers may not match');
       }
       
       setDeals(Array.isArray(data.deals) ? data.deals : []);
       setIsModalOpen(false);
-      console.log('✅ Modal closed, deals set');
     } catch (error) {
-      console.error('💥 Rapid fire underwriting failed:', error);
-      console.error('💥 Error details:', error.message, error.stack);
+      console.error('[RapidFire] Failed:', error);
       alert(`Failed to run rapid fire: ${error.message}`);
       setDeals([]);
       setIsModalOpen(false);
