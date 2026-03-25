@@ -8,6 +8,27 @@ async function getCurrentUserId() {
   return data?.user?.id || null;
 }
 
+// Simple geocoder using Nominatim (no external dependencies)
+async function nominatimGeocode(address) {
+  if (!address || !address.trim()) return null;
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(address)}&limit=1&countrycodes=us`,
+      { headers: { 'User-Agent': 'DealSniper/1.0' } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0) {
+      const lat = parseFloat(data[0].lat);
+      const lng = parseFloat(data[0].lon);
+      if (!isNaN(lat) && !isNaN(lng)) return { latitude: lat, longitude: lng };
+    }
+  } catch (e) {
+    console.warn('Nominatim geocode failed:', e);
+  }
+  return null;
+}
+
 /**
  * Save a deal to Supabase
  * @param {Object} dealData - The complete deal data to save
@@ -62,15 +83,10 @@ export async function saveDeal(dealData) {
   if (!finalLat || !finalLng) {
     const fullAddress = address || parsedData?.property?.address || '';
     if (fullAddress && fullAddress !== 'Unknown Address') {
-      try {
-        const { geocodeAddress } = await import('../utils/geocode');
-        const coords = await geocodeAddress(fullAddress);
-        if (coords) {
-          finalLat = coords.latitude;
-          finalLng = coords.longitude;
-        }
-      } catch (e) {
-        console.warn('Auto-geocode failed:', e);
+      const coords = await nominatimGeocode(fullAddress);
+      if (coords) {
+        finalLat = coords.latitude;
+        finalLng = coords.longitude;
       }
     }
   }
@@ -316,7 +332,6 @@ export async function geocodeExistingDeals() {
 
   console.log(`Geocoding ${needsGeocode.length} deals missing coordinates...`);
 
-  let { geocodeAddress } = await import('../utils/geocode');
   let updated = 0;
 
   for (const deal of needsGeocode) {
@@ -324,7 +339,7 @@ export async function geocodeExistingDeals() {
     if (!addr || addr === 'Unknown Address') continue;
 
     try {
-      const coords = await geocodeAddress(addr);
+      const coords = await nominatimGeocode(addr);
       if (coords && coords.latitude && coords.longitude) {
         const { error: updateErr } = await supabase
           .from('deals')
@@ -335,8 +350,8 @@ export async function geocodeExistingDeals() {
     } catch (e) {
       console.warn(`Geocode failed for ${addr}:`, e);
     }
-    // Throttle: 200ms between requests
-    await new Promise(r => setTimeout(r, 200));
+    // Throttle: 1.1s between requests to respect Nominatim usage policy
+    await new Promise(r => setTimeout(r, 1100));
   }
 
   console.log(`Geocoded ${updated}/${needsGeocode.length} deals`);

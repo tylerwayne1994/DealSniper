@@ -607,6 +607,7 @@ function DashboardMapTab() {
   const [parcelProgress, setParcelProgress] = useState({ current: 0, total: 0, found: 0 });
   const [isFetchingParcels, setIsFetchingParcels] = useState(false);
   const parcelKeyRef = useRef(0); // Force GeoJSON re-render
+  const geocodeBackfillRan = useRef(false); // Prevent double-backfilling
 
   // Toast notification state
   const [toasts, setToasts] = useState([]);
@@ -966,9 +967,10 @@ function DashboardMapTab() {
       });
       console.log(`${dealsWithCoords.length} deals have valid coordinates`);
 
-      // If some deals are missing coordinates, backfill geocode and reload
+      // If some deals are missing coordinates, backfill geocode and reload (once per session)
       const dealsMissingCoords = deals.length - dealsWithCoords.length;
-      if (dealsMissingCoords > 0) {
+      if (dealsMissingCoords > 0 && !geocodeBackfillRan.current) {
+        geocodeBackfillRan.current = true;
         console.log(`Geocoding ${dealsMissingCoords} deals missing coordinates...`);
         geocodeExistingDeals().then(updated => {
           if (updated > 0) {
