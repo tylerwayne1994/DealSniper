@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ReferenceLine
@@ -286,66 +286,77 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
   }, [scenarioData, incomeGrowth, calculateFullAnalysisFn, purchasePrice]);
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 6) VALUE-ADD REVALUATION TABLE — NOI changes × Exit Cap Rates
+  // 6) VALUE-ADD REVALUATION — editable cap rates
   // ═══════════════════════════════════════════════════════════════════════════
-  const noiScenarios = useMemo(() => {
-    const scenarios = [];
-    // Baseline is stabilized NOI (current NOI + all value-add income)
-    // Additional rent bumps on top of stabilized baseline
-    const rentBumps = [0, 25, 50, 75, 100, 150];
-    rentBumps.forEach(bump => {
-      const addlAnnualIncome = bump * totalUnits * 12;
-      scenarios.push({
-        label: bump === 0 ? (hasValueAdd ? 'Stabilized' : 'Current') : `+$${bump}/unit`,
-        type: 'rent',
-        newNOI: stabilizedNOI + addlAnnualIncome,
-        delta: addlAnnualIncome,
-      });
-    });
-    return scenarios;
-  }, [stabilizedNOI, hasValueAdd, totalUnits]);
-
-  const exitCapSteps = useMemo(() => {
-    const caps = [];
-    for (let i = 3; i >= -2; i--) caps.push(exitCapRate + i * 0.005);
-    return caps;
+  const defaultCaps = useMemo(() => {
+    const base = exitCapRate;
+    return [base - 0.015, base - 0.01, base - 0.005, base, base + 0.005, base + 0.01];
   }, [exitCapRate]);
 
+  const [customCaps, setCustomCaps] = useState(null);
+  const capRates = customCaps || defaultCaps;
+
+  const handleCapChange = (idx, rawVal) => {
+    const next = [...capRates];
+    const parsed = parseFloat(rawVal);
+    if (!isNaN(parsed) && parsed > 0 && parsed <= 20) {
+      next[idx] = parsed / 100;
+    }
+    setCustomCaps(next);
+  };
+
+  const noiScenarios = useMemo(() => {
+    const bumps = [0, 25, 50, 75, 100, 150];
+    return bumps.map(bump => {
+      const addl = bump * totalUnits * 12;
+      return {
+        label: bump === 0 ? (hasValueAdd ? 'Stabilized' : 'Current') : `+$${bump}/unit`,
+        newNOI: stabilizedNOI + addl,
+        delta: addl,
+      };
+    });
+  }, [stabilizedNOI, hasValueAdd, totalUnits]);
+
+  // Revaluation: NOI / cap
   const revalMatrix = useMemo(() => {
     return noiScenarios.map(sc => ({
       ...sc,
-      valuations: exitCapSteps.map(cap => ({
+      valuations: capRates.map(cap => ({
         cap,
         value: cap > 0 ? sc.newNOI / cap : 0,
       })),
     }));
-  }, [noiScenarios, exitCapSteps]);
+  }, [noiScenarios, capRates]);
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 7) CASH-OUT REFI TABLE — Revaluation × LTV → Loan Proceeds
+  // 7) CASH-OUT REFI — same cap rates × LTV
   // ═══════════════════════════════════════════════════════════════════════════
   const ltvSteps = [65, 70, 75, 80];
   const currentLoanBalance = purchasePrice * (currentLTV / 100);
 
   const cashoutMatrix = useMemo(() => {
-    // Use the current exit cap for revaluation
-    return noiScenarios.filter(sc => sc.type === 'rent' || sc.highlight).map(sc => {
-      const newValue = exitCapRate > 0 ? sc.newNOI / exitCapRate : 0;
+    return noiScenarios.map(sc => {
       return {
         ...sc,
-        newValue,
-        ltvCells: ltvSteps.map(ltv => {
-          const newLoan = newValue * (ltv / 100);
-          const cashout = Math.max(newLoan - currentLoanBalance, 0);
-          return { ltv, newLoan, cashout };
+        capCells: capRates.map(cap => {
+          const newValue = cap > 0 ? sc.newNOI / cap : 0;
+          return {
+            cap,
+            newValue,
+            ltvCells: ltvSteps.map(ltv => {
+              const newLoan = newValue * (ltv / 100);
+              const cashout = newLoan - currentLoanBalance;
+              return { ltv, newLoan, cashout };
+            }),
+          };
         }),
       };
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [noiScenarios, exitCapRate, currentLoanBalance]);
+  }, [noiScenarios, capRates, currentLoanBalance]);
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 8) POST-REFI CASHFLOW TABLE — After cash-out, new debt service & cashflow
+  // 8) POST-REFI CASHFLOW
   // ═══════════════════════════════════════════════════════════════════════════
   const calcMonthlyPmt = (principal, annualRate, amortYrs) => {
     if (principal <= 0 || amortYrs <= 0) return 0;
@@ -356,24 +367,27 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
   };
 
   const refiCashflowMatrix = useMemo(() => {
-    const refiRate = currentRate > 1 ? currentRate : currentRate * 100; // normalize to pct
-    return noiScenarios.filter(sc => sc.type === 'rent' || sc.highlight).map(sc => {
-      const newValue = exitCapRate > 0 ? sc.newNOI / exitCapRate : 0;
-      return {
-        ...sc,
-        newValue,
-        ltvCells: ltvSteps.map(ltv => {
-          const newLoanAmt = newValue * (ltv / 100);
-          const monthlyPmt = calcMonthlyPmt(newLoanAmt, refiRate, currentAmort);
-          const newADS = monthlyPmt * 12;
-          const annualCashflow = sc.newNOI - newADS;
-          const cashout = Math.max(newLoanAmt - currentLoanBalance, 0);
-          return { ltv, newLoanAmt, newADS, annualCashflow, monthlyCashflow: annualCashflow / 12, cashout };
-        }),
-      };
-    });
+    const refiRate = currentRate > 1 ? currentRate : currentRate * 100;
+    return noiScenarios.map(sc => ({
+      ...sc,
+      capCells: capRates.map(cap => {
+        const newValue = cap > 0 ? sc.newNOI / cap : 0;
+        return {
+          cap,
+          newValue,
+          ltvCells: ltvSteps.map(ltv => {
+            const newLoanAmt = newValue * (ltv / 100);
+            const monthlyPmt = calcMonthlyPmt(newLoanAmt, refiRate, currentAmort);
+            const newADS = monthlyPmt * 12;
+            const annualCashflow = sc.newNOI - newADS;
+            const cashout = newLoanAmt - currentLoanBalance;
+            return { ltv, newLoanAmt, newADS, annualCashflow, monthlyCashflow: annualCashflow / 12, cashout };
+          }),
+        };
+      }),
+    }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [noiScenarios, exitCapRate, currentRate, currentAmort, currentLoanBalance]);
+  }, [noiScenarios, capRates, currentRate, currentAmort, currentLoanBalance]);
 
   // ─── Table cell style helper ─────────────────────────────────────────────
   const cellStyle = (isHeader = false, isCurrent = false) => ({
@@ -693,15 +707,12 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════════
-            TABLE 4: Value-Add Revaluation — NOI Scenarios × Exit Cap
+            TABLE 4: Value-Add Revaluation
             ═══════════════════════════════════════════════════════════════════ */}
         <div style={card}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <span style={{ fontSize: 18 }}>🏗️</span>
-            <div style={{ fontSize: 14, fontWeight: 700, color: VL }}>Value-Add Revaluation</div>
-          </div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: VL, marginBottom: 4 }}>Value-Add Revaluation</div>
           <div style={{ fontSize: 11, color: LB, marginBottom: 16 }}>
-            New property value if you bump rents, across exit cap rate scenarios
+            New property value based on stabilized NOI across cap rate scenarios. Click cap rates to edit.
           </div>
 
           {revalMatrix.length > 0 && (
@@ -709,43 +720,45 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
                   <tr>
-                    <th style={{ ...cellStyle(true), textAlign: 'left', minWidth: 130 }}>Scenario</th>
-                    <th style={{ ...cellStyle(true), minWidth: 90 }}>New NOI</th>
-                    {exitCapSteps.map((cap, i) => (
-                      <th key={i} style={{
-                        ...cellStyle(true),
-                        ...(Math.abs(cap - exitCapRate) < 0.001 ? { color: '#3b82f6', fontWeight: 800 } : {}),
-                      }}>
-                        {(cap * 100).toFixed(2)}% Cap
-                        {Math.abs(cap - exitCapRate) < 0.001 && <span style={{ fontSize: 9, display: 'block', color: '#3b82f6' }}>(current)</span>}
+                    <th style={{ ...cellStyle(true), textAlign: 'left', minWidth: 90 }}>NOI</th>
+                    {capRates.map((cap, i) => (
+                      <th key={i} style={{ ...cellStyle(true), padding: '6px 8px' }}>
+                        <input
+                          type="number"
+                          step="0.25"
+                          value={parseFloat((cap * 100).toFixed(2))}
+                          onChange={e => handleCapChange(i, e.target.value)}
+                          style={{
+                            width: 56, border: `1px solid ${B}`, borderRadius: 4, padding: '4px 6px',
+                            fontSize: 11, fontWeight: 700, textAlign: 'center', background: '#fff',
+                            color: Math.abs(cap - exitCapRate) < 0.001 ? '#3b82f6' : '#374151',
+                          }}
+                        />
+                        <div style={{ fontSize: 9, color: LB, marginTop: 2 }}>% cap</div>
+                        {Math.abs(cap - exitCapRate) < 0.001 && <div style={{ fontSize: 9, color: '#3b82f6', fontWeight: 600 }}>current</div>}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {revalMatrix.map((row, ri) => {
-                    const isCurrentRow = row.label === 'Current' || row.label === 'Stabilized';
+                    const isBase = ri === 0;
                     return (
-                      <tr key={ri} style={isCurrentRow ? { backgroundColor: '#f0f9ff' } : row.highlight ? { backgroundColor: '#f0fdf4' } : {}}>
-                        <td style={{
-                          ...cellStyle(false), textAlign: 'left', fontWeight: 700,
-                          color: row.highlight ? '#059669' : isCurrentRow ? '#2563eb' : row.type === 'expense' ? '#7c3aed' : VL,
-                        }}>
-                          <div>{row.label}</div>
-                          {row.delta > 0 && !isCurrentRow && <div style={{ fontSize: 10, color: '#10b981', fontWeight: 600 }}>+{fmtMoney(row.delta)}/yr</div>}
+                      <tr key={ri}>
+                        <td style={{ ...cellStyle(false), textAlign: 'left', fontWeight: 700, color: isBase ? '#2563eb' : VL, whiteSpace: 'nowrap' }}>
+                          <div>{fmtMoney(row.newNOI)}</div>
+                          <div style={{ fontSize: 10, fontWeight: 600, color: isBase ? '#2563eb' : '#6b7280' }}>
+                            {row.label}{row.delta > 0 && !isBase ? ` (+${fmtMoney(row.delta)}/yr)` : ''}
+                          </div>
                         </td>
-                        <td style={{ ...cellStyle(false), fontWeight: 700, color: VL }}>{fmtMoney(row.newNOI)}</td>
                         {row.valuations.map((v, ci) => {
-                          const vc = valColor(v.value, purchasePrice);
-                          const isCurCap = Math.abs(v.cap - exitCapRate) < 0.001;
+                          const ratio = purchasePrice > 0 ? v.value / purchasePrice : 0;
+                          const color = ratio >= 1.3 ? '#166534' : ratio >= 1.1 ? '#1e40af' : ratio >= 0.95 ? '#3730a3' : '#991b1b';
                           return (
-                            <td key={ci} style={{
-                              ...cellStyle(false, isCurCap && isCurrentRow),
-                              backgroundColor: vc.bg, color: vc.text, fontWeight: 600,
-                            }}>
+                            <td key={ci} style={{ ...cellStyle(false), fontWeight: 600, color }}>
                               <div>{fmtMoney(v.value)}</div>
-                              {!isCurrentRow && purchasePrice > 0 && (
-                                <div style={{ fontSize: 10, color: v.value > purchasePrice ? '#059669' : '#dc2626', fontWeight: 600 }}>
+                              {!isBase && purchasePrice > 0 && (
+                                <div style={{ fontSize: 10, fontWeight: 600, color: v.value > purchasePrice ? '#059669' : '#dc2626' }}>
                                   {v.value > purchasePrice ? '+' : ''}{fmtMoney(v.value - purchasePrice)}
                                 </div>
                               )}
@@ -762,160 +775,132 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════════
-            TABLE 5: Cash-Out Refi Amount — NOI Scenario × LTV
+            TABLE 5: Cash-Out Refinance — per cap rate, per LTV
             ═══════════════════════════════════════════════════════════════════ */}
         <div style={card}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <span style={{ fontSize: 18 }}>💰</span>
-            <div style={{ fontSize: 14, fontWeight: 700, color: VL }}>Cash-Out Refinance Proceeds</div>
-          </div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: VL, marginBottom: 4 }}>Cash-Out Refinance Proceeds</div>
           <div style={{ fontSize: 11, color: LB, marginBottom: 6 }}>
-            How much you can pull out on a cash-out refi at the current {(exitCapRate * 100).toFixed(2)}% exit cap, after paying off existing loan ({fmtMoney(currentLoanBalance)})
+            Cash you can pull out after refi, by cap rate and LTV. Existing loan: {fmtMoney(currentLoanBalance)}
           </div>
           <div style={{ fontSize: 11, color: LB, marginBottom: 16 }}>
-            Refi rate: {currentRate > 1 ? currentRate.toFixed(2) : (currentRate * 100).toFixed(2)}% · Amortization: {currentAmort}yr
+            Rate: {currentRate > 1 ? currentRate.toFixed(2) : (currentRate * 100).toFixed(2)}% / {currentAmort}yr amort
           </div>
 
-          {cashoutMatrix.length > 0 && (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                <thead>
-                  <tr>
-                    <th style={{ ...cellStyle(true), textAlign: 'left', minWidth: 130 }}>Scenario</th>
-                    <th style={{ ...cellStyle(true), minWidth: 100 }}>New Value</th>
-                    {ltvSteps.map((ltv, i) => (
-                      <th key={i} colSpan={2} style={{ ...cellStyle(true) }}>
-                        {ltv}% LTV
-                      </th>
-                    ))}
-                  </tr>
-                  <tr>
-                    <th style={cellStyle(true)}></th>
-                    <th style={cellStyle(true)}></th>
-                    {ltvSteps.map((_, i) => (
-                      <React.Fragment key={i}>
-                        <th style={{ ...cellStyle(true), fontSize: 10 }}>New Loan</th>
-                        <th style={{ ...cellStyle(true), fontSize: 10 }}>Cash Out</th>
-                      </React.Fragment>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {cashoutMatrix.map((row, ri) => {
-                    const isCurrentRow = row.label === 'Current' || row.label === 'Stabilized';
-                    return (
-                      <tr key={ri} style={isCurrentRow ? { backgroundColor: '#f0f9ff' } : row.highlight ? { backgroundColor: '#f0fdf4' } : {}}>
-                        <td style={{
-                          ...cellStyle(false), textAlign: 'left', fontWeight: 700,
-                          color: row.highlight ? '#059669' : isCurrentRow ? '#2563eb' : VL,
-                        }}>
-                          {row.label}
-                        </td>
-                        <td style={{ ...cellStyle(false), fontWeight: 700, color: VL }}>{fmtMoney(row.newValue)}</td>
-                        {row.ltvCells.map((cell, ci) => (
-                          <React.Fragment key={ci}>
-                            <td style={{ ...cellStyle(false), fontWeight: 600, color: VL }}>{fmtMoney(cell.newLoan)}</td>
-                            <td style={{
-                              ...cellStyle(false), fontWeight: 700,
-                              backgroundColor: cell.cashout > 0 ? '#dcfce7' : '#f3f4f6',
-                              color: cell.cashout > 0 ? '#166534' : '#6b7280',
-                            }}>
-                              {cell.cashout > 0 ? fmtMoney(cell.cashout) : '—'}
-                            </td>
-                          </React.Fragment>
+          {cashoutMatrix.length > 0 && capRates.map((cap, capIdx) => {
+            const capPct = (cap * 100).toFixed(2);
+            const isCurrent = Math.abs(cap - exitCapRate) < 0.001;
+            return (
+              <div key={capIdx} style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: isCurrent ? '#3b82f6' : VL, marginBottom: 6 }}>
+                  {capPct}% Cap Rate{isCurrent ? ' (current)' : ''}
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead>
+                      <tr>
+                        <th style={{ ...cellStyle(true), textAlign: 'left', minWidth: 90 }}>NOI</th>
+                        <th style={cellStyle(true)}>New Value</th>
+                        {ltvSteps.map((ltv, i) => (
+                          <th key={i} style={cellStyle(true)}>{ltv}% LTV</th>
                         ))}
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+                    </thead>
+                    <tbody>
+                      {cashoutMatrix.map((row, ri) => {
+                        const isBase = ri === 0;
+                        const capData = row.capCells[capIdx];
+                        return (
+                          <tr key={ri}>
+                            <td style={{ ...cellStyle(false), textAlign: 'left', fontWeight: 700, color: isBase ? '#2563eb' : VL, whiteSpace: 'nowrap' }}>
+                              <div>{fmtMoney(row.newNOI)}</div>
+                              <div style={{ fontSize: 10, color: isBase ? '#2563eb' : '#6b7280' }}>{row.label}</div>
+                            </td>
+                            <td style={{ ...cellStyle(false), fontWeight: 700, color: VL }}>{fmtMoney(capData.newValue)}</td>
+                            {capData.ltvCells.map((cell, ci) => (
+                              <td key={ci} style={{ ...cellStyle(false), fontWeight: 700, color: cell.cashout > 0 ? '#166534' : cell.cashout < 0 ? '#991b1b' : '#6b7280' }}>
+                                {fmtMoney(cell.cashout)}
+                              </td>
+                            ))}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════════
-            TABLE 6: Post Cash-Out Refi Cashflow
+            TABLE 6: Post-Refi Cashflow
             ═══════════════════════════════════════════════════════════════════ */}
         <div style={card}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <span style={{ fontSize: 18 }}>📊</span>
-            <div style={{ fontSize: 14, fontWeight: 700, color: VL }}>Post-Refi Cashflow</div>
-          </div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: VL, marginBottom: 4 }}>Post-Refi Cashflow</div>
           <div style={{ fontSize: 11, color: LB, marginBottom: 16 }}>
-            Annual cashflow after cash-out refi — new debt service based on the larger loan at each LTV
+            Annual cashflow and cash-out after refi at each cap rate and LTV
           </div>
 
-          {refiCashflowMatrix.length > 0 && (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                <thead>
-                  <tr>
-                    <th style={{ ...cellStyle(true), textAlign: 'left', minWidth: 130 }}>Scenario</th>
-                    <th style={{ ...cellStyle(true) }}>NOI</th>
-                    {ltvSteps.map((ltv, i) => (
-                      <th key={i} colSpan={3} style={{ ...cellStyle(true) }}>
-                        {ltv}% LTV Refi
-                      </th>
-                    ))}
-                  </tr>
-                  <tr>
-                    <th style={cellStyle(true)}></th>
-                    <th style={cellStyle(true)}></th>
-                    {ltvSteps.map((_, i) => (
-                      <React.Fragment key={i}>
-                        <th style={{ ...cellStyle(true), fontSize: 10 }}>Debt Svc</th>
-                        <th style={{ ...cellStyle(true), fontSize: 10 }}>Cashflow</th>
-                        <th style={{ ...cellStyle(true), fontSize: 10 }}>Cash Out</th>
-                      </React.Fragment>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {refiCashflowMatrix.map((row, ri) => {
-                    const isCurrentRow = row.label === 'Current' || row.label === 'Stabilized';
-                    return (
-                      <tr key={ri} style={isCurrentRow ? { backgroundColor: '#f0f9ff' } : row.highlight ? { backgroundColor: '#f0fdf4' } : {}}>
-                        <td style={{
-                          ...cellStyle(false), textAlign: 'left', fontWeight: 700,
-                          color: row.highlight ? '#059669' : isCurrentRow ? '#2563eb' : VL,
-                        }}>
-                          {row.label}
-                        </td>
-                        <td style={{ ...cellStyle(false), fontWeight: 700, color: VL }}>{fmtMoney(row.newNOI)}</td>
-                        {row.ltvCells.map((cell, ci) => (
-                          <React.Fragment key={ci}>
-                            <td style={{ ...cellStyle(false), color: '#991b1b', fontWeight: 600 }}>
-                              {fmtMoney(cell.newADS)}
-                            </td>
-                            <td style={{
-                              ...cellStyle(false), fontWeight: 700,
-                              backgroundColor: cell.annualCashflow > 0 ? '#dcfce7' : '#fecaca',
-                              color: cell.annualCashflow > 0 ? '#166534' : '#991b1b',
-                            }}>
-                              <div>{fmtMoney(cell.annualCashflow)}</div>
-                              <div style={{ fontSize: 10, fontWeight: 600 }}>{fmtMoney(cell.monthlyCashflow)}/mo</div>
-                            </td>
-                            <td style={{
-                              ...cellStyle(false), fontWeight: 600,
-                              color: cell.cashout > 0 ? '#166534' : '#6b7280',
-                            }}>
-                              {cell.cashout > 0 ? fmtMoney(cell.cashout) : '—'}
-                            </td>
+          {refiCashflowMatrix.length > 0 && capRates.map((cap, capIdx) => {
+            const capPct = (cap * 100).toFixed(2);
+            const isCurrent = Math.abs(cap - exitCapRate) < 0.001;
+            return (
+              <div key={capIdx} style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: isCurrent ? '#3b82f6' : VL, marginBottom: 6 }}>
+                  {capPct}% Cap Rate{isCurrent ? ' (current)' : ''}
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead>
+                      <tr>
+                        <th style={{ ...cellStyle(true), textAlign: 'left', minWidth: 90 }}>NOI</th>
+                        {ltvSteps.map((ltv, i) => (
+                          <React.Fragment key={i}>
+                            <th style={cellStyle(true)}>Debt Svc ({ltv}%)</th>
+                            <th style={cellStyle(true)}>Cashflow</th>
+                            <th style={cellStyle(true)}>Cash Out</th>
                           </React.Fragment>
                         ))}
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+                    </thead>
+                    <tbody>
+                      {refiCashflowMatrix.map((row, ri) => {
+                        const isBase = ri === 0;
+                        const capData = row.capCells[capIdx];
+                        return (
+                          <tr key={ri}>
+                            <td style={{ ...cellStyle(false), textAlign: 'left', fontWeight: 700, color: isBase ? '#2563eb' : VL, whiteSpace: 'nowrap' }}>
+                              <div>{fmtMoney(row.newNOI)}</div>
+                              <div style={{ fontSize: 10, color: isBase ? '#2563eb' : '#6b7280' }}>{row.label}</div>
+                            </td>
+                            {capData.ltvCells.map((cell, ci) => (
+                              <React.Fragment key={ci}>
+                                <td style={{ ...cellStyle(false), fontWeight: 600, color: '#991b1b' }}>
+                                  {fmtMoney(cell.newADS)}
+                                </td>
+                                <td style={{ ...cellStyle(false), fontWeight: 700, color: cell.annualCashflow > 0 ? '#166534' : '#991b1b' }}>
+                                  <div>{fmtMoney(cell.annualCashflow)}</div>
+                                  <div style={{ fontSize: 10, fontWeight: 600 }}>{fmtMoney(cell.monthlyCashflow)}/mo</div>
+                                </td>
+                                <td style={{ ...cellStyle(false), fontWeight: 700, color: cell.cashout > 0 ? '#166534' : cell.cashout < 0 ? '#991b1b' : '#6b7280' }}>
+                                  {fmtMoney(cell.cashout)}
+                                </td>
+                              </React.Fragment>
+                            ))}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })}
 
-          {/* Current financing reference */}
           <div style={{ marginTop: 16, padding: '12px 16px', backgroundColor: '#f8fafc', borderRadius: 10, border: `1px solid ${B}`, display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 12 }}>
             <div><span style={{ color: LB }}>Current Loan:</span> <span style={{ fontWeight: 700, color: VL }}>{fmtMoney(currentLoanBalance)}</span></div>
             <div><span style={{ color: LB }}>Current ADS:</span> <span style={{ fontWeight: 700, color: VL }}>{fmtMoney(annualDebtService)}</span></div>
-            <div><span style={{ color: LB }}>Current Cashflow:</span> <span style={{ fontWeight: 700, color: noi - annualDebtService > 0 ? '#166534' : '#991b1b' }}>{fmtMoney(noi - annualDebtService)}/yr</span></div>
+            <div><span style={{ color: LB }}>Stabilized NOI:</span> <span style={{ fontWeight: 700, color: VL }}>{fmtMoney(stabilizedNOI)}</span></div>
             <div><span style={{ color: LB }}>Purchase:</span> <span style={{ fontWeight: 700, color: VL }}>{fmtMoney(purchasePrice)}</span></div>
           </div>
         </div>
