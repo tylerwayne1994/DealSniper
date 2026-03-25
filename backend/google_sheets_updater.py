@@ -61,43 +61,53 @@ def load_mapping():
     Returns:
         tuple[list[dict], Path]: (mapping rows, selected mapping CSV path)
     """
-    base_dir = Path(__file__).parent.parent / "client" / "public"
+    backend_dir = Path(__file__).parent
+    search_dirs = [
+        backend_dir,                                     # backend/ (where code lives)
+        backend_dir.parent / "client" / "public",        # legacy path
+    ]
 
     # Optional override via env var; supports absolute or base_dir-relative
     override = os.getenv("UNDERWRITE_MAPPING_CSV")
     if override:
         candidate = Path(override)
         if not candidate.is_absolute():
-            candidate = base_dir / candidate
+            candidate = backend_dir / candidate
         if not candidate.exists():
             raise FileNotFoundError(
                 f"UNDERWRITE_MAPPING_CSV points to a missing file: {candidate}"
             )
         mapping_path = candidate
     else:
-        # Prefer the explicit (1) copy if present, then double-space, then single-space
         preferred_names = [
             "UNDERWRITE  - Data Mapping (1).csv",
             "UNDERWRITE  - Data Mapping.csv",
             "UNDERWRITE - Data Mapping.csv",
         ]
         mapping_path = None
-        for name in preferred_names:
-            p = base_dir / name
-            if p.exists():
-                mapping_path = p
+        for d in search_dirs:
+            if mapping_path:
                 break
+            for name in preferred_names:
+                p = d / name
+                if p.exists():
+                    mapping_path = p
+                    break
 
-        # Fallback: glob any close match, prefer ones containing (1)
+        # Fallback: glob any close match in each search dir
         if mapping_path is None:
-            matches = [p for p in base_dir.glob("UNDERWRITE*Data Mapping*.csv") if p.is_file()]
-            matches.sort(key=lambda p: ("(1)" not in p.name, p.name))
-            if matches:
-                mapping_path = matches[0]
-            else:
-                raise FileNotFoundError(
-                    f"Mapping CSV not found. Looked for variants in {base_dir}."
-                )
+            for d in search_dirs:
+                matches = [p for p in d.glob("UNDERWRITE*Data Mapping*.csv") if p.is_file()]
+                matches.sort(key=lambda p: ("(1)" not in p.name, p.name))
+                if matches:
+                    mapping_path = matches[0]
+                    break
+
+        if mapping_path is None:
+            searched = ", ".join(str(d) for d in search_dirs)
+            raise FileNotFoundError(
+                f"Mapping CSV not found. Looked for variants in: {searched}"
+            )
 
     _dbg(f"Using mapping CSV: {mapping_path}")
     mapping = []

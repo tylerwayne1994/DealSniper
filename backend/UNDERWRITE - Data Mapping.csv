@@ -1,0 +1,58 @@
+CATEGORY,CELL REFERENCE,INPUT NAME,NOTES
+Deal Structure,D9,Purchase Price,Acquisition price
+Deal Structure,H28,Down Payment %,As decimal (e.g. 0.25 = 25%)
+Deal Structure,D23,Closing Costs %,Default 3%
+Deal Structure,D197,Your Equity,Down payment amount
+Deal Structure,D164,Loan Amount,Loan principal
+Deal Structure,H29,Interest Rate %,Annual rate as decimal
+Deal Structure,H30,Loan Term (Years),Loan term
+Deal Structure,H31,Amortization (Years),Amortization schedule
+Deal Structure,H32,IO Period (Years),Interest-only period
+Operating Expenses,C93,Property Tax,Annual
+Operating Expenses,C94,Insurance,Annual
+Operating Expenses,C95,Utilities,Annual owner-paid
+Operating Expenses,C99,Repairs & Maintenance,Annual
+Operating Expenses,C100,Landscaping,Annual
+Operating Expenses,C104,HOA Fees,Annual if applicable
+Operating Expenses,H25,Property Management %,As decimal of EGI
+Assumptions,H22,Vacancy %,As decimal
+Assumptions,L21,CapEx Reserve %,As decimal
+Unit Mix,C33,Unit Type 1,Bedroom type
+Unit Mix,C34,Unit Type 2,
+Unit Mix,C35,Unit Type 3,
+Unit Mix,C36,Unit Type 4,
+Unit Mix,C37,Unit Type 5,
+Unit Mix,C38,Unit Type 6,
+Unit Mix,D33,Number of Units 1,Count
+Unit Mix,D34,Number of Units 2,
+Unit Mix,D35,Number of Units 3,
+Unit Mix,D36,Number of Units 4,
+Unit Mix,D37,Number of Units 5,
+Unit Mix,D38,Number of Units 6,
+Unit Mix,G33,Rent per Unit 1,Monthly
+Unit Mix,G34,Rent per Unit 2,
+Unit Mix,G35,Rent per Unit 3,
+Unit Mix,G36,Rent per Unit 4,
+Unit Mix,G37,Rent per Unit 5,
+Unit Mix,G38,Rent per Unit 6,
+Returns,D13,Cap Rate,Going-in cap rate
+Returns,D14,Cash-on-Cash Return,Year 1
+Returns,L22,Gross Yield,
+Returns,L23,Net Yield,
+Returns,L24,Equity Multiple (10 Years),
+Returns,L25,IRR (10 Years),
+Valuation,E87,Gross Annual Income,Year 1 EGI
+Valuation,E117,Net Operating Income (NOI),Year 1
+Valuation,L26,Appraised Value,
+Valuation,L27,Market Value (Cap Rate),
+Valuation,D197,Equity at Purchase,Required equity
+Cash Flow,L28,Monthly Cash Flow,Year 1
+Cash Flow,L29,Annual Cash Flow,Year 1
+Cash Flow,L30,Total Gain (10 Years),
+Cash Flow,L31,Total Return %,
+Cash Flow,L32,Average Annual Return %,
+Cash Flow,L33,Breakeven Year,
+Cash Flow,L34,Payback Period,
+Debt,D165,Monthly Debt Service,
+Debt,D166,DSCR (Debt Service Coverage Ratio),
+Debt,D167,LTV (Loan-to-Value),
