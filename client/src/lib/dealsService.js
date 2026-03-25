@@ -56,6 +56,25 @@ export async function saveDeal(dealData) {
     existing = data || null;
   }
 
+  // Auto-geocode if no coordinates provided
+  let finalLat = latitude;
+  let finalLng = longitude;
+  if (!finalLat || !finalLng) {
+    const fullAddress = address || parsedData?.property?.address || '';
+    if (fullAddress && fullAddress !== 'Unknown Address') {
+      try {
+        const { geocodeAddress } = await import('../utils/geocode');
+        const coords = await geocodeAddress(fullAddress);
+        if (coords) {
+          finalLat = coords.latitude;
+          finalLng = coords.longitude;
+        }
+      } catch (e) {
+        console.warn('Auto-geocode failed:', e);
+      }
+    }
+  }
+
   const dealRecord = {
     deal_id: dealId,
     address: address || parsedData?.property?.address || 'Unknown Address',
@@ -67,13 +86,13 @@ export async function saveDeal(dealData) {
     market_cap_rate: marketCapRate,
     rentcast_data: rentcastData,
     costseg_data: costsegData,
-    images: images || [],  // NEW: Store extracted images
+    images: images || [],
     broker_name: brokerName,
     broker_phone: brokerPhone,
     broker_email: brokerEmail,
     notes: notes,
-    latitude: latitude,      // NEW: Store geocoded coordinates
-    longitude: longitude,    // NEW: Store geocoded coordinates
+    latitude: finalLat,
+    longitude: finalLng,
     pipeline_status: 'pipeline',
     updated_at: new Date().toISOString()
   };
@@ -272,6 +291,56 @@ export async function loadPipelineDeals() {
     fullScenarioData: deal.scenario_data,
     fullParsedData: deal.parsed_data
   }));
+}
+
+/**
+ * Backfill geocoding for existing pipeline deals that are missing coordinates.
+ * Called automatically from the map when deals without coords are found.
+ */
+export async function geocodeExistingDeals() {
+  const userId = await getCurrentUserId();
+  
+  // Fetch deals missing coordinates
+  let query = supabase
+    .from('deals')
+    .select('deal_id, address, parsed_data, latitude, longitude')
+    .eq('pipeline_status', 'pipeline');
+  if (userId) {
+    query = query.eq('user_id', userId);
+  }
+  const { data: deals, error } = await query;
+  if (error || !deals) return 0;
+
+  const needsGeocode = deals.filter(d => !d.latitude || !d.longitude);
+  if (needsGeocode.length === 0) return 0;
+
+  console.log(`Geocoding ${needsGeocode.length} deals missing coordinates...`);
+
+  let { geocodeAddress } = await import('../utils/geocode');
+  let updated = 0;
+
+  for (const deal of needsGeocode) {
+    const addr = deal.address || deal.parsed_data?.property?.address || '';
+    if (!addr || addr === 'Unknown Address') continue;
+
+    try {
+      const coords = await geocodeAddress(addr);
+      if (coords && coords.latitude && coords.longitude) {
+        const { error: updateErr } = await supabase
+          .from('deals')
+          .update({ latitude: coords.latitude, longitude: coords.longitude })
+          .eq('deal_id', deal.deal_id);
+        if (!updateErr) updated++;
+      }
+    } catch (e) {
+      console.warn(`Geocode failed for ${addr}:`, e);
+    }
+    // Throttle: 200ms between requests
+    await new Promise(r => setTimeout(r, 200));
+  }
+
+  console.log(`Geocoded ${updated}/${needsGeocode.length} deals`);
+  return updated;
 }
 
 /**

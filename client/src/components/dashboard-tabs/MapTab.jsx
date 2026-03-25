@@ -7,7 +7,7 @@ import { API_ENDPOINTS } from '../../config/api';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
-import { loadPipelineDeals } from '../../lib/dealsService';
+import { loadPipelineDeals, geocodeExistingDeals } from '../../lib/dealsService';
 import { batchFetchParcels } from '../../utils/parcelEndpoints';
 import MapOverlayLayers, { COUNTY_METRIC_OPTIONS, ZIP_METRIC_OPTIONS, ZIP_HEATMAP_METRIC_OPTIONS, SfrSalesLegend, MfSalesLegend } from './MapOverlayLayers';
 import MSA_COORDINATES from '../../data/msaCoordinates';
@@ -960,11 +960,23 @@ function DashboardMapTab() {
                          Number.isFinite(d.latitude) && 
                          Number.isFinite(d.longitude);
         if (!hasCoords) {
-          console.warn(`⚠️ Deal missing valid coords:`, d.address, d);
+          console.warn(`Deal missing valid coords:`, d.address, d);
         }
         return hasCoords;
       });
-      console.log(`🔍 ${dealsWithCoords.length} deals have valid coordinates`);
+      console.log(`${dealsWithCoords.length} deals have valid coordinates`);
+
+      // If some deals are missing coordinates, backfill geocode and reload
+      const dealsMissingCoords = deals.length - dealsWithCoords.length;
+      if (dealsMissingCoords > 0) {
+        console.log(`Geocoding ${dealsMissingCoords} deals missing coordinates...`);
+        geocodeExistingDeals().then(updated => {
+          if (updated > 0) {
+            console.log(`Backfilled ${updated} deals, reloading pins...`);
+            loadPipelineProperties();
+          }
+        }).catch(e => console.warn('Backfill geocode error:', e));
+      }
       
       const pipelinePins = dealsWithCoords.map(d => ({
         id: `pipeline-${d.dealId}`,

@@ -139,6 +139,21 @@ def push_to_pipeline(
         ]
         full_address = ", ".join(p for p in address_parts if p)
 
+        # Geocode the address for map pins
+        lat, lng = None, None
+        try:
+            from market_analysis import geocode_address
+            coords = geocode_address(
+                prop.get("address", ""),
+                prop.get("city", ""),
+                prop.get("state", ""),
+                prop.get("zip", ""),
+            )
+            if coords:
+                lng, lat = coords  # geocode_address returns (lon, lat)
+        except Exception as geo_err:
+            log.warning("Geocoding failed for %s: %s", full_address, geo_err)
+
         row = {
             "deal_id": deal_id,
             "user_id": user_id,
@@ -152,6 +167,8 @@ def push_to_pipeline(
             "deal_stage": "underwritten",
             "stage_changed_at": datetime.now(timezone.utc).isoformat(),
             "notes": f"Auto-found by AI agent ({source})",
+            "latitude": lat,
+            "longitude": lng,
             "created_at": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
