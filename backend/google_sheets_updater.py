@@ -389,6 +389,41 @@ def update_google_sheet(scenario_data, full_calcs, sheet_id=None, sheet_tab=None
         # Build Google Sheets API service
         service = build('sheets', 'v4', credentials=credentials)
         
+        # Validate the tab name exists in the spreadsheet
+        try:
+            sheet_meta = service.spreadsheets().get(
+                spreadsheetId=target_sheet_id,
+                fields='sheets.properties.title'
+            ).execute()
+            actual_tabs = [s['properties']['title'] for s in sheet_meta.get('sheets', [])]
+            _dbg(f"Spreadsheet tabs: {actual_tabs}")
+            
+            if target_tab not in actual_tabs:
+                # Try case-insensitive match
+                tab_lower = target_tab.lower()
+                matched = [t for t in actual_tabs if t.lower() == tab_lower]
+                if matched:
+                    _dbg(f"Tab name case mismatch: requested '{target_tab}', using '{matched[0]}'")
+                    target_tab = matched[0]
+                else:
+                    # Try partial/fuzzy match: check if any tab contains the target or vice-versa
+                    partial = [t for t in actual_tabs if tab_lower in t.lower() or t.lower() in tab_lower]
+                    if partial:
+                        _dbg(f"Tab name partial match: requested '{target_tab}', using '{partial[0]}'")
+                        target_tab = partial[0]
+                    else:
+                        # Use the first tab as last resort
+                        if actual_tabs:
+                            _dbg(f"Tab '{target_tab}' not found. Using first tab: '{actual_tabs[0]}'")
+                            target_tab = actual_tabs[0]
+                        else:
+                            return {
+                                'success': False,
+                                'message': f"Spreadsheet has no tabs. Available: {actual_tabs}"
+                            }
+        except Exception as tab_err:
+            _dbg(f"Warning: could not validate tab name: {tab_err}")
+        
         # Load mapping
         mapping, mapping_path = load_mapping()
         _dbg(f"Loaded {len(mapping)} mapping rows; sheet: {target_sheet_id} tab: {target_tab}")
