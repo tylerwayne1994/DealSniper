@@ -69,6 +69,50 @@ export function calculateMortgagePayment(principal, annualRate, years) {
   return payment;
 }
 
+function calculateDealStructureLoanAmount(loan, purchasePrice) {
+  if (!loan) return 0;
+  if (loan.type === 'Equity Partner') return Number(loan.loanDollar) || 0;
+  if (loan.loanAmtMode === 'ltv' || loan.loanAmtMode === 'ltc') {
+    return purchasePrice * (Number(loan.ltv) || 0) / 100;
+  }
+  return Number(loan.loanDollar) || 0;
+}
+
+function calculateDealStructureLoanMonthlyPayment(loan, purchasePrice) {
+  const loanAmount = calculateDealStructureLoanAmount(loan, purchasePrice);
+  const annualRatePct = Number(loan?.rate) || 0;
+  const monthlyRate = annualRatePct / 100 / 12;
+  const amortYears = Number(loan?.amort) || 0;
+  const ioYears = Math.max(0, Number(loan?.io) || 0);
+
+  if (loanAmount <= 0) return 0;
+  if (loan?.type === 'Equity Partner') {
+    return loanAmount * annualRatePct / 100 / 12;
+  }
+  if (ioYears > 0) {
+    return monthlyRate > 0 ? loanAmount * monthlyRate : 0;
+  }
+  if (annualRatePct <= 0 || amortYears <= 0) return 0;
+  return calculateMortgagePayment(loanAmount, annualRatePct / 100, amortYears);
+}
+
+function calculateDealStructureTotals(loans, purchasePrice) {
+  const enabledLoans = Array.isArray(loans) ? loans.filter(loan => loan?.enabled !== false) : [];
+  const debtLoans = enabledLoans.filter(loan => loan.type !== 'Equity Partner');
+  const equityLoans = enabledLoans.filter(loan => loan.type === 'Equity Partner');
+
+  const totalLoanAmount = debtLoans.reduce((sum, loan) => sum + calculateDealStructureLoanAmount(loan, purchasePrice), 0);
+  const totalEquityAmount = equityLoans.reduce((sum, loan) => sum + calculateDealStructureLoanAmount(loan, purchasePrice), 0);
+  const monthlyPayment = enabledLoans.reduce((sum, loan) => sum + calculateDealStructureLoanMonthlyPayment(loan, purchasePrice), 0);
+
+  return {
+    totalLoanAmount,
+    monthlyPayment,
+    annualDebtService: monthlyPayment * 12,
+    downPayment: Math.max(purchasePrice - totalLoanAmount - totalEquityAmount, 0),
+  };
+}
+
 /**
  * Calculate loan balance at a specific point in time
  * @param {number} principal - Original loan amount
@@ -227,11 +271,12 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   let loanAmount, annualDebtService, downPayment, monthlyPayment;
 
   if (hasDealStructureStack) {
-    // Use the pre-computed totals that DealStructureTab wrote via saveToParent()
-    loanAmount       = financing.total_loan_amount   || 0;
-    annualDebtService = financing.annual_debt_service || 0;
-    monthlyPayment   = annualDebtService / 12;
-    downPayment      = financing.down_payment != null ? financing.down_payment : Math.max(purchasePrice - loanAmount, 0);
+    const stackTotals = calculateDealStructureTotals(dealStructureLoans, purchasePrice);
+
+    loanAmount = stackTotals.totalLoanAmount || financing.total_loan_amount || 0;
+    annualDebtService = stackTotals.annualDebtService || financing.annual_debt_service || 0;
+    monthlyPayment = annualDebtService / 12;
+    downPayment = financing.down_payment != null ? financing.down_payment : stackTotals.downPayment;
 
     // Override rate/term from Deal Structure senior loan for projection loan balance calcs
     const seniorLoan = dealStructureLoans.find(l => l.type === 'Senior Loan' && l.enabled !== false);
@@ -307,7 +352,10 @@ export function calculateFullAnalysis(scenarioData, options = {}) {
   
   // For display only (percentage 0-100)
   const ltvDecimal = loanAmount > 0 && purchasePrice > 0 ? (loanAmount / purchasePrice) : 0;
-  const ioYears = Number(financing?.io_years) || 0;
+  const seniorLoanFromStack = hasDealStructureStack
+    ? dealStructureLoans.find(l => l.type === 'Senior Loan' && l.enabled !== false)
+    : null;
+  const ioYears = seniorLoanFromStack ? (Number(seniorLoanFromStack.io) || 0) : (Number(financing?.io_years) || 0);
   const loanFeesPct = 0;
   const financingFeesPct = 0;
   const loanFees = 0;

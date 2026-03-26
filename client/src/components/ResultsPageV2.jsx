@@ -1371,8 +1371,8 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
   const year1NOI = fullCalcs?.year1?.noi ?? noiT12;
   // Annual debt service: prefer Deal Structure multi-loan total when configured
   const hasMultiLoanStack = scenarioData.financing?.loans?.length > 0;
-  const annualDebtService = (hasMultiLoanStack && scenarioData.financing?.annual_debt_service > 0)
-    ? scenarioData.financing.annual_debt_service
+  const annualDebtService = (hasMultiLoanStack && fullCalcs?.financing?.annualDebtService > 0)
+    ? fullCalcs.financing.annualDebtService
     : (fullCalcs?.financing?.annualDebtService ?? scenarioData.pricing_financing?.annual_debt_service ?? 0);
 
   const capRate = (fullCalcs?.year1?.capRate != null)

@@ -12,6 +12,46 @@ const calcMonthlyPayment = (principal, annualRate, amortMonths) => {
   if (r === 0) return principal / amortMonths;
   return principal * (r * Math.pow(1 + r, amortMonths)) / (Math.pow(1 + r, amortMonths) - 1);
 };
+const getLoanAmount = (loan, purchasePrice) => {
+  if (loan.type === 'Equity Partner') return Number(loan.loanDollar) || 0;
+  if (loan.loanAmtMode === 'ltv' || loan.loanAmtMode === 'ltc') {
+    return purchasePrice * (Number(loan.ltv) || 0) / 100;
+  }
+  return Number(loan.loanDollar) || 0;
+};
+const getLoanMetrics = (loan, purchasePrice) => {
+  const amount = getLoanAmount(loan, purchasePrice);
+  if (loan.type === 'Equity Partner') {
+    const prefRate = (Number(loan.rate) || 8) / 100;
+    const monthlyPayment = amount * prefRate / 12;
+    return { amount, monthlyPayment, annualPayment: monthlyPayment * 12, fees: 0, isFullTermIO: false, ioYears: 0 };
+  }
+
+  const annualRate = Number(loan.rate) || 0;
+  const monthlyRate = annualRate / 100 / 12;
+  const amortMonths = (Number(loan.amort) || 0) * 12;
+  const termYears = Number(loan.term) || 0;
+  const ioYears = Math.max(0, Number(loan.io) || 0);
+  const isFullTermIO = termYears > 0 && ioYears >= termYears;
+  let monthlyPayment = 0;
+
+  if (amount > 0) {
+    if (ioYears > 0) {
+      monthlyPayment = monthlyRate > 0 ? amount * monthlyRate : 0;
+    } else if (amortMonths > 0) {
+      monthlyPayment = calcMonthlyPayment(amount, annualRate, amortMonths);
+    }
+  }
+
+  return {
+    amount,
+    monthlyPayment,
+    annualPayment: monthlyPayment * 12,
+    fees: amount * (Number(loan.fees) || 0) / 100,
+    isFullTermIO,
+    ioYears,
+  };
+};
 const fmt = (v) => { if (v == null || isNaN(v)) return '$0'; return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(v); };
 const pct = (v) => { if (v == null || isNaN(v)) return '0%'; return `${v.toFixed(2)}%`; };
 
@@ -21,19 +61,8 @@ const buildStructureFromLoans = (loans, pp, noi) => {
   const debt = en.filter(l => l.type !== 'Equity Partner');
   const eq = en.filter(l => l.type === 'Equity Partner');
   const ld = debt.map(l => {
-    const amt = (l.loanAmtMode==='ltv'||l.loanAmtMode==='ltc') ? pp*(Number(l.ltv)||0)/100 : Number(l.loanDollar)||0;
-    const r=(Number(l.rate)||0)/100/12, n=(Number(l.amort)||30)*12;
-    const ioYrs = Number(l.io) || 0;
-    let mp=0;
-    if(amt>0&&r>0) {
-      if(ioYrs > 0) {
-        // During IO period: interest only
-        mp = amt * r;
-      } else if(n>0) {
-        mp=amt*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);
-      }
-    }
-    return {...l, loanAmt:amt, monthlyPmt:mp, fees:amt*(Number(l.fees)||0)/100, annualDS:mp*12, ioYears:ioYrs};
+    const metrics = getLoanMetrics(l, pp);
+    return {...l, loanAmt:metrics.amount, monthlyPmt:metrics.monthlyPayment, fees:metrics.fees, annualDS:metrics.annualPayment, ioYears:metrics.ioYears, isFullTermIO:metrics.isFullTermIO};
   });
   const ed = eq.map(l => {
     const pe=Number(l.loanDollar)||0, pr=(Number(l.rate)||8)/100, ap=pe*pr;
@@ -112,7 +141,11 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
     const js=JSON.stringify(inc);
     if(prevRef.current===js) return;
     prevRef.current=js;
-    if(JSON.stringify(loans)!==js) setLoans(inc.map(l=>({...l})));
+    if(JSON.stringify(loans)!==js) {
+      const normalizedLoans = inc.map(l=>({...l}));
+      setLoans(normalizedLoans);
+      saveToParent(normalizedLoans);
+    }
   },[financing.loans]); // eslint-disable-line
 
   const saveToParent=useCallback((ul)=>{
@@ -121,18 +154,10 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
     const en=ul.filter(l=>l.enabled!==false);
     let tla=0,tmp=0,tf=0,teq=0;
     en.filter(l=>l.type!=='Equity Partner').forEach(l=>{
-      const a=(l.loanAmtMode==='ltv'||l.loanAmtMode==='ltc')?pp*(Number(l.ltv)||0)/100:Number(l.loanDollar)||0;
-      const r=(Number(l.rate)||0)/100/12,n=(Number(l.amort)||30)*12;
-      const ioYrs = Number(l.io) || 0;
-      let p=0;
-      if(a>0&&r>0) {
-        if(ioYrs > 0) {
-          p = a * r;
-        } else if(n>0) {
-          p=a*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);
-        }
-      }
-      tla+=a;tmp+=p;tf+=a*(Number(l.fees)||0)/100;
+      const metrics = getLoanMetrics(l, pp);
+      tla+=metrics.amount;
+      tmp+=metrics.monthlyPayment;
+      tf+=metrics.fees;
     });
     en.filter(l=>l.type==='Equity Partner').forEach(l=>{
       const e=Number(l.loanDollar)||0;teq+=e;tmp+=e*(Number(l.rate)||8)/100/12;
@@ -188,12 +213,10 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
     const s=scenarioData?.exit_details||{};
     return {holdYrs:s.holdYrs??5,closingPct:s.closingPct??2,brokerPct:s.brokerPct??2,strategy:s.strategy??'cap_rate',capAdj:s.capAdj??0,growthPct:s.growthPct??3};
   });
-  const setExitF=useCallback((f,v)=>{setExit(p=>{const u={...p,[f]:v};if(onFieldChange)onFieldChange('exit_details',u);return u;});},[onFieldChange]);
   const baseMktCap=marketCapRate?.market_cap_rate||goingInCap;
   const exitCap=baseMktCap+(Number(exit.capAdj)||0);
   const exitVal=exit.strategy==='cap_rate'?(exitCap>0?proformaNOI/(exitCap/100):0):(pp*Math.pow(1+(Number(exit.growthPct)||3)/100,Number(exit.holdYrs)||5));
   const exitCosts=exitVal*(Number(exit.closingPct)||0)/100+exitVal*(Number(exit.brokerPct)||0)/100;
-  const netProceeds=exitVal-exitCosts-(structure?.totalLoanAmt||0);
 
   /* Investment criteria moved to Templates page */
 
@@ -264,15 +287,6 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
   const cfC=v=>v>=0?'#10b981':'#ef4444';
   const cocC=v=>v>=8?'#10b981':'#374151';
 
-  const getLoanAmt=l=>l.type==='Equity Partner'?Number(l.loanDollar)||0:(l.loanAmtMode==='ltv'||l.loanAmtMode==='ltc')?pp*(Number(l.ltv)||0)/100:Number(l.loanDollar)||0;
-  const getLoanMo=l=>{
-    if(l.type==='Equity Partner')return(Number(l.loanDollar)||0)*(Number(l.rate)||8)/100/12;
-    const a=getLoanAmt(l),r=(Number(l.rate)||0)/100/12,n=(Number(l.amort)||30)*12;
-    if(a<=0||r<=0||n<=0)return 0;
-    return a*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);
-  };
-
-  // Seller modal
   const [sfF,setSfF]=useState({loanDollar:0,rate:8.5,amort:15,term:15,io:0,fees:0,startMonth:24,paymentFree:0,earlyPenalty:0});
   const openSfModal=(existing=null)=>{
     if(existing){
@@ -303,8 +317,10 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
   ].filter(t=>!existingTypes.includes(t.type));
 
   const renderCard=(loan,isMain)=>{
-    const amt=getLoanAmt(loan),mo=getLoanMo(loan),color=loanColor(loan.type);
+    const metrics=getLoanMetrics(loan, pp);
+    const amt=metrics.amount,mo=metrics.monthlyPayment,color=loanColor(loan.type);
     const isEq=loan.type==='Equity Partner',isSf=loan.type==='Seller Financing';
+    const isFullTermIO=metrics.isFullTermIO;
     return (
       <div key={loan.id} style={{backgroundColor:'#fff',borderRadius:14,border:`2px solid ${color}30`,padding:'20px 22px',flex:isMain?'1 1 55%':'1 1 40%',minWidth:300,position:'relative'}}>
         <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:16}}>
@@ -356,7 +372,7 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
                   updateLoanFields(loan.id,{loanDollar:Math.max(0,Math.round(pp-tl)),equityBasis:'down_payment'});
                 }}
                   style={{flex:1,padding:'8px 12px',borderRadius:8,border:`2px solid ${(loan.equityBasis||'down_payment')==='down_payment'?AC:B}`,backgroundColor:(loan.equityBasis||'down_payment')==='down_payment'?`${AC}10`:'white',color:(loan.equityBasis||'down_payment')==='down_payment'?AC:LB,fontSize:12,fontWeight:600,cursor:'pointer'}}>
-                  💰 Down Payment Only
+                  Down Payment Only
                 </button>
                 <button onClick={()=>{
                   const others=loans.filter(l=>l.id!==loan.id&&l.type!=='Equity Partner'&&l.enabled!==false);
@@ -365,7 +381,7 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
                   updateLoanFields(loan.id,{loanDollar:Math.max(0,Math.round(pp-tl+tf)),equityBasis:'down_plus_closing'});
                 }}
                   style={{flex:1,padding:'8px 12px',borderRadius:8,border:`2px solid ${loan.equityBasis==='down_plus_closing'?'#f97316':B}`,backgroundColor:loan.equityBasis==='down_plus_closing'?'#f9731610':'white',color:loan.equityBasis==='down_plus_closing'?'#f97316':LB,fontSize:12,fontWeight:600,cursor:'pointer'}}>
-                  📋 Down + Closing Costs
+                  Down + Closing Costs
                 </button>
               </div>
             </div>
@@ -378,14 +394,26 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
         {!isEq&&(
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
             <Field label="Amortization (yrs)" value={loan.amort||0} onChange={v=>updateLoanField(loan.id,'amort',v)} step={1}/>
-            <Field label="Loan Term (yrs)" value={loan.term||0} onChange={v=>updateLoanField(loan.id,'term',v)} step={1}/>
+            <Field label="Loan Term (yrs)" value={loan.term||0} onChange={v=>isFullTermIO?updateLoanFields(loan.id,{term:v,io:v}):updateLoanField(loan.id,'term',v)} step={1}/>
           </div>
         )}
         {!isEq&&(
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-            <Field label="Interest Only (yrs)" value={loan.io||0} onChange={v=>updateLoanField(loan.id,'io',v)} step={1}/>
-            <Field label="Loan Fees" suffix="%" value={loan.fees||0} onChange={v=>updateLoanField(loan.id,'fees',v)} step={0.1}/>
-          </div>
+          <>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10,gap:8}}>
+              <div style={{fontSize:11,fontWeight:600,color:LB,textTransform:'uppercase',letterSpacing:'0.04em'}}>Interest Only</div>
+              <button
+                type="button"
+                onClick={()=>updateLoanFields(loan.id, isFullTermIO ? { io: 0 } : { io: Number(loan.term) || 0 })}
+                style={{padding:'6px 10px',borderRadius:999,border:`1px solid ${isFullTermIO ? '#7c3aed' : B}`,background:isFullTermIO ? '#f3e8ff' : '#fff',color:isFullTermIO ? '#6d28d9' : '#475569',fontSize:11,fontWeight:700,cursor:'pointer'}}
+              >
+                {isFullTermIO ? 'Full-Term IO On' : 'Make Full-Term IO'}
+              </button>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <Field label="Interest Only (yrs)" value={loan.io||0} onChange={v=>updateLoanField(loan.id,'io',v)} step={1}/>
+              <Field label="Loan Fees" suffix="%" value={loan.fees||0} onChange={v=>updateLoanField(loan.id,'fees',v)} step={0.1}/>
+            </div>
+          </>
         )}
         {isSf&&(
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
@@ -405,11 +433,11 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
               <div style={{display:'flex',gap:8}}>
                 <button onClick={()=>updateLoanField(loan.id,'doubleInvestment',false)}
                   style={{flex:1,padding:'8px 12px',borderRadius:8,border:`2px solid ${!loan.doubleInvestment?'#22c55e':B}`,backgroundColor:!loan.doubleInvestment?'#22c55e10':'white',color:!loan.doubleInvestment?'#22c55e':LB,fontSize:12,fontWeight:600,cursor:'pointer'}}>
-                  1× Return of Capital
+                  1x Return of Capital
                 </button>
                 <button onClick={()=>updateLoanField(loan.id,'doubleInvestment',true)}
                   style={{flex:1,padding:'8px 12px',borderRadius:8,border:`2px solid ${loan.doubleInvestment?'#f97316':B}`,backgroundColor:loan.doubleInvestment?'#f9731610':'white',color:loan.doubleInvestment?'#f97316':LB,fontSize:12,fontWeight:600,cursor:'pointer'}}>
-                  2× Double Investment
+                  2x Double Investment
                 </button>
               </div>
             </div>
@@ -421,7 +449,7 @@ export default function DealStructureTab({scenarioData,calculations,fullCalcs,ma
             <span style={{fontSize:11,fontWeight:600,color:LB,textTransform:'uppercase'}}>{isEq?'Monthly Pref Payment':'Monthly Payment'}</span>
             <span style={{fontSize:18,fontWeight:800,color}}>{fmt(mo)}</span>
           </div>
-          {!isEq&&amt>0&&<div style={{fontSize:11,color:LB,marginTop:4,textAlign:'right'}}>Annual: {fmt(mo*12)} · Fees: {fmt(amt*(Number(loan.fees)||0)/100)}</div>}
+          {!isEq&&amt>0&&<div style={{fontSize:11,color:LB,marginTop:4,textAlign:'right'}}>{metrics.ioYears > 0 ? `${isFullTermIO ? 'Full-term IO' : `IO through year ${metrics.ioYears}`} · ` : ''}Annual: {fmt(mo*12)} · Fees: {fmt(metrics.fees)}</div>}
           {isEq&&(
             <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${color}30`}}>
               <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:LB,marginBottom:2}}>
