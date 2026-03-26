@@ -1,58 +1,86 @@
 CATEGORY,CELL REFERENCE,INPUT NAME,NOTES
-Deal Structure,D9,Purchase Price,Acquisition price
-Deal Structure,H28,Down Payment %,As decimal (e.g. 0.25 = 25%)
-Deal Structure,D23,Closing Costs %,Default 3%
-Deal Structure,D197,Your Equity,Down payment amount
-Deal Structure,D164,Loan Amount,Loan principal
-Deal Structure,H29,Interest Rate %,Annual rate as decimal
-Deal Structure,H30,Loan Term (Years),Loan term
-Deal Structure,H31,Amortization (Years),Amortization schedule
-Deal Structure,H32,IO Period (Years),Interest-only period
-Operating Expenses,C93,Property Tax,Annual
-Operating Expenses,C94,Insurance,Annual
-Operating Expenses,C95,Utilities,Annual owner-paid
-Operating Expenses,C99,Repairs & Maintenance,Annual
-Operating Expenses,C100,Landscaping,Annual
-Operating Expenses,C104,HOA Fees,Annual if applicable
-Operating Expenses,H25,Property Management %,As decimal of EGI
-Assumptions,H22,Vacancy %,As decimal
-Assumptions,L21,CapEx Reserve %,As decimal
-Unit Mix,C33,Unit Type 1,Bedroom type
+Property Info,D6,Property Name,Property name or address
+Property Info,D7,Total Units,Required - unit count
+Property Info,D8,Total Square Feet,Building SF
+Property Info,D9,Purchase Price,Acquisition price
+Property Info,D22,Year Built,Construction year
+Assumptions,D23,Closing Costs,Dollar amount or estimate
+Assumptions,D24,Due Diligence Budget,If available
+Assumptions,D25,CapEx Budget,Renovation or deferred maint
+Assumptions,H20,Annual Rent Growth %,As decimal (0.02 = 2%)
+Assumptions,H21,Annual Expense Growth %,As decimal (0.03 = 3%)
+Assumptions,H22,Vacancy %,As decimal (0.05 = 5%)
+Assumptions,H23,Bad Debt %,As decimal
+Assumptions,H25,Management Fee %,As decimal of EGI
+Assumptions,H26,Exit Cap Rate 5-Year,As decimal
+Assumptions,H27,Exit Cap Rate 10-Year,As decimal
+Assumptions,L20,Selling Costs %,As decimal
+Assumptions,L21,CapEx Reserve $/Unit/Year,Annual per unit
+Revenue,D63,Gross Potential Rent (Annual),Annual GPR
+Revenue,D65,Loss to Lease (Annual),Below-market lease loss
+Revenue,C71,Laundry Income,$/unit/month
+Revenue,C72,Parking Income,$/unit/month
+Revenue,C73,Pet Income,$/unit/month
+Revenue,C74,Other Income 1,$/unit/month
+Revenue,C75,Other Income 2,$/unit/month
+Revenue,C76,Other Income 3,$/unit/month
+Expenses,C93,Real Estate Taxes,Annual or $/unit/mo
+Expenses,C94,Property Insurance,Annual or $/unit/mo
+Expenses,C95,Water/Sewer,Owner-paid
+Expenses,C96,Electric (Common),Owner-paid
+Expenses,C97,Gas,Owner-paid
+Expenses,C98,Trash Removal,Owner-paid
+Expenses,C99,Repairs & Maintenance,Annual
+Expenses,C100,Landscaping,Annual
+Expenses,C101,Pest Control,Annual
+Expenses,C102,Snow Removal,If applicable
+Expenses,C103,Unit Turnover,Make ready costs
+Expenses,C105,On-Site Payroll,If applicable
+Expenses,C106,Marketing/Advertising,Annual
+Expenses,C107,Legal & Professional,Annual
+Expenses,C108,Accounting,Annual
+Expenses,C109,Administrative,Annual
+Expenses,C110,Security,Annual
+Expenses,C111,Cable/Internet,Annual
+Unit Mix,A33,Unit Number 1,Unit count for this type
+Unit Mix,A34,Unit Number 2,
+Unit Mix,A35,Unit Number 3,
+Unit Mix,A36,Unit Number 4,
+Unit Mix,A37,Unit Number 5,
+Unit Mix,A38,Unit Number 6,
+Unit Mix,C33,Unit Type 1,Bedroom/bath type
 Unit Mix,C34,Unit Type 2,
 Unit Mix,C35,Unit Type 3,
 Unit Mix,C36,Unit Type 4,
 Unit Mix,C37,Unit Type 5,
 Unit Mix,C38,Unit Type 6,
-Unit Mix,D33,Number of Units 1,Count
-Unit Mix,D34,Number of Units 2,
-Unit Mix,D35,Number of Units 3,
-Unit Mix,D36,Number of Units 4,
-Unit Mix,D37,Number of Units 5,
-Unit Mix,D38,Number of Units 6,
-Unit Mix,G33,Rent per Unit 1,Monthly
-Unit Mix,G34,Rent per Unit 2,
-Unit Mix,G35,Rent per Unit 3,
-Unit Mix,G36,Rent per Unit 4,
-Unit Mix,G37,Rent per Unit 5,
-Unit Mix,G38,Rent per Unit 6,
-Returns,D13,Cap Rate,Going-in cap rate
-Returns,D14,Cash-on-Cash Return,Year 1
-Returns,L22,Gross Yield,
-Returns,L23,Net Yield,
-Returns,L24,Equity Multiple (10 Years),
-Returns,L25,IRR (10 Years),
-Valuation,E87,Gross Annual Income,Year 1 EGI
-Valuation,E117,Net Operating Income (NOI),Year 1
-Valuation,L26,Appraised Value,
-Valuation,L27,Market Value (Cap Rate),
-Valuation,D197,Equity at Purchase,Required equity
-Cash Flow,L28,Monthly Cash Flow,Year 1
-Cash Flow,L29,Annual Cash Flow,Year 1
-Cash Flow,L30,Total Gain (10 Years),
-Cash Flow,L31,Total Return %,
-Cash Flow,L32,Average Annual Return %,
-Cash Flow,L33,Breakeven Year,
-Cash Flow,L34,Payback Period,
-Debt,D165,Monthly Debt Service,
-Debt,D166,DSCR (Debt Service Coverage Ratio),
-Debt,D167,LTV (Loan-to-Value),
+Unit Mix,D33,Unit SF 1,Square feet
+Unit Mix,D34,Unit SF 2,
+Unit Mix,D35,Unit SF 3,
+Unit Mix,D36,Unit SF 4,
+Unit Mix,D37,Unit SF 5,
+Unit Mix,D38,Unit SF 6,
+Unit Mix,E33,Unit Status 1,rented/vacant
+Unit Mix,E34,Unit Status 2,
+Unit Mix,E35,Unit Status 3,
+Unit Mix,E36,Unit Status 4,
+Unit Mix,E37,Unit Status 5,
+Unit Mix,E38,Unit Status 6,
+Unit Mix,F33,Market Rent 1,Monthly market rent
+Unit Mix,F34,Market Rent 2,
+Unit Mix,F35,Market Rent 3,
+Unit Mix,F36,Market Rent 4,
+Unit Mix,F37,Market Rent 5,
+Unit Mix,F38,Market Rent 6,
+Unit Mix,G33,In-Place Rent 1,Monthly current rent
+Unit Mix,G34,In-Place Rent 2,
+Unit Mix,G35,In-Place Rent 3,
+Unit Mix,G36,In-Place Rent 4,
+Unit Mix,G37,In-Place Rent 5,
+Unit Mix,G38,In-Place Rent 6,
+Financing,D127,Existing Loan Balance,If assuming debt
+Financing,D128,Existing Loan Rate,Current interest rate
+Financing,D129,Remaining Term (Months),Months remaining
+Value-Add,D119,Monthly Rent Increase ($/unit),Value-add rent bump
+Value-Add,D120,Annual Expense Reduction ($/unit),Expense savings per unit
+Value-Add,D121,Renovation Cost (Total),Total reno budget

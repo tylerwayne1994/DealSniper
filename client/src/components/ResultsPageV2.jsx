@@ -117,7 +117,7 @@ const ResultsPageV2 = ({
     try {
       // Load user's configured sheet ID from profile
       let userSheetId = '';
-      let userSheetTab = 'Underwriting Model';
+      let userSheetTab = 'Model';
       try {
         const prof = await loadProfile();
         console.log('[SheetsExport] Profile loaded:', prof?.googleSheetId ? 'has sheetId' : 'no sheetId');

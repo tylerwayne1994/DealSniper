@@ -12,7 +12,7 @@ from googleapiclient.errors import HttpError
 
 SHEET_ID = "1jZSrAJY_gIu7Rqcmdmg-cdvQc88aC6YyVwhTQ1-dwi0"
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-SHEET_TAB_NAME = "Underwriting Model"
+SHEET_TAB_NAME = "Model"
 
 def _debug_enabled():
     val = os.getenv("UNDERWRITE_DEBUG", "1")
@@ -147,221 +147,259 @@ def load_mapping():
 def extract_value_from_scenario(scenario_data, calcs, input_name):
     """
     Extract value from scenarioData and fullCalcs based on input name.
-    Maps OM parsed data to Google Sheets underwriting model fields.
+    Maps parsed OM data to the Google Sheets underwriting model cells.
+    Cell references match the 'Model' tab in the Underwriting Model spreadsheet.
     """
+    sd = scenario_data
+    prop = sd.get('property', {})
+    pf = sd.get('pricing_financing', {})
+    fin = sd.get('financing', {})
+    pnl = sd.get('pnl', {})
+    exp = sd.get('expenses', {})
+    uw = sd.get('underwriting', {})
+    va = sd.get('value_add', {})
+    unit_mix = sd.get('unit_mix', [])
+    util_bk = exp.get('utility_breakdown', {})
 
-    # Deal Structure
-    if input_name == "Purchase Price":
-        return scenario_data.get('pricing_financing', {}).get('price') or \
-               scenario_data.get('pricing_financing', {}).get('purchase_price')
-    
-    elif input_name == "Down Payment %":
-        return scenario_data.get('pricing_financing', {}).get('down_payment_pct', 0) / 100
-    
-    elif input_name == "Closing Costs %":
-        return 0.03  # Default 3% if not in data
+    # ── Property Info ──
+    if input_name == "Property Name":
+        return prop.get('address') or sd.get('property_name') or prop.get('name')
 
-    elif input_name == "Your Equity":
-        return scenario_data.get('pricing_financing', {}).get('down_payment')
-    
-    elif input_name == "Loan Amount":
-        return scenario_data.get('pricing_financing', {}).get('loan_amount')
-    
-    elif input_name == "Interest Rate %":
-        rate = scenario_data.get('pricing_financing', {}).get('interest_rate')
-        return rate / 100 if rate and rate > 1 else rate
-    
-    elif input_name == "Loan Term (Years)":
-        pf = scenario_data.get('pricing_financing', {})
-        return pf.get('loan_term_years') or pf.get('term_years') or calcs.get('financing', {}).get('loanTermYears') or 30
-    
-    elif input_name == "Amortization (Years)":
-        return scenario_data.get('pricing_financing', {}).get('amortization_years', 30)
+    elif input_name == "Total Units":
+        return prop.get('units') or prop.get('total_units')
 
-    elif input_name == "IO Period (Years)":
-        return (scenario_data.get('financing', {}).get('io_years')
-                or scenario_data.get('pricing_financing', {}).get('io_period_years')
-                or 0)
+    elif input_name == "Total Square Feet":
+        return prop.get('net_rentable_sf') or prop.get('rba_sqft')
 
-    # Expenses
-    elif input_name == "Property Tax":
-        return (scenario_data.get('expenses', {}).get('taxes')
-                or scenario_data.get('operating_data', {}).get('property_taxes'))
-    
-    elif input_name == "Insurance":
-        return (scenario_data.get('expenses', {}).get('insurance')
-                or scenario_data.get('operating_data', {}).get('insurance'))
-    
-    elif input_name == "Utilities":
-        return (scenario_data.get('expenses', {}).get('utilities')
-                or scenario_data.get('operating_data', {}).get('utilities'))
-    
-    elif input_name == "Repairs & Maintenance":
-        return (scenario_data.get('expenses', {}).get('repairs_maintenance')
-                or scenario_data.get('operating_data', {}).get('repairs_and_maintenance'))
-    
-    elif input_name == "Landscaping":
-        return scenario_data.get('operating_data', {}).get('landscaping')
-    
-    elif input_name == "HOA Fees":
-        return scenario_data.get('operating_data', {}).get('hoa_fees')
-    
-    elif input_name == "Property Management %":
-        # Prefer computed percent from expenses.management / EGI
-        mgmt_amt = scenario_data.get('expenses', {}).get('management')
-        egi = scenario_data.get('pnl', {}).get('effective_gross_income') or calcs.get('year1', {}).get('effectiveGrossIncome')
-        if mgmt_amt and egi:
-            return mgmt_amt / egi
-        mgmt_pct = scenario_data.get('operating_data', {}).get('management_fee_pct')
-        return (mgmt_pct / 100) if mgmt_pct and mgmt_pct > 1 else mgmt_pct
-    
+    elif input_name == "Purchase Price":
+        return pf.get('price') or pf.get('purchase_price')
+
+    elif input_name == "Year Built":
+        return prop.get('year_built')
+
+    # ── Assumptions ──
+    elif input_name == "Closing Costs":
+        pct = pf.get('closing_costs_percent', 2)
+        price = pf.get('price') or pf.get('purchase_price')
+        if price and pct:
+            return round(price * pct / 100, 2)
+        return calcs.get('acquisition', {}).get('closingCosts')
+
+    elif input_name == "Due Diligence Budget":
+        return pf.get('due_diligence') or sd.get('due_diligence_budget')
+
+    elif input_name == "CapEx Budget":
+        return pf.get('upfront_capex') or va.get('renovation_cost')
+
+    elif input_name == "Annual Rent Growth %":
+        rate = uw.get('income_growth_rate')
+        if rate is not None:
+            return rate if rate < 1 else rate / 100
+        return 0.02
+
+    elif input_name == "Annual Expense Growth %":
+        rate = uw.get('expense_growth_rate')
+        if rate is not None:
+            return rate if rate < 1 else rate / 100
+        return 0.03
+
     elif input_name == "Vacancy %":
-        vac = (scenario_data.get('pnl', {}).get('vacancy_rate')
-               or scenario_data.get('pnl', {}).get('vacancy_rate_current')
-               or scenario_data.get('pnl', {}).get('vacancy_rate_stabilized')
-               or scenario_data.get('operating_data', {}).get('vacancy_pct'))
-        return (vac / 100) if vac and vac > 1 else vac
-    
-    elif input_name == "CapEx Reserve %":
-        capex_pct = scenario_data.get('operating_data', {}).get('capex_reserve_pct')
-        return (capex_pct / 100) if capex_pct and capex_pct > 1 else capex_pct
+        vac = (pnl.get('vacancy_rate') or pnl.get('vacancy_rate_current')
+               or pnl.get('vacancy_rate_stabilized'))
+        if vac is not None:
+            return vac / 100 if vac > 1 else vac
+        return 0.05
 
-    # Unit Mix
+    elif input_name == "Bad Debt %":
+        bd = pnl.get('bad_debt_pct') or sd.get('bad_debt_pct')
+        if bd is not None:
+            return bd / 100 if bd > 1 else bd
+        return None
+
+    elif input_name == "Management Fee %":
+        mgmt_amt = exp.get('management')
+        egi = pnl.get('effective_gross_income') or calcs.get('year1', {}).get('effectiveGrossIncome')
+        if mgmt_amt and egi and egi > 0:
+            return round(mgmt_amt / egi, 4)
+        mgmt_pct = sd.get('operating_data', {}).get('management_fee_pct')
+        if mgmt_pct is not None:
+            return mgmt_pct / 100 if mgmt_pct > 1 else mgmt_pct
+        return None
+
+    elif input_name == "Exit Cap Rate 5-Year":
+        ec = uw.get('exit_cap_rate') or fin.get('exit_cap_rate')
+        if ec is not None:
+            return ec / 100 if ec > 1 else ec
+        return None
+
+    elif input_name == "Exit Cap Rate 10-Year":
+        ec = uw.get('exit_cap_rate') or fin.get('exit_cap_rate')
+        if ec is not None:
+            val = ec / 100 if ec > 1 else ec
+            return val + 0.005  # 50bp higher for 10-yr
+        return None
+
+    elif input_name == "Selling Costs %":
+        ed = sd.get('exit_details', {})
+        closing = ed.get('closingPct', 2)
+        broker = ed.get('brokerPct', 2)
+        return (closing + broker) / 100
+
+    elif input_name == "CapEx Reserve $/Unit/Year":
+        return sd.get('operating_data', {}).get('capex_reserve_per_unit')
+
+    # ── Revenue ──
+    elif input_name == "Gross Potential Rent (Annual)":
+        gpr = pnl.get('gross_potential_rent') or pnl.get('potential_gross_income')
+        if gpr:
+            return gpr
+        # Compute from unit mix
+        total_monthly = 0
+        for u in unit_mix:
+            cnt = u.get('units', 0)
+            rent = u.get('rent_current') or u.get('rent_market') or u.get('proforma_rent', 0)
+            total_monthly += cnt * rent
+        return total_monthly * 12 if total_monthly > 0 else None
+
+    elif input_name == "Loss to Lease (Annual)":
+        ltl = pnl.get('loss_to_lease')
+        if ltl:
+            return ltl
+        # Compute from unit mix
+        total_monthly = 0
+        for u in unit_mix:
+            cnt = u.get('units', 0)
+            market = u.get('rent_market', 0)
+            current = u.get('rent_current', 0)
+            if market and current:
+                total_monthly += cnt * max(0, market - current)
+        return total_monthly * 12 if total_monthly > 0 else None
+
+    elif input_name == "Laundry Income":
+        return sd.get('other_income_details', {}).get('laundry')
+
+    elif input_name == "Parking Income":
+        return sd.get('other_income_details', {}).get('parking')
+
+    elif input_name == "Pet Income":
+        return sd.get('other_income_details', {}).get('pet')
+
+    elif input_name in ("Other Income 1", "Other Income 2", "Other Income 3"):
+        return None  # Mapped if user has specific line items
+
+    # ── Expenses (annual amounts → written to C column as $/unit/mo) ──
+    elif input_name == "Real Estate Taxes":
+        return exp.get('taxes') or sd.get('operating_data', {}).get('property_taxes')
+
+    elif input_name == "Property Insurance":
+        return exp.get('insurance') or sd.get('operating_data', {}).get('insurance')
+
+    elif input_name == "Water/Sewer":
+        return util_bk.get('water_sewer') or exp.get('water_sewer')
+
+    elif input_name == "Electric (Common)":
+        return util_bk.get('electric') or exp.get('electric')
+
+    elif input_name == "Gas":
+        return util_bk.get('gas') or exp.get('gas')
+
+    elif input_name == "Trash Removal":
+        return util_bk.get('trash') or exp.get('trash')
+
+    elif input_name == "Repairs & Maintenance":
+        return exp.get('repairs_maintenance') or sd.get('operating_data', {}).get('repairs_and_maintenance')
+
+    elif input_name == "Landscaping":
+        return exp.get('landscaping') or sd.get('operating_data', {}).get('landscaping')
+
+    elif input_name == "Pest Control":
+        return exp.get('pest_control')
+
+    elif input_name == "Snow Removal":
+        return exp.get('snow_removal')
+
+    elif input_name == "Unit Turnover":
+        return exp.get('turnover') or exp.get('unit_turnover')
+
+    elif input_name == "On-Site Payroll":
+        return exp.get('payroll')
+
+    elif input_name == "Marketing/Advertising":
+        return exp.get('marketing')
+
+    elif input_name == "Legal & Professional":
+        return exp.get('legal') or exp.get('legal_professional')
+
+    elif input_name == "Accounting":
+        return exp.get('accounting')
+
+    elif input_name == "Administrative":
+        return exp.get('admin') or exp.get('administrative')
+
+    elif input_name == "Security":
+        return exp.get('security')
+
+    elif input_name == "Cable/Internet":
+        return exp.get('cable_internet') or exp.get('cable')
+
+    # ── Unit Mix (rows 18-23 in the Model sheet) ──
+    elif input_name.startswith("Unit Number "):
+        idx = int(input_name.split(" ")[-1]) - 1
+        if idx < len(unit_mix):
+            return unit_mix[idx].get('units') or unit_mix[idx].get('count')
+
     elif input_name.startswith("Unit Type "):
-        idx = int(input_name.split(" ")[-1]) - 1  # "Unit Type 1" -> index 0
-        unit_mix = scenario_data.get('unit_mix', [])
+        idx = int(input_name.split(" ")[-1]) - 1
         if idx < len(unit_mix):
             return unit_mix[idx].get('type')
-    
-    elif input_name.startswith("Number of Units "):
+
+    elif input_name.startswith("Unit SF "):
         idx = int(input_name.split(" ")[-1]) - 1
-        unit_mix = scenario_data.get('unit_mix', [])
         if idx < len(unit_mix):
-            return unit_mix[idx].get('count') or unit_mix[idx].get('units')
-    
-    elif input_name.startswith("Rent per Unit "):
+            return unit_mix[idx].get('unit_sf') or unit_mix[idx].get('sqft') or unit_mix[idx].get('avg_sqft')
+
+    elif input_name.startswith("Unit Status "):
         idx = int(input_name.split(" ")[-1]) - 1
-        unit_mix = scenario_data.get('unit_mix', [])
         if idx < len(unit_mix):
-            return unit_mix[idx].get('rent') or unit_mix[idx].get('rent_current') or unit_mix[idx].get('rent_market')
+            return unit_mix[idx].get('status', 'rented')
 
-    # Investor Metrics
-    elif input_name == "Cash-on-Cash Return":
-        return (calcs.get('cash_on_cash_return')
-                or calcs.get('returns', {}).get('avgCashOnCash')
-                or calcs.get('year1', {}).get('cashOnCash'))
-    
-    elif input_name == "Cap Rate":
-        return (calcs.get('cap_rate')
-                or calcs.get('year1', {}).get('capRate')
-                or scenario_data.get('pnl', {}).get('cap_rate'))
-    
-    elif input_name == "Gross Yield":
-        return calcs.get('gross_yield')
-    
-    elif input_name == "Net Yield":
-        return calcs.get('net_yield')
-    
-    elif input_name == "Equity Multiple (10 Years)":
-        em = calcs.get('equity_multiple_10y')
-        if em is not None:
-            return em
-        exits = calcs.get('returns', {}).get('exitScenarios', [])
-        for s in exits:
-            if s.get('exitYear') == 10:
-                return s.get('equityMultiple')
-        return calcs.get('returns', {}).get('leveredEquityMultiple')
-    
-    elif input_name == "IRR (10 Years)":
-        irr = calcs.get('irr_10y')
-        if irr is not None:
-            return irr
-        exits = calcs.get('returns', {}).get('exitScenarios', [])
-        for s in exits:
-            if s.get('exitYear') == 10:
-                return s.get('irr')
-        return calcs.get('returns', {}).get('leveredIRR')
+    elif input_name.startswith("Market Rent "):
+        idx = int(input_name.split(" ")[-1]) - 1
+        if idx < len(unit_mix):
+            return unit_mix[idx].get('rent_market') or unit_mix[idx].get('proforma_rent')
 
-    # Property Valuation
-    elif input_name == "Gross Annual Income":
-        return (calcs.get('gross_annual_income')
-                or calcs.get('year1', {}).get('potentialGrossIncome')
-                or scenario_data.get('pnl', {}).get('potential_gross_income'))
-    
-    elif input_name == "Net Operating Income (NOI)":
-        return (calcs.get('noi')
-                or calcs.get('year1', {}).get('noi')
-                or scenario_data.get('pnl', {}).get('noi'))
-    
-    elif input_name == "Appraised Value":
-        return scenario_data.get('property_details', {}).get('appraised_value')
-    
-    elif input_name == "Market Value (Cap Rate)":
-        mv = calcs.get('market_value_cap_rate')
-        if mv is not None:
-            return mv
-        noi = (calcs.get('year1', {}).get('noi') or scenario_data.get('pnl', {}).get('noi'))
-        mcap = calcs.get('returns', {}).get('marketCapRateY1') or scenario_data.get('pnl', {}).get('cap_rate')
-        if noi and mcap:
-            # mcap may be percent (e.g., 7.25) or decimal
-            rate = (mcap/100) if mcap > 1 else mcap
-            return round(noi / rate, 2)
+    elif input_name.startswith("In-Place Rent "):
+        idx = int(input_name.split(" ")[-1]) - 1
+        if idx < len(unit_mix):
+            return unit_mix[idx].get('rent_current')
+
+    # ── Financing (existing debt for subject-to) ──
+    elif input_name == "Existing Loan Balance":
+        return sd.get('existing_financing', {}).get('loan_balance')
+
+    elif input_name == "Existing Loan Rate":
+        return sd.get('existing_financing', {}).get('interest_rate')
+
+    elif input_name == "Remaining Term (Months)":
+        return sd.get('existing_financing', {}).get('remaining_term_months')
+
+    # ── Value-Add Inputs (rows 119-121) ──
+    elif input_name == "Monthly Rent Increase ($/unit)":
+        annual_upside = va.get('annual_rent_upside', 0)
+        units = prop.get('units') or prop.get('total_units') or 1
+        if annual_upside:
+            return round(annual_upside / units / 12, 2)
         return None
-    
-    elif input_name == "Equity at Purchase":
-        return calcs.get('equity_at_purchase')
 
-    # Return Metrics
-    elif input_name == "Monthly Cash Flow":
-        cf_annual = (calcs.get('annual_cash_flow') or calcs.get('year1', {}).get('cashFlow'))
-        if cf_annual is not None:
-            return round(cf_annual / 12, 2)
-        return calcs.get('monthly_cash_flow')
-    
-    elif input_name == "Annual Cash Flow":
-        return (calcs.get('annual_cash_flow') or calcs.get('year1', {}).get('cashFlow'))
-    
-    elif input_name == "Total Gain (10 Years)":
-        gain = calcs.get('total_gain_10y')
-        if gain is not None:
-            return gain
-        exits = calcs.get('returns', {}).get('exitScenarios', [])
-        for s in exits:
-            if s.get('exitYear') == 10:
-                return s.get('totalProfit')
+    elif input_name == "Annual Expense Reduction ($/unit)":
+        annual_savings = va.get('annual_expense_savings', 0)
+        units = prop.get('units') or prop.get('total_units') or 1
+        if annual_savings:
+            return round(annual_savings / units, 2)
         return None
-    
-    elif input_name == "Total Return %":
-        tr = calcs.get('total_return_pct')
-        if tr is not None:
-            return tr
-        exits = calcs.get('returns', {}).get('exitScenarios', [])
-        for s in exits:
-            if s.get('exitYear') == 10 and s.get('equityMultiple') is not None:
-                em = s.get('equityMultiple')
-                return (em - 1) if em is not None else None
-        return None
-    
-    elif input_name == "Average Annual Return %":
-        return calcs.get('avg_annual_return_pct')
-    
-    elif input_name == "Breakeven Year":
-        return calcs.get('breakeven_year')
-    
-    elif input_name == "Payback Period":
-        return calcs.get('payback_period')
 
-    # Debt & Coverage
-    elif input_name == "Monthly Debt Service":
-        return (calcs.get('monthly_debt_service')
-                or calcs.get('financing', {}).get('monthlyPayment'))
-    
-    elif input_name == "DSCR (Debt Service Coverage Ratio)":
-        return (calcs.get('dscr') or calcs.get('year1', {}).get('dscr'))
-    
-    elif input_name == "LTV (Loan-to-Value)":
-        return (calcs.get('ltv') or calcs.get('financing', {}).get('ltv')
-                or scenario_data.get('pricing_financing', {}).get('ltv'))
+    elif input_name == "Renovation Cost (Total)":
+        return va.get('renovation_cost') or pf.get('upfront_capex')
 
     return None
 
