@@ -22,6 +22,16 @@ const fmtMoney = (v) => {
   return `$${v.toFixed(0)}`;
 };
 
+const fmtMoneyExact = (v) => {
+  const num = Number(v || 0);
+  return num.toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+};
+
 // Guard against NaN/Infinity/diverged IRR values
 const safePct = (v) => {
   if (v == null || !isFinite(v) || Math.abs(v) > 999) return 'N/A';
@@ -742,9 +752,9 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
                     return (
                       <tr key={ri}>
                         <td style={{ ...cellStyle(false), textAlign: 'left', fontWeight: 700, color: isBase ? '#2563eb' : VL, whiteSpace: 'nowrap' }}>
-                          <div>{fmtMoney(row.newNOI)}</div>
+                          <div>{fmtMoneyExact(row.newNOI)}</div>
                           <div style={{ fontSize: 10, fontWeight: 600, color: isBase ? '#2563eb' : '#6b7280' }}>
-                            {row.label}{row.delta > 0 && !isBase ? ` (+${fmtMoney(row.delta)}/yr)` : ''}
+                            {row.label}{row.delta > 0 && !isBase ? ` (+${fmtMoneyExact(row.delta)}/yr)` : ''}
                           </div>
                         </td>
                         {row.valuations.map((v, ci) => {
@@ -754,10 +764,10 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
                           const color = ratio >= 1.3 ? '#166534' : ratio >= 1.1 ? '#1e40af' : ratio >= 0.95 ? '#3730a3' : '#991b1b';
                           return (
                             <td key={ci} style={{ ...cellStyle(false), fontWeight: 600, color }}>
-                              <div>{fmtMoney(v.value)}</div>
+                              <div>{fmtMoneyExact(v.value)}</div>
                               {!isBase && delta !== 0 && (
                                 <div style={{ fontSize: 10, fontWeight: 600, color: delta > 0 ? '#059669' : '#dc2626' }}>
-                                  {delta > 0 ? '+' : ''}{fmtMoney(delta)}
+                                  {delta > 0 ? '+' : ''}{fmtMoneyExact(delta)}
                                 </div>
                               )}
                             </td>
@@ -791,7 +801,7 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
             </select>
           </div>
           <div style={{ fontSize: 11, color: LB, marginBottom: 16 }}>
-            Cash out at each LTV based on revalued property (existing loan: {fmtMoney(existingLoan)} at {currentLTV}% LTV)
+            Cash out at each LTV based on revalued property (existing loan: {fmtMoneyExact(existingLoan)} at {currentLTV}% LTV)
           </div>
 
           {cashoutRows.length > 0 && (
@@ -812,15 +822,15 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
                     return (
                       <tr key={ri}>
                         <td style={{ ...cellStyle(false), textAlign: 'left', fontWeight: 700, color: isBase ? '#2563eb' : VL, whiteSpace: 'nowrap' }}>
-                          <div>{fmtMoney(row.newNOI)}</div>
+                          <div>{fmtMoneyExact(row.newNOI)}</div>
                           <div style={{ fontSize: 10, color: isBase ? '#2563eb' : '#6b7280' }}>{row.label}</div>
                         </td>
-                        <td style={{ ...cellStyle(false), fontWeight: 700, color: VL }}>{fmtMoney(row.newValue)}</td>
+                        <td style={{ ...cellStyle(false), fontWeight: 700, color: VL }}>{fmtMoneyExact(row.newValue)}</td>
                         {row.ltvCells.map((cell, ci) => (
                           <td key={ci} style={{ ...cellStyle(false), fontWeight: 700 }}>
-                            <div style={{ color: VL }}>{fmtMoney(cell.newLoan)}</div>
+                            <div style={{ color: VL }}>{fmtMoneyExact(cell.newLoan)}</div>
                             <div style={{ fontSize: 10, fontWeight: 600, color: cell.cashOut >= 0 ? '#059669' : '#dc2626' }}>
-                              {cell.cashOut >= 0 ? '+' : ''}{fmtMoney(cell.cashOut)} out
+                              {cell.cashOut >= 0 ? '+' : ''}{fmtMoneyExact(cell.cashOut)} out
                             </div>
                           </td>
                         ))}
@@ -868,20 +878,20 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
                     return (
                       <tr key={ri}>
                         <td style={{ ...cellStyle(false), textAlign: 'left', fontWeight: 700, color: isBase ? '#2563eb' : VL, whiteSpace: 'nowrap' }}>
-                          <div>{fmtMoney(row.newNOI)}</div>
+                          <div>{fmtMoneyExact(row.newNOI)}</div>
                           <div style={{ fontSize: 10, color: isBase ? '#2563eb' : '#6b7280' }}>{row.label}</div>
                         </td>
                         {row.ltvCells.map((cell, ci) => (
                           <React.Fragment key={ci}>
                             <td style={{ ...cellStyle(false), fontWeight: 600, color: VL }}>
-                              {fmtMoney(cell.newLoanAmt)}
+                              {fmtMoneyExact(cell.newLoanAmt)}
                             </td>
                             <td style={{ ...cellStyle(false), fontWeight: 600, color: '#991b1b' }}>
-                              {fmtMoney(cell.newADS)}
+                              {fmtMoneyExact(cell.newADS)}
                             </td>
                             <td style={{ ...cellStyle(false), fontWeight: 700, color: cell.annualCashflow > 0 ? '#166534' : '#991b1b' }}>
-                              <div>{fmtMoney(cell.annualCashflow)}</div>
-                              <div style={{ fontSize: 10, fontWeight: 600 }}>{fmtMoney(cell.monthlyCashflow)}/mo</div>
+                              <div>{fmtMoneyExact(cell.annualCashflow)}</div>
+                              <div style={{ fontSize: 10, fontWeight: 600 }}>{fmtMoneyExact(cell.monthlyCashflow)}/mo</div>
                             </td>
                           </React.Fragment>
                         ))}
@@ -894,10 +904,10 @@ export default function SensitivityAnalysisTab({ scenarioData, fullCalcs, calcul
           )}
 
           <div style={{ marginTop: 16, padding: '12px 16px', backgroundColor: '#f8fafc', borderRadius: 10, border: `1px solid ${B}`, display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 12 }}>
-            <div><span style={{ color: LB }}>Stabilized NOI:</span> <span style={{ fontWeight: 700, color: VL }}>{fmtMoney(stabilizedNOI)}</span></div>
-            <div><span style={{ color: LB }}>Current ADS:</span> <span style={{ fontWeight: 700, color: VL }}>{fmtMoney(annualDebtService)}</span></div>
-            <div><span style={{ color: LB }}>Purchase:</span> <span style={{ fontWeight: 700, color: VL }}>{fmtMoney(purchasePrice)}</span></div>
-            <div><span style={{ color: LB }}>Existing Loan:</span> <span style={{ fontWeight: 700, color: VL }}>{fmtMoney(existingLoan)} ({currentLTV}% LTV)</span></div>
+            <div><span style={{ color: LB }}>Stabilized NOI:</span> <span style={{ fontWeight: 700, color: VL }}>{fmtMoneyExact(stabilizedNOI)}</span></div>
+            <div><span style={{ color: LB }}>Current ADS:</span> <span style={{ fontWeight: 700, color: VL }}>{fmtMoneyExact(annualDebtService)}</span></div>
+            <div><span style={{ color: LB }}>Purchase:</span> <span style={{ fontWeight: 700, color: VL }}>{fmtMoneyExact(purchasePrice)}</span></div>
+            <div><span style={{ color: LB }}>Existing Loan:</span> <span style={{ fontWeight: 700, color: VL }}>{fmtMoneyExact(existingLoan)} ({currentLTV}% LTV)</span></div>
           </div>
         </div>
 
