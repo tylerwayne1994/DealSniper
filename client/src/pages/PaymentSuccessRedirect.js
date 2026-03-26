@@ -6,6 +6,58 @@ export default function PaymentSuccessRedirect() {
   const navigate = useNavigate();
   const location = useLocation();
   const [message, setMessage] = useState('Processing payment and creating your account...');
+  const [checkoutMeta, setCheckoutMeta] = useState(null);
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const normalizePlan = (rawPlan) => {
+    const normalized = (rawPlan || 'standard').toLowerCase();
+    if (normalized === 'base' || normalized === 'pro') return 'standard';
+    return normalized;
+  };
+
+  const finishSignupWithPassword = async (metadata, stripeTrialEndsAt, rawPassword) => {
+    const { email, first_name, last_name, phone, company, title, city, state, plan } = metadata;
+    const subscriptionTier = normalizePlan(plan);
+
+    const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password: rawPassword,
+      options: {
+        data: { first_name, last_name, phone, company, title, city, state }
+      }
+    });
+
+    if (signUpError) {
+      throw signUpError;
+    }
+
+    if (authData?.user) {
+      const monthly = 55;
+      const trialDays = Number(metadata?.trial_days || 7);
+      const trialEndsAt = stripeTrialEndsAt || new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString();
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          subscription_tier: subscriptionTier,
+          token_balance: monthly,
+          monthly_token_limit: monthly,
+          subscription_status: 'trialing',
+          trial_ends_at: trialEndsAt
+        })
+        .eq('id', authData.user.id);
+
+      if (profileError) {
+        console.warn('Profile update error:', profileError);
+      }
+    }
+
+    sessionStorage.removeItem('pendingSignup');
+    setMessage('Account created. Redirecting to login...');
+    try { await supabase.auth.signOut(); } catch {}
+    setTimeout(() => navigate('/login'), 1500);
+  };
 
   useEffect(() => {
     const finishSignup = async () => {
@@ -27,46 +79,16 @@ export default function PaymentSuccessRedirect() {
         if (!res.ok) throw new Error('Failed to retrieve payment metadata');
 
         const { metadata, trial_ends_at: stripeTrialEndsAt } = await res.json();
-        const { email, password, first_name, last_name, phone, company, title, city, state, plan } = metadata;
+        const storedRaw = sessionStorage.getItem('pendingSignup');
+        const stored = storedRaw ? JSON.parse(storedRaw) : null;
 
-        const { data: authData, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { first_name, last_name, phone, company, title, city, state }
-          }
-        });
-
-        if (signUpError) {
-          setMessage('Account creation failed: ' + signUpError.message);
-          setTimeout(() => navigate('/signup'), 2500);
+        if (stored?.password && stored?.email?.toLowerCase() === metadata?.email?.toLowerCase()) {
+          await finishSignupWithPassword(metadata, stripeTrialEndsAt, stored.password);
           return;
         }
 
-        if (authData?.user) {
-          const monthly = plan === 'pro' ? 55 : 25; // align with backend limits
-          const trialDays = Number(metadata?.trial_days || 7);
-          const trialEndsAt = stripeTrialEndsAt || new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString();
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .update({
-              subscription_tier: plan,
-              token_balance: monthly,
-              monthly_token_limit: monthly,
-              subscription_status: 'trialing',
-              trial_ends_at: trialEndsAt
-            })
-            .eq('id', authData.user.id);
-
-          if (profileError) {
-            console.warn('Profile update error:', profileError);
-          }
-        }
-
-        setMessage('Account created. Redirecting to login...');
-        // Explicitly sign out to avoid staying logged into old/new session
-        try { await supabase.auth.signOut(); } catch {}
-        setTimeout(() => navigate('/login'), 1500);
+        setCheckoutMeta({ metadata, stripeTrialEndsAt });
+        setMessage('Payment succeeded. Set your password to finish creating the account.');
       } catch (err) {
         console.error('Payment success handling error:', err);
         setMessage('An error occurred. Please try logging in or sign up again.');
@@ -77,10 +99,53 @@ export default function PaymentSuccessRedirect() {
     finishSignup();
   }, [location.search, navigate]);
 
+  const handleFinalizeSignup = async (e) => {
+    e.preventDefault();
+    if (!checkoutMeta?.metadata) return;
+    if (password.length < 6) {
+      setMessage('Password must be at least 6 characters.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setMessage('Passwords do not match.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await finishSignupWithPassword(checkoutMeta.metadata, checkoutMeta.stripeTrialEndsAt, password);
+    } catch (err) {
+      console.error('Finalize signup error:', err);
+      setMessage('Account creation failed: ' + (err.message || 'Unknown error'));
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <div style={{ padding: 24 }}>
-      <h2>Payment successful</h2>
-      <p>{message}</p>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', padding: 24 }}>
+      <div style={{ width: '100%', maxWidth: 460, background: '#ffffff', borderRadius: 18, padding: 28, boxShadow: '0 24px 64px rgba(0,0,0,0.25)' }}>
+        <h2 style={{ margin: '0 0 12px', fontSize: 26, color: '#111827' }}>Payment successful</h2>
+        <p style={{ margin: '0 0 18px', color: '#4b5563', lineHeight: 1.5 }}>{message}</p>
+        {checkoutMeta?.metadata && (
+          <form onSubmit={handleFinalizeSignup}>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', marginBottom: 6, fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Email</label>
+              <div style={{ padding: '12px 14px', border: '1px solid #e5e7eb', borderRadius: 10, background: '#f8fafc', color: '#111827' }}>{checkoutMeta.metadata.email}</div>
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', marginBottom: 6, fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Create password</label>
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', padding: '12px 14px', border: '1px solid #d1d5db', borderRadius: 10, boxSizing: 'border-box' }} />
+            </div>
+            <div style={{ marginBottom: 18 }}>
+              <label style={{ display: 'block', marginBottom: 6, fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Confirm password</label>
+              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} style={{ width: '100%', padding: '12px 14px', border: '1px solid #d1d5db', borderRadius: 10, boxSizing: 'border-box' }} />
+            </div>
+            <button type="submit" disabled={submitting} style={{ width: '100%', padding: '13px 16px', border: 'none', borderRadius: 12, background: submitting ? '#94a3b8' : '#111827', color: '#ffffff', fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer' }}>
+              {submitting ? 'Creating account...' : 'Create account'}
+            </button>
+          </form>
+        )}
+      </div>
     </div>
   );
 }

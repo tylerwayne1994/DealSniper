@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { User, Building2, Mail, Lock, Phone, MapPin, Briefcase, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 
 // ============================================================================
 // Sign Up Page - Create account with profile fields
 // ============================================================================
 
 function SignUpPage() {
-  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -56,6 +54,12 @@ function SignUpPage() {
     setLoading(true);
 
     try {
+      sessionStorage.setItem('pendingSignup', JSON.stringify({
+        email: formData.email,
+        password: formData.password,
+        createdAt: Date.now(),
+      }));
+
       // Call backend to create Stripe Checkout session
       const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
       const res = await fetch(`${API_BASE}/api/create-checkout-session`, {
@@ -63,7 +67,6 @@ function SignUpPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: formData.email,
-          password: formData.password,
           firstName: formData.firstName,
           lastName: formData.lastName,
           phone: formData.phone,
@@ -81,6 +84,7 @@ function SignUpPage() {
       window.location.href = url;
     } catch (err) {
       console.error('Stripe Checkout error:', err);
+      sessionStorage.removeItem('pendingSignup');
       setError(err.message || 'Failed to start payment');
       setLoading(false);
     }

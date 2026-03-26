@@ -547,7 +547,6 @@ async def create_checkout_session(request: Request):
     data = await request.json()
     email = data.get("email")
     plan = data.get("plan")
-    password = data.get("password")
     first_name = data.get("firstName", "")
     last_name = data.get("lastName", "")
     phone = data.get("phone", "")
@@ -556,8 +555,8 @@ async def create_checkout_session(request: Request):
     city = data.get("city", "")
     state = data.get("state", "")
     
-    if not email or not password:
-        raise HTTPException(status_code=400, detail="Missing required fields: email, password")
+    if not email:
+        raise HTTPException(status_code=400, detail="Missing required field: email")
 
     # Single plan at $100/month
     price_id = PRICE_ID
@@ -577,7 +576,6 @@ async def create_checkout_session(request: Request):
             customer_email=email,
             metadata={
                 "email": email,
-                "password": password,
                 "first_name": first_name,
                 "last_name": last_name,
                 "phone": phone,

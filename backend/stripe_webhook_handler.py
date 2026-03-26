@@ -30,6 +30,14 @@ TIER_TOKEN_LIMITS = {
     "pro": 55,        # Legacy fallback
 }
 
+
+def normalize_subscription_tier(plan: str | None) -> str:
+    """Collapse legacy plan names onto the current single paid tier."""
+    normalized = (plan or "standard").lower()
+    if normalized in TIER_TOKEN_LIMITS:
+        return normalized
+    return "standard"
+
 # Map Stripe price ID to subscription tier
 STRIPE_PRICE_TO_TIER = {
     os.getenv("STRIPE_PRICE_ID", "price_1SfA2SRRD0SJQZk3q6Zujrw0"): "standard",
@@ -171,7 +179,7 @@ async def stripe_webhook(request: Request):
             # Get subscription details to find the price/tier
             subscription = stripe.Subscription.retrieve(subscription_id)
             price_id = subscription["items"]["data"][0]["price"]["id"]
-            tier = STRIPE_PRICE_TO_TIER.get(price_id, "base")
+            tier = normalize_subscription_tier(STRIPE_PRICE_TO_TIER.get(price_id, "standard"))
             
             # Determine trial status
             sub_status = subscription.get("status", "active")  # "trialing", "active", etc.
@@ -181,14 +189,14 @@ async def stripe_webhook(request: Request):
             # Get metadata from session
             metadata = session.get("metadata", {})
             user_id = metadata.get("user_id")
-            plan = metadata.get("plan", "base")
+            plan = normalize_subscription_tier(metadata.get("plan", "standard"))
             
             # Update or create profile with stripe customer ID
             supabase = get_supabase()
             
             if user_id:
                 # Update profile with Stripe info and token balance
-                monthly = 55 if plan == "pro" else 25
+                monthly = TIER_TOKEN_LIMITS.get(plan, 55)
                 
                 update_data = {
                     "stripe_customer_id": customer_id,
@@ -231,7 +239,7 @@ async def stripe_webhook(request: Request):
         customer_id = subscription.get("customer")
         subscription_id = subscription.get("id")
         price_id = subscription["items"]["data"][0]["price"]["id"]
-        tier = STRIPE_PRICE_TO_TIER.get(price_id, "base")
+        tier = normalize_subscription_tier(STRIPE_PRICE_TO_TIER.get(price_id, "standard"))
         sub_status = subscription.get("status", "active")
         
         if customer_id:
