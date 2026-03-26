@@ -252,6 +252,7 @@ import stripe
 
 # Price ID: single $100/month plan - prefer env var, fallback to known ID
 PRICE_ID = os.getenv("STRIPE_PRICE_ID", "price_1SfA2SRRD0SJQZk3q6Zujrw0")
+STRIPE_TRIAL_DAYS = max(0, int(os.getenv("STRIPE_TRIAL_DAYS", "7")))
 
 # Debug endpoint for env vars (dev only)
 @app.get("/debug/env")
@@ -571,7 +572,7 @@ async def create_checkout_session(request: Request):
             }],
             mode="subscription",
             subscription_data={
-                "trial_period_days": 7,
+                "trial_period_days": STRIPE_TRIAL_DAYS,
             },
             customer_email=email,
             metadata={
@@ -584,7 +585,8 @@ async def create_checkout_session(request: Request):
                 "title": title,
                 "city": city,
                 "state": state,
-                "plan": "standard"
+                "plan": "standard",
+                "trial_days": str(STRIPE_TRIAL_DAYS),
             },
             success_url=os.getenv("FRONTEND_URL", "http://localhost:3000") + f"/payment-success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=os.getenv("FRONTEND_URL", "http://localhost:3000") + "/signup?canceled=true",
@@ -598,7 +600,23 @@ async def get_checkout_session(session_id: str):
     try:
         stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
         session = stripe.checkout.Session.retrieve(session_id)
-        return {"metadata": session.get("metadata", {})}
+        subscription_id = session.get("subscription")
+        trial_ends_at = None
+        subscription_status = None
+
+        if subscription_id:
+            subscription = stripe.Subscription.retrieve(subscription_id)
+            subscription_status = subscription.get("status")
+            trial_end = subscription.get("trial_end")
+            if trial_end:
+                from datetime import datetime
+                trial_ends_at = datetime.fromtimestamp(trial_end).isoformat()
+
+        return {
+            "metadata": session.get("metadata", {}),
+            "subscription_status": subscription_status,
+            "trial_ends_at": trial_ends_at,
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

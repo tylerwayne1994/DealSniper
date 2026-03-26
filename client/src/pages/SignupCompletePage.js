@@ -26,7 +26,7 @@ function SignupCompletePage() {
         const res = await fetch(`${API_BASE}/api/get-checkout-session?session_id=${sessionId}`);
         if (!res.ok) throw new Error('Failed to retrieve payment information');
         
-        const { metadata } = await res.json();
+        const { metadata, trial_ends_at: stripeTrialEndsAt } = await res.json();
         const { email, password, first_name, last_name, phone, company, title, city, state, plan } = metadata;
 
         // Create Supabase account
@@ -55,12 +55,16 @@ function SignupCompletePage() {
 
         // Update profile with subscription details
         if (authData.user) {
+          const trialDays = Number(metadata?.trial_days || 7);
+          const trialEndsAt = stripeTrialEndsAt || new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString();
           const { error: profileError } = await supabase
             .from('profiles')
             .update({
               subscription_tier: plan,
               token_balance: plan === 'pro' ? 100 : 25,
-              monthly_limit: plan === 'pro' ? 100 : 25
+              monthly_limit: plan === 'pro' ? 100 : 25,
+              subscription_status: 'trialing',
+              trial_ends_at: trialEndsAt,
             })
             .eq('id', authData.user.id);
 

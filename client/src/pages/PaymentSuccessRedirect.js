@@ -26,7 +26,7 @@ export default function PaymentSuccessRedirect() {
         const res = await fetch(`${API_BASE}/api/get-checkout-session?session_id=${sessionId}`);
         if (!res.ok) throw new Error('Failed to retrieve payment metadata');
 
-        const { metadata } = await res.json();
+        const { metadata, trial_ends_at: stripeTrialEndsAt } = await res.json();
         const { email, password, first_name, last_name, phone, company, title, city, state, plan } = metadata;
 
         const { data: authData, error: signUpError } = await supabase.auth.signUp({
@@ -45,8 +45,8 @@ export default function PaymentSuccessRedirect() {
 
         if (authData?.user) {
           const monthly = plan === 'pro' ? 55 : 25; // align with backend limits
-          // Calculate trial end date (7 days from now)
-          const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+          const trialDays = Number(metadata?.trial_days || 7);
+          const trialEndsAt = stripeTrialEndsAt || new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString();
           const { error: profileError } = await supabase
             .from('profiles')
             .update({
