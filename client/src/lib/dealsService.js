@@ -777,7 +777,7 @@ export async function loadProfile() {
     brandCompanyName: data.brand_company_name || '',
     brandLetterheadText: data.brand_letterhead_text || '',
     googleSheetId: data.google_sheet_id || '',
-    googleSheetTab: data.google_sheet_tab || 'Underwriting Model'
+    googleSheetTab: data.google_sheet_tab || 'Model'
   };
 }
 
@@ -812,7 +812,7 @@ export async function saveProfile(profile) {
     google_sheet_id: profile.googleSheetId
       ? (profile.googleSheetId.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/) || [])[1] || profile.googleSheetId.trim()
       : null,
-    google_sheet_tab: profile.googleSheetTab || 'Underwriting Model',
+    google_sheet_tab: profile.googleSheetTab || 'Model',
     updated_at: new Date().toISOString()
   };
 

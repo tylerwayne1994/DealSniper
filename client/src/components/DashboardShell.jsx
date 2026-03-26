@@ -8,7 +8,6 @@ import {
   BarChart3,
   FileSpreadsheet,
   Home,
-  MapPin,
   Shield,
   Mail,
   FileText,
@@ -16,8 +15,11 @@ import {
   X,
   AlertTriangle,
   Users,
+  ChevronDown,
+  LogOut,
 } from 'lucide-react';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { supabase } from '../lib/supabase';
 
 const SIDEBAR_WIDTH = 200;
 
@@ -127,19 +129,22 @@ const dashboardStyles = {
     display: 'flex',
     alignItems: 'center',
     gap: 10,
+    position: 'relative',
   },
   circleButton: (dark = false) => ({
-    width: 30,
-    height: 30,
+    width: 38,
+    height: 38,
     borderRadius: '999px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: dark ? '#000000' : '#e5e7eb',
     color: dark ? '#ffffff' : '#4b5563',
-    fontSize: 11,
-    fontWeight: 600,
+    fontSize: 12,
+    fontWeight: 700,
     cursor: 'pointer',
+    border: 'none',
+    boxShadow: dark ? '0 10px 24px rgba(15, 23, 42, 0.22)' : 'none',
   }),
   content: {
     flex: 1,
@@ -189,6 +194,9 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
   const navigate = useNavigate();
   const { isMobile, isTablet } = useIsMobile();
   const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = React.useState(false);
+  const [accountUser, setAccountUser] = React.useState(null);
+  const accountMenuRef = React.useRef(null);
 
   const defaultHandleTabClick = (tabId) => {
     if (tabId === 'pipeline') {
@@ -227,6 +235,62 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
   };
 
   const initial = title && title.length > 0 ? title[0].toUpperCase() : 'D';
+
+  React.useEffect(() => {
+    let mounted = true;
+
+    const loadUser = async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (mounted) setAccountUser(data?.user || null);
+      } catch {
+        if (mounted) setAccountUser(null);
+      }
+    };
+
+    loadUser();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) setAccountUser(session?.user || null);
+    });
+
+    return () => {
+      mounted = false;
+      listener?.subscription?.unsubscribe?.();
+    };
+  }, []);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target)) {
+        setAccountMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const rawName =
+    accountUser?.user_metadata?.full_name ||
+    [accountUser?.user_metadata?.first_name, accountUser?.user_metadata?.last_name].filter(Boolean).join(' ') ||
+    accountUser?.email?.split('@')[0] ||
+    'Account';
+  const displayName = rawName || 'Account';
+  const displayEmail = accountUser?.email || 'Signed in';
+  const userInitial = (displayName[0] || displayEmail[0] || 'D').toUpperCase();
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      setAccountMenuOpen(false);
+      navigate('/');
+    } catch (error) {
+      console.error('Sign out error:', error);
+      alert('Failed to sign out. Please try again.');
+    }
+  };
 
   // ── Sidebar content (shared between desktop fixed + mobile drawer) ──
   const sidebarContent = (
@@ -359,8 +423,76 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
               </div>
               <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{title}</span>
             </div>
-            <div style={dashboardStyles.topRight}>
-              <div style={dashboardStyles.circleButton(true)}>{initial}</div>
+            <div style={dashboardStyles.topRight} ref={accountMenuRef}>
+              <button
+                type="button"
+                onClick={() => setAccountMenuOpen((open) => !open)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '4px 6px 4px 4px',
+                  borderRadius: 999,
+                  border: '1px solid #e5e7eb',
+                  background: '#ffffff',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={dashboardStyles.circleButton(true)}>{userInitial}</div>
+                {!isMobile && <ChevronDown size={16} color="#475569" />}
+              </button>
+              {accountMenuOpen && (
+                <div style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 10px)',
+                  right: 0,
+                  width: isMobile ? 230 : 260,
+                  background: '#ffffff',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 16,
+                  boxShadow: '0 24px 50px rgba(15, 23, 42, 0.18)',
+                  padding: 10,
+                  zIndex: 1000,
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: 10,
+                    borderRadius: 12,
+                    background: 'linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)',
+                    marginBottom: 8,
+                  }}>
+                    <div style={{ ...dashboardStyles.circleButton(true), width: 42, height: 42, flexShrink: 0 }}>{userInitial}</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</div>
+                      <div style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayEmail}</div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      padding: '12px 14px',
+                      background: '#111827',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: 12,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <LogOut size={16} />
+                    Sign Out
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

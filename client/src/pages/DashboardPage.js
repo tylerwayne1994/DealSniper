@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   User, 
-  Building2, 
   Save,
   CheckCircle,
   Briefcase,
@@ -11,8 +10,7 @@ import {
   Lock,
   AlertCircle,
   Presentation,
-  FileSpreadsheet,
-  LogOut
+  FileSpreadsheet
 } from 'lucide-react';
 import { loadProfile, saveProfile } from '../lib/dealsService';
 import { supabase } from '../lib/supabase';
@@ -297,7 +295,6 @@ function DashboardPage() {
   const { isMobile } = useIsMobile();
   const [activeTab, setActiveTab] = useState('home');
   const [saveMessage, setSaveMessage] = useState('');
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState('');
   
@@ -323,7 +320,7 @@ function DashboardPage() {
     brandCompanyName: '',
     brandLetterheadText: '',
     googleSheetId: '',
-    googleSheetTab: 'Underwriting Model'
+    googleSheetTab: 'Model'
   });
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
@@ -386,7 +383,7 @@ function DashboardPage() {
               token_balance: data.new_balance
             }));
             
-            setPaymentMessage(`✅ Payment successful! ${tokensPurchased} tokens have been added to your account. New balance: ${data.new_balance}`);
+            setPaymentMessage(`Payment successful. ${tokensPurchased} tokens have been added to your account. New balance: ${data.new_balance}`);
             
             // Remove query params from URL
             window.history.replaceState({}, '', '/dashboard');
@@ -396,19 +393,19 @@ function DashboardPage() {
               setPaymentMessage('');
             }, 5000);
           } else {
-            setPaymentMessage(`⚠️ Payment successful but failed to credit tokens automatically. Please refresh the page.`);
+            setPaymentMessage('Payment succeeded but tokens were not credited automatically yet. Please refresh the page.');
             window.history.replaceState({}, '', '/dashboard');
           }
         } catch (error) {
           console.error('Error crediting tokens:', error);
-          setPaymentMessage(`⚠️ Payment successful but failed to credit tokens automatically. Error: ${error.message}. Please contact support.`);
+          setPaymentMessage(`Payment succeeded but tokens were not credited automatically. Error: ${error.message}. Please contact support.`);
           window.history.replaceState({}, '', '/dashboard');
         }
       };
       
       creditTokens();
     } else if (paymentCanceled === 'true') {
-      setPaymentMessage('❌ Payment was canceled.');
+      setPaymentMessage('Payment was canceled.');
       window.history.replaceState({}, '', '/dashboard');
     }
   }, [profile.id]);
@@ -423,8 +420,6 @@ function DashboardPage() {
         }
       } catch (error) {
         console.error('Error loading profile:', error);
-      } finally {
-        setLoading(false);
       }
     };
     fetchProfile();
@@ -488,30 +483,39 @@ function DashboardPage() {
   // Shared styles
   const inputStyle = {
     width: '100%',
-    padding: '12px 14px',
+    padding: '14px 16px',
     fontSize: '14px',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    backgroundColor: '#f9fafb',
+    border: '1px solid #dbe3ee',
+    borderRadius: '12px',
+    backgroundColor: '#ffffff',
     color: '#111827',
-    boxSizing: 'border-box'
+    boxSizing: 'border-box',
+    boxShadow: 'inset 0 1px 2px rgba(15, 23, 42, 0.04)'
   };
 
   const labelStyle = {
     display: 'block',
     marginBottom: '8px',
-    fontWeight: '600',
-    color: '#374151',
-    fontSize: '13px'
+    fontWeight: '700',
+    color: '#475569',
+    fontSize: '11px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em'
   };
 
   const cardStyle = {
     backgroundColor: 'white',
-    borderRadius: '12px',
-    padding: '24px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    border: '1px solid #e5e7eb'
+    borderRadius: '22px',
+    padding: isMobile ? '20px' : '28px',
+    boxShadow: '0 20px 40px rgba(15,23,42,0.08)',
+    border: '1px solid #e2e8f0'
   };
+
+  const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(' ') || profile.company || 'Your account';
+  const profileInitial = (profile.firstName?.[0] || profile.email?.[0] || 'D').toUpperCase();
+  const profileMeta = [profile.title, profile.company].filter(Boolean).join(' · ') || 'Update your account settings and export preferences';
+  const completionFields = [profile.firstName, profile.lastName, profile.email, profile.company, profile.title, profile.city, profile.state].filter(Boolean).length;
+  const completionPct = Math.round((completionFields / 7) * 100);
 
   // Render Profile Tab
   const renderProfileTab = () => (
@@ -520,29 +524,127 @@ function DashboardPage() {
       {paymentMessage && (
         <div style={{
           padding: '16px 20px',
-          backgroundColor: paymentMessage.includes('✅') ? '#f0fdf4' : '#fef2f2',
+          backgroundColor: paymentMessage.toLowerCase().includes('successful') ? '#f0fdf4' : '#fef2f2',
           borderRadius: '8px',
-          border: `2px solid ${paymentMessage.includes('✅') ? '#10b981' : '#ef4444'}`,
+          border: `2px solid ${paymentMessage.toLowerCase().includes('successful') ? '#10b981' : '#ef4444'}`,
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
           fontSize: '14px',
           fontWeight: '600',
-          color: paymentMessage.includes('✅') ? '#166534' : '#dc2626'
+          color: paymentMessage.toLowerCase().includes('successful') ? '#166534' : '#dc2626'
         }}>
           {paymentMessage}
         </div>
       )}
+
+      <div style={{
+        background: 'linear-gradient(135deg, #f8fafc 0%, #eef2ff 52%, #fdf2f8 100%)',
+        border: '1px solid #e2e8f0',
+        borderRadius: '28px',
+        padding: isMobile ? '20px' : '28px',
+        boxShadow: '0 18px 40px rgba(15,23,42,0.08)'
+      }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1.6fr) minmax(280px, 0.9fr)',
+          gap: isMobile ? '18px' : '24px',
+          alignItems: 'stretch'
+        }}>
+          <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
+            <div style={{
+              width: 68,
+              height: 68,
+              borderRadius: '50%',
+              background: '#111827',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 24,
+              fontWeight: 800,
+              flexShrink: 0,
+              boxShadow: '0 14px 28px rgba(15,23,42,0.18)'
+            }}>
+              {profileInitial}
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>
+                Account Settings
+              </div>
+              <div style={{ fontSize: isMobile ? 26 : 34, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.03em', lineHeight: 1.05 }}>
+                {fullName}
+              </div>
+              <div style={{ fontSize: 14, color: '#475569', marginTop: 8 }}>{profile.email || 'No email on file'}</div>
+              <div style={{ fontSize: 14, color: '#64748b', marginTop: 6 }}>{profileMeta}</div>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 }}>
+                {[profile.city && profile.state ? `${profile.city}, ${profile.state}` : null, profile.googleSheetId ? 'Sheets connected' : 'Sheets not connected', tokenBalance?.subscription_status || 'Active account'].filter(Boolean).map((badge, idx) => (
+                  <span key={idx} style={{ padding: '8px 12px', borderRadius: 999, background: '#ffffff', border: '1px solid #dbe3ee', fontSize: 12, fontWeight: 700, color: '#334155' }}>{badge}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div style={{
+            background: 'rgba(255,255,255,0.82)',
+            border: '1px solid #e2e8f0',
+            borderRadius: 22,
+            padding: '18px 20px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: 14
+          }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Profile Completion</div>
+              <div style={{ fontSize: 30, fontWeight: 800, color: '#111827' }}>{completionPct}%</div>
+            </div>
+            <div style={{ height: 10, background: '#e2e8f0', borderRadius: 999, overflow: 'hidden' }}>
+              <div style={{ width: `${completionPct}%`, height: '100%', background: 'linear-gradient(90deg, #0f766e 0%, #2563eb 100%)' }} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+              <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: 16, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Branding</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#111827', marginTop: 4 }}>{profile.brandCompanyName || profile.company || 'Not set'}</div>
+              </div>
+              <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: 16, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Tokens</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#111827', marginTop: 4 }}>{tokenBalance?.token_balance ?? '—'}</div>
+              </div>
+            </div>
+            <button
+              onClick={handleSaveProfile}
+              disabled={saving}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '14px 18px',
+                backgroundColor: saving ? '#94a3b8' : '#111827',
+                color: 'white',
+                border: 'none',
+                borderRadius: '14px',
+                fontSize: '14px',
+                fontWeight: '700',
+                cursor: saving ? 'not-allowed' : 'pointer'
+              }}
+            >
+              <Save size={18} />
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Primary CTA: Upload Deal (routes to V2 Underwriter) */}
       <div style={{ 
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'space-between', 
-        padding: '16px 20px', 
-        backgroundColor: '#f9fafb', 
-        borderRadius: '12px', 
-        border: '1px solid #e5e7eb'
+        padding: isMobile ? '18px 20px' : '18px 22px', 
+        background: 'linear-gradient(135deg, #fff7ed 0%, #ffffff 100%)', 
+        borderRadius: '18px', 
+        border: '1px solid #fed7aa'
       }}>
         <div>
           <div style={{ fontSize: '15px', fontWeight: 600, color: '#111827' }}>
@@ -621,7 +723,7 @@ function DashboardPage() {
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                 display: 'inline-block'
               }}>
-                🎯 MEMBER
+                Member
               </div>
 
               {/* Token Counter */}
@@ -686,7 +788,7 @@ function DashboardPage() {
               border: '2px solid #e0e7ff'
             }}>
               <div style={{ fontSize: '13px', fontWeight: '700', color: '#4338ca', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                🎯 Token Usage
+                Token Usage
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px', fontSize: '14px' }}>
                 <div style={{ color: '#374151' }}>
@@ -757,7 +859,7 @@ function DashboardPage() {
                 backgroundColor: isExpired ? '#fecaca' : isUrgent ? '#fde68a' : '#a7f3d0',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '12px'
               }}>
-                <span style={{ fontSize: '20px' }}>{isExpired ? '⏰' : isUrgent ? '⚠️' : '🎉'}</span>
+                {isExpired ? <AlertCircle size={20} color="#dc2626" /> : <CheckCircle size={20} color={isUrgent ? '#d97706' : '#059669'} />}
               </div>
               <div>
                 <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: isExpired ? '#dc2626' : '#111827' }}>
@@ -1044,10 +1146,10 @@ function DashboardPage() {
             name="googleSheetTab"
             value={profile.googleSheetTab}
             onChange={handleProfileChange}
-            placeholder="Underwriting Model"
+            placeholder="Model"
           />
           <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
-            The tab/sheet name within your spreadsheet where data should be written (default: "Underwriting Model")
+            The tab/sheet name within your spreadsheet where data should be written (default: "Model")
           </p>
         </div>
       </div>
@@ -1234,62 +1336,6 @@ function DashboardPage() {
         </div>
       </div>
 
-      {/* Save Button */}
-      <button
-        onClick={handleSaveProfile}
-        disabled={saving}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-          padding: '14px 28px',
-          backgroundColor: saving ? '#6b7280' : '#0d9488',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          fontSize: '14px',
-          fontWeight: '600',
-          cursor: saving ? 'not-allowed' : 'pointer',
-          alignSelf: 'flex-start'
-        }}
-      >
-        <Save size={18} />
-        {saving ? 'Saving...' : 'Save Profile'}
-      </button>
-
-      {/* Sign Out Button */}
-      <button
-        onClick={async () => {
-          try {
-            const { error } = await supabase.auth.signOut();
-            if (error) throw error;
-            navigate('/');
-          } catch (error) {
-            console.error('Sign out error:', error);
-            alert('Failed to sign out. Please try again.');
-          }
-        }}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-          padding: '14px 28px',
-          backgroundColor: '#ef4444',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          fontSize: '14px',
-          fontWeight: '600',
-          cursor: 'pointer',
-          alignSelf: 'flex-start'
-        }}
-      >
-        <LogOut size={18} />
-        Sign Out
-      </button>
-
       {/* Token Packages for Purchase */}
       {profile.email && (
         <div style={{ marginTop: 32 }}>
@@ -1330,39 +1376,6 @@ function DashboardPage() {
     </div>
   );
 
-  // Render Properties Tab (placeholder)
-  const renderPropertiesTab = () => (
-    <div style={cardStyle}>
-      <div style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        padding: '60px 20px',
-        textAlign: 'center'
-      }}>
-        <div style={{ 
-          width: '80px', 
-          height: '80px', 
-          borderRadius: '50%', 
-          backgroundColor: '#f0fdfa', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          marginBottom: '20px'
-        }}>
-          <Building2 size={40} color="#0d9488" />
-        </div>
-        <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', marginBottom: '8px' }}>
-          Properties Coming Soon
-        </h3>
-        <p style={{ fontSize: '14px', color: '#6b7280', maxWidth: '400px' }}>
-          Track and manage your portfolio properties.
-        </p>
-      </div>
-    </div>
-  );
-
   // Render Pitch Deck Tab
   const renderPitchDeckTab = () => (
     <div style={cardStyle}>
@@ -1399,7 +1412,7 @@ function DashboardPage() {
   return (
     <DashboardShell
       activeTab={activeTab}
-      title="Dashboard"
+      title={activeTab === 'profile' ? 'Profile' : activeTab === 'rapid-fire' ? 'Rapid Fire' : activeTab === 'pitch-deck' ? 'Pitch Deck' : 'Dashboard'}
       onTabClick={(tabId, defaultNavigate) => {
         if (tabId === 'profile' || tabId === 'rapid-fire' || tabId === 'pitch-deck' || tabId === 'home' || tabId === 'map') {
           setActiveTab(tabId);
