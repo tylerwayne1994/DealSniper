@@ -1071,15 +1071,15 @@ function UnderwriteV2Page() {
             >
               <Upload style={{ width: 64, height: 64, color: '#9ca3af', margin: '0 auto 16px' }} />
               <div style={{ fontSize: 18, fontWeight: 600, color: '#374151', marginBottom: 8 }}>
-                {file ? file.name : 'Drop PDF here or click to browse'}
+                {file ? file.name : 'Drop file here or click to browse'}
               </div>
               <div style={{ fontSize: 14, color: '#6b7280' }}>
-                PDF files only • Maximum 50MB
+                PDF, Excel (.xlsx/.xls), or CSV • Maximum 50MB
               </div>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="application/pdf"
+                accept="application/pdf,.pdf,.xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
                 style={{ display: 'none' }}
                 onChange={handleFileChange}
               />
@@ -1385,7 +1385,22 @@ function UnderwriteV2Page() {
                       <input type="number" style={{ ...styles.input, paddingRight: 40 }} value={verifiedData?.financing?.io_years || 0} onChange={(e) => updateVerifiedField('financing', 'io_years', parseFloat(e.target.value))} placeholder="0" />
                       <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>yrs</span>
                     </div>
-                    <span style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, display: 'block' }}>Optional: 0–3 years</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                      <input
+                        type="checkbox"
+                        id="fullIO"
+                        checked={(verifiedData?.financing?.io_years || 0) >= (verifiedData?.financing?.loan_term_years || 10)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            updateVerifiedField('financing', 'io_years', verifiedData?.financing?.loan_term_years || 10);
+                          } else {
+                            updateVerifiedField('financing', 'io_years', 0);
+                          }
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      />
+                      <label htmlFor="fullIO" style={{ fontSize: 11, color: '#64748b', cursor: 'pointer', fontWeight: 600 }}>Full-term IO (no amortization)</label>
+                    </div>
                   </div>
                   <div>
                     <label style={{ display: 'block', marginBottom: 6, fontSize: 12, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px' }}>

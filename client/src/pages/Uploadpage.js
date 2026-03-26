@@ -216,13 +216,28 @@ const EnhancedUploadPage = () => {
   const onFileInput = async (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    if (f.type !== "application/pdf") {
-      setError(`Only PDF is supported. Got: ${f.type || "unknown"}`);
+    const allowedTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+      'text/csv',
+    ];
+    const allowedExtensions = ['.pdf', '.xlsx', '.xls', '.csv'];
+    const ext = (f.name || '').toLowerCase().slice(f.name.lastIndexOf('.'));
+    if (!allowedTypes.includes(f.type) && !allowedExtensions.includes(ext)) {
+      setError(`Unsupported file type. Accepted: PDF, Excel (.xlsx/.xls), CSV. Got: ${f.type || "unknown"}`);
       return;
     }
     setError("");
     setFile(f);
-    await genPdfThumbs(f);
+    if (f.type === 'application/pdf') {
+      await genPdfThumbs(f);
+    } else {
+      // For spreadsheets, skip page selection — go straight to processing
+      setPdfPages([]);
+      setSelectedPages(new Set([1]));
+      setStep("pageSelect");
+    }
   };
 
   const genPdfThumbs = async (pdfFile) => {

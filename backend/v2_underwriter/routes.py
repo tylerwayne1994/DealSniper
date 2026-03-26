@@ -1672,10 +1672,24 @@ async def parse_deal_v2(file: UploadFile = File(...)):
     ALLOWED_DOC_MIMES = {
         "application/pdf", "image/png", "image/jpeg", "image/jpg", "image/webp",
     }
+    ALLOWED_SHEET_MIMES = {
+        "text/csv",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/octet-stream",
+    }
     
     mime = (file.content_type or "").lower()
-    if mime not in ALLOWED_DOC_MIMES:
-        raise HTTPException(status_code=415, detail=f"Unsupported file type: {mime}")
+    filename = (file.filename or "").lower()
+    is_sheet = (
+        mime in ALLOWED_SHEET_MIMES
+        or filename.endswith('.xlsx')
+        or filename.endswith('.xls')
+        or filename.endswith('.csv')
+    )
+    
+    if mime not in ALLOWED_DOC_MIMES and not is_sheet:
+        raise HTTPException(status_code=415, detail=f"Unsupported file type: {mime}. Accepted: PDF, images, Excel (.xlsx/.xls), CSV.")
     
     data = await file.read()
     if not data:
@@ -1692,8 +1706,41 @@ async def parse_deal_v2(file: UploadFile = File(...)):
         
         anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
         
+        # ── Spreadsheet path: convert to text, send as text to Claude ──
+        if is_sheet:
+            log.info("[V2] Spreadsheet detected, converting to text for Claude...")
+            import io as _io
+            import csv as _csv
+            
+            sheet_text = ""
+            if filename.endswith('.csv') or mime == "text/csv":
+                text_stream = _io.TextIOWrapper(_io.BytesIO(data), encoding="utf-8-sig", newline="")
+                reader = _csv.reader(text_stream)
+                rows = list(reader)
+                for row in rows[:500]:  # Limit to 500 rows
+                    sheet_text += "\t".join(str(c) for c in row) + "\n"
+            else:
+                from openpyxl import load_workbook
+                wb = load_workbook(_io.BytesIO(data), read_only=True, data_only=True)
+                for ws_name in wb.sheetnames[:5]:  # Max 5 sheets
+                    ws = wb[ws_name]
+                    sheet_text += f"\n=== Sheet: {ws_name} ===\n"
+                    row_count = 0
+                    for row in ws.iter_rows(values_only=True):
+                        if row_count >= 500:
+                            break
+                        sheet_text += "\t".join(str(c) if c is not None else "" for c in row) + "\n"
+                        row_count += 1
+                wb.close()
+            
+            log.info(f"[V2] Spreadsheet text length: {len(sheet_text)} chars")
+            content_items = [{
+                "type": "text",
+                "text": f"The following is data from a real estate spreadsheet/workbook. Extract all financial data from it.\n\n{sheet_text}"
+            }]
+        
         # PDFs need to be converted to images for Claude vision
-        if mime == "application/pdf":
+        elif mime == "application/pdf":
             # Use smart filtering to only process pages with financial data
             try:
                 images = filter_pdf_pages_smart(data, min_score=15, max_pages=15)
