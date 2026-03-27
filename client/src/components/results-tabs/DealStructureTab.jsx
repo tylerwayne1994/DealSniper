@@ -4,6 +4,7 @@ import {
   Calculator,
   DollarSign,
   Plus,
+  TrendingUp,
   Trash2,
   Wallet,
   X,
@@ -18,6 +19,7 @@ const SURFACE = '#ffffff';
 const PAGE = '#f8fafc';
 const POSITIVE = '#059669';
 const NEGATIVE = '#dc2626';
+const API_BASE = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
 
 const INPUT_STYLE = {
   width: '100%',
@@ -270,6 +272,11 @@ export default function DealStructureTab({ scenarioData, fullCalcs, onFieldChang
   const [builderLoans, setBuilderLoans] = useState(() => cloneLoans(currentLoans));
   const [dirty, setDirty] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [treasuryRates, setTreasuryRates] = useState([]);
+  const [treasuryLoading, setTreasuryLoading] = useState(false);
+  const [treasuryAsOf, setTreasuryAsOf] = useState(null);
+  const [treasuryError, setTreasuryError] = useState('');
+  const [spread, setSpread] = useState(Number(financing?.spread) || 1.5);
   const [calculatorState, setCalculatorState] = useState({
     open: false,
     loanId: null,
@@ -286,6 +293,49 @@ export default function DealStructureTab({ scenarioData, fullCalcs, onFieldChang
       setBuilderLoans(cloneLoans(currentLoans));
     }
   }, [currentLoans, dirty]);
+
+  useEffect(() => {
+    if (!dirty) {
+      setSpread(Number(financing?.spread) || 1.5);
+    }
+  }, [dirty, financing?.spread]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadTreasuryRates = async () => {
+      setTreasuryLoading(true);
+      setTreasuryError('');
+
+      try {
+        const response = await fetch(`${API_BASE}/api/treasury-rates`);
+        if (!response.ok) {
+          throw new Error(`Treasury rates request failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!cancelled) {
+          setTreasuryRates(Array.isArray(data?.rates) ? data.rates : []);
+          setTreasuryAsOf(data?.as_of || null);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setTreasuryError('Treasury rates unavailable right now.');
+          setTreasuryRates([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setTreasuryLoading(false);
+        }
+      }
+    };
+
+    loadTreasuryRates();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const currentStructure = useMemo(() => buildStructureFromLoans(currentLoans, purchasePrice, noi), [currentLoans, purchasePrice, noi]);
   const builderStructure = useMemo(() => buildStructureFromLoans(builderLoans, purchasePrice, noi), [builderLoans, purchasePrice, noi]);
@@ -307,6 +357,7 @@ export default function DealStructureTab({ scenarioData, fullCalcs, onFieldChang
 
     const structure = buildStructureFromLoans(loansToSave, purchasePrice, noi);
     onFieldChange('financing.loans', loansToSave);
+    onFieldChange('financing.spread', spread);
     if (!structure) return;
 
     onFieldChange('financing.total_loan_amount', structure.totalLoanAmt);
@@ -324,7 +375,7 @@ export default function DealStructureTab({ scenarioData, fullCalcs, onFieldChang
       onFieldChange('financing.io_years', seniorLoan.io || 0);
       onFieldChange('financing.loan_fees_percent', seniorLoan.fees || 0);
     }
-  }, [noi, onFieldChange, purchasePrice]);
+  }, [noi, onFieldChange, purchasePrice, spread]);
 
   const updateBuilderLoan = useCallback((loanId, updates) => {
     setBuilderLoans((previous) => previous.map((loan) => (loan.id === loanId ? { ...loan, ...updates } : loan)));
@@ -402,6 +453,13 @@ export default function DealStructureTab({ scenarioData, fullCalcs, onFieldChang
 
   const builderLoanTypes = builderLoans.map((loan) => loan.type);
   const availableLoanTypes = LOAN_LIBRARY.filter((item) => item.type !== 'Senior Loan' && !builderLoanTypes.includes(item.type));
+  const seniorBuilderLoan = builderLoans.find((loan) => loan.type === 'Senior Loan') || null;
+  const selectedTreasuryTerm = seniorBuilderLoan && treasuryRates.length > 0
+    ? treasuryRates.find((entry) => (
+      Math.abs(((Number(entry.rate) || 0) + spread) - (Number(seniorBuilderLoan.rate) || 0)) < 0.011
+      && Number(entry.term) === Number(seniorBuilderLoan.term)
+    ))?.term
+    : null;
   const comparisonDelta = builderStructure && currentStructure
     ? {
         monthly: builderStructure.totalMonthlyPmt - currentStructure.totalMonthlyPmt,
@@ -495,6 +553,57 @@ export default function DealStructureTab({ scenarioData, fullCalcs, onFieldChang
                   Apply Structure
                 </button>
               </div>
+            </div>
+
+            <div style={{ ...CARD_STYLE, boxShadow: 'none', padding: 18, marginBottom: 18, background: '#f8fbff' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                <TrendingUp size={16} color={PRIMARY} />
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: TEXT }}>Senior Loan Rate Options</div>
+                  <div style={{ fontSize: 12, color: MUTED }}>Live Treasury terms plus spread. Apply one click to the senior loan.</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: 14, alignItems: 'end', marginBottom: 14 }}>
+                <Field label="Spread" suffix="%" value={spread} onChange={(value) => setSpread(value)} step={0.1} />
+                <div style={{ fontSize: 12, color: MUTED }}>
+                  Current senior loan rate: <span style={{ color: TEXT, fontWeight: 700 }}>{percent(seniorBuilderLoan?.rate || 0)}</span>
+                  {treasuryAsOf ? `  |  Treasury as of ${treasuryAsOf}` : ''}
+                </div>
+              </div>
+
+              {treasuryLoading ? (
+                <div style={{ fontSize: 12, color: MUTED }}>Loading Treasury rates...</div>
+              ) : treasuryRates.length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
+                  {treasuryRates.map((entry) => {
+                    const appliedRate = (Number(entry.rate) || 0) + spread;
+                    const isSelected = Number(selectedTreasuryTerm) === Number(entry.term);
+                    return (
+                      <button
+                        key={entry.term}
+                        type="button"
+                        onClick={() => seniorBuilderLoan && updateBuilderLoan(seniorBuilderLoan.id, { rate: Number(appliedRate.toFixed(2)), term: Number(entry.term) })}
+                        style={{
+                          textAlign: 'left',
+                          padding: '12px 14px',
+                          borderRadius: 12,
+                          border: `1px solid ${isSelected ? PRIMARY : BORDER}`,
+                          background: isSelected ? PRIMARY_SOFT : '#fff',
+                          cursor: seniorBuilderLoan ? 'pointer' : 'default',
+                        }}
+                        disabled={!seniorBuilderLoan}
+                      >
+                        <div style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{entry.term} Year</div>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: TEXT, marginBottom: 4 }}>{percent(appliedRate)}</div>
+                        <div style={{ fontSize: 12, color: MUTED }}>{percent(entry.rate)} Treasury + {percent(spread)}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ fontSize: 12, color: treasuryError ? NEGATIVE : MUTED }}>{treasuryError || 'Treasury rates unavailable right now.'}</div>
+              )}
             </div>
 
             {comparisonDelta && builderStructure && currentStructure ? (
