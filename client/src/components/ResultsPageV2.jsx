@@ -217,7 +217,7 @@ const ResultsPageV2 = ({
   const handleExportToExcel = async () => {
     setIsExcelExporting(true);
     try {
-      const response = await fetch(`${API_BASE}/api/export/excel`, {
+      const response = await fetch(`${API_BASE_URL}/api/export/excel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scenarioData })
