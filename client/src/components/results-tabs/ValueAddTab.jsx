@@ -20,12 +20,11 @@ const DEFAULT_RENO_ITEMS = [
 ];
 
 const EXPENSE_OPT_ITEMS = [
-  { id: 'insurance', name: 'Insurance Bill-Back', defaultSavingsPct: 100, expKey: 'insurance' },
-  { id: 'tax_appeal', name: 'Property Tax Appeal', defaultSavingsPct: 10, expKey: 'taxes' },
-  { id: 'management', name: 'Management Fee Reduction', defaultSavingsPct: 20, expKey: 'management' },
-  { id: 'maintenance', name: 'Maintenance Contracts', defaultSavingsPct: 15, expKey: 'repairs_maintenance' },
-  { id: 'energy', name: 'Energy Efficiency (LED, Low-Flow)', defaultSavingsPct: 25, expKey: 'utilities' },
-  { id: 'landscaping', name: 'Landscape Contract', defaultSavingsPct: 10, expKey: 'landscaping' },
+  { id: 'insurance', name: 'Insurance Bill-Back', defaultSavingsPct: 100, expKey: 'insurance', helper: 'Pass insurance cost through to tenants' },
+  { id: 'tax_appeal', name: 'Property Tax Appeal', defaultSavingsPct: 10, expKey: 'taxes', helper: 'Reduce taxes through appeal or reassessment' },
+  { id: 'management', name: 'Management Fee Reduction', defaultSavingsPct: 20, expKey: 'management', helper: 'Trim third-party or in-house management burden' },
+  { id: 'maintenance', name: 'Repairs & Maintenance', defaultSavingsPct: 15, expKey: 'repairs_maintenance', helper: 'Contract and turnover savings on repairs and maintenance' },
+  { id: 'landscaping', name: 'Landscape Contract', defaultSavingsPct: 10, expKey: 'landscaping', helper: 'Renegotiate grounds and exterior service contracts' },
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -181,6 +180,14 @@ export default function ValueAddTab({
   const totalRubsRecovery = rubsSchedule.reduce((s, r) => s + r.annualRecovery, 0);
   const totalMonthlyRubsPerUnit = rubsSchedule.reduce((s, r) => s + r.monthlyPerUnit, 0);
   const totalOwnerRetained = rubsSchedule.reduce((s, r) => s + r.ownerRetainedAnnual, 0);
+  const expenseAmountMap = useMemo(() => ({
+    taxes: Number(expenses.taxes) || Number(fullCalcs?.year1?.expenseItems?.taxes) || 0,
+    insurance: Number(expenses.insurance) || Number(fullCalcs?.year1?.expenseItems?.insurance) || 0,
+    utilities: Number(expenses.utilities) || Number(fullCalcs?.year1?.expenseItems?.utilities) || totalUtilityCost || 0,
+    repairs_maintenance: Number(expenses.repairs_maintenance) || Number(expenses.repairs) || Number(fullCalcs?.year1?.expenseItems?.repairs_maintenance) || Number(fullCalcs?.year1?.expenseItems?.repairs) || 0,
+    management: Number(expenses.management) || Number(fullCalcs?.year1?.expenseItems?.management) || 0,
+    landscaping: Number(expenses.landscaping) || Number(fullCalcs?.year1?.expenseItems?.landscaping) || 0,
+  }), [expenses, fullCalcs, totalUtilityCost]);
 
   // ═════════════════════════════════════════════════════════════
   // RENOVATION BUDGET (NEW)
@@ -225,7 +232,7 @@ export default function ValueAddTab({
   const expSavingsConfig = scenarioData?.value_add?.expense_savings || {};
   const expOptItems = EXPENSE_OPT_ITEMS.map(d => {
     const saved = expSavingsConfig[d.id];
-    const currentAmount = expenses[d.expKey] || 0;
+    const currentAmount = expenseAmountMap[d.expKey] || 0;
     const savingsPct = saved?.savings_pct ?? d.defaultSavingsPct;
     const enabled = saved?.enabled || false;
     const annualSavings = enabled ? Math.round(currentAmount * (savingsPct / 100)) : 0;
@@ -238,6 +245,8 @@ export default function ValueAddTab({
   };
 
   const totalExpSavings = expOptItems.reduce((s, i) => s + i.annualSavings, 0);
+  const totalModeledExpenseBase = expOptItems.reduce((sum, item) => sum + item.currentAmount, 0);
+  const expenseCoverageRentPerUnitMonth = totalUnits > 0 ? (totalExpSavings / totalUnits / 12) : 0;
 
   useEffect(() => {
     if ((scenarioData?.value_add?.annual_expense_savings || 0) !== totalExpSavings) {
@@ -1181,7 +1190,7 @@ export default function ValueAddTab({
           {expOptOpen && (
             <div style={{ marginTop: 20 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <p style={{ margin: 0, fontSize: 12, color: vLB }}>Model expense reductions from insurance bill-back, tax appeals, and operational efficiencies.</p>
+                <p style={{ margin: 0, fontSize: 12, color: vLB }}>Model savings across taxes, insurance, utilities, management, landscaping, and repairs & maintenance.</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f9fafb', padding: '5px 10px', borderRadius: 8, border: `1px solid ${vB}`, flexShrink: 0, marginLeft: 16 }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: vLB }}>Starts Mo.</span>
                   <input type="number" min={1} max={totalMonths} value={scenarioData?.value_add?.expense_start_month || 3}
@@ -1192,21 +1201,23 @@ export default function ValueAddTab({
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
                   <tr style={{ background: '#eef2ff' }}>
-                    {['', 'Category', 'Current Cost', 'Savings %', 'Annual Savings'].map((h, i) => (
+                    {['', 'Category', 'Current Cost', 'Savings %', 'Annual Savings', '$/Unit/Mo'].map((h, i) => (
                       <th key={i} style={{ padding: '10px 12px', textAlign: i <= 1 ? (i === 0 ? 'center' : 'left') : 'right', fontSize: 10, fontWeight: 700, color: vLB, textTransform: 'uppercase', borderBottom: '2px solid #c7d2fe', width: i === 0 ? 50 : 'auto' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {expOptItems.map(item => (
+                  {expOptItems.map(item => {
+                    const perUnitMonth = item.enabled && totalUnits > 0 ? item.annualSavings / totalUnits / 12 : 0;
+                    return (
                     <tr key={item.id} style={{ borderBottom: `1px solid ${vB}`, opacity: item.enabled ? 1 : 0.5 }}>
                       <td style={{ padding: '10px 12px', textAlign: 'center' }}>
                         <VToggle checked={item.enabled} onChange={v => updateExpOpt(item.id, { enabled: v })} color="#f59e0b" />
                       </td>
                       <td style={{ padding: '10px 12px', fontWeight: 600, color: vVL }}>
                         <div>{item.name}</div>
-                        {item.id === 'insurance' && (
-                          <div style={{ fontSize: 10, color: vLB, marginTop: 2 }}>Pass insurance cost through to tenants</div>
+                        {item.helper && (
+                          <div style={{ fontSize: 10, color: vLB, marginTop: 2 }}>{item.helper}</div>
                         )}
                       </td>
                       <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600, color: vLB }}>{vFmt(item.currentAmount)}</td>
@@ -1220,13 +1231,18 @@ export default function ValueAddTab({
                       <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: item.enabled && item.annualSavings > 0 ? '#16a34a' : vLB }}>
                         {item.enabled ? `−${vFmt(item.annualSavings)}` : '—'}
                       </td>
+                      <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: item.enabled && perUnitMonth > 0 ? '#f59e0b' : vLB }}>
+                        {item.enabled && perUnitMonth > 0 ? `$${Math.round(perUnitMonth)}/unit` : '—'}
+                      </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                   <tr style={{ background: '#eef2ff', borderTop: '2px solid #c7d2fe' }}>
                     <td colSpan={2} style={{ padding: '12px 12px', fontWeight: 800, color: vVL }}>Total Expense Savings</td>
-                    <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: vLB }}>{vFmt(totalCurrentExpenses)}</td>
+                    <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: vLB }}>{vFmt(totalModeledExpenseBase)}</td>
                     <td />
                     <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#16a34a' }}>−{vFmt(totalExpSavings)}</td>
+                    <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#f59e0b' }}>${Math.round(expenseCoverageRentPerUnitMonth)}/unit</td>
                   </tr>
                 </tbody>
               </table>
@@ -1755,8 +1771,11 @@ export default function ValueAddTab({
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: vVL }}>Expense Savings</div>
-                  <div style={{ fontSize: 12, color: vLB, marginTop: 4 }}>Insurance bill-back plus contract and ops savings</div>
+                  <div style={{ fontSize: 12, color: vLB, marginTop: 4 }}>Taxes, insurance, utilities, and repairs & maintenance savings</div>
                   <div style={{ fontSize: 18, fontWeight: 800, color: totalExpSavings > 0 ? '#16a34a' : vLB, marginTop: 8 }}>−{vFmt(totalExpSavings)}<span style={{ fontSize: 11, fontWeight: 500, color: vLB }}> expenses/yr</span></div>
+                  <div style={{ fontSize: 12, color: scenarioData?.value_add?.apply_expense_savings ? '#f59e0b' : vLB, marginTop: 6, fontWeight: 600 }}>
+                    {expenseCoverageRentPerUnitMonth > 0 ? `${vFmt(expenseCoverageRentPerUnitMonth)}/unit/month rent equivalent` : '$0/unit/month rent equivalent'}
+                  </div>
                 </div>
                 <VToggle checked={scenarioData?.value_add?.apply_expense_savings || false} onChange={v => {
                   onFieldChange('value_add.apply_expense_savings', v);
