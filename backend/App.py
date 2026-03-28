@@ -365,6 +365,9 @@ except Exception as e:
 from google_sheets_updater import update_google_sheet
 from google_sheets_results_exporter import export_full_results_workbook
 
+# Excel template export
+from excel_export import export_to_excel
+
 # HUD API proxy router (provides /api/hud/* endpoints)
 try:
     from hud_api import router as hud_router
@@ -4050,6 +4053,48 @@ async def export_results_to_google_sheet(request: Request):
 
     except Exception as e:
         log.error(f"Error exporting results workbook: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
+
+
+@app.post("/api/export/excel")
+async def export_to_excel_template(request: Request):
+    """
+    Export scenario data to the underwriting.xlsx template.
+    Fills input cells and preserves formulas.
+    Returns the filled Excel file as a download.
+    """
+    from fastapi.responses import StreamingResponse
+    
+    try:
+        body = await request.json()
+        scenario_data = body.get('scenarioData', {})
+        
+        if not scenario_data:
+            return JSONResponse(status_code=400, content={"success": False, "message": "scenarioData required"})
+        
+        # Generate the filled Excel file
+        excel_buffer = export_to_excel(scenario_data)
+        
+        # Create filename from property address or generic name
+        property_info = scenario_data.get('property', {})
+        address = property_info.get('address', 'Deal')
+        # Sanitize filename
+        safe_name = re.sub(r'[^\w\s-]', '', address).strip().replace(' ', '_')[:50] or 'Deal'
+        filename = f"{safe_name}_Underwriting.xlsx"
+        
+        return StreamingResponse(
+            excel_buffer,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+        
+    except FileNotFoundError as e:
+        log.error(f"Template not found: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "message": "Excel template not found on server"})
+    except Exception as e:
+        log.error(f"Error exporting to Excel: {str(e)}")
         return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
 
 

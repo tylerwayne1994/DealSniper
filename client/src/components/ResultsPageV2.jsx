@@ -211,6 +211,43 @@ const ResultsPageV2 = ({
     }
   };
 
+  // Excel template export state & handler
+  const [isExcelExporting, setIsExcelExporting] = useState(false);
+  
+  const handleExportToExcel = async () => {
+    setIsExcelExporting(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/export/excel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scenarioData })
+      });
+      
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || 'Export failed');
+      }
+      
+      // Download the file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
+      a.download = filenameMatch ? filenameMatch[1] : 'Underwriting_Model.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (err) {
+      console.error('[ExcelExport] Exception:', err);
+      alert(`Excel export failed: ${err.message}`);
+    } finally {
+      setIsExcelExporting(false);
+    }
+  };
+
   const autoSaveTimerRef = useRef(null);
   const scenarioSnapshotRef = useRef(null);
   const marketDataFetchedRef = useRef(false);
@@ -3226,6 +3263,26 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
             >
               <FileSpreadsheet size={14} />
               {isSheetsExporting ? 'Sending Full Results...' : sheetsExportStatus === 'success' ? '✓ Results Sent' : sheetsExportStatus === 'error' ? 'Export Failed' : 'Export Full Results'}
+            </button>
+            <button
+              onClick={handleExportToExcel}
+              disabled={isExcelExporting}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: isExcelExporting ? '#9ca3af' : '#2563eb',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: isExcelExporting ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <Download size={14} />
+              {isExcelExporting ? 'Generating...' : 'Download Excel'}
             </button>
             <button
               onClick={handleGeneratePitchDeck}
