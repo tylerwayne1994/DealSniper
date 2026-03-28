@@ -366,7 +366,7 @@ from google_sheets_updater import update_google_sheet
 from google_sheets_results_exporter import export_full_results_workbook
 
 # Excel template export
-from excel_ai_export import export_to_excel_ai
+from llm_excel_export import llm_export_to_excel
 
 # HUD API proxy router (provides /api/hud/* endpoints)
 try:
@@ -4059,22 +4059,66 @@ async def export_results_to_google_sheet(request: Request):
 @app.post("/api/export/excel")
 async def export_to_excel_endpoint(request: Request):
     """
-    Export scenario data to an Excel underwriting model.
-    Builds a clean spreadsheet from scenarioData + fullCalcs.
-    Returns the Excel file as a download.
+    Export scenario data to an Excel underwriting model using Claude LLM.
+    Intelligently structures all tab data into a professional spreadsheet.
+    COSTS 1 TOKEN.
     """
     from fastapi.responses import StreamingResponse
+    from token_manager import get_current_profile_id, get_profile, reset_tokens_if_needed
+    from token_manager import get_supabase as get_token_supabase
     
     try:
+        # Check tokens first
+        try:
+            profile_id = get_current_profile_id(request)
+            profile = get_profile(profile_id)
+            profile = reset_tokens_if_needed(profile)
+            
+            tokens_required = 1  # Excel export costs 1 token
+            
+            if profile["token_balance"] < tokens_required:
+                return JSONResponse(
+                    status_code=402,
+                    content={
+                        "success": False,
+                        "error": f"Insufficient tokens. You need {tokens_required} token(s) but have {profile['token_balance']}.",
+                        "tokens_required": tokens_required,
+                        "token_balance": profile["token_balance"]
+                    }
+                )
+        except HTTPException as he:
+            log.warning(f"Token check failed: {he.detail}. Allowing request for backward compatibility.")
+            profile_id = None
+            profile = None
+        
         body = await request.json()
         scenario_data = body.get('scenarioData', {})
         full_calcs = body.get('fullCalcs', {})
+        sensitivity_data = body.get('sensitivityData', {})
+        waterfall_data = body.get('waterfallData', {})
         
         if not scenario_data:
             return JSONResponse(status_code=400, content={"success": False, "message": "scenarioData required"})
         
-        # Generate the Excel file using AI export
-        excel_buffer = export_to_excel_ai(scenario_data, full_calcs)
+        # Generate the Excel file using LLM
+        excel_buffer = llm_export_to_excel(
+            scenario_data=scenario_data,
+            full_calcs=full_calcs,
+            sensitivity_data=sensitivity_data,
+            waterfall_data=waterfall_data
+        )
+        
+        # Deduct token after successful generation
+        if profile_id and profile:
+            try:
+                supabase = get_token_supabase()
+                new_balance = profile["token_balance"] - 1
+                supabase.table("profiles").update({
+                    "token_balance": new_balance
+                }).eq("id", profile_id).execute()
+                log.info(f"Deducted 1 token for Excel export. New balance: {new_balance}")
+            except Exception as te:
+                log.warning(f"Failed to deduct token: {te}")
         
         # Create filename from property address or generic name
         property_info = scenario_data.get('property', {})

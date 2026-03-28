@@ -217,18 +217,55 @@ const ResultsPageV2 = ({
   const handleExportToExcel = async () => {
     setIsExcelExporting(true);
     try {
+      // Get profile ID for token deduction
+      let profileId = null;
+      try {
+        const userRes = await supabase.auth.getUser();
+        profileId = userRes?.data?.user?.id;
+      } catch {}
+      
       // Get fullCalcs the same way other parts of the app do
       const fullCalcs = calculations?.fullAnalysis || calculations || {};
       
+      // Build sensitivity data from scenarioData
+      const sensitivityData = {
+        revaluation: scenarioData?.sensitivity?.revaluation || {},
+        cashOutRefi: scenarioData?.sensitivity?.cash_out_refi || {},
+        postRefiCashflow: scenarioData?.sensitivity?.post_refi_cashflow || {}
+      };
+      
+      // Build waterfall data
+      const waterfallData = {
+        equity_structure: scenarioData?.financing?.equity_structure || {},
+        preferred_return: scenarioData?.financing?.preferred_return,
+        promote_split: scenarioData?.financing?.promote_split,
+        loans: scenarioData?.financing?.loans || []
+      };
+      
       const response = await fetch(`${API_BASE_URL}/api/export/excel`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scenarioData, fullCalcs })
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(profileId ? { 'X-Profile-ID': profileId } : {})
+        },
+        body: JSON.stringify({ 
+          scenarioData, 
+          fullCalcs,
+          sensitivityData,
+          waterfallData
+        })
       });
+      
+      // Handle 402 insufficient tokens
+      if (response.status === 402) {
+        const err = await response.json();
+        alert(`Insufficient tokens. You need 1 token but have ${err.token_balance || 0}. Purchase more tokens in Settings.`);
+        return;
+      }
       
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.message || 'Export failed');
+        throw new Error(err.message || err.error || 'Export failed');
       }
       
       // Download the file
