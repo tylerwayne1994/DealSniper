@@ -483,44 +483,67 @@ export default function DealStructureTab({ scenarioData, fullCalcs, onFieldChang
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 0.9fr) minmax(420px, 1.1fr)', gap: 20, alignItems: 'start' }}>
-          <section style={{ ...CARD_STYLE, padding: 22 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-              <Wallet size={18} color={PRIMARY} />
-              <div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: TEXT }}>Current Debt Structure</div>
-                <div style={{ fontSize: 12, color: MUTED }}>This is the structure the deal is currently using.</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <section style={{ ...CARD_STYLE, padding: 22 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+                <Wallet size={18} color={PRIMARY} />
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: TEXT }}>Current Debt Structure</div>
+                  <div style={{ fontSize: 12, color: MUTED }}>This is the structure the deal is currently using.</div>
+                </div>
               </div>
-            </div>
 
-            {currentStructure ? (
-              <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12, marginBottom: 16 }}>
-                  <SummaryMetric label="Monthly Debt Service" value={currency(currentStructure.totalMonthlyPmt)} subvalue={currency(currentStructure.totalAnnualPmt) + ' annual'} />
-                  <SummaryMetric label="Cash Flow After Debt" value={currency(currentStructure.cashflow)} valueColor={currentStructure.cashflow >= 0 ? POSITIVE : NEGATIVE} subvalue={`DSCR ${currentStructure.dscr.toFixed(2)}x`} />
-                </div>
-
-                <div style={{ ...CARD_STYLE, boxShadow: 'none', overflow: 'hidden' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr 0.8fr 0.8fr 1fr 1fr', gap: 12, padding: '12px 14px', background: '#f1f5f9', borderBottom: `1px solid ${BORDER}`, fontSize: 11, fontWeight: 800, color: MUTED, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    <div>Position</div>
-                    <div style={{ textAlign: 'right' }}>Amount</div>
-                    <div style={{ textAlign: 'right' }}>Rate</div>
-                    <div style={{ textAlign: 'right' }}>Term</div>
-                    <div style={{ textAlign: 'right' }}>Monthly</div>
-                    <div style={{ textAlign: 'right' }}>Annual</div>
+              {currentStructure ? (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12, marginBottom: 16 }}>
+                    <SummaryMetric label="Monthly Debt Service" value={currency(currentStructure.totalMonthlyPmt)} subvalue={currency(currentStructure.totalAnnualPmt) + ' annual'} />
+                    <SummaryMetric label="Cash Flow After Debt" value={currency(currentStructure.cashflow)} valueColor={currentStructure.cashflow >= 0 ? POSITIVE : NEGATIVE} subvalue={`DSCR ${currentStructure.dscr.toFixed(2)}x`} />
                   </div>
-                  {currentLoans.map((loan) => <LoanRow key={loan.id} loan={loan} purchasePrice={purchasePrice} />)}
-                </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12, marginTop: 16 }}>
-                  <SummaryMetric label="Total Loan Amount" value={currency(currentStructure.totalLoanAmt)} subvalue={`LTV ${percent(currentStructure.ltv)}`} />
-                  <SummaryMetric label="Down Payment" value={currency(currentStructure.downPayment)} subvalue={currentStructure.totalFees > 0 ? `${currency(currentStructure.totalFees)} fees` : 'No loan fees'} />
-                  <SummaryMetric label="Loan To Cost" value={percent(currentStructure.ltc)} subvalue={`Blended rate ${percent(currentStructure.blendedRate)}`} />
+                  <div style={{ ...CARD_STYLE, boxShadow: 'none', overflow: 'hidden' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr 0.8fr 0.8fr 1fr 1fr', gap: 12, padding: '12px 14px', background: '#f1f5f9', borderBottom: `1px solid ${BORDER}`, fontSize: 11, fontWeight: 800, color: MUTED, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      <div>Position</div>
+                      <div style={{ textAlign: 'right' }}>Amount</div>
+                      <div style={{ textAlign: 'right' }}>Rate</div>
+                      <div style={{ textAlign: 'right' }}>Term</div>
+                      <div style={{ textAlign: 'right' }}>Monthly</div>
+                      <div style={{ textAlign: 'right' }}>Annual</div>
+                    </div>
+                    {currentLoans.map((loan) => <LoanRow key={loan.id} loan={loan} purchasePrice={purchasePrice} />)}
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12, marginTop: 16 }}>
+                    <SummaryMetric label="Total Loan Amount" value={currency(currentStructure.totalLoanAmt)} subvalue={`LTV ${percent(currentStructure.ltv)}`} />
+                    <SummaryMetric label="Down Payment" value={currency(currentStructure.downPayment)} subvalue={currentStructure.totalFees > 0 ? `${currency(currentStructure.totalFees)} fees` : 'No loan fees'} />
+                    <SummaryMetric label="Loan To Cost" value={percent(currentStructure.ltc)} subvalue={`Blended rate ${percent(currentStructure.blendedRate)}`} />
+                  </div>
+                </>
+              ) : (
+                <div style={{ padding: '18px 0', color: MUTED }}>Add a price and financing inputs to view the current structure.</div>
+              )}
+            </section>
+
+            {builderStructure ? (
+              <section style={{ ...CARD_STYLE, padding: 22 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+                  <BarChart3 size={18} color={PRIMARY} />
+                  <div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: TEXT }}>Scenario Summary</div>
+                    <div style={{ fontSize: 12, color: MUTED }}>This is what the alternative structure would do if you apply it.</div>
+                  </div>
                 </div>
-              </>
-            ) : (
-              <div style={{ padding: '18px 0', color: MUTED }}>Add a price and financing inputs to view the current structure.</div>
-            )}
-          </section>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12, marginBottom: 12 }}>
+                  <SummaryMetric label="Loan Amount" value={currency(builderStructure.totalLoanAmt)} subvalue={`LTV ${percent(builderStructure.ltv)}`} />
+                  <SummaryMetric label="Cash Required" value={currency(builderStructure.cashOutOfPocket)} subvalue={`${currency(builderStructure.downPayment)} down payment`} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12 }}>
+                  <SummaryMetric label="Monthly Debt" value={currency(builderStructure.totalMonthlyPmt)} subvalue={currency(builderStructure.totalAnnualPmt) + ' annual'} />
+                  <SummaryMetric label="Cash Flow" value={currency(builderStructure.cashflow)} valueColor={builderStructure.cashflow >= 0 ? POSITIVE : NEGATIVE} subvalue={`CoC ${percent(builderStructure.cashOnCash)}`} />
+                  <SummaryMetric label="DSCR" value={`${builderStructure.dscr.toFixed(2)}x`} valueColor={builderStructure.dscr >= 1.25 ? POSITIVE : builderStructure.dscr >= 1 ? TEXT : NEGATIVE} subvalue={`Blended rate ${percent(builderStructure.blendedRate)}`} />
+                </div>
+              </section>
+            ) : null}
+          </div>
 
           <section style={{ ...CARD_STYLE, padding: 22 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14, marginBottom: 18 }}>
@@ -705,25 +728,6 @@ export default function DealStructureTab({ scenarioData, fullCalcs, onFieldChang
             </div>
           </section>
         </div>
-
-        {builderStructure ? (
-          <div style={{ ...CARD_STYLE, padding: 22, marginTop: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-              <BarChart3 size={18} color={PRIMARY} />
-              <div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: TEXT }}>Scenario Summary</div>
-                <div style={{ fontSize: 12, color: MUTED }}>This is what the alternative structure would do if you apply it.</div>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 12 }}>
-              <SummaryMetric label="Loan Amount" value={currency(builderStructure.totalLoanAmt)} subvalue={`LTV ${percent(builderStructure.ltv)}`} />
-              <SummaryMetric label="Cash Required" value={currency(builderStructure.cashOutOfPocket)} subvalue={`${currency(builderStructure.downPayment)} down payment`} />
-              <SummaryMetric label="Monthly Debt" value={currency(builderStructure.totalMonthlyPmt)} subvalue={currency(builderStructure.totalAnnualPmt) + ' annual'} />
-              <SummaryMetric label="Cash Flow" value={currency(builderStructure.cashflow)} valueColor={builderStructure.cashflow >= 0 ? POSITIVE : NEGATIVE} subvalue={`CoC ${percent(builderStructure.cashOnCash)}`} />
-              <SummaryMetric label="DSCR" value={`${builderStructure.dscr.toFixed(2)}x`} valueColor={builderStructure.dscr >= 1.25 ? POSITIVE : builderStructure.dscr >= 1 ? TEXT : NEGATIVE} subvalue={`Blended rate ${percent(builderStructure.blendedRate)}`} />
-            </div>
-          </div>
-        ) : null}
 
         {calculatorState.open ? (
           <div
