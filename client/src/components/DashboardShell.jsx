@@ -17,6 +17,8 @@ import {
   Users,
   ChevronDown,
   LogOut,
+  Phone,
+  MessageCircle,
 } from 'lucide-react';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { supabase } from '../lib/supabase';
@@ -335,6 +337,27 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
           onClick={() => handleTabClick(tab.id)}
         />
       ))}
+
+      {/* Contact section */}
+      <div style={{ marginTop: 'auto', padding: '16px 12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+        <div style={{ fontSize: 10, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
+          Questions or Concerns?
+        </div>
+        <a
+          href="mailto:terrainvestai@gmail.com"
+          style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#94a3b8', fontSize: 12, textDecoration: 'none', marginBottom: 6 }}
+        >
+          <Mail size={14} />
+          terrainvestai@gmail.com
+        </a>
+        <a
+          href="tel:7605241227"
+          style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#94a3b8', fontSize: 12, textDecoration: 'none' }}
+        >
+          <Phone size={14} />
+          (760) 524-1227
+        </a>
+      </div>
     </>
   );
 
