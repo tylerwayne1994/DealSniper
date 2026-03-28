@@ -1771,10 +1771,10 @@ export default function ValueAddTab({
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: vVL }}>Expense Savings</div>
-                  <div style={{ fontSize: 12, color: vLB, marginTop: 4 }}>Taxes, insurance, utilities, and repairs & maintenance savings</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: totalExpSavings > 0 ? '#16a34a' : vLB, marginTop: 8 }}>−{vFmt(totalExpSavings)}<span style={{ fontSize: 11, fontWeight: 500, color: vLB }}> expenses/yr</span></div>
+                  <div style={{ fontSize: 12, color: vLB, marginTop: 4 }}>Push expenses onto tenants to boost NOI</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: totalExpSavings > 0 ? '#16a34a' : vLB, marginTop: 8 }}>+{vFmt(totalExpSavings)}<span style={{ fontSize: 11, fontWeight: 500, color: vLB }}>/yr</span></div>
                   <div style={{ fontSize: 12, color: scenarioData?.value_add?.apply_expense_savings ? '#f59e0b' : vLB, marginTop: 6, fontWeight: 600 }}>
-                    {expenseCoverageRentPerUnitMonth > 0 ? `${vFmt(expenseCoverageRentPerUnitMonth)}/unit/month rent equivalent` : '$0/unit/month rent equivalent'}
+                    {expenseCoverageRentPerUnitMonth > 0 ? `$${Math.round(expenseCoverageRentPerUnitMonth)}/unit/month` : '$0/unit/month'}
                   </div>
                 </div>
                 <VToggle checked={scenarioData?.value_add?.apply_expense_savings || false} onChange={v => {
