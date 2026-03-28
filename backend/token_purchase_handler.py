@@ -23,7 +23,7 @@ STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 stripe.api_key = STRIPE_SECRET_KEY
 
 # Token packages mapping
-# 65 tokens for $30 - Stripe price: price_1TG3jvRSKEwwH1TS0OCQdJvW
+# 65 tokens for $30
 TOKEN_PACKAGES = {
     "65_tokens": {"tokens": 65, "price": 3000, "name": "$30 - 65 Tokens", "stripe_price": os.getenv("STRIPE_TOKEN_PRICE_65", "price_1TG3jvRSKEwwH1TS0OCQdJvW")},
 }
