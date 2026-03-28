@@ -111,6 +111,17 @@ export default function CompressedTab({
   const vaTotalAdj = vaRentUpside + vaRubsRecovery + vaOtherIncome + vaExpenseSavings;
   const adjNOI = noiYear1 + vaTotalAdj;
   const adjCashFlow = cashFlowYear1 + vaTotalAdj;
+  const vacancyRateYear1 = grossOperatingIncome > 0 && vacancyLossYear1 > 0
+    ? (vacancyLossYear1 / grossOperatingIncome)
+    : 0;
+  const proFormaRentalIncome = rentalIncome + vaRentUpside;
+  const proFormaOtherIncome = otherIncome + vaRubsRecovery + vaOtherIncome;
+  const proFormaGOI = proFormaRentalIncome + proFormaOtherIncome;
+  const proFormaVacancyLoss = vacancyRateYear1 > 0 ? (proFormaGOI * vacancyRateYear1) : vacancyLossYear1;
+  const proFormaEGI = proFormaGOI - proFormaVacancyLoss;
+  const proFormaOperatingExpenses = Math.max(0, totalOperatingExpenses - vaExpenseSavings);
+  const proFormaNOI = proFormaEGI - proFormaOperatingExpenses;
+  const proFormaCashFlow = proFormaNOI - debtServiceYear1;
 
   // === Expense Items for donut chart ===
   const expenseItems = fullCalcs?.year1?.expenseItems || {};
@@ -265,7 +276,6 @@ export default function CompressedTab({
   const exitProj = projections.find(p => p.year === selectedHoldPeriod);
   const netSalePrice = exitProj?.netSalesProceeds || selectedScenario.salePrice || 0;
   const loanBalAtExit = exitProj?.loanBalance || 0;
-  const financedByDebt = loanAmount;
   const totalCashReceived = cumCashFlows + netSalePrice - Math.abs(loanBalAtExit);
   const totalCashInvested = totalEquity; // equity already includes down payment + closing + capex
   const compTotalProfit = totalCashReceived - totalCashInvested;
@@ -304,9 +314,6 @@ export default function CompressedTab({
     // Total cost to GP for the partner
     const totalPartnerCost = totalPrefPaid + balloonPayout;
 
-    // Use compTotalProfit if available, else totalProfit
-    const dealProfit = compTotalProfit > 0 ? compTotalProfit : totalProfit;
-
     // GP distributions = total cash - LP distributions
     // LP gets: preferred returns + return of capital (balloon)
     const lpDistributions = totalPrefPaid + balloonPayout;
@@ -332,7 +339,7 @@ export default function CompressedTab({
       gpIRR, lpIRR, gpEM, lpEM,
       holdYrs, totalPartnerCost,
     };
-  }, [epLoan, downPayment, compTotalProfit, totalProfit, selectedHoldPeriod, cumCashFlows, netSalePrice, loanBalAtExit]);
+  }, [epLoan, downPayment, selectedHoldPeriod, cumCashFlows, netSalePrice, loanBalAtExit]);
 
   // Profitability rows
   const profitRows = [
@@ -379,7 +386,7 @@ export default function CompressedTab({
   };
 
   // ── Financial row helper ──
-  const FinRow = ({ label, monthly, yearly, color, bold, dot }) => (
+  const FinRow = ({ label, monthly, yearly, proFormaMonthly = monthly, proFormaYearly = yearly, color, bold, dot }) => (
     <tr style={{ borderBottom: `1px solid #f3f4f6` }}>
       <td style={{ padding: '10px 12px', fontSize: 13, fontWeight: bold ? 700 : 500, color: color || VL }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -389,6 +396,8 @@ export default function CompressedTab({
       </td>
       <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: bold ? 700 : 500, color: color || VL, fontSize: 13 }}>{fmt(monthly)}</td>
       <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: bold ? 700 : 500, color: color || VL, fontSize: 13 }}>{fmt(yearly)}</td>
+      <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: bold ? 700 : 500, color: color || VL, fontSize: 13 }}>{fmt(proFormaMonthly)}</td>
+      <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: bold ? 700 : 500, color: color || VL, fontSize: 13 }}>{fmt(proFormaYearly)}</td>
     </tr>
   );
 
@@ -414,8 +423,6 @@ export default function CompressedTab({
   const financingFees = loanAmount * 0.005;
   const totalInterest = debtServiceYear1 * holdingPeriod - (loanAmount - (exitProj?.loanBalance || loanAmount * 0.9));
   const totalProjectCost = purchasePrice + closingCosts + capitalImprovements + acquisitionFee + loanFees + financingFees;
-  const loanTermYears = seniorLoan?.term || scenarioData?.pricing_financing?.term_years || 30;
-  const amortYears = seniorLoan?.amort || scenarioData?.pricing_financing?.amortization_years || 30;
   const exitCapRate = fullCalcs?.returns?.exitCapRate || fullCalcs?.returns?.terminalCapRate || selectedScenario?.exitCapRate || (capRateVal + 0.5);
   const noiAtSale = exitProj?.noi || (startingNOI * Math.pow(1.03, holdingPeriod));
 
@@ -1029,23 +1036,21 @@ export default function CompressedTab({
             <thead>
               <tr style={{ borderBottom: `2px solid ${B}` }}>
                 <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 700, color: LB, fontSize: 12, textTransform: 'uppercase' }}>Description</th>
-                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: LB, fontSize: 12, textTransform: 'uppercase' }}>Month</th>
-                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: LB, fontSize: 12, textTransform: 'uppercase' }}>Year</th>
+                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: LB, fontSize: 12, textTransform: 'uppercase' }}>Current Month</th>
+                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: LB, fontSize: 12, textTransform: 'uppercase' }}>Current Year</th>
+                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#4f46e5', fontSize: 12, textTransform: 'uppercase' }}>Pro Forma Month</th>
+                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#4f46e5', fontSize: 12, textTransform: 'uppercase' }}>Pro Forma Year</th>
               </tr>
             </thead>
             <tbody>
-              <FinRow label="Rental Income" monthly={rentalIncome / 12} yearly={rentalIncome} dot="#22c55e" />
-              <FinRow label="Other Income" monthly={otherIncome / 12} yearly={otherIncome} dot="#06b6d4" />
-              <FinRow label="Gross Operating Income (GOI)" monthly={grossOperatingIncome / 12} yearly={grossOperatingIncome} bold color={AC} dot={AC} />
-              {vacancyLossYear1 > 0 && <FinRow label="Less: Vacancy Loss" monthly={-vacancyLossYear1 / 12} yearly={-vacancyLossYear1} dot="#f59e0b" />}
-              {vacancyLossYear1 > 0 && <FinRow label="Effective Gross Income (EGI)" monthly={effectiveGrossIncomeYear1 / 12} yearly={effectiveGrossIncomeYear1} bold color="#6366f1" dot="#6366f1" />}
-              <FinRow label="Operating Expenses" monthly={totalOperatingExpenses / 12} yearly={totalOperatingExpenses} dot="#ef4444" />
+              <FinRow label="Rental Income" monthly={rentalIncome / 12} yearly={rentalIncome} proFormaMonthly={proFormaRentalIncome / 12} proFormaYearly={proFormaRentalIncome} dot="#22c55e" />
+              <FinRow label="Other Income" monthly={otherIncome / 12} yearly={otherIncome} proFormaMonthly={proFormaOtherIncome / 12} proFormaYearly={proFormaOtherIncome} dot="#06b6d4" />
+              <FinRow label="Gross Operating Income (GOI)" monthly={grossOperatingIncome / 12} yearly={grossOperatingIncome} proFormaMonthly={proFormaGOI / 12} proFormaYearly={proFormaGOI} bold color={AC} dot={AC} />
+              {vacancyLossYear1 > 0 && <FinRow label="Less: Vacancy Loss" monthly={-vacancyLossYear1 / 12} yearly={-vacancyLossYear1} proFormaMonthly={-proFormaVacancyLoss / 12} proFormaYearly={-proFormaVacancyLoss} dot="#f59e0b" />}
+              {vacancyLossYear1 > 0 && <FinRow label="Effective Gross Income (EGI)" monthly={effectiveGrossIncomeYear1 / 12} yearly={effectiveGrossIncomeYear1} proFormaMonthly={proFormaEGI / 12} proFormaYearly={proFormaEGI} bold color="#6366f1" dot="#6366f1" />}
+              <FinRow label="Operating Expenses" monthly={totalOperatingExpenses / 12} yearly={totalOperatingExpenses} proFormaMonthly={proFormaOperatingExpenses / 12} proFormaYearly={proFormaOperatingExpenses} dot="#ef4444" />
               {capitalReserve > 0 && <FinRow label="Capital Reserve" monthly={capitalReserve / 12} yearly={capitalReserve} dot="#8b5cf6" />}
               {capitalExpenditure > 0 && <FinRow label="Capital Expenditure" monthly={capitalExpenditure / 12} yearly={capitalExpenditure} dot="#f97316" />}
-              {vaRentUpside > 0 && <FinRow label="+ Rent Optimization (Value-Add)" monthly={vaRentUpside / 12} yearly={vaRentUpside} dot="#4f46e5" />}
-              {vaRubsRecovery > 0 && <FinRow label="+ RUBS Recovery (Value-Add)" monthly={vaRubsRecovery / 12} yearly={vaRubsRecovery} dot="#0ea5e9" />}
-              {vaOtherIncome > 0 && <FinRow label="+ Other Income (Value-Add)" monthly={vaOtherIncome / 12} yearly={vaOtherIncome} dot="#8b5cf6" />}
-              {vaExpenseSavings > 0 && <FinRow label="+ Expense Savings (Value-Add)" monthly={vaExpenseSavings / 12} yearly={vaExpenseSavings} dot="#f59e0b" />}
               <tr style={{ borderTop: `2px solid ${B}` }}>
                 <td style={{ padding: '12px 12px', fontSize: 13, fontWeight: 800, color: '#16a34a' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1053,10 +1058,12 @@ export default function CompressedTab({
                     Net Operating Income (NOI){vaTotalAdj > 0 ? ' ★' : ''}
                   </span>
                 </td>
-                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#16a34a', fontSize: 13 }}>{fmt(adjNOI / 12)}</td>
-                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#16a34a', fontSize: 13 }}>{fmt(adjNOI)}</td>
+                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#16a34a', fontSize: 13 }}>{fmt(noiYear1 / 12)}</td>
+                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#16a34a', fontSize: 13 }}>{fmt(noiYear1)}</td>
+                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#16a34a', fontSize: 13 }}>{fmt(proFormaNOI / 12)}</td>
+                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: '#16a34a', fontSize: 13 }}>{fmt(proFormaNOI)}</td>
               </tr>
-              <FinRow label="Debt Service" monthly={debtServiceYear1 / 12} yearly={debtServiceYear1} dot="#dc2626" />
+              <FinRow label="Debt Service" monthly={debtServiceYear1 / 12} yearly={debtServiceYear1} proFormaMonthly={debtServiceYear1 / 12} proFormaYearly={debtServiceYear1} dot="#dc2626" />
               <tr style={{ borderTop: `2px solid ${B}`, backgroundColor: adjCashFlow >= 0 ? '#f0fdf4' : '#fef2f2' }}>
                 <td style={{ padding: '12px 12px', fontSize: 14, fontWeight: 800, color: adjCashFlow >= 0 ? '#16a34a' : '#ef4444' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1064,13 +1071,15 @@ export default function CompressedTab({
                     Cash Flow (Bottom Line){vaTotalAdj > 0 ? ' ★' : ''}
                   </span>
                 </td>
-                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: adjCashFlow >= 0 ? '#16a34a' : '#ef4444', fontSize: 14 }}>{fmt(adjCashFlow / 12)}</td>
-                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: adjCashFlow >= 0 ? '#16a34a' : '#ef4444', fontSize: 14 }}>{fmt(adjCashFlow)}</td>
+                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: cashFlowYear1 >= 0 ? '#16a34a' : '#ef4444', fontSize: 14 }}>{fmt(cashFlowYear1 / 12)}</td>
+                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: cashFlowYear1 >= 0 ? '#16a34a' : '#ef4444', fontSize: 14 }}>{fmt(cashFlowYear1)}</td>
+                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: proFormaCashFlow >= 0 ? '#16a34a' : '#ef4444', fontSize: 14 }}>{fmt(proFormaCashFlow / 12)}</td>
+                <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: proFormaCashFlow >= 0 ? '#16a34a' : '#ef4444', fontSize: 14 }}>{fmt(proFormaCashFlow)}</td>
               </tr>
               {vaTotalAdj > 0 && (
                 <tr>
-                  <td colSpan={3} style={{ padding: '8px 12px', fontSize: 10, color: '#4f46e5', fontStyle: 'italic' }}>
-                    ★ Includes value-add adjustments (+{fmt(vaTotalAdj)}/yr). Toggle in Value-Add tab.
+                  <td colSpan={5} style={{ padding: '8px 12px', fontSize: 10, color: '#4f46e5', fontStyle: 'italic' }}>
+                    ★ Pro forma reflects live value-add adjustments from rent optimization, RUBS, other income, and expense savings across the Results tabs.
                   </td>
                 </tr>
               )}

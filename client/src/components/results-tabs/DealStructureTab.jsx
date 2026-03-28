@@ -615,7 +615,7 @@ export default function DealStructureTab({ scenarioData, fullCalcs, onFieldChang
               </div>
             ) : null}
 
-            <div style={{ display: 'grid', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: 14, alignItems: 'start' }}>
               {builderLoans.map((loan) => {
                 const metrics = getLoanMetrics(loan, purchasePrice);
                 const isEquity = loan.type === 'Equity Partner';
