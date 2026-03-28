@@ -23,10 +23,9 @@ STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 stripe.api_key = STRIPE_SECRET_KEY
 
 # Token packages mapping
+# 65 tokens for $30 - Stripe price: price_1TG3jvRSKEwwH1TS0OCQdJvW
 TOKEN_PACKAGES = {
-    "14_tokens": {"tokens": 14, "price": 2500, "name": "$25- 14 token pack"},
-    "30_tokens": {"tokens": 30, "price": 5000, "name": "$50- 30 Tokens"},
-    "70_tokens": {"tokens": 70, "price": 10000, "name": "$100- 70 Tokens"},
+    "65_tokens": {"tokens": 65, "price": 3000, "name": "$30 - 65 Tokens", "stripe_price": os.getenv("STRIPE_TOKEN_PRICE_65", "price_1TG3jvRSKEwwH1TS0OCQdJvW")},
 }
 
 router = APIRouter(prefix="/api", tags=["Token Purchase"])

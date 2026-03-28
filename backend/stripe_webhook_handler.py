@@ -23,11 +23,11 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 stripe.api_key = STRIPE_SECRET_KEY
 
-# Single plan: $100/month with 55 tokens
+# Single plan: $100/month with 25 tokens (accumulates monthly)
 TIER_TOKEN_LIMITS = {
-    "standard": 55,   # $100/month - 55 tokens
-    "base": 55,       # Legacy fallback
-    "pro": 55,        # Legacy fallback
+    "standard": 25,   # $100/month - 25 tokens
+    "base": 25,       # Legacy fallback
+    "pro": 25,        # Legacy fallback
 }
 
 
@@ -196,7 +196,7 @@ async def stripe_webhook(request: Request):
             
             if user_id:
                 # Update profile with Stripe info and token balance
-                monthly = TIER_TOKEN_LIMITS.get(plan, 55)
+                monthly = TIER_TOKEN_LIMITS.get(plan, 25)
                 
                 update_data = {
                     "stripe_customer_id": customer_id,
