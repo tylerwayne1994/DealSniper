@@ -24,7 +24,7 @@ import DashboardMapTab from '../components/dashboard-tabs/MapTab';
 // Token Package Card Component
 // ============================================================================
 
-function TokenPackageCard({ name, tokens, price, description, packageId, profileEmail, profileId }) {
+function TokenPackageCard({ name, tokens, price, description, packageId, profileEmail, profileId, compact = false }) {
   const [loading, setLoading] = useState(false);
 
   const handlePurchase = async () => {
@@ -54,6 +54,29 @@ function TokenPackageCard({ name, tokens, price, description, packageId, profile
       setLoading(false);
     }
   };
+
+  // Compact mode - just a small "Buy" button
+  if (compact) {
+    return (
+      <button
+        onClick={handlePurchase}
+        disabled={loading}
+        style={{
+          padding: '4px 10px',
+          backgroundColor: loading ? '#9ca3af' : '#0d9488',
+          color: 'white',
+          border: 'none',
+          borderRadius: '6px',
+          fontSize: '11px',
+          fontWeight: '600',
+          cursor: loading ? 'not-allowed' : 'pointer',
+          whiteSpace: 'nowrap'
+        }}
+      >
+        {loading ? '...' : `Buy ${tokens} - ${price}`}
+      </button>
+    );
+  }
 
   return (
     <div style={{
@@ -608,7 +631,21 @@ function DashboardPage() {
               </div>
               <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: 16, border: '1px solid #e2e8f0' }}>
                 <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Tokens</div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: '#111827', marginTop: 4 }}>{tokenBalance?.token_balance ?? '—'}</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                  <span style={{ fontSize: 16, fontWeight: 800, color: '#111827' }}>{tokenBalance?.token_balance ?? '—'}</span>
+                  {profile.email && (
+                    <TokenPackageCard
+                      name="65 Tokens"
+                      tokens={65}
+                      price="$30"
+                      description="65 tokens for AI enhanced tabs"
+                      packageId="65_tokens"
+                      profileEmail={profile.email}
+                      profileId={profile.id}
+                      compact={true}
+                    />
+                  )}
+                </div>
               </div>
             </div>
             <button
@@ -1335,26 +1372,6 @@ function DashboardPage() {
           </div>
         </div>
       </div>
-
-      {/* Token Packages for Purchase */}
-      {profile.email && (
-        <div style={{ marginTop: 32 }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0d9488', marginBottom: 12 }}>
-            Buy More Tokens
-          </h3>
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <TokenPackageCard
-              name="65 Token Pack"
-              tokens={65}
-              price="$30"
-              description="65 tokens for AI enhanced tabs"
-              packageId="65_tokens"
-              profileEmail={profile.email}
-              profileId={profile.id}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 
