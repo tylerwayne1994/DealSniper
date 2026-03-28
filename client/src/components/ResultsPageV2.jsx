@@ -44,6 +44,7 @@ import ScenarioSheet from './ScenarioSheet';
 import { supabase } from '../lib/supabase';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import { loadCountyTaxData, lookupFromScenario, computeTaxComparison } from '../utils/countyTaxLookup';
+import { buildGoogleSheetsWorkbookPayload } from '../utils/buildGoogleSheetsWorkbookPayload';
 
 const ResultsPageV2 = ({ 
   dealId,
@@ -145,12 +146,41 @@ const ResultsPageV2 = ({
         return;
       }
 
-      const fullCalcsPayload = calculations?.fullAnalysis || calculations || {};
-      console.log('[SheetsExport] Sending to API:', { hasScenarioData: !!scenarioData, hasCalcs: !!fullCalcsPayload, sheetId: userSheetId, sheetTab: userSheetTab });
-      const response = await fetch(`${API_BASE_URL}/api/sheets/populate`, {
+      const existingDeal = dealId ? await loadDeal(dealId).catch(() => null) : null;
+      const workbookPayload = buildGoogleSheetsWorkbookPayload({
+        scenarioData,
+        calculations,
+        underwritingResult,
+        rentcastData: rentcastData || existingDeal?.rentcastData || savedRentcastData,
+        marketData,
+        documentAnalysis,
+        costsegData: existingDeal?.costsegData || null,
+        sensitivity,
+        countyTaxEntry,
+        selectedStructureMetrics,
+        recommendedStructure,
+        messages,
+        dealId,
+        baseTabName: userSheetTab || 'Results',
+      });
+
+      console.log('[SheetsExport] Sending full workbook to API:', {
+        hasScenarioData: !!scenarioData,
+        hasCalcs: !!calculations,
+        sheetId: userSheetId,
+        baseTabName: workbookPayload.baseTabName,
+        sheetCount: workbookPayload.sheets.length,
+        rawSheetCount: workbookPayload.rawSheets.length,
+      });
+
+      const response = await fetch(`${API_BASE_URL}/api/sheets/export-results`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scenarioData, fullCalcs: fullCalcsPayload, sheetId: userSheetId, sheetTab: userSheetTab })
+        body: JSON.stringify({
+          sheetId: userSheetId,
+          sheetTab: userSheetTab,
+          workbook: workbookPayload,
+        })
       });
 
       if (!response.ok) {
@@ -3195,7 +3225,7 @@ Using ALL of the underlying scenario data and structures (Traditional, Seller Fi
               }}
             >
               <FileSpreadsheet size={14} />
-              {isSheetsExporting ? 'Sending to Sheets...' : sheetsExportStatus === 'success' ? '✓ Sent to Sheets' : sheetsExportStatus === 'error' ? 'Export Failed' : 'Export to Google Sheets'}
+              {isSheetsExporting ? 'Sending Full Results...' : sheetsExportStatus === 'success' ? '✓ Results Sent' : sheetsExportStatus === 'error' ? 'Export Failed' : 'Export Full Results'}
             </button>
             <button
               onClick={handleGeneratePitchDeck}

@@ -363,6 +363,7 @@ except Exception as e:
 
 # Google Sheets: Auto-populate underwriting model
 from google_sheets_updater import update_google_sheet
+from google_sheets_results_exporter import export_full_results_workbook
 
 # HUD API proxy router (provides /api/hud/* endpoints)
 try:
@@ -4022,6 +4023,33 @@ async def populate_underwriting_sheet(request: Request):
         
     except Exception as e:
         log.error(f"Error populating sheet: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
+
+
+@app.post("/api/sheets/export-results")
+async def export_results_to_google_sheet(request: Request):
+    """
+    Export the full Results page into multiple Google Sheets tabs.
+    Uses the existing service-account flow; the destination spreadsheet must
+    already be shared with the service-account email.
+    """
+    try:
+        body = await request.json()
+        workbook = body.get('workbook')
+        sheet_id = body.get('sheetId')
+        sheet_tab = body.get('sheetTab')
+
+        if not workbook:
+            return JSONResponse(status_code=400, content={"success": False, "message": "workbook payload required"})
+
+        if not sheet_id:
+            return JSONResponse(status_code=400, content={"success": False, "message": "sheetId required - configure your Google Sheet in Dashboard settings"})
+
+        result = export_full_results_workbook(workbook, sheet_id=sheet_id, base_tab_name=sheet_tab)
+        return JSONResponse(content=result)
+
+    except Exception as e:
+        log.error(f"Error exporting results workbook: {str(e)}")
         return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
 
 
