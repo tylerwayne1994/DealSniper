@@ -252,7 +252,7 @@ import stripe
 
 # Price ID: single $100/month plan - prefer env var, fallback to known ID
 PRICE_ID = os.getenv("STRIPE_PRICE_ID", "price_1SfA2SRRD0SJQZk3q6Zujrw0")
-STRIPE_TRIAL_DAYS = max(0, int(os.getenv("STRIPE_TRIAL_DAYS", "7")))
+STRIPE_TRIAL_DAYS = max(0, int(os.getenv("STRIPE_TRIAL_DAYS", "4")))
 
 # Debug endpoint for env vars (dev only)
 @app.get("/debug/env")

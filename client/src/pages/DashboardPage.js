@@ -1342,31 +1342,13 @@ function DashboardPage() {
           <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0d9488', marginBottom: 12 }}>
             Buy More Tokens
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: isMobile ? '12px' : '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
             <TokenPackageCard
-              name="$25- 14 token pack"
-              tokens={14}
-              price="$25"
-              description="14 tokens used for the AI enhanced tabs"
-              packageId="14_tokens"
-              profileEmail={profile.email}
-              profileId={profile.id}
-            />
-            <TokenPackageCard
-              name="$50- 30 Tokens"
-              tokens={30}
-              price="$50"
-              description="30 Tokens used for AI enhanced tabs"
-              packageId="30_tokens"
-              profileEmail={profile.email}
-              profileId={profile.id}
-            />
-            <TokenPackageCard
-              name="$100- 70 Tokens"
-              tokens={70}
-              price="$100"
-              description="70 Tokens for All enhanced tabs"
-              packageId="70_tokens"
+              name="65 Token Pack"
+              tokens={65}
+              price="$30"
+              description="65 tokens for AI enhanced tabs"
+              packageId="65_tokens"
               profileEmail={profile.email}
               profileId={profile.id}
             />

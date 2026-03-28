@@ -167,10 +167,10 @@ function SignUpPage() {
         <div style={{ width: '100%', maxWidth: '500px' }}>
           <div style={{ marginBottom: '32px', textAlign: 'center' }}>
             <h2 style={{ fontSize: '28px', fontWeight: '700', color: '#f1f5f9', marginBottom: '8px', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
-              Start Your 7-Day Free Trial
+              Start Your 4-Day Free Trial
             </h2>
             <p style={{ color: '#10b981', fontSize: '15px', fontWeight: '600', marginBottom: '4px', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
-              Full access for 7 days — cancel anytime before your trial ends
+              Full access for 4 days — cancel anytime before your trial ends
             </p>
             <p style={{ color: '#94a3b8', fontSize: '14px', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
               Already have an account?{' '}
@@ -226,10 +226,10 @@ function SignUpPage() {
                   $100<span style={{ fontSize: '16px', fontWeight: '500', color: '#94a3b8' }}>/month</span>
                 </div>
                 <div style={{ color: '#10b981', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
-                  55 AI Tokens per month
+                  25 AI Tokens per month (rollover)
                 </div>
                 <div style={{ color: '#64748b', fontSize: '12px' }}>
-                  Your card will be charged after the 7-day free trial. Cancel anytime.
+                  Your card will be charged after the 4-day free trial. Cancel anytime.
                 </div>
               </div>
             </div>
