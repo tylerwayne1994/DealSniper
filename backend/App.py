@@ -366,7 +366,7 @@ from google_sheets_updater import update_google_sheet
 from google_sheets_results_exporter import export_full_results_workbook
 
 # Excel template export
-from excel_export import export_to_excel
+from excel_ai_export import export_to_excel_ai
 
 # HUD API proxy router (provides /api/hud/* endpoints)
 try:
@@ -4057,23 +4057,24 @@ async def export_results_to_google_sheet(request: Request):
 
 
 @app.post("/api/export/excel")
-async def export_to_excel_template(request: Request):
+async def export_to_excel_endpoint(request: Request):
     """
-    Export scenario data to the underwriting.xlsx template.
-    Fills input cells and preserves formulas.
-    Returns the filled Excel file as a download.
+    Export scenario data to an Excel underwriting model.
+    Builds a clean spreadsheet from scenarioData + fullCalcs.
+    Returns the Excel file as a download.
     """
     from fastapi.responses import StreamingResponse
     
     try:
         body = await request.json()
         scenario_data = body.get('scenarioData', {})
+        full_calcs = body.get('fullCalcs', {})
         
         if not scenario_data:
             return JSONResponse(status_code=400, content={"success": False, "message": "scenarioData required"})
         
-        # Generate the filled Excel file
-        excel_buffer = export_to_excel(scenario_data)
+        # Generate the Excel file using AI export
+        excel_buffer = export_to_excel_ai(scenario_data, full_calcs)
         
         # Create filename from property address or generic name
         property_info = scenario_data.get('property', {})
@@ -4090,11 +4091,10 @@ async def export_to_excel_template(request: Request):
             }
         )
         
-    except FileNotFoundError as e:
-        log.error(f"Template not found: {str(e)}")
-        return JSONResponse(status_code=500, content={"success": False, "message": "Excel template not found on server"})
     except Exception as e:
         log.error(f"Error exporting to Excel: {str(e)}")
+        import traceback
+        log.error(traceback.format_exc())
         return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
 
 

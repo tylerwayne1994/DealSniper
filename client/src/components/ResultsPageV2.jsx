@@ -217,10 +217,13 @@ const ResultsPageV2 = ({
   const handleExportToExcel = async () => {
     setIsExcelExporting(true);
     try {
+      // Get fullCalcs the same way other parts of the app do
+      const fullCalcs = calculations?.fullAnalysis || calculations || {};
+      
       const response = await fetch(`${API_BASE_URL}/api/export/excel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scenarioData })
+        body: JSON.stringify({ scenarioData, fullCalcs })
       });
       
       if (!response.ok) {
