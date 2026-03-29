@@ -1001,11 +1001,12 @@ async def generate_in_background(session_id: str, deal_data: Dict, profile_id: s
     session = get_session(session_id)
     
     try:
-        # Simulate progress updates (replace with actual generation)
-        for i in range(10):
-            await asyncio.sleep(2)
-            session["generation_status"]["spreadsheet_progress"] = min(100, (i + 1) * 10)
-            session["generation_status"]["pitch_deck_progress"] = min(100, (i + 1) * 10)
+        log.info(f"[DealBuilder] Starting generation for session {session_id}")
+        log.info(f"[DealBuilder] Deal data keys: {list(deal_data.keys()) if deal_data else 'None'}")
+        
+        # Quick progress update
+        session["generation_status"]["spreadsheet_progress"] = 10
+        session["generation_status"]["pitch_deck_progress"] = 10
         
         # Generate spreadsheet
         log.info(f"[DealBuilder] Generating spreadsheet for session {session_id}...")
@@ -1013,6 +1014,7 @@ async def generate_in_background(session_id: str, deal_data: Dict, profile_id: s
         session["generation_status"]["spreadsheet"] = "complete"
         session["generation_status"]["spreadsheet_progress"] = 100
         session["outputs"]["spreadsheet_url"] = spreadsheet_url
+        log.info(f"[DealBuilder] Spreadsheet done: {spreadsheet_url}")
         
         # Generate pitch deck  
         log.info(f"[DealBuilder] Generating pitch deck for session {session_id}...")
