@@ -148,8 +148,14 @@ function DealBuilderPage() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Upload failed');
+        let errorMsg = `HTTP ${response.status}`;
+        try {
+          const error = await response.json();
+          errorMsg = error.detail || error.error || errorMsg;
+        } catch {
+          errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMsg);
       }
 
       const data = await response.json();
