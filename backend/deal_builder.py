@@ -785,15 +785,8 @@ async def upload_om(
     Returns parsed deal data and initial underwriting analysis.
     """
     try:
-        # Get profile for token check (optional for upload phase)
-        from token_manager import get_current_profile_id, get_profile, check_tokens, deduct_tokens
-        profile_id = None
-        try:
-            profile_id = get_current_profile_id(request)
-            profile = get_profile(profile_id)
-            log.info(f"[DealBuilder] Upload by profile {profile_id}")
-        except Exception:
-            log.warning("[DealBuilder] No profile for upload - proceeding anyway")
+        # Token checks disabled for testing
+        log.info("[DealBuilder] Upload received (token checks disabled for testing)")
         
         # Read file
         file_bytes = await file.read()
@@ -949,26 +942,16 @@ async def deal_builder_chat(request: Request):
 async def generate_deliverables(request: Request):
     """
     Generate spreadsheet + pitch deck in parallel.
-    Deducts tokens and starts background generation.
+    Token checks disabled for testing.
     """
     try:
-        from token_manager import get_current_profile_id, get_profile, check_tokens, deduct_tokens
-        
-        # Require authentication for generation
-        profile_id = get_current_profile_id(request)
-        profile = get_profile(profile_id)
-        
-        # Check tokens
-        token_check = check_tokens(profile_id, DEAL_BUILDER_TOKEN_COST)
-        if not token_check["has_tokens"]:
-            return JSONResponse(
-                status_code=402,
-                content={"success": False, "error": "Insufficient tokens", "required": DEAL_BUILDER_TOKEN_COST}
-            )
+        # Token checks disabled for testing
+        log.info("[DealBuilder] Generate request (token checks disabled for testing)")
         
         data = await request.json()
         session_id = data.get("session_id")
         deal_data = data.get("deal_data")
+        profile_id = "test_user"  # Placeholder for testing
         
         session = get_session(session_id)
         
@@ -980,10 +963,6 @@ async def generate_deliverables(request: Request):
                 status_code=400,
                 content={"success": False, "error": "No deal data in session"}
             )
-        
-        # Deduct tokens
-        deduct_tokens(profile_id, DEAL_BUILDER_TOKEN_COST, "deal_builder_full")
-        log.info(f"[DealBuilder] Deducted {DEAL_BUILDER_TOKEN_COST} tokens from {profile_id}")
         
         # Update status
         session["generation_status"] = {
