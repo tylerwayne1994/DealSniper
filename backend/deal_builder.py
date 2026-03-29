@@ -1487,6 +1487,7 @@ async def download_file(filename: str):
     filepath = output_dir / filename
     
     if not filepath.exists():
+        log.error(f"[DealBuilder] File not found: {filepath}")
         raise HTTPException(status_code=404, detail="File not found")
     
     # Determine media type
@@ -1497,8 +1498,11 @@ async def download_file(filename: str):
     else:
         media_type = "application/octet-stream"
     
+    log.info(f"[DealBuilder] Serving file: {filepath} ({media_type})")
+    
     return FileResponse(
         path=filepath,
         filename=filename,
-        media_type=media_type
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )

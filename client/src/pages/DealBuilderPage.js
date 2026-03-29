@@ -726,7 +726,8 @@ function DealBuilderPage() {
                       <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         <a
                           href={downloadUrls.spreadsheet}
-                          download
+                          target="_blank"
+                          rel="noopener noreferrer"
                           style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -745,7 +746,8 @@ function DealBuilderPage() {
                         </a>
                         <a
                           href={downloadUrls.pitchDeck}
-                          download
+                          target="_blank"
+                          rel="noopener noreferrer"
                           style={{
                             display: 'flex',
                             alignItems: 'center',
