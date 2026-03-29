@@ -1,0 +1,3075 @@
+{
+  "workbook": "underwriting",
+  "sheet": "Underwriting Model",
+  "usedRange": "A1:K162",
+  "totalRows": 162,
+  "totalColumns": 11,
+  "notes": {
+    "B19": "2025 P_L statement.pdf | Page 1 | Walker Apartments",
+    "B20": "2025 P_L statement.pdf | Page 1 | 521 SW 24th st Oklahoma city, OK 73109",
+    "B63": "2025 P_L statement.pdf | Page 1 | $110,775"
+  },
+  "data": [
+    {
+      "row": 1,
+      "cells": {
+        "A": {
+          "value": "DEAL NAME \u2014 INVESTMENT UNDERWRITING MODEL"
+        }
+      }
+    },
+    {
+      "row": 2,
+      "cells": {
+        "A": {
+          "value": "Address | City, ST ZIP  |  Units  |  Year Built  |  Offer Price  |  Down %  |  Rate / Amort"
+        }
+      }
+    },
+    {
+      "row": 4,
+      "cells": {
+        "A": {
+          "value": "\ud83d\udccb  DEAL SNAPSHOT"
+        },
+        "G": {
+          "value": "\ud83d\udcb0  FINANCIAL PERFORMANCE"
+        },
+        "J": {
+          "value": "\ud83c\udfe6  EQUITY RETURNS (Full Value-Add)"
+        }
+      }
+    },
+    {
+      "row": 5,
+      "cells": {
+        "A": {
+          "value": "Purchase Price"
+        },
+        "B": {
+          "value": 850000
+        },
+        "G": {
+          "value": "NOI \u2014 Current Expenses"
+        },
+        "H": {
+          "value": 52952.5,
+          "formula": "=B87"
+        },
+        "J": {
+          "value": "Your Investment"
+        },
+        "K": {
+          "value": 0,
+          "formula": "=B47"
+        }
+      }
+    },
+    {
+      "row": 6,
+      "cells": {
+        "A": {
+          "value": "Price Per Unit"
+        },
+        "B": {
+          "value": 70833.33333333333,
+          "formula": "=B5/B11"
+        },
+        "G": {
+          "value": "NOI \u2014 Full Value-Add"
+        },
+        "H": {
+          "value": 52952.5,
+          "formula": "=D87"
+        },
+        "J": {
+          "value": "Your Annual CF (S3)"
+        },
+        "K": {
+          "value": -12460.946885297028,
+          "formula": "=I31"
+        }
+      }
+    },
+    {
+      "row": 7,
+      "cells": {
+        "A": {
+          "value": "Total Cash to Close"
+        },
+        "B": {
+          "value": 178500,
+          "formula": "=B42"
+        },
+        "G": {
+          "value": "Cap Rate \u2014 Current"
+        },
+        "H": {
+          "value": 0.062297058823529414,
+          "formula": "=B95"
+        },
+        "J": {
+          "value": "Your Monthly CF (S3)"
+        },
+        "K": {
+          "value": -1038.412240441419,
+          "formula": "=I32"
+        }
+      }
+    },
+    {
+      "row": 8,
+      "cells": {
+        "A": {
+          "value": "Loan Amount"
+        },
+        "B": {
+          "value": 680000,
+          "formula": "=B40"
+        },
+        "G": {
+          "value": "Cap Rate \u2014 Value-Add"
+        },
+        "H": {
+          "value": 0.062297058823529414,
+          "formula": "=D95"
+        },
+        "J": {
+          "value": "Your 5-Year Distributions"
+        },
+        "K": {
+          "value": -62304.73442648514,
+          "formula": "=I36"
+        }
+      }
+    },
+    {
+      "row": 9,
+      "cells": {
+        "A": {
+          "value": "Monthly Debt Service"
+        },
+        "B": {
+          "value": 4524.05696721844,
+          "formula": "=B43"
+        },
+        "G": {
+          "value": "DSCR"
+        },
+        "H": {
+          "value": 0.9753874377153194,
+          "formula": "=B96"
+        },
+        "J": {
+          "value": "Partner Investment"
+        },
+        "K": {
+          "value": 178000,
+          "formula": "=B46"
+        }
+      }
+    },
+    {
+      "row": 10,
+      "cells": {
+        "A": {
+          "value": "Occupancy"
+        },
+        "B": {
+          "formula": "=B28"
+        },
+        "G": {
+          "value": "Annual Debt Service"
+        },
+        "H": {
+          "value": 54288.683606621285,
+          "formula": "=B44"
+        },
+        "J": {
+          "value": "Partner Annual (S3)"
+        },
+        "K": {
+          "value": 11124.763278675742,
+          "formula": "=I27"
+        }
+      }
+    },
+    {
+      "row": 11,
+      "cells": {
+        "A": {
+          "value": "Total Units"
+        },
+        "B": {
+          "value": 12,
+          "formula": "=B26"
+        },
+        "G": {
+          "value": "Interest Rate"
+        },
+        "H": {
+          "value": 0.07,
+          "formula": "=B34"
+        },
+        "J": {
+          "value": "Year 5 Value (9% Cap)"
+        },
+        "K": {
+          "value": "#DIV/0!",
+          "formula": "=H46"
+        }
+      }
+    },
+    {
+      "row": 12,
+      "cells": {
+        "A": {
+          "value": "Year Built"
+        },
+        "G": {
+          "value": "Amortization"
+        },
+        "H": {
+          "value": "30 yrs",
+          "formula": "=B35&\" yrs\""
+        },
+        "J": {
+          "value": "Return on $50k (5yr)"
+        },
+        "K": {
+          "value": "#DIV/0!",
+          "formula": "=H76"
+        }
+      }
+    },
+    {
+      "row": 14,
+      "cells": {
+        "A": {
+          "value": "  \u26a0  Blue = changeable inputs  |  Black = calculated formulas  |  Green = references  |  All scenarios update automatically when inputs change"
+        }
+      }
+    },
+    {
+      "row": 16,
+      "cells": {
+        "A": {
+          "value": "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501  ASSUMPTIONS  \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501"
+        },
+        "F": {
+          "value": "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501  EQUITY PARTNER CASHFLOW SPLIT  \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501"
+        }
+      }
+    },
+    {
+      "row": 18,
+      "cells": {
+        "A": {
+          "value": "PROPERTY INFORMATION"
+        },
+        "F": {
+          "value": "CASHFLOW SUMMARY"
+        },
+        "G": {
+          "value": "Scenario 1\nCurrent Expenses"
+        },
+        "H": {
+          "value": "Scenario 2\nRUBS + Trash"
+        },
+        "I": {
+          "value": "Scenario 3\nFull Value-Add"
+        }
+      }
+    },
+    {
+      "row": 19,
+      "cells": {
+        "A": {
+          "value": "Property Name"
+        },
+        "B": {
+          "value": "Walker Apartments",
+          "note": "2025 P_L statement.pdf | Page 1 | Walker Apartments"
+        },
+        "C": {
+          "value": "Source: 2025 P&L \u2014 Walker Apartments, Trinity Legacy LLC"
+        },
+        "F": {
+          "value": "Total NOI"
+        },
+        "G": {
+          "value": 52952.5,
+          "formula": "=B87"
+        },
+        "H": {
+          "value": 52952.5,
+          "formula": "=C87"
+        },
+        "I": {
+          "value": 52952.5,
+          "formula": "=D87"
+        }
+      }
+    },
+    {
+      "row": 20,
+      "cells": {
+        "A": {
+          "value": "Address"
+        },
+        "B": {
+          "value": "521 SW 24th St, Oklahoma City, OK 73109",
+          "note": "2025 P_L statement.pdf | Page 1 | 521 SW 24th st Oklahoma city, OK 73109"
+        },
+        "F": {
+          "value": "Annual Debt Service"
+        },
+        "G": {
+          "value": 54288.683606621285,
+          "formula": "=B44"
+        },
+        "H": {
+          "value": 54288.683606621285,
+          "formula": "=B44"
+        },
+        "I": {
+          "value": 54288.683606621285,
+          "formula": "=B44"
+        }
+      }
+    },
+    {
+      "row": 21,
+      "cells": {
+        "A": {
+          "value": "Asset Type"
+        },
+        "F": {
+          "value": "Total Cashflow Available"
+        },
+        "G": {
+          "value": -1336.1836066212854,
+          "formula": "=B91"
+        },
+        "H": {
+          "value": -1336.1836066212854,
+          "formula": "=C91"
+        },
+        "I": {
+          "value": -1336.1836066212854,
+          "formula": "=D91"
+        }
+      }
+    },
+    {
+      "row": 22,
+      "cells": {
+        "A": {
+          "value": "Year Built / Renovated"
+        }
+      }
+    },
+    {
+      "row": 23,
+      "cells": {
+        "A": {
+          "value": "APN"
+        },
+        "F": {
+          "value": "PARTNER \u2014 EQUITY / PREFERRED RETURN"
+        }
+      }
+    },
+    {
+      "row": 24,
+      "cells": {
+        "A": {
+          "value": "Gross Building SF"
+        },
+        "F": {
+          "value": "Preferred Return"
+        },
+        "G": {
+          "value": 14240,
+          "formula": "=B46*B48"
+        },
+        "H": {
+          "value": 14240,
+          "formula": "=B46*B48"
+        },
+        "I": {
+          "value": 14240,
+          "formula": "=B46*B48"
+        }
+      }
+    },
+    {
+      "row": 25,
+      "cells": {
+        "A": {
+          "value": "Lot Size (Acres)"
+        },
+        "F": {
+          "value": "Remaining After Pref"
+        },
+        "G": {
+          "value": -15576.183606621285,
+          "formula": "=G21-G24"
+        },
+        "H": {
+          "value": -15576.183606621285,
+          "formula": "=H21-G24"
+        },
+        "I": {
+          "value": -15576.183606621285,
+          "formula": "=I21-G24"
+        }
+      }
+    },
+    {
+      "row": 26,
+      "cells": {
+        "A": {
+          "value": "Total Units"
+        },
+        "B": {
+          "value": 12
+        },
+        "F": {
+          "value": "Partner 20% of Remaining"
+        },
+        "G": {
+          "value": -3115.2367213242574,
+          "formula": "=G25*B49"
+        },
+        "H": {
+          "value": -3115.2367213242574,
+          "formula": "=H25*B49"
+        },
+        "I": {
+          "value": -3115.2367213242574,
+          "formula": "=I25*B49"
+        }
+      }
+    },
+    {
+      "row": 27,
+      "cells": {
+        "A": {
+          "value": "Unit Mix"
+        },
+        "F": {
+          "value": "PARTNER TOTAL ANNUAL"
+        },
+        "G": {
+          "value": 11124.763278675742,
+          "formula": "=G24+G26"
+        },
+        "H": {
+          "value": 11124.763278675742,
+          "formula": "=G24+H26"
+        },
+        "I": {
+          "value": 11124.763278675742,
+          "formula": "=G24+I26"
+        }
+      }
+    },
+    {
+      "row": 28,
+      "cells": {
+        "A": {
+          "value": "Current Occupancy"
+        },
+        "F": {
+          "value": "Partner Monthly"
+        },
+        "G": {
+          "value": 927.0636065563118,
+          "formula": "=G27/12"
+        },
+        "H": {
+          "value": 927.0636065563118,
+          "formula": "=H27/12"
+        },
+        "I": {
+          "value": 927.0636065563118,
+          "formula": "=I27/12"
+        }
+      }
+    },
+    {
+      "row": 29,
+      "cells": {
+        "A": {
+          "value": "Average SF Per Unit"
+        }
+      }
+    },
+    {
+      "row": 30,
+      "cells": {
+        "A": {
+          "value": "Average Current Rent/Unit"
+        },
+        "F": {
+          "value": "YOU \u2014 OPERATOR / 80% EQUITY"
+        }
+      }
+    },
+    {
+      "row": 31,
+      "cells": {
+        "A": {
+          "value": "PURCHASE & FINANCING"
+        },
+        "F": {
+          "value": "YOUR TOTAL ANNUAL"
+        },
+        "G": {
+          "value": -12460.946885297028,
+          "formula": "=G21-G27"
+        },
+        "H": {
+          "value": -12460.946885297028,
+          "formula": "=H21-H27"
+        },
+        "I": {
+          "value": -12460.946885297028,
+          "formula": "=I21-I27"
+        }
+      }
+    },
+    {
+      "row": 32,
+      "cells": {
+        "A": {
+          "value": "Purchase Price"
+        },
+        "B": {
+          "value": 850000
+        },
+        "F": {
+          "value": "Your Monthly"
+        },
+        "G": {
+          "value": -1038.412240441419,
+          "formula": "=G31/12"
+        },
+        "H": {
+          "value": -1038.412240441419,
+          "formula": "=H31/12"
+        },
+        "I": {
+          "value": -1038.412240441419,
+          "formula": "=I31/12"
+        }
+      }
+    },
+    {
+      "row": 33,
+      "cells": {
+        "A": {
+          "value": "Down Payment %"
+        },
+        "B": {
+          "value": 0.2
+        },
+        "F": {
+          "value": "Your CoC Return (on $50,000)"
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=G31/B47"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=H31/B47"
+        },
+        "I": {
+          "value": "#DIV/0!",
+          "formula": "=I31/B47"
+        }
+      }
+    },
+    {
+      "row": 34,
+      "cells": {
+        "A": {
+          "value": "Interest Rate"
+        },
+        "B": {
+          "value": 0.07
+        }
+      }
+    },
+    {
+      "row": 35,
+      "cells": {
+        "A": {
+          "value": "Amortization (Years)"
+        },
+        "B": {
+          "value": 30
+        },
+        "F": {
+          "value": "5-YEAR ACCUMULATION"
+        }
+      }
+    },
+    {
+      "row": 36,
+      "cells": {
+        "A": {
+          "value": "Closing Costs %"
+        },
+        "B": {
+          "value": 0.01
+        },
+        "F": {
+          "value": "Your 5-Year Distributions"
+        },
+        "G": {
+          "value": -62304.73442648514,
+          "formula": "=G31*5"
+        },
+        "H": {
+          "value": -62304.73442648514,
+          "formula": "=H31*5"
+        },
+        "I": {
+          "value": -62304.73442648514,
+          "formula": "=I31*5"
+        }
+      }
+    },
+    {
+      "row": 37,
+      "cells": {
+        "A": {
+          "value": "Working Capital ($)"
+        },
+        "F": {
+          "value": "Partner 5-Year Distributions"
+        },
+        "G": {
+          "value": 55623.816393378715,
+          "formula": "=G27*5"
+        },
+        "H": {
+          "value": 55623.816393378715,
+          "formula": "=H27*5"
+        },
+        "I": {
+          "value": 55623.816393378715,
+          "formula": "=I27*5"
+        }
+      }
+    },
+    {
+      "row": 38,
+      "cells": {
+        "A": {
+          "value": "Down Payment ($)"
+        },
+        "B": {
+          "value": 170000,
+          "formula": "=B32*B33"
+        },
+        "F": {
+          "value": "Total Distributions Combined"
+        },
+        "G": {
+          "value": -6680.918033106427,
+          "formula": "=G36+G37"
+        },
+        "H": {
+          "value": -6680.918033106427,
+          "formula": "=H36+H37"
+        },
+        "I": {
+          "value": -6680.918033106427,
+          "formula": "=I36+I37"
+        }
+      }
+    },
+    {
+      "row": 39,
+      "cells": {
+        "A": {
+          "value": "CALCULATED FINANCING \u2014 do not edit (black = formula)"
+        }
+      }
+    },
+    {
+      "row": 40,
+      "cells": {
+        "A": {
+          "value": "Loan Amount"
+        },
+        "B": {
+          "value": 680000,
+          "formula": "=B32-B38"
+        },
+        "F": {
+          "value": "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501  YEAR 5 BUYOUT ANALYSIS  \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501"
+        }
+      }
+    },
+    {
+      "row": 41,
+      "cells": {
+        "A": {
+          "value": "Closing Costs ($)"
+        },
+        "B": {
+          "value": 8500,
+          "formula": "=B32*B36"
+        }
+      }
+    },
+    {
+      "row": 42,
+      "cells": {
+        "A": {
+          "value": "Total Cash to Close"
+        },
+        "B": {
+          "value": 178500,
+          "formula": "=B38+B41+B37"
+        },
+        "G": {
+          "value": "Conservative\n10.5% Exit Cap"
+        },
+        "H": {
+          "value": "Realistic\n9% Exit Cap"
+        },
+        "I": {
+          "value": "Optimistic\n8% Exit Cap"
+        }
+      }
+    },
+    {
+      "row": 43,
+      "cells": {
+        "A": {
+          "value": "Monthly Debt Service"
+        },
+        "B": {
+          "value": 4524.05696721844,
+          "formula": "=IFERROR(B40*(B34/12)/(1-(1+B34/12)^(-B35*12)),0)"
+        },
+        "F": {
+          "value": "PROPERTY VALUATION AT YEAR 5 (Stabilized Full Value-Add NOI)"
+        }
+      }
+    },
+    {
+      "row": 44,
+      "cells": {
+        "A": {
+          "value": "Annual Debt Service"
+        },
+        "B": {
+          "value": 54288.683606621285,
+          "formula": "=B43*12"
+        },
+        "F": {
+          "value": "Stabilized NOI (Full Value-Add)"
+        },
+        "G": {
+          "value": 52952.5,
+          "formula": "=D87"
+        },
+        "H": {
+          "value": 52952.5,
+          "formula": "=D87"
+        },
+        "I": {
+          "value": 52952.5,
+          "formula": "=D87"
+        }
+      }
+    },
+    {
+      "row": 45,
+      "cells": {
+        "A": {
+          "value": "EQUITY PARTNER STRUCTURE"
+        },
+        "F": {
+          "value": "Exit Cap Rate"
+        },
+        "G": {
+          "formula": "=B56"
+        },
+        "H": {
+          "formula": "=B57"
+        }
+      }
+    },
+    {
+      "row": 46,
+      "cells": {
+        "A": {
+          "value": "Investor Contribution ($)"
+        },
+        "B": {
+          "value": 178000
+        },
+        "F": {
+          "value": "Year 5 Property Value (NOI \u00f7 Cap Rate)"
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=G44/G45"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=G44/H45"
+        },
+        "I": {
+          "value": "#DIV/0!",
+          "formula": "=G44/I45"
+        }
+      }
+    },
+    {
+      "row": 47,
+      "cells": {
+        "A": {
+          "value": "Your Contribution ($)"
+        },
+        "B": {
+          "value": 0
+        },
+        "F": {
+          "value": "Original Purchase Price"
+        },
+        "G": {
+          "value": 850000,
+          "formula": "=B32"
+        },
+        "H": {
+          "value": 850000,
+          "formula": "=B32"
+        },
+        "I": {
+          "value": 850000,
+          "formula": "=B32"
+        }
+      }
+    },
+    {
+      "row": 48,
+      "cells": {
+        "A": {
+          "value": "Preferred Return %"
+        },
+        "B": {
+          "value": 0.08
+        },
+        "F": {
+          "value": "Forced Appreciation Created"
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=G46-G47"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=H46-H47"
+        },
+        "I": {
+          "value": "#DIV/0!",
+          "formula": "=I46-I47"
+        }
+      }
+    },
+    {
+      "row": 49,
+      "cells": {
+        "A": {
+          "value": "Partner Equity %"
+        },
+        "B": {
+          "value": 0.2
+        },
+        "F": {
+          "value": "LOAN BALANCE AT YEAR 5"
+        }
+      }
+    },
+    {
+      "row": 50,
+      "cells": {
+        "A": {
+          "value": "Your Equity %"
+        },
+        "B": {
+          "value": 0.8
+        }
+      }
+    },
+    {
+      "row": 51,
+      "cells": {
+        "A": {
+          "value": "VALUE-ADD ASSUMPTIONS"
+        },
+        "F": {
+          "value": "Remaining Loan Balance"
+        },
+        "G": {
+          "value": 640094.811032985,
+          "formula": "=IFERROR(B43*(1-(1+B34/12)^(-(B35*12-60)))/(B34/12),0)"
+        },
+        "H": {
+          "value": 640094.811032985,
+          "formula": "=IFERROR(B43*(1-(1+B34/12)^(-(B35*12-60)))/(B34/12),0)"
+        },
+        "I": {
+          "value": 640094.811032985,
+          "formula": "=IFERROR(B43*(1-(1+B34/12)^(-(B35*12-60)))/(B34/12),0)"
+        }
+      }
+    },
+    {
+      "row": 52,
+      "cells": {
+        "A": {
+          "value": "Rent Bump / Unit / Mo ($)"
+        },
+        "F": {
+          "value": "Total Equity in Property"
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=G46-G51"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=H46-G51"
+        },
+        "I": {
+          "value": "#DIV/0!",
+          "formula": "=I46-G51"
+        }
+      }
+    },
+    {
+      "row": 53,
+      "cells": {
+        "A": {
+          "value": "RUBS Recovery / Year ($)"
+        },
+        "F": {
+          "value": "CASH-OUT REFI SCENARIOS"
+        }
+      }
+    },
+    {
+      "row": 54,
+      "cells": {
+        "A": {
+          "value": "Trash Fee / Unit / Mo ($)"
+        }
+      }
+    },
+    {
+      "row": 55,
+      "cells": {
+        "A": {
+          "value": "Annual Appreciation Rate"
+        },
+        "F": {
+          "value": "70% LTV \u2014 New Loan Amount"
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=G46*0.7"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=H46*0.7"
+        },
+        "I": {
+          "value": "#DIV/0!",
+          "formula": "=I46*0.7"
+        }
+      }
+    },
+    {
+      "row": 56,
+      "cells": {
+        "A": {
+          "value": "Exit Cap \u2014 Conservative"
+        },
+        "F": {
+          "value": "75% LTV \u2014 New Loan Amount"
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=G46*0.75"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=H46*0.75"
+        },
+        "I": {
+          "value": "#DIV/0!",
+          "formula": "=I46*0.75"
+        }
+      }
+    },
+    {
+      "row": 57,
+      "cells": {
+        "A": {
+          "value": "Exit Cap \u2014 Market"
+        },
+        "F": {
+          "value": "80% LTV \u2014 New Loan Amount"
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=G46*0.8"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=H46*0.8"
+        },
+        "I": {
+          "value": "#DIV/0!",
+          "formula": "=I46*0.8"
+        }
+      }
+    },
+    {
+      "row": 58,
+      "cells": {
+        "A": {
+          "value": "Hold Period (Years)"
+        }
+      }
+    },
+    {
+      "row": 59,
+      "cells": {
+        "F": {
+          "value": "70% LTV \u2014 Net Cash Out After Payoff"
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=G55-G51"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=H55-G51"
+        },
+        "I": {
+          "value": "#DIV/0!",
+          "formula": "=I55-G51"
+        }
+      }
+    },
+    {
+      "row": 60,
+      "cells": {
+        "A": {
+          "value": "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501  CASHFLOW SCENARIOS  \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501"
+        },
+        "F": {
+          "value": "75% LTV \u2014 Net Cash Out After Payoff"
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=G56-G51"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=H56-G51"
+        },
+        "I": {
+          "value": "#DIV/0!",
+          "formula": "=I56-G51"
+        }
+      }
+    },
+    {
+      "row": 61,
+      "cells": {
+        "F": {
+          "value": "80% LTV \u2014 Net Cash Out After Payoff"
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=G57-G51"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=H57-G51"
+        },
+        "I": {
+          "value": "#DIV/0!",
+          "formula": "=I57-G51"
+        }
+      }
+    },
+    {
+      "row": 62,
+      "cells": {
+        "B": {
+          "value": "Scenario 1\nCurrent Expenses"
+        },
+        "C": {
+          "value": "Scenario 2\nRUBS + Trash"
+        },
+        "D": {
+          "value": "Scenario 3\nFull Value-Add\n(+Rent Bump)"
+        },
+        "F": {
+          "value": "PARTNER BUYOUT \u2014 Capital Owed at Year 5"
+        }
+      }
+    },
+    {
+      "row": 63,
+      "cells": {
+        "A": {
+          "value": "Scheduled Gross Income"
+        },
+        "B": {
+          "value": 110775,
+          "note": "2025 P_L statement.pdf | Page 1 | $110,775"
+        },
+        "C": {
+          "value": 110775
+        },
+        "D": {
+          "value": 110775,
+          "formula": "=B63+B52*12*B26*B28"
+        }
+      }
+    },
+    {
+      "row": 64,
+      "cells": {
+        "A": {
+          "value": "Less: Vacancy (10%)"
+        },
+        "B": {
+          "value": -11077.5,
+          "formula": "=-B63*0.1"
+        },
+        "C": {
+          "value": -11077.5,
+          "formula": "=-C63*0.1"
+        },
+        "D": {
+          "value": -11077.5,
+          "formula": "=-D63*0.1"
+        },
+        "F": {
+          "value": "Partner Capital to Return"
+        },
+        "G": {
+          "value": 178000,
+          "formula": "=B46"
+        },
+        "H": {
+          "value": 178000,
+          "formula": "=B46"
+        },
+        "I": {
+          "value": 178000,
+          "formula": "=B46"
+        }
+      }
+    },
+    {
+      "row": 65,
+      "cells": {
+        "A": {
+          "value": "Other Income (Late Fees/Deposits)"
+        },
+        "B": {
+          "value": 0
+        },
+        "C": {
+          "value": 0
+        },
+        "D": {
+          "value": 0
+        },
+        "F": {
+          "value": "Refi Cash Out (70% LTV)"
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=G59"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=H59"
+        },
+        "I": {
+          "value": "#DIV/0!",
+          "formula": "=I59"
+        }
+      }
+    },
+    {
+      "row": 66,
+      "cells": {
+        "A": {
+          "value": "RUBS Recovery"
+        },
+        "C": {
+          "formula": "=B53"
+        },
+        "D": {
+          "formula": "=B53"
+        },
+        "F": {
+          "value": "  \u2192 Surplus / (Shortfall) at 70% LTV"
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=G65-G64"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=H65-G64"
+        },
+        "I": {
+          "value": "#DIV/0!",
+          "formula": "=I65-G64"
+        }
+      }
+    },
+    {
+      "row": 67,
+      "cells": {
+        "A": {
+          "value": "Trash Fee Income"
+        },
+        "C": {
+          "value": 0,
+          "formula": "=B54*12*B26*B28"
+        },
+        "D": {
+          "value": 0,
+          "formula": "=B54*12*B26*B28"
+        },
+        "F": {
+          "value": "Refi Cash Out (75% LTV)"
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=G60"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=H60"
+        },
+        "I": {
+          "value": "#DIV/0!",
+          "formula": "=I60"
+        }
+      }
+    },
+    {
+      "row": 68,
+      "cells": {
+        "A": {
+          "value": "GROSS OPERATING INCOME"
+        },
+        "B": {
+          "value": 99697.5,
+          "formula": "=SUM(B63:B67)"
+        },
+        "C": {
+          "value": 99697.5,
+          "formula": "=SUM(C63:C67)"
+        },
+        "D": {
+          "value": 99697.5,
+          "formula": "=SUM(D63:D67)"
+        },
+        "F": {
+          "value": "  \u2192 Surplus / (Shortfall) at 75% LTV"
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=G67-G64"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=H67-G64"
+        },
+        "I": {
+          "value": "#DIV/0!",
+          "formula": "=I67-G64"
+        }
+      }
+    },
+    {
+      "row": 69,
+      "cells": {
+        "A": {
+          "value": "EXPENSES"
+        },
+        "F": {
+          "value": "Refi Cash Out (80% LTV)"
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=G61"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=H61"
+        },
+        "I": {
+          "value": "#DIV/0!",
+          "formula": "=I61"
+        }
+      }
+    },
+    {
+      "row": 70,
+      "cells": {
+        "A": {
+          "value": "Property Tax"
+        },
+        "B": {
+          "value": 7560
+        },
+        "C": {
+          "value": 7560
+        },
+        "D": {
+          "value": 7560
+        },
+        "F": {
+          "value": "  \u2192 Surplus / (Shortfall) at 80% LTV"
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=G69-G64"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=H69-G64"
+        },
+        "I": {
+          "value": "#DIV/0!",
+          "formula": "=I69-G64"
+        }
+      }
+    },
+    {
+      "row": 71,
+      "cells": {
+        "A": {
+          "value": "Insurance"
+        },
+        "B": {
+          "value": 5544
+        },
+        "C": {
+          "value": 5544
+        },
+        "D": {
+          "value": 5544
+        },
+        "F": {
+          "value": "YOUR 5-YEAR TOTAL OUTCOME"
+        }
+      }
+    },
+    {
+      "row": 72,
+      "cells": {
+        "A": {
+          "value": "Management (6% of GOI)"
+        }
+      }
+    },
+    {
+      "row": 73,
+      "cells": {
+        "A": {
+          "value": "Repairs & Maintenance"
+        },
+        "B": {
+          "value": 11906
+        },
+        "C": {
+          "value": 11906
+        },
+        "D": {
+          "value": 11906
+        },
+        "F": {
+          "value": "Your 5-Year Distributions (Full Value-Add)"
+        },
+        "G": {
+          "value": -62304.73442648514,
+          "formula": "=I36"
+        },
+        "H": {
+          "value": -62304.73442648514,
+          "formula": "=I36"
+        },
+        "I": {
+          "value": -62304.73442648514,
+          "formula": "=I36"
+        }
+      }
+    },
+    {
+      "row": 74,
+      "cells": {
+        "A": {
+          "value": "Turnover / Cleaning"
+        },
+        "B": {
+          "value": 0
+        },
+        "C": {
+          "value": 0
+        },
+        "D": {
+          "value": 0
+        },
+        "F": {
+          "value": "Cash Kept After 75% LTV Buyout"
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=MAX(G60-G64,0)"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=MAX(H60-G64,0)"
+        },
+        "I": {
+          "value": "#DIV/0!",
+          "formula": "=MAX(I60-G64,0)"
+        }
+      }
+    },
+    {
+      "row": 75,
+      "cells": {
+        "A": {
+          "value": "Landscaping"
+        },
+        "B": {
+          "value": 900
+        },
+        "C": {
+          "value": 900
+        },
+        "D": {
+          "value": 900
+        },
+        "F": {
+          "value": "TOTAL IN YOUR POCKET (Distributions + Surplus)"
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=G73+G74"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=G73+H74"
+        },
+        "I": {
+          "value": "#DIV/0!",
+          "formula": "=G73+I74"
+        }
+      }
+    },
+    {
+      "row": 76,
+      "cells": {
+        "A": {
+          "value": "Payroll"
+        },
+        "B": {
+          "value": 0
+        },
+        "C": {
+          "value": 0
+        },
+        "D": {
+          "value": 0
+        },
+        "F": {
+          "value": "Return on Your $50,000"
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=G75/B47"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=G75/B47"
+        },
+        "I": {
+          "value": "#DIV/0!",
+          "formula": "=G75/B47"
+        }
+      }
+    },
+    {
+      "row": 77,
+      "cells": {
+        "A": {
+          "value": "Water / Sewer"
+        },
+        "B": {
+          "value": 5209
+        },
+        "C": {
+          "value": 5209
+        },
+        "D": {
+          "value": 5209
+        },
+        "F": {
+          "value": "* Practical realistic scenario = Conservative exit cap. Adjust assumptions above to model scenarios."
+        }
+      }
+    },
+    {
+      "row": 78,
+      "cells": {
+        "A": {
+          "value": "Electricity (Common Only)"
+        },
+        "B": {
+          "value": 11207
+        },
+        "C": {
+          "value": 11207
+        },
+        "D": {
+          "value": 11207
+        },
+        "E": {
+          "value": "Includes Gas ($2,738) \u2014 no separate line in model"
+        }
+      }
+    },
+    {
+      "row": 79,
+      "cells": {
+        "A": {
+          "value": "Pest Control"
+        },
+        "B": {
+          "value": 0
+        },
+        "C": {
+          "value": 0
+        },
+        "D": {
+          "value": 0
+        }
+      }
+    },
+    {
+      "row": 80,
+      "cells": {
+        "A": {
+          "value": "Trash Service"
+        },
+        "B": {
+          "value": 2794
+        },
+        "C": {
+          "value": 2794
+        },
+        "D": {
+          "value": 2794
+        }
+      }
+    },
+    {
+      "row": 81,
+      "cells": {
+        "A": {
+          "value": "General Admin"
+        },
+        "B": {
+          "value": 1625
+        },
+        "C": {
+          "value": 1625
+        },
+        "D": {
+          "value": 1625
+        }
+      }
+    },
+    {
+      "row": 82,
+      "cells": {
+        "A": {
+          "value": "Marketing"
+        },
+        "B": {
+          "value": 0
+        },
+        "C": {
+          "value": 0
+        },
+        "D": {
+          "value": 0
+        }
+      }
+    },
+    {
+      "row": 83,
+      "cells": {
+        "A": {
+          "value": "Reserves"
+        },
+        "B": {
+          "value": 0
+        },
+        "C": {
+          "value": 0
+        },
+        "D": {
+          "value": 0
+        }
+      }
+    },
+    {
+      "row": 84,
+      "cells": {
+        "A": {
+          "value": "Licenses & Permits"
+        },
+        "B": {
+          "value": 0
+        },
+        "C": {
+          "value": 0
+        },
+        "D": {
+          "value": 0
+        }
+      }
+    },
+    {
+      "row": 85,
+      "cells": {
+        "A": {
+          "value": "TOTAL EXPENSES"
+        },
+        "B": {
+          "value": 46745,
+          "formula": "=SUM(B70:B84)"
+        },
+        "C": {
+          "value": 46745,
+          "formula": "=SUM(C70:C84)"
+        },
+        "D": {
+          "value": 46745,
+          "formula": "=SUM(D70:D84)"
+        }
+      }
+    },
+    {
+      "row": 87,
+      "cells": {
+        "A": {
+          "value": "NET OPERATING INCOME"
+        },
+        "B": {
+          "value": 52952.5,
+          "formula": "=B68-B85"
+        },
+        "C": {
+          "value": 52952.5,
+          "formula": "=C68-C85"
+        },
+        "D": {
+          "value": 52952.5,
+          "formula": "=D68-D85"
+        }
+      }
+    },
+    {
+      "row": 89,
+      "cells": {
+        "A": {
+          "value": "DEBT SERVICE & CASHFLOW"
+        }
+      }
+    },
+    {
+      "row": 90,
+      "cells": {
+        "A": {
+          "value": "Annual Debt Service"
+        },
+        "B": {
+          "value": 54288.683606621285,
+          "formula": "=B44"
+        },
+        "C": {
+          "value": 54288.683606621285,
+          "formula": "=B44"
+        },
+        "D": {
+          "value": 54288.683606621285,
+          "formula": "=B44"
+        }
+      }
+    },
+    {
+      "row": 91,
+      "cells": {
+        "A": {
+          "value": "Annual Cashflow"
+        },
+        "B": {
+          "value": -1336.1836066212854,
+          "formula": "=B87-B90"
+        },
+        "C": {
+          "value": -1336.1836066212854,
+          "formula": "=C87-C90"
+        },
+        "D": {
+          "value": -1336.1836066212854,
+          "formula": "=D87-D90"
+        }
+      }
+    },
+    {
+      "row": 92,
+      "cells": {
+        "A": {
+          "value": "Monthly Cashflow"
+        },
+        "B": {
+          "value": -111.34863388510712,
+          "formula": "=B91/12"
+        },
+        "C": {
+          "value": -111.34863388510712,
+          "formula": "=C91/12"
+        },
+        "D": {
+          "value": -111.34863388510712,
+          "formula": "=D91/12"
+        }
+      }
+    },
+    {
+      "row": 94,
+      "cells": {
+        "A": {
+          "value": "RETURNS"
+        }
+      }
+    },
+    {
+      "row": 95,
+      "cells": {
+        "A": {
+          "value": "Cap Rate"
+        },
+        "B": {
+          "value": 0.062297058823529414,
+          "formula": "=B87/B32"
+        },
+        "C": {
+          "value": 0.062297058823529414,
+          "formula": "=C87/B32"
+        },
+        "D": {
+          "value": 0.062297058823529414,
+          "formula": "=D87/B32"
+        }
+      }
+    },
+    {
+      "row": 96,
+      "cells": {
+        "A": {
+          "value": "DSCR"
+        },
+        "B": {
+          "value": 0.9753874377153194,
+          "formula": "=B87/B44"
+        },
+        "C": {
+          "value": 0.9753874377153194,
+          "formula": "=C87/B44"
+        },
+        "D": {
+          "value": 0.9753874377153194,
+          "formula": "=D87/B44"
+        }
+      }
+    },
+    {
+      "row": 97,
+      "cells": {
+        "A": {
+          "value": "Cash-on-Cash (Your Investment)"
+        },
+        "B": {
+          "value": "#DIV/0!",
+          "formula": "=B91/B47"
+        },
+        "C": {
+          "value": "#DIV/0!",
+          "formula": "=C91/B47"
+        },
+        "D": {
+          "value": "#DIV/0!",
+          "formula": "=D91/B47"
+        }
+      }
+    },
+    {
+      "row": 98,
+      "cells": {
+        "A": {
+          "value": "Cash-on-Cash (Partner)"
+        },
+        "B": {
+          "value": -0.00750664947540048,
+          "formula": "=B91/B46"
+        },
+        "C": {
+          "value": -0.00750664947540048,
+          "formula": "=C91/B46"
+        },
+        "D": {
+          "value": -0.00750664947540048,
+          "formula": "=D91/B46"
+        }
+      }
+    },
+    {
+      "row": 99,
+      "cells": {
+        "A": {
+          "value": "Price Per Unit"
+        },
+        "B": {
+          "value": 70833.33333333333,
+          "formula": "=B32/B26"
+        },
+        "C": {
+          "value": 70833.33333333333,
+          "formula": "=B32/B26"
+        },
+        "D": {
+          "value": 70833.33333333333,
+          "formula": "=B32/B26"
+        }
+      }
+    },
+    {
+      "row": 101,
+      "cells": {
+        "A": {
+          "value": "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501  SENSITIVITY ANALYSIS  \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501"
+        }
+      }
+    },
+    {
+      "row": 102,
+      "cells": {
+        "A": {
+          "value": "TABLE 1: PROPERTY VALUE AT EXIT \u2014 NOI Scenario  \u00d7  Exit Cap Rate  (change assumptions above to update)"
+        }
+      }
+    },
+    {
+      "row": 103,
+      "cells": {
+        "A": {
+          "value": "NOI Scenario"
+        },
+        "B": {
+          "value": "NOI Value ($)"
+        },
+        "C": {
+          "value": 0.08
+        },
+        "D": {
+          "value": 0.085
+        },
+        "E": {
+          "value": 0.09
+        },
+        "F": {
+          "value": 0.095
+        },
+        "G": {
+          "value": 0.1
+        },
+        "H": {
+          "value": 0.105
+        },
+        "I": {
+          "value": 0.11
+        }
+      }
+    },
+    {
+      "row": 104,
+      "cells": {
+        "A": {
+          "value": "Current Expenses NOI"
+        },
+        "B": {
+          "value": 52952.5,
+          "formula": "=B87"
+        },
+        "C": {
+          "value": 661906.25,
+          "formula": "=$B104/C103"
+        },
+        "D": {
+          "value": 622970.5882352941,
+          "formula": "=$B104/D103"
+        },
+        "E": {
+          "value": 588361.1111111111,
+          "formula": "=$B104/E103"
+        },
+        "F": {
+          "value": 557394.7368421053,
+          "formula": "=$B104/F103"
+        },
+        "G": {
+          "value": 529525,
+          "formula": "=$B104/G103"
+        },
+        "H": {
+          "value": 504309.52380952385,
+          "formula": "=$B104/H103"
+        },
+        "I": {
+          "value": 481386.36363636365,
+          "formula": "=$B104/I103"
+        }
+      }
+    },
+    {
+      "row": 105,
+      "cells": {
+        "A": {
+          "value": "RUBS + Trash NOI"
+        },
+        "B": {
+          "value": 52952.5,
+          "formula": "=C87"
+        },
+        "C": {
+          "value": 661906.25,
+          "formula": "=$B105/C103"
+        },
+        "D": {
+          "value": 622970.5882352941,
+          "formula": "=$B105/D103"
+        },
+        "E": {
+          "value": 588361.1111111111,
+          "formula": "=$B105/E103"
+        },
+        "F": {
+          "value": 557394.7368421053,
+          "formula": "=$B105/F103"
+        },
+        "G": {
+          "value": 529525,
+          "formula": "=$B105/G103"
+        },
+        "H": {
+          "value": 504309.52380952385,
+          "formula": "=$B105/H103"
+        },
+        "I": {
+          "value": 481386.36363636365,
+          "formula": "=$B105/I103"
+        }
+      }
+    },
+    {
+      "row": 106,
+      "cells": {
+        "A": {
+          "value": "Full Value-Add NOI"
+        },
+        "B": {
+          "value": 52952.5,
+          "formula": "=D87"
+        },
+        "C": {
+          "value": 661906.25,
+          "formula": "=$B106/C103"
+        },
+        "D": {
+          "value": 622970.5882352941,
+          "formula": "=$B106/D103"
+        },
+        "E": {
+          "value": 588361.1111111111,
+          "formula": "=$B106/E103"
+        },
+        "F": {
+          "value": 557394.7368421053,
+          "formula": "=$B106/F103"
+        },
+        "G": {
+          "value": 529525,
+          "formula": "=$B106/G103"
+        },
+        "H": {
+          "value": 504309.52380952385,
+          "formula": "=$B106/H103"
+        },
+        "I": {
+          "value": 481386.36363636365,
+          "formula": "=$B106/I103"
+        }
+      }
+    },
+    {
+      "row": 107,
+      "cells": {
+        "A": {
+          "value": "Value-Add +10%"
+        },
+        "B": {
+          "value": 58247.75000000001,
+          "formula": "=D87*1.1"
+        },
+        "C": {
+          "value": 728096.8750000001,
+          "formula": "=$B107/C103"
+        },
+        "D": {
+          "value": 685267.6470588236,
+          "formula": "=$B107/D103"
+        },
+        "E": {
+          "value": 647197.2222222224,
+          "formula": "=$B107/E103"
+        },
+        "F": {
+          "value": 613134.2105263158,
+          "formula": "=$B107/F103"
+        },
+        "G": {
+          "value": 582477.5,
+          "formula": "=$B107/G103"
+        },
+        "H": {
+          "value": 554740.4761904763,
+          "formula": "=$B107/H103"
+        },
+        "I": {
+          "value": 529525.0000000001,
+          "formula": "=$B107/I103"
+        }
+      }
+    },
+    {
+      "row": 108,
+      "cells": {
+        "A": {
+          "value": "Value-Add -10%"
+        },
+        "B": {
+          "value": 47657.25,
+          "formula": "=D87*0.9"
+        },
+        "C": {
+          "value": 595715.625,
+          "formula": "=$B108/C103"
+        },
+        "D": {
+          "value": 560673.5294117647,
+          "formula": "=$B108/D103"
+        },
+        "E": {
+          "value": 529525,
+          "formula": "=$B108/E103"
+        },
+        "F": {
+          "value": 501655.2631578947,
+          "formula": "=$B108/F103"
+        },
+        "G": {
+          "value": 476572.5,
+          "formula": "=$B108/G103"
+        },
+        "H": {
+          "value": 453878.5714285714,
+          "formula": "=$B108/H103"
+        },
+        "I": {
+          "value": 433247.7272727273,
+          "formula": "=$B108/I103"
+        }
+      }
+    },
+    {
+      "row": 110,
+      "cells": {
+        "A": {
+          "value": "TABLE 2: ANNUAL CASHFLOW SENSITIVITY \u2014 Purchase Price  \u00d7  Interest Rate  (uses Full Value-Add NOI)"
+        }
+      }
+    },
+    {
+      "row": 111,
+      "cells": {
+        "A": {
+          "value": "Purchase Price"
+        },
+        "B": {
+          "value": 0.06
+        },
+        "C": {
+          "value": 0.065
+        },
+        "D": {
+          "value": 0.07
+        },
+        "E": {
+          "value": 0.075
+        },
+        "F": {
+          "value": 0.08
+        },
+        "G": {
+          "value": 0.085
+        }
+      }
+    },
+    {
+      "row": 112,
+      "cells": {
+        "B": {
+          "value": 52952.5,
+          "formula": "=D87-(A112*(1-B33)*(B111/12)/(1-(1+B111/12)^(-B35*12))*12)"
+        },
+        "C": {
+          "value": 52952.5,
+          "formula": "=D87-(A112*(1-B33)*(C111/12)/(1-(1+C111/12)^(-B35*12))*12)"
+        },
+        "D": {
+          "value": 52952.5,
+          "formula": "=D87-(A112*(1-B33)*(D111/12)/(1-(1+D111/12)^(-B35*12))*12)"
+        },
+        "E": {
+          "value": 52952.5,
+          "formula": "=D87-(A112*(1-B33)*(E111/12)/(1-(1+E111/12)^(-B35*12))*12)"
+        },
+        "F": {
+          "value": 52952.5,
+          "formula": "=D87-(A112*(1-B33)*(F111/12)/(1-(1+F111/12)^(-B35*12))*12)"
+        },
+        "G": {
+          "value": 52952.5,
+          "formula": "=D87-(A112*(1-B33)*(G111/12)/(1-(1+G111/12)^(-B35*12))*12)"
+        }
+      }
+    },
+    {
+      "row": 113,
+      "cells": {
+        "B": {
+          "value": 52952.5,
+          "formula": "=D87-(A113*(1-B33)*(B111/12)/(1-(1+B111/12)^(-B35*12))*12)"
+        },
+        "C": {
+          "value": 52952.5,
+          "formula": "=D87-(A113*(1-B33)*(C111/12)/(1-(1+C111/12)^(-B35*12))*12)"
+        },
+        "D": {
+          "value": 52952.5,
+          "formula": "=D87-(A113*(1-B33)*(D111/12)/(1-(1+D111/12)^(-B35*12))*12)"
+        },
+        "E": {
+          "value": 52952.5,
+          "formula": "=D87-(A113*(1-B33)*(E111/12)/(1-(1+E111/12)^(-B35*12))*12)"
+        },
+        "F": {
+          "value": 52952.5,
+          "formula": "=D87-(A113*(1-B33)*(F111/12)/(1-(1+F111/12)^(-B35*12))*12)"
+        },
+        "G": {
+          "value": 52952.5,
+          "formula": "=D87-(A113*(1-B33)*(G111/12)/(1-(1+G111/12)^(-B35*12))*12)"
+        }
+      }
+    },
+    {
+      "row": 114,
+      "cells": {
+        "B": {
+          "value": 52952.5,
+          "formula": "=D87-(A114*(1-B33)*(B111/12)/(1-(1+B111/12)^(-B35*12))*12)"
+        },
+        "C": {
+          "value": 52952.5,
+          "formula": "=D87-(A114*(1-B33)*(C111/12)/(1-(1+C111/12)^(-B35*12))*12)"
+        },
+        "D": {
+          "value": 52952.5,
+          "formula": "=D87-(A114*(1-B33)*(D111/12)/(1-(1+D111/12)^(-B35*12))*12)"
+        },
+        "E": {
+          "value": 52952.5,
+          "formula": "=D87-(A114*(1-B33)*(E111/12)/(1-(1+E111/12)^(-B35*12))*12)"
+        },
+        "F": {
+          "value": 52952.5,
+          "formula": "=D87-(A114*(1-B33)*(F111/12)/(1-(1+F111/12)^(-B35*12))*12)"
+        },
+        "G": {
+          "value": 52952.5,
+          "formula": "=D87-(A114*(1-B33)*(G111/12)/(1-(1+G111/12)^(-B35*12))*12)"
+        }
+      }
+    },
+    {
+      "row": 115,
+      "cells": {
+        "B": {
+          "value": 52952.5,
+          "formula": "=D87-(A115*(1-B33)*(B111/12)/(1-(1+B111/12)^(-B35*12))*12)"
+        },
+        "C": {
+          "value": 52952.5,
+          "formula": "=D87-(A115*(1-B33)*(C111/12)/(1-(1+C111/12)^(-B35*12))*12)"
+        },
+        "D": {
+          "value": 52952.5,
+          "formula": "=D87-(A115*(1-B33)*(D111/12)/(1-(1+D111/12)^(-B35*12))*12)"
+        },
+        "E": {
+          "value": 52952.5,
+          "formula": "=D87-(A115*(1-B33)*(E111/12)/(1-(1+E111/12)^(-B35*12))*12)"
+        },
+        "F": {
+          "value": 52952.5,
+          "formula": "=D87-(A115*(1-B33)*(F111/12)/(1-(1+F111/12)^(-B35*12))*12)"
+        },
+        "G": {
+          "value": 52952.5,
+          "formula": "=D87-(A115*(1-B33)*(G111/12)/(1-(1+G111/12)^(-B35*12))*12)"
+        }
+      }
+    },
+    {
+      "row": 116,
+      "cells": {
+        "B": {
+          "value": 52952.5,
+          "formula": "=D87-(A116*(1-B33)*(B111/12)/(1-(1+B111/12)^(-B35*12))*12)"
+        },
+        "C": {
+          "value": 52952.5,
+          "formula": "=D87-(A116*(1-B33)*(C111/12)/(1-(1+C111/12)^(-B35*12))*12)"
+        },
+        "D": {
+          "value": 52952.5,
+          "formula": "=D87-(A116*(1-B33)*(D111/12)/(1-(1+D111/12)^(-B35*12))*12)"
+        },
+        "E": {
+          "value": 52952.5,
+          "formula": "=D87-(A116*(1-B33)*(E111/12)/(1-(1+E111/12)^(-B35*12))*12)"
+        },
+        "F": {
+          "value": 52952.5,
+          "formula": "=D87-(A116*(1-B33)*(F111/12)/(1-(1+F111/12)^(-B35*12))*12)"
+        },
+        "G": {
+          "value": 52952.5,
+          "formula": "=D87-(A116*(1-B33)*(G111/12)/(1-(1+G111/12)^(-B35*12))*12)"
+        }
+      }
+    },
+    {
+      "row": 117,
+      "cells": {
+        "B": {
+          "value": 52952.5,
+          "formula": "=D87-(A117*(1-B33)*(B111/12)/(1-(1+B111/12)^(-B35*12))*12)"
+        },
+        "C": {
+          "value": 52952.5,
+          "formula": "=D87-(A117*(1-B33)*(C111/12)/(1-(1+C111/12)^(-B35*12))*12)"
+        },
+        "D": {
+          "value": 52952.5,
+          "formula": "=D87-(A117*(1-B33)*(D111/12)/(1-(1+D111/12)^(-B35*12))*12)"
+        },
+        "E": {
+          "value": 52952.5,
+          "formula": "=D87-(A117*(1-B33)*(E111/12)/(1-(1+E111/12)^(-B35*12))*12)"
+        },
+        "F": {
+          "value": 52952.5,
+          "formula": "=D87-(A117*(1-B33)*(F111/12)/(1-(1+F111/12)^(-B35*12))*12)"
+        },
+        "G": {
+          "value": 52952.5,
+          "formula": "=D87-(A117*(1-B33)*(G111/12)/(1-(1+G111/12)^(-B35*12))*12)"
+        }
+      }
+    },
+    {
+      "row": 118,
+      "cells": {
+        "B": {
+          "value": 52952.5,
+          "formula": "=D87-(A118*(1-B33)*(B111/12)/(1-(1+B111/12)^(-B35*12))*12)"
+        },
+        "C": {
+          "value": 52952.5,
+          "formula": "=D87-(A118*(1-B33)*(C111/12)/(1-(1+C111/12)^(-B35*12))*12)"
+        },
+        "D": {
+          "value": 52952.5,
+          "formula": "=D87-(A118*(1-B33)*(D111/12)/(1-(1+D111/12)^(-B35*12))*12)"
+        },
+        "E": {
+          "value": 52952.5,
+          "formula": "=D87-(A118*(1-B33)*(E111/12)/(1-(1+E111/12)^(-B35*12))*12)"
+        },
+        "F": {
+          "value": 52952.5,
+          "formula": "=D87-(A118*(1-B33)*(F111/12)/(1-(1+F111/12)^(-B35*12))*12)"
+        },
+        "G": {
+          "value": 52952.5,
+          "formula": "=D87-(A118*(1-B33)*(G111/12)/(1-(1+G111/12)^(-B35*12))*12)"
+        }
+      }
+    },
+    {
+      "row": 119,
+      "cells": {
+        "B": {
+          "value": 52952.5,
+          "formula": "=D87-(A119*(1-B33)*(B111/12)/(1-(1+B111/12)^(-B35*12))*12)"
+        },
+        "C": {
+          "value": 52952.5,
+          "formula": "=D87-(A119*(1-B33)*(C111/12)/(1-(1+C111/12)^(-B35*12))*12)"
+        },
+        "D": {
+          "value": 52952.5,
+          "formula": "=D87-(A119*(1-B33)*(D111/12)/(1-(1+D111/12)^(-B35*12))*12)"
+        },
+        "E": {
+          "value": 52952.5,
+          "formula": "=D87-(A119*(1-B33)*(E111/12)/(1-(1+E111/12)^(-B35*12))*12)"
+        },
+        "F": {
+          "value": 52952.5,
+          "formula": "=D87-(A119*(1-B33)*(F111/12)/(1-(1+F111/12)^(-B35*12))*12)"
+        },
+        "G": {
+          "value": 52952.5,
+          "formula": "=D87-(A119*(1-B33)*(G111/12)/(1-(1+G111/12)^(-B35*12))*12)"
+        }
+      }
+    },
+    {
+      "row": 120,
+      "cells": {
+        "B": {
+          "value": 52952.5,
+          "formula": "=D87-(A120*(1-B33)*(B111/12)/(1-(1+B111/12)^(-B35*12))*12)"
+        },
+        "C": {
+          "value": 52952.5,
+          "formula": "=D87-(A120*(1-B33)*(C111/12)/(1-(1+C111/12)^(-B35*12))*12)"
+        },
+        "D": {
+          "value": 52952.5,
+          "formula": "=D87-(A120*(1-B33)*(D111/12)/(1-(1+D111/12)^(-B35*12))*12)"
+        },
+        "E": {
+          "value": 52952.5,
+          "formula": "=D87-(A120*(1-B33)*(E111/12)/(1-(1+E111/12)^(-B35*12))*12)"
+        },
+        "F": {
+          "value": 52952.5,
+          "formula": "=D87-(A120*(1-B33)*(F111/12)/(1-(1+F111/12)^(-B35*12))*12)"
+        },
+        "G": {
+          "value": 52952.5,
+          "formula": "=D87-(A120*(1-B33)*(G111/12)/(1-(1+G111/12)^(-B35*12))*12)"
+        }
+      }
+    },
+    {
+      "row": 122,
+      "cells": {
+        "A": {
+          "value": "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501  RENT ROLL  \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501"
+        }
+      }
+    },
+    {
+      "row": 124,
+      "cells": {
+        "A": {
+          "value": "Unit #"
+        },
+        "B": {
+          "value": "Mix"
+        },
+        "C": {
+          "value": "Current Rent"
+        },
+        "D": {
+          "value": "Market Rent"
+        },
+        "E": {
+          "value": "Loss to Lease"
+        },
+        "F": {
+          "value": "SF"
+        },
+        "G": {
+          "value": "Rent/SF"
+        },
+        "H": {
+          "value": "Market Rent/SF"
+        }
+      }
+    },
+    {
+      "row": 125,
+      "cells": {
+        "A": {
+          "value": 1
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C125/F125"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D125/F125"
+        }
+      }
+    },
+    {
+      "row": 126,
+      "cells": {
+        "A": {
+          "value": 2
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C126/F126"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D126/F126"
+        }
+      }
+    },
+    {
+      "row": 127,
+      "cells": {
+        "A": {
+          "value": 3
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C127/F127"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D127/F127"
+        }
+      }
+    },
+    {
+      "row": 128,
+      "cells": {
+        "A": {
+          "value": 4
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C128/F128"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D128/F128"
+        }
+      }
+    },
+    {
+      "row": 129,
+      "cells": {
+        "A": {
+          "value": 5
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C129/F129"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D129/F129"
+        }
+      }
+    },
+    {
+      "row": 130,
+      "cells": {
+        "A": {
+          "value": 6
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C130/F130"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D130/F130"
+        }
+      }
+    },
+    {
+      "row": 131,
+      "cells": {
+        "A": {
+          "value": 7
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C131/F131"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D131/F131"
+        }
+      }
+    },
+    {
+      "row": 132,
+      "cells": {
+        "A": {
+          "value": 8
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C132/F132"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D132/F132"
+        }
+      }
+    },
+    {
+      "row": 133,
+      "cells": {
+        "A": {
+          "value": 9
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C133/F133"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D133/F133"
+        }
+      }
+    },
+    {
+      "row": 134,
+      "cells": {
+        "A": {
+          "value": 10
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C134/F134"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D134/F134"
+        }
+      }
+    },
+    {
+      "row": 135,
+      "cells": {
+        "A": {
+          "value": 11
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C135/F135"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D135/F135"
+        }
+      }
+    },
+    {
+      "row": 136,
+      "cells": {
+        "A": {
+          "value": 12
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C136/F136"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D136/F136"
+        }
+      }
+    },
+    {
+      "row": 137,
+      "cells": {
+        "A": {
+          "value": 13
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C137/F137"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D137/F137"
+        }
+      }
+    },
+    {
+      "row": 138,
+      "cells": {
+        "A": {
+          "value": 14
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C138/F138"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D138/F138"
+        }
+      }
+    },
+    {
+      "row": 139,
+      "cells": {
+        "A": {
+          "value": 15
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C139/F139"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D139/F139"
+        }
+      }
+    },
+    {
+      "row": 140,
+      "cells": {
+        "A": {
+          "value": 16
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C140/F140"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D140/F140"
+        }
+      }
+    },
+    {
+      "row": 141,
+      "cells": {
+        "A": {
+          "value": 17
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C141/F141"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D141/F141"
+        }
+      }
+    },
+    {
+      "row": 142,
+      "cells": {
+        "A": {
+          "value": 18
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C142/F142"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D142/F142"
+        }
+      }
+    },
+    {
+      "row": 143,
+      "cells": {
+        "A": {
+          "value": 19
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C143/F143"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D143/F143"
+        }
+      }
+    },
+    {
+      "row": 144,
+      "cells": {
+        "A": {
+          "value": 20
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C144/F144"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D144/F144"
+        }
+      }
+    },
+    {
+      "row": 145,
+      "cells": {
+        "A": {
+          "value": 21
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C145/F145"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D145/F145"
+        }
+      }
+    },
+    {
+      "row": 146,
+      "cells": {
+        "A": {
+          "value": 22
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C146/F146"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D146/F146"
+        }
+      }
+    },
+    {
+      "row": 147,
+      "cells": {
+        "A": {
+          "value": 23
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C147/F147"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D147/F147"
+        }
+      }
+    },
+    {
+      "row": 148,
+      "cells": {
+        "A": {
+          "value": 24
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C148/F148"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D148/F148"
+        }
+      }
+    },
+    {
+      "row": 149,
+      "cells": {
+        "A": {
+          "value": 25
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C149/F149"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D149/F149"
+        }
+      }
+    },
+    {
+      "row": 150,
+      "cells": {
+        "A": {
+          "value": 26
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C150/F150"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D150/F150"
+        }
+      }
+    },
+    {
+      "row": 151,
+      "cells": {
+        "A": {
+          "value": 27
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C151/F151"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D151/F151"
+        }
+      }
+    },
+    {
+      "row": 152,
+      "cells": {
+        "A": {
+          "value": 28
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C152/F152"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D152/F152"
+        }
+      }
+    },
+    {
+      "row": 153,
+      "cells": {
+        "A": {
+          "value": 29
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C153/F153"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D153/F153"
+        }
+      }
+    },
+    {
+      "row": 154,
+      "cells": {
+        "A": {
+          "value": 30
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C154/F154"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D154/F154"
+        }
+      }
+    },
+    {
+      "row": 155,
+      "cells": {
+        "A": {
+          "value": 31
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C155/F155"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D155/F155"
+        }
+      }
+    },
+    {
+      "row": 156,
+      "cells": {
+        "A": {
+          "value": 32
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C156/F156"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D156/F156"
+        }
+      }
+    },
+    {
+      "row": 157,
+      "cells": {
+        "A": {
+          "value": 33
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C157/F157"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D157/F157"
+        }
+      }
+    },
+    {
+      "row": 158,
+      "cells": {
+        "A": {
+          "value": 34
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C158/F158"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D158/F158"
+        }
+      }
+    },
+    {
+      "row": 159,
+      "cells": {
+        "A": {
+          "value": 35
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C159/F159"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D159/F159"
+        }
+      }
+    },
+    {
+      "row": 160,
+      "cells": {
+        "A": {
+          "value": 36
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C160/F160"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D160/F160"
+        }
+      }
+    },
+    {
+      "row": 161,
+      "cells": {
+        "A": {
+          "value": 37
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C161/F161"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D161/F161"
+        }
+      }
+    },
+    {
+      "row": 162,
+      "cells": {
+        "A": {
+          "value": 38
+        },
+        "G": {
+          "value": "#DIV/0!",
+          "formula": "=C162/F162"
+        },
+        "H": {
+          "value": "#DIV/0!",
+          "formula": "=D162/F162"
+        }
+      }
+    }
+  ]
+}

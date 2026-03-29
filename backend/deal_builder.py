@@ -1036,9 +1036,8 @@ async def generate_in_background(session_id: str, deal_data: Dict, profile_id: s
 
 
 async def generate_spreadsheet(deal_data: Dict, session_id: str) -> str:
-    """Generate Excel spreadsheet with proper cell mappings."""
-    import openpyxl
-    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side, numbers
+    """Generate comprehensive Excel underwriting model using template generator."""
+    from template_generator import build_full_underwriting_model
     
     log.info(f"[DealBuilder] generate_spreadsheet called with deal_data keys: {list(deal_data.keys()) if deal_data else 'None'}")
     log.info(f"[DealBuilder] deal_data content (first 500 chars): {str(deal_data)[:500]}")
@@ -1049,253 +1048,10 @@ async def generate_spreadsheet(deal_data: Dict, session_id: str) -> str:
             log.info("[DealBuilder] deal_data missing structure, extracting with Claude...")
             deal_data = await extract_structured_data(deal_data)
         
-        # Extract all data from deal_data
-        prop = deal_data.get("property", {})
-        fin = deal_data.get("financials", {})
-        inc = deal_data.get("income", {})
-        exp = deal_data.get("expenses", {})
-        occ = deal_data.get("occupancy", {})
-        unit_mix = deal_data.get("unit_mix", [])
+        log.info(f"[DealBuilder] Building full underwriting model...")
         
-        log.info(f"[DealBuilder] Extracted - prop: {prop}, fin: {fin}")
-        
-        # Create workbook
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "Underwriting Model"
-        
-        # Styling
-        title_font = Font(bold=True, size=14)
-        header_font = Font(bold=True, size=11)
-        blue_font = Font(color="0066CC")  # Blue for inputs
-        currency_format = '"$"#,##0'
-        percent_format = '0.00%'
-        
-        # Build deal name and address
-        deal_name = prop.get("name") or prop.get("address") or "Deal Analysis"
-        address = prop.get("address", "")
-        city = prop.get("city", "")
-        state = prop.get("state", "")
-        zip_code = prop.get("zip", "")
-        units = prop.get("units") or prop.get("total_units") or 0
-        year_built = prop.get("year_built", "")
-        
-        # Row 1: Title
-        ws["A1"] = f"{deal_name} — INVESTMENT UNDERWRITING MODEL"
-        ws["A1"].font = title_font
-        ws.merge_cells('A1:H1')
-        
-        # Row 2: Address line
-        address_line = f"{address}"
-        if city: address_line += f" | {city}"
-        if state: address_line += f", {state}"
-        if zip_code: address_line += f" {zip_code}"
-        if units: address_line += f" | {units} Units"
-        if year_built: address_line += f" | Built {year_built}"
-        ws["A2"] = address_line
-        ws.merge_cells('A2:H2')
-        
-        # Row 4: Section Headers
-        ws["A4"] = "DEAL SNAPSHOT"
-        ws["A4"].font = header_font
-        ws["F4"] = "FINANCIAL PERFORMANCE"
-        ws["F4"].font = header_font
-        
-        # DEAL SNAPSHOT (Rows 5-12)
-        asking_price = fin.get("asking_price") or 0
-        noi = fin.get("noi") or 0
-        cap_rate = fin.get("cap_rate") or 0
-        
-        ws["A5"] = "Purchase Price"
-        ws["B5"] = asking_price
-        ws["B5"].number_format = currency_format
-        
-        ws["A6"] = "Price Per Unit"
-        if units and units > 0:
-            ws["B6"] = asking_price / units if asking_price else 0
-        else:
-            ws["B6"] = fin.get("price_per_unit", 0)
-        ws["B6"].number_format = currency_format
-        
-        ws["A7"] = "Price Per SF"
-        ws["B7"] = fin.get("price_per_sf", 0)
-        ws["B7"].number_format = currency_format
-        
-        ws["A8"] = "In-Place NOI"
-        ws["B8"] = noi
-        ws["B8"].number_format = currency_format
-        
-        ws["A9"] = "Cap Rate"
-        cap_val = cap_rate / 100 if cap_rate > 1 else cap_rate
-        ws["B9"] = cap_val
-        ws["B9"].number_format = percent_format
-        
-        ws["A10"] = "Total Units"
-        ws["B10"] = units
-        
-        ws["A11"] = "Current Occupancy"
-        occ_val = occ.get("current_occupancy") or 0.95
-        if occ_val > 1: occ_val = occ_val / 100
-        ws["B11"] = occ_val
-        ws["B11"].number_format = percent_format
-        
-        ws["A12"] = "Year Built"
-        ws["B12"] = year_built
-        
-        # FINANCIAL PERFORMANCE (Column F-G)
-        gpr = fin.get("gross_potential_rent") or 0
-        vacancy = fin.get("vacancy_loss") or 0
-        egi = fin.get("effective_gross_income") or 0
-        total_exp = fin.get("total_expenses") or 0
-        
-        ws["F5"] = "Gross Potential Rent"
-        ws["G5"] = gpr
-        ws["G5"].number_format = currency_format
-        
-        ws["F6"] = "Vacancy Loss"
-        ws["G6"] = vacancy
-        ws["G6"].number_format = currency_format
-        
-        ws["F7"] = "Effective Gross Income"
-        ws["G7"] = egi
-        ws["G7"].number_format = currency_format
-        
-        ws["F8"] = "Total Expenses"
-        ws["G8"] = total_exp
-        ws["G8"].number_format = currency_format
-        
-        ws["F9"] = "Net Operating Income"
-        ws["G9"] = noi
-        ws["G9"].number_format = currency_format
-        ws["G9"].font = Font(bold=True)
-        
-        ws["F10"] = "Expense Ratio"
-        exp_ratio = fin.get("expense_ratio") or (total_exp / egi if egi else 0)
-        if exp_ratio > 1: exp_ratio = exp_ratio / 100
-        ws["G10"] = exp_ratio
-        ws["G10"].number_format = percent_format
-        
-        # Row 14: PROPERTY INFORMATION Header
-        ws["A14"] = "PROPERTY INFORMATION"
-        ws["A14"].font = header_font
-        
-        # Property Info (Rows 15-22)
-        ws["A15"] = "Property Name"
-        ws["B15"] = deal_name
-        
-        ws["A16"] = "Address"
-        ws["B16"] = address
-        
-        ws["A17"] = "City, State ZIP"
-        ws["B17"] = f"{city}, {state} {zip_code}".strip(", ")
-        
-        ws["A18"] = "Asset Type"
-        ws["B18"] = prop.get("property_type", "Multifamily")
-        
-        ws["A19"] = "Year Built"
-        ws["B19"] = year_built
-        
-        ws["A20"] = "Building SF"
-        ws["B20"] = prop.get("building_sf") or prop.get("gross_building_sf") or 0
-        ws["B20"].number_format = '#,##0'
-        
-        ws["A21"] = "Lot Size"
-        ws["B21"] = prop.get("lot_size") or prop.get("lot_size_acres") or ""
-        
-        ws["A22"] = "Total Units"
-        ws["B22"] = units
-        
-        # Row 24: OPERATING EXPENSES Header
-        ws["A24"] = "OPERATING EXPENSES"
-        ws["A24"].font = header_font
-        
-        # Expenses (Rows 25-38)
-        expense_rows = [
-            ("Property Taxes", exp.get("taxes") or exp.get("property_tax") or 0),
-            ("Insurance", exp.get("insurance") or 0),
-            ("Management Fee", exp.get("management_fee") or exp.get("management") or 0),
-            ("Repairs & Maintenance", exp.get("repairs_maintenance") or exp.get("repairs_and_maintenance") or 0),
-            ("Utilities", exp.get("utilities") or 0),
-            ("Water/Sewer", exp.get("water_sewer") or 0),
-            ("Trash", exp.get("trash") or exp.get("trash_service") or 0),
-            ("Landscaping", exp.get("landscaping") or 0),
-            ("Payroll", exp.get("payroll") or 0),
-            ("Marketing", exp.get("marketing") or 0),
-            ("Admin", exp.get("admin") or exp.get("general_admin") or 0),
-            ("Reserves", exp.get("reserves") or 0),
-            ("Other", exp.get("other") or 0),
-        ]
-        
-        for i, (label, value) in enumerate(expense_rows):
-            ws[f"A{25+i}"] = label
-            ws[f"B{25+i}"] = value
-            ws[f"B{25+i}"].number_format = currency_format
-        
-        ws["A38"] = "TOTAL EXPENSES"
-        ws["A38"].font = header_font
-        ws["B38"] = f"=SUM(B25:B37)"
-        ws["B38"].number_format = currency_format
-        
-        # UNIT MIX (Starting Row 41)
-        ws["A41"] = "UNIT MIX"
-        ws["A41"].font = header_font
-        
-        ws["A42"] = "Type"
-        ws["B42"] = "Count"
-        ws["C42"] = "SF"
-        ws["D42"] = "Monthly Rent"
-        ws["A42"].font = header_font
-        ws["B42"].font = header_font
-        ws["C42"].font = header_font
-        ws["D42"].font = header_font
-        
-        if unit_mix and len(unit_mix) > 0:
-            for i, unit in enumerate(unit_mix):
-                row = 43 + i
-                ws[f"A{row}"] = unit.get("type", "")
-                ws[f"B{row}"] = unit.get("count", 0)
-                ws[f"C{row}"] = unit.get("sf", 0)
-                ws[f"D{row}"] = unit.get("rent", 0)
-                ws[f"D{row}"].number_format = currency_format
-        else:
-            # Add placeholder row
-            ws["A43"] = "All Units"
-            ws["B43"] = units
-            ws["C43"] = prop.get("avg_sf_per_unit") or 0
-            ws["D43"] = occ.get("average_rent") or prop.get("avg_current_rent_per_unit") or 0
-            ws["D43"].number_format = currency_format
-        
-        # INCOME (Starting Row 50)
-        ws["A50"] = "INCOME BREAKDOWN"
-        ws["A50"].font = header_font
-        
-        ws["A51"] = "Rental Income"
-        ws["B51"] = inc.get("rental_income") or gpr
-        ws["B51"].number_format = currency_format
-        
-        ws["A52"] = "Other Income"
-        ws["B52"] = inc.get("other_income", 0)
-        ws["B52"].number_format = currency_format
-        
-        ws["A53"] = "Laundry"
-        ws["B53"] = inc.get("laundry", 0)
-        ws["B53"].number_format = currency_format
-        
-        ws["A54"] = "Parking"
-        ws["B54"] = inc.get("parking", 0)
-        ws["B54"].number_format = currency_format
-        
-        ws["A55"] = "Pet Fees"
-        ws["B55"] = inc.get("pet_fees", 0)
-        ws["B55"].number_format = currency_format
-        
-        # Column widths
-        ws.column_dimensions['A'].width = 22
-        ws.column_dimensions['B'].width = 15
-        ws.column_dimensions['C'].width = 12
-        ws.column_dimensions['D'].width = 15
-        ws.column_dimensions['F'].width = 22
-        ws.column_dimensions['G'].width = 15
+        # Use the comprehensive template generator
+        wb = build_full_underwriting_model(deal_data)
         
         # Save to file
         output_dir = Path(__file__).parent / "data" / "deal_builder_outputs"
@@ -1305,7 +1061,7 @@ async def generate_spreadsheet(deal_data: Dict, session_id: str) -> str:
         filepath = output_dir / filename
         
         wb.save(filepath)
-        log.info(f"[DealBuilder] Saved spreadsheet to {filepath}")
+        log.info(f"[DealBuilder] Saved comprehensive spreadsheet to {filepath}")
         
         return f"/api/deal-builder/download/{filename}"
         
