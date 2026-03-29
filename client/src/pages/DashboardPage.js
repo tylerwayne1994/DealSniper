@@ -1375,45 +1375,12 @@ function DashboardPage() {
     </div>
   );
 
-  // Render Pitch Deck Tab
-  const renderPitchDeckTab = () => (
-    <div style={cardStyle}>
-      <div style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        padding: '60px 20px',
-        textAlign: 'center'
-      }}>
-        <div style={{ 
-          width: '80px', 
-          height: '80px', 
-          borderRadius: '50%', 
-          backgroundColor: '#dbeafe', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          marginBottom: '20px'
-        }}>
-          <Presentation size={40} color="#2563eb" />
-        </div>
-        <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', marginBottom: '8px' }}>
-          Pitch Deck Generator
-        </h3>
-        <p style={{ fontSize: '14px', color: '#6b7280', maxWidth: '400px' }}>
-          Generate investor pitch decks for your deals.
-        </p>
-      </div>
-    </div>
-  );
-
   return (
     <DashboardShell
       activeTab={activeTab}
-      title={activeTab === 'profile' ? 'Profile' : activeTab === 'rapid-fire' ? 'Rapid Fire' : activeTab === 'pitch-deck' ? 'Pitch Deck' : 'Dashboard'}
+      title={activeTab === 'profile' ? 'Profile' : activeTab === 'rapid-fire' ? 'Rapid Fire' : 'Dashboard'}
       onTabClick={(tabId, defaultNavigate) => {
-        if (tabId === 'profile' || tabId === 'rapid-fire' || tabId === 'pitch-deck' || tabId === 'home' || tabId === 'map') {
+        if (tabId === 'profile' || tabId === 'rapid-fire' || tabId === 'home' || tabId === 'map') {
           setActiveTab(tabId);
         } else {
           defaultNavigate(tabId);
@@ -1446,7 +1413,6 @@ function DashboardPage() {
       {activeTab === 'rapid-fire' && (
         <RapidFirePage />
       )}
-      {activeTab === 'pitch-deck' && renderPitchDeckTab()}
     </DashboardShell>
   );
 }
