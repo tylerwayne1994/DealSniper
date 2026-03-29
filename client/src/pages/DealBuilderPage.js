@@ -349,9 +349,10 @@ function DealBuilderPage() {
           if (status.complete) {
             clearInterval(pollInterval);
             setIsGenerating(false);
+            // Prepend API_BASE to make absolute URLs (backend returns relative paths)
             setDownloadUrls({
-              spreadsheet: status.spreadsheet_url,
-              pitchDeck: status.pitch_deck_url,
+              spreadsheet: status.spreadsheet_url ? `${API_BASE}${status.spreadsheet_url}` : null,
+              pitchDeck: status.pitch_deck_url ? `${API_BASE}${status.pitch_deck_url}` : null,
               dealId: status.deal_id
             });
 
