@@ -304,6 +304,14 @@ app.include_router(token_purchase_router)
 from investor_portal import router as investor_portal_router
 app.include_router(investor_portal_router)
 
+# Deal Builder: AI-powered full deal underwriting + pitch deck + spreadsheet
+try:
+    from deal_builder import router as deal_builder_router
+    app.include_router(deal_builder_router)
+    log.info("[DEAL BUILDER] Router loaded successfully")
+except Exception as _db_err:
+    log.error("[DEAL BUILDER] Failed to load: %s", _db_err)
+
 # Agent System: Browser-use AI deal scouting agents
 try:
     from agent_system.router import router as agent_router

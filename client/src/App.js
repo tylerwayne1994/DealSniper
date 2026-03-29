@@ -10,7 +10,7 @@ import PaymentSuccessRedirect from './pages/PaymentSuccessRedirect';
 import UnderwriteV2Page from './pages/UnderwriteV2Page.jsx'; // V2 Underwriter (explicit .jsx to avoid legacy .js)
 import UnderwriteAnalysisPage from './pages/UnderwriteAnalysisPage'; // AI Analysis Page
 import MaxAIUnderwritePage from './pages/MaxAIUnderwritePage'; // MAX AI Underwriting
-import MarketResearchPage from './pages/MarketResearchPage'; // Market Discovery AI
+import DealBuilderPage from './pages/DealBuilderPage'; // Deal Builder AI
 import DueDiligencePage from './pages/DueDiligencePage'; // Due Diligence Checklist
 import EmailDealsPage from './pages/EmailDealsPage'; // Email Deal Screener
 import EmailUnderwritePage from './pages/EmailUnderwritePage'; // Email Underwrite Pipeline
@@ -46,7 +46,7 @@ function App() {
         <Route path="/underwrite" element={<UnderwriteV2Page />} /> {/* V2 Underwriter */}
         <Route path="/underwrite/analysis" element={<UnderwriteAnalysisPage />} /> {/* AI Analysis */}
         <Route path="/underwrite/max" element={<MaxAIUnderwritePage />} /> {/* MAX AI Underwriting */}
-        <Route path="/market-research" element={<MarketResearchPage />} /> {/* Market Discovery */}
+        <Route path="/market-research" element={<DealBuilderPage />} /> {/* Deal Builder */}
         <Route path="/due-diligence" element={<DueDiligencePage />} /> {/* Due Diligence Checklist */}
         <Route path="/email-deals" element={<EmailDealsPage />} /> {/* Email Deal Screener */}
         <Route path="/email-underwrite" element={<EmailUnderwritePage />} /> {/* Email Underwrite Pipeline */}

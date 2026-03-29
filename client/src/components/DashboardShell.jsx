@@ -186,7 +186,7 @@ const tabs = [
   { id: 'email-underwrite', label: 'Email Underwrite', icon: Mail, section: 'deals' },
   { id: 'red-flag-scanner', label: 'Red Flag Scanner', icon: AlertTriangle, section: 'deals' },
   { id: 'templates', label: 'Templates', icon: FileText, section: 'deals' },
-  { id: 'market', label: 'Market Research', icon: BarChart3, section: 'analysis' },
+  { id: 'market', label: 'Deal Builder', icon: BarChart3, section: 'analysis' },
   { id: 'pitch-deck', label: 'Pitch Deck', icon: Presentation, section: 'analysis' },
   { id: 'contract', label: 'Contracts', icon: Shield, section: 'analysis' },
   { id: 'investor-portal', label: 'Investor Portal', icon: Users, section: 'analysis' },
