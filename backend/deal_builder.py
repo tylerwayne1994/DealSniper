@@ -552,7 +552,12 @@ When adjusting numbers, always show:
 
 Be conversational but precise. Every number should be calculated, not estimated.
 
-When the user indicates approval (says things like "approved", "looks good", "let's do it", "go ahead", "build it", "generate", etc.), respond with a final summary of the deal terms and confirm you're ready to generate the spreadsheet and pitch deck. Set readyForApproval: true in your response."""
+IMPORTANT: You are integrated with a platform that CAN generate Excel spreadsheets and PowerPoint pitch decks. When the user asks you to generate/build/create the spreadsheet or pitch deck, respond with:
+"Ready to generate your deal package. Click the 'Approve & Generate' button to build your spreadsheet and pitch deck."
+
+Include the text "readyForApproval: true" somewhere in your response when the user wants to generate deliverables. This triggers the generation system.
+
+DO NOT say you cannot generate files - the backend handles file generation automatically when triggered."""
 
 
 # ============================================================================
@@ -1029,45 +1034,213 @@ async def generate_in_background(session_id: str, deal_data: Dict, profile_id: s
 
 
 async def generate_spreadsheet(deal_data: Dict, session_id: str) -> str:
-    """Generate Excel spreadsheet using Claude."""
+    """Generate Excel spreadsheet with proper cell mappings."""
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    
     try:
-        from llm_excel_export import export_to_excel_ai
-        
-        # Build scenario data from deal data
+        # Extract all data from deal_data
         prop = deal_data.get("property", {})
         fin = deal_data.get("financials", {})
+        inc = deal_data.get("income", {})
+        exp = deal_data.get("expenses", {})
+        occ = deal_data.get("occupancy", {})
+        unit_mix = deal_data.get("unit_mix", [])
         
-        scenario_data = {
-            "address": prop.get("address", "Unknown Property"),
-            "units": prop.get("units", 0),
-            "asking_price": fin.get("asking_price", 0),
-            "noi": fin.get("noi", 0),
-            "cap_rate": fin.get("cap_rate", 0),
-            "expense_ratio": fin.get("expense_ratio", 0),
-            "gross_income": fin.get("effective_gross_income", 0),
-            "total_expenses": fin.get("total_expenses", 0),
-            # Add more fields as needed
-        }
+        # Create workbook
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Underwriting Model"
         
-        # Generate Excel file
-        excel_buffer = export_to_excel_ai(scenario_data)
+        # Styling
+        title_font = Font(bold=True, size=14)
+        header_font = Font(bold=True, size=11)
+        blue_font = Font(color="0066CC")  # Blue for inputs
         
-        # Save to temp location (in production, upload to S3/storage)
+        # Build deal name and address
+        deal_name = prop.get("name", prop.get("address", "Deal Analysis"))
+        address = prop.get("address", "")
+        city = prop.get("city", "")
+        state = prop.get("state", "")
+        zip_code = prop.get("zip", "")
+        units = prop.get("units", 0)
+        year_built = prop.get("year_built", "")
+        
+        # Row 1: Title
+        ws["A1"] = f"{deal_name} — INVESTMENT UNDERWRITING MODEL"
+        ws["A1"].font = title_font
+        
+        # Row 2: Address line
+        address_line = f"{address} | {city}, {state} {zip_code} | {units} Units | Built {year_built}"
+        ws["A2"] = address_line
+        
+        # Row 4: Section Headers
+        ws["A4"] = "DEAL SNAPSHOT"
+        ws["A4"].font = header_font
+        ws["G4"] = "FINANCIAL PERFORMANCE"
+        ws["G4"].font = header_font
+        
+        # DEAL SNAPSHOT (Rows 5-12)
+        ws["A5"] = "Purchase Price"
+        ws["B5"] = fin.get("asking_price", 0)
+        ws["B5"].font = blue_font
+        
+        ws["A6"] = "Price Per Unit"
+        ws["B6"] = f"=B5/{units}" if units else fin.get("price_per_unit", 0)
+        
+        ws["A7"] = "Price Per SF"
+        ws["B7"] = fin.get("price_per_sf", 0)
+        
+        ws["A8"] = "In-Place NOI"
+        ws["B8"] = fin.get("noi", 0)
+        
+        ws["A9"] = "Cap Rate"
+        ws["B9"] = fin.get("cap_rate", 0) / 100 if fin.get("cap_rate", 0) > 1 else fin.get("cap_rate", 0)
+        
+        ws["A10"] = "Total Units"
+        ws["B10"] = units
+        
+        ws["A11"] = "Current Occupancy"
+        ws["B11"] = occ.get("current_occupancy", 0.95)
+        
+        ws["A12"] = "Year Built"
+        ws["B12"] = year_built
+        
+        # FINANCIAL PERFORMANCE (Column G-H)
+        ws["G5"] = "Gross Potential Rent"
+        ws["H5"] = fin.get("gross_potential_rent", 0)
+        
+        ws["G6"] = "Vacancy Loss"
+        ws["H6"] = fin.get("vacancy_loss", 0)
+        
+        ws["G7"] = "Effective Gross Income"
+        ws["H7"] = fin.get("effective_gross_income", 0)
+        
+        ws["G8"] = "Total Expenses"
+        ws["H8"] = fin.get("total_expenses", 0)
+        
+        ws["G9"] = "Net Operating Income"
+        ws["H9"] = fin.get("noi", 0)
+        
+        ws["G10"] = "Expense Ratio"
+        ws["H10"] = fin.get("expense_ratio", 0)
+        
+        # Row 14: PROPERTY INFORMATION Header
+        ws["A14"] = "PROPERTY INFORMATION"
+        ws["A14"].font = header_font
+        
+        # Property Info (Rows 15-25)
+        ws["A15"] = "Property Name"
+        ws["B15"] = prop.get("name", deal_name)
+        
+        ws["A16"] = "Address"
+        ws["B16"] = address
+        
+        ws["A17"] = "City, State ZIP"
+        ws["B17"] = f"{city}, {state} {zip_code}"
+        
+        ws["A18"] = "Asset Type"
+        ws["B18"] = prop.get("property_type", "Multifamily")
+        
+        ws["A19"] = "Year Built / Renovated"
+        ws["B19"] = f"{year_built} / {prop.get('year_renovated', 'N/A')}"
+        
+        ws["A20"] = "Building SF"
+        ws["B20"] = prop.get("building_sf", 0)
+        
+        ws["A21"] = "Lot Size (Acres)"
+        ws["B21"] = prop.get("lot_size", "")
+        
+        ws["A22"] = "Total Units"
+        ws["B22"] = units
+        
+        # Row 27: EXPENSES Header
+        ws["A27"] = "OPERATING EXPENSES"
+        ws["A27"].font = header_font
+        
+        # Expenses (Rows 28-42)
+        expense_rows = [
+            ("Property Taxes", exp.get("taxes", 0)),
+            ("Insurance", exp.get("insurance", 0)),
+            ("Management Fee", exp.get("management_fee", 0)),
+            ("Repairs & Maintenance", exp.get("repairs_maintenance", 0)),
+            ("Utilities (Owner-Paid)", exp.get("utilities", 0)),
+            ("Water/Sewer", exp.get("water_sewer", 0)),
+            ("Trash", exp.get("trash", 0)),
+            ("Landscaping", exp.get("landscaping", 0)),
+            ("Payroll", exp.get("payroll", 0)),
+            ("Marketing", exp.get("marketing", 0)),
+            ("Admin", exp.get("admin", 0)),
+            ("Reserves", exp.get("reserves", 0)),
+            ("Other", exp.get("other", 0)),
+        ]
+        
+        for i, (label, value) in enumerate(expense_rows):
+            ws[f"A{28+i}"] = label
+            ws[f"B{28+i}"] = value
+            ws[f"B{28+i}"].font = blue_font
+        
+        ws["A41"] = "TOTAL EXPENSES"
+        ws["A41"].font = header_font
+        ws["B41"] = f"=SUM(B28:B40)"
+        
+        ws["A43"] = "NET OPERATING INCOME"
+        ws["A43"].font = header_font
+        ws["B43"] = f"=H7-B41"
+        
+        # UNIT MIX (Starting Row 46)
+        if unit_mix:
+            ws["A46"] = "UNIT MIX"
+            ws["A46"].font = header_font
+            ws["A47"] = "Type"
+            ws["B47"] = "Count"
+            ws["C47"] = "SF"
+            ws["D47"] = "Rent"
+            
+            for i, unit in enumerate(unit_mix):
+                row = 48 + i
+                ws[f"A{row}"] = unit.get("type", "")
+                ws[f"B{row}"] = unit.get("count", 0)
+                ws[f"C{row}"] = unit.get("sf", 0)
+                ws[f"D{row}"] = unit.get("rent", 0)
+        
+        # INCOME (Starting Row 60)
+        ws["A60"] = "INCOME BREAKDOWN"
+        ws["A60"].font = header_font
+        
+        income_rows = [
+            ("Rental Income", inc.get("rental_income", 0)),
+            ("Other Income", inc.get("other_income", 0)),
+            ("Laundry", inc.get("laundry", 0)),
+            ("Parking", inc.get("parking", 0)),
+            ("Pet Fees", inc.get("pet_fees", 0)),
+            ("Late Fees", inc.get("late_fees", 0)),
+        ]
+        
+        for i, (label, value) in enumerate(income_rows):
+            ws[f"A{61+i}"] = label
+            ws[f"B{61+i}"] = value
+        
+        # Column widths
+        ws.column_dimensions['A'].width = 25
+        ws.column_dimensions['B'].width = 15
+        ws.column_dimensions['G'].width = 25
+        ws.column_dimensions['H'].width = 15
+        
+        # Save to buffer
         output_dir = Path(__file__).parent / "data" / "deal_builder_outputs"
         output_dir.mkdir(parents=True, exist_ok=True)
         
         filename = f"deal_{session_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
         filepath = output_dir / filename
         
-        with open(filepath, 'wb') as f:
-            f.write(excel_buffer.getvalue())
+        wb.save(filepath)
+        log.info(f"[DealBuilder] Saved spreadsheet to {filepath}")
         
-        # Return URL (for now, just the filename - would be S3 URL in production)
         return f"/api/deal-builder/download/{filename}"
         
     except Exception as e:
         log.exception(f"[DealBuilder] Spreadsheet generation error: {e}")
-        # Return placeholder URL on error
         return f"/api/deal-builder/download/error_{session_id}.xlsx"
 
 

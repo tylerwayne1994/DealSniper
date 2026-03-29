@@ -193,6 +193,19 @@ function DealBuilderPage() {
       textareaRef.current.style.height = 'auto';
     }
     
+    // Check for explicit generation requests - skip chat and go straight to generation
+    const generateKeywords = ['generate', 'build the spreadsheet', 'make the spreadsheet', 'create the spreadsheet', 
+                              'build the model', 'create the model', 'make the pitch deck', 'build it now', 
+                              'generate now', 'produce the files', 'make the files'];
+    const isGenerateRequest = generateKeywords.some(kw => userMessage.toLowerCase().includes(kw));
+    
+    // If explicitly asking to generate and we have deal data, skip chat and generate directly
+    if (isGenerateRequest && dealData && !isApproved) {
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      handleApprove();
+      return;
+    }
+    
     // Check for approval keywords
     const approvalKeywords = ['approved', 'looks good', 'let\'s do it', 'go ahead', 'proceed', 'build it', 'generate', 'create the'];
     const isApprovalMessage = approvalKeywords.some(kw => userMessage.toLowerCase().includes(kw));
