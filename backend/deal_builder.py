@@ -847,7 +847,7 @@ async def upload_om(
         log.exception(f"[DealBuilder] Upload error: {e}")
         return JSONResponse(
             status_code=500,
-            content={"success": False, "error": str(e)}
+            content={"success": False, "detail": str(e)}
         )
 
 
