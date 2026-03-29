@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Sparkles, Download, Users, Building2, ChevronLeft, ChevronRight, Maximize2, Minimize2, Layers, Edit3, Eye, Code, Undo2, Redo2, Trash2, Copy, ArrowUp, ArrowDown, Check, X } from 'lucide-react';
 import DashboardShell from '../components/DashboardShell';
-import { loadDeal } from '../lib/dealsService';
+import { loadDeal, loadPipelineDeals } from '../lib/dealsService';
 import { supabase } from '../lib/supabase';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -139,6 +139,8 @@ function PitchDeckPage() {
   
   const [selectedDeal, setSelectedDeal] = useState(null);
   const [isLoadingDeal, setIsLoadingDeal] = useState(false);
+  const [pipelineDeals, setPipelineDeals] = useState([]);
+  const [isLoadingDeals, setIsLoadingDeals] = useState(false);
   
   // Deal Structure Questions
   const [structureType, setStructureType] = useState(''); // 'jv' or 'syndication'
@@ -207,6 +209,18 @@ function PitchDeckPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dealIdFromUrl]);
+
+  // Load pipeline deals for selector
+  useEffect(() => {
+    if (!dealIdFromUrl && !selectedDeal) {
+      setIsLoadingDeals(true);
+      loadPipelineDeals()
+        .then(deals => setPipelineDeals(deals || []))
+        .catch(err => console.error('[PitchDeck] Failed to load deals:', err))
+        .finally(() => setIsLoadingDeals(false));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadDealData = async (dealId) => {
     setIsLoadingDeal(true);
@@ -761,24 +775,100 @@ function PitchDeckPage() {
   if (!selectedDeal) {
     return (
       <DashboardShell activeTab="pitch-deck" title="Pitch Deck">
-        <div style={{ padding: '60px', textAlign: 'center' }}>
-          <Building2 size={48} style={{ color: '#9ca3af', margin: '0 auto 16px' }} />
-          <p style={{ color: '#6b7280' }}>No deal selected. Go to Pipeline and click Pitch on a deal.</p>
-          <button
-            onClick={() => navigate('/pipeline')}
-            style={{
-              marginTop: '16px',
-              padding: '10px 20px',
-              backgroundColor: '#10b981',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '600'
-            }}
-          >
-            Go to Pipeline
-          </button>
+        <div style={{ padding: '60px 40px', maxWidth: '600px', margin: '0 auto' }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            padding: '40px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              backgroundColor: '#ede9fe',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 24px'
+            }}>
+              <Sparkles size={36} color="#6366f1" />
+            </div>
+            <h2 style={{ margin: '0 0 8px', fontSize: '24px', fontWeight: '700', color: '#111827' }}>
+              AI Pitch Deck Generator
+            </h2>
+            <p style={{ color: '#6b7280', marginBottom: '32px', fontSize: '14px' }}>
+              Create investor-ready presentations for your deals
+            </p>
+            
+            <div style={{ textAlign: 'left', marginBottom: '24px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#374151', fontSize: '14px' }}>
+                Select a Deal
+              </label>
+              {isLoadingDeals ? (
+                <div style={{ padding: '12px', color: '#6b7280', fontSize: '14px' }}>Loading deals...</div>
+              ) : pipelineDeals.length === 0 ? (
+                <div style={{ padding: '12px', color: '#6b7280', fontSize: '14px' }}>
+                  No deals in your pipeline yet.
+                  <button
+                    onClick={() => navigate('/underwrite')}
+                    style={{
+                      display: 'block',
+                      marginTop: '12px',
+                      padding: '10px 20px',
+                      backgroundColor: '#10b981',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '14px'
+                    }}
+                  >
+                    Underwrite Your First Deal
+                  </button>
+                </div>
+              ) : (
+                <select
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      navigate(`/pitch-deck?dealId=${e.target.value}`);
+                    }
+                  }}
+                  defaultValue=""
+                  style={{
+                    width: '100%',
+                    padding: '14px 16px',
+                    fontSize: '15px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '10px',
+                    backgroundColor: 'white',
+                    color: '#111827',
+                    cursor: 'pointer',
+                    appearance: 'none',
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 12px center',
+                    backgroundSize: '20px'
+                  }}
+                >
+                  <option value="">Choose a deal...</option>
+                  {pipelineDeals.map(deal => (
+                    <option key={deal.dealId || deal.id} value={deal.dealId || deal.id}>
+                      {deal.address || deal.property_name || 'Untitled'} {deal.units ? `(${deal.units} units)` : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '20px', marginTop: '20px' }}>
+              <p style={{ color: '#9ca3af', fontSize: '13px', margin: 0 }}>
+                Or go to <button onClick={() => navigate('/pipeline')} style={{ color: '#6366f1', fontWeight: '600', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Pipeline</button> to manage your deals
+              </p>
+            </div>
+          </div>
         </div>
       </DashboardShell>
     );
