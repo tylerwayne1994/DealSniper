@@ -633,17 +633,69 @@ def build_full_underwriting_model(deal_data: Dict[str, Any]) -> openpyxl.Workboo
         ws[f"{col}122"].font = HEADER_FONT
         ws[f"{col}122"].fill = HEADER_FILL
     
-    # Add unit rows (up to 50 units)
-    max_units = min(int(units) if units > 0 else 20, 50)
-    for i in range(max_units):
-        row = 123 + i
-        ws[f"A{row}"] = i + 1
-        ws[f"E{row}"] = f"=D{row}-C{row}"
-        ws[f"E{row}"].number_format = CURRENCY_FORMAT
-        ws[f"G{row}"] = f"=IFERROR(C{row}/F{row},0)"
-        ws[f"G{row}"].number_format = CURRENCY_FORMAT
-        ws[f"H{row}"] = f"=IFERROR(D{row}/F{row},0)"
-        ws[f"H{row}"].number_format = CURRENCY_FORMAT
+    # Calculate average rent per unit
+    avg_rent = gross_income / 12 / units if units > 0 and gross_income > 0 else 0
+    avg_sf = building_sf / units if units > 0 and building_sf > 0 else 800  # Default 800 SF
+    market_rent = avg_rent * 1.05  # Assume 5% market premium
+    
+    # If we have unit_mix data, use it to build rent roll
+    if unit_mix and len(unit_mix) > 0:
+        row = 123
+        for unit_type in unit_mix:
+            unit_count = safe_num(unit_type.get("count", 1))
+            unit_label = unit_type.get("type") or unit_type.get("unit_type") or "Unit"
+            unit_rent = safe_num(unit_type.get("rent") or unit_type.get("current_rent", avg_rent))
+            unit_sf = safe_num(unit_type.get("sf") or unit_type.get("sqft", avg_sf))
+            unit_market = safe_num(unit_type.get("market_rent", unit_rent * 1.05))
+            
+            # Create a row for each unit of this type
+            for j in range(int(unit_count)):
+                ws[f"A{row}"] = row - 122  # Unit number
+                ws[f"B{row}"] = unit_label
+                ws[f"B{row}"].font = INPUT_FONT
+                ws[f"C{row}"] = unit_rent
+                ws[f"C{row}"].number_format = CURRENCY_FORMAT
+                ws[f"C{row}"].font = INPUT_FONT
+                ws[f"D{row}"] = unit_market
+                ws[f"D{row}"].number_format = CURRENCY_FORMAT
+                ws[f"D{row}"].font = INPUT_FONT
+                ws[f"E{row}"] = f"=D{row}-C{row}"
+                ws[f"E{row}"].number_format = CURRENCY_FORMAT
+                ws[f"F{row}"] = unit_sf
+                ws[f"F{row}"].number_format = NUMBER_FORMAT
+                ws[f"F{row}"].font = INPUT_FONT
+                ws[f"G{row}"] = f"=IFERROR(C{row}/F{row},0)"
+                ws[f"G{row}"].number_format = CURRENCY_FORMAT
+                ws[f"H{row}"] = f"=IFERROR(D{row}/F{row},0)"
+                ws[f"H{row}"].number_format = CURRENCY_FORMAT
+                row += 1
+                if row > 172:  # Max 50 units
+                    break
+            if row > 172:
+                break
+    else:
+        # No unit_mix - create rows with estimated data based on property info
+        max_units = min(int(units) if units > 0 else 10, 50)
+        for i in range(max_units):
+            row = 123 + i
+            ws[f"A{row}"] = i + 1
+            ws[f"B{row}"] = "Unit"
+            ws[f"B{row}"].font = INPUT_FONT
+            ws[f"C{row}"] = avg_rent
+            ws[f"C{row}"].number_format = CURRENCY_FORMAT
+            ws[f"C{row}"].font = INPUT_FONT
+            ws[f"D{row}"] = market_rent
+            ws[f"D{row}"].number_format = CURRENCY_FORMAT
+            ws[f"D{row}"].font = INPUT_FONT
+            ws[f"E{row}"] = f"=D{row}-C{row}"
+            ws[f"E{row}"].number_format = CURRENCY_FORMAT
+            ws[f"F{row}"] = avg_sf
+            ws[f"F{row}"].number_format = NUMBER_FORMAT
+            ws[f"F{row}"].font = INPUT_FONT
+            ws[f"G{row}"] = f"=IFERROR(C{row}/F{row},0)"
+            ws[f"G{row}"].number_format = CURRENCY_FORMAT
+            ws[f"H{row}"] = f"=IFERROR(D{row}/F{row},0)"
+            ws[f"H{row}"].number_format = CURRENCY_FORMAT
     
     # ═══════════════════════════════════════════════════════════════════
     # COLUMN WIDTHS
