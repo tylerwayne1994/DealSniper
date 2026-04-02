@@ -1,420 +1,210 @@
-import React, { useMemo } from 'react';
-import * as calc from '../../utils/propertySpreadsheetCalculations';
-import { mapParsedDataToSpreadsheet } from '../../utils/propertySpreadsheetMapper';
+import React from 'react';
 
-export default function CashFlowTab({ scenarioData, fullCalcs }) {
-  const data = useMemo(() => {
-    const mapped = mapParsedDataToSpreadsheet(scenarioData || {});
-    // If fullCalcs is available, override Year 1 base values so the CashFlowTab
-    // projection starts from the SAME NOI/expenses as the Compressed/Expenses tabs.
-    if (fullCalcs?.year1 && mapped) {
-      const y1 = fullCalcs.year1;
-      // Seed NOI fields so downstream projections are consistent
-      if (y1.noi > 0) {
-        mapped.stabilizedNOI = y1.noi;
-        mapped.proFormaNOI = y1.noi;
-      }
-    }
-    return mapped;
-  }, [scenarioData, fullCalcs]);
+export default function CashFlowTab({ scenarioData }) {
+  if (!scenarioData) {
+    return <div style={{ padding: 24, color: '#6b7280' }}>No data available</div>;
+  }
 
-  const revenueProjections = useMemo(() => calc.calculateRevenueProjections(data), [data]);
-  const expenseProjections = useMemo(() => {
-    const projections = calc.calculateExpenseProjections(data, revenueProjections);
-    // Override Year 1 total expenses with fullCalcs so it matches the Expenses tab exactly.
-    // The mapper/calculator might add management fee + reserves that aren't in the itemized
-    // expenses, causing a discrepancy. Use fullCalcs as the authoritative Year 1 source.
-    if (fullCalcs?.year1?.totalOperatingExpenses > 0 && projections.length > 0) {
-      projections[0].totalExpenses = fullCalcs.year1.totalOperatingExpenses;
-    }
-    return projections;
-  }, [data, revenueProjections, fullCalcs]);
-  const otherIncomeAnnual = useMemo(() => calc.calculateTotalOtherIncome(data.otherIncome), [data]);
-  const noiProjections = useMemo(() => {
-    const projections = calc.calculateNOIProjections(revenueProjections, expenseProjections, data.units, otherIncomeAnnual);
-    // Override Year 1 NOI with fullCalcs so all tabs agree
-    if (fullCalcs?.year1?.noi > 0 && projections.length > 0) {
-      projections[0].noi = fullCalcs.year1.noi;
-      if (fullCalcs.year1.effectiveGrossIncome > 0) {
-        projections[0].effectiveGrossIncome = fullCalcs.year1.effectiveGrossIncome;
-      }
-    }
-    return projections;
-  }, [revenueProjections, expenseProjections, data, otherIncomeAnnual, fullCalcs]);
-  const financingMetrics = useMemo(() => calc.calculateFinancingMetrics(data, noiProjections), [data, noiProjections]);
-  const cashFlowProjections = useMemo(() => calc.calculateCashFlowProjections(noiProjections, financingMetrics, data), [noiProjections, financingMetrics, data]);
-  const saleAnalysis = useMemo(() => calc.calculateSaleAnalysis(noiProjections, data, financingMetrics), [noiProjections, data, financingMetrics]);
-  const equityInvestment = useMemo(() => calc.calculateEquityInvestment(data, financingMetrics), [data, financingMetrics]);
-  const irrCashFlows = useMemo(() => calc.calculateIRRCashFlows(equityInvestment, cashFlowProjections, saleAnalysis), [equityInvestment, cashFlowProjections, saleAnalysis]);
-  const debtSchedule = useMemo(() => calc.calculateDebtAmortizationSchedule(data.financing || {}), [data]);
-
-  const years = Array.from({ length: 11 }, (_, i) => (i === 0 ? 'Year 0' : `Year ${i}`));
+  const property = scenarioData.property || {};
+  const pricing = scenarioData.pricing_financing || {};
+  const pnl = scenarioData.pnl || {};
+  const expenses = scenarioData.expenses || {};
+  const unitMix = scenarioData.unit_mix || [];
+  const underwriting = scenarioData.underwriting || {};
+  const broker = scenarioData.broker_info || {};
+  const assumptions = scenarioData.assumptions || {};
+  const financing = scenarioData.financing || {};
 
   const formatCurrency = (n) => {
-    if (n == null) return '$0';
-    const sign = n < 0 ? '-' : '';
-    const v = Math.abs(n);
-    return `${sign}$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+    if (n == null || isNaN(n) || n === 0) return '-';
+    return `$${Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
   };
-  const formatPercent = (p) => `${((p || 0) * 100).toFixed(2)}%`;
-  const formatMultiple = (m) => `${(m || 0).toFixed(2)}x`;
+
+  const formatPercent = (p) => {
+    if (p == null || isNaN(p) || p === 0) return '-';
+    const val = p > 1 ? p : p * 100;
+    return `${val.toFixed(2)}%`;
+  };
+
+  const formatNumber = (n) => {
+    if (n == null || isNaN(n) || n === 0) return '-';
+    return Number(n).toLocaleString('en-US');
+  };
+
+  // Shared styles
+  const sectionStyle = { marginBottom: 32 };
+  const headerStyle = { margin: '0 0 12px', fontSize: 14, fontWeight: 700, color: '#111827' };
+  const tableStyle = { width: '100%', borderCollapse: 'collapse', fontSize: 13 };
+  const thStyle = { padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', background: '#f9fafb' };
+  const thRightStyle = { ...thStyle, textAlign: 'right' };
+  const tdStyle = { padding: '10px 12px', borderBottom: '1px solid #e5e7eb', color: '#111827' };
+  const tdRightStyle = { ...tdStyle, textAlign: 'right' };
+  const altRowStyle = { background: '#fafafa' };
+
+  const Row = ({ label, value, alt }) => (
+    <tr style={alt ? altRowStyle : {}}>
+      <td style={tdStyle}>{label}</td>
+      <td style={tdRightStyle}>{value}</td>
+    </tr>
+  );
 
   return (
-    <div style={{ padding: 24 }}>
-      <h2 style={{ margin: 0, marginBottom: 16, fontSize: 18, fontWeight: 800, color: '#111827' }}>Investment Cash Flow Details</h2>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, border: '1px solid #e5e7eb' }}>
-          <thead>
-            <tr style={{ background: '#f8fafc' }}>
-              <th style={{ padding: '10px', textAlign: 'left', minWidth: 180 }}>Annual Cash Flow</th>
-              {years.map((y, i) => (
-                <th key={i} style={{ padding: '10px', textAlign: 'right', minWidth: 90, borderLeft: '1px solid #e5e7eb' }}>{y}</th>
-              ))}
-            </tr>
-          </thead>
+    <div style={{ padding: 24, maxWidth: 900 }}>
+      
+      {/* Property Information */}
+      <div style={sectionStyle}>
+        <h3 style={headerStyle}>Property Information</h3>
+        <table style={tableStyle}>
           <tbody>
-            {/* Income */}
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', fontWeight: 600, borderTop: '1px solid #e5e7eb' }}>Gross Potential Rental Income</td>
-              <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>$0</td>
-              {revenueProjections.map((rev, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(rev.grossPotentialRent)}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#f8fafc' }}>
-              <td style={{ padding: '8px', paddingLeft: 24, fontSize: 10, fontStyle: 'italic' }}>GPRI / Sqft (monthly)</td>
-              <td style={{ padding: '8px', textAlign: 'right', fontSize: 10 }}>0</td>
-              {revenueProjections.map((rev, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', fontSize: 10, borderLeft: '1px solid #e5e7eb' }}>{
-                  (() => {
-                    const sf = data.squareFeet || 0;
-                    const perSF = sf ? (rev.grossPotentialRent / sf / 12) : 0;
-                    return `$${perSF.toFixed(2)}`;
-                  })()
-                }</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', paddingLeft: 24, fontWeight: 400, borderTop: '1px solid #f3f4f6' }}>Vacancy</td>
-              <td style={{ padding: '8px', textAlign: 'right', color: '#dc2626', borderLeft: '1px solid #e5e7eb' }}>$0</td>
-              {revenueProjections.map((rev, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', color: '#dc2626', borderLeft: '1px solid #e5e7eb' }}>-{formatCurrency(Math.abs(rev.vacancy)).replace('$','')}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#f8fafc' }}>
-              <td style={{ padding: '8px', paddingLeft: 24, fontSize: 10, fontStyle: 'italic' }}>Vacancy Rate %</td>
-              <td style={{ padding: '8px', textAlign: 'right', fontSize: 10 }}>0%</td>
-              {years.slice(1).map((_, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', fontSize: 10 }}>{formatPercent((data.growth?.vacancyRate || 0))}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', paddingLeft: 24, fontWeight: 400 }}>Loss to Lease</td>
-              <td style={{ padding: '8px', textAlign: 'right', color: '#dc2626', borderLeft: '1px solid #e5e7eb' }}>$0</td>
-              {revenueProjections.map((rev, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', color: '#dc2626', borderLeft: '1px solid #e5e7eb' }}>-{formatCurrency(Math.abs(rev.lossToLease)).replace('$','')}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', fontWeight: 600, borderTop: '1px solid #e5e7eb' }}>Total Supplementary Income</td>
-              <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(0)}</td>
-              {revenueProjections.map((_, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(otherIncomeAnnual)}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#f8fafc' }}>
-              <td style={{ padding: '8px', paddingLeft: 24, fontSize: 10, fontStyle: 'italic' }}>% of Total Potential Income</td>
-              <td style={{ padding: '8px', textAlign: 'right', fontSize: 10 }}>0%</td>
-              {revenueProjections.map((rev, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', fontSize: 10, borderLeft: '1px solid #e5e7eb' }}>{formatPercent(calc.safeDivide(otherIncomeAnnual, rev.grossPotentialRent))}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', fontWeight: 700 }}>Effective Gross Income</td>
-              <td style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderLeft: '1px solid #e5e7eb' }}>$0</td>
-              {noiProjections.map((n, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(n.effectiveGrossIncome)}</td>
-              ))}
-            </tr>
-
-            {/* Operating Expenses header */}
-            <tr style={{ background: '#f8fafc' }}>
-              <td colSpan={12} style={{ padding: '8px', fontWeight: 700, fontSize: 12 }}>OPERATING EXPENSES</td>
-            </tr>
-
-            {/* Expense lines */}
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', paddingLeft: 24 }}>Property Taxes</td>
-              <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>$0</td>
-              {expenseProjections.map((exp, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(exp.realEstateTaxes || 0)}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#f9fafb' }}>
-              <td style={{ padding: '8px', paddingLeft: 24 }}>Insurance</td>
-              <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>$0</td>
-              {expenseProjections.map((exp, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(exp.propertyInsurance || 0)}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', paddingLeft: 24 }}>Utilities</td>
-              <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>$0</td>
-              {expenseProjections.map((exp, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency((exp.waterSewer || 0) + (exp.electric || 0) + (exp.gas || 0) + (exp.trashRemoval || 0))}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#f9fafb' }}>
-              <td style={{ padding: '8px', paddingLeft: 24 }}>Repairs & Maintenance</td>
-              <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>$0</td>
-              {expenseProjections.map((exp, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(exp.repairsMaintenance || 0)}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', paddingLeft: 24 }}>Management Fee</td>
-              <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>$0</td>
-              {expenseProjections.map((exp, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(exp.managementFee || 0)}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#f9fafb' }}>
-              <td style={{ padding: '8px', paddingLeft: 24 }}>Other</td>
-              <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>$0</td>
-              {expenseProjections.map((exp, i) => {
-                const other = (exp.totalExpenses || 0) - (exp.realEstateTaxes || 0) - (exp.propertyInsurance || 0) - ((exp.waterSewer || 0) + (exp.electric || 0) + (exp.gas || 0) + (exp.trashRemoval || 0)) - (exp.repairsMaintenance || 0) - (exp.managementFee || 0);
-                return (
-                  <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(Math.max(0, other))}</td>
-                );
-              })}
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', fontWeight: 700 }}>Total Operating Expenses</td>
-              <td style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderLeft: '1px solid #e5e7eb' }}>$0</td>
-              {expenseProjections.map((exp, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', fontWeight: 700, borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(exp.totalExpenses)}</td>
-              ))}
-            </tr>
-
-            {/* NOI */}
-            <tr style={{ background: '#f8fafc' }}>
-              <td style={{ padding: '10px 8px', fontWeight: 800, fontSize: 12 }}>NET OPERATING INCOME (NOI)</td>
-              <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: 12, borderLeft: '1px solid #e5e7eb' }}>$0</td>
-              {noiProjections.map((noi, i) => (
-                <td key={i} style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: 12, borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(noi.noi)}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', paddingLeft: 24, fontSize: 10, fontStyle: 'italic' }}>Yield on Cost</td>
-              <td style={{ padding: '8px', textAlign: 'right', fontSize: 10 }}>0%</td>
-              {noiProjections.map((n, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', fontSize: 10, borderLeft: '1px solid #e5e7eb' }}>{formatPercent(calc.safeDivide(n.noi, equityInvestment.totalAcquisitionCost))}</td>
-              ))}
-            </tr>
-
-            {/* Debt & Cash Flow */}
-            {/* Financing detail rows to mirror Cactus */}
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px' }}>Total Amortization payments</td>
-              <td style={{ padding: '8px', textAlign: 'right' }}>$0</td>
-              {debtSchedule.years.map((y, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(y.principalScheduled)}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#f9fafb' }}>
-              <td style={{ padding: '8px' }}>Total Interest payments</td>
-              <td style={{ padding: '8px', textAlign: 'right' }}>$0</td>
-              {debtSchedule.years.map((y, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(y.interest)}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px' }}>Total Principal payments</td>
-              <td style={{ padding: '8px', textAlign: 'right' }}>$0</td>
-              {debtSchedule.years.map((y, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(y.principalScheduled + y.principalExtra)}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#f9fafb' }}>
-              <td style={{ padding: '8px' }}>Total Additional Repayments</td>
-              <td style={{ padding: '8px', textAlign: 'right' }}>$0</td>
-              {debtSchedule.years.map((y, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(y.principalExtra)}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px' }}>Total Repayments made with Exit</td>
-              <td style={{ padding: '8px', textAlign: 'right' }}>$0</td>
-              {debtSchedule.years.map((_, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(i === debtSchedule.years.length - 1 ? debtSchedule.repayWithExit[i] : 0)}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#f9fafb' }}>
-              <td style={{ padding: '8px' }}>Total Loans End Balance</td>
-              <td style={{ padding: '8px', textAlign: 'right' }}>{formatCurrency(debtSchedule.years[0]?.endBalance || 0)}</td>
-              {debtSchedule.years.map((y, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(y.endBalance)}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#f8fafc' }}>
-              <td style={{ padding: '10px 8px', fontWeight: 800, fontSize: 12 }}>FINANCING CASH FLOW</td>
-              <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: 12 }}>{formatCurrency(debtSchedule.totalDebtDraw)}</td>
-              {debtSchedule.years.map((y, i) => (
-                <td key={i} style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: 12, borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(-(y.interest + y.principalScheduled + y.principalExtra))}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', fontWeight: 600 }}>Debt Service (Annual)</td>
-              <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>$0</td>
-              {cashFlowProjections.map((cf, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(cf.totalDebtService).replace('$','')}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#f8fafc' }}>
-              <td style={{ padding: '10px 8px', fontWeight: 800, fontSize: 12 }}>CASH FLOW AFTER FINANCING</td>
-              <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: 12, borderLeft: '1px solid #e5e7eb' }}>$0</td>
-              {cashFlowProjections.map((cf, i) => (
-                <td key={i} style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: 12, borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(cf.beforeTaxCashFlow)}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', paddingLeft: 24 }}>Contributions</td>
-              <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(-equityInvestment.requiredEquity)}</td>
-              {cashFlowProjections.map((_, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>$0</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#f8fafc' }}>
-              <td style={{ padding: '10px 8px', fontWeight: 800, fontSize: 12 }}>NET CASH FLOW AFTER CONTRIBUTIONS</td>
-              <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: 12, borderLeft: '1px solid #e5e7eb' }}>$0</td>
-              {cashFlowProjections.map((cf, i) => (
-                <td key={i} style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 800, fontSize: 12, borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(cf.beforeTaxCashFlow)}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', paddingLeft: 24, fontSize: 10, fontStyle: 'italic', fontWeight: 600 }}>% of Effective Gross Income</td>
-              <td style={{ padding: '8px', textAlign: 'right', fontSize: 10 }}>0%</td>
-              {noiProjections.map((n, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', fontSize: 10, fontWeight: 600, borderLeft: '1px solid #e5e7eb' }}>{formatPercent(calc.safeDivide(cashFlowProjections[i]?.beforeTaxCashFlow || 0, n.effectiveGrossIncome))}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', paddingLeft: 24, fontSize: 10, fontStyle: 'italic', fontWeight: 600 }}>Cash-on-Cash Return %</td>
-              <td style={{ padding: '8px', textAlign: 'right', fontSize: 10 }}>-</td>
-              {cashFlowProjections.map((cf, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', fontSize: 10, fontWeight: 600, borderLeft: '1px solid #e5e7eb' }}>{calc.formatPercent(cf.cashOnCash)}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', paddingLeft: 24, fontSize: 10, fontStyle: 'italic', fontWeight: 600 }}>Cash-on-Cash - levered (Incl. capital events)</td>
-              <td style={{ padding: '8px', textAlign: 'right', fontSize: 10 }}>-</td>
-              {years.slice(1).map((_, i) => {
-                const yr = i + 1;
-                let value = cashFlowProjections[i]?.cashOnCash || 0;
-                if (yr === 5) {
-                  const sale = saleAnalysis.year5?.netSaleProceeds || 0;
-                  const totalEquity = equityInvestment.requiredEquity || 1;
-                  value = (cashFlowProjections[i]?.beforeTaxCashFlow + sale) / totalEquity;
-                } else if (yr === 10) {
-                  const sale = saleAnalysis.year10?.netSaleProceeds || 0;
-                  const totalEquity = equityInvestment.requiredEquity || 1;
-                  value = (cashFlowProjections[i]?.beforeTaxCashFlow + sale) / totalEquity;
-                }
-                return (
-                  <td key={i} style={{ padding: '8px', textAlign: 'right', fontSize: 10, fontWeight: 600, borderLeft: '1px solid #e5e7eb' }}>{calc.formatPercent(value)}</td>
-                );
-              })}
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', paddingLeft: 24, fontSize: 10, fontStyle: 'italic', fontWeight: 600 }}>DSCR</td>
-              <td style={{ padding: '8px', textAlign: 'right', fontSize: 10 }}>-</td>
-              {cashFlowProjections.map((cf, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', fontSize: 10, fontWeight: 600, borderLeft: '1px solid #e5e7eb' }}>{cf.dscr != null ? `${cf.dscr.toFixed(2)}x` : '-'}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', paddingLeft: 24 }}>Estimate property Value</td>
-              <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>$0</td>
-              {years.slice(1).map((_, i) => {
-                const yr = i + 1;
-                let v = 0;
-                if (yr === 5) v = saleAnalysis.year5?.grossSalePrice || 0;
-                if (yr === 10) v = saleAnalysis.year10?.grossSalePrice || 0;
-                return (
-                  <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(v)}</td>
-                );
-              })}
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', paddingLeft: 24 }}>Debt balance</td>
-              <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(financingMetrics.blended.totalDebt)}</td>
-              {years.slice(1).map((_, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatCurrency(financingMetrics.blended.totalDebt)}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#f8fafc' }}>
-              <td colSpan={12} style={{ padding: '8px', fontWeight: 700, fontSize: 12 }}>Capital Structure</td>
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', paddingLeft: 24 }}>LTV</td>
-              <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatPercent(financingMetrics.blended.ltv)}</td>
-              {years.slice(1).map((_, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatPercent(financingMetrics.blended.ltv)}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#f9fafb' }}>
-              <td style={{ padding: '8px', paddingLeft: 24 }}>Equity</td>
-              <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatPercent(calc.safeDivide(equityInvestment.requiredEquity, equityInvestment.totalAcquisitionCost))}</td>
-              {years.slice(1).map((_, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatPercent(calc.safeDivide(equityInvestment.requiredEquity, equityInvestment.totalAcquisitionCost))}</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#f8fafc' }}>
-              <td colSpan={12} style={{ padding: '8px', fontWeight: 700, fontSize: 12 }}>Return Metrics</td>
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', paddingLeft: 24 }}>Equity Multiple (EM)</td>
-              <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>0.00x</td>
-              {years.slice(1).map((_, i) => {
-                const yr = i + 1;
-                let m = 0;
-                if (yr === 5) m = irrCashFlows.fiveYear.equityMultiple || 0;
-                if (yr === 10) m = irrCashFlows.tenYear.equityMultiple || 0;
-                return (
-                  <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatMultiple(m)}</td>
-                );
-              })}
-            </tr>
-            <tr style={{ background: '#f9fafb' }}>
-              <td style={{ padding: '8px', paddingLeft: 24 }}>IRR - Levered</td>
-              <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>0%</td>
-              {years.slice(1).map((_, i) => {
-                const yr = i + 1;
-                let irr = 0;
-                if (yr === 5) irr = (irrCashFlows.fiveYear.irr || 0) / 100;
-                if (yr === 10) irr = (irrCashFlows.tenYear.irr || 0) / 100;
-                return (
-                  <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>{formatPercent(irr)}</td>
-                );
-              })}
-            </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ padding: '8px', paddingLeft: 24 }}>Cash-on-Cash - Unlevered (w/o Exit)</td>
-              <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>-</td>
-              {years.slice(1).map((_, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>-</td>
-              ))}
-            </tr>
-            <tr style={{ background: '#f9fafb' }}>
-              <td style={{ padding: '8px', paddingLeft: 24 }}>Cash-on-Cash - Unlevered (Incl. Exit)</td>
-              <td style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>-</td>
-              {years.slice(1).map((_, i) => (
-                <td key={i} style={{ padding: '8px', textAlign: 'right', borderLeft: '1px solid #e5e7eb' }}>-</td>
-              ))}
-            </tr>
+            <Row label="Address" value={property.address || '-'} />
+            <Row label="City, State, ZIP" value={[property.city, property.state, property.zip].filter(Boolean).join(', ') || '-'} alt />
+            <Row label="Units" value={formatNumber(property.units)} />
+            <Row label="Year Built" value={property.year_built || '-'} alt />
+            <Row label="Building SF" value={formatNumber(property.rba_sqft)} />
+            <Row label="Land Area (Acres)" value={property.land_area_acres || '-'} alt />
+            <Row label="Property Type" value={property.property_type || '-'} />
+            <Row label="Property Class" value={property.property_class || '-'} alt />
+            <Row label="Parking Spaces" value={formatNumber(property.parking_spaces)} />
           </tbody>
         </table>
       </div>
+
+      {/* Pricing & Financing */}
+      <div style={sectionStyle}>
+        <h3 style={headerStyle}>Pricing & Financing</h3>
+        <table style={tableStyle}>
+          <tbody>
+            <Row label="Purchase Price" value={formatCurrency(pricing.price)} />
+            <Row label="Price Per Unit" value={formatCurrency(pricing.price_per_unit)} alt />
+            <Row label="Price Per SF" value={formatCurrency(pricing.price_per_sf)} />
+            <Row label="Loan Amount" value={formatCurrency(pricing.loan_amount || financing.loan_amount)} alt />
+            <Row label="Down Payment" value={formatCurrency(pricing.down_payment)} />
+            <Row label="LTV" value={formatPercent(pricing.ltv || financing.ltv)} alt />
+            <Row label="Interest Rate" value={formatPercent(pricing.interest_rate || financing.interest_rate)} />
+            <Row label="Loan Term (Years)" value={pricing.term_years || financing.loan_term_years || '-'} alt />
+            <Row label="Annual Debt Service" value={formatCurrency(pricing.annual_debt_service)} />
+          </tbody>
+        </table>
+      </div>
+
+      {/* Income & NOI */}
+      <div style={sectionStyle}>
+        <h3 style={headerStyle}>Income & NOI</h3>
+        <table style={tableStyle}>
+          <tbody>
+            <Row label="Gross Potential Rent" value={formatCurrency(pnl.gross_potential_rent)} />
+            <Row label="Other Income" value={formatCurrency(pnl.other_income)} alt />
+            <Row label="Vacancy Rate" value={formatPercent(pnl.vacancy_rate)} />
+            <Row label="Vacancy Amount" value={formatCurrency(pnl.vacancy_amount)} alt />
+            <Row label="Effective Gross Income" value={formatCurrency(pnl.effective_gross_income)} />
+            <Row label="Operating Expenses" value={formatCurrency(pnl.operating_expenses)} alt />
+            <Row label="Operating Expenses (T12)" value={formatCurrency(pnl.operating_expenses_t12)} />
+            <Row label="Operating Expenses (Pro Forma)" value={formatCurrency(pnl.operating_expenses_proforma)} alt />
+            <Row label="NOI" value={formatCurrency(pnl.noi)} />
+            <Row label="NOI (T12)" value={formatCurrency(pnl.noi_t12)} alt />
+            <Row label="NOI (Pro Forma)" value={formatCurrency(pnl.noi_proforma)} />
+            <Row label="NOI (Stabilized)" value={formatCurrency(pnl.noi_stabilized)} alt />
+            <Row label="Cap Rate" value={formatPercent(pnl.cap_rate)} />
+            <Row label="Cap Rate (T12)" value={formatPercent(pnl.cap_rate_t12)} alt />
+            <Row label="Cap Rate (Pro Forma)" value={formatPercent(pnl.cap_rate_proforma)} />
+            <Row label="Expense Ratio" value={formatPercent(pnl.expense_ratio)} alt />
+          </tbody>
+        </table>
+      </div>
+
+      {/* Operating Expenses Breakdown */}
+      <div style={sectionStyle}>
+        <h3 style={headerStyle}>Operating Expenses Breakdown</h3>
+        <table style={tableStyle}>
+          <tbody>
+            <Row label="Taxes" value={formatCurrency(expenses.taxes)} />
+            <Row label="Insurance" value={formatCurrency(expenses.insurance)} alt />
+            <Row label="Utilities" value={formatCurrency(expenses.utilities)} />
+            <Row label="Repairs & Maintenance" value={formatCurrency(expenses.repairs_maintenance)} alt />
+            <Row label="Management" value={formatCurrency(expenses.management)} />
+            <Row label="Payroll" value={formatCurrency(expenses.payroll)} alt />
+            <Row label="Admin / G&A" value={formatCurrency(expenses.admin)} />
+            <Row label="Marketing" value={formatCurrency(expenses.marketing)} alt />
+            <Row label="Other" value={formatCurrency(expenses.other)} />
+            <Row label="Total" value={formatCurrency(expenses.total)} alt />
+          </tbody>
+        </table>
+      </div>
+
+      {/* Unit Mix */}
+      {unitMix.length > 0 && (
+        <div style={sectionStyle}>
+          <h3 style={headerStyle}>Unit Mix</h3>
+          <table style={tableStyle}>
+            <thead>
+              <tr>
+                <th style={thStyle}>Type</th>
+                <th style={thRightStyle}>Units</th>
+                <th style={thRightStyle}>Avg SF</th>
+                <th style={thRightStyle}>Current Rent</th>
+                <th style={thRightStyle}>Market Rent</th>
+              </tr>
+            </thead>
+            <tbody>
+              {unitMix.map((unit, i) => (
+                <tr key={i} style={i % 2 === 1 ? altRowStyle : {}}>
+                  <td style={tdStyle}>{unit.type || '-'}</td>
+                  <td style={tdRightStyle}>{formatNumber(unit.units)}</td>
+                  <td style={tdRightStyle}>{formatNumber(unit.unit_sf)}</td>
+                  <td style={tdRightStyle}>{formatCurrency(unit.rent_current)}</td>
+                  <td style={tdRightStyle}>{formatCurrency(unit.rent_market)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Underwriting Metrics */}
+      <div style={sectionStyle}>
+        <h3 style={headerStyle}>Underwriting Metrics</h3>
+        <table style={tableStyle}>
+          <tbody>
+            <Row label="DSCR" value={underwriting.dscr ? underwriting.dscr.toFixed(2) : '-'} />
+            <Row label="Cap Rate" value={formatPercent(underwriting.cap_rate)} alt />
+            <Row label="Cash-on-Cash" value={formatPercent(underwriting.cash_on_cash)} />
+            <Row label="IRR" value={formatPercent(underwriting.irr)} alt />
+          </tbody>
+        </table>
+      </div>
+
+      {/* Assumptions */}
+      {Object.keys(assumptions).length > 0 && (
+        <div style={sectionStyle}>
+          <h3 style={headerStyle}>Assumptions</h3>
+          <table style={tableStyle}>
+            <tbody>
+              <Row label="Rent Growth Rate" value={formatPercent(assumptions.rent_growth_rate)} />
+              <Row label="Expense Growth Rate" value={formatPercent(assumptions.expense_growth_rate)} alt />
+              <Row label="Vacancy Rate" value={formatPercent(assumptions.vacancy_rate)} />
+              <Row label="Management Fee" value={formatPercent(assumptions.management_fee_percent || assumptions.management_fee)} alt />
+              <Row label="Exit Cap Rate" value={formatPercent(assumptions.exit_cap_rate)} />
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Broker Info */}
+      {(broker.broker_name || broker.broker_company) && (
+        <div style={sectionStyle}>
+          <h3 style={headerStyle}>Broker Information</h3>
+          <table style={tableStyle}>
+            <tbody>
+              <Row label="Broker Name" value={broker.broker_name || '-'} />
+              <Row label="Company" value={broker.broker_company || '-'} alt />
+              <Row label="Phone" value={broker.broker_phone || broker.broker_phone_office || '-'} />
+              <Row label="Email" value={broker.broker_email || '-'} alt />
+              <Row label="Seller" value={broker.seller_name || '-'} />
+            </tbody>
+          </table>
+        </div>
+      )}
+
     </div>
   );
 }
