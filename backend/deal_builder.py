@@ -753,21 +753,44 @@ async def underwrite_deal(deal_data: Dict[str, Any]) -> str:
 
 {deal_context}
 
-Please analyze this deal and provide your full underwriting assessment. Include:
-1. Deal Snapshot with key numbers
-2. Strengths of the deal
-3. Weaknesses and red flags
-4. Value-add opportunities with specific NOI impact
-5. Recommended capital structure
-6. Return projections
+Produce your full underwriting assessment following the output format in your instructions. Structure it with clear markdown:
 
-Be specific with numbers and direct with your opinion on whether this is worth pursuing."""
+## 1. Deal Snapshot
+A compact table with key metrics (asking price, units, price/unit, year built, cap rate, NOI, etc.) followed by your one-line first call verdict.
+
+## 2. Your Underwriting vs Broker
+Side-by-side comparison table: | Line Item | Broker | Yours | Delta |
+Include every income and expense line. Show property tax reassessment impact separately.
+
+## 3. Strengths
+Bullet each strength with a bold label and one-sentence explanation. Max 5.
+
+## 4. Red Flags & Risks  
+Bullet each risk with severity (🔴 Critical / 🟡 Caution / 🟢 Minor). Be specific on dollar impact.
+
+## 5. Value-Add Strategy
+Summary table: | Strategy | Annual NOI Impact | Value Created at Market Cap |
+Then show stabilized NOI and equity manufactured.
+
+## 6. Recommended Structure
+Pick the 1-2 best structures for THIS deal. Show the math: equity required, debt terms, DSCR, cashflow split, projected returns. Use tables.
+
+## 7. Return Projections
+5-year cashflow table: | Year | NOI | Debt Service | Net CF | CoC | Cumulative |
+Plus exit scenario with IRR and equity multiple.
+
+## 8. Verdict & Next Steps
+- Go / Conditional Go / Pass — with one paragraph explaining why
+- Recommended offer price with justification
+- Bullet list of missing documents/data needed
+
+Keep tables compact. Use | pipes | for all tables. Bold key numbers. Be direct — no filler. Every number must be calculated, not estimated."""
 
     log.info(f"[DealBuilder] Generating underwriting analysis...")
     
     response = client.messages.create(
         model=ANTHROPIC_MODEL,
-        max_tokens=8000,
+        max_tokens=12000,
         system=UNDERWRITING_SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_prompt}]
     )

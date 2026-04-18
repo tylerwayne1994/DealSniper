@@ -27,6 +27,7 @@
     "react-router-dom": "^6.20.0",
     "react-scripts": "5.0.1",
     "recharts": "^2.10.3",
+    "remark-gfm": "^4.0.1",
     "stripe": "^20.1.0",
     "x-data-spreadsheet": "^1.1.9",
     "xlsx": "^0.18.5"

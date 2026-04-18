@@ -21,6 +21,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import DashboardShell from '../components/DashboardShell';
 import { supabase } from '../lib/supabase';
 
@@ -680,11 +681,27 @@ function DealBuilderPage() {
                     <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
                       {msg.role === 'assistant' ? (
                         <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
                           components={{
+                            h2: ({children}) => <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#111827', margin: '20px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #e5e7eb' }}>{children}</h2>,
+                            h3: ({children}) => <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#374151', margin: '16px 0 6px' }}>{children}</h3>,
                             p: ({children}) => <p style={{ margin: '0 0 8px' }}>{children}</p>,
                             ul: ({children}) => <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ul>,
+                            ol: ({children}) => <ol style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ol>,
                             li: ({children}) => <li style={{ marginBottom: '4px' }}>{children}</li>,
-                            strong: ({children}) => <strong style={{ fontWeight: '600' }}>{children}</strong>
+                            strong: ({children}) => <strong style={{ fontWeight: '700', color: '#111827' }}>{children}</strong>,
+                            table: ({children}) => (
+                              <div style={{ overflowX: 'auto', margin: '12px 0', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>{children}</table>
+                              </div>
+                            ),
+                            thead: ({children}) => <thead style={{ backgroundColor: '#f3f4f6' }}>{children}</thead>,
+                            th: ({children}) => <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '600', color: '#374151', borderBottom: '2px solid #e5e7eb', whiteSpace: 'nowrap' }}>{children}</th>,
+                            td: ({children}) => <td style={{ padding: '8px 12px', borderBottom: '1px solid #f3f4f6', color: '#374151' }}>{children}</td>,
+                            tr: ({children, ...props}) => <tr style={{ ':hover': { backgroundColor: '#f9fafb' } }} {...props}>{children}</tr>,
+                            blockquote: ({children}) => <blockquote style={{ margin: '12px 0', padding: '8px 16px', borderLeft: '3px solid #6366f1', backgroundColor: '#f5f3ff', borderRadius: '0 6px 6px 0' }}>{children}</blockquote>,
+                            hr: () => <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '16px 0' }} />,
+                            code: ({children}) => <code style={{ backgroundColor: '#f3f4f6', padding: '2px 6px', borderRadius: '4px', fontSize: '13px', fontFamily: 'monospace' }}>{children}</code>,
                           }}
                         >
                           {msg.content}
