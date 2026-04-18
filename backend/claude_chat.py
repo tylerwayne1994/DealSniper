@@ -40,7 +40,7 @@ ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
 _sessions: Dict[str, Dict[str, Any]] = {}
 
 # ============================================================================
-# System Prompt - CRE Underwriting Specialist
+# System Prompt - CRE Underwriting Specialist with Artifacts
 # ============================================================================
 
 SYSTEM_PROMPT = """You are a seasoned commercial real estate investor, underwriter, and deal structurer embedded in the DealSniper platform. You have closed hundreds of multifamily and commercial deals and your investment philosophy is built around durable, Day 1 cashflow.
@@ -51,7 +51,94 @@ SYSTEM_PROMPT = """You are a seasoned commercial real estate investor, underwrit
 
 2. **Underwriting from Scratch**: You never trust broker numbers. You build your own underwriting from the raw documents, identifying every dollar of value-add and every hidden risk.
 
-3. **Structured Output**: When asked to generate a spreadsheet, business plan, or pitch deck, you produce clean, structured content that can be exported.
+3. **Artifact Generation**: You can create spreadsheets and documents that appear live in the canvas. Users can see what you're building and ask for changes before downloading.
+
+## ARTIFACTS - CRITICAL INSTRUCTIONS
+
+When asked to create a spreadsheet, underwrite model, business plan, or any downloadable document, you MUST output an artifact block. Artifacts appear in the canvas panel where users can preview and download them.
+
+### SPREADSHEET ARTIFACT FORMAT
+
+When creating spreadsheets (underwrite models, pro formas, sensitivity tables), use this exact format:
+
+```artifact:spreadsheet:Title Here
+{
+  "sheets": [
+    {
+      "name": "Sheet Name",
+      "columns": ["A", "B", "C", "D", "E"],
+      "data": [
+        ["Header 1", "Header 2", "Header 3", "Header 4", "Header 5"],
+        ["Row Label", 100000, 50000, "=B2+C2", "=D2*0.1"],
+        ["Another Row", 200000, 75000, "=B3+C3", "=D3*0.1"]
+      ],
+      "columnWidths": {"A": 25, "B": 15, "C": 15, "D": 15, "E": 15},
+      "formatting": {
+        "A1:E1": {"bold": true, "background": "#f0f0f0"},
+        "B2:E10": {"numberFormat": "$#,##0"},
+        "E2:E10": {"numberFormat": "0.00%"}
+      }
+    }
+  ]
+}
+```
+
+SPREADSHEET RULES:
+- Use Excel-style formulas (=SUM, =B2*C2, etc.) - they will work in the exported file
+- Include multiple sheets for complex models (Summary, Assumptions, Cash Flow, Sensitivity, etc.)
+- Always include proper number formatting for currency and percentages
+- Make headers bold with background color
+- Use realistic CRE underwriting structure
+
+### DOCUMENT ARTIFACT FORMAT
+
+When creating business plans, executive summaries, or any text document, use this format:
+
+```artifact:document:Title Here
+# Document Title
+
+## Section 1
+Content here with **bold** and *italic* formatting.
+
+### Subsection
+- Bullet points
+- More points
+
+## Section 2
+| Column 1 | Column 2 | Column 3 |
+|----------|----------|----------|
+| Data     | Data     | Data     |
+
+## Section 3
+More content...
+```
+
+DOCUMENT RULES:
+- Use standard Markdown formatting
+- Include clear section headers
+- Use tables for financial summaries
+- Be thorough but concise
+
+### WHEN TO CREATE ARTIFACTS
+
+CREATE a spreadsheet artifact when user asks for:
+- "Build me an underwrite model"
+- "Create a pro forma"
+- "Make a spreadsheet"
+- "Generate a sensitivity analysis"
+- "Build a cash flow model"
+
+CREATE a document artifact when user asks for:
+- "Write a business plan"
+- "Create an executive summary"
+- "Generate an investment memo"
+- "Write up the deal"
+
+DO NOT create artifacts for:
+- General analysis or discussion
+- Answering questions
+- Explaining concepts
+- Partial work that needs more input first
 
 ## YOUR PHILOSOPHY
 
@@ -61,28 +148,40 @@ SYSTEM_PROMPT = """You are a seasoned commercial real estate investor, underwrit
 - **Small rent increases**: $30-50/month rent bumps that recapture shifted expenses create massive NOI impact without tenant turnover.
 - **Survive downturns**: Stay 10-15% below market rent for occupancy stability through any cycle.
 
-## DOCUMENT PARSING CHECKLIST
+## UNDERWRITING STANDARDS
 
-When analyzing uploaded documents, extract:
-- Property basics: address, units, year built, square footage, property type
-- Unit mix: bedroom/bath counts, square footage per unit type, current rents
-- Financial: asking price, broker cap rate, broker NOI, gross income, expenses
-- Occupancy: physical and economic vacancy from T12 if available
-- Expenses: line by line — NEVER roll up. Flag who pays each utility.
-- Debt: existing loan terms, rate, maturity, prepayment, assumability
-- Tax: assessed value vs asking price (reassessment risk)
-- Deferred maintenance and capital needs
+When building underwrite models, always include:
 
-## OUTPUT FORMAT
+**INCOME SECTION:**
+- Gross Potential Rent (current in-place, NOT pro forma)
+- Vacancy Loss (use T12 actual, minimum 5%)
+- Other Income (laundry, parking, fees - only documented)
+- Effective Gross Income
 
-When generating documents:
-- **Underwrite Model**: Use markdown tables for financial projections
-- **Business Plan**: Use structured markdown with clear sections
-- **Analysis**: Be direct, use bullet points, show your math
+**EXPENSE SECTION (line by line, never rolled up):**
+- Property Taxes (current AND reassessed at purchase price)
+- Insurance
+- Property Management (8-10% if self-managed)
+- Repairs & Maintenance
+- CapEx Reserve ($250-500/unit/year)
+- Utilities (broken out: water, sewer, trash, gas, electric)
+- All other documented expenses
 
-Always cross-check numbers. Broker NOI and your calculated NOI rarely match — use yours and explain every discrepancy.
+**RETURNS SECTION:**
+- NOI (your calculation, not broker's)
+- Cap Rate
+- Debt Service (at proposed financing terms)
+- DSCR (minimum 1.20)
+- Cash-on-Cash Return
+- Price per Unit / Price per SF
 
-If critical data is missing (rent roll, T12, utility breakdown), produce a partial analysis with a clear list of what's still needed. A partial analysis done right is more valuable than guesswork."""
+**VALUE-ADD SECTION:**
+- RUBS recovery potential
+- Rent recapture from expense shifting
+- Expense normalization opportunities
+- Rehab premium (if applicable)
+
+Always show your math. Always explain discrepancies with broker numbers."""
 
 # ============================================================================
 # Pydantic Models
@@ -497,3 +596,229 @@ async def delete_session(session_id: str):
         del _sessions[session_id]
     
     return JSONResponse(content={"success": True})
+
+
+# ============================================================================
+# Artifact Execution - Generate Downloadable Files
+# ============================================================================
+
+def generate_spreadsheet_from_artifact(artifact_data: Dict[str, Any], title: str) -> bytes:
+    """
+    Generate an Excel file from artifact JSON data.
+    Claude provides the structure, we just convert to xlsx.
+    """
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+    except ImportError:
+        raise HTTPException(status_code=500, detail="openpyxl not installed")
+    
+    wb = Workbook()
+    # Remove default sheet
+    wb.remove(wb.active)
+    
+    sheets = artifact_data.get("sheets", [])
+    if not sheets:
+        raise HTTPException(status_code=400, detail="No sheets in artifact data")
+    
+    for sheet_data in sheets:
+        sheet_name = sheet_data.get("name", "Sheet")[:31]  # Excel limit
+        ws = wb.create_sheet(title=sheet_name)
+        
+        # Write data
+        data = sheet_data.get("data", [])
+        for row_idx, row in enumerate(data, start=1):
+            for col_idx, cell_value in enumerate(row, start=1):
+                cell = ws.cell(row=row_idx, column=col_idx)
+                
+                # Handle formulas
+                if isinstance(cell_value, str) and cell_value.startswith("="):
+                    cell.value = cell_value
+                else:
+                    cell.value = cell_value
+        
+        # Apply column widths
+        col_widths = sheet_data.get("columnWidths", {})
+        for col_letter, width in col_widths.items():
+            ws.column_dimensions[col_letter].width = width
+        
+        # Apply formatting
+        formatting = sheet_data.get("formatting", {})
+        for cell_range, fmt in formatting.items():
+            try:
+                for row in ws[cell_range]:
+                    for cell in (row if hasattr(row, '__iter__') else [row]):
+                        if fmt.get("bold"):
+                            cell.font = Font(bold=True)
+                        if fmt.get("background"):
+                            cell.fill = PatternFill(start_color=fmt["background"].replace("#", ""), 
+                                                   end_color=fmt["background"].replace("#", ""), 
+                                                   fill_type="solid")
+                        if fmt.get("numberFormat"):
+                            cell.number_format = fmt["numberFormat"]
+            except Exception as e:
+                log.warning(f"[Artifact] Failed to apply formatting {cell_range}: {e}")
+    
+    # Save to bytes
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output.getvalue()
+
+
+def generate_document_from_artifact(markdown_content: str, title: str) -> bytes:
+    """
+    Generate a PDF from markdown content.
+    Uses markdown2 + weasyprint if available, otherwise returns HTML.
+    """
+    try:
+        import markdown2
+        html_content = markdown2.markdown(
+            markdown_content, 
+            extras=["tables", "fenced-code-blocks", "header-ids"]
+        )
+    except ImportError:
+        # Fallback: basic markdown conversion
+        html_content = f"<pre>{markdown_content}</pre>"
+    
+    # Wrap in styled HTML
+    full_html = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{title}</title>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }}
+        h1 {{ color: #1a1a1a; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }}
+        h2 {{ color: #2563eb; margin-top: 30px; }}
+        h3 {{ color: #444; }}
+        table {{
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }}
+        th, td {{
+            border: 1px solid #ddd;
+            padding: 10px 12px;
+            text-align: left;
+        }}
+        th {{
+            background: #f5f5f5;
+            font-weight: 600;
+        }}
+        tr:nth-child(even) {{ background: #fafafa; }}
+        code {{
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Consolas', monospace;
+        }}
+        pre {{
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }}
+        ul, ol {{ padding-left: 24px; }}
+        li {{ margin-bottom: 8px; }}
+        blockquote {{
+            border-left: 4px solid #2563eb;
+            padding-left: 16px;
+            margin-left: 0;
+            color: #666;
+            font-style: italic;
+        }}
+    </style>
+</head>
+<body>
+{html_content}
+</body>
+</html>"""
+    
+    # Try to generate PDF with weasyprint
+    try:
+        from weasyprint import HTML
+        pdf_bytes = HTML(string=full_html).write_pdf()
+        return pdf_bytes
+    except ImportError:
+        log.warning("[Artifact] weasyprint not available, returning HTML instead")
+        return full_html.encode('utf-8')
+    except Exception as e:
+        log.warning(f"[Artifact] PDF generation failed: {e}, returning HTML")
+        return full_html.encode('utf-8')
+
+
+@router.post("/artifact/execute")
+async def execute_artifact(request: Request):
+    """
+    Execute an artifact to generate a downloadable file.
+    
+    Body:
+    {
+        "type": "spreadsheet" | "document",
+        "title": "File Title",
+        "data": { ... } | "markdown content"
+    }
+    """
+    try:
+        body = await request.json()
+        artifact_type = body.get("type")
+        title = body.get("title", "Untitled")
+        data = body.get("data")
+        
+        if not artifact_type or not data:
+            raise HTTPException(status_code=400, detail="type and data required")
+        
+        if artifact_type == "spreadsheet":
+            # Parse JSON if string
+            if isinstance(data, str):
+                try:
+                    data = json.loads(data)
+                except json.JSONDecodeError as e:
+                    raise HTTPException(status_code=400, detail=f"Invalid JSON: {e}")
+            
+            file_bytes = generate_spreadsheet_from_artifact(data, title)
+            filename = f"{title.replace(' ', '_')}.xlsx"
+            media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            
+        elif artifact_type == "document":
+            # data is markdown string
+            if not isinstance(data, str):
+                raise HTTPException(status_code=400, detail="Document data must be markdown string")
+            
+            file_bytes = generate_document_from_artifact(data, title)
+            
+            # Check if PDF or HTML was generated
+            if file_bytes[:4] == b'%PDF':
+                filename = f"{title.replace(' ', '_')}.pdf"
+                media_type = "application/pdf"
+            else:
+                filename = f"{title.replace(' ', '_')}.html"
+                media_type = "text/html"
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown artifact type: {artifact_type}")
+        
+        # Return as base64 for frontend to handle download
+        file_b64 = base64.standard_b64encode(file_bytes).decode('utf-8')
+        
+        return JSONResponse(content={
+            "success": True,
+            "filename": filename,
+            "media_type": media_type,
+            "data": file_b64
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.exception(f"[Artifact] Execution error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

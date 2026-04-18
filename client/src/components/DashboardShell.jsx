@@ -18,7 +18,6 @@ import {
   ChevronDown,
   LogOut,
   Phone,
-  MessageCircle,
   MessageSquare,
 } from 'lucide-react';
 import { useIsMobile } from '../hooks/useIsMobile';

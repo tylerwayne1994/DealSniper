@@ -4,16 +4,16 @@
  * Features:
  * - Streaming chat with Claude
  * - PDF/document upload and preview in canvas
- * - Real-time document generation
- * - Export to Excel, PDF, PPTX
+ * - Real-time artifact generation (spreadsheets, documents)
+ * - Export to Excel, PDF
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Send, Upload, FileText, X, Loader, Download,
+  ArrowLeft, Send, Upload, FileText, X, Loader,
   FileSpreadsheet, File, Image, PanelRightClose,
-  PanelRight, MessageSquare, Eye, Copy, Check
+  PanelRight, MessageSquare, Eye, Copy, Check, Table, FileDown
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
@@ -36,6 +36,289 @@ const COLORS = {
   userBubble: '#2563eb',
   assistantBubble: '#ffffff',
   canvasBg: '#fafafa',
+  artifactBg: '#f0fdf4',
+  artifactBorder: '#86efac',
+};
+
+// ============================================================================
+// Artifact Utilities
+// ============================================================================
+
+/**
+ * Parse artifacts from Claude's response text.
+ * Artifacts are formatted as: ```artifact:type:title\n...content...\n```
+ */
+const parseArtifacts = (text) => {
+  const artifacts = [];
+  const artifactRegex = /```artifact:(spreadsheet|document):([^\n]+)\n([\s\S]*?)```/g;
+  let match;
+  let cleanedText = text;
+  
+  while ((match = artifactRegex.exec(text)) !== null) {
+    const [fullMatch, type, title, content] = match;
+    const id = `artifact-${Date.now()}-${artifacts.length}`;
+    
+    let parsedData = null;
+    if (type === 'spreadsheet') {
+      try {
+        parsedData = JSON.parse(content.trim());
+      } catch (e) {
+        console.error('Failed to parse spreadsheet artifact:', e);
+        continue;
+      }
+    } else {
+      parsedData = content.trim();
+    }
+    
+    artifacts.push({
+      id,
+      type,
+      title: title.trim(),
+      data: parsedData,
+      raw: content.trim(),
+    });
+    
+    // Replace artifact in text with a reference
+    cleanedText = cleanedText.replace(fullMatch, `\n\n**[Artifact: ${title.trim()}]** _(View in Canvas)_\n\n`);
+  }
+  
+  return { artifacts, cleanedText };
+};
+
+// ============================================================================
+// Spreadsheet Preview Component
+// ============================================================================
+
+const SpreadsheetPreview = ({ artifact, onDownload, isDownloading }) => {
+  const [activeSheet, setActiveSheet] = useState(0);
+  
+  if (!artifact?.data?.sheets?.length) {
+    return (
+      <div style={{ padding: 20, color: COLORS.textMuted, textAlign: 'center' }}>
+        No spreadsheet data
+      </div>
+    );
+  }
+  
+  const sheets = artifact.data.sheets;
+  const currentSheet = sheets[activeSheet];
+  const data = currentSheet?.data || [];
+  
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Sheet tabs */}
+      {sheets.length > 1 && (
+        <div style={{
+          display: 'flex',
+          gap: 4,
+          padding: '8px 12px',
+          borderBottom: `1px solid ${COLORS.border}`,
+          background: COLORS.bg,
+          overflowX: 'auto',
+        }}>
+          {sheets.map((sheet, idx) => (
+            <button
+              key={idx}
+              onClick={() => setActiveSheet(idx)}
+              style={{
+                padding: '6px 12px',
+                fontSize: 12,
+                fontWeight: activeSheet === idx ? 600 : 400,
+                background: activeSheet === idx ? COLORS.white : 'transparent',
+                border: activeSheet === idx ? `1px solid ${COLORS.border}` : '1px solid transparent',
+                borderRadius: 6,
+                cursor: 'pointer',
+                color: COLORS.text,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {sheet.name || `Sheet ${idx + 1}`}
+            </button>
+          ))}
+        </div>
+      )}
+      
+      {/* Title bar */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '10px 12px',
+        background: COLORS.white,
+        borderBottom: `1px solid ${COLORS.border}`,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <FileSpreadsheet size={16} color="#10b981" />
+          <span style={{ fontWeight: 600, fontSize: 14 }}>{artifact.title}</span>
+        </div>
+        <button
+          onClick={onDownload}
+          disabled={isDownloading}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 12px',
+            background: '#10b981',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 6,
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: isDownloading ? 'not-allowed' : 'pointer',
+            opacity: isDownloading ? 0.7 : 1,
+          }}
+        >
+          {isDownloading ? (
+            <Loader size={12} style={{ animation: 'spin 1s linear infinite' }} />
+          ) : (
+            <FileDown size={12} />
+          )}
+          Download .xlsx
+        </button>
+      </div>
+      
+      {/* Table */}
+      <div style={{ flex: 1, overflow: 'auto', padding: 12 }}>
+        <table style={{
+          borderCollapse: 'collapse',
+          width: '100%',
+          fontSize: 12,
+          fontFamily: 'ui-monospace, monospace',
+        }}>
+          <tbody>
+            {data.map((row, rowIdx) => (
+              <tr key={rowIdx}>
+                {(Array.isArray(row) ? row : [row]).map((cell, colIdx) => {
+                  const isHeader = rowIdx === 0;
+                  const CellTag = isHeader ? 'th' : 'td';
+                  
+                  // Format cell value
+                  let displayValue = cell;
+                  if (typeof cell === 'number') {
+                    displayValue = cell.toLocaleString();
+                  } else if (typeof cell === 'string' && cell.startsWith('=')) {
+                    displayValue = cell; // Show formula
+                  }
+                  
+                  return (
+                    <CellTag
+                      key={colIdx}
+                      style={{
+                        padding: '6px 10px',
+                        border: `1px solid ${COLORS.border}`,
+                        background: isHeader ? '#f5f5f5' : COLORS.white,
+                        fontWeight: isHeader ? 600 : 400,
+                        textAlign: typeof cell === 'number' ? 'right' : 'left',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {displayValue}
+                    </CellTag>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// Document Preview Component
+// ============================================================================
+
+const DocumentPreview = ({ artifact, onDownload, isDownloading }) => {
+  if (!artifact?.data) {
+    return (
+      <div style={{ padding: 20, color: COLORS.textMuted, textAlign: 'center' }}>
+        No document data
+      </div>
+    );
+  }
+  
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Title bar */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '10px 12px',
+        background: COLORS.white,
+        borderBottom: `1px solid ${COLORS.border}`,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <FileText size={16} color="#2563eb" />
+          <span style={{ fontWeight: 600, fontSize: 14 }}>{artifact.title}</span>
+        </div>
+        <button
+          onClick={onDownload}
+          disabled={isDownloading}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 12px',
+            background: '#2563eb',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 6,
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: isDownloading ? 'not-allowed' : 'pointer',
+            opacity: isDownloading ? 0.7 : 1,
+          }}
+        >
+          {isDownloading ? (
+            <Loader size={12} style={{ animation: 'spin 1s linear infinite' }} />
+          ) : (
+            <FileDown size={12} />
+          )}
+          Download PDF
+        </button>
+      </div>
+      
+      {/* Document content */}
+      <div style={{
+        flex: 1,
+        overflow: 'auto',
+        padding: 24,
+        background: COLORS.white,
+      }}>
+        <div style={{
+          maxWidth: 700,
+          margin: '0 auto',
+          fontSize: 14,
+          lineHeight: 1.7,
+        }}>
+          <ReactMarkdown
+            components={{
+              h1: ({ children }) => <h1 style={{ fontSize: 24, fontWeight: 700, margin: '0 0 16px', borderBottom: `2px solid ${COLORS.primary}`, paddingBottom: 8 }}>{children}</h1>,
+              h2: ({ children }) => <h2 style={{ fontSize: 20, fontWeight: 600, color: COLORS.primary, margin: '24px 0 12px' }}>{children}</h2>,
+              h3: ({ children }) => <h3 style={{ fontSize: 16, fontWeight: 600, margin: '20px 0 8px' }}>{children}</h3>,
+              p: ({ children }) => <p style={{ margin: '0 0 12px' }}>{children}</p>,
+              ul: ({ children }) => <ul style={{ margin: '0 0 12px', paddingLeft: 24 }}>{children}</ul>,
+              ol: ({ children }) => <ol style={{ margin: '0 0 12px', paddingLeft: 24 }}>{children}</ol>,
+              li: ({ children }) => <li style={{ marginBottom: 6 }}>{children}</li>,
+              table: ({ children }) => (
+                <div style={{ overflowX: 'auto', margin: '16px 0' }}>
+                  <table style={{ borderCollapse: 'collapse', width: '100%' }}>{children}</table>
+                </div>
+              ),
+              th: ({ children }) => <th style={{ border: `1px solid ${COLORS.border}`, padding: '8px 12px', background: '#f5f5f5', fontWeight: 600, textAlign: 'left' }}>{children}</th>,
+              td: ({ children }) => <td style={{ border: `1px solid ${COLORS.border}`, padding: '8px 12px' }}>{children}</td>,
+              blockquote: ({ children }) => <blockquote style={{ borderLeft: `3px solid ${COLORS.primary}`, paddingLeft: 16, margin: '12px 0', color: COLORS.textMuted, fontStyle: 'italic' }}>{children}</blockquote>,
+            }}
+          >
+            {artifact.data}
+          </ReactMarkdown>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 // ============================================================================
@@ -308,7 +591,12 @@ export default function ClaudeUnderwritePage() {
 
   // Canvas state
   const [showCanvas, setShowCanvas] = useState(true);
-  const [activeCanvasTab, setActiveCanvasTab] = useState('chat'); // 'chat', 'document', 'export'
+  const [activeCanvasTab, setActiveCanvasTab] = useState('artifacts'); // 'artifacts', 'document', 'chat'
+  
+  // Artifact state
+  const [artifacts, setArtifacts] = useState([]);
+  const [activeArtifact, setActiveArtifact] = useState(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Initialize session on mount
   useEffect(() => {
@@ -320,7 +608,7 @@ export default function ClaudeUnderwritePage() {
           setSessionId(data.session_id);
           setMessages([{
             role: 'assistant',
-            content: `I'm Claude, your CRE underwriting partner. Upload your OM, rent roll, T12, or any deal documents and I'll analyze them from scratch — no broker assumptions, just the real numbers.\n\nI can help you:\n- **Parse and verify** all financial data from documents\n- **Build your own underwriting** with conservative assumptions\n- **Identify value-add opportunities** (RUBS, expense optimization, rent recapture)\n- **Structure the deal** to maximize returns with minimum equity\n- **Generate documents** (underwrite model, business plan, pitch deck)\n\nDrop your files or ask me anything about a deal.`
+            content: `I'm Claude, your CRE underwriting partner. Upload your OM, rent roll, T12, or any deal documents and I'll analyze them from scratch — no broker assumptions, just the real numbers.\n\n**I can generate documents that appear live in the canvas:**\n- "Build me an underwrite model" → Spreadsheet with pro forma, returns, sensitivity\n- "Write a business plan" → Full investment memo with value-add strategy\n\n**I can also help you:**\n- Parse and verify all financial data from documents\n- Identify value-add opportunities (RUBS, expense optimization)\n- Structure the deal to maximize returns\n\nDrop your files or ask me anything about a deal.`
           }]);
         }
       } catch (err) {
@@ -490,9 +778,19 @@ export default function ClaudeUnderwritePage() {
         }
       }
 
-      // Add final message
+      // Add final message and parse artifacts
       if (fullContent) {
-        setMessages(prev => [...prev, { role: 'assistant', content: fullContent }]);
+        const { artifacts: newArtifacts, cleanedText } = parseArtifacts(fullContent);
+        
+        // Add artifacts to state
+        if (newArtifacts.length > 0) {
+          setArtifacts(prev => [...prev, ...newArtifacts]);
+          // Auto-select the first new artifact
+          setActiveArtifact(newArtifacts[0]);
+          setActiveCanvasTab('artifacts');
+        }
+        
+        setMessages(prev => [...prev, { role: 'assistant', content: cleanedText }]);
       }
     } catch (err) {
       console.error('Chat error:', err);
@@ -505,6 +803,53 @@ export default function ClaudeUnderwritePage() {
       setStreamingContent('');
     }
   }, [inputValue, isStreaming, sessionId, messages]);
+
+  // Download artifact
+  const handleDownloadArtifact = async (artifact) => {
+    if (!artifact) return;
+    
+    setIsDownloading(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/claude-chat/artifact/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: artifact.type,
+          title: artifact.title,
+          data: artifact.type === 'spreadsheet' ? artifact.data : artifact.data,
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // Create download link
+        const byteCharacters = atob(result.data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: result.media_type });
+        
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = result.filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        throw new Error(result.detail || 'Download failed');
+      }
+    } catch (err) {
+      console.error('Download error:', err);
+      alert(`Download failed: ${err.message}`);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   // Handle keyboard shortcuts
   const handleKeyDown = (e) => {
@@ -828,17 +1173,50 @@ export default function ClaudeUnderwritePage() {
               background: COLORS.bg,
             }}>
               <CanvasTab
+                active={activeCanvasTab === 'artifacts'}
+                icon={Table}
+                label={`Artifacts${artifacts.length > 0 ? ` (${artifacts.length})` : ''}`}
+                onClick={() => setActiveCanvasTab('artifacts')}
+              />
+              <CanvasTab
                 active={activeCanvasTab === 'document'}
                 icon={FileText}
-                label="Document Preview"
+                label="Uploads"
                 onClick={() => setActiveCanvasTab('document')}
               />
               <CanvasTab
                 active={activeCanvasTab === 'chat'}
                 icon={MessageSquare}
-                label="Conversation"
+                label="Summary"
                 onClick={() => setActiveCanvasTab('chat')}
               />
+              
+              {/* Artifact selector dropdown */}
+              {activeCanvasTab === 'artifacts' && artifacts.length > 1 && (
+                <div style={{ marginLeft: 'auto', marginBottom: 8 }}>
+                  <select
+                    value={activeArtifact?.id || ''}
+                    onChange={(e) => {
+                      const selected = artifacts.find(a => a.id === e.target.value);
+                      setActiveArtifact(selected || null);
+                    }}
+                    style={{
+                      padding: '6px 10px',
+                      fontSize: 12,
+                      border: `1px solid ${COLORS.border}`,
+                      borderRadius: 6,
+                      background: COLORS.white,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {artifacts.map(a => (
+                      <option key={a.id} value={a.id}>
+                        {a.type === 'spreadsheet' ? '📊' : '📄'} {a.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               
               {/* File selector dropdown */}
               {activeCanvasTab === 'document' && uploadedFiles.length > 0 && (
@@ -868,9 +1246,50 @@ export default function ClaudeUnderwritePage() {
             </div>
 
             {/* Canvas Content */}
-            <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
-              {activeCanvasTab === 'document' && (
+            <div style={{ flex: 1, overflow: 'auto' }}>
+              {/* Artifacts Tab */}
+              {activeCanvasTab === 'artifacts' && (
                 <>
+                  {activeArtifact ? (
+                    activeArtifact.type === 'spreadsheet' ? (
+                      <SpreadsheetPreview
+                        artifact={activeArtifact}
+                        onDownload={() => handleDownloadArtifact(activeArtifact)}
+                        isDownloading={isDownloading}
+                      />
+                    ) : (
+                      <DocumentPreview
+                        artifact={activeArtifact}
+                        onDownload={() => handleDownloadArtifact(activeArtifact)}
+                        isDownloading={isDownloading}
+                      />
+                    )
+                  ) : (
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: '100%',
+                      padding: 40,
+                      color: COLORS.textMuted,
+                      textAlign: 'center',
+                    }}>
+                      <Table size={48} strokeWidth={1} />
+                      <p style={{ marginTop: 16, fontSize: 14, fontWeight: 500 }}>
+                        No artifacts yet
+                      </p>
+                      <p style={{ fontSize: 13, color: COLORS.textLight, maxWidth: 300 }}>
+                        Ask Claude to "build an underwrite model" or "write a business plan" and it will appear here
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+              
+              {/* Document/Uploads Tab */}
+              {activeCanvasTab === 'document' && (
+                <div style={{ padding: 16, height: '100%' }}>
                   {previewData?.file_type === 'application/pdf' && previewData?.base64_data ? (
                     <PDFViewer
                       base64Data={previewData.base64_data}
@@ -917,90 +1336,44 @@ export default function ClaudeUnderwritePage() {
                       </p>
                     </div>
                   )}
-                </>
-              )}
-
-              {activeCanvasTab === 'chat' && (
-                <div style={{
-                  background: COLORS.white,
-                  border: `1px solid ${COLORS.border}`,
-                  borderRadius: 12,
-                  padding: 20,
-                  height: '100%',
-                  overflow: 'auto',
-                }}>
-                  <h3 style={{ margin: '0 0 16px', fontSize: 14, fontWeight: 600 }}>
-                    Conversation Summary
-                  </h3>
-                  {messages.filter(m => m.role !== 'system').length === 0 ? (
-                    <p style={{ color: COLORS.textMuted, fontSize: 13 }}>
-                      No messages yet. Start by uploading a document or asking a question.
-                    </p>
-                  ) : (
-                    <div style={{ fontSize: 13, lineHeight: 1.6 }}>
-                      {messages.filter(m => m.role !== 'system').map((msg, idx) => (
-                        <div key={idx} style={{ marginBottom: 12 }}>
-                          <strong style={{ color: msg.role === 'user' ? COLORS.primary : '#10b981' }}>
-                            {msg.role === 'user' ? 'You' : 'Claude'}:
-                          </strong>
-                          <span style={{ marginLeft: 8, color: COLORS.text }}>
-                            {msg.content.slice(0, 200)}{msg.content.length > 200 ? '...' : ''}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               )}
-            </div>
 
-            {/* Export Actions */}
-            <div style={{
-              padding: '12px 16px',
-              borderTop: `1px solid ${COLORS.border}`,
-              background: COLORS.white,
-              display: 'flex',
-              gap: 8,
-              justifyContent: 'flex-end',
-            }}>
-              <button
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '8px 14px',
-                  background: COLORS.bg,
-                  border: `1px solid ${COLORS.border}`,
-                  borderRadius: 8,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: COLORS.text,
-                  cursor: 'pointer',
-                }}
-                title="Coming soon"
-              >
-                <FileSpreadsheet size={14} />
-                Export Excel
-              </button>
-              <button
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '8px 14px',
-                  background: COLORS.bg,
-                  border: `1px solid ${COLORS.border}`,
-                  borderRadius: 8,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: COLORS.text,
-                  cursor: 'pointer',
-                }}
-                title="Coming soon"
-              >
-                <Download size={14} />
-                Export PDF
-              </button>
+              {/* Chat Summary Tab */}
+              {activeCanvasTab === 'chat' && (
+                <div style={{ padding: 16, height: '100%' }}>
+                  <div style={{
+                    background: COLORS.white,
+                    border: `1px solid ${COLORS.border}`,
+                    borderRadius: 12,
+                    padding: 20,
+                    height: '100%',
+                    overflow: 'auto',
+                  }}>
+                    <h3 style={{ margin: '0 0 16px', fontSize: 14, fontWeight: 600 }}>
+                      Conversation Summary
+                    </h3>
+                    {messages.filter(m => m.role !== 'system').length === 0 ? (
+                      <p style={{ color: COLORS.textMuted, fontSize: 13 }}>
+                        No messages yet. Start by uploading a document or asking a question.
+                      </p>
+                    ) : (
+                      <div style={{ fontSize: 13, lineHeight: 1.6 }}>
+                        {messages.filter(m => m.role !== 'system').map((msg, idx) => (
+                          <div key={idx} style={{ marginBottom: 12 }}>
+                            <strong style={{ color: msg.role === 'user' ? COLORS.primary : '#10b981' }}>
+                              {msg.role === 'user' ? 'You' : 'Claude'}:
+                            </strong>
+                            <span style={{ marginLeft: 8, color: COLORS.text }}>
+                              {msg.content.slice(0, 200)}{msg.content.length > 200 ? '...' : ''}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
