@@ -26,6 +26,16 @@ import { supabase } from '../lib/supabase';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
 
+// Wake up Render backend (free tier sleeps after inactivity)
+async function wakeBackend() {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 45000);
+    await fetch(`${API_BASE}/health`, { method: 'GET', mode: 'no-cors', signal: controller.signal });
+    clearTimeout(timeout);
+  } catch { /* ignore – just a wake-up ping */ }
+}
+
 // Suggestion prompts for getting started
 const SUGGESTIONS = [
   {
@@ -134,6 +144,9 @@ function DealBuilderPage() {
     }]);
 
     try {
+      // Wake Render backend if it's sleeping (free tier spins down)
+      await wakeBackend();
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('session_id', sessionId);

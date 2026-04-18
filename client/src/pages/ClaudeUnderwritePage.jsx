@@ -598,6 +598,10 @@ export default function ClaudeUnderwritePage() {
   const [activeArtifact, setActiveArtifact] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
+  // Drag state
+  const [dragActive, setDragActive] = useState(false);
+  const dragCounter = useRef(0);
+
   // Initialize session on mount
   useEffect(() => {
     const initSession = async () => {
@@ -608,7 +612,7 @@ export default function ClaudeUnderwritePage() {
           setSessionId(data.session_id);
           setMessages([{
             role: 'assistant',
-            content: `I'm Claude, your CRE underwriting partner. Upload your OM, rent roll, T12, or any deal documents and I'll analyze them from scratch — no broker assumptions, just the real numbers.\n\n**I can generate documents that appear live in the canvas:**\n- "Build me an underwrite model" → Spreadsheet with pro forma, returns, sensitivity\n- "Write a business plan" → Full investment memo with value-add strategy\n\n**I can also help you:**\n- Parse and verify all financial data from documents\n- Identify value-add opportunities (RUBS, expense optimization)\n- Structure the deal to maximize returns\n\nDrop your files or ask me anything about a deal.`
+            content: `I'm your CRE underwriting partner. Upload your OM, rent roll, T12, or any deal documents and I'll analyze them from scratch — no broker assumptions, just the real numbers.\n\n**I can generate documents that appear live in the canvas:**\n- "Build me an underwrite model" -> Spreadsheet with pro forma, returns, sensitivity\n- "Write a business plan" -> Full investment memo with value-add strategy\n\n**I can also help you:**\n- Parse and verify all financial data from documents\n- Identify value-add opportunities (RUBS, expense optimization)\n- Structure the deal to maximize returns\n\nDrop your files or ask me anything about a deal.`
           }]);
         }
       } catch (err) {
@@ -862,6 +866,9 @@ export default function ClaudeUnderwritePage() {
   // Handle drag and drop
   const handleDrop = (e) => {
     e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current = 0;
+    setDragActive(false);
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
       handleFileUpload(files);
@@ -870,6 +877,25 @@ export default function ClaudeUnderwritePage() {
 
   const handleDragOver = (e) => {
     e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setDragActive(true);
+    }
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
+      setDragActive(false);
+    }
   };
 
   if (isInitializing) {
@@ -897,7 +923,40 @@ export default function ClaudeUnderwritePage() {
       }}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
     >
+      {/* Drag overlay */}
+      {dragActive && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9999,
+          background: 'rgba(59, 130, 246, 0.08)',
+          border: '3px dashed #3b82f6',
+          borderRadius: 12,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          pointerEvents: 'none',
+        }}>
+          <div style={{
+            background: '#fff',
+            padding: '32px 48px',
+            borderRadius: 16,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            textAlign: 'center',
+          }}>
+            <Upload size={40} color="#3b82f6" />
+            <p style={{ margin: '12px 0 0', fontSize: 16, fontWeight: 600, color: '#1e293b' }}>
+              Drop files to upload
+            </p>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b' }}>
+              PDF, images, CSV, Excel
+            </p>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <header style={{
         display: 'flex',
@@ -929,7 +988,7 @@ export default function ClaudeUnderwritePage() {
           </button>
           <div>
             <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: COLORS.text }}>
-              Claude Underwriter
+              AI Underwriter
             </h1>
             <p style={{ margin: 0, fontSize: 12, color: COLORS.textMuted }}>
               AI-powered deal analysis and document generation
@@ -1094,7 +1153,10 @@ export default function ClaudeUnderwritePage() {
                   multiple
                   accept=".pdf,image/*,.csv,.xlsx,.xls,.txt"
                   style={{ display: 'none' }}
-                  onChange={(e) => handleFileUpload(Array.from(e.target.files))}
+                  onChange={(e) => {
+                    handleFileUpload(Array.from(e.target.files));
+                    e.target.value = '';
+                  }}
                 />
 
                 {/* Text Input */}
@@ -1280,7 +1342,7 @@ export default function ClaudeUnderwritePage() {
                         No artifacts yet
                       </p>
                       <p style={{ fontSize: 13, color: COLORS.textLight, maxWidth: 300 }}>
-                        Ask Claude to "build an underwrite model" or "write a business plan" and it will appear here
+                        Ask the AI to "build an underwrite model" or "write a business plan" and it will appear here
                       </p>
                     </div>
                   )}
@@ -1362,7 +1424,7 @@ export default function ClaudeUnderwritePage() {
                         {messages.filter(m => m.role !== 'system').map((msg, idx) => (
                           <div key={idx} style={{ marginBottom: 12 }}>
                             <strong style={{ color: msg.role === 'user' ? COLORS.primary : '#10b981' }}>
-                              {msg.role === 'user' ? 'You' : 'Claude'}:
+                              {msg.role === 'user' ? 'You' : 'AI'}:
                             </strong>
                             <span style={{ marginLeft: 8, color: COLORS.text }}>
                               {msg.content.slice(0, 200)}{msg.content.length > 200 ? '...' : ''}

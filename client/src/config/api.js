@@ -85,10 +85,7 @@ export const API_ENDPOINTS = {
   // Health
   health: `${API_BASE_URL}/health`,
 
-  // Red Flag Scanner
-  redFlagScan: `${API_BASE_URL}/api/red-flag/scan`,
-
-  // Claude Chat Underwriter
+  // AI Underwriter Chat
   claudeChatSession: `${API_BASE_URL}/api/claude-chat/session`,
   claudeChatUpload: `${API_BASE_URL}/api/claude-chat/upload`,
   claudeChatStream: `${API_BASE_URL}/api/claude-chat/chat/stream`,
