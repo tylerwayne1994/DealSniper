@@ -19,6 +19,7 @@ import {
   LogOut,
   Phone,
   MessageCircle,
+  MessageSquare,
 } from 'lucide-react';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { supabase } from '../lib/supabase';
@@ -185,6 +186,7 @@ const tabs = [
   { id: 'rapid-fire', label: 'Rapid Fire', icon: Zap, section: 'deals' },
   { id: 'email-underwrite', label: 'Email Underwrite', icon: Mail, section: 'deals' },
   { id: 'red-flag-scanner', label: 'Red Flag Scanner', icon: AlertTriangle, section: 'deals' },
+  { id: 'claude-underwriter', label: 'Claude Underwriter', icon: MessageSquare, section: 'deals' },
   { id: 'templates', label: 'Templates', icon: FileText, section: 'deals' },
   { id: 'market', label: 'Deal Builder', icon: BarChart3, section: 'analysis' },
   { id: 'pitch-deck', label: 'Pitch Deck', icon: Presentation, section: 'analysis' },
@@ -209,6 +211,8 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
       navigate('/email-underwrite');
     } else if (tabId === 'red-flag-scanner') {
       navigate('/red-flag-scanner');
+    } else if (tabId === 'claude-underwriter') {
+      navigate('/claude-underwriter');
     } else if (tabId === 'templates') {
       navigate('/templates');
     } else if (tabId === 'market') {

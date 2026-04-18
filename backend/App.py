@@ -332,6 +332,14 @@ try:
 except Exception as _rfs_err:
     log.error("[RED FLAG SCANNER] Failed to load: %s", _rfs_err)
 
+# Claude Chat Underwriter: Direct Claude API chat with streaming + document canvas
+try:
+    from claude_chat import router as claude_chat_router
+    app.include_router(claude_chat_router)
+    log.info("[CLAUDE CHAT] Router loaded successfully")
+except Exception as _cc_err:
+    log.error("[CLAUDE CHAT] Failed to load: %s", _cc_err)
+
 # Market Analysis: Drive-time isochrones & census aggregation
 try:
     import market_analysis

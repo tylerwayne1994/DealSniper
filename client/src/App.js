@@ -23,6 +23,7 @@ import PitchDeckPage from './pages/PitchDeckPage'; // Pitch Deck Generator
 import ContractPage from './pages/ContractPage'; // Contract Generator
 import MapViewPage from './pages/MapViewPage'; // Map View
 import RedFlagScannerPage from './pages/RedFlagScannerPage'; // AI Red Flag Scanner
+import ClaudeUnderwritePage from './pages/ClaudeUnderwritePage'; // Claude Direct Chat Underwriter
 import InvestorPortalPage from './pages/InvestorPortalPage'; // Investor Portal / LP Dashboard
 
 function App() {
@@ -52,6 +53,7 @@ function App() {
         <Route path="/email-underwrite" element={<EmailUnderwritePage />} /> {/* Email Underwrite Pipeline */}
         <Route path="/templates" element={<TemplatesPage />} /> {/* Deal Templates */}
         <Route path="/red-flag-scanner" element={<RedFlagScannerPage />} /> {/* AI Red Flag Scanner */}
+        <Route path="/claude-underwriter" element={<ClaudeUnderwritePage />} /> {/* Claude Direct Chat */}
         <Route path="/investor-portal" element={<InvestorPortalPage />} /> {/* Investor Portal / LP Dashboard */}
       </Routes>
     </Router>

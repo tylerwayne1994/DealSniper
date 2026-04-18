@@ -87,6 +87,14 @@ export const API_ENDPOINTS = {
 
   // Red Flag Scanner
   redFlagScan: `${API_BASE_URL}/api/red-flag/scan`,
+
+  // Claude Chat Underwriter
+  claudeChatSession: `${API_BASE_URL}/api/claude-chat/session`,
+  claudeChatUpload: `${API_BASE_URL}/api/claude-chat/upload`,
+  claudeChatStream: `${API_BASE_URL}/api/claude-chat/chat/stream`,
+  claudeChatNonStream: `${API_BASE_URL}/api/claude-chat/chat`,
+  claudeChatFile: (sessionId, fileId) => `${API_BASE_URL}/api/claude-chat/file/${sessionId}/${fileId}`,
+  claudeChatFiles: (sessionId) => `${API_BASE_URL}/api/claude-chat/session/${sessionId}/files`,
 };
 
 export default API_BASE_URL;
