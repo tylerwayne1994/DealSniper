@@ -1,9 +1,9 @@
 // Deal Builder — Two-column: Chat + Spreadsheet Underwriting Workbook
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Send, Upload, FileText, Loader, CheckCircle, Download, X,
-  Layers, ExternalLink, AlertCircle
+  Layers, ExternalLink, AlertCircle, Maximize2, Minimize2
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -26,8 +26,64 @@ const pct  = (v) => v != null && v !== 0 ? (typeof v === 'number' && Math.abs(v)
 const dollar = (v) => v != null && v !== 0 ? '$' + Math.round(v).toLocaleString() : '—';
 const neg    = (v) => v != null && v !== 0 ? '($' + Math.abs(Math.round(v)).toLocaleString() + ')' : '—';
 
+/* ─────────── Editable Cell ─────────────── */
+function EditableCell({ value, cellKey, overrides, onEdit, isTotal, isNeg }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const inputRef = useRef(null);
+  const display = overrides?.[cellKey] !== undefined ? overrides[cellKey] : value;
+  const isOverridden = overrides?.[cellKey] !== undefined;
+
+  useEffect(() => { if (editing && inputRef.current) inputRef.current.focus(); }, [editing]);
+
+  const startEdit = () => {
+    // Strip formatting to get raw value for editing
+    const raw = String(display).replace(/[\$,%()\s]/g, '').replace(/,/g, '');
+    setDraft(raw === '—' ? '' : raw);
+    setEditing(true);
+  };
+
+  const commit = () => {
+    setEditing(false);
+    if (draft.trim() === '' || draft === String(value).replace(/[\$,%()\s]/g, '').replace(/,/g, '')) {
+      // Reset to original if empty or unchanged
+      if (onEdit) onEdit(cellKey, undefined);
+    } else {
+      if (onEdit) onEdit(cellKey, draft.trim());
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); commit(); }
+    if (e.key === 'Escape') { setEditing(false); }
+  };
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={handleKeyDown}
+        className="w-full px-2 py-0.5 text-[12.5px] text-right tabular-nums bg-white border border-blue-400 rounded outline-none ring-2 ring-blue-100"
+      />
+    );
+  }
+
+  return (
+    <span
+      onClick={startEdit}
+      title="Click to edit"
+      className={`cursor-pointer hover:bg-blue-100/50 rounded px-1 -mx-1 transition-colors ${isOverridden ? 'text-blue-600 underline decoration-blue-300 decoration-dotted underline-offset-2' : ''}`}
+    >
+      {display || '—'}
+    </span>
+  );
+}
+
 /* ─────────── Spreadsheet Section Component ─────────────── */
-function SheetSection({ title, rows, columns, accent }) {
+function SheetSection({ title, rows, columns, accent, sectionIdx, overrides, onCellEdit }) {
   const colCount = columns ? columns.length : 1;
   const gridCols = `minmax(220px,2.5fr) repeat(${colCount},minmax(100px,1fr))`;
   return (
@@ -59,13 +115,16 @@ function SheetSection({ title, rows, columns, accent }) {
             <div className={`px-4 py-[7px] text-[12.5px] truncate ${isTotal ? 'font-bold text-slate-800' : isSub ? 'font-semibold text-slate-700' : 'text-slate-500 pl-6'}`}>
               {row.label}
             </div>
-            {row.values ? row.values.map((v, j) => (
-              <div key={j} className={`px-4 py-[7px] text-[12.5px] font-mono text-right tabular-nums ${isTotal ? 'font-bold text-slate-800' : 'text-slate-600'} ${typeof v === 'string' && v.startsWith('(') ? '!text-rose-500' : ''}`}>
-                {v}
-              </div>
-            )) : (
-              <div className={`px-4 py-[7px] text-[12.5px] font-mono text-right tabular-nums ${isTotal ? 'font-bold text-slate-800' : 'text-slate-600'} ${typeof row.value === 'string' && row.value.startsWith('(') ? '!text-rose-500' : ''}`}>
-                {row.value || '—'}
+            {row.values ? row.values.map((v, j) => {
+              const ck = `${sectionIdx}-${i}-${j}`;
+              return (
+                <div key={j} className={`px-4 py-[7px] text-[13px] text-right tabular-nums ${isTotal ? 'font-semibold text-slate-800' : 'font-medium text-slate-600'} ${typeof v === 'string' && v.startsWith('(') ? '!text-rose-500' : ''}`}>
+                  <EditableCell value={v} cellKey={ck} overrides={overrides} onEdit={onCellEdit} isTotal={isTotal} />
+                </div>
+              );
+            }) : (
+              <div className={`px-4 py-[7px] text-[13px] text-right tabular-nums ${isTotal ? 'font-semibold text-slate-800' : 'font-medium text-slate-600'} ${typeof row.value === 'string' && row.value.startsWith('(') ? '!text-rose-500' : ''}`}>
+                <EditableCell value={row.value || '—'} cellKey={`${sectionIdx}-${i}-0`} overrides={overrides} onEdit={onCellEdit} isTotal={isTotal} />
               </div>
             )}
           </div>
@@ -310,7 +369,7 @@ function buildWorkbook(d) {
 }
 
 /* ──────────────── Workbook Panel ──────────────────────── */
-function WorkbookPanel({ dealData }) {
+function WorkbookPanel({ dealData, overrides, onCellEdit }) {
   const sections = useMemo(() => buildWorkbook(dealData), [dealData]);
   const prop = dealData?.property || {};
 
@@ -341,7 +400,7 @@ function WorkbookPanel({ dealData }) {
       </div>
       <div className="min-w-[420px] py-3">
         {sections.map((s, i) => (
-          <SheetSection key={i} title={s.title} rows={s.rows} columns={s.columns} accent={s.accent} />
+          <SheetSection key={i} title={s.title} rows={s.rows} columns={s.columns} accent={s.accent} sectionIdx={i} overrides={overrides} onCellEdit={onCellEdit} />
         ))}
         <div className="h-8" />
       </div>
@@ -364,6 +423,16 @@ function DealBuilderPage() {
   const [generationProgress, setGenerationProgress] = useState({ spreadsheet: 0, pitchDeck: 0 });
   const [generationStatus, setGenerationStatus] = useState({ spreadsheet: 'idle', pitchDeck: 'idle' });
   const [downloadUrls, setDownloadUrls] = useState({ spreadsheet: null, pitchDeck: null, dealId: null });
+  const [cellOverrides, setCellOverrides] = useState({});
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const handleCellEdit = useCallback((cellKey, value) => {
+    setCellOverrides(prev => {
+      const next = { ...prev };
+      if (value === undefined) { delete next[cellKey]; } else { next[cellKey] = value; }
+      return next;
+    });
+  }, []);
 
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
@@ -505,6 +574,8 @@ function DealBuilderPage() {
     setGenerationProgress({ spreadsheet: 0, pitchDeck: 0 });
     setGenerationStatus({ spreadsheet: 'idle', pitchDeck: 'idle' });
     setDownloadUrls({ spreadsheet: null, pitchDeck: null, dealId: null });
+    setCellOverrides({});
+    setIsFullscreen(false);
     setSessionId(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   };
 
@@ -533,7 +604,7 @@ function DealBuilderPage() {
     table: ({ children }) => <div className="overflow-x-auto my-2 rounded-lg border border-gray-200"><table className="w-full border-collapse text-xs">{children}</table></div>,
     thead: ({ children }) => <thead className="bg-gray-50">{children}</thead>,
     th: ({ children }) => <th className="px-2.5 py-1.5 text-left font-semibold text-slate-400 border-b border-gray-200 text-[10px] uppercase tracking-widest">{children}</th>,
-    td: ({ children }) => <td className="px-2.5 py-1.5 border-b border-gray-100 text-slate-600 font-mono text-right text-xs">{children}</td>,
+    td: ({ children }) => <td className="px-2.5 py-1.5 border-b border-gray-100 text-slate-600 text-right text-xs tabular-nums">{children}</td>,
     blockquote: ({ children }) => <blockquote className="my-2 pl-3 border-l-2 border-slate-300 text-slate-500 text-xs">{children}</blockquote>,
     hr: () => <hr className="border-t border-gray-200 my-2" />,
     code: ({ children }) => <code className="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">{children}</code>,
@@ -680,13 +751,48 @@ function DealBuilderPage() {
           </div>
 
           {/* ═══ RIGHT — Workbook ═══ */}
-          <div className="flex flex-col w-1/2 min-w-0 bg-gray-50/50">
-            <div className="px-4 py-2 border-b border-gray-100 bg-white shrink-0">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Underwriting Workbook</span>
+          {!isFullscreen && (
+            <div className="flex flex-col w-1/2 min-w-0 bg-gray-50/50">
+              <div className="px-4 py-2 border-b border-gray-100 bg-white shrink-0 flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Underwriting Workbook</span>
+                <div className="flex items-center gap-1.5">
+                  {Object.keys(cellOverrides).length > 0 && (
+                    <button onClick={() => setCellOverrides({})} className="text-[10px] text-slate-400 border border-gray-200 rounded-md px-2 py-0.5 hover:bg-gray-50 hover:text-slate-600 transition-all" title="Reset all edits">
+                      Reset
+                    </button>
+                  )}
+                  <button onClick={() => setIsFullscreen(true)} className="p-1 rounded-md hover:bg-gray-100 text-slate-400 hover:text-slate-600 transition-all" title="Fullscreen">
+                    <Maximize2 size={14} />
+                  </button>
+                </div>
+              </div>
+              <WorkbookPanel dealData={dealData} overrides={cellOverrides} onCellEdit={handleCellEdit} />
             </div>
-            <WorkbookPanel dealData={dealData} />
-          </div>
+          )}
         </div>
+
+        {/* ═══ Fullscreen Workbook Overlay ═══ */}
+        {isFullscreen && (
+          <div className="fixed inset-0 z-50 bg-white flex flex-col" style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
+            <div className="px-5 py-2.5 border-b border-gray-200/60 bg-white shrink-0 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-[15px] font-bold text-slate-800 tracking-tight">Underwriting Workbook</span>
+                <span className="text-xs text-slate-400">Click any value to edit</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {Object.keys(cellOverrides).length > 0 && (
+                  <button onClick={() => setCellOverrides({})} className="text-xs text-slate-500 border border-gray-200 rounded-lg px-3 py-1 hover:bg-gray-50 hover:border-gray-300 transition-all">
+                    Reset Edits
+                  </button>
+                )}
+                <button onClick={() => setIsFullscreen(false)} className="p-1.5 rounded-lg hover:bg-gray-100 text-slate-500 hover:text-slate-700 transition-all" title="Exit fullscreen">
+                  <Minimize2 size={16} />
+                </button>
+              </div>
+            </div>
+            <WorkbookPanel dealData={dealData} overrides={cellOverrides} onCellEdit={handleCellEdit} />
+          </div>
+        )}
 
         <input ref={fileInputRef} type="file" accept=".pdf,image/*" onChange={handleFileUpload} className="hidden" />
       </div>
