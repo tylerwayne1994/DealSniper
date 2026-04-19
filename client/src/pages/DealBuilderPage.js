@@ -1,24 +1,9 @@
-// Deal Builder Page - AI-Powered Full Deal Underwriting + Pitch Deck + Spreadsheet
-// Upload OM → Chat with Max → Generate Pitch Deck + Spreadsheet
-import React, { useState, useRef, useEffect } from 'react';
+// Deal Builder — Two-column: Chat + Spreadsheet Underwriting Workbook
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Send, 
-  ArrowLeft, 
-  Sparkles, 
-  Upload,
-  FileText,
-  Loader,
-  Building2,
-  CheckCircle,
-  Download,
-  X,
-  Layers,
-  DollarSign,
-  TrendingUp,
-  PieChart,
-  AlertCircle,
-  ExternalLink
+import {
+  Send, Upload, FileText, Loader, CheckCircle, Download, X,
+  Layers, ExternalLink, AlertCircle
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -27,48 +12,342 @@ import { supabase } from '../lib/supabase';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'https://dealsniper-oh9v.onrender.com';
 
-// Wake up Render backend (free tier sleeps after inactivity)
 async function wakeBackend() {
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 45000);
-    await fetch(`${API_BASE}/health`, { method: 'GET', mode: 'no-cors', signal: controller.signal });
-    clearTimeout(timeout);
-  } catch { /* ignore – just a wake-up ping */ }
+    const c = new AbortController();
+    const t = setTimeout(() => c.abort(), 45000);
+    await fetch(`${API_BASE}/health`, { method: 'GET', mode: 'no-cors', signal: c.signal });
+    clearTimeout(t);
+  } catch { /* wake-up ping */ }
 }
 
-// Suggestion prompts for getting started
-const SUGGESTIONS = [
-  {
-    icon: Upload,
-    color: '#10b981',
-    title: "Upload an OM",
-    desc: "Start by uploading an Offering Memorandum",
-    action: 'upload'
-  },
-  {
-    icon: DollarSign,
-    color: '#f59e0b',
-    title: "Value-Add Strategy",
-    desc: "Find ways to boost NOI and returns",
-    prompt: "What are the best value-add strategies for this deal? How can I increase NOI through rent bumps, expense reductions, or RUBS?"
-  },
-  {
-    icon: PieChart,
-    color: '#6366f1',
-    title: "Capital Structure",
-    desc: "Structure the deal for investors",
-    prompt: "Help me structure the capital stack for this deal. What's a good LP/GP split? Should I do preferred return or straight equity?"
-  },
-  {
-    icon: TrendingUp,
-    color: '#ec4899',
-    title: "Deal Weaknesses",
-    desc: "Identify risks and red flags",
-    prompt: "What are the potential weaknesses or risks in this deal? What should I be worried about?"
-  }
-];
+/* ───────────────────────── format helpers ───────────────── */
+const pct  = (v) => v != null && v !== 0 ? (typeof v === 'number' && Math.abs(v) < 1 ? (v * 100).toFixed(1) + '%' : Number(v).toFixed(1) + '%') : '—';
+const dollar = (v) => v != null && v !== 0 ? '$' + Math.round(v).toLocaleString() : '—';
+const neg    = (v) => v != null && v !== 0 ? '($' + Math.abs(Math.round(v)).toLocaleString() + ')' : '—';
 
+/* ─────────── Spreadsheet Section Component ─────────────── */
+function SheetSection({ title, rows, columns, accent }) {
+  const colCount = columns ? columns.length : 1;
+  const gridCols = `minmax(200px,2fr) repeat(${colCount},minmax(90px,1fr))`;
+  return (
+    <div className="mb-px">
+      {/* Section header */}
+      <div className={`px-3 py-1.5 text-[11px] font-bold tracking-wide uppercase border-b border-gray-200 select-none ${accent ? 'bg-[#3d4f5f] text-white' : 'bg-[#f0f1f3] text-[#4a5568]'}`}>
+        {title}
+      </div>
+      {/* Column headers */}
+      {columns && columns.length > 0 && (
+        <div className="grid bg-[#f7f8f9] border-b border-gray-200" style={{ gridTemplateColumns: gridCols }}>
+          <div className="px-3 py-1" />
+          {columns.map((c, i) => (
+            <div key={i} className="px-3 py-1 text-[10px] font-bold text-[#6b7280] uppercase tracking-wider text-right select-none">{c}</div>
+          ))}
+        </div>
+      )}
+      {/* Rows */}
+      {rows.map((row, i) => {
+        const isTotal = row.total;
+        const isSub = row.sub;
+        if (row.label === ' ') return <div key={i} className="h-2 border-b border-gray-100" />;
+        return (
+          <div
+            key={i}
+            className={`grid ${isTotal ? 'border-b-2 border-[#ccd0d5] bg-[#f7f8f9]' : 'border-b border-[#ebedf0]'} hover:bg-[#f0f4ff] transition-colors`}
+            style={{ gridTemplateColumns: gridCols }}
+          >
+            <div className={`px-3 py-[5px] text-[12px] truncate ${isTotal ? 'font-bold text-[#1a202c]' : isSub ? 'font-semibold text-[#2d3748]' : 'text-[#4a5568] pl-5'}`}>
+              {row.label}
+            </div>
+            {row.values ? row.values.map((v, j) => (
+              <div key={j} className={`px-3 py-[5px] text-[12px] font-mono text-right tabular-nums ${isTotal ? 'font-bold text-[#1a202c]' : 'text-[#374151]'} ${typeof v === 'string' && v.startsWith('(') ? 'text-red-600' : ''}`}>
+                {v}
+              </div>
+            )) : (
+              <div className={`px-3 py-[5px] text-[12px] font-mono text-right tabular-nums ${isTotal ? 'font-bold text-[#1a202c]' : 'text-[#374151]'} ${typeof row.value === 'string' && row.value.startsWith('(') ? 'text-red-600' : ''}`}>
+                {row.value || '—'}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─────── Build workbook sections from parsed deal ──────── */
+function buildWorkbook(d) {
+  if (!d) return null;
+  const fin = d.financials || {};
+  const exp = d.expenses || {};
+  const inc = d.income || {};
+  const prop = d.property || {};
+  const units = prop.units || 0;
+
+  const askingPrice = fin.asking_price || 0;
+  const downPct = 0.25;
+  const loanAmt = askingPrice * (1 - downPct);
+  const downAmt = askingPrice * downPct;
+  const rate = 0.07;
+  const amort = 25;
+  const mp = loanAmt > 0 ? (loanAmt * (rate / 12)) / (1 - Math.pow(1 + rate / 12, -amort * 12)) : 0;
+  const annualDS = mp * 12;
+
+  const origFee = loanAmt * 0.01;
+  const closingCosts = askingPrice * 0.02;
+  const inspDD = 5000;
+  const reserve3mo = (exp.taxes || 0) / 4 + (exp.insurance || 0) / 4 + mp * 3;
+  const totalCash = downAmt + origFee + closingCosts + inspDD + reserve3mo;
+
+  const gpr = fin.gross_potential_rent || inc.rental_income || 0;
+  const vacRate = 0.06;
+  const vacLoss = gpr * vacRate;
+  const otherInc = inc.other_income || 0;
+  const egi = gpr - vacLoss + otherInc;
+
+  const taxes = exp.taxes || 0;
+  const insurance = exp.insurance || 0;
+  const utils = (exp.utilities || 0) + (exp.water_sewer || 0);
+  const trash = exp.trash || 0;
+  const rm = exp.repairs_maintenance || 0;
+  const mgmt = exp.management_fee || egi * 0.08;
+  const payroll = exp.payroll || 0;
+  const marketing = exp.marketing || 0;
+  const admin = exp.admin || 0;
+  const capex = units * 500;
+  const otherExp = exp.other || 0;
+  const totalExp = taxes + insurance + utils + trash + rm + mgmt + payroll + marketing + admin + capex + otherExp;
+
+  const taxReassessed = askingPrice * 0.0163;
+  const noiDay1 = egi - totalExp;
+  const rubsRecovery = utils * 0.9;
+  const trashShift = trash;
+  const rentBump = units * 40 * 12;
+  const stabExpDelta = rubsRecovery + trashShift - (taxReassessed - taxes);
+  const noiStab = noiDay1 + rubsRecovery + trashShift + rentBump - (taxReassessed - taxes);
+
+  const cfDay1 = noiDay1 - annualDS;
+  const cfStab = noiStab - annualDS;
+
+  const dscr = annualDS > 0 ? noiDay1 / annualDS : 0;
+  const dscrStab = annualDS > 0 ? noiStab / annualDS : 0;
+  const capRate = askingPrice > 0 ? noiDay1 / askingPrice : 0;
+  const capRateStab = askingPrice > 0 ? noiStab / askingPrice : 0;
+  const grm = gpr > 0 ? askingPrice / gpr : 0;
+  const ppu = units > 0 ? askingPrice / units : 0;
+  const expRatio = egi > 0 ? totalExp / egi : 0;
+  const coc = totalCash > 0 ? cfDay1 / totalCash : 0;
+  const cocStab = totalCash > 0 ? cfStab / totalCash : 0;
+
+  const refiCap = 0.085;
+  const stabValue = noiStab > 0 ? noiStab / refiCap : 0;
+  const ltvAmts = [0.65, 0.70, 0.75, 0.80].map(l => stabValue * l);
+  const refiRate = 0.065;
+  const refiAmort = 30;
+  const refiPmt = (a) => a > 0 ? (a * (refiRate / 12)) / (1 - Math.pow(1 + refiRate / 12, -refiAmort * 12)) : 0;
+  const refiCF = (a) => (noiStab - refiPmt(a) * 12) / 12;
+
+  const investorPrincipal = totalCash;
+  const bonus = investorPrincipal * 0.15;
+  const totalToInvestor = investorPrincipal + bonus;
+  const cashOut75 = ltvAmts[2] - loanAmt;
+  const netAfter = cashOut75 - totalToInvestor;
+  const covers = cashOut75 >= totalToInvestor;
+  const investorROI = investorPrincipal > 0 ? totalToInvestor / investorPrincipal - 1 : 0;
+
+  return [
+    {
+      title: '1. Deal Assumptions', accent: true,
+      rows: [
+        { label: 'Purchase Price', value: dollar(askingPrice), sub: true },
+        { label: 'Down Payment %', value: pct(downPct) },
+        { label: 'Loan Amount', value: dollar(loanAmt) },
+        { label: 'Down Payment $', value: dollar(downAmt) },
+        { label: 'Interest Rate', value: pct(rate) },
+        { label: 'Amortization', value: amort + ' years' },
+        { label: 'Monthly Debt Service', value: dollar(mp) },
+        { label: 'Annual Debt Service', value: dollar(annualDS), total: true },
+      ]
+    },
+    {
+      title: '2. Acquisition Costs',
+      rows: [
+        { label: 'Origination Fee (1% of loan)', value: dollar(origFee) },
+        { label: 'Closing Costs (title, attorney)', value: dollar(closingCosts) },
+        { label: 'Inspection / Due Diligence', value: dollar(inspDD) },
+        { label: '3-Month Payment Reserve', value: dollar(reserve3mo) },
+        { label: 'TOTAL CASH NEEDED (INVESTOR)', value: dollar(totalCash), total: true },
+      ]
+    },
+    {
+      title: '3. Income Assumptions',
+      rows: [
+        { label: 'Gross Potential Rent', value: dollar(gpr), sub: true },
+        { label: 'Vacancy & Credit Loss (' + pct(vacRate) + ')', value: neg(vacLoss) },
+        { label: 'Other Income', value: dollar(otherInc) },
+        { label: 'Effective Gross Income', value: dollar(egi), total: true },
+        { label: 'RUBS — Water + Gas (est.)', value: dollar(rubsRecovery) },
+        { label: 'CapEx Reserve ($500/unit)', value: neg(capex) },
+      ]
+    },
+    {
+      title: '4. Income Statement', columns: ['Day 1', 'Stabilized'],
+      rows: [
+        { label: 'Gross Potential Rent', values: [dollar(gpr), dollar(gpr + rentBump)] },
+        { label: 'Vacancy & Credit Loss', values: [neg(vacLoss), neg((gpr + rentBump) * vacRate)] },
+        { label: 'RUBS / Utility Recovery', values: ['—', dollar(rubsRecovery)] },
+        { label: 'Other Income', values: [dollar(otherInc), dollar(otherInc)] },
+        { label: 'TOTAL OPERATING INCOME', values: [dollar(egi), dollar(gpr + rentBump - (gpr + rentBump) * vacRate + rubsRecovery + otherInc)], total: true },
+        { label: ' ', values: ['', ''] },
+        { label: 'Property Taxes', values: [dollar(taxes), dollar(taxReassessed)] },
+        { label: 'Insurance', values: [dollar(insurance), dollar(insurance)] },
+        { label: 'Utilities (owner-paid)', values: [dollar(utils), dollar(Math.max(0, utils - rubsRecovery))] },
+        { label: 'Trash / Contract', values: [dollar(trash), dollar(0)] },
+        { label: 'Repairs & Maintenance', values: [dollar(rm), dollar(rm)] },
+        { label: 'Management Fee', values: [dollar(mgmt), dollar(mgmt)] },
+        { label: 'Payroll', values: [dollar(payroll), dollar(payroll)] },
+        { label: 'Marketing', values: [dollar(marketing), dollar(marketing)] },
+        { label: 'Admin / Other', values: [dollar(admin + otherExp), dollar(admin + otherExp)] },
+        { label: 'CapEx Reserve ($500/unit)', values: [dollar(capex), dollar(capex)] },
+        { label: 'TOTAL OPERATING EXPENSES', values: [dollar(totalExp), dollar(totalExp - stabExpDelta)], total: true },
+        { label: ' ', values: ['', ''] },
+        { label: 'NET OPERATING INCOME (NOI)', values: [dollar(noiDay1), dollar(noiStab)], total: true },
+      ]
+    },
+    {
+      title: '5. Debt Service & Cash Flow', columns: ['Day 1', 'Stabilized'],
+      rows: [
+        { label: 'Annual Debt Service', values: [neg(annualDS), neg(annualDS)] },
+        { label: 'CASH FLOW BEFORE TAX', values: [dollar(cfDay1), dollar(cfStab)], total: true },
+        { label: 'Monthly Cash Flow', values: [dollar(cfDay1 / 12), dollar(cfStab / 12)] },
+      ]
+    },
+    {
+      title: '6. Key Metrics', columns: ['Day 1', 'Stabilized'],
+      rows: [
+        { label: 'DSCR', values: [dscr.toFixed(2) + 'x', dscrStab.toFixed(2) + 'x'], sub: true },
+        { label: 'Cap Rate', values: [pct(capRate), pct(capRateStab)] },
+        { label: 'GRM', values: [grm.toFixed(2), '—'] },
+        { label: 'Price Per Unit', values: [dollar(ppu), '—'] },
+        { label: 'Expense Ratio', values: [pct(expRatio), '—'] },
+        { label: 'Cash-on-Cash Return', values: [pct(coc), pct(cocStab)], total: true },
+      ]
+    },
+    {
+      title: '7. Stabilized Value & Cash-Out Refi',
+      rows: [
+        { label: 'Refi Cap Rate Assumption', value: pct(refiCap), sub: true },
+        { label: 'Stabilized Value (NOI ÷ Cap Rate)', value: dollar(stabValue), total: true },
+        { label: '65% LTV — Conservative', value: dollar(ltvAmts[0]) },
+        { label: '70% LTV — Moderate', value: dollar(ltvAmts[1]) },
+        { label: '75% LTV — Standard', value: dollar(ltvAmts[2]), sub: true },
+        { label: '80% LTV — Aggressive', value: dollar(ltvAmts[3]) },
+      ]
+    },
+    {
+      title: '8. Post-Refi Monthly Cash Flow',
+      rows: [
+        { label: '65% LTV', value: dollar(refiCF(ltvAmts[0])) },
+        { label: '70% LTV', value: dollar(refiCF(ltvAmts[1])) },
+        { label: '75% LTV', value: dollar(refiCF(ltvAmts[2])), sub: true },
+        { label: '80% LTV', value: dollar(refiCF(ltvAmts[3])) },
+      ]
+    },
+    {
+      title: '9. Investor Structure & Cash-Out (75% LTV)',
+      rows: [
+        { label: 'Return of Principal', value: dollar(investorPrincipal) },
+        { label: 'Bonus Payment (15%)', value: dollar(bonus) },
+        { label: 'TOTAL TO INVESTOR AT REFI', value: dollar(totalToInvestor), total: true },
+        { label: 'Cash Out Proceeds (75% LTV)', value: dollar(cashOut75) },
+        { label: 'YOUR NET AFTER INVESTOR PAY', value: dollar(netAfter), total: true },
+        { label: 'Covers Investor?', value: covers ? '✅ Yes' : '❌ No', sub: true },
+      ]
+    },
+    {
+      title: '10. Investor Return Metrics',
+      rows: [
+        { label: 'Investor Total Return', value: dollar(totalToInvestor) },
+        { label: 'Investor ROI', value: pct(investorROI) },
+        { label: 'Investor CAGR (5yr est.)', value: pct(Math.pow(1 + investorROI, 1 / 5) - 1) },
+      ]
+    },
+    {
+      title: '11. Value Add Summary',
+      rows: [
+        { label: 'RUBS — Water + Gas Billback', value: dollar(rubsRecovery) },
+        { label: 'Trash Cost Shift', value: dollar(trashShift) },
+        { label: 'Rent Recapture ($40/unit/mo)', value: dollar(rentBump) },
+        { label: 'CapEx Reserve (cost)', value: neg(capex) },
+        { label: 'TOTAL NET VALUE ADD', value: dollar(rubsRecovery + trashShift + rentBump - capex), total: true },
+      ]
+    },
+    {
+      title: '12. Investor Timeline — Strategy A (8% Pref)',
+      rows: [
+        { label: 'Close (Month 0)', value: neg(investorPrincipal), sub: true },
+        { label: 'Year 1 (Day 1 ops)', value: dollar(investorPrincipal * 0.08) },
+        { label: 'Year 2 (Stabilizing)', value: dollar(investorPrincipal * 0.08) },
+        { label: 'Year 3 (Stabilized)', value: dollar(investorPrincipal * 0.08) },
+        { label: 'Year 4 (Hold)', value: dollar(investorPrincipal * 0.08) },
+        { label: 'Year 5 (Cash-Out Refi)', value: dollar(totalToInvestor), total: true },
+        { label: 'Post-Refi (ongoing)', value: '—' },
+      ]
+    },
+    {
+      title: '13. Investor Timeline — Strategy B (Capital Return at Refi)',
+      rows: [
+        { label: 'Close (Month 0)', value: neg(investorPrincipal), sub: true },
+        { label: 'Year 1', value: dollar(cfDay1 * 0.5) },
+        { label: 'Year 2', value: dollar((cfDay1 + cfStab) / 2 * 0.5) },
+        { label: 'Year 3 (Stabilized)', value: dollar(cfStab * 0.5) },
+        { label: 'Year 4', value: dollar(cfStab * 0.5) },
+        { label: 'Year 5 (Cash-Out Refi)', value: dollar(totalToInvestor), total: true },
+        { label: 'Post-Refi (50/50 split)', value: dollar(refiCF(ltvAmts[2]) * 0.5) },
+      ]
+    },
+  ];
+}
+
+/* ──────────────── Workbook Panel ──────────────────────── */
+function WorkbookPanel({ dealData }) {
+  const sections = useMemo(() => buildWorkbook(dealData), [dealData]);
+  const prop = dealData?.property || {};
+
+  if (!sections) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center select-none">
+          <div className="text-5xl mb-3 opacity-20">📊</div>
+          <div className="text-[13px] font-semibold text-gray-400">Underwriting Workbook</div>
+          <div className="text-[11px] text-gray-300 mt-1">Upload an OM to populate the model</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto overflow-x-auto">
+      {/* Property header bar */}
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-2 shadow-sm">
+        <div className="text-[13px] font-bold text-[#1a202c] truncate">{prop.name || prop.address || 'Underwriting Model'}</div>
+        <div className="text-[11px] text-[#6b7280]">
+          {[prop.address, prop.city, prop.state, prop.zip].filter(Boolean).join(', ')}
+          {prop.units ? ` · ${prop.units} units` : ''}
+          {prop.year_built ? ` · Built ${prop.year_built}` : ''}
+        </div>
+      </div>
+      <div className="min-w-[400px]">
+        {sections.map((s, i) => (
+          <SheetSection key={i} title={s.title} rows={s.rows} columns={s.columns} accent={s.accent} />
+        ))}
+        <div className="h-8" />
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════ MAIN PAGE ═══════════════════ */
 function DealBuilderPage() {
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
@@ -79,117 +358,54 @@ function DealBuilderPage() {
   const [sessionId, setSessionId] = useState(null);
   const [dealData, setDealData] = useState(null);
   const [isApproved, setIsApproved] = useState(false);
-  
-  // Generation state
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState({ spreadsheet: 0, pitchDeck: 0 });
   const [generationStatus, setGenerationStatus] = useState({ spreadsheet: 'idle', pitchDeck: 'idle' });
   const [downloadUrls, setDownloadUrls] = useState({ spreadsheet: null, pitchDeck: null, dealId: null });
-  
+
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Initialize session
-  useEffect(() => {
-    const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    setSessionId(newSessionId);
-  }, []);
+  useEffect(() => { setSessionId(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`); }, []);
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // Auto-resize textarea
   const handleInputChange = (e) => {
     setInput(e.target.value);
     e.target.style.height = 'auto';
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
   };
 
-  const handleSuggestionClick = (suggestion) => {
-    if (suggestion.action === 'upload') {
-      fileInputRef.current?.click();
-    } else if (suggestion.prompt) {
-      setInput(suggestion.prompt);
-      if (textareaRef.current) {
-        textareaRef.current.focus();
-        textareaRef.current.style.height = 'auto';
-        textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
-      }
-    }
-  };
-
-  // Handle file upload
+  /* ─── File Upload ─── */
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Validate file type
     const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
-    if (!validTypes.includes(file.type)) {
-      alert('Please upload a PDF or image file');
-      return;
-    }
-
+    if (!validTypes.includes(file.type)) { alert('Please upload a PDF or image file'); return; }
     setIsUploading(true);
     setUploadedFile({ name: file.name, size: file.size, type: file.type });
-
-    // Add user message about upload
-    setMessages(prev => [...prev, { 
-      role: 'user', 
-      content: `I'm uploading an OM: ${file.name}`,
-      isUpload: true,
-      fileName: file.name
-    }]);
-
+    setMessages(prev => [...prev, { role: 'user', content: `Uploading: ${file.name}`, isUpload: true, fileName: file.name }]);
     try {
-      // Wake Render backend if it's sleeping (free tier spins down)
       await wakeBackend();
-
       const formData = new FormData();
       formData.append('file', file);
       formData.append('session_id', sessionId);
-
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData?.user?.id;
-
       const response = await fetch(`${API_BASE}/api/deal-builder/upload`, {
-        method: 'POST',
-        headers: userId ? { 'X-Profile-ID': userId } : {},
-        body: formData
+        method: 'POST', headers: userId ? { 'X-Profile-ID': userId } : {}, body: formData
       });
-
       if (!response.ok) {
-        let errorMsg = `HTTP ${response.status}`;
-        try {
-          const error = await response.json();
-          errorMsg = error.detail || error.error || errorMsg;
-        } catch {
-          errorMsg = `HTTP ${response.status}: ${response.statusText}`;
-        }
-        throw new Error(errorMsg);
+        let msg = `HTTP ${response.status}`;
+        try { const err = await response.json(); msg = err.detail || err.error || msg; } catch { msg = `HTTP ${response.status}: ${response.statusText}`; }
+        throw new Error(msg);
       }
-
       const data = await response.json();
-      
-      // Store parsed deal data
       setDealData(data.dealData);
-      
-      // Add assistant response with parsed data summary
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: data.response,
-        dealSummary: data.dealSummary
-      }]);
-
+      setMessages(prev => [...prev, { role: 'assistant', content: data.response, dealSummary: data.dealSummary }]);
     } catch (error) {
       console.error('Upload error:', error);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: `I had trouble processing that file: ${error.message}. Please try again with a clear PDF or image of the OM.`
-      }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${error.message}. Try again with a clear PDF or image.` }]);
       setUploadedFile(null);
     } finally {
       setIsUploading(false);
@@ -197,624 +413,227 @@ function DealBuilderPage() {
     }
   };
 
-  // Send chat message
+  /* ─── Chat ─── */
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
-
     const userMessage = input.trim();
     setInput('');
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
-    
-    // Check for explicit generation requests - skip chat and go straight to generation
-    const generateKeywords = ['generate', 'build the spreadsheet', 'make the spreadsheet', 'create the spreadsheet', 
-                              'build the model', 'create the model', 'make the pitch deck', 'build it now', 
-                              'generate now', 'produce the files', 'make the files'];
-    const isGenerateRequest = generateKeywords.some(kw => userMessage.toLowerCase().includes(kw));
-    
-    // If explicitly asking to generate and we have deal data, skip chat and generate directly
-    if (isGenerateRequest && dealData && !isApproved) {
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+
+    const genKW = ['generate', 'build the spreadsheet', 'make the spreadsheet', 'create the spreadsheet', 'build the model', 'create the model', 'make the pitch deck', 'build it now', 'generate now'];
+    if (genKW.some(kw => userMessage.toLowerCase().includes(kw)) && dealData && !isApproved) {
       setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-      handleApprove();
-      return;
+      handleApprove(); return;
     }
-    
-    // Check for approval keywords
-    const approvalKeywords = ['approved', 'looks good', 'let\'s do it', 'go ahead', 'proceed', 'build it', 'generate', 'create the'];
-    const isApprovalMessage = approvalKeywords.some(kw => userMessage.toLowerCase().includes(kw));
-    
+
+    const approvalKW = ['approved', 'looks good', "let's do it", 'go ahead', 'proceed', 'build it', 'generate', 'create the'];
+    const isApprovalMsg = approvalKW.some(kw => userMessage.toLowerCase().includes(kw));
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
-
     try {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData?.user?.id;
-
       const response = await fetch(`${API_BASE}/api/deal-builder/chat`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(userId && { 'X-Profile-ID': userId })
-        },
-        body: JSON.stringify({
-          message: userMessage,
-          session_id: sessionId,
-          deal_data: dealData,
-          conversation_history: messages.map(m => ({
-            role: m.role,
-            content: m.content
-          })),
-          is_approval: isApprovalMessage
-        })
+        headers: { 'Content-Type': 'application/json', ...(userId && { 'X-Profile-ID': userId }) },
+        body: JSON.stringify({ message: userMessage, session_id: sessionId, deal_data: dealData, conversation_history: messages.map(m => ({ role: m.role, content: m.content })), is_approval: isApprovalMsg })
       });
-
-      if (response.status === 401) {
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: 'Please log in to use Deal Builder. Go to the login page, sign in, then try again.'
-        }]);
-        return;
-      }
-
-      if (response.status === 402) {
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: 'You are out of tokens for this feature. Please purchase more tokens to continue.'
-        }]);
-        return;
-      }
-
+      if (response.status === 401) { setMessages(prev => [...prev, { role: 'assistant', content: 'Please log in to use Deal Builder.' }]); return; }
+      if (response.status === 402) { setMessages(prev => [...prev, { role: 'assistant', content: 'Out of tokens. Purchase more to continue.' }]); return; }
       const data = await response.json();
-
       if (data.success) {
-        // Update deal data if modified
-        if (data.updatedDealData) {
-          setDealData(data.updatedDealData);
-        }
-
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: data.response,
-          showApproveButton: data.readyForApproval && !isApproved
-        }]);
-
-        // If user approved and backend confirmed, start generation
-        if (data.approved) {
-          setIsApproved(true);
-          startGeneration();
-        }
+        if (data.updatedDealData) setDealData(data.updatedDealData);
+        setMessages(prev => [...prev, { role: 'assistant', content: data.response, showApproveButton: data.readyForApproval && !isApproved }]);
+        if (data.approved) { setIsApproved(true); startGeneration(); }
       } else {
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: `I encountered an error: ${data.error || 'Unknown error'}. Please try again.`
-        }]);
+        setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${data.error || 'Unknown'}` }]);
       }
     } catch (error) {
       console.error('Chat error:', error);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'There was a connection error. Please check your internet and try again.'
-      }]);
-    } finally {
-      setIsLoading(false);
-    }
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Connection error. Check your internet and try again.' }]);
+    } finally { setIsLoading(false); }
   };
 
-  // Handle approval button click
-  const handleApprove = async () => {
-    setMessages(prev => [...prev, { role: 'user', content: 'Approved! Generate the spreadsheet and pitch deck.' }]);
-    setIsApproved(true);
-    startGeneration();
+  const handleApprove = () => {
+    setMessages(prev => [...prev, { role: 'user', content: 'Approved — generate the spreadsheet and pitch deck.' }]);
+    setIsApproved(true); startGeneration();
   };
 
-  // Start parallel generation of spreadsheet + pitch deck
+  /* ─── Generation ─── */
   const startGeneration = async () => {
     setIsGenerating(true);
     setGenerationStatus({ spreadsheet: 'generating', pitchDeck: 'generating' });
     setGenerationProgress({ spreadsheet: 0, pitchDeck: 0 });
-
-    setMessages(prev => [...prev, { 
-      role: 'assistant', 
-      content: 'Building your deliverables now. This usually takes 1-2 minutes...',
-      isGenerationStatus: true
-    }]);
-
+    setMessages(prev => [...prev, { role: 'assistant', content: 'Building deliverables — 1-2 minutes...', isGenerationStatus: true }]);
     try {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData?.user?.id;
-
-      // Start generation (backend handles parallel processing)
-      const response = await fetch(`${API_BASE}/api/deal-builder/generate`, {
+      const resp = await fetch(`${API_BASE}/api/deal-builder/generate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(userId && { 'X-Profile-ID': userId })
-        },
-        body: JSON.stringify({
-          session_id: sessionId,
-          deal_data: dealData
-        })
+        headers: { 'Content-Type': 'application/json', ...(userId && { 'X-Profile-ID': userId }) },
+        body: JSON.stringify({ session_id: sessionId, deal_data: dealData })
       });
+      if (!resp.ok) throw new Error('Generation failed');
 
-      if (!response.ok) {
-        throw new Error('Generation failed');
-      }
-
-      // Poll for progress
-      const pollInterval = setInterval(async () => {
+      const poll = setInterval(async () => {
         try {
-          const statusRes = await fetch(`${API_BASE}/api/deal-builder/status/${sessionId}`, {
-            headers: userId ? { 'X-Profile-ID': userId } : {}
-          });
-          const status = await statusRes.json();
-
-          setGenerationProgress({
-            spreadsheet: status.spreadsheet_progress || 0,
-            pitchDeck: status.pitch_deck_progress || 0
-          });
-
-          setGenerationStatus({
-            spreadsheet: status.spreadsheet_status || 'generating',
-            pitchDeck: status.pitch_deck_status || 'generating'
-          });
-
-          // Check if complete
-          if (status.complete) {
-            clearInterval(pollInterval);
-            setIsGenerating(false);
-            // Prepend API_BASE to make absolute URLs (backend returns relative paths)
-            setDownloadUrls({
-              spreadsheet: status.spreadsheet_url ? `${API_BASE}${status.spreadsheet_url}` : null,
-              pitchDeck: status.pitch_deck_url ? `${API_BASE}${status.pitch_deck_url}` : null,
-              dealId: status.deal_id
-            });
-
-            setMessages(prev => [...prev, { 
-              role: 'assistant', 
-              content: 'Your deal package is ready! You can download your spreadsheet and pitch deck below, or view the deal in your pipeline.',
-              isComplete: true
-            }]);
+          const sr = await fetch(`${API_BASE}/api/deal-builder/status/${sessionId}`, { headers: userId ? { 'X-Profile-ID': userId } : {} });
+          const st = await sr.json();
+          setGenerationProgress({ spreadsheet: st.spreadsheet_progress || 0, pitchDeck: st.pitch_deck_progress || 0 });
+          setGenerationStatus({ spreadsheet: st.spreadsheet_status || 'generating', pitchDeck: st.pitch_deck_status || 'generating' });
+          if (st.complete) {
+            clearInterval(poll); setIsGenerating(false);
+            setDownloadUrls({ spreadsheet: st.spreadsheet_url ? `${API_BASE}${st.spreadsheet_url}` : null, pitchDeck: st.pitch_deck_url ? `${API_BASE}${st.pitch_deck_url}` : null, dealId: st.deal_id });
+            setMessages(prev => [...prev, { role: 'assistant', content: 'Deal package ready. Download below.', isComplete: true }]);
           }
-        } catch (err) {
-          console.error('Status poll error:', err);
-        }
+        } catch (e) { console.error('Poll error:', e); }
       }, 2000);
-
-      // Timeout after 5 minutes
-      setTimeout(() => {
-        clearInterval(pollInterval);
-        if (isGenerating) {
-          setIsGenerating(false);
-          setMessages(prev => [...prev, { 
-            role: 'assistant', 
-            content: 'Generation is taking longer than expected. Please check back in a moment or try again.'
-          }]);
-        }
-      }, 300000);
-
+      setTimeout(() => { clearInterval(poll); if (isGenerating) { setIsGenerating(false); setMessages(prev => [...prev, { role: 'assistant', content: 'Taking longer than expected. Try again.' }]); } }, 300000);
     } catch (error) {
-      console.error('Generation error:', error);
-      setIsGenerating(false);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: `Generation failed: ${error.message}. Please try again.`
-      }]);
+      console.error('Generation error:', error); setIsGenerating(false);
+      setMessages(prev => [...prev, { role: 'assistant', content: `Generation failed: ${error.message}` }]);
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
+  const handleKeyDown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
 
   const clearChat = () => {
-    setMessages([]);
-    setInput('');
-    setUploadedFile(null);
-    setDealData(null);
-    setIsApproved(false);
-    setIsGenerating(false);
+    setMessages([]); setInput(''); setUploadedFile(null); setDealData(null);
+    setIsApproved(false); setIsGenerating(false);
     setGenerationProgress({ spreadsheet: 0, pitchDeck: 0 });
     setGenerationStatus({ spreadsheet: 'idle', pitchDeck: 'idle' });
     setDownloadUrls({ spreadsheet: null, pitchDeck: null, dealId: null });
-    // New session
     setSessionId(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   };
 
-  // Progress bar component
+  /* ─── Progress ─── */
   const ProgressBar = ({ label, progress, status }) => (
-    <div style={{ marginBottom: '12px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-        <span style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>{label}</span>
-        <span style={{ fontSize: '12px', color: '#6b7280' }}>
-          {status === 'complete' ? 'Complete' : status === 'generating' ? `${progress}%` : 'Waiting...'}
-        </span>
+    <div className="mb-2">
+      <div className="flex justify-between mb-0.5">
+        <span className="text-[11px] font-semibold text-gray-600">{label}</span>
+        <span className="text-[10px] text-gray-400">{status === 'complete' ? 'Done' : status === 'generating' ? `${progress}%` : '...'}</span>
       </div>
-      <div style={{ 
-        height: '8px', 
-        backgroundColor: '#e5e7eb', 
-        borderRadius: '4px', 
-        overflow: 'hidden' 
-      }}>
-        <div style={{ 
-          height: '100%', 
-          width: `${progress}%`, 
-          backgroundColor: status === 'complete' ? '#10b981' : '#6366f1',
-          borderRadius: '4px',
-          transition: 'width 0.3s ease'
-        }} />
+      <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full transition-all ${status === 'complete' ? 'bg-emerald-500' : 'bg-[#5a6b7a]'}`} style={{ width: `${progress}%` }} />
       </div>
     </div>
   );
 
+  /* ─── Markdown ─── */
+  const md = {
+    h2: ({ children }) => <h2 className="text-[13px] font-bold text-gray-900 mt-4 mb-1 pb-0.5 border-b border-gray-200">{children}</h2>,
+    h3: ({ children }) => <h3 className="text-[12px] font-bold text-gray-700 mt-2 mb-1">{children}</h3>,
+    p: ({ children }) => <p className="mb-1.5 text-[12px] leading-relaxed">{children}</p>,
+    ul: ({ children }) => <ul className="my-1 pl-4 text-[12px]">{children}</ul>,
+    ol: ({ children }) => <ol className="my-1 pl-4 text-[12px]">{children}</ol>,
+    li: ({ children }) => <li className="mb-0.5">{children}</li>,
+    strong: ({ children }) => <strong className="font-bold text-gray-900">{children}</strong>,
+    table: ({ children }) => <div className="overflow-x-auto my-2 rounded border border-gray-200"><table className="w-full border-collapse text-[11px]">{children}</table></div>,
+    thead: ({ children }) => <thead className="bg-gray-50">{children}</thead>,
+    th: ({ children }) => <th className="px-2 py-1 text-left font-semibold text-gray-500 border-b border-gray-200 text-[10px] uppercase tracking-wider">{children}</th>,
+    td: ({ children }) => <td className="px-2 py-1 border-b border-gray-100 text-gray-700 font-mono text-right text-[11px]">{children}</td>,
+    blockquote: ({ children }) => <blockquote className="my-2 pl-3 border-l-2 border-[#5a6b7a] text-gray-500 text-[11px]">{children}</blockquote>,
+    hr: () => <hr className="border-t border-gray-200 my-2" />,
+    code: ({ children }) => <code className="bg-gray-100 px-1 rounded text-[11px] font-mono">{children}</code>,
+  };
+
+  /* ═══════════════════ RENDER ═══════════════════ */
   return (
     <DashboardShell activeTab="market" title="Deal Builder">
-      <div style={{ 
-        display: 'flex', 
-        flexDirection: 'column',
-        height: 'calc(100vh - 64px)',
-        backgroundColor: '#f9fafb'
-      }}>
-        
-        {/* Header */}
-        <div style={{
-          padding: '16px 24px',
-          borderBottom: '1px solid #e5e7eb',
-          backgroundColor: 'white',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
-              backgroundColor: '#eef2ff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Sparkles size={22} color="#6366f1" />
-            </div>
-            <div>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827' }}>
-                Max Deal Builder
-              </h2>
-              <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#6b7280' }}>
-                Upload OM → Underwrite → Get Pitch Deck + Spreadsheet
-              </p>
-            </div>
+      <div className="flex flex-col h-[calc(100vh-64px)] bg-white">
+
+        {/* ── Top bar ── */}
+        <div className="flex items-center justify-between px-4 py-1.5 border-b border-gray-200 bg-white shrink-0">
+          <div className="flex items-center gap-3">
+            <span className="text-[14px] font-bold text-[#1a202c] tracking-tight">Deal Builder</span>
+            <span className="text-[11px] text-gray-400 hidden sm:inline">Upload OM → Underwrite → Spreadsheet + Pitch Deck</span>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1 text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">
+              <AlertCircle size={11} /> <b>10 tokens</b> / deal
+            </span>
             {messages.length > 0 && (
-              <button
-                onClick={clearChat}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: 'white',
-                  color: '#374151',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  cursor: 'pointer'
-                }}
-              >
-                New Deal
-              </button>
+              <button onClick={clearChat} className="text-[11px] text-gray-500 border border-gray-200 rounded px-2 py-0.5 hover:bg-gray-50 transition-colors">New Deal</button>
             )}
           </div>
         </div>
 
-        {/* Cost info banner */}
-        <div style={{
-          padding: '8px 24px',
-          backgroundColor: '#fef3c7',
-          borderBottom: '1px solid #fcd34d',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          <AlertCircle size={16} color="#d97706" />
-          <span style={{ fontSize: '13px', color: '#92400e' }}>
-            <strong>10 tokens</strong> for full deal package (underwriting + spreadsheet + pitch deck)
-          </span>
-        </div>
+        {/* ── Two-column body ── */}
+        <div className="flex flex-1 min-h-0">
 
-        {/* Content Area */}
-        <div style={{ 
-          flex: 1,
-          overflow: 'auto',
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
-          
-          {/* Welcome Section - Only show when no messages */}
-          {messages.length === 0 && (
-            <div style={{ padding: '40px 24px', maxWidth: '800px', margin: '0 auto', width: '100%' }}>
-              <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-                <div style={{
-                  width: '80px',
-                  height: '80px',
-                  borderRadius: '50%',
-                  backgroundColor: '#eef2ff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 20px'
-                }}>
-                  <Building2 size={40} color="#6366f1" />
-                </div>
-                <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#111827', marginBottom: '12px' }}>
-                  Build Your Deal Package
-                </h1>
-                <p style={{ fontSize: '16px', color: '#6b7280', maxWidth: '550px', margin: '0 auto', lineHeight: '1.6' }}>
-                  Upload an OM and I'll underwrite the deal, identify value-add opportunities, structure the capital stack, and generate a professional spreadsheet + investor pitch deck.
-                </p>
-              </div>
+          {/* ═══ LEFT — Chat ═══ */}
+          <div className="flex flex-col w-1/2 border-r border-gray-200 min-w-0">
 
-              {/* Upload Area */}
-              <div 
-                onClick={() => fileInputRef.current?.click()}
-                style={{
-                  border: '2px dashed #d1d5db',
-                  borderRadius: '16px',
-                  padding: '48px',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  marginBottom: '32px',
-                  backgroundColor: 'white',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#6366f1';
-                  e.currentTarget.style.backgroundColor = '#fafafe';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#d1d5db';
-                  e.currentTarget.style.backgroundColor = 'white';
-                }}
-              >
-                <Upload size={48} color="#6366f1" style={{ marginBottom: '16px' }} />
-                <p style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
-                  Drop your OM here or click to upload
-                </p>
-                <p style={{ fontSize: '14px', color: '#6b7280' }}>
-                  PDF or image files supported
-                </p>
-              </div>
-
-              {/* Suggestion Cards */}
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(2, 1fr)', 
-                gap: '12px'
-              }}>
-                {SUGGESTIONS.slice(1).map((suggestion, idx) => {
-                  const Icon = suggestion.icon;
-                  return (
-                    <div
-                      key={idx}
-                      onClick={() => handleSuggestionClick(suggestion)}
-                      style={{
-                        padding: '16px',
-                        backgroundColor: 'white',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '12px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = '#6366f1';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = '#e5e7eb';
-                      }}
-                    >
-                      <div style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '8px',
-                        backgroundColor: `${suggestion.color}15`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginBottom: '10px'
-                      }}>
-                        <Icon size={18} color={suggestion.color} />
-                      </div>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '4px' }}>
-                        {suggestion.title}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                        {suggestion.desc}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="px-3 py-1.5 border-b border-gray-100 bg-[#fafbfc] shrink-0">
+              <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Chat</span>
             </div>
-          )}
 
-          {/* Messages */}
-          {messages.length > 0 && (
-            <div style={{ flex: 1, padding: '24px', maxWidth: '900px', margin: '0 auto', width: '100%' }}>
+            {/* Upload zone */}
+            {!uploadedFile && (
+              <div onClick={() => fileInputRef.current?.click()}
+                className="mx-3 mt-2 mb-1 border border-dashed border-gray-300 rounded p-3 text-center cursor-pointer hover:border-[#5a6b7a] hover:bg-[#fafbfc] transition-colors shrink-0">
+                <Upload size={18} className="mx-auto mb-1 text-gray-400" />
+                <div className="text-[12px] font-semibold text-gray-600">Upload OM, T-12, Rent Roll, or Debt Quote</div>
+                <div className="text-[10px] text-gray-400 mt-0.5">PDF or image</div>
+              </div>
+            )}
+
+            {/* File pill */}
+            {uploadedFile && (
+              <div className="mx-3 mt-2 mb-1 flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded px-3 py-1 text-[11px] text-emerald-700 shrink-0">
+                <FileText size={13} />
+                <span className="truncate font-medium">{uploadedFile.name}</span>
+                {!isUploading && <CheckCircle size={13} className="text-emerald-500 shrink-0" />}
+                <button onClick={() => fileInputRef.current?.click()} className="ml-auto text-[10px] text-gray-500 border border-gray-200 rounded px-1.5 py-0.5 hover:bg-gray-50">+ Add</button>
+              </div>
+            )}
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+              {messages.length === 0 && !uploadedFile && (
+                <div className="flex items-center justify-center h-full text-gray-400 text-[12px] select-none">Upload a document to start</div>
+              )}
+
               {messages.map((msg, idx) => (
-                <div 
-                  key={idx}
-                  style={{
-                    display: 'flex',
-                    justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                    marginBottom: '16px'
-                  }}
-                >
-                  <div style={{
-                    maxWidth: '80%',
-                    padding: '14px 18px',
-                    borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                    backgroundColor: msg.role === 'user' ? '#6366f1' : 'white',
-                    color: msg.role === 'user' ? 'white' : '#111827',
-                    border: msg.role === 'user' ? 'none' : '1px solid #e5e7eb',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
-                  }}>
-                    {/* File upload indicator */}
+                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[92%] px-3 py-2 rounded-lg text-[12px] leading-relaxed ${
+                    msg.role === 'user'
+                      ? 'bg-[#3d4f5f] text-white rounded-br-sm'
+                      : 'bg-[#fafbfc] border border-gray-200 text-[#1a202c] rounded-bl-sm'
+                  }`}>
                     {msg.isUpload && (
-                      <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '8px',
-                        marginBottom: '8px',
-                        padding: '8px 12px',
-                        backgroundColor: 'rgba(255,255,255,0.15)',
-                        borderRadius: '8px'
-                      }}>
-                        <FileText size={16} />
-                        <span style={{ fontSize: '13px' }}>{msg.fileName}</span>
+                      <div className="flex items-center gap-1 mb-1 opacity-70 text-[11px]">
+                        <FileText size={12} /><span>{msg.fileName}</span>
                       </div>
                     )}
+                    {msg.role === 'assistant' ? (
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={md}>{msg.content}</ReactMarkdown>
+                    ) : msg.content}
 
-                    {/* Message content */}
-                    <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
-                      {msg.role === 'assistant' ? (
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
-                          components={{
-                            h2: ({children}) => <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#111827', margin: '20px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #e5e7eb' }}>{children}</h2>,
-                            h3: ({children}) => <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#374151', margin: '16px 0 6px' }}>{children}</h3>,
-                            p: ({children}) => <p style={{ margin: '0 0 8px' }}>{children}</p>,
-                            ul: ({children}) => <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ul>,
-                            ol: ({children}) => <ol style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ol>,
-                            li: ({children}) => <li style={{ marginBottom: '4px' }}>{children}</li>,
-                            strong: ({children}) => <strong style={{ fontWeight: '700', color: '#111827' }}>{children}</strong>,
-                            table: ({children}) => (
-                              <div style={{ overflowX: 'auto', margin: '12px 0', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>{children}</table>
-                              </div>
-                            ),
-                            thead: ({children}) => <thead style={{ backgroundColor: '#f3f4f6' }}>{children}</thead>,
-                            th: ({children}) => <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '600', color: '#374151', borderBottom: '2px solid #e5e7eb', whiteSpace: 'nowrap' }}>{children}</th>,
-                            td: ({children}) => <td style={{ padding: '8px 12px', borderBottom: '1px solid #f3f4f6', color: '#374151' }}>{children}</td>,
-                            tr: ({children, ...props}) => <tr style={{ ':hover': { backgroundColor: '#f9fafb' } }} {...props}>{children}</tr>,
-                            blockquote: ({children}) => <blockquote style={{ margin: '12px 0', padding: '8px 16px', borderLeft: '3px solid #6366f1', backgroundColor: '#f5f3ff', borderRadius: '0 6px 6px 0' }}>{children}</blockquote>,
-                            hr: () => <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '16px 0' }} />,
-                            code: ({children}) => <code style={{ backgroundColor: '#f3f4f6', padding: '2px 6px', borderRadius: '4px', fontSize: '13px', fontFamily: 'monospace' }}>{children}</code>,
-                          }}
-                        >
-                          {msg.content}
-                        </ReactMarkdown>
-                      ) : (
-                        msg.content
-                      )}
-                    </div>
-
-                    {/* Approve button */}
                     {msg.showApproveButton && !isApproved && (
-                      <button
-                        onClick={handleApprove}
-                        style={{
-                          marginTop: '12px',
-                          padding: '10px 20px',
-                          backgroundColor: '#10b981',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px'
-                        }}
-                      >
-                        <CheckCircle size={18} />
-                        Approve & Generate Package
+                      <button onClick={handleApprove} className="mt-2 flex items-center gap-1 px-2.5 py-1 bg-emerald-600 text-white rounded text-[11px] font-semibold hover:bg-emerald-700 transition-colors">
+                        <CheckCircle size={13} /> Approve & Generate
                       </button>
                     )}
-
-                    {/* Generation progress */}
                     {msg.isGenerationStatus && isGenerating && (
-                      <div style={{ marginTop: '16px', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
-                        <ProgressBar 
-                          label="Spreadsheet Model" 
-                          progress={generationProgress.spreadsheet} 
-                          status={generationStatus.spreadsheet}
-                        />
-                        <ProgressBar 
-                          label="Pitch Deck" 
-                          progress={generationProgress.pitchDeck} 
-                          status={generationStatus.pitchDeck}
-                        />
+                      <div className="mt-2 p-2 bg-white rounded border border-gray-100">
+                        <ProgressBar label="Spreadsheet" progress={generationProgress.spreadsheet} status={generationStatus.spreadsheet} />
+                        <ProgressBar label="Pitch Deck" progress={generationProgress.pitchDeck} status={generationStatus.pitchDeck} />
                       </div>
                     )}
-
-                    {/* Download buttons */}
                     {msg.isComplete && downloadUrls.spreadsheet && (
-                      <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <a
-                          href={downloadUrls.spreadsheet}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            padding: '12px 16px',
-                            backgroundColor: '#10b981',
-                            color: 'white',
-                            borderRadius: '8px',
-                            textDecoration: 'none',
-                            fontSize: '14px',
-                            fontWeight: '600'
-                          }}
-                        >
-                          <Download size={18} />
-                          Download Spreadsheet (.xlsx)
+                      <div className="mt-2 flex flex-col gap-1">
+                        <a href={downloadUrls.spreadsheet} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1 px-2.5 py-1 bg-emerald-600 text-white rounded text-[11px] font-semibold no-underline hover:bg-emerald-700">
+                          <Download size={13} /> Spreadsheet (.xlsx)
                         </a>
-                        <a
-                          href={downloadUrls.pitchDeck}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            padding: '12px 16px',
-                            backgroundColor: '#6366f1',
-                            color: 'white',
-                            borderRadius: '8px',
-                            textDecoration: 'none',
-                            fontSize: '14px',
-                            fontWeight: '600'
-                          }}
-                        >
-                          <Download size={18} />
-                          Download Pitch Deck (.pdf)
+                        <a href={downloadUrls.pitchDeck} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1 px-2.5 py-1 bg-[#3d4f5f] text-white rounded text-[11px] font-semibold no-underline hover:bg-[#2d3e4d]">
+                          <Download size={13} /> Pitch Deck (.pdf)
                         </a>
                         {downloadUrls.dealId && (
-                          <button
-                            onClick={() => navigate(`/pipeline`)}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '8px',
-                              padding: '12px 16px',
-                              backgroundColor: 'white',
-                              color: '#374151',
-                              border: '1px solid #d1d5db',
-                              borderRadius: '8px',
-                              fontSize: '14px',
-                              fontWeight: '600',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            <Layers size={18} />
-                            View in Pipeline
-                            <ExternalLink size={14} />
+                          <button onClick={() => navigate('/pipeline')} className="flex items-center justify-center gap-1 px-2.5 py-1 bg-white text-gray-600 border border-gray-200 rounded text-[11px] font-semibold hover:bg-gray-50">
+                            <Layers size={13} /> Pipeline <ExternalLink size={10} />
                           </button>
                         )}
                       </div>
@@ -822,159 +641,51 @@ function DealBuilderPage() {
                   </div>
                 </div>
               ))}
-              
-              {/* Loading indicator */}
+
               {(isLoading || isUploading) && (
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'flex-start',
-                  marginBottom: '16px'
-                }}>
-                  <div style={{
-                    padding: '14px 18px',
-                    borderRadius: '16px 16px 16px 4px',
-                    backgroundColor: 'white',
-                    border: '1px solid #e5e7eb',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px'
-                  }}>
-                    <Loader size={18} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
-                    <span style={{ fontSize: '14px', color: '#6b7280' }}>
-                      {isUploading ? 'Processing document...' : 'Thinking...'}
-                    </span>
+                <div className="flex justify-start">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-[#fafbfc] border border-gray-200 rounded-lg text-[12px] text-gray-500">
+                    <Loader size={13} className="animate-spin" />
+                    {isUploading ? 'Parsing document...' : 'Thinking...'}
                   </div>
                 </div>
               )}
-              
               <div ref={messagesEndRef} />
             </div>
-          )}
-        </div>
 
-        {/* Input Area */}
-        <div style={{
-          padding: '16px 24px',
-          borderTop: '1px solid #e5e7eb',
-          backgroundColor: 'white'
-        }}>
-          <div style={{ 
-            maxWidth: '900px', 
-            margin: '0 auto',
-            display: 'flex',
-            gap: '12px',
-            alignItems: 'flex-end'
-          }}>
-            {/* File upload button */}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading || isGenerating}
-              style={{
-                padding: '12px',
-                backgroundColor: uploadedFile ? '#dcfce7' : '#f3f4f6',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                cursor: (isUploading || isGenerating) ? 'not-allowed' : 'pointer',
-                opacity: (isUploading || isGenerating) ? 0.5 : 1
-              }}
-              title="Upload OM"
-            >
-              {uploadedFile ? (
-                <CheckCircle size={20} color="#10b981" />
-              ) : (
-                <Upload size={20} color="#6b7280" />
-              )}
-            </button>
-
-            {/* Text input */}
-            <div style={{ flex: 1, position: 'relative' }}>
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                placeholder={uploadedFile ? "Ask about the deal, discuss structure, or say 'approved' when ready..." : "Upload an OM to get started, or ask a question..."}
-                disabled={isLoading || isUploading || isGenerating}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  paddingRight: '50px',
-                  fontSize: '14px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '12px',
-                  resize: 'none',
-                  minHeight: '48px',
-                  maxHeight: '120px',
-                  outline: 'none',
-                  fontFamily: 'inherit'
-                }}
-                rows={1}
-              />
-              <button
-                onClick={sendMessage}
-                disabled={!input.trim() || isLoading || isUploading || isGenerating}
-                style={{
-                  position: 'absolute',
-                  right: '8px',
-                  bottom: '8px',
-                  padding: '8px',
-                  backgroundColor: input.trim() ? '#6366f1' : '#e5e7eb',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: input.trim() ? 'pointer' : 'not-allowed'
-                }}
-              >
-                <Send size={18} color={input.trim() ? 'white' : '#9ca3af'} />
-              </button>
+            {/* Input */}
+            <div className="px-3 py-2 border-t border-gray-100 bg-white shrink-0">
+              <div className="flex gap-1.5 items-end">
+                <button onClick={() => fileInputRef.current?.click()} disabled={isUploading || isGenerating}
+                  className="p-1.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 shrink-0" title="Upload">
+                  <Upload size={14} className="text-gray-400" />
+                </button>
+                <div className="flex-1 relative">
+                  <textarea ref={textareaRef} value={input} onChange={handleInputChange} onKeyDown={handleKeyDown}
+                    placeholder={uploadedFile ? "Discuss the deal or say 'approved'..." : 'Upload an OM to start...'}
+                    disabled={isLoading || isUploading || isGenerating} rows={1}
+                    className="w-full px-2.5 py-1.5 pr-8 text-[12px] border border-gray-200 rounded resize-none outline-none focus:border-[#5a6b7a] min-h-[34px] max-h-[100px]"
+                  />
+                  <button onClick={sendMessage} disabled={!input.trim() || isLoading || isUploading || isGenerating}
+                    className={`absolute right-1.5 bottom-1.5 p-1 rounded ${input.trim() ? 'bg-[#3d4f5f] hover:bg-[#2d3e4d]' : 'bg-gray-200'} transition-colors`}>
+                    <Send size={12} color={input.trim() ? 'white' : '#9ca3af'} />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-          
-          {/* Uploaded file indicator */}
-          {uploadedFile && (
-            <div style={{ 
-              maxWidth: '900px', 
-              margin: '8px auto 0',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '12px',
-              color: '#6b7280'
-            }}>
-              <FileText size={14} />
-              <span>{uploadedFile.name}</span>
-              <button
-                onClick={() => setUploadedFile(null)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: '2px',
-                  cursor: 'pointer',
-                  display: 'flex'
-                }}
-              >
-                <X size={14} color="#9ca3af" />
-              </button>
+
+          {/* ═══ RIGHT — Workbook ═══ */}
+          <div className="flex flex-col w-1/2 min-w-0 bg-white">
+            <div className="px-3 py-1.5 border-b border-gray-100 bg-[#fafbfc] shrink-0">
+              <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Underwriting Workbook</span>
             </div>
-          )}
+            <WorkbookPanel dealData={dealData} />
+          </div>
         </div>
 
-        {/* Hidden file input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".pdf,image/*"
-          onChange={handleFileUpload}
-          style={{ display: 'none' }}
-        />
+        <input ref={fileInputRef} type="file" accept=".pdf,image/*" onChange={handleFileUpload} className="hidden" />
       </div>
-
-      {/* CSS for spinner animation */}
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </DashboardShell>
   );
 }
