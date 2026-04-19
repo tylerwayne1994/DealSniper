@@ -29,19 +29,19 @@ const neg    = (v) => v != null && v !== 0 ? '($' + Math.abs(Math.round(v)).toLo
 /* ─────────── Spreadsheet Section Component ─────────────── */
 function SheetSection({ title, rows, columns, accent }) {
   const colCount = columns ? columns.length : 1;
-  const gridCols = `minmax(200px,2fr) repeat(${colCount},minmax(90px,1fr))`;
+  const gridCols = `minmax(220px,2.5fr) repeat(${colCount},minmax(100px,1fr))`;
   return (
-    <div className="mb-px">
+    <div className="mb-3 mx-3 rounded-xl overflow-hidden border border-gray-200/80 shadow-sm">
       {/* Section header */}
-      <div className={`px-3 py-1.5 text-[11px] font-bold tracking-wide uppercase border-b border-gray-200 select-none ${accent ? 'bg-[#3d4f5f] text-white' : 'bg-[#f0f1f3] text-[#4a5568]'}`}>
+      <div className={`px-4 py-2.5 text-[11px] font-semibold tracking-widest uppercase select-none ${accent ? 'bg-gradient-to-r from-[#1e293b] to-[#334155] text-white' : 'bg-gradient-to-r from-gray-50 to-gray-100 text-gray-500 border-b border-gray-200/60'}`}>
         {title}
       </div>
       {/* Column headers */}
       {columns && columns.length > 0 && (
-        <div className="grid bg-[#f7f8f9] border-b border-gray-200" style={{ gridTemplateColumns: gridCols }}>
-          <div className="px-3 py-1" />
+        <div className="grid bg-gray-50/80 border-b border-gray-200/60" style={{ gridTemplateColumns: gridCols }}>
+          <div className="px-4 py-1.5" />
           {columns.map((c, i) => (
-            <div key={i} className="px-3 py-1 text-[10px] font-bold text-[#6b7280] uppercase tracking-wider text-right select-none">{c}</div>
+            <div key={i} className="px-4 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-widest text-right select-none">{c}</div>
           ))}
         </div>
       )}
@@ -49,22 +49,22 @@ function SheetSection({ title, rows, columns, accent }) {
       {rows.map((row, i) => {
         const isTotal = row.total;
         const isSub = row.sub;
-        if (row.label === ' ') return <div key={i} className="h-2 border-b border-gray-100" />;
+        if (row.label === ' ') return <div key={i} className="h-1.5 bg-gray-50/50" />;
         return (
           <div
             key={i}
-            className={`grid ${isTotal ? 'border-b-2 border-[#ccd0d5] bg-[#f7f8f9]' : 'border-b border-[#ebedf0]'} hover:bg-[#f0f4ff] transition-colors`}
+            className={`grid transition-colors duration-150 ${isTotal ? 'bg-gradient-to-r from-slate-50 to-blue-50/40 border-b-2 border-gray-300/60' : 'border-b border-gray-100 hover:bg-blue-50/30'}`}
             style={{ gridTemplateColumns: gridCols }}
           >
-            <div className={`px-3 py-[5px] text-[12px] truncate ${isTotal ? 'font-bold text-[#1a202c]' : isSub ? 'font-semibold text-[#2d3748]' : 'text-[#4a5568] pl-5'}`}>
+            <div className={`px-4 py-[7px] text-[12.5px] truncate ${isTotal ? 'font-bold text-slate-800' : isSub ? 'font-semibold text-slate-700' : 'text-slate-500 pl-6'}`}>
               {row.label}
             </div>
             {row.values ? row.values.map((v, j) => (
-              <div key={j} className={`px-3 py-[5px] text-[12px] font-mono text-right tabular-nums ${isTotal ? 'font-bold text-[#1a202c]' : 'text-[#374151]'} ${typeof v === 'string' && v.startsWith('(') ? 'text-red-600' : ''}`}>
+              <div key={j} className={`px-4 py-[7px] text-[12.5px] font-mono text-right tabular-nums ${isTotal ? 'font-bold text-slate-800' : 'text-slate-600'} ${typeof v === 'string' && v.startsWith('(') ? '!text-rose-500' : ''}`}>
                 {v}
               </div>
             )) : (
-              <div className={`px-3 py-[5px] text-[12px] font-mono text-right tabular-nums ${isTotal ? 'font-bold text-[#1a202c]' : 'text-[#374151]'} ${typeof row.value === 'string' && row.value.startsWith('(') ? 'text-red-600' : ''}`}>
+              <div className={`px-4 py-[7px] text-[12.5px] font-mono text-right tabular-nums ${isTotal ? 'font-bold text-slate-800' : 'text-slate-600'} ${typeof row.value === 'string' && row.value.startsWith('(') ? '!text-rose-500' : ''}`}>
                 {row.value || '—'}
               </div>
             )}
@@ -316,28 +316,30 @@ function WorkbookPanel({ dealData }) {
 
   if (!sections) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-white to-gray-50">
         <div className="text-center select-none">
-          <div className="text-5xl mb-3 opacity-20">📊</div>
-          <div className="text-[13px] font-semibold text-gray-400">Underwriting Workbook</div>
-          <div className="text-[11px] text-gray-300 mt-1">Upload an OM to populate the model</div>
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+            <span className="text-3xl opacity-40">📊</span>
+          </div>
+          <div className="text-sm font-semibold text-gray-400">Underwriting Workbook</div>
+          <div className="text-xs text-gray-300 mt-1">Upload an OM to populate the model</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto overflow-x-auto">
+    <div className="flex-1 overflow-y-auto overflow-x-auto bg-gradient-to-b from-white to-gray-50/50">
       {/* Property header bar */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-2 shadow-sm">
-        <div className="text-[13px] font-bold text-[#1a202c] truncate">{prop.name || prop.address || 'Underwriting Model'}</div>
-        <div className="text-[11px] text-[#6b7280]">
-          {[prop.address, prop.city, prop.state, prop.zip].filter(Boolean).join(', ')}
-          {prop.units ? ` · ${prop.units} units` : ''}
-          {prop.year_built ? ` · Built ${prop.year_built}` : ''}
+      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200/60 px-5 py-3 shadow-sm">
+        <div className="text-[15px] font-bold text-slate-800 truncate tracking-tight">{prop.name || prop.address || 'Underwriting Model'}</div>
+        <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5">
+          <span>{[prop.address, prop.city, prop.state, prop.zip].filter(Boolean).join(', ')}</span>
+          {prop.units ? <><span className="text-gray-300">·</span><span>{prop.units} units</span></> : ''}
+          {prop.year_built ? <><span className="text-gray-300">·</span><span>Built {prop.year_built}</span></> : ''}
         </div>
       </div>
-      <div className="min-w-[400px]">
+      <div className="min-w-[420px] py-3">
         {sections.map((s, i) => (
           <SheetSection key={i} title={s.title} rows={s.rows} columns={s.columns} accent={s.accent} />
         ))}
@@ -508,52 +510,52 @@ function DealBuilderPage() {
 
   /* ─── Progress ─── */
   const ProgressBar = ({ label, progress, status }) => (
-    <div className="mb-2">
-      <div className="flex justify-between mb-0.5">
-        <span className="text-[11px] font-semibold text-gray-600">{label}</span>
-        <span className="text-[10px] text-gray-400">{status === 'complete' ? 'Done' : status === 'generating' ? `${progress}%` : '...'}</span>
+    <div className="mb-2.5">
+      <div className="flex justify-between mb-1">
+        <span className="text-xs font-semibold text-slate-600">{label}</span>
+        <span className="text-[10px] text-slate-400 font-medium">{status === 'complete' ? 'Done' : status === 'generating' ? `${progress}%` : '...'}</span>
       </div>
-      <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full transition-all ${status === 'complete' ? 'bg-emerald-500' : 'bg-[#5a6b7a]'}`} style={{ width: `${progress}%` }} />
+      <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full transition-all duration-500 ${status === 'complete' ? 'bg-emerald-500' : 'bg-gradient-to-r from-slate-500 to-slate-700'}`} style={{ width: `${progress}%` }} />
       </div>
     </div>
   );
 
   /* ─── Markdown ─── */
   const md = {
-    h2: ({ children }) => <h2 className="text-[13px] font-bold text-gray-900 mt-4 mb-1 pb-0.5 border-b border-gray-200">{children}</h2>,
-    h3: ({ children }) => <h3 className="text-[12px] font-bold text-gray-700 mt-2 mb-1">{children}</h3>,
-    p: ({ children }) => <p className="mb-1.5 text-[12px] leading-relaxed">{children}</p>,
-    ul: ({ children }) => <ul className="my-1 pl-4 text-[12px]">{children}</ul>,
-    ol: ({ children }) => <ol className="my-1 pl-4 text-[12px]">{children}</ol>,
+    h2: ({ children }) => <h2 className="text-sm font-bold text-slate-800 mt-4 mb-1 pb-0.5 border-b border-gray-200">{children}</h2>,
+    h3: ({ children }) => <h3 className="text-[13px] font-bold text-slate-700 mt-2 mb-1">{children}</h3>,
+    p: ({ children }) => <p className="mb-1.5 text-[13px] leading-relaxed">{children}</p>,
+    ul: ({ children }) => <ul className="my-1 pl-4 text-[13px]">{children}</ul>,
+    ol: ({ children }) => <ol className="my-1 pl-4 text-[13px]">{children}</ol>,
     li: ({ children }) => <li className="mb-0.5">{children}</li>,
-    strong: ({ children }) => <strong className="font-bold text-gray-900">{children}</strong>,
-    table: ({ children }) => <div className="overflow-x-auto my-2 rounded border border-gray-200"><table className="w-full border-collapse text-[11px]">{children}</table></div>,
+    strong: ({ children }) => <strong className="font-bold text-slate-800">{children}</strong>,
+    table: ({ children }) => <div className="overflow-x-auto my-2 rounded-lg border border-gray-200"><table className="w-full border-collapse text-xs">{children}</table></div>,
     thead: ({ children }) => <thead className="bg-gray-50">{children}</thead>,
-    th: ({ children }) => <th className="px-2 py-1 text-left font-semibold text-gray-500 border-b border-gray-200 text-[10px] uppercase tracking-wider">{children}</th>,
-    td: ({ children }) => <td className="px-2 py-1 border-b border-gray-100 text-gray-700 font-mono text-right text-[11px]">{children}</td>,
-    blockquote: ({ children }) => <blockquote className="my-2 pl-3 border-l-2 border-[#5a6b7a] text-gray-500 text-[11px]">{children}</blockquote>,
+    th: ({ children }) => <th className="px-2.5 py-1.5 text-left font-semibold text-slate-400 border-b border-gray-200 text-[10px] uppercase tracking-widest">{children}</th>,
+    td: ({ children }) => <td className="px-2.5 py-1.5 border-b border-gray-100 text-slate-600 font-mono text-right text-xs">{children}</td>,
+    blockquote: ({ children }) => <blockquote className="my-2 pl-3 border-l-2 border-slate-300 text-slate-500 text-xs">{children}</blockquote>,
     hr: () => <hr className="border-t border-gray-200 my-2" />,
-    code: ({ children }) => <code className="bg-gray-100 px-1 rounded text-[11px] font-mono">{children}</code>,
+    code: ({ children }) => <code className="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">{children}</code>,
   };
 
   /* ═══════════════════ RENDER ═══════════════════ */
   return (
     <DashboardShell activeTab="market" title="Deal Builder">
-      <div className="flex flex-col h-[calc(100vh-64px)] bg-white">
+      <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50" style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
 
         {/* ── Top bar ── */}
-        <div className="flex items-center justify-between px-4 py-1.5 border-b border-gray-200 bg-white shrink-0">
+        <div className="flex items-center justify-between px-5 py-2 border-b border-gray-200/60 bg-white shrink-0">
           <div className="flex items-center gap-3">
-            <span className="text-[14px] font-bold text-[#1a202c] tracking-tight">Deal Builder</span>
-            <span className="text-[11px] text-gray-400 hidden sm:inline">Upload OM → Underwrite → Spreadsheet + Pitch Deck</span>
+            <span className="text-[15px] font-bold text-slate-800 tracking-tight">Deal Builder</span>
+            <span className="text-xs text-slate-400 hidden sm:inline">Upload OM → Underwrite → Spreadsheet + Pitch Deck</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1 text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">
+            <span className="flex items-center gap-1.5 text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1">
               <AlertCircle size={11} /> <b>10 tokens</b> / deal
             </span>
             {messages.length > 0 && (
-              <button onClick={clearChat} className="text-[11px] text-gray-500 border border-gray-200 rounded px-2 py-0.5 hover:bg-gray-50 transition-colors">New Deal</button>
+              <button onClick={clearChat} className="text-xs text-slate-500 border border-gray-200 rounded-lg px-3 py-1 hover:bg-gray-50 hover:border-gray-300 transition-all">New Deal</button>
             )}
           </div>
         </div>
@@ -562,47 +564,49 @@ function DealBuilderPage() {
         <div className="flex flex-1 min-h-0">
 
           {/* ═══ LEFT — Chat ═══ */}
-          <div className="flex flex-col w-1/2 border-r border-gray-200 min-w-0">
+          <div className="flex flex-col w-1/2 border-r border-gray-200/60 min-w-0 bg-white">
 
-            <div className="px-3 py-1.5 border-b border-gray-100 bg-[#fafbfc] shrink-0">
-              <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Chat</span>
+            <div className="px-4 py-2 border-b border-gray-100 bg-white shrink-0">
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Chat</span>
             </div>
 
             {/* Upload zone */}
             {!uploadedFile && (
               <div onClick={() => fileInputRef.current?.click()}
-                className="mx-3 mt-2 mb-1 border border-dashed border-gray-300 rounded p-3 text-center cursor-pointer hover:border-[#5a6b7a] hover:bg-[#fafbfc] transition-colors shrink-0">
-                <Upload size={18} className="mx-auto mb-1 text-gray-400" />
-                <div className="text-[12px] font-semibold text-gray-600">Upload OM, T-12, Rent Roll, or Debt Quote</div>
-                <div className="text-[10px] text-gray-400 mt-0.5">PDF or image</div>
+                className="mx-4 mt-3 mb-1 border-2 border-dashed border-gray-200 rounded-xl p-5 text-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/30 transition-all duration-200 shrink-0 group">
+                <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-gray-100 group-hover:bg-indigo-100 flex items-center justify-center transition-colors">
+                  <Upload size={18} className="text-gray-400 group-hover:text-indigo-500 transition-colors" />
+                </div>
+                <div className="text-[13px] font-semibold text-slate-600">Upload OM, T-12, Rent Roll, or Debt Quote</div>
+                <div className="text-xs text-slate-400 mt-1">PDF or image</div>
               </div>
             )}
 
             {/* File pill */}
             {uploadedFile && (
-              <div className="mx-3 mt-2 mb-1 flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded px-3 py-1 text-[11px] text-emerald-700 shrink-0">
-                <FileText size={13} />
+              <div className="mx-4 mt-3 mb-1 flex items-center gap-2.5 bg-emerald-50 border border-emerald-200/60 rounded-lg px-3.5 py-2 text-xs text-emerald-700 shrink-0">
+                <FileText size={14} />
                 <span className="truncate font-medium">{uploadedFile.name}</span>
-                {!isUploading && <CheckCircle size={13} className="text-emerald-500 shrink-0" />}
-                <button onClick={() => fileInputRef.current?.click()} className="ml-auto text-[10px] text-gray-500 border border-gray-200 rounded px-1.5 py-0.5 hover:bg-gray-50">+ Add</button>
+                {!isUploading && <CheckCircle size={14} className="text-emerald-500 shrink-0" />}
+                <button onClick={() => fileInputRef.current?.click()} className="ml-auto text-[11px] text-slate-500 border border-gray-200 rounded-md px-2 py-0.5 hover:bg-gray-50 transition-colors">+ Add</button>
               </div>
             )}
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
               {messages.length === 0 && !uploadedFile && (
-                <div className="flex items-center justify-center h-full text-gray-400 text-[12px] select-none">Upload a document to start</div>
+                <div className="flex items-center justify-center h-full text-slate-400 text-[13px] select-none">Upload a document to start</div>
               )}
 
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[92%] px-3 py-2 rounded-lg text-[12px] leading-relaxed ${
+                  <div className={`max-w-[90%] px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed ${
                     msg.role === 'user'
-                      ? 'bg-[#3d4f5f] text-white rounded-br-sm'
-                      : 'bg-[#fafbfc] border border-gray-200 text-[#1a202c] rounded-bl-sm'
+                      ? 'bg-gradient-to-br from-slate-700 to-slate-800 text-white rounded-br-md shadow-sm'
+                      : 'bg-gray-50 border border-gray-200/60 text-slate-700 rounded-bl-md'
                   }`}>
                     {msg.isUpload && (
-                      <div className="flex items-center gap-1 mb-1 opacity-70 text-[11px]">
+                      <div className="flex items-center gap-1.5 mb-1.5 opacity-70 text-xs">
                         <FileText size={12} /><span>{msg.fileName}</span>
                       </div>
                     )}
@@ -611,7 +615,7 @@ function DealBuilderPage() {
                     ) : msg.content}
 
                     {msg.showApproveButton && !isApproved && (
-                      <button onClick={handleApprove} className="mt-2 flex items-center gap-1 px-2.5 py-1 bg-emerald-600 text-white rounded text-[11px] font-semibold hover:bg-emerald-700 transition-colors">
+                      <button onClick={handleApprove} className="mt-2.5 flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 shadow-sm hover:shadow transition-all">
                         <CheckCircle size={13} /> Approve & Generate
                       </button>
                     )}
@@ -624,15 +628,15 @@ function DealBuilderPage() {
                     {msg.isComplete && downloadUrls.spreadsheet && (
                       <div className="mt-2 flex flex-col gap-1">
                         <a href={downloadUrls.spreadsheet} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-1 px-2.5 py-1 bg-emerald-600 text-white rounded text-[11px] font-semibold no-underline hover:bg-emerald-700">
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-semibold no-underline hover:bg-emerald-700 shadow-sm hover:shadow transition-all">
                           <Download size={13} /> Spreadsheet (.xlsx)
                         </a>
                         <a href={downloadUrls.pitchDeck} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-1 px-2.5 py-1 bg-[#3d4f5f] text-white rounded text-[11px] font-semibold no-underline hover:bg-[#2d3e4d]">
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 text-white rounded-lg text-xs font-semibold no-underline hover:bg-slate-800 shadow-sm hover:shadow transition-all">
                           <Download size={13} /> Pitch Deck (.pdf)
                         </a>
                         {downloadUrls.dealId && (
-                          <button onClick={() => navigate('/pipeline')} className="flex items-center justify-center gap-1 px-2.5 py-1 bg-white text-gray-600 border border-gray-200 rounded text-[11px] font-semibold hover:bg-gray-50">
+                          <button onClick={() => navigate('/pipeline')} className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white text-slate-600 border border-gray-200 rounded-lg text-xs font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all">
                             <Layers size={13} /> Pipeline <ExternalLink size={10} />
                           </button>
                         )}
@@ -644,8 +648,8 @@ function DealBuilderPage() {
 
               {(isLoading || isUploading) && (
                 <div className="flex justify-start">
-                  <div className="flex items-center gap-2 px-3 py-2 bg-[#fafbfc] border border-gray-200 rounded-lg text-[12px] text-gray-500">
-                    <Loader size={13} className="animate-spin" />
+                  <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-gray-50 border border-gray-200/60 rounded-2xl rounded-bl-md text-[13px] text-slate-400">
+                    <Loader size={14} className="animate-spin" />
                     {isUploading ? 'Parsing document...' : 'Thinking...'}
                   </div>
                 </div>
@@ -654,21 +658,21 @@ function DealBuilderPage() {
             </div>
 
             {/* Input */}
-            <div className="px-3 py-2 border-t border-gray-100 bg-white shrink-0">
-              <div className="flex gap-1.5 items-end">
+            <div className="px-4 py-3 border-t border-gray-100 bg-white shrink-0">
+              <div className="flex gap-2 items-end">
                 <button onClick={() => fileInputRef.current?.click()} disabled={isUploading || isGenerating}
-                  className="p-1.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 shrink-0" title="Upload">
-                  <Upload size={14} className="text-gray-400" />
+                  className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-gray-300 disabled:opacity-40 shrink-0 transition-all" title="Upload">
+                  <Upload size={15} className="text-slate-400" />
                 </button>
                 <div className="flex-1 relative">
                   <textarea ref={textareaRef} value={input} onChange={handleInputChange} onKeyDown={handleKeyDown}
                     placeholder={uploadedFile ? "Discuss the deal or say 'approved'..." : 'Upload an OM to start...'}
                     disabled={isLoading || isUploading || isGenerating} rows={1}
-                    className="w-full px-2.5 py-1.5 pr-8 text-[12px] border border-gray-200 rounded resize-none outline-none focus:border-[#5a6b7a] min-h-[34px] max-h-[100px]"
+                    className="w-full px-3.5 py-2 pr-10 text-[13px] border border-gray-200 rounded-xl resize-none outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 min-h-[38px] max-h-[100px] transition-all"
                   />
                   <button onClick={sendMessage} disabled={!input.trim() || isLoading || isUploading || isGenerating}
-                    className={`absolute right-1.5 bottom-1.5 p-1 rounded ${input.trim() ? 'bg-[#3d4f5f] hover:bg-[#2d3e4d]' : 'bg-gray-200'} transition-colors`}>
-                    <Send size={12} color={input.trim() ? 'white' : '#9ca3af'} />
+                    className={`absolute right-2 bottom-2 p-1.5 rounded-lg ${input.trim() ? 'bg-slate-700 hover:bg-slate-800 shadow-sm' : 'bg-gray-200'} transition-all`}>
+                    <Send size={13} color={input.trim() ? 'white' : '#9ca3af'} />
                   </button>
                 </div>
               </div>
@@ -676,9 +680,9 @@ function DealBuilderPage() {
           </div>
 
           {/* ═══ RIGHT — Workbook ═══ */}
-          <div className="flex flex-col w-1/2 min-w-0 bg-white">
-            <div className="px-3 py-1.5 border-b border-gray-100 bg-[#fafbfc] shrink-0">
-              <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Underwriting Workbook</span>
+          <div className="flex flex-col w-1/2 min-w-0 bg-gray-50/50">
+            <div className="px-4 py-2 border-b border-gray-100 bg-white shrink-0">
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Underwriting Workbook</span>
             </div>
             <WorkbookPanel dealData={dealData} />
           </div>
