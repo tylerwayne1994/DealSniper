@@ -773,7 +773,7 @@ function DealBuilderPage() {
 
         {/* ═══ Fullscreen Workbook Overlay ═══ */}
         {isFullscreen && (
-          <div className="fixed inset-0 z-50 bg-white flex flex-col" style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
+          <div className="fixed top-0 right-0 bottom-0 z-50 bg-white flex flex-col" style={{ left: '200px', fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
             <div className="px-5 py-2.5 border-b border-gray-200/60 bg-white shrink-0 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-[15px] font-bold text-slate-800 tracking-tight">Underwriting Workbook</span>
