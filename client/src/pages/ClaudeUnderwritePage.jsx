@@ -9,13 +9,15 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Send, Upload, FileText, X, Loader,
   FileSpreadsheet, File, Image, PanelRightClose,
-  PanelRight, MessageSquare, Eye, Copy, Check, Table, FileDown
+  PanelRight, MessageSquare, Eye, Copy, Check, Table, FileDown,
+  Building2, BookOpen, ChevronDown, ChevronUp
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { supabase } from '../lib/supabase';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
 
@@ -569,6 +571,7 @@ const PDFViewer = ({ base64Data, filename }) => {
 
 export default function ClaudeUnderwritePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
@@ -576,6 +579,12 @@ export default function ClaudeUnderwritePage() {
   // Session state
   const [sessionId, setSessionId] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
+
+  // Deal context state (loaded from pipeline via ?dealId=)
+  const [loadedDeal, setLoadedDeal] = useState(null);
+  const [isLoadingDeal, setIsLoadingDeal] = useState(false); // eslint-disable-line no-unused-vars
+  const [dealContextInjected, setDealContextInjected] = useState(false); // eslint-disable-line no-unused-vars
+  const [dealBannerCollapsed, setDealBannerCollapsed] = useState(false);
 
   // Chat state
   const [messages, setMessages] = useState([]);
@@ -612,7 +621,7 @@ export default function ClaudeUnderwritePage() {
           setSessionId(data.session_id);
           setMessages([{
             role: 'assistant',
-            content: `I'm your CRE underwriting partner. Upload your OM, rent roll, T12, or any deal documents and I'll analyze them from scratch — no broker assumptions, just the real numbers.\n\n**I can generate documents that appear live in the canvas:**\n- "Build me an underwrite model" -> Spreadsheet with pro forma, returns, sensitivity\n- "Write a business plan" -> Full investment memo with value-add strategy\n\n**I can also help you:**\n- Parse and verify all financial data from documents\n- Identify value-add opportunities (RUBS, expense optimization)\n- Structure the deal to maximize returns\n\nDrop your files or ask me anything about a deal.`
+            content: `I'm your CRE underwriting partner. Upload your OM, rent roll, T12, or any deal documents and I'll analyze them from scratch — no broker assumptions, just the real numbers.\n\n**Quick actions:**\n- **"Build me a business plan"** → Full investment memo with value-add strategy, scenarios, and exit analysis\n- **"Build me an underwrite model"** → Spreadsheet with pro forma, returns, sensitivity\n- **"Write an executive summary"** → 1-page deal overview\n\n**I can also help you:**\n- Parse and verify all financial data from documents\n- Identify value-add opportunities (RUBS, expense optimization)\n- Structure the deal to maximize returns\n\nDrop your files or ask me anything about a deal.`
           }]);
         }
       } catch (err) {
@@ -623,6 +632,133 @@ export default function ClaudeUnderwritePage() {
     };
     initSession();
   }, []);
+
+  // Load deal from URL param ?dealId=
+  useEffect(() => {
+    const dealId = searchParams.get('dealId');
+    if (!dealId || !sessionId) return;
+
+    const loadDealFromPipeline = async () => {
+      setIsLoadingDeal(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: deal, error } = await supabase
+          .from('deals')
+          .select('*')
+          .eq('deal_id', dealId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (error || !deal) {
+          console.error('Deal not found:', error);
+          return;
+        }
+
+        setLoadedDeal(deal);
+
+        // Inject deal context into the session
+        const res = await fetch(`${API_BASE}/api/claude-chat/inject-deal-context`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: sessionId,
+            deal_data: {
+              address: deal.address,
+              units: deal.units,
+              purchase_price: deal.purchase_price,
+              deal_structure: deal.deal_structure,
+              notes: deal.notes,
+              parsed_data: deal.parsed_data,
+              scenario_data: deal.scenario_data,
+            }
+          }),
+        });
+
+        const result = await res.json();
+        if (result.success) {
+          setDealContextInjected(true);
+          setMessages(prev => [...prev, {
+            role: 'system',
+            content: `✅ Deal loaded: **${deal.address}** — ${deal.units} units · $${(deal.purchase_price || 0).toLocaleString()} · All data is in context.`,
+          }]);
+        }
+      } catch (err) {
+        console.error('Failed to load deal:', err);
+      } finally {
+        setIsLoadingDeal(false);
+      }
+    };
+
+    loadDealFromPipeline();
+  }, [searchParams, sessionId]);
+
+  // Fire "Generate Business Plan" directly
+  const handleGenerateBusinessPlan = useCallback(async (extraInstructions = '') => {
+    if (isStreaming || !sessionId) return;
+
+    const userMessage = extraInstructions
+      ? `Generate a complete professional business plan and investment memo for this deal. ${extraInstructions}`
+      : 'Generate a complete professional business plan and investment memo for this deal.';
+
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setIsStreaming(true);
+    setStreamingContent('');
+
+    try {
+      const response = await fetch(`${API_BASE}/api/claude-chat/business-plan/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: sessionId,
+          instructions: extraInstructions,
+          conversation_history: messages.filter(m => m.role !== 'system').map(m => ({
+            role: m.role,
+            content: m.content,
+          })),
+        }),
+      });
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.type === 'text') {
+                fullContent += data.content;
+                setStreamingContent(fullContent);
+              }
+            } catch (e) {}
+          }
+        }
+      }
+
+      if (fullContent) {
+        const { artifacts: newArtifacts, cleanedText } = parseArtifacts(fullContent);
+        if (newArtifacts.length > 0) {
+          setArtifacts(prev => [...prev, ...newArtifacts]);
+          setActiveArtifact(newArtifacts[0]);
+          setActiveCanvasTab('artifacts');
+        }
+        setMessages(prev => [...prev, { role: 'assistant', content: cleanedText }]);
+      }
+    } catch (err) {
+      console.error('Business plan error:', err);
+    } finally {
+      setIsStreaming(false);
+      setStreamingContent('');
+    }
+  }, [isStreaming, sessionId, messages]);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -991,12 +1127,37 @@ export default function ClaudeUnderwritePage() {
               AI Underwriter
             </h1>
             <p style={{ margin: 0, fontSize: 12, color: COLORS.textMuted }}>
-              AI-powered deal analysis and document generation
+              {loadedDeal ? `📍 ${loadedDeal.address}` : 'AI-powered deal analysis and document generation'}
             </p>
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Business Plan quick button — always visible, pops when deal loaded */}
+          <button
+            onClick={() => handleGenerateBusinessPlan()}
+            disabled={isStreaming}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '8px 14px',
+              background: loadedDeal || uploadedFiles.length > 0 ? '#0f172a' : COLORS.bg,
+              border: `1px solid ${loadedDeal || uploadedFiles.length > 0 ? '#0f172a' : COLORS.border}`,
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 600,
+              color: loadedDeal || uploadedFiles.length > 0 ? '#ffffff' : COLORS.textMuted,
+              cursor: isStreaming ? 'not-allowed' : 'pointer',
+              opacity: isStreaming ? 0.6 : 1,
+              transition: 'all 0.2s',
+            }}
+            title="Generate a full investment business plan"
+          >
+            <BookOpen size={15} />
+            Business Plan
+          </button>
+
           <button
             onClick={() => setShowCanvas(!showCanvas)}
             style={{
@@ -1018,6 +1179,104 @@ export default function ClaudeUnderwritePage() {
           </button>
         </div>
       </header>
+
+      {/* Deal Context Banner — shows when a deal is loaded from pipeline */}
+      {loadedDeal && !dealBannerCollapsed && (
+        <div style={{
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)',
+          color: '#fff',
+          padding: '12px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 16,
+          borderBottom: '1px solid #1e293b',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{
+              width: 36,
+              height: 36,
+              borderRadius: 8,
+              background: 'rgba(16,185,129,0.2)',
+              border: '1px solid rgba(16,185,129,0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Building2 size={18} color="#10b981" />
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>
+                {loadedDeal.address}
+              </div>
+              <div style={{ fontSize: 11, color: '#94a3b8' }}>
+                {loadedDeal.units} units · ${(loadedDeal.purchase_price || 0).toLocaleString()} · {loadedDeal.deal_structure || 'Traditional'} · All deal data loaded into context
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Quick action chips */}
+            {[
+              { label: '📊 Business Plan', action: () => handleGenerateBusinessPlan() },
+              { label: '📈 Underwrite Model', action: () => { setInputValue('Build me a complete underwriting model and pro forma for this deal'); textareaRef.current?.focus(); }},
+              { label: '📋 Executive Summary', action: () => { setInputValue('Write a 1-page executive summary for this deal'); textareaRef.current?.focus(); }},
+            ].map(({ label, action }) => (
+              <button
+                key={label}
+                onClick={action}
+                disabled={isStreaming}
+                style={{
+                  padding: '6px 12px',
+                  background: 'rgba(255,255,255,0.1)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: 6,
+                  color: '#fff',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => e.target.style.background = 'rgba(255,255,255,0.2)'}
+                onMouseLeave={e => e.target.style.background = 'rgba(255,255,255,0.1)'}
+              >
+                {label}
+              </button>
+            ))}
+            <button
+              onClick={() => setDealBannerCollapsed(true)}
+              style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: 4 }}
+              title="Collapse banner"
+            >
+              <ChevronUp size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Collapsed banner re-expand */}
+      {loadedDeal && dealBannerCollapsed && (
+        <button
+          onClick={() => setDealBannerCollapsed(false)}
+          style={{
+            width: '100%',
+            padding: '6px 20px',
+            background: '#0f172a',
+            border: 'none',
+            borderBottom: '1px solid #1e293b',
+            color: '#64748b',
+            fontSize: 11,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+        >
+          <Building2 size={12} />
+          <span>{loadedDeal.address} — deal data loaded</span>
+          <ChevronDown size={12} style={{ marginLeft: 'auto' }} />
+        </button>
+      )}
 
       {/* Main Content */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
@@ -1212,6 +1471,62 @@ export default function ClaudeUnderwritePage() {
               }}>
                 Drop files anywhere or click the upload button. Supports PDF, images, CSV, Excel.
               </p>
+
+              {/* Quick action suggestion chips — shown when no messages yet */}
+              {messages.filter(m => m.role === 'user').length === 0 && !isStreaming && (
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                  justifyContent: 'center',
+                  marginTop: 12,
+                }}>
+                  {[
+                    { icon: '📊', label: 'Business Plan', msg: () => handleGenerateBusinessPlan() },
+                    { icon: '📈', label: 'Underwrite Model', msg: 'Build me a complete underwriting model and pro forma for this deal' },
+                    { icon: '📋', label: 'Executive Summary', msg: 'Write a concise executive summary for this deal' },
+                    { icon: '🔍', label: 'Red Flag Scan', msg: 'Analyze the deal for red flags, risks, and deal killers' },
+                    { icon: '💡', label: 'Value-Add Strategy', msg: 'Identify all value-add opportunities and build a phased business plan' },
+                  ].map(({ icon, label, msg }) => (
+                    <button
+                      key={label}
+                      onClick={() => {
+                        if (typeof msg === 'function') {
+                          msg();
+                        } else {
+                          setInputValue(msg);
+                          textareaRef.current?.focus();
+                        }
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '7px 12px',
+                        background: COLORS.white,
+                        border: `1px solid ${COLORS.border}`,
+                        borderRadius: 20,
+                        fontSize: 12,
+                        fontWeight: 500,
+                        color: COLORS.text,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.borderColor = COLORS.primary;
+                        e.currentTarget.style.color = COLORS.primary;
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.borderColor = COLORS.border;
+                        e.currentTarget.style.color = COLORS.text;
+                      }}
+                    >
+                      <span>{icon}</span>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

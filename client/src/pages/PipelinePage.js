@@ -23,7 +23,8 @@ import {
   LayoutGrid,
   List,
   Copy,
-  GripVertical
+  GripVertical,
+  BrainCircuit
 } from 'lucide-react';
 import { loadPipelineDeals as loadDealsFromSupabase, loadRapidFireDeals as loadRapidFireDealsFromSupabase, deleteDeal, updateDeal, bulkDeleteDeals, duplicateDeal } from '../lib/dealsService';
 import DealComparisonModal from '../components/DealComparisonModal';
@@ -261,6 +262,7 @@ function PipelinePage() {
   const [photoGalleryDeal, setPhotoGalleryDeal] = useState(null);
 
   const handleViewDeal = (deal) => navigate(`/underwrite?viewDeal=${deal.dealId}`);
+  const handleOpenInAIUnderwriter = (deal) => navigate(`/claude-underwriter?dealId=${deal.dealId}`);
 
   const loadPipelineDeals = async () => {
     try {
@@ -775,6 +777,7 @@ function PipelinePage() {
                                 </div>
                                 <div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
                                   <button onClick={() => handleViewDeal(deal)} title="View" style={{ flex: 1, padding: '4px', backgroundColor: '#00854d', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}><Eye size={10} />View</button>
+                                  <button onClick={() => handleOpenInAIUnderwriter(deal)} title="AI Underwriter" style={{ flex: 1, padding: '4px', background: 'linear-gradient(135deg, #0f172a, #1e3a5f)', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}><BrainCircuit size={10} />AI</button>
                                   <button onClick={() => handleDuplicateDeal(deal)} title="Clone" style={{ flex: 1, padding: '4px', backgroundColor: '#6366f1', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}><Copy size={10} />Clone</button>
                                   <button onClick={() => handleDeleteDeal(deal.dealId)} title="Delete" style={{ padding: '4px 6px', backgroundColor: '#ffefef', color: '#d83a52', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={10} /></button>
                                 </div>
@@ -932,6 +935,7 @@ function PipelinePage() {
                                   <td style={{ ...cs, textAlign: 'center' }}>
                                     <div style={{ display: 'flex', gap: '3px', justifyContent: 'center', flexWrap: 'nowrap' }}>
                                       <button onClick={() => handleViewDeal(deal)} title="Underwrite" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#00854d', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><Eye size={13} /></button>
+                                      <button onClick={() => handleOpenInAIUnderwriter(deal)} title="Open in AI Underwriter" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', background: 'linear-gradient(135deg, #0f172a, #1e3a5f)', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><BrainCircuit size={13} /></button>
                                       <button onClick={() => handleGenerateLOI(deal)} title="Generate LOI" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#a25ddc', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><FileText size={13} /></button>
                                       <button onClick={() => handleDueDiligence(deal)} title="Due Diligence" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#fdab3d', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><ClipboardCheck size={13} /></button>
                                       <button onClick={() => navigate(`/pitch-deck?dealId=${deal.dealId}`)} title="Pitch Deck" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#579bfc', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><Presentation size={13} /></button>

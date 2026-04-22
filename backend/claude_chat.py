@@ -264,20 +264,7 @@ async def stream_claude_response(
         
         # Add to system prompt
         system = system + file_summary
-    
-    try:
-        with client.messages.stream(
-            model=ANTHROPIC_MODEL,
-            max_tokens=8192,
-            system=system,
-            messages=messages
-        ) as stream:
-            for text in stream.text_stream:
-                # SSE format
-                yield f"data: {json.dumps({'type': 'text', 'content': text})}\n\n"
-        
-        # Signal completion
-        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
         
     except Exception as e:
         log.exception(f"[Claude Chat] Streaming error: {e}")
@@ -504,10 +491,16 @@ async def chat_stream(request: Request):
         # Get file context from session
         files_context = session.get("files", [])
         
+        # Build system prompt — inject deal context if present
+        system = SYSTEM_PROMPT
+        deal_context = session.get("deal_context", "")
+        if deal_context:
+            system += f"\n\n{'='*60}\nACTIVE DEAL CONTEXT (loaded from pipeline):\n{'='*60}\n{deal_context}"
+        
         log.info(f"[Claude Chat] Streaming response for session {session_id}, {len(files_context)} files in context")
         
         return StreamingResponse(
-            stream_claude_response(messages, SYSTEM_PROMPT, files_context),
+            stream_claude_response(messages, system, files_context),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
@@ -691,65 +684,319 @@ def generate_document_from_artifact(markdown_content: str, title: str) -> bytes:
         # Fallback: basic markdown conversion
         html_content = f"<pre>{markdown_content}</pre>"
     
-    # Wrap in styled HTML
+    # Wrap in styled HTML — professional CRE business plan format matching Appleby style
     full_html = f"""<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <title>{title}</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+
         body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 20px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #ffffff;
+            color: #1a1a2e;
+            font-size: 11pt;
             line-height: 1.6;
-            color: #333;
         }}
-        h1 {{ color: #1a1a1a; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }}
-        h2 {{ color: #2563eb; margin-top: 30px; }}
-        h3 {{ color: #444; }}
+
+        /* Cover / first section */
+        .cover {{
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #0d4429 100%);
+            color: white;
+            padding: 60px 50px 50px;
+            min-height: 220px;
+        }}
+        .cover h1 {{
+            font-size: 32pt;
+            font-weight: 900;
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+            color: #ffffff;
+        }}
+        .cover .subtitle {{
+            font-size: 12pt;
+            color: #94a3b8;
+            margin-bottom: 6px;
+        }}
+        .cover .tagline {{
+            font-size: 10pt;
+            color: #64748b;
+            font-style: italic;
+        }}
+
+        .content {{
+            padding: 40px 50px;
+            max-width: 900px;
+            margin: 0 auto;
+        }}
+
+        /* Section headers */
+        h1 {{
+            font-size: 20pt;
+            font-weight: 800;
+            color: #0f172a;
+            border-bottom: 3px solid #10b981;
+            padding-bottom: 10px;
+            margin: 40px 0 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }}
+
+        h2 {{
+            font-size: 14pt;
+            font-weight: 700;
+            color: #1e3a5f;
+            margin: 28px 0 12px;
+            padding-left: 12px;
+            border-left: 4px solid #10b981;
+        }}
+
+        h3 {{
+            font-size: 12pt;
+            font-weight: 600;
+            color: #374151;
+            margin: 20px 0 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            font-size: 10pt;
+        }}
+
+        p {{
+            margin: 0 0 12px;
+            color: #374151;
+        }}
+
+        /* Tables — main styling */
         table {{
             border-collapse: collapse;
             width: 100%;
-            margin: 20px 0;
+            margin: 16px 0 24px;
+            font-size: 10pt;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
         }}
-        th, td {{
-            border: 1px solid #ddd;
-            padding: 10px 12px;
+
+        thead tr {{
+            background: #0f172a;
+            color: #ffffff;
+        }}
+
+        thead th {{
+            padding: 10px 14px;
             text-align: left;
+            font-weight: 700;
+            font-size: 9pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: none;
         }}
+
+        tbody tr:nth-child(even) {{
+            background: #f8fafc;
+        }}
+
+        tbody tr:nth-child(odd) {{
+            background: #ffffff;
+        }}
+
+        tbody tr:last-child {{
+            background: #e8f5e9;
+            font-weight: 700;
+            border-top: 2px solid #10b981;
+        }}
+
+        td {{
+            padding: 9px 14px;
+            border-bottom: 1px solid #e5e7eb;
+            color: #1f2937;
+        }}
+
         th {{
-            background: #f5f5f5;
-            font-weight: 600;
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 700;
         }}
-        tr:nth-child(even) {{ background: #fafafa; }}
+
+        /* Highlight boxes */
+        .highlight-box {{
+            background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+            border: 1px solid #86efac;
+            border-left: 4px solid #10b981;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin: 16px 0;
+        }}
+
+        .highlight-box strong {{
+            color: #065f46;
+        }}
+
+        /* Metric cards inline */
+        .metrics-row {{
+            display: flex;
+            gap: 16px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }}
+
+        .metric-card {{
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 14px 18px;
+            flex: 1;
+            min-width: 140px;
+        }}
+
+        .metric-card .label {{
+            font-size: 9pt;
+            color: #6b7280;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }}
+
+        .metric-card .value {{
+            font-size: 16pt;
+            font-weight: 800;
+            color: #0f172a;
+            margin-top: 4px;
+        }}
+
+        /* Scenario sections */
+        .scenario-header {{
+            background: #1e3a5f;
+            color: white;
+            padding: 12px 18px;
+            border-radius: 8px 8px 0 0;
+            font-weight: 700;
+            font-size: 11pt;
+            margin-top: 28px;
+        }}
+
+        .scenario-body {{
+            border: 1px solid #e5e7eb;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            padding: 0;
+            overflow: hidden;
+        }}
+
+        /* NOI waterfall */
+        .waterfall-row {{
+            display: flex;
+            align-items: center;
+            padding: 10px 16px;
+            border-bottom: 1px solid #f3f4f6;
+        }}
+
+        .waterfall-row.total {{
+            background: #e8f5e9;
+            font-weight: 700;
+            font-size: 11pt;
+        }}
+
+        .waterfall-row .arrow {{
+            color: #10b981;
+            font-weight: 700;
+            margin: 0 8px;
+        }}
+
+        /* Lists */
+        ul, ol {{
+            padding-left: 20px;
+            margin: 8px 0 12px;
+        }}
+
+        li {{
+            margin-bottom: 6px;
+            color: #374151;
+        }}
+
+        /* Blockquote / callout */
+        blockquote {{
+            background: #eff6ff;
+            border-left: 4px solid #2563eb;
+            padding: 12px 16px;
+            margin: 16px 0;
+            border-radius: 0 6px 6px 0;
+            color: #1e40af;
+            font-style: italic;
+        }}
+
+        /* Recommendation box */
+        .recommendation {{
+            background: linear-gradient(135deg, #0f172a, #1e3a5f);
+            color: white;
+            padding: 24px 28px;
+            border-radius: 12px;
+            margin: 24px 0;
+        }}
+
+        .recommendation h3 {{
+            color: #10b981;
+            font-size: 12pt;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }}
+
+        .recommendation p {{
+            color: #cbd5e1;
+            font-size: 11pt;
+        }}
+
+        /* Confidentiality footer */
+        .confidentiality {{
+            margin-top: 48px;
+            padding: 16px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 9pt;
+            color: #9ca3af;
+            text-align: center;
+            font-style: italic;
+        }}
+
+        /* Page break hints */
+        .page-break {{
+            page-break-before: always;
+        }}
+
+        /* Positive/negative value colors */
+        .positive {{ color: #065f46; font-weight: 600; }}
+        .negative {{ color: #b91c1c; font-weight: 600; }}
+
         code {{
             background: #f4f4f4;
             padding: 2px 6px;
             border-radius: 3px;
             font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 9pt;
         }}
-        pre {{
-            background: #1e1e1e;
-            color: #d4d4d4;
-            padding: 16px;
-            border-radius: 8px;
-            overflow-x: auto;
-        }}
-        ul, ol {{ padding-left: 24px; }}
-        li {{ margin-bottom: 8px; }}
-        blockquote {{
-            border-left: 4px solid #2563eb;
-            padding-left: 16px;
-            margin-left: 0;
-            color: #666;
-            font-style: italic;
+
+        strong {{ font-weight: 700; }}
+
+        hr {{
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 24px 0;
         }}
     </style>
 </head>
 <body>
+<div class="content">
 {html_content}
+</div>
+<div class="confidentiality">
+    This document is confidential and prepared for private investor review only. 
+    All projections are estimates based on available data and subject to due diligence verification. 
+    Past performance does not guarantee future results. Generated by DealSniper AI Underwriter.
+</div>
 </body>
 </html>"""
     
@@ -764,6 +1011,167 @@ def generate_document_from_artifact(markdown_content: str, title: str) -> bytes:
     except Exception as e:
         log.warning(f"[Artifact] PDF generation failed: {e}, returning HTML")
         return full_html.encode('utf-8')
+
+
+# ============================================================================
+# Deal Context Injection - Load parsed deal data into the chat session
+# ============================================================================
+
+BUSINESS_PLAN_PROMPT = """You are generating a professional Investment Underwriting & Business Plan document for a real estate deal. 
+
+Based on the deal data provided in this session, generate a complete business plan document in the following structure. 
+This must be formatted as a document artifact that can be downloaded as a PDF.
+
+The document must include ALL of the following sections — do not skip any:
+
+1. **OFFERING HIGHLIGHTS** — property name/address, year built/renovated, total SF, asking price, T12 actual NOI, going-in cap rate, day-1 equity, occupancy, exit strategy
+
+2. **SECTION 1: PROPERTY OVERVIEW** — property details table (address, type, unit mix, buildings, acreage, parking, occupancy, management, utilities), unit mix & rent roll table (unit type, count, avg rent, monthly, annual totals)
+
+3. **SECTION 2: MARKET ANALYSIS** — why this market, market fundamentals table (metro area, population, median income, income growth, rent growth, vacancy, anchor institutions, major employers), rent comparable summary table (competing properties with units, SF, market rent, occupancy), cap rate context table (major metro vs suburban vs tertiary vs subject market)
+
+4. **SECTION 3: BUSINESS PLAN** — overview of strategy, utility audit table (who pays what, annual cost, action), Phase 1 (RUBS or first value-add initiative with calculations and NOI impact), Phase 2 (rent increases or second initiative), Phase 3 (market rent upside), NOI Growth Waterfall table (baseline → each phase → exit value)
+
+5. **SECTION 4: UNDERWRITING — T12 INCOME & EXPENSES** — full income statement (GPR, vacancy, other income, EGI) and expense breakdown (taxes, insurance, utilities, repairs, management, all line items) with NOI
+
+6. **SECTION 5: DEAL SCENARIOS** — generate 2-4 deal scenarios based on the user's deal structure and investor strategy. Each scenario needs: deal structure table (purchase price, down payment, closing costs, total equity, loan amount, rate, amortization, debt service), cash flow analysis (baseline/year1/year2-3 NOI, debt service, cash flow), exit strategy (refi or sale, exit value, cash out, investor repayment, owner proceeds, investor total return), key metrics (going-in cap rate, market cap rate, day-1 equity, DSCR, investor preferred, total return)
+
+7. **SECTION 6: SCENARIO COMPARISON SUMMARY** — side-by-side comparison table of all scenarios + recommendation
+
+Use the actual numbers from the deal data. Where data is missing, make reasonable assumptions and note them.
+Format all currency with $ and commas. Format all percentages with %.
+Be thorough — this is a professional investor presentation document."""
+
+
+@router.post("/inject-deal-context")
+async def inject_deal_context(request: Request):
+    """
+    Inject parsed deal data from the pipeline into a chat session.
+    This gives Claude full context so the user can just say 'make me a business plan'.
+    
+    Body:
+    {
+        "session_id": "abc123",
+        "deal_data": {
+            "address": "...",
+            "units": 17,
+            "purchase_price": 1250000,
+            "parsed_data": { ... },
+            "scenario_data": { ... },
+            "notes": "..."
+        }
+    }
+    """
+    try:
+        body = await request.json()
+        session_id = body.get("session_id")
+        deal_data = body.get("deal_data", {})
+        
+        if not session_id:
+            raise HTTPException(status_code=400, detail="session_id required")
+        
+        session = get_session(session_id)
+        
+        # Build a comprehensive deal context string
+        parsed = deal_data.get("parsed_data") or {}
+        scenario = deal_data.get("scenario_data") or {}
+        
+        deal_summary = f"""
+DEAL CONTEXT — LOADED FROM PIPELINE
+=====================================
+Address: {deal_data.get('address', parsed.get('property', {}).get('address', 'N/A'))}
+Units: {deal_data.get('units', parsed.get('property', {}).get('units', 'N/A'))}
+Purchase Price: ${deal_data.get('purchase_price', parsed.get('pricing_financing', {}).get('price', 0)):,.0f}
+Deal Structure: {deal_data.get('deal_structure', 'N/A')}
+Notes: {deal_data.get('notes', 'None')}
+
+FULL PARSED DATA:
+{json.dumps(parsed, indent=2)[:30000]}
+
+SCENARIO / ASSUMPTIONS:
+{json.dumps(scenario, indent=2)[:5000]}
+"""
+        
+        # Store as deal context in session
+        session["deal_context"] = deal_summary
+        session["deal_data"] = deal_data
+        session["deal_address"] = deal_data.get("address", "Deal")
+        
+        log.info(f"[Claude Chat] Injected deal context into session {session_id}: {deal_data.get('address', 'unknown')}")
+        
+        return JSONResponse(content={
+            "success": True,
+            "session_id": session_id,
+            "deal_address": session["deal_address"],
+            "context_length": len(deal_summary)
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.exception(f"[Claude Chat] Deal context injection error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/business-plan/generate")
+async def generate_business_plan(request: Request):
+    """
+    Trigger a business plan generation for the current session's deal.
+    Streams the response exactly like /chat/stream.
+    """
+    try:
+        data = await request.json()
+        session_id = data.get("session_id")
+        user_instructions = data.get("instructions", "")
+        
+        if not session_id:
+            raise HTTPException(status_code=400, detail="session_id required")
+        
+        session = get_session(session_id)
+        deal_context = session.get("deal_context", "")
+        
+        if not deal_context and not session.get("files"):
+            raise HTTPException(
+                status_code=400,
+                detail="No deal data in session. Load a deal from the pipeline or upload documents first."
+            )
+        
+        # Build the business plan trigger message
+        user_message = BUSINESS_PLAN_PROMPT
+        if user_instructions:
+            user_message += f"\n\nADDITIONAL INSTRUCTIONS FROM USER:\n{user_instructions}"
+        
+        # Include conversation history
+        conversation_history = data.get("conversation_history", [])
+        messages = []
+        for msg in conversation_history[-10:]:
+            messages.append({"role": msg["role"], "content": msg["content"]})
+        messages.append({"role": "user", "content": user_message})
+        
+        # Build system with deal context
+        system = SYSTEM_PROMPT
+        if deal_context:
+            system += f"\n\n{'='*60}\nACTIVE DEAL CONTEXT:\n{'='*60}\n{deal_context}"
+        
+        files_context = session.get("files", [])
+        
+        log.info(f"[Claude Chat] Generating business plan for session {session_id}")
+        
+        return StreamingResponse(
+            stream_claude_response(messages, system, files_context),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no"
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.exception(f"[Claude Chat] Business plan generation error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/artifact/execute")
