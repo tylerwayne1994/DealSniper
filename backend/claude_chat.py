@@ -265,7 +265,20 @@ async def stream_claude_response(
         # Add to system prompt
         system = system + file_summary
 
-        
+    try:
+        with client.messages.stream(
+            model=ANTHROPIC_MODEL,
+            max_tokens=8192,
+            system=system,
+            messages=messages
+        ) as stream:
+            for text in stream.text_stream:
+                # SSE format
+                yield f"data: {json.dumps({'type': 'text', 'content': text})}\n\n"
+
+        # Signal completion
+        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
     except Exception as e:
         log.exception(f"[Claude Chat] Streaming error: {e}")
         yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
