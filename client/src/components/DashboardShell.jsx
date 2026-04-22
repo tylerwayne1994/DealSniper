@@ -18,8 +18,10 @@ import {
   LogOut,
   Phone,
   MessageSquare,
+  Bell,
 } from 'lucide-react';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useUpdates } from '../hooks/useUpdates';
 import { supabase } from '../lib/supabase';
 
 const SIDEBAR_WIDTH = 200;
@@ -156,8 +158,8 @@ const dashboardStyles = {
   },
 };
 
-// Sidebar item with icon + label
-const SidebarItem = ({ icon: Icon, label, active = false, onClick }) => {
+// Sidebar item with icon + label + optional badge
+const SidebarItem = ({ icon: Icon, label, active = false, onClick, badge = null }) => {
   const [hovered, setHovered] = React.useState(false);
 
   return (
@@ -165,6 +167,7 @@ const SidebarItem = ({ icon: Icon, label, active = false, onClick }) => {
       style={{
         ...dashboardStyles.sidebarItem(active),
         ...(hovered && !active ? { backgroundColor: '#1e293b', color: '#e2e8f0' } : {}),
+        position: 'relative',
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -172,6 +175,26 @@ const SidebarItem = ({ icon: Icon, label, active = false, onClick }) => {
     >
       <Icon size={18} style={{ flexShrink: 0 }} />
       <span>{label}</span>
+      {badge !== null && badge > 0 && (
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '18px',
+            height: '18px',
+            borderRadius: '4px',
+            backgroundColor: '#0ea5e9',
+            color: '#ffffff',
+            fontSize: '10px',
+            fontWeight: '700',
+            marginLeft: 'auto',
+            flexShrink: 0,
+          }}
+        >
+          {badge > 99 ? '99+' : badge}
+        </div>
+      )}
     </div>
   );
 };
@@ -179,6 +202,7 @@ const SidebarItem = ({ icon: Icon, label, active = false, onClick }) => {
 const tabs = [
   { id: 'home', label: 'Home', icon: Home, section: 'main' },
   { id: 'profile', label: 'Profile', icon: User, section: 'main' },
+  { id: 'updates', label: 'Updates', icon: Bell, section: 'main' },
   { id: 'pipeline', label: 'Pipeline', icon: Layers, section: 'deals' },
   { id: 'underwrite', label: 'Underwrite', icon: FileSpreadsheet, section: 'deals' },
   { id: 'rapid-fire', label: 'Rapid Fire', icon: Zap, section: 'deals' },
@@ -194,6 +218,7 @@ const tabs = [
 function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }) {
   const navigate = useNavigate();
   const { isMobile, isTablet } = useIsMobile();
+  const { unreadCount } = useUpdates();
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = React.useState(false);
   const [accountUser, setAccountUser] = React.useState(null);
@@ -218,6 +243,8 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
       navigate('/contract');
     } else if (tabId === 'investor-portal') {
       navigate('/investor-portal');
+    } else if (tabId === 'updates') {
+      navigate('/updates');
     } else if (tabId === 'home') {
       navigate('/dashboard');
     } else {
@@ -310,6 +337,7 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
           label={tab.label}
           active={activeTab === tab.id}
           onClick={() => handleTabClick(tab.id)}
+          badge={tab.id === 'updates' ? unreadCount : null}
         />
       ))}
 

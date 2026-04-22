@@ -24,6 +24,7 @@ import ContractPage from './pages/ContractPage'; // Contract Generator
 import MapViewPage from './pages/MapViewPage'; // Map View
 import ClaudeUnderwritePage from './pages/ClaudeUnderwritePage'; // AI Underwriter Chat
 import InvestorPortalPage from './pages/InvestorPortalPage'; // Investor Portal / LP Dashboard
+import UpdatesPage from './pages/UpdatesPage'; // Updates Notification Center
 
 function App() {
   return (
@@ -53,6 +54,7 @@ function App() {
         <Route path="/templates" element={<TemplatesPage />} /> {/* Deal Templates */}
         <Route path="/claude-underwriter" element={<ClaudeUnderwritePage />} /> {/* AI Underwriter Chat */}
         <Route path="/investor-portal" element={<InvestorPortalPage />} /> {/* Investor Portal / LP Dashboard */}
+        <Route path="/updates" element={<UpdatesPage />} /> {/* Updates Notification Center */}
       </Routes>
     </Router>
   );
