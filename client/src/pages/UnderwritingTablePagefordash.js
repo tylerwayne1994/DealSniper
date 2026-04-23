@@ -15,6 +15,7 @@ import DealExecutionTab from '../components/results-tabs/DealExecutionTab';
 import { CostSegAnalysisView } from '../components/CostSegAnalysis';
 import SummaryTab from '../components/results-tabs/SummaryTab';
 import PropertySpreadsheet from '../components/PropertySpreadsheet';
+import UnderwritingSpreadsheetTemplate from '../components/UnderwritingSpreadsheetTemplate';
 import { saveDeal, loadDeal } from '../lib/dealsService';
 import { mapParsedDataToSpreadsheet } from '../utils/propertySpreadsheetMapper';
 // Removed unused GoogleSheetsSpreadsheet import
@@ -792,6 +793,8 @@ function UnderwritingTablePage({ initialScenarioData, initialCalculations }) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [isDragging, setIsDragging] = useState(false);
+  const [showSpreadsheetTemplate, setShowSpreadsheetTemplate] = useState(false);
+  const [spreadsheetTemplateData, setSpreadsheetTemplateData] = useState(null);
   
   // Push to Pipeline state
   const [isPushing, setIsPushing] = useState(false);
@@ -1716,49 +1719,49 @@ function UnderwritingTablePage({ initialScenarioData, initialCalculations }) {
       setShowUploadModal(false);
       setUploadFile(null);
 
-      // AUTO-SEND TO MAX AI: Automatically analyze the deal
-      console.log('[AUTO-SEND] Sending parsed data to Max AI for analysis...');
-      const aiPrompt = `Underwrite this deal for me and look to see if this is a good deal or not. Analyze the property metrics, financials, NOI projections, cash flow, returns, and provide your professional opinion on whether this is an attractive investment opportunity.`;
-      
-      const newMessages = [
-        ...chatMessages,
-        { role: 'user', content: aiPrompt }
-      ];
-      setChatMessages(newMessages);
-      setChatLoading(true);
+      // SHOW PRESET SPREADSHEET: Display the template with parsed data pre-filled
+      console.log('[SPREADSHEET VIEW] Showing preset underwriting spreadsheet template...');
+      setSpreadsheetTemplateData({
+        address: scenario.property?.address || 'Unknown Address',
+        propertyType: scenario.property?.property_type || 'Multifamily',
+        yearBuilt: scenario.property?.year_built || '',
+        totalUnits: scenario.property?.units || scenario.property?.total_units || 0,
+        totalSF: scenario.property?.square_feet || scenario.property?.total_sf || 0,
+        occupancy: `${((scenario.pnl?.occupancy || 100) * 100).toFixed(0)}%`,
+        
+        // Purchase assumptions
+        purchasePrice: scenario.pricing_financing?.purchase_price || scenario.pricing_financing?.price || 0,
+        closingCosts: (scenario.pricing_financing?.purchase_price || 0) * 0.03,
+        totalAcquisition: (scenario.pricing_financing?.purchase_price || 0) * 1.03,
+        
+        // Financing
+        loanAmount: scenario.pricing_financing?.loan_amount || (scenario.pricing_financing?.purchase_price || 0) * 0.75,
+        downPayment: scenario.pricing_financing?.down_payment || (scenario.pricing_financing?.purchase_price || 0) * 0.25,
+        interestRate: (scenario.financing?.interest_rate || 6.0) / 100,
+        annualDebtService: scenario.financing?.annual_debt_service || 0,
+        
+        // Year 1 performance
+        gpr: scenario.pnl?.gross_potential_rent || 0,
+        egi: scenario.pnl?.effective_gross_income || 0,
+        opex: scenario.pnl?.operating_expenses || 0,
+        noi: scenario.pnl?.noi || 0,
+        
+        // Returns
+        capRate: scenario.pnl?.noi ? (scenario.pnl.noi / (scenario.pricing_financing?.purchase_price || 1)) : 0,
+        dscr: scenario.pnl?.noi ? (scenario.pnl.noi / (scenario.financing?.annual_debt_service || 1)) : 0,
+        coc: 0,
+        
+        // Raw data for later
+        ...scenario
+      });
+      setShowSpreadsheetTemplate(true);
 
-      try {
-        const aiResponse = await fetch(`http://localhost:8010/api/max/chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sheet_state_json: buildSheetStateJson(),
-            sheet_calc_json: buildSheetCalcJson(),
-            sheet_structure: buildSheetStructure(),
-            messages: newMessages,
-            active_tab: 'Property',
-            scenario_data: scenario,
-            full_calculations: fullCalcs,
-            property_data: parsedCopy,
-            parsed_deal_data: data.parsed, // Send full parsed data
-          }),
-        });
-
-        if (aiResponse.ok) {
-          const aiData = await aiResponse.json();
-          const assistantMessage = aiData.message || { role: 'assistant', content: 'Analysis complete.' };
-          setChatMessages((prev) => [...prev, assistantMessage]);
-          console.log('[AUTO-SEND] Max AI analysis received:', assistantMessage);
-        } else {
-          console.error('[AUTO-SEND] Max AI request failed:', aiResponse.status);
-        }
-      } catch (aiErr) {
-        console.error('[AUTO-SEND] Failed to send to Max AI:', aiErr);
-        // Don't fail the upload if AI fails
-      } finally {
-        setChatLoading(false);
-      }
-
+      // Still send to chat but WITHOUT the auto-analysis - let user interact with spreadsheet first
+      const welcomeMessage = {
+        role: 'assistant',
+        content: '✓ Deal parsed! I\'ve populated the spreadsheet template with the extracted data. Review the numbers above, and I\'ll auto-fill any missing fields or help you refine assumptions.'
+      };
+      setChatMessages((prev) => [...prev, welcomeMessage]);
     } catch (err) {
       console.error('Upload/parse error:', err);
       setUploadError(err.message || 'Failed to upload and parse document');
@@ -2907,6 +2910,125 @@ function UnderwritingTablePage({ initialScenarioData, initialCalculations }) {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Spreadsheet Template View - shows after parsing */}
+      {showSpreadsheetTemplate && spreadsheetTemplateData && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.7)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'center',
+          zIndex: 9998,
+          padding: '20px',
+          overflow: 'auto'
+        }}>
+          <div style={{
+            width: '95%',
+            maxWidth: '1400px',
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
+            overflow: 'hidden',
+            animation: 'slideUp 0.3s ease-out',
+            marginTop: '20px',
+            marginBottom: '20px'
+          }}>
+            {/* Header with close button */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '20px 24px',
+              borderBottom: '1px solid #e5e7eb',
+              background: 'linear-gradient(to bottom, #ffffff, #fafafa)'
+            }}>
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: '#111827' }}>
+                Underwriting Model: {spreadsheetTemplateData.address || 'New Deal'}
+              </h2>
+              <button
+                onClick={() => setShowSpreadsheetTemplate(false)}
+                style={{
+                  border: 'none',
+                  background: 'none',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  color: '#6b7280'
+                }}
+                onMouseEnter={(e) => e.target.style.color = '#111827'}
+                onMouseLeave={(e) => e.target.style.color = '#6b7280'}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Spreadsheet Template */}
+            <div style={{ padding: '16px' }}>
+              <UnderwritingSpreadsheetTemplate 
+                dealData={spreadsheetTemplateData}
+                isLoading={isUploading}
+              />
+            </div>
+
+            {/* Footer with actions */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '16px 24px',
+              borderTop: '1px solid #e5e7eb',
+              background: '#fafafa'
+            }}>
+              <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                📝 Edit cells above. Ask Claude (in chat) to fill missing fields or refine assumptions.
+              </div>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={() => setShowSpreadsheetTemplate(false)}
+                  style={{
+                    padding: '10px 18px',
+                    borderRadius: '10px',
+                    border: '1px solid #e5e7eb',
+                    backgroundColor: '#ffffff',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    color: '#6b7280'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = '#ffffff'}
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handlePushToPipeline}
+                  disabled={isPushing}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: isPushing ? '#9ca3af' : 'linear-gradient(135deg, #111827 0%, #374151 100%)',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: isPushing ? 'not-allowed' : 'pointer',
+                    color: '#ffffff',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                  onMouseEnter={(e) => !isPushing && (e.target.style.transform = 'translateY(-1px)')}
+                  onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+                >
+                  {isPushing ? 'Saving...' : '✓ Save to Pipeline'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
