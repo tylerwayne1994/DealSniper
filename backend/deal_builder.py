@@ -595,6 +595,112 @@ def get_session(session_id: str) -> Dict[str, Any]:
     return _sessions[session_id]
 
 
+def _safe_profile_id(request: Request) -> Optional[str]:
+    """Best-effort profile id lookup from auth header/cookie."""
+    return request.headers.get("X-Profile-ID") or request.cookies.get("profile_id")
+
+
+def _get_supabase_client():
+    """Get Supabase service client if configured; return None on failure."""
+    try:
+        from token_manager import get_supabase
+        return get_supabase()
+    except Exception as e:
+        log.warning(f"[DealBuilder] Supabase unavailable for chat persistence: {e}")
+        return None
+
+
+def _persist_session(profile_id: Optional[str], session_id: str, session: Dict[str, Any], generated_deal_id: Optional[str] = None) -> None:
+    """Persist session snapshot to Supabase. No-op if unavailable."""
+    if not profile_id:
+        return
+    sb = _get_supabase_client()
+    if not sb:
+        return
+    try:
+        payload = {
+            "session_id": session_id,
+            "profile_id": profile_id,
+            "deal_data": session.get("deal_data"),
+            "approved": bool(session.get("approved", False)),
+            "generated_deal_id": generated_deal_id or session.get("outputs", {}).get("deal_id"),
+            "updated_at": datetime.utcnow().isoformat(),
+        }
+        sb.table("deal_builder_sessions").upsert(payload).execute()
+    except Exception as e:
+        log.warning(f"[DealBuilder] Failed persisting session snapshot: {e}")
+
+
+def _persist_messages(profile_id: Optional[str], session_id: str, messages: List[Dict[str, str]], deal_id: Optional[str] = None) -> None:
+    """Persist chat messages to Supabase. No-op if unavailable."""
+    if not profile_id or not messages:
+        return
+    sb = _get_supabase_client()
+    if not sb:
+        return
+    rows = []
+    for msg in messages:
+        role = msg.get("role")
+        content = msg.get("content")
+        if role not in {"user", "assistant", "system"} or not content:
+            continue
+        rows.append({
+            "session_id": session_id,
+            "profile_id": profile_id,
+            "deal_id": deal_id,
+            "role": role,
+            "content": content,
+        })
+    if not rows:
+        return
+    try:
+        sb.table("deal_builder_messages").insert(rows).execute()
+    except Exception as e:
+        log.warning(f"[DealBuilder] Failed persisting chat messages: {e}")
+
+
+def _hydrate_session_from_db(profile_id: Optional[str], session_id: str) -> Optional[Dict[str, Any]]:
+    """Hydrate an in-memory session from Supabase if present."""
+    if not profile_id:
+        return None
+    sb = _get_supabase_client()
+    if not sb:
+        return None
+    try:
+        sess_result = sb.table("deal_builder_sessions").select("*").eq("session_id", session_id).eq("profile_id", profile_id).limit(1).execute()
+        session_row = (sess_result.data or [None])[0]
+        if not session_row:
+            return None
+
+        msgs_result = sb.table("deal_builder_messages").select("role, content").eq("session_id", session_id).eq("profile_id", profile_id).order("created_at").execute()
+        conversation = [{"role": m.get("role"), "content": m.get("content")} for m in (msgs_result.data or []) if m.get("role") and m.get("content")]
+
+        session = get_session(session_id)
+        session["deal_data"] = session_row.get("deal_data")
+        session["conversation"] = conversation
+        session["approved"] = bool(session_row.get("approved", False))
+        generated_deal_id = session_row.get("generated_deal_id")
+        if generated_deal_id:
+            session["outputs"]["deal_id"] = generated_deal_id
+        return session
+    except Exception as e:
+        log.warning(f"[DealBuilder] Failed hydrating session from DB: {e}")
+        return None
+
+
+def _link_session_messages_to_deal(profile_id: Optional[str], session_id: str, deal_id: Optional[str]) -> None:
+    """Attach generated deal id to all messages for this session."""
+    if not profile_id or not deal_id:
+        return
+    sb = _get_supabase_client()
+    if not sb:
+        return
+    try:
+        sb.table("deal_builder_messages").update({"deal_id": deal_id}).eq("session_id", session_id).eq("profile_id", profile_id).execute()
+    except Exception as e:
+        log.warning(f"[DealBuilder] Failed linking messages to deal_id: {e}")
+
+
 async def parse_om_with_claude(file_bytes: bytes, file_type: str, filename: str) -> Dict[str, Any]:
     """Parse OM using Claude's native PDF/vision capabilities."""
     client = get_anthropic_client()
@@ -813,6 +919,8 @@ async def upload_om(
     Returns parsed deal data and initial underwriting analysis.
     """
     try:
+        profile_id = _safe_profile_id(request)
+
         # Token checks disabled for testing
         log.info("[DealBuilder] Upload received (token checks disabled for testing)")
         
@@ -843,6 +951,11 @@ async def upload_om(
             "role": "assistant", 
             "content": analysis
         })
+        _persist_session(profile_id, session_id, session)
+        _persist_messages(profile_id, session_id, [
+            {"role": "user", "content": f"I'm uploading an OM: {filename}"},
+            {"role": "assistant", "content": analysis},
+        ])
         
         # Build deal summary for UI
         prop = parsed_data.get("property", {})
@@ -879,8 +992,6 @@ async def deal_builder_chat(request: Request):
     Handles conversation and detects approval.
     """
     try:
-        from token_manager import get_current_profile_id, get_profile
-        
         data = await request.json()
         message = data.get("message", "")
         session_id = data.get("session_id")
@@ -888,6 +999,8 @@ async def deal_builder_chat(request: Request):
         conversation_history = data.get("conversation_history", [])
         is_approval = data.get("is_approval", False)
         
+        profile_id = _safe_profile_id(request)
+
         if not message:
             return JSONResponse(
                 status_code=400,
@@ -896,6 +1009,10 @@ async def deal_builder_chat(request: Request):
         
         # Get session
         session = get_session(session_id)
+
+        # Restore prior session context on refresh/reopen when available
+        if (not session.get("conversation")) and profile_id:
+            _hydrate_session_from_db(profile_id, session_id)
         
         # Update deal data if provided
         if deal_data:
@@ -949,6 +1066,11 @@ async def deal_builder_chat(request: Request):
         # Store in conversation
         session["conversation"].append({"role": "user", "content": message})
         session["conversation"].append({"role": "assistant", "content": response_text})
+        _persist_messages(profile_id, session_id, [
+            {"role": "user", "content": message},
+            {"role": "assistant", "content": response_text},
+        ], deal_id=session.get("outputs", {}).get("deal_id"))
+        _persist_session(profile_id, session_id, session)
         
         return JSONResponse(content={
             "success": True,
@@ -979,7 +1101,7 @@ async def generate_deliverables(request: Request):
         data = await request.json()
         session_id = data.get("session_id")
         deal_data = data.get("deal_data")
-        profile_id = "test_user"  # Placeholder for testing
+        profile_id = _safe_profile_id(request) or "test_user"
         
         session = get_session(session_id)
         
@@ -1002,6 +1124,7 @@ async def generate_deliverables(request: Request):
         
         # Start background generation (in production, use Celery or similar)
         asyncio.create_task(generate_in_background(session_id, session["deal_data"], profile_id))
+        _persist_session(_safe_profile_id(request), session_id, session)
         
         return JSONResponse(content={
             "success": True,
@@ -1049,6 +1172,8 @@ async def generate_in_background(session_id: str, deal_data: Dict, profile_id: s
         # Save deal to pipeline
         deal_id = await save_deal_to_pipeline(deal_data, profile_id)
         session["outputs"]["deal_id"] = deal_id
+        _persist_session(profile_id if profile_id != "test_user" else None, session_id, session, generated_deal_id=deal_id)
+        _link_session_messages_to_deal(profile_id if profile_id != "test_user" else None, session_id, deal_id)
         
         log.info(f"[DealBuilder] Generation complete for session {session_id}")
         
@@ -1212,13 +1337,12 @@ async def save_deal_to_pipeline(deal_data: Dict, profile_id: str) -> str:
         
         deal_record = {
             "deal_id": str(uuid.uuid4()),
-            "profile_id": profile_id,
+            "user_id": profile_id if profile_id and profile_id != "test_user" else None,
             "address": prop.get("address", "Unknown"),
             "units": prop.get("units", 0),
             "purchase_price": fin.get("asking_price", 0),
-            "cap_rate": fin.get("cap_rate", 0),
-            "status": "pipeline",
-            "stage": "new",
+            "pipeline_status": "pipeline",
+            "deal_stage": "underwritten",
             "scenario_data": deal_data,
             "created_at": datetime.utcnow().isoformat()
         }
@@ -1230,6 +1354,42 @@ async def save_deal_to_pipeline(deal_data: Dict, profile_id: str) -> str:
     except Exception as e:
         log.exception(f"[DealBuilder] Pipeline save error: {e}")
         return None
+
+
+@router.get("/history/{session_id}")
+async def get_chat_history(session_id: str, request: Request):
+    """Load persisted chat/session state for a Deal Builder session."""
+    profile_id = _safe_profile_id(request)
+
+    # Prefer live in-memory session when available
+    existing = _sessions.get(session_id)
+    if existing and existing.get("conversation"):
+        return JSONResponse(content={
+            "success": True,
+            "messages": existing.get("conversation", []),
+            "dealData": existing.get("deal_data"),
+            "approved": bool(existing.get("approved", False)),
+            "dealId": existing.get("outputs", {}).get("deal_id")
+        })
+
+    # Fallback: hydrate from DB
+    hydrated = _hydrate_session_from_db(profile_id, session_id)
+    if hydrated:
+        return JSONResponse(content={
+            "success": True,
+            "messages": hydrated.get("conversation", []),
+            "dealData": hydrated.get("deal_data"),
+            "approved": bool(hydrated.get("approved", False)),
+            "dealId": hydrated.get("outputs", {}).get("deal_id")
+        })
+
+    return JSONResponse(content={
+        "success": True,
+        "messages": [],
+        "dealData": None,
+        "approved": False,
+        "dealId": None
+    })
 
 
 @router.get("/status/{session_id}")

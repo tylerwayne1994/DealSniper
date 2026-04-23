@@ -1215,15 +1215,19 @@ function DashboardMapTab() {
         return;
       }
       
-      const dealsWithCoords = deals.filter(d => {
-        const hasCoords = d.latitude && d.longitude && 
-                         Number.isFinite(d.latitude) && 
-                         Number.isFinite(d.longitude);
-        if (!hasCoords) {
-          console.warn(`Deal missing valid coords:`, d.address, d);
-        }
-        return hasCoords;
-      });
+      const dealsWithCoords = deals
+        .map(d => ({
+          ...d,
+          latitude: Number(d.latitude),
+          longitude: Number(d.longitude),
+        }))
+        .filter(d => {
+          const hasCoords = Number.isFinite(d.latitude) && Number.isFinite(d.longitude);
+          if (!hasCoords) {
+            console.warn(`Deal missing valid coords:`, d.address, d);
+          }
+          return hasCoords;
+        });
       console.log(`${dealsWithCoords.length} deals have valid coordinates`);
 
       // If some deals are missing coordinates, backfill geocode and reload (once per session)

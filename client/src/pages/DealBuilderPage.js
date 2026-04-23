@@ -411,6 +411,7 @@ function WorkbookPanel({ dealData, overrides, onCellEdit }) {
 /* ═══════════════════════════ MAIN PAGE ═══════════════════ */
 function DealBuilderPage() {
   const navigate = useNavigate();
+  const createSessionId = () => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -418,7 +419,14 @@ function DealBuilderPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatusText, setUploadStatusText] = useState('');
-  const [sessionId, setSessionId] = useState(null);
+  const [sessionId, setSessionId] = useState(() => {
+    try {
+      const existing = localStorage.getItem('dealBuilderSessionId');
+      return existing || createSessionId();
+    } catch {
+      return createSessionId();
+    }
+  });
   const [dealData, setDealData] = useState(null);
   const [isApproved, setIsApproved] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -440,7 +448,47 @@ function DealBuilderPage() {
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  useEffect(() => { setSessionId(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`); }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem('dealBuilderSessionId', sessionId);
+    } catch {
+      // Ignore localStorage failures
+    }
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    let cancelled = false;
+
+    const restoreHistory = async () => {
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        const userId = userData?.user?.id;
+        const response = await fetch(`${API_BASE}/api/deal-builder/history/${sessionId}`, {
+          headers: userId ? { 'X-Profile-ID': userId } : {}
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!data?.success || cancelled) return;
+
+        if (Array.isArray(data.messages) && data.messages.length > 0) {
+          setMessages(data.messages.map(m => ({ role: m.role, content: m.content })));
+        }
+        if (data.dealData) {
+          setDealData(data.dealData);
+        }
+        if (data.approved) {
+          setIsApproved(true);
+        }
+      } catch (error) {
+        console.warn('Deal Builder history restore skipped:', error);
+      }
+    };
+
+    restoreHistory();
+    return () => { cancelled = true; };
+  }, [sessionId]);
+
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   const handleInputChange = (e) => {
@@ -632,7 +680,7 @@ function DealBuilderPage() {
     setDownloadUrls({ spreadsheet: null, pitchDeck: null, dealId: null });
     setCellOverrides({});
     setIsFullscreen(false);
-    setSessionId(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+    setSessionId(createSessionId());
   };
 
   /* ─── Progress ─── */
