@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { supabase } from '../lib/supabase';
+import UnderwritingSpreadsheetTemplate from '../components/UnderwritingSpreadsheetTemplate';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
 
@@ -597,6 +598,8 @@ export default function ClaudeUnderwritePage() {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFileForPreview, setSelectedFileForPreview] = useState(null);
   const [previewData, setPreviewData] = useState(null);
+  const [showSpreadsheetTemplate, setShowSpreadsheetTemplate] = useState(false);
+  const [spreadsheetTemplateData, setSpreadsheetTemplateData] = useState(null);
 
   // Canvas state
   const [showCanvas, setShowCanvas] = useState(true);
@@ -812,6 +815,34 @@ export default function ClaudeUnderwritePage() {
             role: 'system',
             content: `Uploaded: **${data.filename}**`,
           }]);
+
+          // Show blank spreadsheet template for editing
+          console.log('[SPREADSHEET] Showing blank template for:', data.filename);
+          setSpreadsheetTemplateData({
+            filename: data.filename,
+            address: 'TBD - Will populate from document',
+            propertyType: 'Multifamily',
+            yearBuilt: '',
+            totalUnits: 0,
+            totalSF: 0,
+            occupancy: '0%',
+            purchasePrice: 0,
+            closingCosts: 0,
+            totalAcquisition: 0,
+            loanAmount: 0,
+            downPayment: 0,
+            interestRate: 0.06,
+            annualDebtService: 0,
+            gpr: 0,
+            egi: 0,
+            opex: 0,
+            noi: 0,
+            capRate: 0,
+            dscr: 0,
+            coc: 0,
+            file_id: data.file_id,
+          });
+          setShowSpreadsheetTemplate(true);
         }
       } catch (err) {
         console.error('Upload error:', err);
@@ -1756,11 +1787,116 @@ export default function ClaudeUnderwritePage() {
         )}
       </div>
 
+      {/* Spreadsheet Template Modal */}
+      {showSpreadsheetTemplate && spreadsheetTemplateData && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.7)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'center',
+          zIndex: 9998,
+          padding: '20px',
+          overflow: 'auto'
+        }}>
+          <div style={{
+            width: '95%',
+            maxWidth: '1400px',
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
+            overflow: 'hidden',
+            animation: 'slideUp 0.3s ease-out',
+            marginTop: '20px',
+            marginBottom: '20px'
+          }}>
+            {/* Header with close button */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '20px 24px',
+              borderBottom: '1px solid #e5e7eb',
+              background: 'linear-gradient(to bottom, #ffffff, #fafafa)'
+            }}>
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: '#111827' }}>
+                📊 Blank Underwriting Model
+              </h2>
+              <button
+                onClick={() => setShowSpreadsheetTemplate(false)}
+                style={{
+                  border: 'none',
+                  background: 'none',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  color: '#6b7280'
+                }}
+                onMouseEnter={(e) => e.target.style.color = '#111827'}
+                onMouseLeave={(e) => e.target.style.color = '#6b7280'}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Spreadsheet Template */}
+            <div style={{ padding: '16px' }}>
+              <UnderwritingSpreadsheetTemplate 
+                dealData={spreadsheetTemplateData}
+                isLoading={isUploading}
+              />
+            </div>
+
+            {/* Footer with instructions */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '16px 24px',
+              borderTop: '1px solid #e5e7eb',
+              background: '#fafafa'
+            }}>
+              <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                ✏️ Edit any cell. Then ask me in the chat (left panel) to fill missing fields or analyze the deal.
+              </div>
+              <button
+                onClick={() => setShowSpreadsheetTemplate(false)}
+                style={{
+                  padding: '10px 18px',
+                  borderRadius: '10px',
+                  border: '1px solid #e5e7eb',
+                  backgroundColor: '#ffffff',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  color: '#6b7280'
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#ffffff'}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* CSS Animations */}
       <style>{`
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
         @keyframes blink {
           0%, 100% { opacity: 1; }
