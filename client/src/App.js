@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import Uploadpage from './pages/Uploadpage';
 import PipelinePage from './pages/PipelinePage';
@@ -22,7 +22,6 @@ import ManualEntryPage from './pages/ManualEntryPage'; // Manual Entry
 import PitchDeckPage from './pages/PitchDeckPage'; // Pitch Deck Generator
 import ContractPage from './pages/ContractPage'; // Contract Generator
 import MapViewPage from './pages/MapViewPage'; // Map View
-import ClaudeUnderwritePage from './pages/ClaudeUnderwritePage'; // AI Underwriter Chat
 import InvestorPortalPage from './pages/InvestorPortalPage'; // Investor Portal / LP Dashboard
 import UpdatesPage from './pages/UpdatesPage'; // Updates Notification Center
 import AgentBuilderPage from './pages/AgentBuilderPage'; // Agent Builder (Rapid Fire replacement)
@@ -54,7 +53,7 @@ function App() {
         <Route path="/email-deals" element={<EmailDealsPage />} /> {/* Email Deal Screener */}
         <Route path="/email-underwrite" element={<EmailUnderwritePage />} /> {/* Email Underwrite Pipeline */}
         <Route path="/templates" element={<TemplatesPage />} /> {/* Deal Templates */}
-        <Route path="/claude-underwriter" element={<ClaudeUnderwritePage />} /> {/* AI Underwriter Chat */}
+        <Route path="/claude-underwriter" element={<Navigate to="/market-research" replace />} /> {/* Legacy redirect */}
         <Route path="/agent-builder" element={<AgentBuilderPage />} /> {/* Agent Builder */}
         <Route path="/investor-portal" element={<InvestorPortalPage />} /> {/* Investor Portal / LP Dashboard */}
         <Route path="/updates" element={<UpdatesPage />} /> {/* Updates Notification Center */}

@@ -2,8 +2,8 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Send, Upload, FileText, Loader, CheckCircle, Download, X,
-  Layers, ExternalLink, AlertCircle, Maximize2, Minimize2
+  Send, Upload, FileText, Loader, CheckCircle, Download,
+  Layers, ExternalLink, AlertCircle, Maximize2, Minimize2, BookOpen
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -38,14 +38,14 @@ function EditableCell({ value, cellKey, overrides, onEdit, isTotal, isNeg }) {
 
   const startEdit = () => {
     // Strip formatting to get raw value for editing
-    const raw = String(display).replace(/[\$,%()\s]/g, '').replace(/,/g, '');
+    const raw = String(display).replace(/[$,%()\s]/g, '').replace(/,/g, '');
     setDraft(raw === '—' ? '' : raw);
     setEditing(true);
   };
 
   const commit = () => {
     setEditing(false);
-    if (draft.trim() === '' || draft === String(value).replace(/[\$,%()\s]/g, '').replace(/,/g, '')) {
+    if (draft.trim() === '' || draft === String(value).replace(/[$,%()\s]/g, '').replace(/,/g, '')) {
       // Reset to original if empty or unchanged
       if (onEdit) onEdit(cellKey, undefined);
     } else {
@@ -416,6 +416,8 @@ function DealBuilderPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatusText, setUploadStatusText] = useState('');
   const [sessionId, setSessionId] = useState(null);
   const [dealData, setDealData] = useState(null);
   const [isApproved, setIsApproved] = useState(false);
@@ -453,35 +455,112 @@ function DealBuilderPage() {
     if (!file) return;
     const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
     if (!validTypes.includes(file.type)) { alert('Please upload a PDF or image file'); return; }
+
     setIsUploading(true);
+    setUploadProgress(8);
+    setUploadStatusText('Initializing upload...');
     setUploadedFile({ name: file.name, size: file.size, type: file.type });
     setMessages(prev => [...prev, { role: 'user', content: `Uploading: ${file.name}`, isUpload: true, fileName: file.name }]);
+
     try {
       await wakeBackend();
+      setUploadProgress(24);
+      setUploadStatusText('Connecting to parser...');
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('session_id', sessionId);
+
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData?.user?.id;
+      setUploadProgress(46);
+      setUploadStatusText('Uploading document...');
+
       const response = await fetch(`${API_BASE}/api/deal-builder/upload`, {
         method: 'POST', headers: userId ? { 'X-Profile-ID': userId } : {}, body: formData
       });
+
       if (!response.ok) {
         let msg = `HTTP ${response.status}`;
         try { const err = await response.json(); msg = err.detail || err.error || msg; } catch { msg = `HTTP ${response.status}: ${response.statusText}`; }
         throw new Error(msg);
       }
+
+      setUploadProgress(76);
+      setUploadStatusText('Extracting deal data...');
       const data = await response.json();
       setDealData(data.dealData);
       setMessages(prev => [...prev, { role: 'assistant', content: data.response, dealSummary: data.dealSummary }]);
+      setUploadProgress(100);
+      setUploadStatusText('Upload complete');
     } catch (error) {
       console.error('Upload error:', error);
       setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${error.message}. Try again with a clear PDF or image.` }]);
       setUploadedFile(null);
+      setUploadStatusText('Upload failed');
     } finally {
-      setIsUploading(false);
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+        setUploadStatusText('');
+      }, 350);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  };
+
+  const sendDealBuilderPrompt = async (userMessage, isApprovalMsg = false) => {
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setIsLoading(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id;
+      const response = await fetch(`${API_BASE}/api/deal-builder/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(userId && { 'X-Profile-ID': userId }) },
+        body: JSON.stringify({
+          message: userMessage,
+          session_id: sessionId,
+          deal_data: dealData,
+          conversation_history: messages.map(m => ({ role: m.role, content: m.content })),
+          is_approval: isApprovalMsg,
+        })
+      });
+
+      if (response.status === 401) { setMessages(prev => [...prev, { role: 'assistant', content: 'Please log in to use Deal Builder.' }]); return; }
+      if (response.status === 402) { setMessages(prev => [...prev, { role: 'assistant', content: 'Out of tokens. Purchase more to continue.' }]); return; }
+
+      const data = await response.json();
+      if (data.success) {
+        if (data.updatedDealData) setDealData(data.updatedDealData);
+        setMessages(prev => [...prev, { role: 'assistant', content: data.response, showApproveButton: data.readyForApproval && !isApproved }]);
+        if (data.approved) { setIsApproved(true); startGeneration(); }
+      } else {
+        setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${data.error || 'Unknown'}` }]);
+      }
+    } catch (error) {
+      console.error('Chat error:', error);
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Connection error. Check your internet and try again.' }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGenerateBusinessPlan = async () => {
+    if (isLoading || isUploading || isGenerating) return;
+    const businessPlanPrompt = [
+      'Build a complete professional multifamily business plan for this deal from the uploaded documents and extracted data.',
+      'Include these sections:',
+      '1) Executive Summary',
+      '2) Property & Market Overview',
+      '3) Underwriting Assumptions (rent, vacancy, expenses, capex, debt)',
+      '4) Value-Add Strategy and 12-24 month plan',
+      '5) Risk Analysis and mitigations',
+      '6) Financial Projections and investor returns',
+      '7) Exit strategy and recommendation',
+      'Use concrete numbers from the parsed deal and clearly flag assumptions versus sourced values.'
+    ].join('\n');
+
+    await sendDealBuilderPrompt(businessPlanPrompt, false);
   };
 
   /* ─── Chat ─── */
@@ -499,30 +578,7 @@ function DealBuilderPage() {
 
     const approvalKW = ['approved', 'looks good', "let's do it", 'go ahead', 'proceed', 'build it', 'generate', 'create the'];
     const isApprovalMsg = approvalKW.some(kw => userMessage.toLowerCase().includes(kw));
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-    setIsLoading(true);
-    try {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData?.user?.id;
-      const response = await fetch(`${API_BASE}/api/deal-builder/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(userId && { 'X-Profile-ID': userId }) },
-        body: JSON.stringify({ message: userMessage, session_id: sessionId, deal_data: dealData, conversation_history: messages.map(m => ({ role: m.role, content: m.content })), is_approval: isApprovalMsg })
-      });
-      if (response.status === 401) { setMessages(prev => [...prev, { role: 'assistant', content: 'Please log in to use Deal Builder.' }]); return; }
-      if (response.status === 402) { setMessages(prev => [...prev, { role: 'assistant', content: 'Out of tokens. Purchase more to continue.' }]); return; }
-      const data = await response.json();
-      if (data.success) {
-        if (data.updatedDealData) setDealData(data.updatedDealData);
-        setMessages(prev => [...prev, { role: 'assistant', content: data.response, showApproveButton: data.readyForApproval && !isApproved }]);
-        if (data.approved) { setIsApproved(true); startGeneration(); }
-      } else {
-        setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${data.error || 'Unknown'}` }]);
-      }
-    } catch (error) {
-      console.error('Chat error:', error);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Connection error. Check your internet and try again.' }]);
-    } finally { setIsLoading(false); }
+    await sendDealBuilderPrompt(userMessage, isApprovalMsg);
   };
 
   const handleApprove = () => {
@@ -622,6 +678,14 @@ function DealBuilderPage() {
             <span className="text-xs text-slate-400 hidden sm:inline">Upload OM → Underwrite → Spreadsheet + Pitch Deck</span>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleGenerateBusinessPlan}
+              disabled={isLoading || isUploading || isGenerating || !uploadedFile}
+              className="text-xs text-white bg-slate-900 rounded-lg px-3 py-1.5 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all inline-flex items-center gap-1.5"
+              title="Generate full business plan"
+            >
+              <BookOpen size={12} /> Business Plan
+            </button>
             <span className="flex items-center gap-1.5 text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1">
               <AlertCircle size={11} /> <b>10 tokens</b> / deal
             </span>
@@ -660,6 +724,25 @@ function DealBuilderPage() {
                 <span className="truncate font-medium">{uploadedFile.name}</span>
                 {!isUploading && <CheckCircle size={14} className="text-emerald-500 shrink-0" />}
                 <button onClick={() => fileInputRef.current?.click()} className="ml-auto text-[11px] text-slate-500 border border-gray-200 rounded-md px-2 py-0.5 hover:bg-gray-50 transition-colors">+ Add</button>
+              </div>
+            )}
+
+            {isUploading && (
+              <div className="mx-4 mt-2 mb-1 rounded-xl border border-blue-200 bg-gradient-to-r from-slate-50 to-blue-50 p-3 shadow-sm shrink-0">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 text-[12px] font-semibold text-slate-700">
+                    <Loader size={14} className="animate-spin text-blue-600" />
+                    Uploading and parsing deal file
+                  </div>
+                  <span className="text-[11px] font-bold text-blue-700">{Math.max(1, uploadProgress)}%</span>
+                </div>
+                <div className="h-3 rounded-full bg-blue-100 border border-blue-200 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-600 via-sky-500 to-indigo-500 transition-all duration-300"
+                    style={{ width: `${Math.max(3, uploadProgress)}%` }}
+                  />
+                </div>
+                <div className="mt-1.5 text-[11px] text-slate-600">{uploadStatusText || 'Processing file...'}</div>
               </div>
             )}
 
@@ -717,11 +800,11 @@ function DealBuilderPage() {
                 </div>
               ))}
 
-              {(isLoading || isUploading) && (
+              {isLoading && (
                 <div className="flex justify-start">
                   <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-gray-50 border border-gray-200/60 rounded-2xl rounded-bl-md text-[13px] text-slate-400">
                     <Loader size={14} className="animate-spin" />
-                    {isUploading ? 'Parsing document...' : 'Thinking...'}
+                    Thinking...
                   </div>
                 </div>
               )}

@@ -1111,14 +1111,14 @@ function DealRoomPage() {
                 <Eye size={16} /> View Full Underwriting
               </button>
               <button
-                onClick={() => navigate(`/claude-underwriter?dealId=${dealId}`)}
+                onClick={() => navigate(`/market-research?dealId=${dealId}`)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '12px 14px',
                   borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #0f172a, #1e3a5f)',
                   color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: '700', textAlign: 'left',
                 }}
               >
-                <BrainCircuit size={16} /> AI Underwriter (Claude)
+                <BrainCircuit size={16} /> Deal Builder AI Workspace
               </button>
             </div>
           </div>
