@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Building2, FileText, Upload, Download, Trash2,
+  ArrowLeft, FileText, Upload, Download, Trash2,
   Eye, BrainCircuit, ClipboardCheck, Presentation, Wrench,
-  DollarSign, TrendingUp, Home, X, ExternalLink, StickyNote,
-  Folder, FilePlus, FileCheck, BarChart3, AlertTriangle,
+  DollarSign, Home, X, StickyNote,
+  Folder, FileCheck, BarChart3, AlertTriangle,
   ChevronRight, RefreshCw, Star, Percent, Hash, Calendar,
-  Users, MapPin, Phone, Mail, Layers, Lock
+  Phone, Mail, Layers, Lock, Link2
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { loadDeal, updateDeal } from '../lib/dealsService';
+import { calculateFullAnalysis } from '../utils/realEstateCalculations';
 
 // ============================================================================
 // Constants & Helpers
@@ -39,6 +40,8 @@ const DOC_CATEGORIES = [
   { value: 'contract',      label: 'Contract',       color: '#e2445c' },
   { value: 'inspection',    label: 'Inspection',     color: '#0d9488' },
   { value: 'financials',    label: 'Financials',     color: '#0073ea' },
+  { value: 'google_doc',    label: 'Google Doc',     color: '#1a73e8' },
+  { value: 'google_sheet',  label: 'Google Sheet',   color: '#188038' },
   { value: 'other',         label: 'Other',          color: '#676879' },
 ];
 
@@ -73,6 +76,48 @@ const fileIcon = (type = '') => {
   if (type.includes('spreadsheet') || type.includes('excel') || type.includes('csv')) return '📊';
   if (type.includes('word') || type.includes('document')) return '📝';
   return '📁';
+};
+
+const pickNum = (...vals) => {
+  for (const v of vals) {
+    if (v === null || v === undefined || v === '') continue;
+    const n = Number(v);
+    if (!Number.isNaN(n) && Number.isFinite(n)) return n;
+  }
+  return null;
+};
+
+const normalizeImages = (deal) => {
+  const fromDeal = Array.isArray(deal?.images) ? deal.images : [];
+  const fromParsed = Array.isArray(deal?.parsedData?.images) ? deal.parsedData.images : [];
+  const all = [...fromDeal, ...fromParsed];
+
+  return all
+    .map((img, idx) => {
+      if (typeof img === 'string') {
+        return { id: `img-${idx}`, url: img, storage_path: '', page_number: null };
+      }
+      if (img && typeof img === 'object') {
+        const url = img.url || img.public_url || img.image_url || img.src || '';
+        if (!url) return null;
+        return {
+          id: img.id || `img-${idx}`,
+          url,
+          storage_path: img.storage_path || '',
+          page_number: img.page_number || null,
+        };
+      }
+      return null;
+    })
+    .filter(Boolean);
+};
+
+const normalizeGoogleDocCategory = (url, selected) => {
+  if (!url) return selected || 'other';
+  const u = url.toLowerCase();
+  if (u.includes('docs.google.com/document/')) return 'google_doc';
+  if (u.includes('docs.google.com/spreadsheets/')) return 'google_sheet';
+  return selected || 'other';
 };
 
 // Simple financial score 0-10
@@ -219,6 +264,9 @@ function DealRoomPage() {
   const [uploadProgress, setUploadProgress] = useState('');
   const [docCategory, setDocCategory] = useState('other');
   const [docFilter, setDocFilter] = useState('all');
+  const [docStoreMode, setDocStoreMode] = useState('table');
+  const [externalDocUrl, setExternalDocUrl] = useState('');
+  const [externalDocName, setExternalDocName] = useState('');
   const [notes, setNotes] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
@@ -234,6 +282,11 @@ function DealRoomPage() {
         const d = await loadDeal(dealId);
         setDeal(d);
         setNotes(d?.notes || '');
+        const embeddedDocs = Array.isArray(d?.parsedData?.deal_room_documents) ? d.parsedData.deal_room_documents : [];
+        if (embeddedDocs.length > 0) {
+          setDocuments(embeddedDocs);
+          setDocStoreMode('deal');
+        }
       } catch (e) {
         console.error('Failed to load deal:', e);
       } finally {
@@ -248,22 +301,84 @@ function DealRoomPage() {
     setDocsLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setDocsLoading(false); return; }
+      if (!user) {
+        const embeddedDocs = Array.isArray(deal?.parsedData?.deal_room_documents) ? deal.parsedData.deal_room_documents : [];
+        setDocuments(embeddedDocs);
+        setDocStoreMode('deal');
+        setDocsLoading(false);
+        return;
+      }
       const { data, error } = await supabase
         .from('deal_documents')
         .select('*')
         .eq('deal_id', dealId)
         .eq('user_id', user.id)
         .order('uploaded_at', { ascending: false });
-      if (!error) setDocuments(data || []);
+
+      if (!error) {
+        const tableDocs = data || [];
+        const embeddedDocs = Array.isArray(deal?.parsedData?.deal_room_documents) ? deal.parsedData.deal_room_documents : [];
+        if (tableDocs.length > 0) {
+          setDocuments(tableDocs);
+          setDocStoreMode('table');
+        } else {
+          setDocuments(embeddedDocs);
+          setDocStoreMode(embeddedDocs.length > 0 ? 'deal' : 'table');
+        }
+      } else {
+        const embeddedDocs = Array.isArray(deal?.parsedData?.deal_room_documents) ? deal.parsedData.deal_room_documents : [];
+        setDocuments(embeddedDocs);
+        setDocStoreMode('deal');
+      }
     } catch (e) {
       console.error('Failed to load documents:', e);
+      const embeddedDocs = Array.isArray(deal?.parsedData?.deal_room_documents) ? deal.parsedData.deal_room_documents : [];
+      setDocuments(embeddedDocs);
+      setDocStoreMode('deal');
     } finally {
       setDocsLoading(false);
     }
-  }, [dealId]);
+  }, [dealId, deal?.parsedData]);
 
   useEffect(() => { loadDocuments(); }, [loadDocuments]);
+
+  const saveDocumentsToDealRecord = async (nextDocs) => {
+    const nextParsedData = {
+      ...(deal?.parsedData || {}),
+      deal_room_documents: nextDocs,
+    };
+    await updateDeal(dealId, { parsed_data: nextParsedData });
+    setDeal(prev => prev ? ({ ...prev, parsedData: nextParsedData }) : prev);
+    setDocuments(nextDocs);
+    setDocStoreMode('deal');
+  };
+
+  const persistDocumentRecord = async (record, userId) => {
+    if (docStoreMode === 'table') {
+      try {
+        const { error } = await supabase
+          .from('deal_documents')
+          .insert({
+            deal_id: dealId,
+            user_id: userId,
+            ...record,
+            uploaded_at: record.uploaded_at || new Date().toISOString(),
+          });
+        if (!error) return true;
+      } catch (e) {
+        console.warn('deal_documents insert failed, falling back to deal record:', e);
+      }
+    }
+
+    const current = Array.isArray(documents) ? documents : [];
+    const fallbackDoc = {
+      id: record.id || `local-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      ...record,
+      uploaded_at: record.uploaded_at || new Date().toISOString(),
+    };
+    await saveDocumentsToDealRecord([fallbackDoc, ...current]);
+    return false;
+  };
 
   // ---- Upload document -----------------------------------------------------
   const handleUpload = async (files) => {
@@ -283,31 +398,42 @@ function DealRoomPage() {
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
         const storagePath = `${user.id}/${dealId}/${Date.now()}_${safeName}`;
 
-        const { error: storageError } = await supabase.storage
-          .from('deal-documents')
-          .upload(storagePath, file, { upsert: false });
+        // Try the dedicated docs bucket first, then fallback to existing image bucket.
+        let activeBucket = 'deal-documents';
+        let uploadError = null;
+        let uploadSuccess = false;
 
-        if (storageError) throw storageError;
+        const first = await supabase.storage.from(activeBucket).upload(storagePath, file, { upsert: false });
+        if (!first.error) {
+          uploadSuccess = true;
+        } else {
+          uploadError = first.error;
+          activeBucket = 'deal-images';
+          const second = await supabase.storage.from(activeBucket).upload(storagePath, file, { upsert: false });
+          if (!second.error) {
+            uploadSuccess = true;
+            uploadError = null;
+          } else {
+            uploadError = second.error;
+          }
+        }
 
-        const { data: urlData } = supabase.storage
-          .from('deal-documents')
-          .getPublicUrl(storagePath);
+        if (!uploadSuccess) {
+          throw uploadError || new Error('Storage upload failed');
+        }
 
-        const { error: dbError } = await supabase
-          .from('deal_documents')
-          .insert({
-            deal_id: dealId,
-            user_id: user.id,
-            file_name: file.name,
-            file_size: file.size,
-            file_type: file.type,
-            category: docCategory,
-            storage_path: storagePath,
-            public_url: urlData?.publicUrl || '',
-            uploaded_at: new Date().toISOString(),
-          });
+        const { data: urlData } = supabase.storage.from(activeBucket).getPublicUrl(storagePath);
 
-        if (dbError) throw dbError;
+        await persistDocumentRecord({
+          file_name: file.name,
+          file_size: file.size,
+          file_type: file.type,
+          category: docCategory,
+          storage_path: storagePath,
+          bucket: activeBucket,
+          public_url: urlData?.publicUrl || '',
+          uploaded_at: new Date().toISOString(),
+        }, user.id);
       } catch (err) {
         console.error('Upload error:', err);
         setUploadError(`Failed to upload ${file.name}: ${err.message}`);
@@ -323,10 +449,20 @@ function DealRoomPage() {
     if (!window.confirm(`Delete "${doc.file_name}"?`)) return;
     try {
       if (doc.storage_path) {
-        await supabase.storage.from('deal-documents').remove([doc.storage_path]);
+        const bucket = doc.bucket || 'deal-documents';
+        await supabase.storage.from(bucket).remove([doc.storage_path]);
       }
-      await supabase.from('deal_documents').delete().eq('id', doc.id);
-      setDocuments(prev => prev.filter(d => d.id !== doc.id));
+
+      if (docStoreMode === 'table') {
+        const { error } = await supabase.from('deal_documents').delete().eq('id', doc.id);
+        if (!error) {
+          setDocuments(prev => prev.filter(d => d.id !== doc.id));
+          return;
+        }
+      }
+
+      const nextDocs = (documents || []).filter(d => d.id !== doc.id);
+      await saveDocumentsToDealRecord(nextDocs);
     } catch (e) {
       console.error('Delete error:', e);
     }
@@ -334,9 +470,57 @@ function DealRoomPage() {
 
   // ---- Download document ---------------------------------------------------
   const handleDownloadDoc = (doc) => {
-    if (doc.public_url) {
-      window.open(doc.public_url, '_blank', 'noopener,noreferrer');
+    const target = doc.public_url || doc.external_url || doc.url;
+    if (!target) return;
+    window.open(target, '_blank', 'noopener,noreferrer');
+  };
+
+  // ---- Link import (Google Docs / Sheets / external) ----------------------
+  const handleAddExternalDoc = async () => {
+    const url = (externalDocUrl || '').trim();
+    if (!url) return;
+
+    try {
+      const parsed = new URL(url);
+      if (!parsed.protocol.startsWith('http')) {
+        setUploadError('Please enter a valid http/https URL.');
+        return;
+      }
+    } catch {
+      setUploadError('Please enter a valid URL.');
+      return;
     }
+
+    setUploadError('');
+    const { data: { user } } = await supabase.auth.getUser();
+    const category = normalizeGoogleDocCategory(url, docCategory);
+    const fileName = externalDocName?.trim() || (() => {
+      if (category === 'google_doc') return 'Google Doc';
+      if (category === 'google_sheet') return 'Google Sheet';
+      return 'External Link';
+    })();
+
+    const record = {
+      id: `ext-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      file_name: fileName,
+      file_size: 0,
+      file_type: 'link/url',
+      category,
+      storage_path: '',
+      public_url: url,
+      external_url: url,
+      uploaded_at: new Date().toISOString(),
+    };
+
+    if (user) {
+      await persistDocumentRecord(record, user.id);
+    } else {
+      await saveDocumentsToDealRecord([record, ...(documents || [])]);
+    }
+
+    setExternalDocUrl('');
+    setExternalDocName('');
+    await loadDocuments();
   };
 
   // ---- Save notes ----------------------------------------------------------
@@ -356,7 +540,7 @@ function DealRoomPage() {
   // ---- Compute financial metrics -------------------------------------------
   const getMetrics = () => {
     if (!deal) return {};
-    const sc = deal.scenarioData || {};
+    const sc = deal.scenarioData || deal.parsedData || {};
     const calc = sc.calculations || {};
     const assumptions = sc.assumptions || {};
     const pd = deal.parsedData || {};
@@ -364,58 +548,76 @@ function DealRoomPage() {
     const pricing = pd.pricing_financing || {};
     const income = pd.income_expenses || pd.income || {};
 
-    const price = deal.purchasePrice || pricing.price || 0;
-    const units = deal.units || prop.units || 1;
+    let full = null;
+    try {
+      full = calculateFullAnalysis(sc);
+    } catch (e) {
+      full = null;
+      console.warn('DealRoom: calculateFullAnalysis failed, using fallback metrics', e);
+    }
+
+    const y1 = full?.year1 || {};
+    const acq = full?.acquisition || {};
+    const fin = full?.financing || {};
+    const current = full?.current || {};
+    const stabilized = full?.stabilized || {};
+
+    const price = pickNum(deal.purchasePrice, pricing.purchase_price, pricing.price, acq.purchasePrice, current.price, 0) || 0;
+    const units = pickNum(deal.units, prop.total_units, prop.units, prop.unit_count, 1) || 1;
 
     // Rent & income
-    const monthlyRent = income.monthly_rent || income.gross_rents || calc.grossRent || 0;
-    const annualGrossRent = monthlyRent * 12 || income.annual_gross_rent || 0;
+    const annualGrossRent = pickNum(y1.potentialGrossIncome, income.annual_gross_rent, income.gross_potential_rent, calc.grossAnnualRent, calc.gross_annual_rent, 0) || 0;
+    const monthlyRent = pickNum(income.monthly_rent, income.gross_rents, calc.grossRent, calc.gross_monthly_rent, annualGrossRent > 0 ? annualGrossRent / 12 : 0) || 0;
 
     // Expenses
-    const vacancyRate = assumptions.vacancyRate || 0.05;
-    const expenseRatio = assumptions.expenseRatio || 0.45;
+    const vacancyRateRaw = pickNum(assumptions.vacancyRate, sc.pnl?.vacancy_rate, 0.05);
+    const vacancyRate = vacancyRateRaw > 1 ? vacancyRateRaw / 100 : vacancyRateRaw;
+    const expenseRatioRaw = pickNum(assumptions.expenseRatio, sc.pnl?.expense_ratio_t12, sc.pnl?.expense_ratio, 0.45);
+    const expenseRatio = expenseRatioRaw > 1 ? expenseRatioRaw / 100 : expenseRatioRaw;
     const annualVacancyLoss = annualGrossRent * vacancyRate;
-    const annualExpenses = (annualGrossRent - annualVacancyLoss) * expenseRatio;
-    const annualNOI = calc.noi || (annualGrossRent - annualVacancyLoss - annualExpenses);
+    const annualExpenses = pickNum(y1.totalOperatingExpenses, sc.pnl?.operating_expenses_t12, sc.pnl?.operating_expenses, (annualGrossRent - annualVacancyLoss) * expenseRatio) || 0;
+    const annualNOI = pickNum(y1.noi, current.noi, sc.pnl?.noi_t12, sc.pnl?.noi, calc.noi, annualGrossRent - annualVacancyLoss - annualExpenses) || 0;
 
     // Financing
-    const downPctRaw = assumptions.downPaymentPercent || assumptions.downPayment || 20;
+    const downPctRaw = pickNum(assumptions.downPaymentPercent, assumptions.downPayment, sc.financing?.down_payment_pct, 20);
     const downPct = downPctRaw > 1 ? downPctRaw / 100 : downPctRaw;
-    const downPayment = price * downPct;
-    const loanAmount = price - downPayment;
-    const interestRate = assumptions.interestRate || 7.0;
+    const downPayment = pickNum(fin.downPayment, price * downPct) || 0;
+    const loanAmount = pickNum(fin.loanAmount, sc.financing?.loan_amount, price - downPayment) || 0;
+    const interestRate = pickNum(fin.interestRate, assumptions.interestRate, sc.financing?.interest_rate, 7.0);
     const iRate = interestRate > 1 ? interestRate / 100 : interestRate;
     const monthlyRate = iRate / 12;
-    const termMonths = (assumptions.loanTerm || 30) * 12;
-    const monthlyPI = loanAmount > 0 && monthlyRate > 0
+    const termMonths = (pickNum(assumptions.loanTerm, sc.financing?.loan_term, 30) || 30) * 12;
+    const monthlyPIComputed = loanAmount > 0 && monthlyRate > 0
       ? loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, termMonths)) / (Math.pow(1 + monthlyRate, termMonths) - 1)
       : 0;
-    const annualDebtService = monthlyPI * 12;
+    const annualDebtService = pickNum(y1.debtService, fin.annualDebtService, calc.annualDebtService, monthlyPIComputed * 12) || 0;
+    const monthlyPI = pickNum(calc.monthlyMortgagePayment, calc.monthly_mortgage_payment, annualDebtService / 12, monthlyPIComputed) || 0;
 
     // Key ratios
-    const capRate = calc.capRate || (price > 0 && annualNOI > 0 ? (annualNOI / price) * 100 : null);
-    const dscr = calc.dscr || (annualDebtService > 0 ? annualNOI / annualDebtService : null);
-    const monthlyCF = deal.dayOneCashFlow || calc.monthlyCashFlow || (annualNOI - annualDebtService) / 12;
+    const capRate = pickNum(calc.capRate, calc.cap_rate, y1.capRate, current.capRate, price > 0 && annualNOI > 0 ? (annualNOI / price) * 100 : null);
+    const dscr = pickNum(calc.dscr, y1.dscr, current.dscr, annualDebtService > 0 ? annualNOI / annualDebtService : null);
+    const monthlyCF = pickNum(deal.dayOneCashFlow, calc.monthlyCashFlow, calc.monthly_cash_flow, current.cashflow, y1.cashFlow, (annualNOI - annualDebtService) / 12) || 0;
     const closingCosts = price * 0.03;
-    const renovations = assumptions.renovationCost || calc.renovationCost || 0;
-    const totalInvestment = downPayment + closingCosts + renovations;
+    const renovations = pickNum(assumptions.renovationCost, calc.renovationCost, calc.upfrontCapEx, sc.capex?.upfront, 0) || 0;
+    const totalInvestment = pickNum(fin.totalEquityRequired, calc.totalInvestment, downPayment + closingCosts + renovations) || 0;
     const roi = totalInvestment > 0 ? ((monthlyCF * 12) / totalInvestment) * 100 : null;
-    const cashOnCash = calc.cashOnCash || roi;
-    const ltv = price > 0 ? (loanAmount / price) * 100 : null;
+    const cashOnCash = pickNum(calc.cashOnCash, calc.cash_on_cash, y1.cashOnCash, roi);
+    const ltv = pickNum(fin.ltv, calc.ltv, price > 0 ? (loanAmount / price) * 100 : null);
 
     return {
       price, units, monthlyRent, annualGrossRent, annualNOI,
       monthlyPI, annualDebtService, capRate, dscr, monthlyCF,
       cashOnCash, roi, ltv, downPayment, closingCosts, renovations,
       totalInvestment, loanAmount, annualVacancyLoss, annualExpenses,
-      pricePerUnit: units ? price / units : 0,
+      pricePerUnit: pickNum(acq.pricePerUnit, units ? price / units : 0) || 0,
       interestRate, downPct: downPct * 100,
       // Property details
-      beds: prop.bedrooms || prop.beds || '',
-      baths: prop.bathrooms || prop.baths || '',
-      sqft: prop.square_feet || prop.sqft || '',
-      yearBuilt: prop.year_built || prop.built || '',
+      beds: prop.bedrooms || prop.beds || sc.property?.beds || '',
+      baths: prop.bathrooms || prop.baths || sc.property?.baths || '',
+      sqft: prop.square_feet || prop.sqft || sc.property?.net_rentable_sf || '',
+      yearBuilt: prop.year_built || prop.built || sc.property?.year_built || '',
       lotSize: prop.lot_size || '',
+      stabilizedValue: pickNum(stabilized.value, calc.refiValue, calc.refi_value, deal.refiValue, 0) || 0,
     };
   };
 
@@ -428,7 +630,7 @@ function DealRoomPage() {
     units: metrics.units,
   });
 
-  const stage = deal?.deal_stage || 'underwritten';
+  const stage = deal?.dealStage || deal?.deal_stage || 'underwritten';
   const stageColor = STAGE_COLORS[stage] || STAGE_COLORS.underwritten;
   const filteredDocs = docFilter === 'all' ? documents : documents.filter(d => d.category === docFilter);
 
@@ -458,7 +660,8 @@ function DealRoomPage() {
     );
   }
 
-  const heroImage = deal.images && deal.images.length > 0 ? deal.images[0] : null;
+  const normalizedImages = normalizeImages(deal);
+  const heroImage = normalizedImages.length > 0 ? normalizedImages[0].url : null;
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f6f7fb', fontFamily: 'Figtree, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
@@ -569,10 +772,10 @@ function DealRoomPage() {
                     <div style={{ color: '#fff', fontSize: '22px', fontWeight: '700' }}>{fmt$full(metrics.price)}</div>
                     <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '13px' }}>{deal.address}</div>
                   </div>
-                  {deal.images && deal.images.length > 1 && (
+                  {normalizedImages.length > 1 && (
                     <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '4px' }}>
-                      {deal.images.slice(1, 5).map((img, i) => (
-                        <img key={i} src={img} alt="" style={{ width: '52px', height: '52px', objectFit: 'cover', borderRadius: '6px', border: '2px solid rgba(255,255,255,0.8)' }} />
+                      {normalizedImages.slice(1, 5).map((img, i) => (
+                        <img key={i} src={img.url} alt="" style={{ width: '52px', height: '52px', objectFit: 'cover', borderRadius: '6px', border: '2px solid rgba(255,255,255,0.8)' }} />
                       ))}
                     </div>
                   )}
@@ -762,6 +965,44 @@ function DealRoomPage() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* External URL import */}
+              <div style={{ backgroundColor: '#fff', borderRadius: '10px', border: '1px solid #e6e9ef', padding: '12px' }}>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#676879', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                  Import Link (Google Docs / Sheets)
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '8px', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    value={externalDocUrl}
+                    onChange={e => setExternalDocUrl(e.target.value)}
+                    placeholder="Paste Google Docs or Sheets URL"
+                    style={{ padding: '9px 10px', borderRadius: '8px', border: '1px solid #d0d4e4', fontSize: '13px', color: '#323338', outline: 'none' }}
+                  />
+                  <input
+                    type="text"
+                    value={externalDocName}
+                    onChange={e => setExternalDocName(e.target.value)}
+                    placeholder="Display name (optional)"
+                    style={{ padding: '9px 10px', borderRadius: '8px', border: '1px solid #d0d4e4', fontSize: '13px', color: '#323338', outline: 'none' }}
+                  />
+                  <button
+                    onClick={handleAddExternalDoc}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 12px', borderRadius: '8px', border: 'none', backgroundColor: '#1a73e8', color: '#fff', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }}
+                  >
+                    <Link2 size={13} /> Add Link
+                  </button>
+                </div>
+                <div style={{ marginTop: '6px', fontSize: '11px', color: '#9699a6' }}>
+                  Paste URLs like docs.google.com/document/... or docs.google.com/spreadsheets/....
+                </div>
+              </div>
+
+              <div style={{ fontSize: '11px', color: '#9699a6' }}>
+                {docStoreMode === 'table'
+                  ? 'Document metadata is stored in deal_documents.'
+                  : 'Using embedded deal storage fallback for documents.'}
               </div>
 
               {uploadError && (

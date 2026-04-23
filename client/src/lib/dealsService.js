@@ -205,18 +205,26 @@ export async function loadDeal(dealId) {
   if (!data) return null;
 
   // Transform to camelCase format for frontend
+  const rawImages = Array.isArray(data.images) ? data.images : [];
+  const parsedImages = Array.isArray(data.parsed_data?.images) ? data.parsed_data.images : [];
+  const mergedImages = [...rawImages, ...parsedImages];
+  const calculations = data.scenario_data?.calculations || {};
+
   return {
     dealId: data.deal_id,
     address: data.address,
     units: data.units,
     purchasePrice: data.purchase_price,
     dealStructure: data.deal_structure,
+    dealStage: data.deal_stage || 'underwritten',
+    stageChangedAt: data.stage_changed_at,
+    deathReason: data.death_reason,
     parsedData: data.parsed_data,
     scenarioData: data.scenario_data,
     marketCapRate: data.market_cap_rate,
     rentcastData: data.rentcast_data,
     costsegData: data.costseg_data,
-    images: data.images || [],
+    images: mergedImages,
     brokerName: data.broker_name,
     brokerPhone: data.broker_phone,
     brokerEmail: data.broker_email,
@@ -225,11 +233,11 @@ export async function loadDeal(dealId) {
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     // Extract key metrics from scenario_data
-    dayOneCashFlow: data.scenario_data?.calculations?.dayOneCashFlow || 0,
-    stabilizedCashFlow: data.scenario_data?.calculations?.stabilizedCashFlow || 0,
-    refiValue: data.scenario_data?.calculations?.refiValue || 0,
-    cashOutRefiAmount: data.scenario_data?.calculations?.cashOutRefiAmount || 0,
-    userTotalInPocket: data.scenario_data?.calculations?.userTotalInPocket || 0
+    dayOneCashFlow: calculations.dayOneCashFlow || calculations.day_one_cash_flow || calculations.monthlyCashFlow || calculations.monthly_cash_flow || 0,
+    stabilizedCashFlow: calculations.stabilizedCashFlow || calculations.stabilized_cash_flow || 0,
+    refiValue: calculations.refiValue || calculations.refi_value || calculations.terminalValue || calculations.terminal_value || 0,
+    cashOutRefiAmount: calculations.cashOutRefiAmount || calculations.cash_out_refi_amount || 0,
+    userTotalInPocket: calculations.userTotalInPocket || calculations.user_total_in_pocket || 0
   };
 }
 
@@ -574,10 +582,12 @@ export async function loadDealForResults(dealId) {
     marketCapRate: data.market_cap_rate,
     rentcastData: data.rentcast_data,
     costsegData: data.costseg_data,
+    images: data.images || data.parsed_data?.images || [],
     address: data.address,
     units: data.units,
     purchasePrice: data.purchase_price,
     dealStructure: data.deal_structure,
+    dealStage: data.deal_stage || 'underwritten',
     brokerName: data.broker_name,
     brokerPhone: data.broker_phone,
     brokerEmail: data.broker_email
