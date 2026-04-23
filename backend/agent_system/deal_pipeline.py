@@ -71,7 +71,12 @@ async def parse_om_pdf(pdf_bytes: bytes, filename: str) -> Optional[Dict[str, An
 # Step 2: Trigger AI underwriting on a parsed deal (internal HTTP call)
 # ============================================================================
 
-async def run_underwriting(deal_id: str, user_id: str, buy_box: Optional[Dict] = None) -> Optional[Dict[str, Any]]:
+async def run_underwriting(
+    deal_id: str,
+    user_id: str,
+    buy_box: Optional[Dict] = None,
+    underwriting_mode: str = "hardcoded",
+) -> Optional[Dict[str, Any]]:
     """
     Call the v2 underwriter's analysis endpoint on an already-parsed deal.
     Returns { deal_id, verdict, analysis, summary_text, numeric_summary } or None.
@@ -84,7 +89,7 @@ async def run_underwriting(deal_id: str, user_id: str, buy_box: Optional[Dict] =
 
         body = {
             "buy_box": buy_box or {},
-            "underwriting_mode": "hardcoded",
+            "underwriting_mode": underwriting_mode,
             "calc_json": {},
             "wizard_structure": {},
         }
@@ -193,6 +198,7 @@ async def process_agent_deals(
     agent_id: str,
     deals: List[DealResult],
     buy_box: Optional[Dict[str, Any]] = None,
+    underwriting_mode: str = "hardcoded",
 ) -> List[Dict[str, Any]]:
     """
     Process all deals found by an agent run — full pipeline:
@@ -243,6 +249,7 @@ async def process_agent_deals(
                         deal_id=v2_deal_id,
                         user_id=user_id,
                         buy_box=buy_box,
+                        underwriting_mode=underwriting_mode,
                     )
                     if underwrite_result:
                         log.info("Underwriting complete for %s: verdict=%s",
@@ -323,12 +330,29 @@ async def execute_agent_run(
     log.info("[DEBUG] Buy box: %s", {k: v for k, v in buy_box.items() if v} if isinstance(buy_box, dict) else buy_box)
 
     try:
+        builder = {}
+        search_buy_box = dict(buy_box or {})
+        if isinstance(search_buy_box.get("__builder"), dict):
+            builder = search_buy_box.pop("__builder")
+
+        runner_type = (builder.get("runner_type") or "native").lower()
+        underwriting_depth = (builder.get("underwriting_depth") or "deep").lower()
+        underwriting_mode = "deep" if underwriting_depth == "deep" else "hardcoded"
+
         # Run the browser agent across all platforms
-        log.info("[DEBUG] Starting browser agent search across %d platforms...", len(platform_credentials))
-        deals = await run_agent_search(
-            platform_credentials=platform_credentials,
-            buy_box=buy_box,
-        )
+        log.info("[DEBUG] Starting %s search across %d platforms...", runner_type, len(platform_credentials))
+        if runner_type == "browseros":
+            from agent_system.browseros_runner import run_browseros_search
+            deals = await run_browseros_search(
+                platform_credentials=platform_credentials,
+                buy_box=search_buy_box,
+                builder=builder,
+            )
+        else:
+            deals = await run_agent_search(
+                platform_credentials=platform_credentials,
+                buy_box=search_buy_box,
+            )
         log.info("[DEBUG] Browser search complete: %d deals found", len(deals))
         for i, d in enumerate(deals):
             log.info("[DEBUG] Deal %d: %s | %s | $%s | %s",
@@ -341,7 +365,8 @@ async def execute_agent_run(
             user_id=user_id,
             agent_id=agent_id,
             deals=deals,
-            buy_box=buy_box,
+            buy_box=search_buy_box,
+            underwriting_mode=underwriting_mode,
         )
 
         # Mark run as completed

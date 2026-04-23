@@ -25,6 +25,8 @@ import MapViewPage from './pages/MapViewPage'; // Map View
 import ClaudeUnderwritePage from './pages/ClaudeUnderwritePage'; // AI Underwriter Chat
 import InvestorPortalPage from './pages/InvestorPortalPage'; // Investor Portal / LP Dashboard
 import UpdatesPage from './pages/UpdatesPage'; // Updates Notification Center
+import AgentBuilderPage from './pages/AgentBuilderPage'; // Agent Builder (Rapid Fire replacement)
+import DealRoomPage from './pages/DealRoomPage'; // Deal Room
 
 function App() {
   return (
@@ -53,8 +55,10 @@ function App() {
         <Route path="/email-underwrite" element={<EmailUnderwritePage />} /> {/* Email Underwrite Pipeline */}
         <Route path="/templates" element={<TemplatesPage />} /> {/* Deal Templates */}
         <Route path="/claude-underwriter" element={<ClaudeUnderwritePage />} /> {/* AI Underwriter Chat */}
+        <Route path="/agent-builder" element={<AgentBuilderPage />} /> {/* Agent Builder */}
         <Route path="/investor-portal" element={<InvestorPortalPage />} /> {/* Investor Portal / LP Dashboard */}
         <Route path="/updates" element={<UpdatesPage />} /> {/* Updates Notification Center */}
+          <Route path="/deal-room/:dealId" element={<DealRoomPage />} /> {/* Deal Room */}
       </Routes>
     </Router>
   );

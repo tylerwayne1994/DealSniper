@@ -291,7 +291,13 @@ Return ONLY valid JSON in this exact format:
   "reasoning": "Scottsdale submarket supports $1,850/unit rent (FMR + 15%). NOI of $850k yields 7.5% cap rate, exceeding 7% minimum. DSCR of 1.35 and CoC of 9.2% both exceed thresholds. Property qualifies as DEAL."
 }}"""
 
+    anthropic_api_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
+    if not anthropic_api_key:
+        log.warning("[AI] Anthropic key missing for analyze_property_with_ai, skipping AI path")
+        return {"estimatedNOI": None, "verdict": "MAYBE", "confidence": "low", "reasoning": "AI analysis unavailable"}
+
     try:
+        anthropic_client = Anthropic(api_key=anthropic_api_key)
         response = anthropic_client.messages.create(
             model="claude-3-5-haiku-20241022",  # Cheapest and fastest
             max_tokens=600,
@@ -511,6 +517,9 @@ async def rapid_fire_underwrite(
     min_dscr = _num_or_default("minDscr", 1.25)
     min_coc = _num_or_default("minCoC", 8.0)
     min_cap = _num_or_default("minCapRate", 7.0)
+    underwriting_mode = str(settings_obj.get("underwriteMode", "fast") or "fast").strip().lower()
+    if underwriting_mode not in ("fast", "deep"):
+        underwriting_mode = "fast"
 
     def as_float(v):
         if v is None:
@@ -524,6 +533,54 @@ async def rapid_fire_underwrite(
             return float(s)
         except Exception:
             return None
+
+    def _build_data_quality(
+        *,
+        source_type: str,
+        address: str,
+        units,
+        total_price,
+        noi,
+        gross_income,
+        listing_url,
+        noi_source: str,
+        use_ai_verdict: bool,
+    ):
+        missing_fields = []
+        assumptions = []
+
+        if not address:
+            missing_fields.append("address")
+        if units in (None, 0):
+            missing_fields.append("units")
+        if total_price in (None, 0):
+            missing_fields.append("price")
+        if noi in (None, 0):
+            missing_fields.append("noi")
+        if not listing_url:
+            missing_fields.append("listing_url")
+
+        if source_type in ("reonomy", "propstream") and gross_income in (None, 0):
+            assumptions.append("income_not_provided")
+        if noi_source and "broker" in noi_source.lower():
+            assumptions.append("broker_cap_implied_noi")
+        if noi_source and "fmr" in noi_source.lower():
+            assumptions.append("hud_fmr_estimation")
+        if use_ai_verdict:
+            assumptions.append("ai_inference_used")
+
+        score = 1.0
+        score -= min(0.5, 0.08 * len(missing_fields))
+        score -= min(0.35, 0.06 * len(assumptions))
+        score = max(0.15, min(1.0, score))
+
+        confidence = "high" if score >= 0.8 else "medium" if score >= 0.55 else "low"
+        return {
+            "score": round(score, 3),
+            "confidence": confidence,
+            "missing_fields": missing_fields,
+            "assumptions": assumptions,
+        }
 
     # Load tabular data from CSV or Excel into list of dicts.
     rows = []
@@ -1168,6 +1225,35 @@ async def rapid_fire_underwrite(
             cash_on_cash = (annual_cf / equity) * 100.0
             monthly_cf = annual_cf / 12.0
 
+        # Deep mode: stress test (higher vacancy, higher expenses, +100 bps debt cost)
+        stressed_dscr = None
+        stressed_cash_on_cash = None
+        if underwriting_mode == "deep" and total_price and total_price > 0:
+            stressed_noi = None
+            if gross_income is not None and gross_income > 0:
+                deep_vacancy = vacancy_rate + 2.0
+                deep_expense = expense_ratio + 3.0
+                eff_income_stress = gross_income * (1.0 - deep_vacancy / 100.0)
+                opex_stress = eff_income_stress * (deep_expense / 100.0)
+                insurance_stress = total_price * 0.005
+                reserves_stress = (units or 1) * 250.0
+                stressed_noi = eff_income_stress - opex_stress - insurance_stress - reserves_stress
+            elif noi is not None:
+                # If no gross income available, apply a conservative NOI haircut.
+                stressed_noi = noi * 0.93
+
+            if stressed_noi is not None:
+                deep_rate = interest_rate_pct + 1.0
+                deep_ads = annual_debt_service(total_price)
+                if deep_ads is not None and deep_rate != interest_rate_pct:
+                    # Approximate the +100bps payment increase when we only have current ADS.
+                    deep_ads = deep_ads * 1.12
+                if deep_ads not in (None, 0):
+                    stressed_dscr = stressed_noi / deep_ads
+                if equity > 0 and deep_ads is not None:
+                    stressed_annual_cf = stressed_noi - deep_ads
+                    stressed_cash_on_cash = (stressed_annual_cf / equity) * 100.0
+
         # Per-unit metrics for sanity checking
         noi_per_unit = None
         if noi is not None and units is not None and units > 0:
@@ -1255,11 +1341,33 @@ async def rapid_fire_underwrite(
                 else:
                     verdict = "DEAL"
 
+                if underwriting_mode == "deep":
+                    if stressed_dscr is not None and stressed_dscr < min_dscr:
+                        verdict_reasons.append(f"Stress DSCR {stressed_dscr:.2f} below {min_dscr:.2f}")
+                        if verdict == "DEAL":
+                            verdict = "MAYBE"
+                    if stressed_cash_on_cash is not None and stressed_cash_on_cash < min_coc:
+                        verdict_reasons.append(f"Stress CoC {stressed_cash_on_cash:.1f}% below {min_coc:.1f}%")
+                        if verdict == "DEAL":
+                            verdict = "MAYBE"
+
                 # Add NOI source warning if derived from broker cap
                 if noi_source and "broker" in noi_source:
                     verdict_reasons.append("⚠ NOI from broker cap rate (unverified)")
                 elif noi_source and "FMR" in noi_source:
                     verdict_reasons.append("⚠ NOI estimated from HUD Fair Market Rents")
+
+        data_quality = _build_data_quality(
+            source_type=source_type,
+            address=str(name) if name else "",
+            units=units,
+            total_price=total_price,
+            noi=noi,
+            gross_income=gross_income,
+            listing_url=str(listing_url).strip() if listing_url else "",
+            noi_source=noi_source or "",
+            use_ai_verdict=use_ai_verdict,
+        )
 
         # Final price-per-unit for DTO
         price_per_unit_dto = None
@@ -1282,6 +1390,8 @@ async def rapid_fire_underwrite(
             "dscr": float(dscr) if dscr is not None else None,
             "debtYield": float(debt_yield) if debt_yield is not None else None,
             "cashOnCash": float(cash_on_cash) if cash_on_cash is not None else None,
+            "stressedDscr": float(stressed_dscr) if stressed_dscr is not None else None,
+            "stressedCashOnCash": float(stressed_cash_on_cash) if stressed_cash_on_cash is not None else None,
             "monthlyCashFlow": float(monthly_cf) if monthly_cf is not None else None,
             "annualCashFlow": float(annual_cf) if annual_cf is not None else None,
             "noiPerUnit": float(noi_per_unit) if noi_per_unit is not None else None,
@@ -1295,6 +1405,8 @@ async def rapid_fire_underwrite(
             "ownerName": str(owner_name).strip() if owner_name else None,
             "verdict": verdict,
             "verdictReasons": verdict_reasons,
+            "underwriteMode": underwriting_mode,
+            "dataQuality": data_quality,
             "aiAnalysis": {
                 "used": use_ai_verdict,
                 "reasoning": ai_reasoning,
@@ -1328,6 +1440,7 @@ async def rapid_fire_underwrite(
             "address": address_header,
             "owner": owner_header,
         },
+        "underwrite_mode": underwriting_mode,
         "skipped_no_price": skipped_no_price,
         "returned_deals": len(deals),
     }
@@ -2206,15 +2319,28 @@ async def underwrite_deal(deal_id: str, request: Request):
         log.info("[V2] Calling OpenAI (GPT) for full underwriting analysis...")
 
         # Build the user message and call OpenAI wrapper which logs usage
+        mode_prompt = (
+            "Run a DEEP underwriting pass with sensitivity checks, downside stress callouts, "
+            "and explicit confidence flags by section."
+            if underwriting_mode == "deep"
+            else "Run a FAST underwriting pass focused on the highest-impact decision points."
+        )
         user_message = {
             "role": "user",
-            "content": "Use the system prompt, deal_json, calc_json, wizard_structure, and buy_box provided above. Do NOT recalculate numbers that already exist in calc_json. Produce the 1–8 section underwriting exactly in the required format."
+            "content": (
+                "Use the system prompt, deal_json, calc_json, wizard_structure, and buy_box provided above. "
+                "Do NOT recalculate numbers that already exist in calc_json. "
+                f"{mode_prompt} "
+                "Produce the 1–8 section underwriting exactly in the required format."
+            )
         }
+
+        analysis_model = "gpt-4o" if underwriting_mode == "deep" else "gpt-4o-mini"
 
         analysis_text = call_openai_chat(
             system_prompt=system_prompt,
             messages=[user_message],
-            model="gpt-4o-mini",
+            model=analysis_model,
             user_id=request.headers.get('X-User-ID') or request.cookies.get('user_id'),
             action='underwrite_full',
             deduct_from_balance=True,
@@ -2302,6 +2428,8 @@ async def underwrite_deal(deal_id: str, request: Request):
             "analysis": analysis_text,
             "analysis_markdown": analysis_text,
             "summary_text": summary_text,
+            "underwriting_mode": underwriting_mode,
+            "analysis_model": analysis_model,
             "calc_json": calc_json,
             "wizard_structure": wizard_structure,
             "numeric_summary": {

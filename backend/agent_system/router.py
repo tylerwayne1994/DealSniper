@@ -74,6 +74,8 @@ async def create_agent(request: Request, body: AgentCreateRequest):
         log.info("[DEBUG] Encryption successful, %d platforms encrypted", len(encrypted_platforms))
 
         buy_box = body.buy_box.dict() if body.buy_box else {}
+        if body.builder:
+            buy_box["__builder"] = body.builder
         log.info("[DEBUG] Buy box: %s", {k: v for k, v in buy_box.items() if v})
 
         config = create_agent_config(user_id, {
@@ -116,14 +118,25 @@ async def update_agent(request: Request, agent_id: str, body: AgentUpdateRequest
     log.info("[DEBUG] PUT /config/%s — user_id=%s", agent_id, user_id)
 
     update_data = {}
+
+    current_config = None
+    if body.buy_box is not None or body.builder is not None:
+        current_config = get_agent_config(agent_id, user_id)
+        if not current_config:
+            raise HTTPException(status_code=404, detail="Agent config not found")
     if body.platforms is not None:
         log.info("[DEBUG] Updating platforms: %s", [p.platform_id for p in body.platforms])
         update_data["platform_credentials"] = encrypt_platform_list([
             {"platform_id": p.platform_id, "username": p.username, "password": p.password}
             for p in body.platforms
         ])
-    if body.buy_box is not None:
-        update_data["buy_box"] = body.buy_box.dict()
+    if body.buy_box is not None or body.builder is not None:
+        merged_buy_box = (current_config or {}).get("buy_box", {}) or {}
+        if body.buy_box is not None:
+            merged_buy_box = body.buy_box.dict()
+        if body.builder is not None:
+            merged_buy_box["__builder"] = body.builder
+        update_data["buy_box"] = merged_buy_box
     if body.runs_per_week is not None:
         update_data["runs_per_week"] = body.runs_per_week
     if body.status is not None:
@@ -361,11 +374,17 @@ def _config_response(config: dict) -> dict:
         except Exception:
             buy_box = {}
 
+    builder = {}
+    safe_buy_box = dict(buy_box) if isinstance(buy_box, dict) else {}
+    if "__builder" in safe_buy_box and isinstance(safe_buy_box["__builder"], dict):
+        builder = safe_buy_box.pop("__builder")
+
     return {
         "id": config.get("id", ""),
         "user_id": config.get("user_id", ""),
         "platforms": safe_platforms,
-        "buy_box": buy_box,
+        "buy_box": safe_buy_box,
+        "builder": builder,
         "runs_per_week": config.get("runs_per_week", 1),
         "status": config.get("status", "active"),
         "last_run_at": config.get("last_run_at"),

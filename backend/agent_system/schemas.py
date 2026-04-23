@@ -43,6 +43,7 @@ class AgentCreateRequest(BaseModel):
     platforms: List[PlatformCredentialIn] = Field(default_factory=list)
     buy_box: BuyBoxParams = Field(default_factory=BuyBoxParams)
     runs_per_week: int = Field(1, ge=1, le=7)
+    builder: Dict[str, Any] = Field(default_factory=dict)
 
 
 class AgentUpdateRequest(BaseModel):
@@ -50,6 +51,7 @@ class AgentUpdateRequest(BaseModel):
     buy_box: Optional[BuyBoxParams] = None
     runs_per_week: Optional[int] = Field(None, ge=1, le=7)
     status: Optional[str] = None  # active | paused
+    builder: Optional[Dict[str, Any]] = None
 
 
 # ---- Responses ----
@@ -59,6 +61,7 @@ class AgentConfigResponse(BaseModel):
     user_id: str
     platforms: List[Dict[str, str]] = Field(default_factory=list, description="Platform IDs only (credentials hidden)")
     buy_box: Dict[str, Any] = Field(default_factory=dict)
+    builder: Dict[str, Any] = Field(default_factory=dict)
     runs_per_week: int = 1
     status: str = "active"
     last_run_at: Optional[str] = None

@@ -1,8 +1,6 @@
-import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Upload, AlertCircle, CheckCircle, XCircle, Loader, Building2, BarChart3 } from 'lucide-react';
 import { saveRapidFireDeals } from '../lib/dealsService';
-import { API_ENDPOINTS } from '../config/api';
-import { supabase } from '../lib/supabase';
 
 // NOTE: Backend base remains used for underwriting endpoint only
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8010";
@@ -54,12 +52,6 @@ const fmtCurrency = (val) => {
   if (val === null || val === undefined || isNaN(val)) return '-';
   const num = Number(val);
   return '$' + num.toLocaleString(undefined, { maximumFractionDigits: 0 });
-};
-
-const fmtNumber = (val) => {
-  if (val === null || val === undefined || isNaN(val)) return '-';
-  const num = Number(val);
-  return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
 };
 
 const fmtPercent = (val) => {
@@ -426,20 +418,14 @@ function RapidFirePage() {
   const [sortDirection, setSortDirection] = useState('asc');
   const [validationErrors, setValidationErrors] = useState({ acquisitionFee: '' });
   const [isPushingToPipeline, setIsPushingToPipeline] = useState(false);
-  const [profileId, setProfileId] = useState('');
 
   // Token confirmation modal state
   const [isTokenConfirmOpen, setIsTokenConfirmOpen] = useState(false);
-  const [pendingTokenInfo, setPendingTokenInfo] = useState({ required: 1, balance: null });
+  const [pendingTokenInfo] = useState({ required: 1, balance: null });
 
   // Toast state
   const [toastMessage, setToastMessage] = useState('');
-  const [toastType, setToastType] = useState('success');
-  const showToast = (msg, type = 'success') => {
-    setToastMessage(msg);
-    setToastType(type);
-    setTimeout(() => setToastMessage(''), 4000);
-  };
+  const [toastType] = useState('success');
 
   const [settings, setSettings] = useState({
     vacancyRate: 5,
@@ -451,7 +437,8 @@ function RapidFirePage() {
     amortizationYears: 30,
     minDscr: 1.25,
     minCoC: 8,
-    minCapRate: 7
+    minCapRate: 7,
+    underwriteMode: 'fast'
   });
 
   // Data source: CREXI (default) vs Reonomy off-market
@@ -459,22 +446,6 @@ function RapidFirePage() {
 
   const [verdictFilter, setVerdictFilter] = useState('all');
 
-  // Refs for synchronized scrolling between top scrollbar and table
-  const topScrollRef = useRef(null);
-  const tableScrollRef = useRef(null);
-
-  // Sync scroll handlers
-  const handleTopScroll = useCallback(() => {
-    if (tableScrollRef.current && topScrollRef.current) {
-      tableScrollRef.current.scrollLeft = topScrollRef.current.scrollLeft;
-    }
-  }, []);
-
-  const handleTableScroll = useCallback(() => {
-    if (topScrollRef.current && tableScrollRef.current) {
-      topScrollRef.current.scrollLeft = tableScrollRef.current.scrollLeft;
-    }
-  }, []);
 
   const handleFileChange = (e) => {
     const file = e.target.files && e.target.files[0];
@@ -495,16 +466,6 @@ function RapidFirePage() {
     e.preventDefault();
   };
 
-  // Load auth user id for protected token endpoints
-  useEffect(() => {
-    (async () => {
-      try {
-        const userRes = await supabase.auth.getUser();
-        const uid = userRes?.data?.user?.id;
-        if (uid) setProfileId(uid);
-      } catch {}
-    })();
-  }, []);
 
   const validateSettings = () => {
     const errors = { acquisitionFee: '' };
@@ -751,6 +712,45 @@ function RapidFirePage() {
           }}
         >
           Reonomy off-market spreadsheet upload
+        </button>
+      </div>
+
+      {/* Underwriting depth mode */}
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          Underwrite mode
+        </div>
+        <button
+          type="button"
+          onClick={() => setSettings(prev => ({ ...prev, underwriteMode: 'fast' }))}
+          style={{
+            padding: '7px 12px',
+            borderRadius: '999px',
+            border: 'none',
+            fontSize: '12px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            backgroundColor: settings.underwriteMode === 'fast' ? '#0f172a' : '#e5e7eb',
+            color: settings.underwriteMode === 'fast' ? '#ffffff' : '#475569',
+          }}
+        >
+          Fast Screen
+        </button>
+        <button
+          type="button"
+          onClick={() => setSettings(prev => ({ ...prev, underwriteMode: 'deep' }))}
+          style={{
+            padding: '7px 12px',
+            borderRadius: '999px',
+            border: 'none',
+            fontSize: '12px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            backgroundColor: settings.underwriteMode === 'deep' ? '#0f172a' : '#e5e7eb',
+            color: settings.underwriteMode === 'deep' ? '#ffffff' : '#475569',
+          }}
+        >
+          Deep Underwrite
         </button>
       </div>
 
@@ -1139,6 +1139,23 @@ function RapidFirePage() {
                                 textTransform: 'uppercase'
                               }}>
                                 🤖 {deal.aiAnalysis.confidence || 'medium'}
+                              </span>
+                            </div>
+                          )}
+                          {deal.dataQuality && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                              <span style={{
+                                backgroundColor: deal.dataQuality.confidence === 'high' ? '#dcfce7' :
+                                               deal.dataQuality.confidence === 'medium' ? '#fef9c3' : '#fee2e2',
+                                color: deal.dataQuality.confidence === 'high' ? '#166534' :
+                                       deal.dataQuality.confidence === 'medium' ? '#854d0e' : '#991b1b',
+                                padding: '1px 6px',
+                                borderRadius: '999px',
+                                fontSize: '9px',
+                                fontWeight: '700',
+                                textTransform: 'uppercase'
+                              }}>
+                                DATA {deal.dataQuality.confidence} ({Math.round((deal.dataQuality.score || 0) * 100)}%)
                               </span>
                             </div>
                           )}

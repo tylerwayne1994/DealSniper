@@ -25,6 +25,7 @@ import {
   Copy,
   GripVertical,
   BrainCircuit
+    ,BookOpen
 } from 'lucide-react';
 import { loadPipelineDeals as loadDealsFromSupabase, loadRapidFireDeals as loadRapidFireDealsFromSupabase, deleteDeal, updateDeal, bulkDeleteDeals, duplicateDeal } from '../lib/dealsService';
 import DealComparisonModal from '../components/DealComparisonModal';
@@ -263,6 +264,7 @@ function PipelinePage() {
 
   const handleViewDeal = (deal) => navigate(`/underwrite?viewDeal=${deal.dealId}`);
   const handleOpenInAIUnderwriter = (deal) => navigate(`/claude-underwriter?dealId=${deal.dealId}`);
+    const handleOpenDealRoom = (deal) => navigate(`/deal-room/${deal.dealId}`);
 
   const loadPipelineDeals = async () => {
     try {
@@ -781,6 +783,7 @@ function PipelinePage() {
                                   <button onClick={() => handleDuplicateDeal(deal)} title="Clone" style={{ flex: 1, padding: '4px', backgroundColor: '#6366f1', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}><Copy size={10} />Clone</button>
                                   <button onClick={() => handleDeleteDeal(deal.dealId)} title="Delete" style={{ padding: '4px 6px', backgroundColor: '#ffefef', color: '#d83a52', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={10} /></button>
                                 </div>
+                                  <button onClick={() => handleOpenDealRoom(deal)} title="Open Deal Room" style={{ marginTop: '4px', width: '100%', padding: '5px', backgroundColor: '#0073ea', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}><BookOpen size={10} />Deal Room</button>
                               </div>
                             );
                           })}
@@ -876,7 +879,15 @@ function PipelinePage() {
                                     />
                                   </td>
                                   {/* Address */}
-                                  <td style={cs}><div style={{ fontWeight: '600', color: '#323338', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deal.address || '-'}</div></td>
+                                    <td style={cs}>
+                                      <div
+                                        style={{ fontWeight: '600', color: '#0073ea', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' }}
+                                        onClick={() => handleOpenDealRoom(deal)}
+                                        title="Open Deal Room"
+                                      >
+                                        {deal.address || '-'}
+                                      </div>
+                                    </td>
                                   {/* Deal Structure badge */}
                                   <td style={cs}>
                                     <span style={{ display: 'inline-block', padding: '4px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: '600', backgroundColor: sColors.bg, color: sColors.text, whiteSpace: 'nowrap' }}>
@@ -935,6 +946,7 @@ function PipelinePage() {
                                   <td style={{ ...cs, textAlign: 'center' }}>
                                     <div style={{ display: 'flex', gap: '3px', justifyContent: 'center', flexWrap: 'nowrap' }}>
                                       <button onClick={() => handleViewDeal(deal)} title="Underwrite" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#00854d', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><Eye size={13} /></button>
+                                        <button onClick={() => handleOpenDealRoom(deal)} title="Deal Room" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#0073ea', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><BookOpen size={13} /></button>
                                       <button onClick={() => handleOpenInAIUnderwriter(deal)} title="Open in AI Underwriter" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', background: 'linear-gradient(135deg, #0f172a, #1e3a5f)', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><BrainCircuit size={13} /></button>
                                       <button onClick={() => handleGenerateLOI(deal)} title="Generate LOI" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#a25ddc', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><FileText size={13} /></button>
                                       <button onClick={() => handleDueDiligence(deal)} title="Due Diligence" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#fdab3d', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><ClipboardCheck size={13} /></button>

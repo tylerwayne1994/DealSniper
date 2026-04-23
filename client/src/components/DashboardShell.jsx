@@ -205,7 +205,7 @@ const tabs = [
   { id: 'updates', label: 'Updates', icon: Bell, section: 'main' },
   { id: 'pipeline', label: 'Pipeline', icon: Layers, section: 'deals' },
   { id: 'underwrite', label: 'Underwrite', icon: FileSpreadsheet, section: 'deals' },
-  { id: 'rapid-fire', label: 'Rapid Fire', icon: Zap, section: 'deals' },
+  { id: 'agent-builder', label: 'Agent Builder', icon: Zap, section: 'deals' },
   { id: 'email-underwrite', label: 'Email Underwrite', icon: Mail, section: 'deals' },
   { id: 'claude-underwriter', label: 'AI Underwriter', icon: MessageSquare, section: 'deals' },
   { id: 'templates', label: 'Templates', icon: FileText, section: 'deals' },
@@ -229,6 +229,8 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
       navigate('/pipeline');
     } else if (tabId === 'underwrite') {
       navigate('/underwrite');
+    } else if (tabId === 'agent-builder') {
+      navigate('/agent-builder');
     } else if (tabId === 'email-underwrite') {
       navigate('/email-underwrite');
     } else if (tabId === 'claude-underwriter') {

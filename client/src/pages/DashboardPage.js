@@ -16,7 +16,6 @@ import { loadProfile, saveProfile } from '../lib/dealsService';
 import { supabase } from '../lib/supabase';
 import { API_ENDPOINTS } from '../config/api';
 import { useIsMobile } from '../hooks/useIsMobile';
-import RapidFirePage from './RapidFirePage';
 import DashboardShell from '../components/DashboardShell';
 import DashboardMapTab from '../components/dashboard-tabs/MapTab';
 
@@ -1378,9 +1377,9 @@ function DashboardPage() {
   return (
     <DashboardShell
       activeTab={activeTab}
-      title={activeTab === 'profile' ? 'Profile' : activeTab === 'rapid-fire' ? 'Rapid Fire' : 'Dashboard'}
+      title={activeTab === 'profile' ? 'Profile' : 'Dashboard'}
       onTabClick={(tabId, defaultNavigate) => {
-        if (tabId === 'profile' || tabId === 'rapid-fire' || tabId === 'home' || tabId === 'map') {
+        if (tabId === 'profile' || tabId === 'home' || tabId === 'map') {
           setActiveTab(tabId);
         } else {
           defaultNavigate(tabId);
@@ -1410,9 +1409,6 @@ function DashboardPage() {
 
       {activeTab === 'home' && <DashboardMapTab />}
       {activeTab === 'profile' && renderProfileTab()}
-      {activeTab === 'rapid-fire' && (
-        <RapidFirePage />
-      )}
     </DashboardShell>
   );
 }
