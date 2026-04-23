@@ -687,6 +687,11 @@ async def run_agent_search(
     """
     all_deals: List[DealResult] = []
     run_log: List[str] = []
+    successful_platform_searches = 0
+    platform_errors: List[str] = []
+
+    if not platform_credentials:
+        raise RuntimeError("No enabled platforms configured. Enable at least one source in Agent Builder.")
 
     for cred in platform_credentials:
         platform_id = cred.get("platform_id", "unknown")
@@ -699,6 +704,7 @@ async def run_agent_search(
                 credentials=cred,
                 buy_box=buy_box,
             )
+            successful_platform_searches += 1
             # Filter by buy box
             filtered = [d for d in deals if passes_buy_box(d, buy_box)]
             all_deals.extend(filtered)
@@ -707,5 +713,10 @@ async def run_agent_search(
         except Exception as e:
             log.error("Error searching %s: %s", platform_id, e)
             run_log.append(f"{platform_id}: ERROR — {str(e)}")
+            platform_errors.append(f"{platform_id}: {str(e)}")
+
+    if successful_platform_searches == 0:
+        error_detail = "; ".join(platform_errors[:3]) if platform_errors else "No platform searches were executed."
+        raise RuntimeError(f"All platform searches failed. {error_detail}")
 
     return all_deals

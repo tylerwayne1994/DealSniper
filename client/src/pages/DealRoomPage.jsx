@@ -52,7 +52,7 @@ const fmt$ = (v) => {
   const sign = n < 0 ? '-' : '';
   if (abs >= 1000000) return `${sign}$${(abs / 1000000).toFixed(2)}M`;
   if (abs >= 1000)    return `${sign}$${(abs / 1000).toFixed(0)}K`;
-  return `${sign}$${abs.toLocaleString()}`;
+  return `${sign}$${Math.round(abs).toLocaleString()}`;
 };
 
 const fmt$full = (v) => {
@@ -547,6 +547,7 @@ function DealRoomPage() {
     const prop = pd.property || {};
     const pricing = pd.pricing_financing || {};
     const income = pd.income_expenses || pd.income || {};
+    const expenses = pd.expenses || pd.income_expenses || {};
 
     let full = null;
     try {
@@ -566,8 +567,16 @@ function DealRoomPage() {
     const units = pickNum(deal.units, prop.total_units, prop.units, prop.unit_count, 1) || 1;
 
     // Rent & income
-    const annualGrossRent = pickNum(y1.potentialGrossIncome, income.annual_gross_rent, income.gross_potential_rent, calc.grossAnnualRent, calc.gross_annual_rent, 0) || 0;
-    const monthlyRent = pickNum(income.monthly_rent, income.gross_rents, calc.grossRent, calc.gross_monthly_rent, annualGrossRent > 0 ? annualGrossRent / 12 : 0) || 0;
+    let annualGrossRent = pickNum(y1.potentialGrossIncome, income.annual_gross_rent, income.gross_potential_rent, calc.grossAnnualRent, calc.gross_annual_rent, 0) || 0;
+    let monthlyRent = pickNum(income.monthly_rent, calc.grossRent, calc.gross_monthly_rent, income.gross_rents, annualGrossRent > 0 ? annualGrossRent / 12 : 0) || 0;
+
+    // Normalize annual/monthly rent to prevent mixed-unit values from parsed sources.
+    if (annualGrossRent > 0 && monthlyRent > annualGrossRent) {
+      monthlyRent = annualGrossRent / 12;
+    }
+    if (annualGrossRent <= 0 && monthlyRent > 0) {
+      annualGrossRent = monthlyRent * 12;
+    }
 
     // Expenses
     const vacancyRateRaw = pickNum(assumptions.vacancyRate, sc.pnl?.vacancy_rate, 0.05);
@@ -593,10 +602,54 @@ function DealRoomPage() {
     const annualDebtService = pickNum(y1.debtService, fin.annualDebtService, calc.annualDebtService, monthlyPIComputed * 12) || 0;
     const monthlyPI = pickNum(calc.monthlyMortgagePayment, calc.monthly_mortgage_payment, annualDebtService / 12, monthlyPIComputed) || 0;
 
+    // Monthly operating assumptions used by the One Sheet breakdown.
+    const annualTaxes = pickNum(
+      expenses.property_taxes_annual,
+      expenses.taxes_annual,
+      expenses.property_taxes,
+      expenses.taxes,
+      sc.expenses?.taxes,
+      sc.pnl?.property_taxes,
+      price * 0.015
+    ) || 0;
+    const annualInsurance = pickNum(
+      expenses.insurance_annual,
+      expenses.insurance,
+      sc.expenses?.insurance,
+      sc.pnl?.insurance,
+      price * 0.005
+    ) || 0;
+    const monthlyTaxes = pickNum(expenses.property_taxes_monthly, expenses.taxes_monthly, annualTaxes / 12) || 0;
+    const monthlyInsurance = pickNum(expenses.insurance_monthly, annualInsurance / 12) || 0;
+
+    const mgmtRateRaw = pickNum(assumptions.managementFeeRate, assumptions.managementFeePercent, sc.pnl?.management_fee_rate, 0.08);
+    const maintenanceRateRaw = pickNum(assumptions.maintenanceRate, assumptions.maintenancePercent, sc.pnl?.maintenance_rate, 0.05);
+    const vacancyReserveRateRaw = pickNum(assumptions.vacancyReserveRate, assumptions.vacancyReservePercent, vacancyRate, 0.05);
+    const mgmtRate = mgmtRateRaw > 1 ? mgmtRateRaw / 100 : mgmtRateRaw;
+    const maintenanceRate = maintenanceRateRaw > 1 ? maintenanceRateRaw / 100 : maintenanceRateRaw;
+    const vacancyReserveRate = vacancyReserveRateRaw > 1 ? vacancyReserveRateRaw / 100 : vacancyReserveRateRaw;
+
+    const monthlyMaintenance = monthlyRent * maintenanceRate;
+    const monthlyMgmt = monthlyRent * mgmtRate;
+    const monthlyVacancyReserve = monthlyRent * vacancyReserveRate;
+    const monthlyCFBreakdown = monthlyRent - monthlyPI - monthlyTaxes - monthlyInsurance - monthlyMaintenance - monthlyMgmt - monthlyVacancyReserve;
+
     // Key ratios
     const capRate = pickNum(calc.capRate, calc.cap_rate, y1.capRate, current.capRate, price > 0 && annualNOI > 0 ? (annualNOI / price) * 100 : null);
     const dscr = pickNum(calc.dscr, y1.dscr, current.dscr, annualDebtService > 0 ? annualNOI / annualDebtService : null);
-    const monthlyCF = pickNum(deal.dayOneCashFlow, calc.monthlyCashFlow, calc.monthly_cash_flow, current.cashflow, y1.cashFlow, (annualNOI - annualDebtService) / 12) || 0;
+    const annualCFFallback = (annualNOI - annualDebtService);
+    const monthlyCFCandidate = pickNum(deal.dayOneCashFlow, calc.monthlyCashFlow, calc.monthly_cash_flow, current.cashflow, y1.cashFlow, null);
+    let monthlyCF = monthlyCFBreakdown;
+    if (monthlyCFCandidate != null) {
+      // If the candidate is annual-sized, normalize to monthly.
+      const normalizedCandidate = Math.abs(monthlyCFCandidate) > Math.abs(annualCFFallback) * 0.6 ? (monthlyCFCandidate / 12) : monthlyCFCandidate;
+      const deltaToBreakdown = Math.abs(normalizedCandidate - monthlyCFBreakdown);
+      monthlyCF = deltaToBreakdown <= Math.max(5000, Math.abs(monthlyCFBreakdown) * 0.75)
+        ? normalizedCandidate
+        : monthlyCFBreakdown;
+    } else if (Number.isFinite(annualCFFallback)) {
+      monthlyCF = annualCFFallback / 12;
+    }
     const closingCosts = price * 0.03;
     const renovations = pickNum(assumptions.renovationCost, calc.renovationCost, calc.upfrontCapEx, sc.capex?.upfront, 0) || 0;
     const totalInvestment = pickNum(fin.totalEquityRequired, calc.totalInvestment, downPayment + closingCosts + renovations) || 0;
@@ -611,6 +664,7 @@ function DealRoomPage() {
       totalInvestment, loanAmount, annualVacancyLoss, annualExpenses,
       pricePerUnit: pickNum(acq.pricePerUnit, units ? price / units : 0) || 0,
       interestRate, downPct: downPct * 100,
+      monthlyTaxes, monthlyInsurance, monthlyMaintenance, monthlyMgmt, monthlyVacancyReserve,
       // Property details
       beds: prop.bedrooms || prop.beds || sc.property?.beds || '',
       baths: prop.bathrooms || prop.baths || sc.property?.baths || '',
@@ -857,11 +911,11 @@ function DealRoomPage() {
                   </div>
                   <BreakdownRow label="Gross Rent" value={fmt$(metrics.monthlyRent)} color="#00c875" />
                   <BreakdownRow label="Principal & Interest" value={`-${fmt$(metrics.monthlyPI)}`} color="#e2445c" />
-                  <BreakdownRow label="Property Taxes" value={`-${fmt$(metrics.price * 0.015 / 12)}`} color="#e2445c" />
-                  <BreakdownRow label="Insurance" value={`-${fmt$(metrics.price * 0.005 / 12)}`} color="#e2445c" />
-                  <BreakdownRow label="Maintenance (5%)" value={`-${fmt$(metrics.monthlyRent * 0.05)}`} color="#e2445c" />
-                  <BreakdownRow label="Property Mgmt (8%)" value={`-${fmt$(metrics.monthlyRent * 0.08)}`} color="#e2445c" />
-                  <BreakdownRow label="Vacancy Reserve (5%)" value={`-${fmt$(metrics.monthlyRent * 0.05)}`} color="#e2445c" />
+                  <BreakdownRow label="Property Taxes" value={`-${fmt$(metrics.monthlyTaxes)}`} color="#e2445c" />
+                  <BreakdownRow label="Insurance" value={`-${fmt$(metrics.monthlyInsurance)}`} color="#e2445c" />
+                  <BreakdownRow label="Maintenance" value={`-${fmt$(metrics.monthlyMaintenance)}`} color="#e2445c" />
+                  <BreakdownRow label="Property Mgmt" value={`-${fmt$(metrics.monthlyMgmt)}`} color="#e2445c" />
+                  <BreakdownRow label="Vacancy Reserve" value={`-${fmt$(metrics.monthlyVacancyReserve)}`} color="#e2445c" />
                   <BreakdownRow label="Net Cash Flow" value={fmt$(metrics.monthlyCF)} isTotal color={metrics.monthlyCF >= 0 ? '#00c875' : '#e2445c'} />
                 </div>
 

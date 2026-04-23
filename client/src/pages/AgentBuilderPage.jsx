@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Brain,
   Bot,
@@ -72,6 +72,8 @@ function AgentBuilderPage() {
   const [status, setStatus] = useState('');
   const [runs, setRuns] = useState([]);
   const [deals, setDeals] = useState([]);
+  const runPollRef = useRef(null);
+  const runPollTimeoutRef = useRef(null);
 
   const [platforms, setPlatforms] = useState([
     { platform_id: 'crexi', enabled: true, username: '', password: '' },
@@ -184,8 +186,58 @@ function AgentBuilderPage() {
 
     const runsData = await runsRes.json();
     const dealsData = await dealsRes.json();
-    setRuns(Array.isArray(runsData.runs) ? runsData.runs : []);
+    const nextRuns = Array.isArray(runsData.runs) ? runsData.runs : [];
+    setRuns(nextRuns);
     setDeals(Array.isArray(dealsData.deals) ? dealsData.deals : []);
+    return nextRuns;
+  };
+
+  const stopRunPolling = () => {
+    if (runPollRef.current) {
+      clearInterval(runPollRef.current);
+      runPollRef.current = null;
+    }
+    if (runPollTimeoutRef.current) {
+      clearTimeout(runPollTimeoutRef.current);
+      runPollTimeoutRef.current = null;
+    }
+  };
+
+  const startRunPolling = (uid, configId, runId) => {
+    stopRunPolling();
+
+    const tick = async () => {
+      try {
+        const latestRuns = await loadRunsAndDeals(uid, configId);
+        if (!Array.isArray(latestRuns) || !latestRuns.length) return;
+
+        const run = latestRuns.find((r) => r.id === runId) || latestRuns[0];
+        if (!run) return;
+
+        if (run.status === 'completed') {
+          setStatus(`Run completed: ${run.deals_found || 0} deals found.`);
+          stopRunPolling();
+          return;
+        }
+
+        if (run.status === 'failed') {
+          setStatus(`Run failed: ${run.error || 'Unknown error'}`);
+          stopRunPolling();
+          return;
+        }
+
+        setStatus(`Run in progress (${run.status || 'running'})...`);
+      } catch (err) {
+        console.error('Run poll error:', err);
+      }
+    };
+
+    tick();
+    runPollRef.current = setInterval(tick, 4000);
+    runPollTimeoutRef.current = setTimeout(() => {
+      stopRunPolling();
+      setStatus('Run is taking longer than expected. Check Recent Runs for updates.');
+    }, 10 * 60 * 1000);
   };
 
   useEffect(() => {
@@ -263,6 +315,7 @@ function AgentBuilderPage() {
       }
     };
     init();
+    return () => stopRunPolling();
   }, []);
 
   const persistConfig = async () => {
@@ -335,9 +388,11 @@ function AgentBuilderPage() {
       if (!res.ok) throw new Error(data?.detail || 'Failed triggering run');
       setStatus(`Run started (${data.dispatch || 'queued'}).`);
       await loadRunsAndDeals(userId, savedId);
+      if (data?.run_id) startRunPolling(userId, savedId, data.run_id);
     } catch (err) {
       console.error(err);
       setStatus(`Run failed: ${err.message}`);
+      stopRunPolling();
     } finally {
       setIsRunning(false);
     }
@@ -863,6 +918,11 @@ function AgentBuilderPage() {
                         <span style={{ color: '#64748b' }}>{r.deals_found || 0} deals</span>
                       </div>
                       <div style={{ marginTop: 6, fontSize: 11, color: '#64748b' }}>{r.started_at || 'No timestamp'}</div>
+                      {r.error && (
+                        <div style={{ marginTop: 6, fontSize: 11, color: '#b91c1c', lineHeight: 1.4 }}>
+                          {r.error}
+                        </div>
+                      )}
                     </div>
                   ))}
                   {!runs.length && <div style={{ fontSize: 12, color: '#94a3b8' }}>No runs yet.</div>}
