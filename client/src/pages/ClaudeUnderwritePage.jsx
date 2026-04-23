@@ -598,12 +598,11 @@ export default function ClaudeUnderwritePage() {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFileForPreview, setSelectedFileForPreview] = useState(null);
   const [previewData, setPreviewData] = useState(null);
-  const [showSpreadsheetTemplate, setShowSpreadsheetTemplate] = useState(false);
   const [spreadsheetTemplateData, setSpreadsheetTemplateData] = useState(null);
 
   // Canvas state
   const [showCanvas, setShowCanvas] = useState(true);
-  const [activeCanvasTab, setActiveCanvasTab] = useState('artifacts'); // 'artifacts', 'document', 'chat'
+  const [activeCanvasTab, setActiveCanvasTab] = useState('spreadsheet'); // 'artifacts', 'document', 'chat', 'spreadsheet'
   
   // Artifact state
   const [artifacts, setArtifacts] = useState([]);
@@ -842,7 +841,7 @@ export default function ClaudeUnderwritePage() {
             coc: 0,
             file_id: data.file_id,
           });
-          setShowSpreadsheetTemplate(true);
+          setActiveCanvasTab('spreadsheet');
         }
       } catch (err) {
         console.error('Upload error:', err);
@@ -1581,6 +1580,12 @@ export default function ClaudeUnderwritePage() {
               background: COLORS.bg,
             }}>
               <CanvasTab
+                active={activeCanvasTab === 'spreadsheet'}
+                icon={FileSpreadsheet}
+                label="Model"
+                onClick={() => setActiveCanvasTab('spreadsheet')}
+              />
+              <CanvasTab
                 active={activeCanvasTab === 'artifacts'}
                 icon={Table}
                 label={`Artifacts${artifacts.length > 0 ? ` (${artifacts.length})` : ''}`}
@@ -1695,6 +1700,35 @@ export default function ClaudeUnderwritePage() {
                 </>
               )}
               
+              {/* Spreadsheet Model Tab */}
+              {activeCanvasTab === 'spreadsheet' && (
+                <div style={{ padding: 16, height: '100%', overflow: 'auto' }}>
+                  {spreadsheetTemplateData ? (
+                    <UnderwritingSpreadsheetTemplate 
+                      dealData={spreadsheetTemplateData}
+                      isLoading={isUploading}
+                    />
+                  ) : (
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: '100%',
+                      color: COLORS.textMuted,
+                    }}>
+                      <FileSpreadsheet size={48} strokeWidth={1} />
+                      <p style={{ marginTop: 12, fontSize: 14 }}>
+                        No model yet
+                      </p>
+                      <p style={{ fontSize: 12, color: COLORS.textLight, maxWidth: 300 }}>
+                        Upload a deal document or ask me to "Build me an underwrite model" to get started
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+              
               {/* Document/Uploads Tab */}
               {activeCanvasTab === 'document' && (
                 <div style={{ padding: 16, height: '100%' }}>
@@ -1786,101 +1820,6 @@ export default function ClaudeUnderwritePage() {
           </div>
         )}
       </div>
-
-      {/* Spreadsheet Template Modal */}
-      {showSpreadsheetTemplate && spreadsheetTemplateData && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.7)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'center',
-          zIndex: 9998,
-          padding: '20px',
-          overflow: 'auto'
-        }}>
-          <div style={{
-            width: '95%',
-            maxWidth: '1400px',
-            backgroundColor: '#ffffff',
-            borderRadius: '16px',
-            boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
-            overflow: 'hidden',
-            animation: 'slideUp 0.3s ease-out',
-            marginTop: '20px',
-            marginBottom: '20px'
-          }}>
-            {/* Header with close button */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '20px 24px',
-              borderBottom: '1px solid #e5e7eb',
-              background: 'linear-gradient(to bottom, #ffffff, #fafafa)'
-            }}>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: '#111827' }}>
-                📊 Blank Underwriting Model
-              </h2>
-              <button
-                onClick={() => setShowSpreadsheetTemplate(false)}
-                style={{
-                  border: 'none',
-                  background: 'none',
-                  cursor: 'pointer',
-                  padding: '4px',
-                  color: '#6b7280'
-                }}
-                onMouseEnter={(e) => e.target.style.color = '#111827'}
-                onMouseLeave={(e) => e.target.style.color = '#6b7280'}
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            {/* Spreadsheet Template */}
-            <div style={{ padding: '16px' }}>
-              <UnderwritingSpreadsheetTemplate 
-                dealData={spreadsheetTemplateData}
-                isLoading={isUploading}
-              />
-            </div>
-
-            {/* Footer with instructions */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '16px 24px',
-              borderTop: '1px solid #e5e7eb',
-              background: '#fafafa'
-            }}>
-              <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                ✏️ Edit any cell. Then ask me in the chat (left panel) to fill missing fields or analyze the deal.
-              </div>
-              <button
-                onClick={() => setShowSpreadsheetTemplate(false)}
-                style={{
-                  padding: '10px 18px',
-                  borderRadius: '10px',
-                  border: '1px solid #e5e7eb',
-                  backgroundColor: '#ffffff',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  color: '#6b7280'
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#f3f4f6'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = '#ffffff'}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* CSS Animations */}
       <style>{`
