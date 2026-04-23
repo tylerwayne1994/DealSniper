@@ -1154,10 +1154,10 @@ export default function ClaudeUnderwritePage() {
           </button>
           <div>
             <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: COLORS.text }}>
-              Deal Builder
+              AI Underwriter
             </h1>
             <p style={{ margin: 0, fontSize: 12, color: COLORS.textMuted }}>
-              {loadedDeal ? `📍 ${loadedDeal.address}` : 'AI-powered deal analysis, business plan, and model generation'}
+              {loadedDeal ? `📍 ${loadedDeal.address}` : 'AI-powered deal analysis and document generation'}
             </p>
           </div>
         </div>

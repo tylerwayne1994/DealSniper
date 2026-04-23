@@ -17,6 +17,7 @@ import {
   ChevronDown,
   LogOut,
   Phone,
+  MessageSquare,
   Bell,
 } from 'lucide-react';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -206,6 +207,7 @@ const tabs = [
   { id: 'underwrite', label: 'Underwrite', icon: FileSpreadsheet, section: 'deals' },
   { id: 'agent-builder', label: 'Agent Builder', icon: Zap, section: 'deals' },
   { id: 'email-underwrite', label: 'Email Underwrite', icon: Mail, section: 'deals' },
+  { id: 'claude-underwriter', label: 'AI Underwriter', icon: MessageSquare, section: 'deals' },
   { id: 'templates', label: 'Templates', icon: FileText, section: 'deals' },
   { id: 'market', label: 'Deal Builder', icon: BarChart3, section: 'analysis' },
   { id: 'pitch-deck', label: 'Pitch Deck', icon: Presentation, section: 'analysis' },
@@ -231,6 +233,8 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
       navigate('/agent-builder');
     } else if (tabId === 'email-underwrite') {
       navigate('/email-underwrite');
+    } else if (tabId === 'claude-underwriter') {
+      navigate('/claude-underwriter');
     } else if (tabId === 'templates') {
       navigate('/templates');
     } else if (tabId === 'market') {
