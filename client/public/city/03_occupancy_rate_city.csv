@@ -1,0 +1,286 @@
+city,lat,lng,occupancy_rate_pct,vacancy_rate_pct,physical_occupancy_pct,economic_occupancy_pct,occ_1yr_prior_pct,market_tightness,data_source,as_of_date,source_url
+New York,40.7128,-74.006,95.47,4.53,93.4,94.36,97.27,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Los Angeles,34.0522,-118.2437,96.4,3.6,95.52,95.72,97.74,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Chicago,41.8781,-87.6298,92.39,7.61,90.85,92.26,93.53,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Houston,29.7604,-95.3698,90.79,9.21,91.41,88.47,92.55,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Phoenix,33.4484,-112.074,89.3,10.7,90.15,89.68,88.46,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Philadelphia,39.9526,-75.1652,92.14,7.86,92.73,90.12,93.93,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+San Antonio,29.4241,-98.4936,89.24,10.76,88.21,88.68,91.51,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+San Diego,32.7157,-117.1611,97.57,2.43,97.96,95.59,98.78,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+DFW,32.7767,-96.797,91.26,8.74,91.27,88.76,91.83,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Bay Area,37.7749,-122.4194,94.38,5.62,95.34,93.32,96.79,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Austin,30.2672,-97.7431,91.47,8.53,91.69,89.06,92.25,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Jacksonville,30.3322,-81.6557,88.25,11.75,89.06,86.03,87.86,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Columbus,39.9612,-82.9988,93.59,6.41,94.19,93.98,93.53,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Charlotte,35.2271,-80.8431,91.84,8.16,90.32,92.32,90.86,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Indianapolis,39.7684,-86.1581,92.62,7.38,92.11,90.29,92.84,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Seattle,47.6062,-122.3321,94.43,5.57,95.79,91.99,97.01,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Denver,39.7392,-104.9903,92.19,7.81,92.42,92.52,92.68,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Nashville,36.1627,-86.7816,90.81,9.19,89.02,87.97,90.45,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Oklahoma City,35.4676,-97.5164,92.26,7.74,90.88,90.91,94.16,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+El Paso,31.7619,-106.485,93.03,6.97,91.5,93.53,92.73,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+DC Metro,38.9072,-77.0369,95.36,4.64,95.86,93.5,95.44,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Boston,42.3601,-71.0589,97.26,2.74,97.73,95.02,96.66,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Las Vegas,36.1699,-115.1398,92.57,7.43,92.57,91.8,94.76,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Memphis,35.1495,-90.049,93.13,6.87,94.12,93.76,92.87,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Louisville,38.2527,-85.7585,94.36,5.64,95.52,93.18,96.29,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Portland,45.5051,-122.675,92.42,7.58,93.72,92.03,92.71,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Baltimore,39.2904,-76.6122,93.23,6.77,91.69,93.29,93.63,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Milwaukee,43.0389,-87.9065,93.57,6.43,91.46,93.91,94.35,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Albuquerque,35.0844,-106.6504,95.04,4.96,93.23,93.92,94.94,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Tucson,32.2226,-110.9747,92.82,7.18,91.1,92.53,92.02,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Central Valley,36.7783,-119.4179,96.28,3.72,96.23,93.21,97.36,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Sacramento,38.5816,-121.4944,93.11,6.89,91.03,93.24,92.83,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Kansas City,39.0997,-94.5786,92.68,7.32,93.83,92.93,93.62,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Atlanta,33.749,-84.388,90.27,9.73,89.92,90.82,91.24,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Omaha,41.2565,-95.9345,95.63,4.37,96.38,92.76,96.6,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Colorado Springs,38.8339,-104.8214,92.66,7.34,93.63,90.62,93.58,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Raleigh-Durham,35.7796,-78.6382,91.49,8.51,90.08,89.24,90.75,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Hampton Roads,36.8529,-75.978,95.27,4.73,93.99,92.68,96.51,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Minneapolis,44.9778,-93.265,95.03,4.97,94.3,93.07,96.99,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Tampa Bay,27.9506,-82.4572,91.15,8.85,91.22,89.37,92.55,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+New Orleans,29.9511,-90.0715,93.09,6.91,93.16,90.93,95.73,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Richmond,37.5407,-77.436,91.88,8.12,92.03,89.53,91.53,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Spokane,47.6588,-117.426,94.77,5.23,94.24,93.77,94.81,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Des Moines,41.5868,-93.625,94.9,5.1,94.39,94.8,95.4,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Montgomery,32.3668,-86.3,91.35,8.65,89.51,90.01,91.96,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Inland Empire,33.9806,-117.3755,96.91,3.09,98.05,95.58,97.67,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Ventura,34.2805,-119.2945,96.0,4.0,93.68,93.86,95.69,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Tallahassee,30.4518,-84.2807,90.86,9.14,89.32,89.46,92.7,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Huntsville,34.7304,-86.5861,94.96,5.04,92.7,93.54,95.03,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Knoxville,35.9606,-83.9207,94.49,5.51,95.3,91.78,96.42,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Chattanooga,35.0456,-85.3097,92.68,7.32,90.56,91.89,92.96,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Fort Collins,40.5853,-105.0844,95.47,4.53,96.51,95.46,94.9,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Eugene,44.0521,-123.0868,94.97,5.03,93.98,94.07,96.77,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Boise,43.615,-116.2023,90.87,9.13,88.7,90.38,91.54,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Sarasota,27.3364,-82.5307,89.38,10.62,88.78,89.39,89.32,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Savannah,32.0835,-81.0998,90.93,9.07,92.02,91.46,92.08,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Charleston,32.7765,-79.9311,93.27,6.73,90.93,92.56,93.61,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Salt Lake City,40.7608,-111.891,90.82,9.18,90.05,89.08,90.4,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Greenville,34.8526,-82.394,93.54,6.46,91.27,91.61,92.99,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Asheville,35.5951,-82.5515,94.66,5.34,93.38,94.45,97.23,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Wilmington,34.2257,-77.9447,91.82,8.18,91.1,89.91,94.0,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Fayetteville,35.0527,-78.8784,93.66,6.34,92.37,91.27,92.66,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Fayetteville AR,36.0626,-94.1574,95.31,4.69,93.52,92.77,94.83,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Reno,39.5296,-119.8138,95.11,4.89,93.32,94.11,96.5,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Baton Rouge,30.4515,-91.1871,92.73,7.27,93.67,92.78,92.47,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Lafayette,30.2241,-92.0198,89.5,10.5,90.22,88.02,89.08,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Lake Charles,30.2266,-93.2174,90.87,9.13,91.77,88.57,89.86,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Shreveport,32.5252,-93.7502,89.49,10.51,88.73,88.23,89.25,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Corpus Christi,27.8006,-97.3964,90.85,9.15,91.61,89.23,91.73,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Lubbock,33.5779,-101.8552,94.05,5.95,92.5,93.87,95.33,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Wichita,37.6872,-97.3301,95.15,4.85,95.71,93.02,96.98,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Tulsa,36.154,-95.9928,91.89,8.11,93.04,91.23,90.98,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Sioux Falls,43.5446,-96.7311,95.66,4.34,95.71,92.72,96.08,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Fargo,46.8772,-96.7898,95.44,4.56,94.75,95.35,97.73,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Billings,45.7833,-108.5007,93.71,6.29,94.0,91.99,93.62,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Bozeman,45.677,-111.0429,95.27,4.73,94.45,95.44,95.07,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Cheyenne,41.14,-104.8202,92.5,7.5,92.81,91.82,91.85,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Idaho Falls,43.4917,-112.0408,92.13,7.87,91.39,91.23,92.27,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Provo,40.2338,-111.6585,92.36,7.64,90.84,92.67,91.66,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Ogden,41.223,-111.9738,94.58,5.42,94.85,93.92,96.14,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+St. George,37.0965,-113.5684,93.65,6.35,91.7,93.44,95.19,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Carson City,39.1638,-119.7674,94.13,5.87,94.52,92.12,95.14,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Santa Fe,35.687,-105.9378,92.95,7.05,93.62,91.1,94.94,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Las Cruces,32.3199,-106.7637,93.43,6.57,92.64,92.51,94.89,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Yuma,32.6927,-114.6277,93.11,6.89,91.98,93.44,95.25,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Flagstaff,35.1983,-111.6513,93.02,6.98,91.68,90.88,93.89,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Prescott,34.54,-112.4685,92.28,7.72,91.74,91.07,94.13,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Medford,42.3265,-122.8756,94.96,5.04,93.48,94.2,94.31,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Bend,44.0582,-121.3153,96.77,3.23,96.72,95.12,95.93,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Corvallis,44.5646,-123.262,94.26,5.74,93.8,91.34,94.53,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Salem,44.9429,-123.0351,92.78,7.22,92.87,90.87,92.42,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Bellingham,48.7519,-122.4787,96.02,3.98,96.91,93.94,97.82,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Yakima,46.6021,-120.5059,93.09,6.91,93.32,93.23,94.04,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Olympia,47.0379,-122.9007,94.94,5.06,95.46,94.21,96.15,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Tri-Cities,46.2396,-119.1006,94.73,5.27,95.97,94.24,94.28,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Vancouver,45.6387,-122.6615,92.79,7.21,92.61,92.01,91.8,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Everett,47.979,-122.2021,96.06,3.94,94.67,93.99,95.36,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Tacoma,47.2529,-122.4443,94.4,5.6,92.3,93.69,96.8,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Bellevue,47.6101,-122.2015,96.9,3.1,97.69,95.54,97.58,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Bradenton,27.4989,-82.5748,87.81,12.19,87.97,85.21,88.47,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Lakeland,28.0395,-81.9498,88.38,11.62,88.06,86.2,90.84,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Fort Myers,26.6406,-81.8723,90.71,9.29,88.94,89.84,91.66,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Naples,26.142,-81.7948,90.53,9.47,89.94,88.24,90.93,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Ocala,29.1872,-82.1401,88.54,11.46,88.36,87.51,90.5,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Palm Beach,26.7056,-80.0364,92.26,7.74,90.38,89.47,91.23,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Miami,25.7617,-80.1918,91.49,8.51,90.52,91.68,92.05,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Daytona,29.2108,-81.0228,89.14,10.86,90.01,87.33,90.33,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Melbourne,28.0836,-80.6081,90.16,9.84,90.18,89.28,90.51,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Gainesville,29.6516,-82.3248,92.53,7.47,91.31,91.94,92.94,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Port St. Lucie,27.273,-80.3582,89.89,10.11,89.72,88.68,92.38,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Pensacola,30.4213,-87.2169,91.93,8.07,91.66,90.51,92.78,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Macon,32.8407,-83.6324,91.87,8.13,92.78,88.93,92.01,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Augusta,33.4735,-82.0105,94.2,5.8,93.96,91.79,95.85,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Columbus GA,32.461,-84.9877,93.12,6.88,94.2,93.45,94.01,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Athens,33.9519,-83.3576,91.77,8.23,92.75,91.93,92.38,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Valdosta,30.8327,-83.2785,91.54,8.46,91.47,90.41,93.98,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Birmingham,33.5186,-86.8104,91.95,8.05,92.97,91.08,94.43,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Mobile,30.6954,-88.0399,91.23,8.77,91.62,91.57,90.94,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Tuscaloosa,33.2098,-87.5692,90.86,9.14,89.72,89.6,90.12,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Dothan,31.2232,-85.3905,91.05,8.95,90.05,89.52,92.77,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Auburn,32.6099,-85.4808,93.56,6.44,91.31,93.97,95.14,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Jackson,32.2988,-90.1848,89.47,10.53,88.37,86.54,91.92,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Gulfport,30.3674,-89.0928,90.65,9.35,91.39,89.15,90.38,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Hattiesburg,31.3271,-89.2903,92.03,7.97,92.45,91.83,92.19,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Starkville,33.4504,-88.8184,93.75,6.25,92.88,92.49,93.74,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Little Rock,34.7465,-92.2896,92.61,7.39,91.37,92.14,93.94,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Fort Smith,35.3859,-94.3985,94.08,5.92,91.78,91.79,94.26,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Jonesboro,35.8423,-90.7043,92.7,7.3,92.95,91.68,94.26,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Springdale,36.1867,-94.1288,95.58,4.42,93.92,93.76,95.56,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Rogers,36.332,-94.1185,95.73,4.27,96.34,94.71,95.35,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Bentonville,36.3729,-94.2088,93.48,6.52,91.76,93.94,94.41,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Clarksville,36.5298,-87.3595,95.18,4.82,93.14,94.62,94.92,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Johnson City,36.3134,-82.3535,93.44,6.56,92.12,93.9,94.01,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Kingsport,36.5484,-82.5618,91.95,8.05,90.29,90.71,92.14,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Jackson TN,35.6145,-88.8139,92.84,7.16,92.73,91.21,93.56,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Franklin,35.9251,-86.8689,94.72,5.28,95.49,94.38,93.65,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Brentwood,36.0331,-86.7828,95.45,4.55,93.87,94.03,95.92,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Murfreesboro,35.8456,-86.3903,93.77,6.23,94.39,93.78,95.05,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Smyrna,35.9829,-86.5186,92.45,7.55,93.35,90.66,94.7,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Spring Hill,35.7512,-86.93,91.84,8.16,92.24,89.36,94.13,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Bowling Green,36.9685,-86.4808,93.86,6.14,93.99,93.92,94.85,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Lexington,38.0406,-84.5037,94.18,5.82,93.91,91.71,96.73,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Evansville,37.9716,-87.5711,94.71,5.29,94.01,91.9,97.27,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+South Bend,41.6764,-86.252,92.81,7.19,92.38,92.16,94.11,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Fort Wayne,41.1306,-85.1289,94.98,5.02,94.35,92.79,95.26,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Grand Rapids,42.9634,-85.6681,94.73,5.27,93.93,93.73,96.29,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Ann Arbor,42.2808,-83.743,95.05,4.95,93.74,93.49,96.81,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Lansing,42.7325,-84.5555,92.75,7.25,91.04,92.78,94.94,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Kalamazoo,42.2917,-85.5872,94.82,5.18,95.1,92.94,96.16,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Flint,43.0125,-83.6875,91.82,8.18,91.43,89.43,91.35,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Detroit,42.3314,-83.0458,90.55,9.45,91.53,89.78,93.11,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Toledo,41.6639,-83.5552,93.02,6.98,93.05,92.64,94.75,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Akron,41.0814,-81.519,93.86,6.14,94.42,92.66,93.72,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Dayton,39.7589,-84.1916,92.87,7.13,90.73,92.39,92.04,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Cincinnati,39.1031,-84.512,94.31,5.69,92.52,93.55,94.78,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Cleveland,41.4993,-81.6944,92.8,7.2,93.75,91.94,93.77,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Pittsburgh,40.4406,-79.9959,92.75,7.25,91.96,91.55,91.86,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Providence,41.824,-71.4128,96.29,3.71,97.13,95.46,96.57,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Hartford,41.7658,-72.6851,94.21,5.79,92.1,92.84,94.38,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Bridgeport,41.1865,-73.1952,96.47,3.53,96.11,95.14,96.86,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Springfield MA,42.1015,-72.5898,94.25,5.75,95.54,94.31,96.58,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Worcester,42.2626,-71.8023,95.39,4.61,94.1,93.17,96.97,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Syracuse,43.0481,-76.1474,95.3,4.7,93.76,95.97,94.89,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Rochester,43.1566,-77.6088,94.33,5.67,93.75,92.45,94.03,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Albany,42.6526,-73.7562,96.05,3.95,94.7,95.59,98.02,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Buffalo,42.8864,-78.8784,93.21,6.79,91.46,90.94,94.44,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Yonkers,40.9312,-73.8988,95.79,4.21,96.25,93.12,95.41,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Newark,40.7357,-74.1724,97.35,2.65,96.91,96.01,99.95,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Paterson,40.9168,-74.1719,95.32,4.68,96.4,95.71,94.48,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Anchorage,61.2181,-149.9003,94.13,5.87,92.87,91.59,95.82,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Honolulu,21.3069,-157.8583,95.83,4.17,94.6,94.73,98.37,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Wichita Falls,33.9137,-98.4934,91.53,8.47,92.69,90.75,92.49,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Midland,31.9973,-102.0779,94.91,5.09,96.24,94.24,95.69,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Odessa,31.8457,-102.3676,93.06,6.94,94.0,90.18,95.36,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Tyler,32.3513,-95.3011,93.49,6.51,92.01,91.92,94.04,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Waco,31.5493,-97.1467,93.86,6.14,93.9,92.2,94.37,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Beaumont,30.086,-94.1018,89.75,10.25,88.77,89.36,89.48,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Abilene,32.4487,-99.7331,93.02,6.98,94.32,93.29,94.77,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Laredo,27.5306,-99.4803,91.79,8.21,92.7,89.07,91.42,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+McAllen,26.2034,-98.23,94.22,5.78,93.49,92.16,95.26,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Brownsville,25.9017,-97.4975,93.35,6.65,93.58,90.75,93.71,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Killeen,31.1171,-97.7278,91.95,8.05,91.32,89.6,92.91,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Bryan-College Station,30.628,-96.3344,95.27,4.73,94.77,92.34,95.45,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Victoria,28.8053,-97.0036,94.16,5.84,95.09,93.94,93.41,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Longview,32.5007,-94.7405,92.79,7.21,91.65,89.92,91.94,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Nacogdoches,31.6035,-94.6552,91.2,8.8,92.12,90.61,93.31,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Lufkin,31.3382,-94.7291,94.1,5.9,94.39,91.83,94.34,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Huntsville TX,30.7235,-95.5508,91.03,8.97,90.67,90.72,90.77,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Texarkana,33.4251,-94.0477,93.92,6.08,94.1,92.75,95.15,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Paris TX,33.6609,-95.5555,92.37,7.63,92.17,90.44,94.43,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Amarillo,35.222,-101.8313,92.21,7.79,92.42,91.82,94.67,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Deltona,28.9005,-81.2637,91.49,8.51,90.67,91.63,92.06,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Daytona Beach,29.2108,-81.0228,88.58,11.42,89.04,85.73,90.84,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Kissimmee,28.2919,-81.4076,92.11,7.89,93.05,92.21,93.02,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Sanford,28.8005,-81.2731,88.7,11.3,89.45,87.1,89.06,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Clearwater,27.9659,-82.8001,91.2,8.8,89.35,90.1,92.93,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Cape Coral,26.5629,-81.9495,89.32,10.68,90.28,88.15,89.25,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Homestead,25.4687,-80.4776,91.49,8.51,90.91,90.84,93.21,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Doral,25.8195,-80.3556,93.11,6.89,91.63,92.31,93.37,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Aventura,25.9565,-80.1392,94.33,5.67,93.36,94.08,94.81,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Boca Raton,26.3683,-80.1289,93.48,6.52,93.7,91.88,95.14,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+West Palm Beach,26.7153,-80.0534,91.97,8.03,90.94,89.28,93.5,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Delray Beach,26.4615,-80.0728,93.54,6.46,91.46,91.43,94.07,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Boynton Beach,26.5317,-80.0905,93.42,6.58,93.84,92.01,93.27,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Pompano Beach,26.2379,-80.1248,92.48,7.52,93.27,91.68,93.13,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Hollywood,26.0112,-80.1495,91.25,8.75,92.52,88.68,93.89,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Coral Springs,26.2707,-80.2707,94.26,5.74,94.74,93.93,94.79,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Miramar,25.986,-80.233,94.67,5.33,92.65,91.75,95.6,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Pembroke Pines,26.007,-86.1527,91.7,8.3,91.7,92.19,91.76,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Sunrise,26.167,-80.2561,94.26,5.74,94.95,92.38,95.03,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Plantation,26.1276,-80.2331,94.18,5.82,93.48,91.49,94.36,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Davie,26.0765,-80.2521,92.3,7.7,92.57,90.33,92.52,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Weston,26.1003,-80.3998,93.97,6.03,93.69,93.26,95.94,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Deerfield Beach,26.3184,-80.0998,91.66,8.34,90.63,92.08,93.7,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Margate,26.2445,-80.2062,93.1,6.9,93.74,91.47,92.16,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Lauderhill,26.1401,-80.2131,93.48,6.52,91.41,90.77,94.01,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Tamarac,26.2129,-80.2497,94.08,5.92,91.94,92.62,94.85,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Coconut Creek,26.2712,-80.1793,94.68,5.32,94.69,95.3,95.39,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+North Miami,25.8897,-80.1868,91.01,8.99,90.65,91.48,93.16,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Miami Gardens,25.942,-80.2456,93.06,6.94,94.17,91.79,93.08,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Hialeah,25.8576,-80.2781,92.22,7.78,92.16,92.21,91.16,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Greenville SC,34.8526,-82.394,94.61,5.39,94.04,92.68,96.81,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Columbia SC,34.0007,-81.0348,94.06,5.94,93.02,93.75,95.58,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Spartanburg,34.9496,-81.932,93.43,6.57,92.43,90.43,93.93,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Rock Hill,34.9249,-81.0251,94.5,5.5,94.78,94.85,96.54,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+North Charleston,32.8546,-79.9748,92.69,7.31,92.46,91.63,93.29,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Mount Pleasant,32.8323,-79.8284,94.01,5.99,93.57,92.84,94.51,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Wilmington NC,34.2257,-77.9447,91.68,8.32,91.27,89.63,92.53,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Gastonia,35.2621,-81.1873,92.75,7.25,90.75,90.69,94.95,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Concord NC,35.4088,-80.5795,92.41,7.59,92.7,92.22,92.81,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Huntersville,35.4107,-80.8429,94.03,5.97,93.2,92.07,93.3,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Mooresville,35.5746,-80.8098,93.26,6.74,91.74,91.29,92.39,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Cary,35.7915,-78.7811,94.8,5.2,93.21,95.26,96.27,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Durham,35.994,-78.8986,94.69,5.31,95.66,92.82,97.29,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Chapel Hill,35.9132,-79.0558,94.88,5.12,94.2,93.55,95.6,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Apex,35.7327,-78.8503,93.87,6.13,93.28,92.34,93.86,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Morrisville,35.8237,-78.8253,92.75,7.25,93.53,92.97,92.63,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+High Point,35.9557,-80.0053,93.61,6.39,94.32,91.89,96.24,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Winston-Salem,36.0999,-80.2442,92.18,7.82,91.68,92.52,92.21,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Greensboro,36.0726,-79.792,93.79,6.21,94.99,91.73,92.87,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Richmond VA,37.5407,-77.436,93.96,6.04,93.61,93.85,95.14,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Newport News,37.0871,-76.473,95.27,4.73,94.15,95.09,94.84,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Chesapeake,36.7682,-76.2875,93.25,6.75,92.73,93.71,94.2,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Virginia Beach,36.8529,-75.978,93.49,6.51,92.9,92.23,94.96,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Hampton,37.0299,-76.3452,92.23,7.77,91.02,90.83,94.85,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Alexandria VA,38.8048,-77.0469,95.85,4.15,96.8,93.32,94.81,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Madison WI,43.0731,-89.4012,96.66,3.34,94.81,96.11,97.75,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Green Bay,44.5133,-88.0133,93.15,6.85,93.19,93.67,94.13,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Kenosha,42.5847,-87.8212,94.44,5.56,94.46,93.67,96.48,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Racine,42.7261,-87.7829,93.91,6.09,92.25,91.37,94.26,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Appleton,44.2619,-88.4154,94.86,5.14,93.06,94.56,95.71,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Eau Claire,44.8113,-91.4985,94.1,5.9,92.48,91.82,95.11,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+La Crosse,43.8014,-91.2396,95.07,4.93,93.22,94.01,94.08,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Janesville,42.6828,-89.0187,92.82,7.18,93.88,91.24,93.57,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Cedar Rapids,41.9779,-91.6656,93.8,6.2,94.74,92.71,95.37,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Iowa City,41.6611,-91.5302,95.89,4.11,93.58,95.47,97.47,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Sioux City,42.4999,-96.4003,93.95,6.05,93.8,92.63,96.02,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Waterloo,42.4928,-92.3426,96.21,3.79,94.15,95.22,95.16,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Ames,42.0308,-93.6319,97.36,2.64,97.03,96.84,96.58,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Dubuque,42.5006,-90.6646,93.43,6.57,94.76,92.3,93.61,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Olathe,38.8814,-94.8191,93.65,6.35,94.03,90.96,96.05,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Lawrence KS,38.9717,-95.2353,95.47,4.53,93.72,93.22,97.61,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Shawnee,39.0228,-94.7152,95.04,4.96,96.3,93.15,93.95,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Lenexa,38.9536,-94.7336,93.92,6.08,94.3,94.37,92.83,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Lincoln NE,40.8136,-96.7026,96.5,3.5,97.1,94.74,96.88,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Grand Island,40.925,-98.342,96.87,3.13,98.14,94.79,99.06,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Rapid City,44.0805,-103.231,94.1,5.9,93.91,91.32,93.49,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Bismarck,46.8083,-100.7837,97.1,2.9,97.16,96.77,98.95,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Grand Forks,47.9253,-97.0329,96.62,3.38,95.35,95.67,96.53,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Minot,48.2325,-101.2963,96.31,3.69,96.01,96.26,98.36,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Missoula,46.8721,-113.994,94.18,5.82,93.91,92.48,94.53,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Great Falls,47.5002,-111.3008,96.02,3.98,95.19,93.6,96.75,Very Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Helena MT,46.5958,-112.027,94.37,5.63,95.2,93.89,95.14,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Kalispell,48.192,-114.3168,94.55,5.45,92.27,92.7,95.79,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Casper,42.8501,-106.3252,92.76,7.24,91.7,91.65,95.04,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Laramie,41.3114,-105.5911,93.38,6.62,91.57,93.12,94.29,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Nampa,43.5407,-116.5635,92.52,7.48,93.07,89.69,94.45,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Meridian,43.6121,-116.3915,90.38,9.62,91.37,90.87,89.68,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Coeur d'Alene,47.6777,-116.7805,92.44,7.56,91.1,89.84,94.73,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Twin Falls,42.5629,-114.4609,93.69,6.31,94.56,90.65,96.19,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Pocatello,42.8713,-112.4455,94.43,5.57,95.19,93.6,94.02,Tight,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+West Valley City,40.6916,-112.001,90.15,9.85,90.44,87.83,91.67,Loose,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+West Jordan,40.6097,-111.9391,91.22,8.78,92.18,89.54,92.93,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Sandy,40.5649,-111.8389,93.8,6.2,92.36,92.99,95.13,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily
+Lehi,40.3916,-111.8507,93.67,6.33,94.09,92.35,95.47,Balanced,CoStar/Axiometrics,2025-Q4,https://www.costar.com/multifamily

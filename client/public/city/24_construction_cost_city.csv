@@ -1,0 +1,286 @@
+city,lat,lng,hard_cost_per_sf,soft_cost_per_sf,land_cost_per_unit,total_dev_cost_per_unit,construction_cost_yoy_chg_pct,labor_availability,data_source,as_of_date,source_url
+New York,40.7128,-74.006,175.89,53.83,75158.5,518474.88,4.76,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Los Angeles,34.0522,-118.2437,183.05,46.31,76474.62,381239.71,4.61,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Chicago,41.8781,-87.6298,149.0,46.69,39850.08,202335.59,2.99,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Houston,29.7604,-95.3698,117.42,35.76,29755.24,168285.35,4.04,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Phoenix,33.4484,-112.074,169.52,41.36,40677.18,237886.32,3.19,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Philadelphia,39.9526,-75.1652,149.57,44.76,42103.53,207266.47,3.57,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+San Antonio,29.4241,-98.4936,129.0,37.32,29096.96,167128.99,4.86,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+San Diego,32.7157,-117.1611,183.83,56.14,69401.56,432546.91,4.42,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+DFW,32.7767,-96.797,164.54,44.79,34909.39,204360.32,4.34,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Bay Area,37.7749,-122.4194,195.07,45.65,95713.06,491734.66,4.6,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Austin,30.2672,-97.7431,144.5,45.22,41797.62,236227.32,2.9,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Jacksonville,30.3322,-81.6557,129.12,37.47,30039.97,169940.82,4.07,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Columbus,39.9612,-82.9988,140.28,39.42,31034.56,173582.64,2.79,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Charlotte,35.2271,-80.8431,158.69,44.1,32228.46,227503.75,4.17,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Indianapolis,39.7684,-86.1581,129.92,37.4,28023.05,140956.7,3.3,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Seattle,47.6062,-122.3321,185.49,47.7,71947.91,419575.63,4.78,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Denver,39.7392,-104.9903,140.88,43.2,53816.26,292925.05,4.07,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Nashville,36.1627,-86.7816,147.29,39.71,37065.19,234719.1,4.72,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Oklahoma City,35.4676,-97.5164,136.45,39.33,21504.84,127996.11,3.42,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+El Paso,31.7619,-106.485,136.91,39.05,22010.31,120628.28,2.67,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+DC Metro,38.9072,-77.0369,174.51,46.04,69268.0,405141.41,3.49,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Boston,42.3601,-71.0589,171.72,57.38,90853.65,499458.96,4.12,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Las Vegas,36.1699,-115.1398,153.49,46.88,34182.84,213205.36,3.01,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Memphis,35.1495,-90.049,139.02,32.49,20004.47,116103.22,3.83,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Louisville,38.2527,-85.7585,124.72,35.21,25893.71,138489.62,4.67,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Portland,45.5051,-122.675,162.91,48.2,44020.53,311847.23,2.13,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Baltimore,39.2904,-76.6122,156.48,43.17,35639.14,190089.9,2.18,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Milwaukee,43.0389,-87.9065,134.09,33.6,24234.39,148495.03,2.23,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Albuquerque,35.0844,-106.6504,132.23,38.95,24055.3,147466.47,3.14,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Tucson,32.2226,-110.9747,142.11,38.73,24692.17,143923.75,2.68,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Central Valley,36.7783,-119.4179,140.67,34.9,33361.12,185341.46,2.99,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Sacramento,38.5816,-121.4944,148.13,42.37,39854.64,234519.1,3.05,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Kansas City,39.0997,-94.5786,130.63,34.03,26067.11,161857.58,4.77,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Atlanta,33.749,-84.388,154.03,39.87,29980.31,209912.98,2.54,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Omaha,41.2565,-95.9345,137.43,33.78,23403.35,148301.24,2.43,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Colorado Springs,38.8339,-104.8214,158.18,47.05,35620.68,194983.49,2.86,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Raleigh-Durham,35.7796,-78.6382,153.56,44.45,48158.97,255017.11,3.21,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Hampton Roads,36.8529,-75.978,140.06,35.08,27476.67,169118.21,3.03,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Minneapolis,44.9778,-93.265,140.7,43.48,35529.62,213670.55,4.43,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Tampa Bay,27.9506,-82.4572,169.77,47.87,36218.94,212689.01,2.48,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+New Orleans,29.9511,-90.0715,120.17,33.36,26442.78,162114.62,2.33,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Richmond,37.5407,-77.436,138.91,37.41,35649.31,193909.5,3.35,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Spokane,47.6588,-117.426,138.28,37.25,31631.35,159276.26,4.36,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Des Moines,41.5868,-93.625,119.43,37.15,28036.16,154920.12,4.06,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Montgomery,32.3668,-86.3,130.32,35.68,20381.69,127507.97,3.94,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Inland Empire,33.9806,-117.3755,152.7,45.73,52617.32,312579.88,2.95,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Ventura,34.2805,-119.2945,193.24,51.34,75506.08,372078.67,3.57,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Tallahassee,30.4518,-84.2807,128.02,35.9,23232.21,149295.89,4.86,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Huntsville,34.7304,-86.5861,130.64,36.74,25015.7,169960.48,4.19,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Knoxville,35.9606,-83.9207,137.89,32.11,24588.83,159101.8,4.05,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Chattanooga,35.0456,-85.3097,127.1,37.05,24651.6,159008.05,4.54,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Fort Collins,40.5853,-105.0844,168.53,45.3,37637.15,261896.96,3.34,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Eugene,44.0521,-123.0868,150.46,44.95,44613.99,245148.12,3.76,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Boise,43.615,-116.2023,167.47,45.01,35871.8,240367.76,2.63,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Sarasota,27.3364,-82.5307,151.74,46.17,44290.47,265212.19,4.41,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Savannah,32.0835,-81.0998,151.31,44.91,37910.39,192938.42,4.64,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Charleston,32.7765,-79.9311,168.89,47.64,41625.99,266914.37,4.3,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Salt Lake City,40.7608,-111.891,162.76,47.36,46099.93,228346.02,3.34,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Greenville,34.8526,-82.394,131.73,36.04,31624.56,169640.86,4.75,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Asheville,35.5951,-82.5515,144.75,38.65,40914.22,240222.11,4.45,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Wilmington,34.2257,-77.9447,150.18,40.06,35754.54,223665.88,2.83,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Fayetteville,35.0527,-78.8784,133.56,32.54,24931.66,134186.67,4.0,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Fayetteville AR,36.0626,-94.1574,131.61,40.16,27331.72,185651.93,4.19,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Reno,39.5296,-119.8138,151.68,39.19,40510.7,265901.83,3.74,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Baton Rouge,30.4515,-91.1871,135.27,32.51,27631.52,134648.04,3.31,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Lafayette,30.2241,-92.0198,118.85,36.93,22464.13,129909.23,2.66,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Lake Charles,30.2266,-93.2174,136.9,34.25,20317.97,131345.89,3.42,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Shreveport,32.5252,-93.7502,137.89,38.32,20384.24,123523.34,2.88,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Corpus Christi,27.8006,-97.3964,119.58,38.86,23959.17,148586.26,4.2,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Lubbock,33.5779,-101.8552,129.5,39.95,20163.13,120607.23,2.91,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Wichita,37.6872,-97.3301,134.69,35.38,24094.66,130675.84,3.52,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Tulsa,36.154,-95.9928,130.18,39.62,23725.72,132255.82,3.23,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Sioux Falls,43.5446,-96.7311,133.78,39.04,23502.79,145962.68,3.95,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Fargo,46.8772,-96.7898,117.08,37.58,23326.61,152615.4,4.29,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Billings,45.7833,-108.5007,121.58,36.79,25034.34,149940.67,2.56,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Bozeman,45.677,-111.0429,152.46,44.83,53545.4,290004.37,3.64,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Cheyenne,41.14,-104.8202,121.12,40.48,23091.55,158321.52,4.65,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Idaho Falls,43.4917,-112.0408,129.6,34.44,27720.04,151995.48,4.84,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Provo,40.2338,-111.6585,168.11,39.87,31425.03,208933.45,4.02,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Ogden,41.223,-111.9738,131.58,34.44,27114.26,176117.76,3.22,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+St. George,37.0965,-113.5684,147.22,45.45,45053.82,244668.06,3.32,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Carson City,39.1638,-119.7674,143.67,44.47,37527.39,231420.84,2.69,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Santa Fe,35.687,-105.9378,143.87,39.24,43076.0,277517.18,3.51,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Las Cruces,32.3199,-106.7637,137.54,33.62,22388.87,129177.15,3.69,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Yuma,32.6927,-114.6277,139.8,32.47,26849.06,143875.27,2.82,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Flagstaff,35.1983,-111.6513,142.07,43.57,50106.42,253545.6,2.88,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Prescott,34.54,-112.4685,140.95,47.46,38143.88,228516.79,3.88,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Medford,42.3265,-122.8756,140.27,44.89,36438.37,231796.49,4.69,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Bend,44.0582,-121.3153,140.96,41.32,52798.99,293504.4,3.51,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Corvallis,44.5646,-123.262,152.54,45.66,42013.49,209311.79,4.56,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Salem,44.9429,-123.0351,161.64,39.07,31816.75,209408.47,4.84,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Bellingham,48.7519,-122.4787,154.37,47.08,48523.64,304018.85,4.38,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Yakima,46.6021,-120.5059,140.17,33.08,27275.31,144765.53,3.84,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Olympia,47.0379,-122.9007,149.24,41.2,43031.02,253385.08,3.57,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Tri-Cities,46.2396,-119.1006,141.59,35.5,32454.97,166314.46,4.81,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Vancouver,45.6387,-122.6615,163.15,42.28,52135.68,285450.98,4.71,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Everett,47.979,-122.2021,169.59,57.38,53006.85,322380.24,4.8,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Tacoma,47.2529,-122.4443,160.0,39.79,58387.1,318761.1,4.9,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Bellevue,47.6101,-122.2015,179.77,48.04,74886.12,447068.16,4.03,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Bradenton,27.4989,-82.5748,156.71,46.01,30612.62,208069.65,3.49,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Lakeland,28.0395,-81.9498,135.55,39.46,27878.56,183297.95,4.58,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Fort Myers,26.6406,-81.8723,168.7,43.07,37932.71,220287.06,2.95,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Naples,26.142,-81.7948,180.67,45.8,55425.24,336068.46,2.47,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Ocala,29.1872,-82.1401,137.72,34.89,26688.02,166283.63,4.2,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Palm Beach,26.7056,-80.0364,186.75,47.53,66302.73,323734.32,3.76,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Miami,25.7617,-80.1918,198.07,54.48,77108.72,424785.9,2.61,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Daytona,29.2108,-81.0228,124.36,38.94,28064.12,162320.0,4.5,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Melbourne,28.0836,-80.6081,166.44,40.24,36066.23,192683.57,3.95,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Gainesville,29.6516,-82.3248,136.01,34.86,31678.22,167004.94,3.33,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Port St. Lucie,27.273,-80.3582,156.57,40.34,39484.84,207769.46,3.78,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Pensacola,30.4213,-87.2169,129.92,38.36,33402.1,185915.27,3.52,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Macon,32.8407,-83.6324,134.24,34.83,21483.41,128049.16,4.8,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Augusta,33.4735,-82.0105,142.76,38.31,25778.95,136590.85,3.62,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Columbus GA,32.461,-84.9877,117.55,37.26,20829.68,134415.39,4.89,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Athens,33.9519,-83.3576,139.02,38.39,28532.77,160880.33,2.73,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Valdosta,30.8327,-83.2785,141.32,35.41,20930.96,117627.69,3.62,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Birmingham,33.5186,-86.8104,120.59,32.55,24772.89,138524.6,3.07,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Mobile,30.6954,-88.0399,132.08,40.32,24399.24,130198.08,4.15,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Tuscaloosa,33.2098,-87.5692,136.29,40.59,26713.13,128017.61,4.03,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Dothan,31.2232,-85.3905,119.45,40.35,20224.94,119479.25,4.52,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Auburn,32.6099,-85.4808,124.45,38.38,30630.29,158078.42,3.33,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Jackson,32.2988,-90.1848,137.57,33.27,21251.06,117652.68,2.89,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Gulfport,30.3674,-89.0928,135.37,38.27,25237.32,131641.04,3.25,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Hattiesburg,31.3271,-89.2903,128.92,32.24,20661.42,119939.16,4.19,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Starkville,33.4504,-88.8184,121.15,35.44,23231.89,127301.8,4.61,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Little Rock,34.7465,-92.2896,138.94,37.96,20215.25,144188.35,3.12,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Fort Smith,35.3859,-94.3985,122.42,34.17,21701.33,119677.49,3.77,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Jonesboro,35.8423,-90.7043,142.22,38.3,19307.37,128330.66,4.17,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Springdale,36.1867,-94.1288,132.08,33.31,30878.79,168066.36,3.7,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Rogers,36.332,-94.1185,144.3,45.62,36797.5,180096.17,3.58,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Bentonville,36.3729,-94.2088,158.26,48.11,37909.36,210839.66,4.68,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Clarksville,36.5298,-87.3595,133.21,34.74,25280.2,142157.65,2.2,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Johnson City,36.3134,-82.3535,119.49,38.16,23523.93,157270.6,3.56,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Kingsport,36.5484,-82.5618,130.77,39.35,21930.74,155314.25,2.49,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Jackson TN,35.6145,-88.8139,128.03,32.17,25683.85,129062.1,3.56,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Franklin,35.9251,-86.8689,176.12,53.95,59014.22,362871.6,4.64,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Brentwood,36.0331,-86.7828,178.14,57.42,72264.65,409256.23,3.19,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Murfreesboro,35.8456,-86.3903,165.07,45.17,36346.65,233472.46,3.93,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Smyrna,35.9829,-86.5186,165.99,46.98,35211.19,238038.02,3.68,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Spring Hill,35.7512,-86.93,146.02,43.29,42135.35,246597.79,3.04,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Bowling Green,36.9685,-86.4808,142.61,33.16,23654.39,155738.52,4.55,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Lexington,38.0406,-84.5037,131.23,40.06,26353.4,170123.18,4.16,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Evansville,37.9716,-87.5711,138.34,39.53,22762.27,118664.48,2.68,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+South Bend,41.6764,-86.252,138.2,33.36,23874.82,127147.17,3.37,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Fort Wayne,41.1306,-85.1289,128.23,34.44,22076.64,116810.94,2.37,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Grand Rapids,42.9634,-85.6681,139.45,37.78,33713.96,166053.89,3.41,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Ann Arbor,42.2808,-83.743,140.36,47.58,58230.12,282640.43,4.44,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Lansing,42.7325,-84.5555,132.97,38.44,26562.02,133903.12,2.94,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Kalamazoo,42.2917,-85.5872,118.73,34.93,20656.47,140008.18,3.38,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Flint,43.0125,-83.6875,141.94,37.41,17083.58,98517.89,2.3,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Detroit,42.3314,-83.0458,129.97,39.6,25176.33,144873.59,4.74,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Toledo,41.6639,-83.5552,129.62,34.76,22069.96,119669.76,2.83,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Akron,41.0814,-81.519,122.17,34.13,18625.62,111652.26,3.27,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Dayton,39.7589,-84.1916,124.79,36.29,18563.93,108833.63,2.37,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Cincinnati,39.1031,-84.512,139.05,32.08,26767.54,165541.49,2.93,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Cleveland,41.4993,-81.6944,138.66,34.55,25488.54,137318.23,4.83,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Pittsburgh,40.4406,-79.9959,120.52,36.85,25398.25,172836.97,2.25,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Providence,41.824,-71.4128,144.2,46.7,44983.94,320743.33,4.64,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Hartford,41.7658,-72.6851,152.44,46.24,42156.3,239526.17,2.37,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Bridgeport,41.1865,-73.1952,158.14,45.35,46316.02,257114.17,2.14,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Springfield MA,42.1015,-72.5898,138.36,38.46,30243.15,190129.8,3.61,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Worcester,42.2626,-71.8023,143.87,40.44,52180.31,321983.42,2.35,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Syracuse,43.0481,-76.1474,134.41,36.28,24110.06,151571.03,3.87,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Rochester,43.1566,-77.6088,134.85,37.96,24847.46,160906.37,3.28,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Albany,42.6526,-73.7562,142.38,38.49,30246.93,191758.56,2.21,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Buffalo,42.8864,-78.8784,139.81,37.51,29785.76,159948.1,3.06,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Yonkers,40.9312,-73.8988,175.6,50.92,68151.71,379630.94,2.62,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Newark,40.7357,-74.1724,199.59,47.72,60681.47,326688.18,2.64,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Paterson,40.9168,-74.1719,139.51,46.11,51313.28,286967.02,3.16,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Anchorage,61.2181,-149.9003,162.85,41.11,39540.56,231875.95,2.52,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Honolulu,21.3069,-157.8583,194.42,50.74,102082.5,736095.36,2.56,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Wichita Falls,33.9137,-98.4934,126.11,34.18,17368.24,111864.88,3.33,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Midland,31.9973,-102.0779,142.97,40.58,26960.22,194545.68,2.79,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Odessa,31.8457,-102.3676,134.62,36.01,30230.21,155615.04,3.9,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Tyler,32.3513,-95.3011,124.93,35.37,25134.28,134787.95,3.97,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Waco,31.5493,-97.1467,119.49,40.39,25110.04,129341.52,3.91,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Beaumont,30.086,-94.1018,141.87,35.95,24771.46,130871.19,4.69,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Abilene,32.4487,-99.7331,142.37,37.06,19759.78,124811.9,3.05,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Laredo,27.5306,-99.4803,122.37,37.17,22564.08,119760.08,4.43,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+McAllen,26.2034,-98.23,139.59,35.75,22063.31,114062.59,3.52,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Brownsville,25.9017,-97.4975,139.47,40.29,20663.19,124266.51,2.98,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Killeen,31.1171,-97.7278,132.2,39.24,26363.86,140156.76,4.86,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Bryan-College Station,30.628,-96.3344,139.98,32.74,27098.32,161175.5,3.13,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Victoria,28.8053,-97.0036,136.32,40.63,18521.07,116660.28,4.36,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Longview,32.5007,-94.7405,141.35,36.01,22387.15,142771.31,4.67,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Nacogdoches,31.6035,-94.6552,132.39,40.46,18380.07,126225.25,2.2,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Lufkin,31.3382,-94.7291,129.4,36.27,17136.6,124006.85,3.06,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Huntsville TX,30.7235,-95.5508,122.44,36.58,21600.22,141580.45,2.89,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Texarkana,33.4251,-94.0477,137.98,38.42,22245.96,112877.18,3.43,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Paris TX,33.6609,-95.5555,130.41,32.14,19967.07,112467.0,2.89,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Amarillo,35.222,-101.8313,139.9,38.76,25853.49,127718.24,4.64,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Deltona,28.9005,-81.2637,150.46,40.15,35175.12,208922.87,2.76,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Daytona Beach,29.2108,-81.0228,142.49,33.63,30119.66,184107.92,2.56,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Kissimmee,28.2919,-81.4076,139.94,39.9,33067.99,210796.32,2.54,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Sanford,28.8005,-81.2731,141.52,38.23,37825.16,194718.89,3.95,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Clearwater,27.9659,-82.8001,146.56,46.65,49649.99,273804.55,4.36,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Cape Coral,26.5629,-81.9495,156.28,45.55,40137.93,228327.12,3.04,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Homestead,25.4687,-80.4776,149.37,46.45,35229.33,242698.68,3.42,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Doral,25.8195,-80.3556,172.24,56.52,71676.3,390537.84,3.92,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Aventura,25.9565,-80.1392,169.32,55.63,73843.65,461076.84,2.22,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Boca Raton,26.3683,-80.1289,186.49,54.08,77038.04,394522.13,2.82,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+West Palm Beach,26.7153,-80.0534,175.75,49.87,50288.36,328839.42,3.15,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Delray Beach,26.4615,-80.0728,171.99,51.21,62215.33,342096.3,3.79,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Boynton Beach,26.5317,-80.0905,151.07,42.65,57082.02,297128.92,3.59,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Pompano Beach,26.2379,-80.1248,195.36,52.54,51754.23,319455.78,4.79,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Hollywood,26.0112,-80.1495,184.25,52.98,51525.3,307819.18,4.27,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Coral Springs,26.2707,-80.2707,196.09,49.14,52057.28,317206.34,2.51,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Miramar,25.986,-80.233,193.96,51.5,56601.35,339557.23,4.73,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Pembroke Pines,26.007,-86.1527,167.16,50.1,51329.3,298544.74,3.24,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Sunrise,26.167,-80.2561,155.27,41.44,47643.34,296195.26,2.69,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Plantation,26.1276,-80.2331,182.68,47.07,46826.41,319271.32,4.58,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Davie,26.0765,-80.2521,189.87,49.03,56818.76,345372.97,4.25,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Weston,26.1003,-80.3998,197.01,50.07,77401.86,422968.39,3.92,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Deerfield Beach,26.3184,-80.0998,140.26,47.39,48523.64,304210.37,3.55,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Margate,26.2445,-80.2062,149.94,48.2,41075.62,245519.4,2.4,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Lauderhill,26.1401,-80.2131,162.36,40.36,43650.5,218476.44,4.59,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Tamarac,26.2129,-80.2497,153.6,44.02,37898.68,245446.74,4.27,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Coconut Creek,26.2712,-80.1793,148.61,48.09,46662.99,291009.85,2.46,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+North Miami,25.8897,-80.1868,146.82,44.73,46515.13,273695.6,2.79,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Miami Gardens,25.942,-80.2456,152.96,40.57,38789.28,235323.9,2.95,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Hialeah,25.8576,-80.2781,150.63,42.84,38520.76,254908.08,3.76,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Greenville SC,34.8526,-82.394,121.92,40.37,33313.9,174771.83,3.63,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Columbia SC,34.0007,-81.0348,129.0,38.25,24700.15,152586.59,4.72,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Spartanburg,34.9496,-81.932,121.66,39.29,31220.38,150693.48,4.63,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Rock Hill,34.9249,-81.0251,137.48,40.3,32896.71,193696.02,3.74,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+North Charleston,32.8546,-79.9748,163.71,38.53,41777.81,212035.24,3.19,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Mount Pleasant,32.8323,-79.8284,195.36,52.67,62610.21,316079.4,3.37,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Wilmington NC,34.2257,-77.9447,151.56,42.68,43542.53,208704.97,2.56,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Gastonia,35.2621,-81.1873,125.02,40.51,26094.59,158622.66,3.92,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Concord NC,35.4088,-80.5795,165.75,39.67,34967.39,230767.07,4.57,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Huntersville,35.4107,-80.8429,154.23,46.14,39411.29,267552.35,4.12,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Mooresville,35.5746,-80.8098,167.14,38.4,43464.96,257435.22,2.58,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Cary,35.7915,-78.7811,167.79,48.26,57175.9,278532.32,2.92,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Durham,35.994,-78.8986,150.32,43.45,50036.3,254706.31,2.56,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Chapel Hill,35.9132,-79.0558,139.54,38.74,51430.82,304444.98,2.83,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Apex,35.7327,-78.8503,147.59,38.3,51093.77,314657.78,2.24,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Morrisville,35.8237,-78.8253,155.07,47.17,52203.39,310329.43,4.15,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+High Point,35.9557,-80.0053,118.04,33.19,30615.23,161445.4,3.53,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Winston-Salem,36.0999,-80.2442,127.72,36.95,26251.95,169577.69,4.49,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Greensboro,36.0726,-79.792,130.01,33.67,30503.07,159500.21,4.89,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Richmond VA,37.5407,-77.436,134.27,36.92,32230.32,173604.68,3.83,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Newport News,37.0871,-76.473,123.71,40.44,30485.85,186236.06,2.45,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Chesapeake,36.7682,-76.2875,153.93,43.96,36767.95,195151.32,2.56,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Virginia Beach,36.8529,-75.978,146.18,43.18,33577.36,220723.78,3.1,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Hampton,37.0299,-76.3452,133.28,38.45,26505.06,187477.92,4.12,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Alexandria VA,38.8048,-77.0469,169.0,48.17,59574.35,417807.26,4.83,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Madison WI,43.0731,-89.4012,144.39,48.52,33784.33,229799.05,3.13,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Green Bay,44.5133,-88.0133,141.88,38.4,22996.59,141513.93,4.58,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Kenosha,42.5847,-87.8212,125.07,32.93,25829.26,153800.05,3.3,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Racine,42.7261,-87.7829,142.4,40.7,20856.77,127800.29,3.95,Available,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Appleton,44.2619,-88.4154,141.38,34.51,26856.51,145943.28,2.31,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Eau Claire,44.8113,-91.4985,131.08,32.22,24145.47,143318.85,3.21,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+La Crosse,43.8014,-91.2396,142.32,36.19,24756.54,142658.11,3.35,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Janesville,42.6828,-89.0187,138.8,38.94,26587.68,141839.91,3.34,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Cedar Rapids,41.9779,-91.6656,127.25,37.32,24945.82,140492.72,2.25,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Iowa City,41.6611,-91.5302,125.88,34.92,28956.01,166680.36,2.26,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Sioux City,42.4999,-96.4003,142.7,32.05,20718.77,119461.41,3.03,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Waterloo,42.4928,-92.3426,134.74,39.51,18475.63,123393.45,4.22,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Ames,42.0308,-93.6319,120.84,35.45,31062.34,168909.05,4.2,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Dubuque,42.5006,-90.6646,119.53,37.05,25187.26,147668.17,4.06,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Olathe,38.8814,-94.8191,156.53,45.48,35452.85,182107.04,2.61,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Lawrence KS,38.9717,-95.2353,142.38,33.28,25509.63,175755.89,3.87,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Shawnee,39.0228,-94.7152,162.67,41.73,33822.48,192652.49,3.51,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Lenexa,38.9536,-94.7336,166.82,46.51,40844.37,215849.51,3.93,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Lincoln NE,40.8136,-96.7026,118.95,34.3,21374.07,141661.2,3.11,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Grand Island,40.925,-98.342,134.38,32.93,21427.97,115284.49,4.52,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Rapid City,44.0805,-103.231,127.08,35.22,28453.49,168091.31,4.64,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Bismarck,46.8083,-100.7837,119.09,32.79,27558.04,166217.44,3.23,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Grand Forks,47.9253,-97.0329,122.23,36.32,24433.87,156213.79,3.41,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Minot,48.2325,-101.2963,141.67,39.32,25731.6,146248.5,3.0,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Missoula,46.8721,-113.994,161.81,42.91,40551.79,221700.95,2.54,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Great Falls,47.5002,-111.3008,140.78,32.04,22037.88,132035.9,4.05,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Helena MT,46.5958,-112.027,139.78,33.29,27971.15,170353.68,4.61,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Kalispell,48.192,-114.3168,163.45,48.29,35703.46,230055.5,3.22,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Casper,42.8501,-106.3252,135.69,35.88,27088.78,142039.5,3.02,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Laramie,41.3114,-105.5911,123.67,34.71,27534.23,174504.46,3.41,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Nampa,43.5407,-116.5635,168.83,45.9,39936.43,188750.02,3.16,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Meridian,43.6121,-116.3915,167.92,48.4,33964.28,228867.16,4.24,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Coeur d'Alene,47.6777,-116.7805,154.14,47.33,39141.4,271269.1,4.39,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Twin Falls,42.5629,-114.4609,125.79,34.04,33129.46,160886.88,4.57,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Pocatello,42.8713,-112.4455,139.75,34.67,26223.09,141554.55,2.56,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+West Valley City,40.6916,-112.001,148.2,43.96,34447.14,208717.24,2.89,Moderate,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+West Jordan,40.6097,-111.9391,162.82,40.24,34891.92,209687.44,3.01,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Sandy,40.5649,-111.8389,161.65,44.68,34671.33,208036.75,4.67,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index
+Lehi,40.3916,-111.8507,152.61,48.08,49308.44,296222.72,2.59,Tight,Turner Construction Cost Index / RSMeans,2025-Q4,https://www.turnerconstruction.com/cost-index

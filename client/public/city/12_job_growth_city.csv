@@ -1,0 +1,286 @@
+city,lat,lng,job_growth_yoy_pct,jobs_added_12mo,unemployment_rate_pct,labor_force_participation_pct,top_growth_sector,major_employers,data_source,as_of_date,source_url
+New York,40.7128,-74.006,1.12,19694,4.36,63.66,Government/Education,"JPMorgan Chase, Goldman Sachs, NYC Health, Amazon",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Los Angeles,34.0522,-118.2437,1.49,18539,5.22,62.29,Government/Education,"Kaiser Permanente, UCLA Health, Amazon, Disney",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Chicago,41.8781,-87.6298,1.71,27915,4.82,60.66,Logistics,"Amazon, United Airlines, Advocate Health, Northwestern",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Houston,29.7604,-95.3698,2.3,32318,4.81,60.49,Healthcare,"ExxonMobil, Houston Methodist, Amazon, Shell",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Phoenix,33.4484,-112.074,2.39,43380,3.95,66.57,Healthcare,"Banner Health, Amazon, Intel, Wells Fargo",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Philadelphia,39.9526,-75.1652,1.65,20996,5.26,60.51,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+San Antonio,29.4241,-98.4936,2.37,29331,3.74,62.5,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+San Diego,32.7157,-117.1611,1.85,30223,3.59,61.27,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+DFW,32.7767,-96.797,3.13,39748,3.97,61.22,Healthcare,"Amazon, American Airlines, AT&T, Texas Health",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Bay Area,37.7749,-122.4194,1.08,16200,3.8,63.86,Government/Education,"Apple, Google, Meta, Stanford Health",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Austin,30.2672,-97.7431,4.02,54692,3.41,63.24,Technology,"Dell, Apple, Tesla, UT Austin",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Jacksonville,30.3322,-81.6557,2.35,41456,4.1,61.63,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Columbus,39.9612,-82.9988,2.58,39789,3.52,62.82,Healthcare,"Nationwide, OhioHealth, Amazon, JPMorgan",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Charlotte,35.2271,-80.8431,3.15,49864,3.87,62.74,Technology,"Bank of America, Wells Fargo, Atrium Health, Amazon",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Indianapolis,39.7684,-86.1581,2.24,40601,3.37,64.72,Healthcare,"Eli Lilly, IU Health, Amazon, Salesforce",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Seattle,47.6062,-122.3321,1.93,30895,3.57,65.47,Healthcare,"Amazon, Boeing, Microsoft, Providence Health",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Denver,39.7392,-104.9903,2.73,39895,3.41,65.18,Healthcare,"UCHealth, Amazon, Lockheed Martin, DIA",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Nashville,36.1627,-86.7816,2.97,46966,3.71,60.86,Healthcare,"HCA Healthcare, Vanderbilt, Amazon, Bridgestone",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Oklahoma City,35.4676,-97.5164,2.14,36669,4.08,65.61,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+El Paso,31.7619,-106.485,1.69,23625,5.12,64.01,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+DC Metro,38.9072,-77.0369,1.7,26281,3.13,64.85,Logistics,"Federal Government, Booz Allen, Amazon, Northrop",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Boston,42.3601,-71.0589,1.89,36129,3.51,65.28,Healthcare,"Mass General, Harvard, Raytheon, Amazon",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Las Vegas,36.1699,-115.1398,2.07,34625,5.24,62.62,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Memphis,35.1495,-90.049,1.52,22550,5.25,64.08,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Louisville,38.2527,-85.7585,2.36,33203,3.66,63.94,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Portland,45.5051,-122.675,2.04,24372,4.39,62.68,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Baltimore,39.2904,-76.6122,1.35,24410,4.51,61.54,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Milwaukee,43.0389,-87.9065,1.95,28434,3.86,61.18,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Albuquerque,35.0844,-106.6504,2.02,24465,4.86,65.37,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Tucson,32.2226,-110.9747,1.64,24246,3.92,63.16,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Central Valley,36.7783,-119.4179,1.59,21893,8.52,61.29,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Sacramento,38.5816,-121.4944,2.04,28669,5.56,64.22,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Kansas City,39.0997,-94.5786,2.64,44124,3.71,62.38,Healthcare,"Cerner, HCA, Amazon, Sprint",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Atlanta,33.749,-84.388,2.4,35358,4.1,66.12,Healthcare,"Delta Air Lines, CDC, Emory Health, Amazon",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Omaha,41.2565,-95.9345,2.21,33171,2.98,66.42,Healthcare,"Berkshire Hathaway, Union Pacific, Amazon, Mutual of Omaha",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Colorado Springs,38.8339,-104.8214,2.05,31822,3.64,66.51,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Raleigh-Durham,35.7796,-78.6382,3.32,46987,3.47,64.2,Technology,"Duke Health, UNC Health, IBM, Cisco",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Hampton Roads,36.8529,-75.978,1.69,25587,3.77,63.74,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Minneapolis,44.9778,-93.265,2.31,36251,3.42,61.37,Healthcare,"Target, UnitedHealth, Mayo Clinic, Amazon",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Tampa Bay,27.9506,-82.4572,2.48,41433,3.62,64.48,Healthcare,"BayCare Health, Amazon, Raymond James, Publix",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+New Orleans,29.9511,-90.0715,1.29,20142,5.81,64.82,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Richmond,37.5407,-77.436,2.51,39284,3.83,62.49,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Spokane,47.6588,-117.426,2.03,28681,4.23,65.75,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Des Moines,41.5868,-93.625,2.37,35306,2.93,64.73,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Montgomery,32.3668,-86.3,1.69,24990,4.45,65.83,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Inland Empire,33.9806,-117.3755,2.16,36640,5.25,62.88,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Ventura,34.2805,-119.2945,1.93,29921,4.62,64.6,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Tallahassee,30.4518,-84.2807,1.74,24189,3.8,63.42,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Huntsville,34.7304,-86.5861,3.76,55001,2.95,66.23,Technology,"NASA, Redstone Arsenal, Boeing, Raytheon",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Knoxville,35.9606,-83.9207,2.16,29476,3.5,61.03,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Chattanooga,35.0456,-85.3097,2.19,34429,3.52,65.65,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Fort Collins,40.5853,-105.0844,2.53,41138,2.84,64.07,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Eugene,44.0521,-123.0868,1.82,28651,3.79,62.6,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Boise,43.615,-116.2023,2.2,30266,2.94,62.68,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Sarasota,27.3364,-82.5307,2.18,33730,3.29,65.41,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Savannah,32.0835,-81.0998,2.57,36451,4.21,65.73,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Charleston,32.7765,-79.9311,3.15,42285,3.33,64.94,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Salt Lake City,40.7608,-111.891,2.98,39588,3.3,62.39,Healthcare,"Intermountain Health, University of Utah, Amazon, Adobe",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Greenville,34.8526,-82.394,2.19,40504,3.27,64.67,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Asheville,35.5951,-82.5515,2.52,30144,2.88,61.75,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Wilmington,34.2257,-77.9447,2.45,34211,3.61,66.02,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Fayetteville,35.0527,-78.8784,2.01,28741,4.08,64.58,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Fayetteville AR,36.0626,-94.1574,2.5,40817,3.15,62.21,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Reno,39.5296,-119.8138,2.26,29776,4.21,65.76,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Baton Rouge,30.4515,-91.1871,1.54,24121,5.29,64.94,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Lafayette,30.2241,-92.0198,1.28,22512,5.47,63.86,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Lake Charles,30.2266,-93.2174,1.19,15925,5.79,63.5,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Shreveport,32.5252,-93.7502,1.24,19442,5.58,66.51,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Corpus Christi,27.8006,-97.3964,1.78,26027,4.94,61.75,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Lubbock,33.5779,-101.8552,1.72,27824,3.67,65.26,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Wichita,37.6872,-97.3301,1.61,25732,3.81,66.27,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Tulsa,36.154,-95.9928,1.74,23883,4.21,61.14,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Sioux Falls,43.5446,-96.7311,2.64,46664,2.72,63.28,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Fargo,46.8772,-96.7898,2.18,35679,2.18,61.65,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Billings,45.7833,-108.5007,1.93,28242,2.97,64.96,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Bozeman,45.677,-111.0429,3.7,48517,2.63,64.88,Technology,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Cheyenne,41.14,-104.8202,1.89,29659,3.21,64.12,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Idaho Falls,43.4917,-112.0408,2.06,30903,3.15,62.22,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Provo,40.2338,-111.6585,2.83,45772,3.01,62.41,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Ogden,41.223,-111.9738,1.94,34124,2.87,64.09,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+St. George,37.0965,-113.5684,3.04,49069,2.8,65.44,Technology,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Carson City,39.1638,-119.7674,1.83,24251,4.39,63.45,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Santa Fe,35.687,-105.9378,1.75,24623,4.19,62.92,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Las Cruces,32.3199,-106.7637,1.45,23401,5.6,60.94,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Yuma,32.6927,-114.6277,1.07,16208,13.7,66.22,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Flagstaff,35.1983,-111.6513,2.0,34066,3.82,63.48,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Prescott,34.54,-112.4685,2.29,35012,3.55,60.65,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Medford,42.3265,-122.8756,1.28,20849,5.53,66.28,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Bend,44.0582,-121.3153,2.6,39414,3.6,63.55,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Corvallis,44.5646,-123.262,1.6,27061,3.8,61.0,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Salem,44.9429,-123.0351,1.57,25899,4.86,60.5,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Bellingham,48.7519,-122.4787,2.48,32314,3.65,61.94,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Yakima,46.6021,-120.5059,1.18,17098,6.56,62.1,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Olympia,47.0379,-122.9007,1.76,28533,3.7,63.82,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Tri-Cities,46.2396,-119.1006,1.81,28136,5.08,62.7,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Vancouver,45.6387,-122.6615,2.39,29146,4.43,63.39,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Everett,47.979,-122.2021,2.26,34002,3.57,65.26,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Tacoma,47.2529,-122.4443,1.87,31391,4.34,65.93,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Bellevue,47.6101,-122.2015,2.91,40012,3.33,61.08,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Bradenton,27.4989,-82.5748,1.99,26879,3.37,62.0,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Lakeland,28.0395,-81.9498,2.26,31829,3.78,65.81,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Fort Myers,26.6406,-81.8723,1.88,32242,3.55,65.75,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Naples,26.142,-81.7948,2.43,35705,3.49,65.58,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Ocala,29.1872,-82.1401,1.56,27846,4.37,61.37,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Palm Beach,26.7056,-80.0364,2.12,33761,3.35,66.22,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Miami,25.7617,-80.1918,2.34,35658,4.67,61.68,Healthcare,"Baptist Health, University of Miami, Amazon, Carnival",BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Daytona,29.2108,-81.0228,1.54,29776,4.19,65.01,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Melbourne,28.0836,-80.6081,1.91,27809,3.56,66.63,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Gainesville,29.6516,-82.3248,1.95,29135,3.46,63.95,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Port St. Lucie,27.273,-80.3582,2.09,27926,4.07,65.03,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Pensacola,30.4213,-87.2169,1.65,28950,3.61,63.02,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Macon,32.8407,-83.6324,1.43,22590,5.06,62.65,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Augusta,33.4735,-82.0105,1.97,26089,4.4,60.64,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Columbus GA,32.461,-84.9877,1.28,24572,4.58,61.47,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Athens,33.9519,-83.3576,2.25,26505,4.4,66.09,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Valdosta,30.8327,-83.2785,1.29,23184,5.24,65.28,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Birmingham,33.5186,-86.8104,2.02,26061,4.32,64.56,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Mobile,30.6954,-88.0399,1.28,25080,5.61,66.44,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Tuscaloosa,33.2098,-87.5692,1.91,26837,4.39,63.57,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Dothan,31.2232,-85.3905,1.42,23187,4.94,64.8,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Auburn,32.6099,-85.4808,2.14,29724,3.52,64.27,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Jackson,32.2988,-90.1848,1.11,18470,6.13,64.9,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Gulfport,30.3674,-89.0928,1.65,23809,5.26,64.39,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Hattiesburg,31.3271,-89.2903,1.31,22415,5.14,62.41,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Starkville,33.4504,-88.8184,1.52,21057,4.36,64.86,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Little Rock,34.7465,-92.2896,1.62,27554,4.56,63.91,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Fort Smith,35.3859,-94.3985,1.63,21457,4.9,62.73,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Jonesboro,35.8423,-90.7043,1.71,24996,4.27,63.51,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Springdale,36.1867,-94.1288,2.51,38830,3.12,60.92,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Rogers,36.332,-94.1185,3.27,47745,3.05,60.61,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Bentonville,36.3729,-94.2088,3.24,49215,2.58,62.24,Technology,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Clarksville,36.5298,-87.3595,1.67,28920,4.57,64.95,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Johnson City,36.3134,-82.3535,1.69,28527,3.54,63.05,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Kingsport,36.5484,-82.5618,1.43,21458,4.16,60.62,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Jackson TN,35.6145,-88.8139,1.55,23203,4.35,61.65,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Franklin,35.9251,-86.8689,2.64,43059,3.16,61.69,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Brentwood,36.0331,-86.7828,2.94,39497,2.67,61.52,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Murfreesboro,35.8456,-86.3903,2.98,43489,3.48,63.32,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Smyrna,35.9829,-86.5186,2.55,35973,3.04,63.9,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Spring Hill,35.7512,-86.93,2.68,49470,3.24,65.54,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Bowling Green,36.9685,-86.4808,1.77,30802,3.21,62.05,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Lexington,38.0406,-84.5037,2.06,31705,3.79,63.87,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Evansville,37.9716,-87.5711,1.9,30224,3.86,61.2,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+South Bend,41.6764,-86.252,1.44,21142,4.08,66.05,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Fort Wayne,41.1306,-85.1289,2.17,31329,3.89,63.29,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Grand Rapids,42.9634,-85.6681,2.66,38114,3.69,60.37,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Ann Arbor,42.2808,-83.743,1.95,29071,3.1,65.35,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Lansing,42.7325,-84.5555,1.89,25155,4.68,64.87,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Kalamazoo,42.2917,-85.5872,1.64,29880,4.23,62.86,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Flint,43.0125,-83.6875,0.73,11144,7.62,60.89,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Detroit,42.3314,-83.0458,1.62,23236,6.88,62.55,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Toledo,41.6639,-83.5552,1.65,21169,5.55,66.52,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Akron,41.0814,-81.519,1.72,24850,5.39,64.88,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Dayton,39.7589,-84.1916,1.5,22942,5.8,64.23,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Cincinnati,39.1031,-84.512,2.45,31518,4.25,61.81,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Cleveland,41.4993,-81.6944,1.49,20261,5.67,62.43,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Pittsburgh,40.4406,-79.9959,1.95,29946,4.21,62.26,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Providence,41.824,-71.4128,2.01,26504,4.78,65.7,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Hartford,41.7658,-72.6851,1.39,24074,5.19,66.14,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Bridgeport,41.1865,-73.1952,1.56,24420,5.02,66.1,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Springfield MA,42.1015,-72.5898,1.52,20492,5.73,64.59,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Worcester,42.2626,-71.8023,1.64,24504,4.5,60.62,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Syracuse,43.0481,-76.1474,1.49,23621,5.07,64.05,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Rochester,43.1566,-77.6088,1.39,21868,5.84,63.17,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Albany,42.6526,-73.7562,1.87,24002,4.8,64.43,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Buffalo,42.8864,-78.8784,1.51,20560,5.1,62.33,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Yonkers,40.9312,-73.8988,1.52,21204,4.82,66.03,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Newark,40.7357,-74.1724,1.6,19935,6.3,61.7,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Paterson,40.9168,-74.1719,1.25,17105,7.49,61.89,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Anchorage,61.2181,-149.9003,1.57,22418,5.15,66.14,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Honolulu,21.3069,-157.8583,1.41,23716,3.38,63.58,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Wichita Falls,33.9137,-98.4934,1.52,21736,4.8,64.52,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Midland,31.9973,-102.0779,2.53,41573,3.41,66.14,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Odessa,31.8457,-102.3676,2.07,29719,4.1,61.56,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Tyler,32.3513,-95.3011,1.54,29832,4.49,61.65,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Waco,31.5493,-97.1467,1.99,29859,4.32,64.77,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Beaumont,30.086,-94.1018,1.68,22260,5.27,62.93,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Abilene,32.4487,-99.7331,1.68,20057,4.54,63.64,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Laredo,27.5306,-99.4803,1.38,23329,5.6,61.74,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+McAllen,26.2034,-98.23,1.58,25836,4.97,65.87,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Brownsville,25.9017,-97.4975,1.53,23706,6.52,63.58,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Killeen,31.1171,-97.7278,1.96,28353,4.9,65.37,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Bryan-College Station,30.628,-96.3344,2.34,35410,3.65,62.28,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Victoria,28.8053,-97.0036,1.64,22584,4.39,62.52,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Longview,32.5007,-94.7405,1.31,20622,4.94,64.66,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Nacogdoches,31.6035,-94.6552,1.43,21103,4.47,60.88,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Lufkin,31.3382,-94.7291,1.2,16862,4.61,63.66,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Huntsville TX,30.7235,-95.5508,1.82,24896,4.58,64.39,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Texarkana,33.4251,-94.0477,1.04,19922,4.96,65.68,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Paris TX,33.6609,-95.5555,1.19,18529,5.05,61.59,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Amarillo,35.222,-101.8313,1.99,29203,3.43,62.59,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Deltona,28.9005,-81.2637,2.15,27525,4.01,62.74,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Daytona Beach,29.2108,-81.0228,1.8,29373,4.35,61.03,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Kissimmee,28.2919,-81.4076,2.19,36286,4.38,62.83,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Sanford,28.8005,-81.2731,1.86,27260,3.72,64.93,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Clearwater,27.9659,-82.8001,1.74,32079,3.8,61.21,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Cape Coral,26.5629,-81.9495,2.02,32213,3.67,65.46,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Homestead,25.4687,-80.4776,1.58,28643,4.97,65.87,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Doral,25.8195,-80.3556,2.55,37738,4.95,65.98,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Aventura,25.9565,-80.1392,2.34,36236,4.6,64.13,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Boca Raton,26.3683,-80.1289,2.32,36355,3.75,61.4,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+West Palm Beach,26.7153,-80.0534,2.16,34745,3.99,62.78,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Delray Beach,26.4615,-80.0728,1.88,29656,4.01,65.0,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Boynton Beach,26.5317,-80.0905,1.99,32358,4.12,65.2,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Pompano Beach,26.2379,-80.1248,2.25,27031,4.77,63.66,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Hollywood,26.0112,-80.1495,2.01,27447,4.1,64.65,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Coral Springs,26.2707,-80.2707,2.28,28372,4.02,62.55,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Miramar,25.986,-80.233,1.86,30780,3.84,62.59,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Pembroke Pines,26.007,-86.1527,2.23,32449,3.57,66.3,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Sunrise,26.167,-80.2561,1.98,27497,4.33,63.42,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Plantation,26.1276,-80.2331,1.94,26703,4.11,66.45,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Davie,26.0765,-80.2521,2.1,28342,4.08,60.73,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Weston,26.1003,-80.3998,2.4,34664,3.08,65.23,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Deerfield Beach,26.3184,-80.0998,2.26,26639,4.87,66.31,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Margate,26.2445,-80.2062,1.55,23765,4.42,65.34,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Lauderhill,26.1401,-80.2131,1.7,22631,5.39,62.75,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Tamarac,26.2129,-80.2497,1.86,25266,4.52,63.69,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Coconut Creek,26.2712,-80.1793,1.67,26286,4.14,64.55,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+North Miami,25.8897,-80.1868,1.92,29754,5.48,63.14,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Miami Gardens,25.942,-80.2456,1.69,24699,5.25,61.81,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Hialeah,25.8576,-80.2781,1.3,21475,5.73,66.25,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Greenville SC,34.8526,-82.394,2.42,34436,3.65,64.23,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Columbia SC,34.0007,-81.0348,2.07,30205,4.05,60.59,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Spartanburg,34.9496,-81.932,1.88,26564,4.46,61.83,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Rock Hill,34.9249,-81.0251,2.74,37098,4.08,63.07,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+North Charleston,32.8546,-79.9748,2.33,40321,3.6,61.58,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Mount Pleasant,32.8323,-79.8284,2.68,39989,3.26,64.67,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Wilmington NC,34.2257,-77.9447,2.01,31327,3.55,63.22,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Gastonia,35.2621,-81.1873,1.88,32846,4.95,61.64,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Concord NC,35.4088,-80.5795,2.54,39399,3.82,64.27,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Huntersville,35.4107,-80.8429,2.73,39406,3.41,66.18,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Mooresville,35.5746,-80.8098,2.98,40874,3.64,62.3,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Cary,35.7915,-78.7811,2.65,43585,3.01,63.07,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Durham,35.994,-78.8986,3.3,52349,3.55,62.01,Technology,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Chapel Hill,35.9132,-79.0558,2.67,33292,3.03,60.98,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Apex,35.7327,-78.8503,2.93,49685,3.08,60.6,Technology,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Morrisville,35.8237,-78.8253,2.91,48321,3.01,61.59,Technology,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+High Point,35.9557,-80.0053,1.89,23934,4.46,61.47,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Winston-Salem,36.0999,-80.2442,1.91,30018,4.61,66.29,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Greensboro,36.0726,-79.792,1.98,27916,4.75,62.32,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Richmond VA,37.5407,-77.436,2.64,33825,3.57,65.49,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Newport News,37.0871,-76.473,1.8,28402,4.29,61.72,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Chesapeake,36.7682,-76.2875,2.24,30191,3.54,61.22,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Virginia Beach,36.8529,-75.978,1.62,29098,3.47,65.41,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Hampton,37.0299,-76.3452,1.55,22729,4.37,61.85,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Alexandria VA,38.8048,-77.0469,1.82,27986,2.94,66.55,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Madison WI,43.0731,-89.4012,2.38,35572,2.55,63.97,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Green Bay,44.5133,-88.0133,1.69,28051,3.48,66.35,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Kenosha,42.5847,-87.8212,2.0,24238,4.17,65.09,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Racine,42.7261,-87.7829,1.29,20679,4.95,60.76,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Appleton,44.2619,-88.4154,1.71,28444,2.73,63.55,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Eau Claire,44.8113,-91.4985,2.01,32341,2.86,62.2,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+La Crosse,43.8014,-91.2396,1.61,24272,3.25,61.17,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Janesville,42.6828,-89.0187,1.85,29982,4.86,61.42,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Cedar Rapids,41.9779,-91.6656,1.8,33202,2.96,61.3,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Iowa City,41.6611,-91.5302,2.04,26577,3.03,62.94,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Sioux City,42.4999,-96.4003,1.55,29374,3.45,63.72,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Waterloo,42.4928,-92.3426,1.51,21538,4.64,66.4,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Ames,42.0308,-93.6319,2.46,32178,2.48,64.38,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Dubuque,42.5006,-90.6646,1.68,23945,3.22,66.43,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Olathe,38.8814,-94.8191,2.78,40867,3.26,62.73,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Lawrence KS,38.9717,-95.2353,1.71,29064,3.46,64.17,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Shawnee,39.0228,-94.7152,2.21,38170,2.97,66.12,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Lenexa,38.9536,-94.7336,2.6,46574,2.54,63.21,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Lincoln NE,40.8136,-96.7026,2.45,29259,2.63,64.55,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Grand Island,40.925,-98.342,1.96,24731,2.69,64.87,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Rapid City,44.0805,-103.231,2.24,29653,2.71,63.41,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Bismarck,46.8083,-100.7837,2.01,27555,2.41,64.9,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Grand Forks,47.9253,-97.0329,1.79,29875,2.63,62.2,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Minot,48.2325,-101.2963,1.3,24367,2.91,63.02,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Missoula,46.8721,-113.994,2.22,32150,3.48,64.12,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Great Falls,47.5002,-111.3008,1.29,20065,3.21,60.97,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Helena MT,46.5958,-112.027,1.74,28988,3.18,62.12,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Kalispell,48.192,-114.3168,2.05,36049,2.93,60.48,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Casper,42.8501,-106.3252,1.59,20568,4.34,66.43,Government/Education,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Laramie,41.3114,-105.5911,1.82,28351,3.18,60.76,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Nampa,43.5407,-116.5635,1.93,31578,3.17,64.25,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Meridian,43.6121,-116.3915,2.65,33171,3.37,60.62,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Coeur d'Alene,47.6777,-116.7805,2.18,34885,3.84,63.6,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Twin Falls,42.5629,-114.4609,1.86,28274,3.44,62.84,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Pocatello,42.8713,-112.4455,1.84,25561,3.42,61.8,Logistics,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+West Valley City,40.6916,-112.001,2.02,35207,3.5,65.97,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+West Jordan,40.6097,-111.9391,2.27,40830,3.31,62.16,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Sandy,40.5649,-111.8389,2.32,37565,3.14,63.9,Healthcare,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/
+Lehi,40.3916,-111.8507,3.11,50680,2.27,62.73,Technology,Diversified local employers,BLS Current Employment Statistics,2025-Q4,https://www.bls.gov/ces/

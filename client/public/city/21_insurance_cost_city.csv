@@ -1,0 +1,286 @@
+city,lat,lng,insurance_cost_pct_of_ebi,avg_annual_premium_per_unit,premium_yoy_chg_pct,premium_3yr_chg_pct,carrier_availability,wind_hail_deductible_pct,data_source,as_of_date,source_url
+New York,40.7128,-74.006,0.98,1141.0,20.98,44.9,Moderate,2.86,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Los Angeles,34.0522,-118.2437,0.7,938.0,11.62,53.32,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Chicago,41.8781,-87.6298,0.53,592.0,14.06,41.08,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Houston,29.7604,-95.3698,1.19,1574.0,14.33,68.1,Moderate,2.01,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Phoenix,33.4484,-112.074,0.35,405.0,23.38,54.93,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Philadelphia,39.9526,-75.1652,0.48,601.0,14.58,65.3,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+San Antonio,29.4241,-98.4936,0.58,650.0,18.55,56.89,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+San Diego,32.7157,-117.1611,0.41,518.0,21.89,64.85,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+DFW,32.7767,-96.797,0.59,717.0,23.05,44.59,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Bay Area,37.7749,-122.4194,0.77,1024.0,20.48,50.35,Moderate,2.08,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Austin,30.2672,-97.7431,0.5,672.0,22.83,53.92,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Jacksonville,30.3322,-81.6557,1.59,1832.0,16.2,47.3,Moderate,2.77,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Columbus,39.9612,-82.9988,0.38,497.0,13.84,51.56,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Charlotte,35.2271,-80.8431,0.45,566.0,11.64,60.53,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Indianapolis,39.7684,-86.1581,0.43,528.0,20.85,46.52,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Seattle,47.6062,-122.3321,0.47,624.0,14.29,53.56,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Denver,39.7392,-104.9903,0.53,622.0,24.34,46.17,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Nashville,36.1627,-86.7816,0.5,596.0,13.06,66.02,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Oklahoma City,35.4676,-97.5164,0.57,626.0,16.12,57.62,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+El Paso,31.7619,-106.485,0.38,442.0,23.81,44.0,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+DC Metro,38.9072,-77.0369,0.5,651.0,16.53,37.78,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Boston,42.3601,-71.0589,0.58,666.0,22.76,43.9,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Las Vegas,36.1699,-115.1398,0.29,327.0,21.35,38.07,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Memphis,35.1495,-90.049,0.45,573.0,11.76,48.75,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Louisville,38.2527,-85.7585,0.4,484.0,15.17,64.04,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Portland,45.5051,-122.675,0.56,573.0,25.33,55.13,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Baltimore,39.2904,-76.6122,0.47,660.0,11.43,46.2,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Milwaukee,43.0389,-87.9065,0.4,550.0,14.99,56.79,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Albuquerque,35.0844,-106.6504,0.36,458.0,24.01,51.49,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Tucson,32.2226,-110.9747,0.32,461.0,17.97,59.59,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Central Valley,36.7783,-119.4179,0.43,582.0,20.16,67.83,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Sacramento,38.5816,-121.4944,0.6,853.0,16.81,58.23,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Kansas City,39.0997,-94.5786,0.46,583.0,12.22,48.72,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Atlanta,33.749,-84.388,0.42,463.0,19.09,45.56,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Omaha,41.2565,-95.9345,0.4,549.0,13.84,38.85,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Colorado Springs,38.8339,-104.8214,0.51,538.0,18.68,67.96,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Raleigh-Durham,35.7796,-78.6382,0.44,584.0,17.64,61.25,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Hampton Roads,36.8529,-75.978,0.54,645.0,12.76,40.22,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Minneapolis,44.9778,-93.265,0.4,464.0,21.44,59.13,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Tampa Bay,27.9506,-82.4572,1.6,1992.0,25.17,40.34,Limited,2.44,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+New Orleans,29.9511,-90.0715,0.92,1090.0,13.68,55.34,Moderate,3.11,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Richmond,37.5407,-77.436,0.39,466.0,13.52,52.31,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Spokane,47.6588,-117.426,0.39,494.0,11.18,61.12,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Des Moines,41.5868,-93.625,0.41,493.0,22.34,53.37,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Montgomery,32.3668,-86.3,0.48,505.0,21.13,46.03,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Inland Empire,33.9806,-117.3755,0.46,574.0,24.23,65.92,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Ventura,34.2805,-119.2945,0.52,656.0,16.76,49.44,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Tallahassee,30.4518,-84.2807,1.22,1461.0,13.0,43.96,Moderate,3.11,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Huntsville,34.7304,-86.5861,0.42,475.0,21.39,43.55,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Knoxville,35.9606,-83.9207,0.47,559.0,15.78,51.9,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Chattanooga,35.0456,-85.3097,0.44,504.0,15.24,42.05,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Fort Collins,40.5853,-105.0844,0.45,565.0,22.62,51.51,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Eugene,44.0521,-123.0868,0.54,624.0,14.26,45.61,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Boise,43.615,-116.2023,0.35,375.0,15.97,40.11,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Sarasota,27.3364,-82.5307,1.97,2192.0,17.71,47.92,Limited,1.81,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Savannah,32.0835,-81.0998,1.03,1196.0,22.98,53.03,Moderate,1.94,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Charleston,32.7765,-79.9311,0.87,1112.0,21.79,45.71,Moderate,1.9,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Salt Lake City,40.7608,-111.891,0.33,431.0,24.49,46.72,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Greenville,34.8526,-82.394,0.46,556.0,23.14,47.31,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Asheville,35.5951,-82.5515,0.44,528.0,24.95,61.04,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Wilmington,34.2257,-77.9447,0.82,955.0,15.11,66.24,Moderate,2.78,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Fayetteville,35.0527,-78.8784,0.52,676.0,11.52,55.86,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Fayetteville AR,36.0626,-94.1574,0.45,484.0,18.84,58.34,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Reno,39.5296,-119.8138,0.37,402.0,23.09,65.15,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Baton Rouge,30.4515,-91.1871,0.74,901.0,17.35,50.57,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Lafayette,30.2241,-92.0198,0.79,886.0,12.98,55.97,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Lake Charles,30.2266,-93.2174,0.86,966.0,14.33,45.94,Moderate,2.11,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Shreveport,32.5252,-93.7502,0.81,985.0,21.45,37.65,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Corpus Christi,27.8006,-97.3964,0.6,717.0,18.46,42.76,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Lubbock,33.5779,-101.8552,0.57,635.0,21.6,48.5,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Wichita,37.6872,-97.3301,0.48,575.0,22.79,39.09,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Tulsa,36.154,-95.9928,0.54,573.0,22.91,54.73,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Sioux Falls,43.5446,-96.7311,0.37,431.0,16.29,57.62,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Fargo,46.8772,-96.7898,0.37,412.0,14.21,56.66,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Billings,45.7833,-108.5007,0.41,481.0,16.0,37.07,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Bozeman,45.677,-111.0429,0.44,511.0,23.99,45.03,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Cheyenne,41.14,-104.8202,0.35,493.0,15.78,51.56,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Idaho Falls,43.4917,-112.0408,0.33,407.0,20.83,66.96,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Provo,40.2338,-111.6585,0.34,399.0,16.19,40.0,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Ogden,41.223,-111.9738,0.32,394.0,23.71,48.64,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+St. George,37.0965,-113.5684,0.34,440.0,13.42,63.13,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Carson City,39.1638,-119.7674,0.35,414.0,15.43,44.77,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Santa Fe,35.687,-105.9378,0.36,457.0,23.15,40.39,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Las Cruces,32.3199,-106.7637,0.42,453.0,18.3,40.67,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Yuma,32.6927,-114.6277,0.33,438.0,15.62,64.0,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Flagstaff,35.1983,-111.6513,0.44,537.0,19.7,48.72,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Prescott,34.54,-112.4685,0.38,530.0,20.55,66.57,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Medford,42.3265,-122.8756,0.55,609.0,22.68,66.51,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Bend,44.0582,-121.3153,0.51,612.0,17.18,62.39,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Corvallis,44.5646,-123.262,0.52,574.0,12.63,39.06,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Salem,44.9429,-123.0351,0.51,615.0,15.82,48.09,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Bellingham,48.7519,-122.4787,0.51,545.0,15.14,60.8,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Yakima,46.6021,-120.5059,0.49,545.0,17.09,63.77,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Olympia,47.0379,-122.9007,0.49,594.0,21.65,51.82,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Tri-Cities,46.2396,-119.1006,0.5,586.0,21.99,46.33,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Vancouver,45.6387,-122.6615,0.57,655.0,25.73,65.57,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Everett,47.979,-122.2021,0.44,616.0,19.6,42.92,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Tacoma,47.2529,-122.4443,0.46,587.0,24.71,66.9,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Bellevue,47.6101,-122.2015,0.49,554.0,22.39,66.16,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Bradenton,27.4989,-82.5748,1.67,2143.0,16.99,55.16,Limited,2.55,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Lakeland,28.0395,-81.9498,1.7,2108.0,24.47,41.18,Limited,1.91,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Fort Myers,26.6406,-81.8723,1.91,2236.0,25.0,61.58,Limited,3.11,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Naples,26.142,-81.7948,1.89,2513.0,19.77,58.13,Limited,2.59,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Ocala,29.1872,-82.1401,1.4,1777.0,22.19,67.69,Limited,1.91,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Palm Beach,26.7056,-80.0364,1.67,2121.0,17.37,61.96,Limited,2.21,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Miami,25.7617,-80.1918,1.77,2368.0,11.67,46.15,Limited,2.12,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Daytona,29.2108,-81.0228,1.54,1885.0,11.63,44.8,Moderate,2.35,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Melbourne,28.0836,-80.6081,1.45,1821.0,22.46,37.49,Moderate,2.73,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Gainesville,29.6516,-82.3248,1.17,1369.0,16.39,37.34,Moderate,2.9,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Port St. Lucie,27.273,-80.3582,1.88,2210.0,23.08,59.42,Limited,2.4,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Pensacola,30.4213,-87.2169,1.19,1490.0,23.32,37.55,Moderate,1.8,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Macon,32.8407,-83.6324,0.43,541.0,16.59,49.74,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Augusta,33.4735,-82.0105,0.42,518.0,16.35,53.61,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Columbus GA,32.461,-84.9877,0.46,564.0,23.16,59.71,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Athens,33.9519,-83.3576,0.43,551.0,19.01,45.46,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Valdosta,30.8327,-83.2785,0.43,535.0,21.87,44.19,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Birmingham,33.5186,-86.8104,0.41,556.0,22.45,57.35,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Mobile,30.6954,-88.0399,0.49,675.0,11.82,43.02,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Tuscaloosa,33.2098,-87.5692,0.41,533.0,16.33,37.79,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Dothan,31.2232,-85.3905,0.46,591.0,13.77,61.97,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Auburn,32.6099,-85.4808,0.48,588.0,22.92,60.3,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Jackson,32.2988,-90.1848,0.55,650.0,22.11,56.51,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Gulfport,30.3674,-89.0928,0.85,1093.0,25.84,62.38,Moderate,2.35,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Hattiesburg,31.3271,-89.2903,0.56,607.0,21.45,63.2,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Starkville,33.4504,-88.8184,0.57,641.0,15.16,59.57,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Little Rock,34.7465,-92.2896,0.55,681.0,18.08,58.05,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Fort Smith,35.3859,-94.3985,0.42,594.0,15.84,38.4,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Jonesboro,35.8423,-90.7043,0.47,539.0,21.8,51.52,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Springdale,36.1867,-94.1288,0.43,473.0,15.01,61.35,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Rogers,36.332,-94.1185,0.43,522.0,13.38,46.37,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Bentonville,36.3729,-94.2088,0.46,548.0,18.22,46.34,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Clarksville,36.5298,-87.3595,0.46,493.0,23.21,51.58,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Johnson City,36.3134,-82.3535,0.45,524.0,24.57,59.57,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Kingsport,36.5484,-82.5618,0.48,503.0,17.1,66.95,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Jackson TN,35.6145,-88.8139,0.49,558.0,12.13,39.08,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Franklin,35.9251,-86.8689,0.48,604.0,18.07,42.38,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Brentwood,36.0331,-86.7828,0.45,597.0,20.61,37.36,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Murfreesboro,35.8456,-86.3903,0.45,536.0,15.49,58.58,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Smyrna,35.9829,-86.5186,0.43,602.0,13.83,43.75,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Spring Hill,35.7512,-86.93,0.47,609.0,18.18,67.89,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Bowling Green,36.9685,-86.4808,0.44,548.0,13.81,53.38,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Lexington,38.0406,-84.5037,0.43,474.0,13.04,51.34,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Evansville,37.9716,-87.5711,0.45,475.0,11.41,63.38,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+South Bend,41.6764,-86.252,0.42,466.0,17.58,57.68,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Fort Wayne,41.1306,-85.1289,0.41,466.0,21.74,68.18,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Grand Rapids,42.9634,-85.6681,0.44,499.0,16.95,54.87,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Ann Arbor,42.2808,-83.743,0.4,458.0,13.69,46.4,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Lansing,42.7325,-84.5555,0.39,502.0,21.11,49.9,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Kalamazoo,42.2917,-85.5872,0.45,510.0,23.36,49.89,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Flint,43.0125,-83.6875,0.43,495.0,25.81,45.68,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Detroit,42.3314,-83.0458,0.45,565.0,18.7,50.75,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Toledo,41.6639,-83.5552,0.41,468.0,14.62,38.38,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Akron,41.0814,-81.519,0.42,482.0,12.3,40.44,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Dayton,39.7589,-84.1916,0.44,521.0,14.19,52.23,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Cincinnati,39.1031,-84.512,0.4,458.0,22.96,40.0,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Cleveland,41.4993,-81.6944,0.41,515.0,18.92,65.05,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Pittsburgh,40.4406,-79.9959,0.53,637.0,23.87,58.77,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Providence,41.824,-71.4128,0.64,650.0,16.68,57.73,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Hartford,41.7658,-72.6851,0.52,742.0,13.77,62.88,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Bridgeport,41.1865,-73.1952,0.59,643.0,17.17,67.99,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Springfield MA,42.1015,-72.5898,0.6,755.0,22.25,52.23,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Worcester,42.2626,-71.8023,0.56,747.0,20.03,50.64,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Syracuse,43.0481,-76.1474,0.48,665.0,25.31,62.86,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Rochester,43.1566,-77.6088,0.48,616.0,16.48,37.22,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Albany,42.6526,-73.7562,0.5,564.0,21.97,48.38,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Buffalo,42.8864,-78.8784,0.49,585.0,19.54,43.9,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Yonkers,40.9312,-73.8988,1.0,1207.0,22.92,49.27,Moderate,2.85,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Newark,40.7357,-74.1724,0.96,1248.0,24.57,61.33,Moderate,2.79,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Paterson,40.9168,-74.1719,1.02,1248.0,11.91,42.57,Moderate,2.67,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Anchorage,61.2181,-149.9003,0.54,686.0,12.91,59.67,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Honolulu,21.3069,-157.8583,0.56,675.0,19.91,65.64,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Wichita Falls,33.9137,-98.4934,0.49,649.0,11.73,48.65,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Midland,31.9973,-102.0779,0.54,656.0,22.25,65.12,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Odessa,31.8457,-102.3676,0.51,609.0,14.33,44.84,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Tyler,32.3513,-95.3011,0.54,625.0,13.84,60.13,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Waco,31.5493,-97.1467,0.52,660.0,16.56,40.63,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Beaumont,30.086,-94.1018,0.75,835.0,19.24,46.31,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Abilene,32.4487,-99.7331,0.48,628.0,14.04,43.26,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Laredo,27.5306,-99.4803,0.53,612.0,12.05,38.44,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+McAllen,26.2034,-98.23,0.54,637.0,17.54,58.81,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Brownsville,25.9017,-97.4975,0.55,644.0,21.7,45.29,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Killeen,31.1171,-97.7278,0.56,616.0,12.03,62.68,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Bryan-College Station,30.628,-96.3344,0.49,627.0,16.31,39.78,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Victoria,28.8053,-97.0036,0.62,804.0,13.94,57.42,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Longview,32.5007,-94.7405,0.49,636.0,14.7,64.05,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Nacogdoches,31.6035,-94.6552,0.52,563.0,17.11,53.72,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Lufkin,31.3382,-94.7291,0.49,591.0,15.06,56.71,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Huntsville TX,30.7235,-95.5508,0.57,614.0,24.95,59.66,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Texarkana,33.4251,-94.0477,0.57,566.0,17.07,63.01,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Paris TX,33.6609,-95.5555,0.55,598.0,24.77,62.98,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Amarillo,35.222,-101.8313,0.49,656.0,11.27,61.09,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Deltona,28.9005,-81.2637,1.37,1849.0,21.73,64.33,Moderate,3.14,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Daytona Beach,29.2108,-81.0228,1.33,1829.0,14.65,41.35,Moderate,1.85,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Kissimmee,28.2919,-81.4076,1.52,1703.0,19.46,36.89,Limited,1.78,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Sanford,28.8005,-81.2731,1.55,1589.0,17.53,53.54,Moderate,3.09,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Clearwater,27.9659,-82.8001,1.83,2146.0,14.19,59.92,Limited,1.87,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Cape Coral,26.5629,-81.9495,1.88,2342.0,21.77,62.95,Limited,2.21,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Homestead,25.4687,-80.4776,1.99,2011.0,15.74,58.22,Limited,2.67,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Doral,25.8195,-80.3556,1.67,2266.0,21.29,51.11,Limited,1.96,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Aventura,25.9565,-80.1392,2.01,2158.0,17.79,51.47,Limited,1.76,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Boca Raton,26.3683,-80.1289,1.99,2279.0,13.72,53.98,Limited,2.05,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+West Palm Beach,26.7153,-80.0534,1.94,2061.0,16.76,43.77,Limited,3.11,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Delray Beach,26.4615,-80.0728,1.96,2365.0,24.03,40.76,Limited,3.05,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Boynton Beach,26.5317,-80.0905,2.02,2006.0,25.57,54.59,Limited,1.91,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Pompano Beach,26.2379,-80.1248,1.82,2008.0,12.01,50.12,Limited,2.61,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Hollywood,26.0112,-80.1495,1.82,2353.0,15.72,38.53,Limited,3.02,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Coral Springs,26.2707,-80.2707,1.88,2239.0,18.83,48.68,Limited,1.77,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Miramar,25.986,-80.233,1.68,2190.0,23.83,39.79,Limited,1.79,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Pembroke Pines,26.007,-86.1527,1.94,2019.0,22.47,53.8,Limited,2.47,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Sunrise,26.167,-80.2561,1.71,2034.0,15.84,57.77,Limited,2.64,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Plantation,26.1276,-80.2331,1.71,2301.0,11.43,65.45,Limited,1.77,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Davie,26.0765,-80.2521,2.02,2322.0,21.68,58.62,Limited,2.99,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Weston,26.1003,-80.3998,1.91,2104.0,12.25,46.96,Limited,1.76,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Deerfield Beach,26.3184,-80.0998,1.76,2272.0,13.05,44.14,Limited,2.35,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Margate,26.2445,-80.2062,1.88,2431.0,19.41,47.26,Limited,1.75,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Lauderhill,26.1401,-80.2131,1.71,2092.0,18.33,57.31,Limited,2.5,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Tamarac,26.2129,-80.2497,1.76,2325.0,25.68,54.91,Limited,3.12,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Coconut Creek,26.2712,-80.1793,1.78,2244.0,20.67,37.41,Limited,2.23,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+North Miami,25.8897,-80.1868,2.01,2023.0,17.34,49.06,Limited,1.75,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Miami Gardens,25.942,-80.2456,1.71,2196.0,22.61,66.77,Limited,3.11,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Hialeah,25.8576,-80.2781,2.0,2058.0,13.54,53.15,Limited,2.22,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Greenville SC,34.8526,-82.394,0.46,510.0,23.21,47.19,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Columbia SC,34.0007,-81.0348,0.44,592.0,19.6,66.93,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Spartanburg,34.9496,-81.932,0.49,584.0,17.07,61.37,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Rock Hill,34.9249,-81.0251,0.47,582.0,22.06,50.01,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+North Charleston,32.8546,-79.9748,1.02,1068.0,17.35,40.91,Moderate,1.77,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Mount Pleasant,32.8323,-79.8284,0.95,1135.0,24.31,40.14,Moderate,2.63,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Wilmington NC,34.2257,-77.9447,0.9,950.0,13.51,64.41,Moderate,2.42,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Gastonia,35.2621,-81.1873,0.45,533.0,16.79,54.49,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Concord NC,35.4088,-80.5795,0.43,512.0,16.02,49.31,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Huntersville,35.4107,-80.8429,0.44,516.0,21.77,44.62,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Mooresville,35.5746,-80.8098,0.47,520.0,18.24,63.06,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Cary,35.7915,-78.7811,0.45,514.0,22.25,52.24,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Durham,35.994,-78.8986,0.45,534.0,21.98,59.0,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Chapel Hill,35.9132,-79.0558,0.42,529.0,12.0,44.24,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Apex,35.7327,-78.8503,0.41,505.0,14.73,43.14,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Morrisville,35.8237,-78.8253,0.49,585.0,12.16,47.28,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+High Point,35.9557,-80.0053,0.43,500.0,18.78,45.49,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Winston-Salem,36.0999,-80.2442,0.47,501.0,12.33,56.94,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Greensboro,36.0726,-79.792,0.48,558.0,24.62,46.29,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Richmond VA,37.5407,-77.436,0.45,546.0,12.41,43.31,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Newport News,37.0871,-76.473,0.55,648.0,17.07,64.78,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Chesapeake,36.7682,-76.2875,0.48,666.0,13.07,61.5,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Virginia Beach,36.8529,-75.978,0.55,582.0,13.65,42.26,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Hampton,37.0299,-76.3452,0.54,598.0,18.47,45.07,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Alexandria VA,38.8048,-77.0469,0.53,671.0,23.26,49.85,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Madison WI,43.0731,-89.4012,0.39,477.0,18.14,47.59,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Green Bay,44.5133,-88.0133,0.39,458.0,15.73,58.32,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Kenosha,42.5847,-87.8212,0.45,509.0,20.84,58.56,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Racine,42.7261,-87.7829,0.39,531.0,15.14,52.55,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Appleton,44.2619,-88.4154,0.41,498.0,12.96,67.05,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Eau Claire,44.8113,-91.4985,0.39,541.0,15.44,41.58,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+La Crosse,43.8014,-91.2396,0.43,508.0,23.95,62.61,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Janesville,42.6828,-89.0187,0.41,472.0,11.15,64.91,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Cedar Rapids,41.9779,-91.6656,0.43,461.0,17.23,45.68,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Iowa City,41.6611,-91.5302,0.4,509.0,17.93,56.08,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Sioux City,42.4999,-96.4003,0.46,500.0,14.4,63.32,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Waterloo,42.4928,-92.3426,0.46,487.0,20.78,63.2,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Ames,42.0308,-93.6319,0.46,529.0,15.43,47.24,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Dubuque,42.5006,-90.6646,0.39,484.0,25.76,52.22,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Olathe,38.8814,-94.8191,0.45,467.0,24.06,37.79,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Lawrence KS,38.9717,-95.2353,0.44,502.0,14.04,66.39,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Shawnee,39.0228,-94.7152,0.45,476.0,23.41,49.55,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Lenexa,38.9536,-94.7336,0.46,524.0,19.14,54.99,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Lincoln NE,40.8136,-96.7026,0.4,517.0,21.1,46.75,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Grand Island,40.925,-98.342,0.45,494.0,18.61,42.96,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Rapid City,44.0805,-103.231,0.4,430.0,24.11,45.02,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Bismarck,46.8083,-100.7837,0.41,420.0,11.79,37.87,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Grand Forks,47.9253,-97.0329,0.42,455.0,17.76,50.62,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Minot,48.2325,-101.2963,0.4,416.0,21.36,65.46,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Missoula,46.8721,-113.994,0.36,416.0,23.3,44.36,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Great Falls,47.5002,-111.3008,0.37,477.0,23.12,64.44,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Helena MT,46.5958,-112.027,0.36,471.0,17.86,64.27,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Kalispell,48.192,-114.3168,0.4,436.0,14.94,44.31,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Casper,42.8501,-106.3252,0.36,488.0,25.39,46.05,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Laramie,41.3114,-105.5911,0.4,462.0,16.96,61.9,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Nampa,43.5407,-116.5635,0.33,371.0,12.67,61.08,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Meridian,43.6121,-116.3915,0.3,380.0,21.58,44.02,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Coeur d'Alene,47.6777,-116.7805,0.32,401.0,24.88,64.25,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Twin Falls,42.5629,-114.4609,0.33,378.0,22.45,60.67,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Pocatello,42.8713,-112.4455,0.32,441.0,22.14,39.14,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+West Valley City,40.6916,-112.001,0.37,421.0,24.69,58.76,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+West Jordan,40.6097,-111.9391,0.33,404.0,11.82,59.07,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Sandy,40.5649,-111.8389,0.35,396.0,25.0,43.44,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org
+Lehi,40.3916,-111.8507,0.34,429.0,17.86,48.64,Ample,1.0,NMHC Insurance Survey / Marsh McLennan,2025,https://www.nmhc.org

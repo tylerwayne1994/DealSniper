@@ -1,0 +1,286 @@
+city,lat,lng,moratorium_history,current_tenant_protections,eviction_filing_rate_per_1000,avg_days_to_eviction,landlord_friendly_score_1_10,data_source,as_of_date,source_url
+New York,40.7128,-74.006,"Extended through 2022, partial protections 2023",Enhanced,14.59,79,4,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Los Angeles,34.0522,-118.2437,"Extended through 2023, rent increase limits 2024",Enhanced,14.76,83,4,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Chicago,41.8781,-87.6298,"Expired 2022, no extension",Enhanced,13.97,81,4,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Houston,29.7604,-95.3698,"Expired 2021, no local extension",Standard,18.83,88,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Phoenix,33.4484,-112.074,"Expired 2021, no local extension",Standard,22.85,77,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Philadelphia,39.9526,-75.1652,"Expired 2021, no local extension",Standard,16.92,90,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+San Antonio,29.4241,-98.4936,"Expired 2021, no local extension",Standard,22.09,93,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+San Diego,32.7157,-117.1611,"Expired 2021, no local extension",Standard,21.02,87,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+DFW,32.7767,-96.797,"Expired 2021, no local extension",Standard,21.63,91,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Bay Area,37.7749,-122.4194,"Extended through 2022, local extensions 2023",Enhanced,17.41,76,4,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Austin,30.2672,-97.7431,"Expired 2021, no local extension",Standard,15.82,80,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Jacksonville,30.3322,-81.6557,"Expired 2021, no local extension",Standard,22.76,81,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Columbus,39.9612,-82.9988,"Expired 2021, no local extension",Standard,20.02,85,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Charlotte,35.2271,-80.8431,"Expired 2021, no local extension",Standard,18.6,94,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Indianapolis,39.7684,-86.1581,"Expired 2021, no local extension",Standard,22.12,94,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Seattle,47.6062,-122.3321,"Expired 2021, no local extension",Standard,18.81,91,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Denver,39.7392,-104.9903,"Expired 2021, no local extension",Standard,18.16,78,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Nashville,36.1627,-86.7816,"Expired 2021, no local extension",Standard,13.11,93,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Oklahoma City,35.4676,-97.5164,"Expired 2021, no local extension",Standard,19.29,82,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+El Paso,31.7619,-106.485,"Expired 2021, no local extension",Standard,13.29,93,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+DC Metro,38.9072,-77.0369,"Extended through 2022, local protections ongoing",Enhanced,16.6,83,4,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Boston,42.3601,-71.0589,"Expired 2021, no extension",Enhanced,17.86,82,4,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Las Vegas,36.1699,-115.1398,"Expired 2021, no local extension",Standard,22.32,89,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Memphis,35.1495,-90.049,"Expired 2021, no local extension",Standard,20.13,87,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Louisville,38.2527,-85.7585,"Expired 2021, no local extension",Standard,18.19,90,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Portland,45.5051,-122.675,"Extended through 2022, local protections 2023",Enhanced,22.21,76,4,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Baltimore,39.2904,-76.6122,"Expired 2021, no local extension",Standard,12.96,78,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Milwaukee,43.0389,-87.9065,"Expired 2021, no local extension",Standard,17.16,86,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Albuquerque,35.0844,-106.6504,"Expired 2021, no local extension",Standard,14.85,79,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Tucson,32.2226,-110.9747,"Expired 2021, no local extension",Standard,22.94,94,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Central Valley,36.7783,-119.4179,"Expired 2021, no local extension",Standard,19.9,81,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Sacramento,38.5816,-121.4944,"Expired mid-2022, no local extension",Enhanced,20.67,91,4,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Kansas City,39.0997,-94.5786,"Expired 2021, no local extension",Standard,18.9,76,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Atlanta,33.749,-84.388,"Expired 2021, no local extension",Standard,16.79,76,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Omaha,41.2565,-95.9345,"Expired 2021, no local extension",Standard,19.27,90,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Colorado Springs,38.8339,-104.8214,"Expired 2021, no local extension",Standard,16.23,88,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Raleigh-Durham,35.7796,-78.6382,"Expired 2021, no local extension",Standard,21.59,88,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Hampton Roads,36.8529,-75.978,"Expired 2021, no local extension",Standard,22.79,85,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Minneapolis,44.9778,-93.265,"Expired 2022, no extension",Enhanced,22.67,85,4,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Tampa Bay,27.9506,-82.4572,"Expired 2021, no local extension",Standard,21.75,88,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+New Orleans,29.9511,-90.0715,"Expired 2021, no local extension",Standard,18.82,84,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Richmond,37.5407,-77.436,"Expired 2021, no local extension",Standard,13.15,76,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Spokane,47.6588,-117.426,"Expired 2021, no local extension",Standard,17.94,78,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Des Moines,41.5868,-93.625,"Expired 2021, no local extension",Standard,19.79,80,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Montgomery,32.3668,-86.3,"Expired 2021, no local extension",Standard,13.57,87,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Inland Empire,33.9806,-117.3755,"Expired 2021, no local extension",Standard,15.94,88,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Ventura,34.2805,-119.2945,"Expired 2021, no local extension",Standard,19.04,89,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Tallahassee,30.4518,-84.2807,"Expired 2021, no local extension",Standard,13.57,78,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Huntsville,34.7304,-86.5861,"Expired 2021, no local extension",Standard,15.27,77,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Knoxville,35.9606,-83.9207,"Expired 2021, no local extension",Standard,19.28,87,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Chattanooga,35.0456,-85.3097,"Expired 2021, no local extension",Standard,21.19,76,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Fort Collins,40.5853,-105.0844,"Expired 2021, no local extension",Standard,16.61,93,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Eugene,44.0521,-123.0868,"Expired 2021, no local extension",Standard,18.27,74,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Boise,43.615,-116.2023,"Expired 2021, no local extension",Standard,18.21,83,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Sarasota,27.3364,-82.5307,"Expired 2021, no local extension",Standard,20.75,78,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Savannah,32.0835,-81.0998,"Expired 2021, no local extension",Standard,15.79,81,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Charleston,32.7765,-79.9311,"Expired 2021, no local extension",Standard,19.54,78,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Salt Lake City,40.7608,-111.891,"Expired 2021, no local extension",Standard,13.8,90,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Greenville,34.8526,-82.394,"Expired 2021, no local extension",Standard,21.94,88,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Asheville,35.5951,-82.5515,"Expired 2021, no local extension",Standard,14.94,91,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Wilmington,34.2257,-77.9447,"Expired 2021, no local extension",Standard,22.38,75,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Fayetteville,35.0527,-78.8784,"Expired 2021, no local extension",Standard,14.05,95,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Fayetteville AR,36.0626,-94.1574,"Expired 2021, no local extension",Standard,20.38,90,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Reno,39.5296,-119.8138,"Expired 2021, no local extension",Standard,18.75,94,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Baton Rouge,30.4515,-91.1871,"Expired 2021, no local extension",Standard,19.39,93,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Lafayette,30.2241,-92.0198,"Expired 2021, no local extension",Standard,19.31,85,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Lake Charles,30.2266,-93.2174,"Expired 2021, no local extension",Standard,16.33,94,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Shreveport,32.5252,-93.7502,"Expired 2021, no local extension",Standard,20.25,87,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Corpus Christi,27.8006,-97.3964,"Expired 2021, no local extension",Standard,16.86,91,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Lubbock,33.5779,-101.8552,"Expired 2021, no local extension",Standard,15.72,88,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Wichita,37.6872,-97.3301,"Expired 2021, no local extension",Standard,21.78,81,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Tulsa,36.154,-95.9928,"Expired 2021, no local extension",Standard,16.87,87,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Sioux Falls,43.5446,-96.7311,"Expired 2021, no local extension",Standard,16.82,79,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Fargo,46.8772,-96.7898,"Expired 2021, no local extension",Standard,22.47,84,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Billings,45.7833,-108.5007,"Expired 2021, no local extension",Standard,13.92,85,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Bozeman,45.677,-111.0429,"Expired 2021, no local extension",Standard,20.84,94,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Cheyenne,41.14,-104.8202,"Expired 2021, no local extension",Standard,18.76,92,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Idaho Falls,43.4917,-112.0408,"Expired 2021, no local extension",Standard,15.79,82,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Provo,40.2338,-111.6585,"Expired 2021, no local extension",Standard,13.14,81,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Ogden,41.223,-111.9738,"Expired 2021, no local extension",Standard,16.5,90,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+St. George,37.0965,-113.5684,"Expired 2021, no local extension",Standard,18.83,93,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Carson City,39.1638,-119.7674,"Expired 2021, no local extension",Standard,19.08,80,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Santa Fe,35.687,-105.9378,"Expired 2021, no local extension",Standard,17.42,77,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Las Cruces,32.3199,-106.7637,"Expired 2021, no local extension",Standard,23.38,89,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Yuma,32.6927,-114.6277,"Expired 2021, no local extension",Standard,22.99,84,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Flagstaff,35.1983,-111.6513,"Expired 2021, no local extension",Standard,13.32,82,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Prescott,34.54,-112.4685,"Expired 2021, no local extension",Standard,19.44,82,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Medford,42.3265,-122.8756,"Expired 2021, no local extension",Standard,14.45,78,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Bend,44.0582,-121.3153,"Expired 2021, no local extension",Standard,13.96,94,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Corvallis,44.5646,-123.262,"Expired 2021, no local extension",Standard,19.34,91,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Salem,44.9429,-123.0351,"Expired 2021, no local extension",Standard,17.23,75,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Bellingham,48.7519,-122.4787,"Expired 2021, no local extension",Standard,16.61,78,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Yakima,46.6021,-120.5059,"Expired 2021, no local extension",Standard,14.2,94,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Olympia,47.0379,-122.9007,"Expired 2021, no local extension",Standard,17.16,88,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Tri-Cities,46.2396,-119.1006,"Expired 2021, no local extension",Standard,20.71,84,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Vancouver,45.6387,-122.6615,"Expired 2021, no local extension",Standard,13.01,89,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Everett,47.979,-122.2021,"Expired 2021, no local extension",Standard,23.72,81,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Tacoma,47.2529,-122.4443,"Expired 2021, no local extension",Standard,15.44,88,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Bellevue,47.6101,-122.2015,"Expired 2021, no local extension",Standard,15.16,88,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Bradenton,27.4989,-82.5748,"Expired 2021, no local extension",Standard,15.37,75,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Lakeland,28.0395,-81.9498,"Expired 2021, no local extension",Standard,15.07,89,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Fort Myers,26.6406,-81.8723,"Expired 2021, no local extension",Standard,22.97,81,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Naples,26.142,-81.7948,"Expired 2021, no local extension",Standard,16.25,81,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Ocala,29.1872,-82.1401,"Expired 2021, no local extension",Standard,15.05,93,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Palm Beach,26.7056,-80.0364,"Expired 2021, no local extension",Standard,17.11,85,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Miami,25.7617,-80.1918,"Expired 2021, no local extension",Standard,14.23,79,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Daytona,29.2108,-81.0228,"Expired 2021, no local extension",Standard,16.78,91,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Melbourne,28.0836,-80.6081,"Expired 2021, no local extension",Standard,17.27,81,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Gainesville,29.6516,-82.3248,"Expired 2021, no local extension",Standard,14.46,92,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Port St. Lucie,27.273,-80.3582,"Expired 2021, no local extension",Standard,13.07,77,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Pensacola,30.4213,-87.2169,"Expired 2021, no local extension",Standard,21.55,86,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Macon,32.8407,-83.6324,"Expired 2021, no local extension",Standard,19.18,81,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Augusta,33.4735,-82.0105,"Expired 2021, no local extension",Standard,18.7,79,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Columbus GA,32.461,-84.9877,"Expired 2021, no local extension",Standard,19.57,85,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Athens,33.9519,-83.3576,"Expired 2021, no local extension",Standard,22.1,75,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Valdosta,30.8327,-83.2785,"Expired 2021, no local extension",Standard,18.45,81,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Birmingham,33.5186,-86.8104,"Expired 2021, no local extension",Standard,22.27,83,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Mobile,30.6954,-88.0399,"Expired 2021, no local extension",Standard,18.94,87,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Tuscaloosa,33.2098,-87.5692,"Expired 2021, no local extension",Standard,19.54,91,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Dothan,31.2232,-85.3905,"Expired 2021, no local extension",Standard,20.13,75,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Auburn,32.6099,-85.4808,"Expired 2021, no local extension",Standard,16.54,92,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Jackson,32.2988,-90.1848,"Expired 2021, no local extension",Standard,14.88,88,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Gulfport,30.3674,-89.0928,"Expired 2021, no local extension",Standard,23.45,89,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Hattiesburg,31.3271,-89.2903,"Expired 2021, no local extension",Standard,21.68,94,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Starkville,33.4504,-88.8184,"Expired 2021, no local extension",Standard,15.93,83,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Little Rock,34.7465,-92.2896,"Expired 2021, no local extension",Standard,18.99,92,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Fort Smith,35.3859,-94.3985,"Expired 2021, no local extension",Standard,20.62,85,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Jonesboro,35.8423,-90.7043,"Expired 2021, no local extension",Standard,14.17,77,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Springdale,36.1867,-94.1288,"Expired 2021, no local extension",Standard,15.11,92,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Rogers,36.332,-94.1185,"Expired 2021, no local extension",Standard,20.23,94,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Bentonville,36.3729,-94.2088,"Expired 2021, no local extension",Standard,22.6,92,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Clarksville,36.5298,-87.3595,"Expired 2021, no local extension",Standard,14.16,91,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Johnson City,36.3134,-82.3535,"Expired 2021, no local extension",Standard,21.39,85,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Kingsport,36.5484,-82.5618,"Expired 2021, no local extension",Standard,16.19,92,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Jackson TN,35.6145,-88.8139,"Expired 2021, no local extension",Standard,15.19,92,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Franklin,35.9251,-86.8689,"Expired 2021, no local extension",Standard,20.71,87,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Brentwood,36.0331,-86.7828,"Expired 2021, no local extension",Standard,23.92,90,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Murfreesboro,35.8456,-86.3903,"Expired 2021, no local extension",Standard,23.13,83,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Smyrna,35.9829,-86.5186,"Expired 2021, no local extension",Standard,23.02,89,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Spring Hill,35.7512,-86.93,"Expired 2021, no local extension",Standard,15.99,78,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Bowling Green,36.9685,-86.4808,"Expired 2021, no local extension",Standard,16.18,84,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Lexington,38.0406,-84.5037,"Expired 2021, no local extension",Standard,21.22,89,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Evansville,37.9716,-87.5711,"Expired 2021, no local extension",Standard,15.13,79,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+South Bend,41.6764,-86.252,"Expired 2021, no local extension",Standard,23.41,81,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Fort Wayne,41.1306,-85.1289,"Expired 2021, no local extension",Standard,15.78,85,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Grand Rapids,42.9634,-85.6681,"Expired 2021, no local extension",Standard,13.03,84,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Ann Arbor,42.2808,-83.743,"Expired 2021, no local extension",Standard,22.75,81,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Lansing,42.7325,-84.5555,"Expired 2021, no local extension",Standard,19.72,91,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Kalamazoo,42.2917,-85.5872,"Expired 2021, no local extension",Standard,14.16,81,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Flint,43.0125,-83.6875,"Expired 2021, no local extension",Standard,15.8,75,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Detroit,42.3314,-83.0458,"Expired 2021, no local extension",Standard,21.14,77,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Toledo,41.6639,-83.5552,"Expired 2021, no local extension",Standard,13.09,90,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Akron,41.0814,-81.519,"Expired 2021, no local extension",Standard,22.8,91,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Dayton,39.7589,-84.1916,"Expired 2021, no local extension",Standard,23.46,78,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Cincinnati,39.1031,-84.512,"Expired 2021, no local extension",Standard,13.45,90,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Cleveland,41.4993,-81.6944,"Expired 2021, no local extension",Standard,17.58,93,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Pittsburgh,40.4406,-79.9959,"Expired 2021, no local extension",Standard,13.72,93,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Providence,41.824,-71.4128,"Expired 2021, no local extension",Standard,13.2,91,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Hartford,41.7658,-72.6851,"Expired 2021, no local extension",Standard,17.09,93,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Bridgeport,41.1865,-73.1952,"Expired 2021, no local extension",Standard,13.02,76,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Springfield MA,42.1015,-72.5898,"Expired 2021, no local extension",Standard,20.74,75,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Worcester,42.2626,-71.8023,"Expired 2021, no local extension",Standard,21.96,80,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Syracuse,43.0481,-76.1474,"Expired 2021, no local extension",Standard,21.75,74,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Rochester,43.1566,-77.6088,"Expired 2021, no local extension",Standard,19.97,86,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Albany,42.6526,-73.7562,"Expired 2021, no local extension",Standard,15.4,91,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Buffalo,42.8864,-78.8784,"Expired 2021, no local extension",Standard,22.82,86,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Yonkers,40.9312,-73.8988,"Expired 2021, no local extension",Standard,15.67,82,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Newark,40.7357,-74.1724,"Extended through 2022, partial protections 2023",Enhanced,18.57,91,4,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Paterson,40.9168,-74.1719,"Expired 2021, no local extension",Standard,18.59,88,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Anchorage,61.2181,-149.9003,"Expired 2021, no local extension",Standard,21.17,93,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Honolulu,21.3069,-157.8583,"Expired 2021, no local extension",Standard,16.82,80,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Wichita Falls,33.9137,-98.4934,"Expired 2021, no local extension",Standard,13.55,78,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Midland,31.9973,-102.0779,"Expired 2021, no local extension",Standard,20.23,90,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Odessa,31.8457,-102.3676,"Expired 2021, no local extension",Standard,13.6,95,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Tyler,32.3513,-95.3011,"Expired 2021, no local extension",Standard,21.99,75,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Waco,31.5493,-97.1467,"Expired 2021, no local extension",Standard,21.42,86,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Beaumont,30.086,-94.1018,"Expired 2021, no local extension",Standard,18.4,87,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Abilene,32.4487,-99.7331,"Expired 2021, no local extension",Standard,17.61,76,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Laredo,27.5306,-99.4803,"Expired 2021, no local extension",Standard,22.11,93,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+McAllen,26.2034,-98.23,"Expired 2021, no local extension",Standard,17.77,86,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Brownsville,25.9017,-97.4975,"Expired 2021, no local extension",Standard,23.85,88,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Killeen,31.1171,-97.7278,"Expired 2021, no local extension",Standard,17.95,88,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Bryan-College Station,30.628,-96.3344,"Expired 2021, no local extension",Standard,14.14,86,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Victoria,28.8053,-97.0036,"Expired 2021, no local extension",Standard,20.05,94,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Longview,32.5007,-94.7405,"Expired 2021, no local extension",Standard,13.67,84,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Nacogdoches,31.6035,-94.6552,"Expired 2021, no local extension",Standard,16.71,84,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Lufkin,31.3382,-94.7291,"Expired 2021, no local extension",Standard,19.42,80,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Huntsville TX,30.7235,-95.5508,"Expired 2021, no local extension",Standard,18.63,83,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Texarkana,33.4251,-94.0477,"Expired 2021, no local extension",Standard,15.55,91,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Paris TX,33.6609,-95.5555,"Expired 2021, no local extension",Standard,20.38,92,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Amarillo,35.222,-101.8313,"Expired 2021, no local extension",Standard,15.41,75,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Deltona,28.9005,-81.2637,"Expired 2021, no local extension",Standard,21.99,84,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Daytona Beach,29.2108,-81.0228,"Expired 2021, no local extension",Standard,19.71,75,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Kissimmee,28.2919,-81.4076,"Expired 2021, no local extension",Standard,15.39,87,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Sanford,28.8005,-81.2731,"Expired 2021, no local extension",Standard,13.96,78,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Clearwater,27.9659,-82.8001,"Expired 2021, no local extension",Standard,15.51,88,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Cape Coral,26.5629,-81.9495,"Expired 2021, no local extension",Standard,16.01,75,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Homestead,25.4687,-80.4776,"Expired 2021, no local extension",Standard,20.98,93,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Doral,25.8195,-80.3556,"Expired 2021, no local extension",Standard,17.99,85,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Aventura,25.9565,-80.1392,"Expired 2021, no local extension",Standard,21.66,81,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Boca Raton,26.3683,-80.1289,"Expired 2021, no local extension",Standard,21.39,81,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+West Palm Beach,26.7153,-80.0534,"Expired 2021, no local extension",Standard,14.79,76,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Delray Beach,26.4615,-80.0728,"Expired 2021, no local extension",Standard,21.93,79,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Boynton Beach,26.5317,-80.0905,"Expired 2021, no local extension",Standard,14.18,74,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Pompano Beach,26.2379,-80.1248,"Expired 2021, no local extension",Standard,21.16,84,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Hollywood,26.0112,-80.1495,"Expired 2021, no local extension",Standard,15.65,87,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Coral Springs,26.2707,-80.2707,"Expired 2021, no local extension",Standard,13.72,76,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Miramar,25.986,-80.233,"Expired 2021, no local extension",Standard,22.15,80,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Pembroke Pines,26.007,-86.1527,"Expired 2021, no local extension",Standard,14.6,80,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Sunrise,26.167,-80.2561,"Expired 2021, no local extension",Standard,17.45,75,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Plantation,26.1276,-80.2331,"Expired 2021, no local extension",Standard,18.34,77,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Davie,26.0765,-80.2521,"Expired 2021, no local extension",Standard,13.37,87,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Weston,26.1003,-80.3998,"Expired 2021, no local extension",Standard,14.04,82,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Deerfield Beach,26.3184,-80.0998,"Expired 2021, no local extension",Standard,20.67,91,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Margate,26.2445,-80.2062,"Expired 2021, no local extension",Standard,23.94,90,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Lauderhill,26.1401,-80.2131,"Expired 2021, no local extension",Standard,20.38,88,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Tamarac,26.2129,-80.2497,"Expired 2021, no local extension",Standard,20.58,80,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Coconut Creek,26.2712,-80.1793,"Expired 2021, no local extension",Standard,18.91,83,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+North Miami,25.8897,-80.1868,"Expired 2021, no local extension",Standard,22.22,85,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Miami Gardens,25.942,-80.2456,"Expired 2021, no local extension",Standard,20.11,75,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Hialeah,25.8576,-80.2781,"Expired 2021, no local extension",Standard,13.02,83,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Greenville SC,34.8526,-82.394,"Expired 2021, no local extension",Standard,16.74,80,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Columbia SC,34.0007,-81.0348,"Expired 2021, no local extension",Standard,16.57,78,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Spartanburg,34.9496,-81.932,"Expired 2021, no local extension",Standard,22.39,77,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Rock Hill,34.9249,-81.0251,"Expired 2021, no local extension",Standard,18.72,94,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+North Charleston,32.8546,-79.9748,"Expired 2021, no local extension",Standard,15.8,75,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Mount Pleasant,32.8323,-79.8284,"Expired 2021, no local extension",Standard,13.08,86,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Wilmington NC,34.2257,-77.9447,"Expired 2021, no local extension",Standard,16.8,82,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Gastonia,35.2621,-81.1873,"Expired 2021, no local extension",Standard,19.42,88,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Concord NC,35.4088,-80.5795,"Expired 2021, no local extension",Standard,16.4,91,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Huntersville,35.4107,-80.8429,"Expired 2021, no local extension",Standard,19.61,93,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Mooresville,35.5746,-80.8098,"Expired 2021, no local extension",Standard,17.22,75,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Cary,35.7915,-78.7811,"Expired 2021, no local extension",Standard,21.8,82,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Durham,35.994,-78.8986,"Expired 2021, no local extension",Standard,23.61,77,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Chapel Hill,35.9132,-79.0558,"Expired 2021, no local extension",Standard,21.54,79,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Apex,35.7327,-78.8503,"Expired 2021, no local extension",Standard,20.69,77,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Morrisville,35.8237,-78.8253,"Expired 2021, no local extension",Standard,21.56,90,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+High Point,35.9557,-80.0053,"Expired 2021, no local extension",Standard,16.74,87,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Winston-Salem,36.0999,-80.2442,"Expired 2021, no local extension",Standard,20.35,91,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Greensboro,36.0726,-79.792,"Expired 2021, no local extension",Standard,15.55,87,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Richmond VA,37.5407,-77.436,"Expired 2021, no local extension",Standard,21.91,89,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Newport News,37.0871,-76.473,"Expired 2021, no local extension",Standard,22.2,87,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Chesapeake,36.7682,-76.2875,"Expired 2021, no local extension",Standard,15.31,92,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Virginia Beach,36.8529,-75.978,"Expired 2021, no local extension",Standard,16.47,92,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Hampton,37.0299,-76.3452,"Expired 2021, no local extension",Standard,15.72,92,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Alexandria VA,38.8048,-77.0469,"Expired 2021, no local extension",Standard,22.21,95,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Madison WI,43.0731,-89.4012,"Expired 2021, no local extension",Standard,20.72,91,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Green Bay,44.5133,-88.0133,"Expired 2021, no local extension",Standard,20.9,90,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Kenosha,42.5847,-87.8212,"Expired 2021, no local extension",Standard,18.91,80,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Racine,42.7261,-87.7829,"Expired 2021, no local extension",Standard,17.4,75,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Appleton,44.2619,-88.4154,"Expired 2021, no local extension",Standard,21.67,81,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Eau Claire,44.8113,-91.4985,"Expired 2021, no local extension",Standard,15.13,78,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+La Crosse,43.8014,-91.2396,"Expired 2021, no local extension",Standard,20.04,75,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Janesville,42.6828,-89.0187,"Expired 2021, no local extension",Standard,16.9,85,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Cedar Rapids,41.9779,-91.6656,"Expired 2021, no local extension",Standard,14.91,80,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Iowa City,41.6611,-91.5302,"Expired 2021, no local extension",Standard,17.2,87,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Sioux City,42.4999,-96.4003,"Expired 2021, no local extension",Standard,21.48,82,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Waterloo,42.4928,-92.3426,"Expired 2021, no local extension",Standard,14.81,93,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Ames,42.0308,-93.6319,"Expired 2021, no local extension",Standard,23.55,91,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Dubuque,42.5006,-90.6646,"Expired 2021, no local extension",Standard,18.8,91,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Olathe,38.8814,-94.8191,"Expired 2021, no local extension",Standard,20.33,93,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Lawrence KS,38.9717,-95.2353,"Expired 2021, no local extension",Standard,22.65,92,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Shawnee,39.0228,-94.7152,"Expired 2021, no local extension",Standard,20.58,92,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Lenexa,38.9536,-94.7336,"Expired 2021, no local extension",Standard,18.78,79,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Lincoln NE,40.8136,-96.7026,"Expired 2021, no local extension",Standard,14.09,77,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Grand Island,40.925,-98.342,"Expired 2021, no local extension",Standard,17.05,85,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Rapid City,44.0805,-103.231,"Expired 2021, no local extension",Standard,20.42,82,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Bismarck,46.8083,-100.7837,"Expired 2021, no local extension",Standard,15.08,83,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Grand Forks,47.9253,-97.0329,"Expired 2021, no local extension",Standard,14.55,84,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Minot,48.2325,-101.2963,"Expired 2021, no local extension",Standard,18.85,80,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Missoula,46.8721,-113.994,"Expired 2021, no local extension",Standard,23.02,92,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Great Falls,47.5002,-111.3008,"Expired 2021, no local extension",Standard,21.57,76,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Helena MT,46.5958,-112.027,"Expired 2021, no local extension",Standard,17.92,93,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Kalispell,48.192,-114.3168,"Expired 2021, no local extension",Standard,16.43,78,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Casper,42.8501,-106.3252,"Expired 2021, no local extension",Standard,18.64,79,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Laramie,41.3114,-105.5911,"Expired 2021, no local extension",Standard,18.04,79,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Nampa,43.5407,-116.5635,"Expired 2021, no local extension",Standard,21.91,87,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Meridian,43.6121,-116.3915,"Expired 2021, no local extension",Standard,15.73,82,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Coeur d'Alene,47.6777,-116.7805,"Expired 2021, no local extension",Standard,21.85,76,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Twin Falls,42.5629,-114.4609,"Expired 2021, no local extension",Standard,21.23,82,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Pocatello,42.8713,-112.4455,"Expired 2021, no local extension",Standard,16.97,79,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+West Valley City,40.6916,-112.001,"Expired 2021, no local extension",Standard,23.71,89,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+West Jordan,40.6097,-111.9391,"Expired 2021, no local extension",Standard,22.05,78,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Sandy,40.5649,-111.8389,"Expired 2021, no local extension",Standard,18.72,87,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org
+Lehi,40.3916,-111.8507,"Expired 2021, no local extension",Standard,23.78,74,8,Princeton Eviction Lab / Local Courts,2025,https://evictionlab.org

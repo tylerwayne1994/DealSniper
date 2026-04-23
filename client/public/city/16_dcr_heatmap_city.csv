@@ -1,0 +1,286 @@
+city,lat,lng,debt_coverage_ratio,dcr_at_65pct_ltv,dcr_at_70pct_ltv,dcr_at_75pct_ltv,assumed_interest_rate_pct,assumed_amort_years,lender_minimum_dcr,pencils_at_current_rates,data_source,as_of_date,source_url
+New York,40.7128,-74.006,0.91,0.98,0.87,0.82,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Los Angeles,34.0522,-118.2437,0.95,1.03,0.96,0.85,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Chicago,41.8781,-87.6298,1.17,1.26,1.12,1.03,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Houston,29.7604,-95.3698,1.15,1.25,1.12,1.05,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Phoenix,33.4484,-112.074,1.04,1.14,1.04,0.92,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Philadelphia,39.9526,-75.1652,1.19,1.27,1.16,1.08,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+San Antonio,29.4241,-98.4936,1.14,1.25,1.11,1.0,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+San Diego,32.7157,-117.1611,0.95,1.03,0.95,0.83,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+DFW,32.7767,-96.797,1.23,1.32,1.19,1.1,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Bay Area,37.7749,-122.4194,0.94,1.04,0.95,0.83,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Austin,30.2672,-97.7431,1.0,1.1,0.99,0.91,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Jacksonville,30.3322,-81.6557,1.03,1.11,1.03,0.92,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Columbus,39.9612,-82.9988,1.28,1.39,1.22,1.15,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Charlotte,35.2271,-80.8431,1.14,1.23,1.11,1.02,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Indianapolis,39.7684,-86.1581,1.26,1.38,1.22,1.13,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Seattle,47.6062,-122.3321,1.06,1.13,1.06,0.97,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Denver,39.7392,-104.9903,1.07,1.16,1.04,0.97,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Nashville,36.1627,-86.7816,1.1,1.17,1.07,1.01,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Oklahoma City,35.4676,-97.5164,1.28,1.35,1.26,1.18,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+El Paso,31.7619,-106.485,1.31,1.39,1.26,1.15,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+DC Metro,38.9072,-77.0369,1.09,1.16,1.06,0.97,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Boston,42.3601,-71.0589,0.92,0.98,0.88,0.83,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Las Vegas,36.1699,-115.1398,1.14,1.2,1.11,1.01,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Memphis,35.1495,-90.049,1.28,1.4,1.25,1.14,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Louisville,38.2527,-85.7585,1.41,1.55,1.34,1.25,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Portland,45.5051,-122.675,1.08,1.17,1.07,0.99,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Baltimore,39.2904,-76.6122,1.16,1.28,1.13,1.07,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Milwaukee,43.0389,-87.9065,1.34,1.49,1.32,1.19,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Albuquerque,35.0844,-106.6504,1.34,1.45,1.31,1.21,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Tucson,32.2226,-110.9747,1.21,1.32,1.17,1.1,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Central Valley,36.7783,-119.4179,1.17,1.26,1.13,1.03,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Sacramento,38.5816,-121.4944,1.06,1.14,1.05,0.94,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Kansas City,39.0997,-94.5786,1.37,1.52,1.35,1.24,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Atlanta,33.749,-84.388,1.09,1.21,1.1,0.99,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Omaha,41.2565,-95.9345,1.35,1.48,1.29,1.24,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Colorado Springs,38.8339,-104.8214,1.15,1.21,1.15,1.04,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Raleigh-Durham,35.7796,-78.6382,1.23,1.33,1.21,1.08,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Hampton Roads,36.8529,-75.978,1.18,1.25,1.19,1.06,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Minneapolis,44.9778,-93.265,1.16,1.28,1.16,1.03,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Tampa Bay,27.9506,-82.4572,1.1,1.21,1.07,0.99,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+New Orleans,29.9511,-90.0715,1.14,1.24,1.09,1.05,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Richmond,37.5407,-77.436,1.21,1.28,1.15,1.1,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Spokane,47.6588,-117.426,1.18,1.3,1.15,1.05,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Des Moines,41.5868,-93.625,1.36,1.46,1.37,1.19,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Montgomery,32.3668,-86.3,1.34,1.41,1.35,1.23,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Inland Empire,33.9806,-117.3755,1.09,1.14,1.05,0.99,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Ventura,34.2805,-119.2945,0.99,1.09,0.98,0.87,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Tallahassee,30.4518,-84.2807,1.19,1.32,1.17,1.08,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Huntsville,34.7304,-86.5861,1.25,1.34,1.22,1.1,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Knoxville,35.9606,-83.9207,1.19,1.28,1.18,1.06,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Chattanooga,35.0456,-85.3097,1.26,1.35,1.22,1.1,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Fort Collins,40.5853,-105.0844,1.17,1.24,1.15,1.05,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Eugene,44.0521,-123.0868,1.1,1.17,1.08,0.98,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Boise,43.615,-116.2023,1.0,1.09,0.99,0.91,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Sarasota,27.3364,-82.5307,1.02,1.08,1.01,0.91,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Savannah,32.0835,-81.0998,1.18,1.28,1.13,1.04,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Charleston,32.7765,-79.9311,1.09,1.14,1.06,0.98,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Salt Lake City,40.7608,-111.891,1.08,1.16,1.04,0.96,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Greenville,34.8526,-82.394,1.23,1.36,1.2,1.1,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Asheville,35.5951,-82.5515,1.1,1.17,1.08,0.97,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Wilmington,34.2257,-77.9447,1.16,1.24,1.16,1.04,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Fayetteville,35.0527,-78.8784,1.28,1.4,1.22,1.16,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Fayetteville AR,36.0626,-94.1574,1.21,1.27,1.18,1.06,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Reno,39.5296,-119.8138,1.09,1.17,1.04,1.01,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Baton Rouge,30.4515,-91.1871,1.21,1.28,1.19,1.1,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Lafayette,30.2241,-92.0198,1.17,1.24,1.14,1.04,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Lake Charles,30.2266,-93.2174,1.13,1.2,1.08,1.05,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Shreveport,32.5252,-93.7502,1.12,1.2,1.12,1.01,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Corpus Christi,27.8006,-97.3964,1.19,1.29,1.17,1.08,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Lubbock,33.5779,-101.8552,1.25,1.33,1.25,1.12,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Wichita,37.6872,-97.3301,1.3,1.44,1.29,1.18,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Tulsa,36.154,-95.9928,1.33,1.41,1.28,1.21,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Sioux Falls,43.5446,-96.7311,1.36,1.46,1.35,1.26,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Fargo,46.8772,-96.7898,1.42,1.5,1.41,1.27,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Billings,45.7833,-108.5007,1.24,1.33,1.24,1.12,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Bozeman,45.677,-111.0429,1.1,1.16,1.09,1.01,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Cheyenne,41.14,-104.8202,1.24,1.31,1.22,1.1,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Idaho Falls,43.4917,-112.0408,1.21,1.32,1.18,1.07,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Provo,40.2338,-111.6585,1.2,1.26,1.18,1.06,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Ogden,41.223,-111.9738,1.14,1.24,1.13,1.03,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+St. George,37.0965,-113.5684,1.19,1.3,1.15,1.05,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Carson City,39.1638,-119.7674,1.07,1.18,1.02,0.96,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Santa Fe,35.687,-105.9378,1.06,1.12,1.06,0.96,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Las Cruces,32.3199,-106.7637,1.21,1.31,1.17,1.07,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Yuma,32.6927,-114.6277,1.23,1.33,1.22,1.08,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Flagstaff,35.1983,-111.6513,1.08,1.13,1.03,1.0,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Prescott,34.54,-112.4685,1.07,1.17,1.08,0.99,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Medford,42.3265,-122.8756,1.08,1.19,1.03,0.97,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Bend,44.0582,-121.3153,1.03,1.11,1.02,0.91,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Corvallis,44.5646,-123.262,1.13,1.25,1.08,1.02,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Salem,44.9429,-123.0351,1.09,1.16,1.05,0.96,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Bellingham,48.7519,-122.4787,1.13,1.22,1.08,1.01,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Yakima,46.6021,-120.5059,1.14,1.24,1.11,1.0,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Olympia,47.0379,-122.9007,1.14,1.27,1.14,1.03,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Tri-Cities,46.2396,-119.1006,1.21,1.34,1.15,1.06,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Vancouver,45.6387,-122.6615,1.12,1.21,1.1,1.03,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Everett,47.979,-122.2021,1.05,1.12,1.0,0.94,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Tacoma,47.2529,-122.4443,1.11,1.17,1.1,1.0,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Bellevue,47.6101,-122.2015,0.98,1.05,0.94,0.89,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Bradenton,27.4989,-82.5748,1.06,1.16,1.02,0.93,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Lakeland,28.0395,-81.9498,1.05,1.1,1.0,0.97,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Fort Myers,26.6406,-81.8723,1.0,1.08,1.0,0.93,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Naples,26.142,-81.7948,1.04,1.12,1.02,0.94,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Ocala,29.1872,-82.1401,1.08,1.18,1.08,0.98,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Palm Beach,26.7056,-80.0364,1.07,1.14,1.08,0.96,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Miami,25.7617,-80.1918,1.0,1.1,0.97,0.87,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Daytona,29.2108,-81.0228,1.07,1.13,1.03,0.97,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Melbourne,28.0836,-80.6081,1.12,1.24,1.08,1.01,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Gainesville,29.6516,-82.3248,1.2,1.32,1.2,1.1,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Port St. Lucie,27.273,-80.3582,1.04,1.13,1.04,0.92,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Pensacola,30.4213,-87.2169,1.17,1.3,1.14,1.04,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Macon,32.8407,-83.6324,1.23,1.35,1.2,1.1,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Augusta,33.4735,-82.0105,1.2,1.26,1.14,1.1,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Columbus GA,32.461,-84.9877,1.17,1.28,1.16,1.06,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Athens,33.9519,-83.3576,1.22,1.33,1.2,1.08,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Valdosta,30.8327,-83.2785,1.23,1.37,1.23,1.08,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Birmingham,33.5186,-86.8104,1.26,1.38,1.25,1.11,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Mobile,30.6954,-88.0399,1.21,1.3,1.2,1.09,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Tuscaloosa,33.2098,-87.5692,1.25,1.32,1.23,1.1,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Dothan,31.2232,-85.3905,1.21,1.32,1.18,1.11,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Auburn,32.6099,-85.4808,1.17,1.25,1.16,1.04,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Jackson,32.2988,-90.1848,1.13,1.21,1.12,1.0,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Gulfport,30.3674,-89.0928,1.2,1.27,1.18,1.05,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Hattiesburg,31.3271,-89.2903,1.26,1.4,1.22,1.14,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Starkville,33.4504,-88.8184,1.16,1.22,1.11,1.04,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Little Rock,34.7465,-92.2896,1.19,1.3,1.17,1.09,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Fort Smith,35.3859,-94.3985,1.23,1.33,1.23,1.14,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Jonesboro,35.8423,-90.7043,1.19,1.31,1.15,1.05,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Springdale,36.1867,-94.1288,1.29,1.41,1.28,1.15,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Rogers,36.332,-94.1185,1.2,1.26,1.16,1.08,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Bentonville,36.3729,-94.2088,1.24,1.37,1.2,1.1,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Clarksville,36.5298,-87.3595,1.2,1.26,1.17,1.1,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Johnson City,36.3134,-82.3535,1.17,1.23,1.15,1.03,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Kingsport,36.5484,-82.5618,1.23,1.36,1.17,1.09,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Jackson TN,35.6145,-88.8139,1.21,1.31,1.17,1.11,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Franklin,35.9251,-86.8689,1.14,1.25,1.13,1.06,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Brentwood,36.0331,-86.7828,1.03,1.12,1.01,0.93,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Murfreesboro,35.8456,-86.3903,1.16,1.26,1.13,1.07,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Smyrna,35.9829,-86.5186,1.15,1.22,1.11,1.04,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Spring Hill,35.7512,-86.93,1.13,1.23,1.08,1.01,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Bowling Green,36.9685,-86.4808,1.21,1.3,1.2,1.1,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Lexington,38.0406,-84.5037,1.32,1.4,1.33,1.22,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Evansville,37.9716,-87.5711,1.23,1.31,1.21,1.08,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+South Bend,41.6764,-86.252,1.29,1.37,1.27,1.18,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Fort Wayne,41.1306,-85.1289,1.26,1.37,1.25,1.13,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Grand Rapids,42.9634,-85.6681,1.29,1.37,1.23,1.15,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Ann Arbor,42.2808,-83.743,1.1,1.18,1.07,0.97,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Lansing,42.7325,-84.5555,1.26,1.35,1.22,1.12,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Kalamazoo,42.2917,-85.5872,1.22,1.29,1.16,1.09,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Flint,43.0125,-83.6875,1.12,1.23,1.12,1.01,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Detroit,42.3314,-83.0458,1.18,1.24,1.15,1.09,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Toledo,41.6639,-83.5552,1.22,1.34,1.18,1.13,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Akron,41.0814,-81.519,1.22,1.34,1.16,1.07,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Dayton,39.7589,-84.1916,1.13,1.23,1.14,1.02,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Cincinnati,39.1031,-84.512,1.21,1.29,1.16,1.11,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Cleveland,41.4993,-81.6944,1.21,1.33,1.21,1.08,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Pittsburgh,40.4406,-79.9959,1.21,1.32,1.15,1.06,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Providence,41.824,-71.4128,1.09,1.15,1.04,0.96,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Hartford,41.7658,-72.6851,1.04,1.1,1.05,0.94,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Bridgeport,41.1865,-73.1952,1.01,1.09,0.98,0.94,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Springfield MA,42.1015,-72.5898,1.11,1.19,1.1,1.0,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Worcester,42.2626,-71.8023,1.06,1.12,1.07,0.94,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Syracuse,43.0481,-76.1474,1.17,1.29,1.13,1.02,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Rochester,43.1566,-77.6088,1.15,1.25,1.15,1.01,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Albany,42.6526,-73.7562,1.14,1.22,1.1,1.05,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Buffalo,42.8864,-78.8784,1.18,1.31,1.14,1.08,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Yonkers,40.9312,-73.8988,1.02,1.09,1.03,0.91,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Newark,40.7357,-74.1724,1.03,1.13,1.01,0.94,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Paterson,40.9168,-74.1719,0.98,1.08,0.97,0.88,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Anchorage,61.2181,-149.9003,1.15,1.24,1.13,1.03,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Honolulu,21.3069,-157.8583,0.85,0.91,0.81,0.76,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Wichita Falls,33.9137,-98.4934,1.26,1.34,1.21,1.16,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Midland,31.9973,-102.0779,1.21,1.3,1.21,1.09,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Odessa,31.8457,-102.3676,1.13,1.21,1.14,1.03,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Tyler,32.3513,-95.3011,1.24,1.35,1.19,1.14,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Waco,31.5493,-97.1467,1.22,1.35,1.21,1.07,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Beaumont,30.086,-94.1018,1.21,1.31,1.17,1.1,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Abilene,32.4487,-99.7331,1.17,1.3,1.16,1.03,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Laredo,27.5306,-99.4803,1.24,1.34,1.23,1.12,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+McAllen,26.2034,-98.23,1.19,1.25,1.2,1.09,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Brownsville,25.9017,-97.4975,1.2,1.28,1.17,1.1,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Killeen,31.1171,-97.7278,1.22,1.32,1.16,1.09,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Bryan-College Station,30.628,-96.3344,1.2,1.28,1.17,1.06,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Victoria,28.8053,-97.0036,1.2,1.26,1.16,1.1,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Longview,32.5007,-94.7405,1.21,1.34,1.21,1.11,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Nacogdoches,31.6035,-94.6552,1.28,1.37,1.26,1.17,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Lufkin,31.3382,-94.7291,1.22,1.3,1.2,1.1,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Huntsville TX,30.7235,-95.5508,1.23,1.33,1.19,1.08,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Texarkana,33.4251,-94.0477,1.14,1.25,1.09,1.04,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Paris TX,33.6609,-95.5555,1.12,1.23,1.12,1.04,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Amarillo,35.222,-101.8313,1.24,1.31,1.22,1.14,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Deltona,28.9005,-81.2637,1.07,1.18,1.05,0.96,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Daytona Beach,29.2108,-81.0228,1.09,1.21,1.05,0.96,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Kissimmee,28.2919,-81.4076,1.09,1.14,1.04,0.96,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Sanford,28.8005,-81.2731,1.12,1.24,1.11,0.98,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Clearwater,27.9659,-82.8001,1.05,1.16,1.02,0.94,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Cape Coral,26.5629,-81.9495,0.98,1.04,0.94,0.89,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Homestead,25.4687,-80.4776,1.06,1.12,1.01,0.96,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Doral,25.8195,-80.3556,0.96,1.04,0.95,0.89,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Aventura,25.9565,-80.1392,1.0,1.08,0.99,0.9,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Boca Raton,26.3683,-80.1289,1.06,1.11,1.05,0.98,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+West Palm Beach,26.7153,-80.0534,1.02,1.13,0.98,0.91,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Delray Beach,26.4615,-80.0728,1.08,1.17,1.09,0.99,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Boynton Beach,26.5317,-80.0905,1.05,1.14,1.06,0.94,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Pompano Beach,26.2379,-80.1248,1.03,1.09,1.03,0.94,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Hollywood,26.0112,-80.1495,1.05,1.14,1.02,0.92,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Coral Springs,26.2707,-80.2707,1.02,1.08,0.97,0.9,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Miramar,25.986,-80.233,1.06,1.15,1.02,0.95,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Pembroke Pines,26.007,-86.1527,1.02,1.13,0.99,0.93,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Sunrise,26.167,-80.2561,1.01,1.1,1.0,0.93,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Plantation,26.1276,-80.2331,1.03,1.1,0.99,0.95,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Davie,26.0765,-80.2521,1.1,1.21,1.05,1.02,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Weston,26.1003,-80.3998,1.07,1.14,1.04,0.97,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Deerfield Beach,26.3184,-80.0998,1.04,1.14,1.0,0.92,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Margate,26.2445,-80.2062,1.0,1.09,1.0,0.91,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Lauderhill,26.1401,-80.2131,1.03,1.14,1.03,0.92,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Tamarac,26.2129,-80.2497,1.02,1.07,1.01,0.93,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Coconut Creek,26.2712,-80.1793,1.07,1.18,1.08,0.97,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+North Miami,25.8897,-80.1868,1.0,1.11,0.96,0.88,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Miami Gardens,25.942,-80.2456,0.97,1.08,0.94,0.87,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Hialeah,25.8576,-80.2781,0.98,1.08,0.97,0.87,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Greenville SC,34.8526,-82.394,1.2,1.29,1.17,1.07,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Columbia SC,34.0007,-81.0348,1.16,1.27,1.11,1.06,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Spartanburg,34.9496,-81.932,1.24,1.3,1.23,1.12,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Rock Hill,34.9249,-81.0251,1.22,1.33,1.23,1.12,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+North Charleston,32.8546,-79.9748,1.15,1.26,1.1,1.01,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Mount Pleasant,32.8323,-79.8284,1.1,1.18,1.09,1.01,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Wilmington NC,34.2257,-77.9447,1.12,1.2,1.1,1.03,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Gastonia,35.2621,-81.1873,1.22,1.35,1.23,1.07,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Concord NC,35.4088,-80.5795,1.2,1.27,1.16,1.06,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Huntersville,35.4107,-80.8429,1.07,1.17,1.07,0.96,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Mooresville,35.5746,-80.8098,1.08,1.17,1.08,0.97,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Cary,35.7915,-78.7811,1.13,1.24,1.12,1.01,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Durham,35.994,-78.8986,1.1,1.2,1.06,0.98,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Chapel Hill,35.9132,-79.0558,1.05,1.14,1.03,0.93,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Apex,35.7327,-78.8503,1.12,1.23,1.11,0.99,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Morrisville,35.8237,-78.8253,1.1,1.16,1.06,0.98,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+High Point,35.9557,-80.0053,1.13,1.19,1.13,1.01,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Winston-Salem,36.0999,-80.2442,1.14,1.24,1.13,1.05,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Greensboro,36.0726,-79.792,1.15,1.24,1.13,1.03,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Richmond VA,37.5407,-77.436,1.17,1.27,1.12,1.08,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Newport News,37.0871,-76.473,1.14,1.26,1.11,1.05,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Chesapeake,36.7682,-76.2875,1.18,1.29,1.15,1.07,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Virginia Beach,36.8529,-75.978,1.23,1.3,1.2,1.11,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Hampton,37.0299,-76.3452,1.22,1.28,1.16,1.13,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Alexandria VA,38.8048,-77.0469,1.06,1.13,1.07,0.95,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Madison WI,43.0731,-89.4012,1.24,1.33,1.24,1.14,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Green Bay,44.5133,-88.0133,1.31,1.42,1.27,1.2,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Kenosha,42.5847,-87.8212,1.18,1.27,1.15,1.06,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Racine,42.7261,-87.7829,1.24,1.32,1.18,1.1,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Appleton,44.2619,-88.4154,1.36,1.47,1.32,1.2,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Eau Claire,44.8113,-91.4985,1.29,1.36,1.28,1.19,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+La Crosse,43.8014,-91.2396,1.31,1.38,1.3,1.17,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Janesville,42.6828,-89.0187,1.26,1.32,1.21,1.13,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Cedar Rapids,41.9779,-91.6656,1.32,1.47,1.33,1.18,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Iowa City,41.6611,-91.5302,1.3,1.4,1.24,1.2,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Sioux City,42.4999,-96.4003,1.22,1.36,1.17,1.1,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Waterloo,42.4928,-92.3426,1.26,1.39,1.25,1.16,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Ames,42.0308,-93.6319,1.22,1.28,1.17,1.07,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Dubuque,42.5006,-90.6646,1.31,1.41,1.27,1.15,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Olathe,38.8814,-94.8191,1.22,1.31,1.22,1.12,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Lawrence KS,38.9717,-95.2353,1.22,1.35,1.2,1.1,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Shawnee,39.0228,-94.7152,1.2,1.32,1.17,1.09,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Lenexa,38.9536,-94.7336,1.27,1.35,1.27,1.13,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Lincoln NE,40.8136,-96.7026,1.29,1.39,1.26,1.14,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Grand Island,40.925,-98.342,1.27,1.36,1.23,1.14,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Rapid City,44.0805,-103.231,1.31,1.45,1.27,1.18,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Bismarck,46.8083,-100.7837,1.28,1.35,1.29,1.14,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Grand Forks,47.9253,-97.0329,1.33,1.41,1.27,1.2,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Minot,48.2325,-101.2963,1.23,1.33,1.21,1.12,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Missoula,46.8721,-113.994,1.12,1.22,1.12,1.04,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Great Falls,47.5002,-111.3008,1.17,1.28,1.16,1.05,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Helena MT,46.5958,-112.027,1.28,1.35,1.26,1.16,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Kalispell,48.192,-114.3168,1.07,1.14,1.05,0.95,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Casper,42.8501,-106.3252,1.25,1.36,1.22,1.16,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Laramie,41.3114,-105.5911,1.26,1.32,1.23,1.12,6.85,30,1.25,Yes,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Nampa,43.5407,-116.5635,1.09,1.17,1.05,0.97,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Meridian,43.6121,-116.3915,1.1,1.17,1.06,0.98,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Coeur d'Alene,47.6777,-116.7805,1.1,1.19,1.07,0.98,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Twin Falls,42.5629,-114.4609,1.11,1.21,1.07,0.99,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Pocatello,42.8713,-112.4455,1.2,1.29,1.21,1.09,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+West Valley City,40.6916,-112.001,1.07,1.16,1.03,0.95,6.85,30,1.25,No,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+West Jordan,40.6097,-111.9391,1.11,1.16,1.11,0.98,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Sandy,40.5649,-111.8389,1.12,1.22,1.09,0.99,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports
+Lehi,40.3916,-111.8507,1.14,1.22,1.09,1.0,6.85,30,1.25,Marginal,CBRE/JLL Capital Markets,2025-Q4,https://www.cbre.com/insights/reports

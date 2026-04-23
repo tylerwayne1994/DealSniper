@@ -1,0 +1,286 @@
+city,lat,lng,rent_control_status,rent_stabilization_status,annual_increase_cap_pct,exemptions_new_construction,just_cause_eviction_required,regulatory_risk_score,data_source,as_of_date,source_url
+New York,40.7128,-74.006,Yes - Strong,Yes,3.0,Yes - typically 15 years,Yes,9,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Los Angeles,34.0522,-118.2437,Yes - Strong,Yes,3.0,Yes - typically 15 years,Yes,9,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Chicago,41.8781,-87.6298,Partial,Partial,,Yes - typically 15 years,No,6,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Houston,29.7604,-95.3698,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Phoenix,33.4484,-112.074,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Philadelphia,39.9526,-75.1652,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+San Antonio,29.4241,-98.4936,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+San Diego,32.7157,-117.1611,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+DFW,32.7767,-96.797,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Bay Area,37.7749,-122.4194,Yes - Strong,Yes,3.0,Yes - typically 15 years,Yes,9,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Austin,30.2672,-97.7431,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Jacksonville,30.3322,-81.6557,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Columbus,39.9612,-82.9988,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Charlotte,35.2271,-80.8431,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Indianapolis,39.7684,-86.1581,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Seattle,47.6062,-122.3321,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Denver,39.7392,-104.9903,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Nashville,36.1627,-86.7816,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Oklahoma City,35.4676,-97.5164,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+El Paso,31.7619,-106.485,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+DC Metro,38.9072,-77.0369,Yes - Moderate,Partial,5.0,Yes - typically 15 years,Yes,6,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Boston,42.3601,-71.0589,Yes - Moderate,Partial,5.0,Yes - typically 15 years,Yes,6,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Las Vegas,36.1699,-115.1398,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Memphis,35.1495,-90.049,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Louisville,38.2527,-85.7585,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Portland,45.5051,-122.675,Yes - Moderate,Partial,5.0,Yes - typically 15 years,Yes,6,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Baltimore,39.2904,-76.6122,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Milwaukee,43.0389,-87.9065,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Albuquerque,35.0844,-106.6504,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Tucson,32.2226,-110.9747,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Central Valley,36.7783,-119.4179,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Sacramento,38.5816,-121.4944,Yes - Moderate,Partial,5.0,Yes - typically 15 years,Yes,6,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Kansas City,39.0997,-94.5786,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Atlanta,33.749,-84.388,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Omaha,41.2565,-95.9345,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Colorado Springs,38.8339,-104.8214,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Raleigh-Durham,35.7796,-78.6382,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Hampton Roads,36.8529,-75.978,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Minneapolis,44.9778,-93.265,Partial,Partial,,Yes - typically 15 years,No,6,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Tampa Bay,27.9506,-82.4572,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+New Orleans,29.9511,-90.0715,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Richmond,37.5407,-77.436,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Spokane,47.6588,-117.426,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Des Moines,41.5868,-93.625,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Montgomery,32.3668,-86.3,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Inland Empire,33.9806,-117.3755,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Ventura,34.2805,-119.2945,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Tallahassee,30.4518,-84.2807,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Huntsville,34.7304,-86.5861,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Knoxville,35.9606,-83.9207,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Chattanooga,35.0456,-85.3097,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Fort Collins,40.5853,-105.0844,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Eugene,44.0521,-123.0868,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Boise,43.615,-116.2023,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Sarasota,27.3364,-82.5307,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Savannah,32.0835,-81.0998,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Charleston,32.7765,-79.9311,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Salt Lake City,40.7608,-111.891,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Greenville,34.8526,-82.394,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Asheville,35.5951,-82.5515,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Wilmington,34.2257,-77.9447,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Fayetteville,35.0527,-78.8784,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Fayetteville AR,36.0626,-94.1574,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Reno,39.5296,-119.8138,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Baton Rouge,30.4515,-91.1871,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Lafayette,30.2241,-92.0198,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Lake Charles,30.2266,-93.2174,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Shreveport,32.5252,-93.7502,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Corpus Christi,27.8006,-97.3964,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Lubbock,33.5779,-101.8552,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Wichita,37.6872,-97.3301,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Tulsa,36.154,-95.9928,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Sioux Falls,43.5446,-96.7311,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Fargo,46.8772,-96.7898,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Billings,45.7833,-108.5007,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Bozeman,45.677,-111.0429,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Cheyenne,41.14,-104.8202,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Idaho Falls,43.4917,-112.0408,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Provo,40.2338,-111.6585,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Ogden,41.223,-111.9738,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+St. George,37.0965,-113.5684,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Carson City,39.1638,-119.7674,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Santa Fe,35.687,-105.9378,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Las Cruces,32.3199,-106.7637,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Yuma,32.6927,-114.6277,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Flagstaff,35.1983,-111.6513,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Prescott,34.54,-112.4685,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Medford,42.3265,-122.8756,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Bend,44.0582,-121.3153,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Corvallis,44.5646,-123.262,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Salem,44.9429,-123.0351,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Bellingham,48.7519,-122.4787,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Yakima,46.6021,-120.5059,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Olympia,47.0379,-122.9007,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Tri-Cities,46.2396,-119.1006,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Vancouver,45.6387,-122.6615,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Everett,47.979,-122.2021,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Tacoma,47.2529,-122.4443,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Bellevue,47.6101,-122.2015,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Bradenton,27.4989,-82.5748,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Lakeland,28.0395,-81.9498,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Fort Myers,26.6406,-81.8723,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Naples,26.142,-81.7948,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Ocala,29.1872,-82.1401,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Palm Beach,26.7056,-80.0364,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Miami,25.7617,-80.1918,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Daytona,29.2108,-81.0228,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Melbourne,28.0836,-80.6081,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Gainesville,29.6516,-82.3248,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Port St. Lucie,27.273,-80.3582,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Pensacola,30.4213,-87.2169,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Macon,32.8407,-83.6324,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Augusta,33.4735,-82.0105,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Columbus GA,32.461,-84.9877,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Athens,33.9519,-83.3576,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Valdosta,30.8327,-83.2785,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Birmingham,33.5186,-86.8104,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Mobile,30.6954,-88.0399,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Tuscaloosa,33.2098,-87.5692,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Dothan,31.2232,-85.3905,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Auburn,32.6099,-85.4808,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Jackson,32.2988,-90.1848,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Gulfport,30.3674,-89.0928,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Hattiesburg,31.3271,-89.2903,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Starkville,33.4504,-88.8184,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Little Rock,34.7465,-92.2896,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Fort Smith,35.3859,-94.3985,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Jonesboro,35.8423,-90.7043,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Springdale,36.1867,-94.1288,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Rogers,36.332,-94.1185,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Bentonville,36.3729,-94.2088,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Clarksville,36.5298,-87.3595,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Johnson City,36.3134,-82.3535,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Kingsport,36.5484,-82.5618,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Jackson TN,35.6145,-88.8139,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Franklin,35.9251,-86.8689,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Brentwood,36.0331,-86.7828,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Murfreesboro,35.8456,-86.3903,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Smyrna,35.9829,-86.5186,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Spring Hill,35.7512,-86.93,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Bowling Green,36.9685,-86.4808,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Lexington,38.0406,-84.5037,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Evansville,37.9716,-87.5711,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+South Bend,41.6764,-86.252,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Fort Wayne,41.1306,-85.1289,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Grand Rapids,42.9634,-85.6681,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Ann Arbor,42.2808,-83.743,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Lansing,42.7325,-84.5555,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Kalamazoo,42.2917,-85.5872,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Flint,43.0125,-83.6875,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Detroit,42.3314,-83.0458,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Toledo,41.6639,-83.5552,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Akron,41.0814,-81.519,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Dayton,39.7589,-84.1916,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Cincinnati,39.1031,-84.512,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Cleveland,41.4993,-81.6944,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Pittsburgh,40.4406,-79.9959,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Providence,41.824,-71.4128,Yes - Moderate,Partial,5.0,Yes - typically 15 years,Yes,6,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Hartford,41.7658,-72.6851,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Bridgeport,41.1865,-73.1952,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Springfield MA,42.1015,-72.5898,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Worcester,42.2626,-71.8023,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Syracuse,43.0481,-76.1474,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Rochester,43.1566,-77.6088,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Albany,42.6526,-73.7562,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Buffalo,42.8864,-78.8784,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Yonkers,40.9312,-73.8988,Yes - Moderate,Partial,5.0,Yes - typically 15 years,Yes,6,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Newark,40.7357,-74.1724,Yes - Strong,Yes,3.0,Yes - typically 15 years,Yes,9,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Paterson,40.9168,-74.1719,Yes - Moderate,Partial,5.0,Yes - typically 15 years,Yes,6,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Anchorage,61.2181,-149.9003,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Honolulu,21.3069,-157.8583,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Wichita Falls,33.9137,-98.4934,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Midland,31.9973,-102.0779,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Odessa,31.8457,-102.3676,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Tyler,32.3513,-95.3011,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Waco,31.5493,-97.1467,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Beaumont,30.086,-94.1018,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Abilene,32.4487,-99.7331,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Laredo,27.5306,-99.4803,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+McAllen,26.2034,-98.23,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Brownsville,25.9017,-97.4975,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Killeen,31.1171,-97.7278,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Bryan-College Station,30.628,-96.3344,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Victoria,28.8053,-97.0036,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Longview,32.5007,-94.7405,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Nacogdoches,31.6035,-94.6552,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Lufkin,31.3382,-94.7291,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Huntsville TX,30.7235,-95.5508,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Texarkana,33.4251,-94.0477,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Paris TX,33.6609,-95.5555,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Amarillo,35.222,-101.8313,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Deltona,28.9005,-81.2637,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Daytona Beach,29.2108,-81.0228,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Kissimmee,28.2919,-81.4076,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Sanford,28.8005,-81.2731,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Clearwater,27.9659,-82.8001,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Cape Coral,26.5629,-81.9495,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Homestead,25.4687,-80.4776,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Doral,25.8195,-80.3556,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Aventura,25.9565,-80.1392,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Boca Raton,26.3683,-80.1289,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+West Palm Beach,26.7153,-80.0534,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Delray Beach,26.4615,-80.0728,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Boynton Beach,26.5317,-80.0905,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Pompano Beach,26.2379,-80.1248,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Hollywood,26.0112,-80.1495,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Coral Springs,26.2707,-80.2707,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Miramar,25.986,-80.233,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Pembroke Pines,26.007,-86.1527,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Sunrise,26.167,-80.2561,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Plantation,26.1276,-80.2331,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Davie,26.0765,-80.2521,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Weston,26.1003,-80.3998,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Deerfield Beach,26.3184,-80.0998,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Margate,26.2445,-80.2062,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Lauderhill,26.1401,-80.2131,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Tamarac,26.2129,-80.2497,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Coconut Creek,26.2712,-80.1793,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+North Miami,25.8897,-80.1868,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Miami Gardens,25.942,-80.2456,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Hialeah,25.8576,-80.2781,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Greenville SC,34.8526,-82.394,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Columbia SC,34.0007,-81.0348,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Spartanburg,34.9496,-81.932,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Rock Hill,34.9249,-81.0251,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+North Charleston,32.8546,-79.9748,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Mount Pleasant,32.8323,-79.8284,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Wilmington NC,34.2257,-77.9447,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Gastonia,35.2621,-81.1873,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Concord NC,35.4088,-80.5795,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Huntersville,35.4107,-80.8429,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Mooresville,35.5746,-80.8098,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Cary,35.7915,-78.7811,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Durham,35.994,-78.8986,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Chapel Hill,35.9132,-79.0558,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Apex,35.7327,-78.8503,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Morrisville,35.8237,-78.8253,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+High Point,35.9557,-80.0053,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Winston-Salem,36.0999,-80.2442,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Greensboro,36.0726,-79.792,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Richmond VA,37.5407,-77.436,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Newport News,37.0871,-76.473,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Chesapeake,36.7682,-76.2875,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Virginia Beach,36.8529,-75.978,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Hampton,37.0299,-76.3452,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Alexandria VA,38.8048,-77.0469,Partial,Partial,,Yes - typically 15 years,No,6,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Madison WI,43.0731,-89.4012,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Green Bay,44.5133,-88.0133,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Kenosha,42.5847,-87.8212,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Racine,42.7261,-87.7829,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Appleton,44.2619,-88.4154,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Eau Claire,44.8113,-91.4985,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+La Crosse,43.8014,-91.2396,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Janesville,42.6828,-89.0187,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Cedar Rapids,41.9779,-91.6656,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Iowa City,41.6611,-91.5302,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Sioux City,42.4999,-96.4003,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Waterloo,42.4928,-92.3426,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Ames,42.0308,-93.6319,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Dubuque,42.5006,-90.6646,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Olathe,38.8814,-94.8191,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Lawrence KS,38.9717,-95.2353,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Shawnee,39.0228,-94.7152,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Lenexa,38.9536,-94.7336,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Lincoln NE,40.8136,-96.7026,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Grand Island,40.925,-98.342,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Rapid City,44.0805,-103.231,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Bismarck,46.8083,-100.7837,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Grand Forks,47.9253,-97.0329,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Minot,48.2325,-101.2963,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Missoula,46.8721,-113.994,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Great Falls,47.5002,-111.3008,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Helena MT,46.5958,-112.027,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Kalispell,48.192,-114.3168,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Casper,42.8501,-106.3252,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Laramie,41.3114,-105.5911,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Nampa,43.5407,-116.5635,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Meridian,43.6121,-116.3915,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Coeur d'Alene,47.6777,-116.7805,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Twin Falls,42.5629,-114.4609,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Pocatello,42.8713,-112.4455,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+West Valley City,40.6916,-112.001,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+West Jordan,40.6097,-111.9391,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Sandy,40.5649,-111.8389,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/
+Lehi,40.3916,-111.8507,No,No,,N/A,No,2,NMHC/Local Jurisdiction,2025,https://www.nmhc.org/research-insight/rent-control-tracker/

@@ -25,6 +25,139 @@ import {
   X
 } from 'lucide-react';
 
+const CITY_METRIC_DATASET_FILES = [
+  '01_rent_growth_yoy_city.csv',
+  '02_effective_rent_city.csv',
+  '03_occupancy_rate_city.csv',
+  '04_concessions_city.csv',
+  '05_units_under_construction_city.csv',
+  '06_permits_city.csv',
+  '07_deliveries_city.csv',
+  '08_supply_demand_ratio_city.csv',
+  '09_population_growth_city.csv',
+  '10_household_formation_renter_pct_city.csv',
+  '11_income_wage_growth_city.csv',
+  '12_job_growth_city.csv',
+  '13_age_cohort_city.csv',
+  '14_price_per_unit_city.csv',
+  '15_grm_city.csv',
+  '16_dcr_heatmap_city.csv',
+  '17_transaction_volume_city.csv',
+  '18_rent_control_city.csv',
+  '19_eviction_history_city.csv',
+  '20_natural_hazard_risk_city.csv',
+  '21_insurance_cost_city.csv',
+  '22_cap_rates_extended_city.csv',
+  '23_zoning_entitlement_city.csv',
+  '24_construction_cost_city.csv',
+  '25_composite_market_score_city.csv',
+];
+
+const ZIP_METRIC_DATASET_FILES = [
+  '01_rent_growth_yoy_zip.csv',
+  '02_effective_rent_zip.csv',
+  '03_occupancy_rate_zip.csv',
+  '04_concessions_zip.csv',
+  '05_units_under_construction_zip.csv',
+  '06_permits_zip.csv',
+  '07_deliveries_zip.csv',
+  '08_supply_demand_ratio_zip.csv',
+  '09_population_growth_zip.csv',
+  '10_household_formation_renter_pct_zip.csv',
+  '11_income_wage_growth_zip.csv',
+  '12_job_growth_zip.csv',
+  '13_age_cohort_zip.csv',
+  '14_price_per_unit_zip.csv',
+  '15_grm_zip.csv',
+  '16_dcr_heatmap_zip.csv',
+  '17_transaction_volume_zip.csv',
+  '18_rent_control_zip.csv',
+  '19_eviction_history_zip.csv',
+  '20_natural_hazard_risk_zip.csv',
+  '21_insurance_cost_zip.csv',
+  '22_cap_rates_extended_zip.csv',
+  '23_zoning_entitlement_zip.csv',
+  '24_construction_cost_zip.csv',
+  '25_composite_market_score_zip.csv',
+];
+
+const titleizeToken = (token) => {
+  const t = token.toLowerCase();
+  if (t === 'yoy') return 'YoY';
+  if (t === 'pct') return '%';
+  if (t === 'grm') return 'GRM';
+  if (t === 'dcr') return 'DCR';
+  if (t === 'mf') return 'MF';
+  if (t === 'sf') return 'SF';
+  if (t === 'usd') return 'USD';
+  if (t === 'ltv') return 'LTV';
+  return token.charAt(0).toUpperCase() + token.slice(1).toLowerCase();
+};
+
+const datasetLabelFromFile = (filename) => {
+  const [index] = filename.split('_');
+  const base = filename
+    .replace(/^\d+_/, '')
+    .replace(/_(city|zip)\.csv$/, '')
+    .split('_')
+    .map(titleizeToken)
+    .join(' ')
+    .replace(/ %/g, '%');
+  return `${index}. ${base}`;
+};
+
+const CITY_METRIC_DATASETS = CITY_METRIC_DATASET_FILES.map((filename) => ({
+  value: `/city/${filename}`,
+  label: datasetLabelFromFile(filename),
+}));
+
+const ZIP_METRIC_DATASETS = ZIP_METRIC_DATASET_FILES.map((filename) => ({
+  value: `/zip/${filename}`,
+  label: datasetLabelFromFile(filename),
+}));
+
+const CITY_OVERLAY_BASE_FIELDS = new Set(['city', 'lat', 'lng', 'data_source', 'as_of_date', 'source_url']);
+const ZIP_OVERLAY_BASE_FIELDS = new Set(['zip_code', 'metro', 'lat', 'lng', 'data_source', 'as_of_date', 'source_url']);
+const METRIC_CATEGORICAL_COLORS = ['#2563eb', '#16a34a', '#f59e0b', '#dc2626', '#7c3aed', '#0ea5e9', '#be185d', '#4d7c0f'];
+
+const parseNumericValue = (value) => {
+  if (value == null || value === '') return null;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  const cleaned = String(value).replace(/[^0-9.+-]/g, '');
+  if (!cleaned) return null;
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const metricLabelFromKey = (key) => key
+  .split('_')
+  .map(titleizeToken)
+  .join(' ')
+  .replace(/ %/g, '%');
+
+const hashString = (text) => {
+  let hash = 0;
+  for (let i = 0; i < text.length; i += 1) hash = ((hash << 5) - hash) + text.charCodeAt(i);
+  return Math.abs(hash);
+};
+
+const metricColorForNumeric = (value, min, max) => {
+  const n = parseNumericValue(value);
+  if (n == null) return '#94a3b8';
+  if (min == null || max == null || max <= min) return '#3b82f6';
+  const t = Math.max(0, Math.min(1, (n - min) / (max - min)));
+  if (t < 0.2) return '#dc2626';
+  if (t < 0.4) return '#f97316';
+  if (t < 0.6) return '#eab308';
+  if (t < 0.8) return '#22c55e';
+  return '#0ea5e9';
+};
+
+const metricColorForCategory = (value) => {
+  const text = String(value || 'N/A');
+  return METRIC_CATEGORICAL_COLORS[hashString(text) % METRIC_CATEGORICAL_COLORS.length];
+};
+
 // ─── Zone color by prefix ────────────────
 // ─── Zoning Category Colors (legend-driven) ─────────────────────────────────
 const CATEGORY_COLORS = {
@@ -582,6 +715,18 @@ function DashboardMapTab() {
   const [dataCentersEnabled, setDataCentersEnabled] = useState(false);
   const [dataCentersData, setDataCentersData] = useState([]);
 
+  // Dynamic city/zip metrics overlays
+  const [cityMetricsEnabled, setCityMetricsEnabled] = useState(false);
+  const [zipMetricsEnabled, setZipMetricsEnabled] = useState(false);
+  const [cityMetricDataset, setCityMetricDataset] = useState(CITY_METRIC_DATASETS[0]?.value || '/city/01_rent_growth_yoy_city.csv');
+  const [zipMetricDataset, setZipMetricDataset] = useState(ZIP_METRIC_DATASETS[0]?.value || '/zip/01_rent_growth_yoy_zip.csv');
+  const [cityMetricsData, setCityMetricsData] = useState([]);
+  const [zipMetricsData, setZipMetricsData] = useState([]);
+  const [cityMetricColumns, setCityMetricColumns] = useState([]);
+  const [zipMetricColumns, setZipMetricColumns] = useState([]);
+  const [cityMetric, setCityMetric] = useState('');
+  const [zipMetricV2, setZipMetricV2] = useState('');
+
   // AI Agent zoning discovery state
   const [agentCities, setAgentCities] = useState([]); // cached city slugs from backend
   const [agentSelectedSlug, setAgentSelectedSlug] = useState('');
@@ -696,6 +841,44 @@ function DashboardMapTab() {
       error: (err) => console.error('[DevPipeline] CSV parse error:', err)
     });
   }, [devPipelineEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load selected city metric dataset when enabled
+  useEffect(() => {
+    if (!cityMetricsEnabled || !cityMetricDataset) return;
+    Papa.parse(cityMetricDataset, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const rows = (results.data || []).filter((row) => Number.isFinite(parseFloat(row.lat)) && Number.isFinite(parseFloat(row.lng)));
+        const sample = rows[0] || {};
+        const columns = Object.keys(sample).filter((k) => !CITY_OVERLAY_BASE_FIELDS.has(k));
+        setCityMetricsData(rows);
+        setCityMetricColumns(columns);
+        setCityMetric((prev) => (columns.includes(prev) ? prev : (columns[0] || '')));
+      },
+      error: (err) => console.error('[CityMetrics] CSV parse error:', err),
+    });
+  }, [cityMetricsEnabled, cityMetricDataset]);
+
+  // Load selected zip metric dataset when enabled
+  useEffect(() => {
+    if (!zipMetricsEnabled || !zipMetricDataset) return;
+    Papa.parse(zipMetricDataset, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const rows = (results.data || []).filter((row) => Number.isFinite(parseFloat(row.lat)) && Number.isFinite(parseFloat(row.lng)));
+        const sample = rows[0] || {};
+        const columns = Object.keys(sample).filter((k) => !ZIP_OVERLAY_BASE_FIELDS.has(k));
+        setZipMetricsData(rows);
+        setZipMetricColumns(columns);
+        setZipMetricV2((prev) => (columns.includes(prev) ? prev : (columns[0] || '')));
+      },
+      error: (err) => console.error('[ZipMetrics] CSV parse error:', err),
+    });
+  }, [zipMetricsEnabled, zipMetricDataset]);
 
   // Load absorption rates CSV when first enabled
   useEffect(() => {
@@ -860,6 +1043,82 @@ function DashboardMapTab() {
       ...['Very High', 'High', 'Moderate', 'Low', 'Very Low'].filter(d => demand.has(d)),
     ];
   }, [capRateData]);
+
+  const cityMetricMeta = useMemo(() => {
+    if (!cityMetric || cityMetricsData.length === 0) return { isNumeric: false, min: null, max: null };
+    const values = cityMetricsData.map((row) => row[cityMetric]).filter((v) => v != null && v !== '');
+    if (values.length === 0) return { isNumeric: false, min: null, max: null };
+    const numericVals = values.map(parseNumericValue).filter((v) => v != null);
+    const isNumeric = numericVals.length >= Math.max(1, Math.floor(values.length * 0.7));
+    if (!isNumeric || numericVals.length === 0) return { isNumeric: false, min: null, max: null };
+    return { isNumeric: true, min: Math.min(...numericVals), max: Math.max(...numericVals) };
+  }, [cityMetricsData, cityMetric]);
+
+  const zipMetricV2Meta = useMemo(() => {
+    if (!zipMetricV2 || zipMetricsData.length === 0) return { isNumeric: false, min: null, max: null };
+    const values = zipMetricsData.map((row) => row[zipMetricV2]).filter((v) => v != null && v !== '');
+    if (values.length === 0) return { isNumeric: false, min: null, max: null };
+    const numericVals = values.map(parseNumericValue).filter((v) => v != null);
+    const isNumeric = numericVals.length >= Math.max(1, Math.floor(values.length * 0.7));
+    if (!isNumeric || numericVals.length === 0) return { isNumeric: false, min: null, max: null };
+    return { isNumeric: true, min: Math.min(...numericVals), max: Math.max(...numericVals) };
+  }, [zipMetricsData, zipMetricV2]);
+
+  const cityMetricLegend = useMemo(() => {
+    if (!cityMetric || cityMetricsData.length === 0) return [];
+    if (cityMetricMeta.isNumeric) {
+      const { min, max } = cityMetricMeta;
+      if (min == null || max == null) return [];
+      const step = (max - min) / 5 || 0;
+      return [0, 1, 2, 3, 4].map((i) => {
+        const start = min + (step * i);
+        const end = i === 4 ? max : min + (step * (i + 1));
+        const sample = i === 4 ? end : start;
+        return {
+          color: metricColorForNumeric(sample, min, max),
+          label: `${start.toFixed(2)}${i === 4 ? ' - ' + end.toFixed(2) : ' - ' + end.toFixed(2)}`,
+        };
+      });
+    }
+
+    const counts = {};
+    cityMetricsData.forEach((row) => {
+      const key = String(row[cityMetric] || 'N/A');
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([label]) => ({ color: metricColorForCategory(label), label }));
+  }, [cityMetric, cityMetricsData, cityMetricMeta]);
+
+  const zipMetricV2Legend = useMemo(() => {
+    if (!zipMetricV2 || zipMetricsData.length === 0) return [];
+    if (zipMetricV2Meta.isNumeric) {
+      const { min, max } = zipMetricV2Meta;
+      if (min == null || max == null) return [];
+      const step = (max - min) / 5 || 0;
+      return [0, 1, 2, 3, 4].map((i) => {
+        const start = min + (step * i);
+        const end = i === 4 ? max : min + (step * (i + 1));
+        const sample = i === 4 ? end : start;
+        return {
+          color: metricColorForNumeric(sample, min, max),
+          label: `${start.toFixed(2)}${i === 4 ? ' - ' + end.toFixed(2) : ' - ' + end.toFixed(2)}`,
+        };
+      });
+    }
+
+    const counts = {};
+    zipMetricsData.forEach((row) => {
+      const key = String(row[zipMetricV2] || 'N/A');
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([label]) => ({ color: metricColorForCategory(label), label }));
+  }, [zipMetricV2, zipMetricsData, zipMetricV2Meta]);
 
   // Color by cap rate value — green = low (good for buyers), red = high
   const capRateColor = (rate) => {
@@ -1597,6 +1856,8 @@ function DashboardMapTab() {
       if (countyOverlay) mapContext.activeLayers.push('County (' + countyMetric + ')');
       if (zipOverlay) mapContext.activeLayers.push('ZIP Points (' + zipMetric + ')');
       if (zipHeatmap) mapContext.activeLayers.push('ZIP Heatmap (' + zipHeatmapMetric + ')');
+      if (cityMetricsEnabled) mapContext.activeLayers.push('City Metrics (' + (cityMetric || 'dataset') + ')');
+      if (zipMetricsEnabled) mapContext.activeLayers.push('ZIP Metrics (' + (zipMetricV2 || 'dataset') + ')');
       if (zoningEnabled) mapContext.activeLayers.push('Zoning');
 
       const headers = { 'Content-Type': 'application/json' };
@@ -1636,7 +1897,8 @@ function DashboardMapTab() {
     }
   }, [chat, userId, customPins, devPipelineEnabled, devPipelineData, devPipelineFilter,
       absorptionEnabled, absorptionData, absorptionFilter, capRateEnabled, capRateData, capRateFilter,
-      countyOverlay, countyMetric, zipOverlay, zipMetric, zipHeatmap, zipHeatmapMetric, zoningEnabled]);
+      countyOverlay, countyMetric, zipOverlay, zipMetric, zipHeatmap, zipHeatmapMetric,
+      cityMetricsEnabled, cityMetric, zipMetricsEnabled, zipMetricV2, zoningEnabled]);
 
   // Render assistant content with simple markdown-ish formatting and collapse
   const FormattedMessage = ({ text }) => {
@@ -2643,6 +2905,8 @@ function DashboardMapTab() {
                         { label: 'Cap Rates', active: capRateEnabled, color: '#ec4899', count: capRateEnabled ? filteredCapRates.length : null, toggle: () => setCapRateEnabled(v => !v) },
                         { label: 'County', active: countyOverlay, color: '#6366f1', toggle: () => setCountyOverlay(v => !v) },
                         { label: 'ZIP Points', active: zipOverlay, color: '#10b981', toggle: () => setZipOverlay(v => !v) },
+                        { label: 'City Metrics', active: cityMetricsEnabled, color: '#14b8a6', count: cityMetricsEnabled ? cityMetricsData.length : null, toggle: () => setCityMetricsEnabled(v => !v) },
+                        { label: 'ZIP Metrics+', active: zipMetricsEnabled, color: '#06b6d4', count: zipMetricsEnabled ? zipMetricsData.length : null, toggle: () => setZipMetricsEnabled(v => !v) },
                         { label: 'ZIP Heat', active: zipHeatmap, color: '#3b82f6', toggle: () => setZipHeatmap(v => !v) },
                         { label: 'Zoning', active: zoningEnabled, color: '#0ea5e9', toggle: () => { setZoningEnabled(v => { if (v) { setZoningServiceKey(''); setZoningFilter(''); } return !v; }); } },
                         { label: 'SFR Sales', active: sfrSalesEnabled, color: '#f59e0b', toggle: () => setSfrSalesEnabled(v => !v) },
@@ -2667,7 +2931,7 @@ function DashboardMapTab() {
                   </div>
 
                   {/* Active Layer Settings */}
-                  {(countyOverlay || zipOverlay || zipHeatmap || devPipelineEnabled || absorptionEnabled || capRateEnabled || zoningEnabled || sfrSalesEnabled || mfSalesEnabled) && (
+                  {(countyOverlay || zipOverlay || cityMetricsEnabled || zipMetricsEnabled || zipHeatmap || devPipelineEnabled || absorptionEnabled || capRateEnabled || zoningEnabled || sfrSalesEnabled || mfSalesEnabled) && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 5, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                       {devPipelineEnabled && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -2722,6 +2986,70 @@ function DashboardMapTab() {
                           }}>
                             {ZIP_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{opt.label}</option>)}
                           </select>
+                        </div>
+                      )}
+                      {cityMetricsEnabled && (
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                          <span style={{ fontSize: 9, fontWeight: 600, color: '#14b8a6', minWidth: 36, marginTop: 4 }}>CITY</span>
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <select value={cityMetricDataset} onChange={(e) => setCityMetricDataset(e.target.value)} style={{
+                              width: '100%', padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
+                              backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
+                            }}>
+                              {CITY_METRIC_DATASETS.map(opt => <option key={opt.value} value={opt.value} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{opt.label}</option>)}
+                            </select>
+                            <select value={cityMetric} onChange={(e) => setCityMetric(e.target.value)} style={{
+                              width: '100%', padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
+                              backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
+                            }}>
+                              {cityMetricColumns.map(col => <option key={col} value={col} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{metricLabelFromKey(col)}</option>)}
+                            </select>
+                            {cityMetricLegend.length > 0 && (
+                              <div style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 6px', background: 'rgba(255,255,255,0.03)' }}>
+                                <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', marginBottom: 4 }}>Legend · {metricLabelFromKey(cityMetric || '')}</div>
+                                <div style={{ display: 'grid', gap: 3 }}>
+                                  {cityMetricLegend.map((item, idx) => (
+                                    <div key={`city-legend-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      <span style={{ width: 10, height: 10, borderRadius: 3, background: item.color, border: '1px solid rgba(255,255,255,0.4)' }} />
+                                      <span style={{ fontSize: 9, color: '#cbd5e1', lineHeight: 1.2 }}>{item.label}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {zipMetricsEnabled && (
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                          <span style={{ fontSize: 9, fontWeight: 600, color: '#06b6d4', minWidth: 36, marginTop: 4 }}>ZIP+</span>
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <select value={zipMetricDataset} onChange={(e) => setZipMetricDataset(e.target.value)} style={{
+                              width: '100%', padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
+                              backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
+                            }}>
+                              {ZIP_METRIC_DATASETS.map(opt => <option key={opt.value} value={opt.value} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{opt.label}</option>)}
+                            </select>
+                            <select value={zipMetricV2} onChange={(e) => setZipMetricV2(e.target.value)} style={{
+                              width: '100%', padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
+                              backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
+                            }}>
+                              {zipMetricColumns.map(col => <option key={col} value={col} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{metricLabelFromKey(col)}</option>)}
+                            </select>
+                            {zipMetricV2Legend.length > 0 && (
+                              <div style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 6px', background: 'rgba(255,255,255,0.03)' }}>
+                                <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', marginBottom: 4 }}>Legend · {metricLabelFromKey(zipMetricV2 || '')}</div>
+                                <div style={{ display: 'grid', gap: 3 }}>
+                                  {zipMetricV2Legend.map((item, idx) => (
+                                    <div key={`zip-legend-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      <span style={{ width: 10, height: 10, borderRadius: 3, background: item.color, border: '1px solid rgba(255,255,255,0.4)' }} />
+                                      <span style={{ fontSize: 9, color: '#cbd5e1', lineHeight: 1.2 }}>{item.label}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
                       {zipHeatmap && (
@@ -3514,6 +3842,92 @@ function DashboardMapTab() {
                       {msa.CapRate_Data_Source && (
                         <div style={{ marginTop: 4, fontSize: 10, color: '#9ca3af' }}>Source: {msa.CapRate_Data_Source}</div>
                       )}
+                    </div>
+                  </Popup>
+                </CircleMarker>
+              );
+            })}
+
+            {/* City metric dataset markers */}
+            {cityMetricsEnabled && cityMetric && cityMetricsData.map((row, idx) => {
+              const lat = parseFloat(row.lat);
+              const lng = parseFloat(row.lng);
+              if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+              const rawValue = row[cityMetric];
+              const markerColor = cityMetricMeta.isNumeric
+                ? metricColorForNumeric(rawValue, cityMetricMeta.min, cityMetricMeta.max)
+                : metricColorForCategory(rawValue);
+
+              return (
+                <CircleMarker
+                  key={`city-metric-${idx}`}
+                  center={[lat, lng]}
+                  radius={6}
+                  pathOptions={{ fillColor: markerColor, fillOpacity: 0.85, color: '#fff', weight: 1.5 }}
+                >
+                  <Popup maxWidth={380}>
+                    <div style={{ fontFamily: 'Inter, -apple-system, sans-serif', minWidth: 300, padding: 4 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: '#111827', marginBottom: 3 }}>{row.city || 'Unknown City'}</div>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                        <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: `${markerColor}20`, color: markerColor, border: `1px solid ${markerColor}50` }}>
+                          {metricLabelFromKey(cityMetric)}: {rawValue || 'N/A'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: 12 }}>
+                        {Object.entries(row).filter(([k, v]) => !CITY_OVERLAY_BASE_FIELDS.has(k) && v !== '' && v != null).slice(0, 12).map(([k, v]) => (
+                          <div key={`${idx}-${k}`}>
+                            <span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>{metricLabelFromKey(k).toUpperCase()}</span><br/>
+                            <span style={{ color: '#374151', fontWeight: 600 }}>{String(v)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ marginTop: 8, borderTop: '1px solid #f1f5f9', paddingTop: 6, fontSize: 10, color: '#64748b' }}>
+                        Source: {row.data_source || 'N/A'} · {row.as_of_date || 'N/A'}
+                      </div>
+                    </div>
+                  </Popup>
+                </CircleMarker>
+              );
+            })}
+
+            {/* ZIP metric dataset markers */}
+            {zipMetricsEnabled && zipMetricV2 && zipMetricsData.map((row, idx) => {
+              const lat = parseFloat(row.lat);
+              const lng = parseFloat(row.lng);
+              if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+              const rawValue = row[zipMetricV2];
+              const markerColor = zipMetricV2Meta.isNumeric
+                ? metricColorForNumeric(rawValue, zipMetricV2Meta.min, zipMetricV2Meta.max)
+                : metricColorForCategory(rawValue);
+
+              return (
+                <CircleMarker
+                  key={`zip-metric-${idx}`}
+                  center={[lat, lng]}
+                  radius={5.5}
+                  pathOptions={{ fillColor: markerColor, fillOpacity: 0.85, color: '#fff', weight: 1.5 }}
+                >
+                  <Popup maxWidth={380}>
+                    <div style={{ fontFamily: 'Inter, -apple-system, sans-serif', minWidth: 300, padding: 4 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: '#111827', marginBottom: 3 }}>ZIP {row.zip_code || 'N/A'}{row.metro ? ` · ${row.metro}` : ''}</div>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                        <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: `${markerColor}20`, color: markerColor, border: `1px solid ${markerColor}50` }}>
+                          {metricLabelFromKey(zipMetricV2)}: {rawValue || 'N/A'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: 12 }}>
+                        {Object.entries(row).filter(([k, v]) => !ZIP_OVERLAY_BASE_FIELDS.has(k) && v !== '' && v != null).slice(0, 12).map(([k, v]) => (
+                          <div key={`${idx}-${k}`}>
+                            <span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>{metricLabelFromKey(k).toUpperCase()}</span><br/>
+                            <span style={{ color: '#374151', fontWeight: 600 }}>{String(v)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ marginTop: 8, borderTop: '1px solid #f1f5f9', paddingTop: 6, fontSize: 10, color: '#64748b' }}>
+                        Source: {row.data_source || 'N/A'} · {row.as_of_date || 'N/A'}
+                      </div>
                     </div>
                   </Popup>
                 </CircleMarker>

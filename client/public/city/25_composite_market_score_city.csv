@@ -1,0 +1,286 @@
+city,lat,lng,composite_mf_score_100,demand_score_25,rent_growth_score_20,population_score_15,employment_score_15,pricing_score_15,financing_score_10,market_tier,data_source,as_of_date,source_url
+New York,40.7128,-74.006,50.5,23.8,6.0,1.5,4.5,13.0,1.7,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Los Angeles,34.0522,-118.2437,54.1,23.9,7.0,2.0,5.2,13.8,2.1,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Chicago,41.8781,-87.6298,55.8,23.4,9.3,0.5,6.8,11.2,4.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Houston,29.7604,-95.3698,53.1,22.4,-1.0,8.0,8.2,10.5,5.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Phoenix,33.4484,-112.074,53.8,22.5,-3.7,9.0,10.5,11.2,4.1,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Philadelphia,39.9526,-75.1652,55.1,23.3,8.3,1.0,5.6,12.0,4.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+San Antonio,29.4241,-98.4936,57.0,22.6,2.7,7.5,8.2,10.5,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+San Diego,32.7157,-117.1611,60.5,24.1,9.3,2.5,7.5,14.5,2.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+DFW,32.7767,-96.797,65.6,22.9,5.0,10.5,10.5,11.2,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Bay Area,37.7749,-122.4194,51.9,23.7,6.0,1.5,4.5,14.5,1.7,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Austin,30.2672,-97.7431,56.9,22.6,-8.3,14.0,13.1,12.0,3.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Jacksonville,30.3322,-81.6557,44.6,22.2,-9.3,8.5,9.4,10.5,3.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Columbus,39.9612,-82.9988,70.9,23.4,12.7,7.0,10.5,10.5,6.9,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Charlotte,35.2271,-80.8431,65.6,23.0,4.0,11.5,11.6,11.2,4.3,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Indianapolis,39.7684,-86.1581,64.7,23.3,10.7,4.0,9.4,10.5,6.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Seattle,47.6062,-122.3321,63.5,23.6,8.3,6.0,8.2,13.8,3.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Denver,39.7392,-104.9903,59.2,23.1,2.7,7.5,9.4,12.5,4.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Nashville,36.1627,-86.7816,55.2,22.6,-3.0,9.5,10.5,12.0,3.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Oklahoma City,35.4676,-97.5164,62.2,23.2,9.3,4.5,8.2,9.5,7.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+El Paso,31.7619,-106.485,55.4,23.4,7.3,2.5,5.6,8.8,7.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+DC Metro,38.9072,-77.0369,60.4,23.7,9.3,4.0,6.8,13.0,3.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Boston,42.3601,-71.0589,62.4,24.1,11.7,2.5,8.2,13.8,2.1,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Las Vegas,36.1699,-115.1398,59.8,22.9,3.0,9.0,9.0,11.2,4.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Memphis,35.1495,-90.049,50.7,22.9,6.0,1.0,5.6,8.8,6.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Louisville,38.2527,-85.7585,66.9,23.6,11.7,3.5,9.4,10.5,8.3,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Portland,45.5051,-122.675,54.6,23.3,4.0,4.0,6.8,13.0,3.6,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Baltimore,39.2904,-76.6122,53.7,23.4,8.3,0.5,5.6,11.2,4.6,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Milwaukee,43.0389,-87.9065,58.2,23.4,10.7,0.5,6.8,10.0,6.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Albuquerque,35.0844,-106.6504,57.7,23.3,8.3,2.5,6.8,10.0,6.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Tucson,32.2226,-110.9747,57.1,23.4,6.0,4.0,6.8,10.5,6.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Central Valley,36.7783,-119.4179,54.6,23.8,4.0,4.0,5.6,11.2,6.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Sacramento,38.5816,-121.4944,48.5,23.3,-2.3,4.5,6.8,12.0,4.3,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Kansas City,39.0997,-94.5786,70.5,23.4,13.7,4.5,10.5,10.5,7.9,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Atlanta,33.749,-84.388,62.6,22.8,6.0,9.0,9.0,11.2,4.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Omaha,41.2565,-95.9345,66.5,23.6,11.7,4.0,9.4,10.5,7.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Colorado Springs,38.8339,-104.8214,57.4,23.1,1.7,8.0,8.2,11.2,5.1,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Raleigh-Durham,35.7796,-78.6382,71.2,23.1,5.0,12.5,13.1,12.0,5.4,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Hampton Roads,36.8529,-75.978,57.5,23.4,8.3,2.5,6.8,10.5,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Minneapolis,44.9778,-93.265,60.3,23.6,9.3,2.5,8.2,11.2,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Tampa Bay,27.9506,-82.4572,47.1,22.6,-7.7,7.5,9.4,11.2,4.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+New Orleans,29.9511,-90.0715,49.4,22.9,5.0,1.0,5.6,9.5,5.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Richmond,37.5407,-77.436,66.7,23.4,10.7,6.0,9.4,11.2,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Spokane,47.6588,-117.426,59.9,23.3,7.3,6.0,6.8,10.5,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Des Moines,41.5868,-93.625,67.6,23.6,12.7,4.0,9.4,10.5,7.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Montgomery,32.3668,-86.3,54.2,23.1,7.3,2.5,5.6,8.8,6.9,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Inland Empire,33.9806,-117.3755,63.0,23.8,8.3,6.0,8.2,13.0,3.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Ventura,34.2805,-119.2945,59.0,24.1,9.3,2.5,6.8,13.8,2.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Tallahassee,30.4518,-84.2807,55.9,23.1,6.0,4.0,6.8,10.0,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Huntsville,34.7304,-86.5861,76.5,23.4,11.7,11.0,13.1,10.5,6.9,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Knoxville,35.9606,-83.9207,63.8,23.3,9.3,6.0,8.2,10.5,6.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Chattanooga,35.0456,-85.3097,62.8,23.3,8.3,6.0,8.2,10.5,6.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Fort Collins,40.5853,-105.0844,63.1,23.6,6.0,7.5,9.4,12.0,4.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Eugene,44.0521,-123.0868,55.3,23.6,5.0,4.0,6.8,12.0,4.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Boise,43.615,-116.2023,54.6,22.6,-4.7,14.0,7.9,11.2,3.6,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Sarasota,27.3364,-82.5307,44.0,22.1,-10.0,9.5,8.2,11.2,2.9,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Savannah,32.0835,-81.0998,62.2,23.0,6.3,7.5,9.4,10.5,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Charleston,32.7765,-79.9311,70.7,23.2,8.0,12.0,10.5,12.0,5.0,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Salt Lake City,40.7608,-111.891,49.2,22.7,-8.0,8.0,10.5,12.0,4.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Greenville,34.8526,-82.394,67.6,23.4,9.3,9.0,9.4,10.5,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Asheville,35.5951,-82.5515,64.0,23.6,8.3,7.5,8.2,12.0,4.3,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Wilmington,34.2257,-77.9447,64.1,23.3,7.3,9.0,8.2,11.2,5.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Fayetteville,35.0527,-78.8784,55.9,23.1,6.0,4.0,6.8,10.0,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Fayetteville AR,36.0626,-94.1574,73.6,23.6,11.7,11.0,10.5,10.5,6.4,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Reno,39.5296,-119.8138,59.7,23.4,5.0,7.5,8.2,11.2,4.3,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Baton Rouge,30.4515,-91.1871,51.5,22.9,5.0,2.5,5.6,9.5,6.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Lafayette,30.2241,-92.0198,50.4,22.8,4.0,2.5,5.6,9.5,6.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Lake Charles,30.2266,-93.2174,45.6,22.6,3.3,1.0,4.5,8.8,5.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Shreveport,32.5252,-93.7502,45.6,22.6,3.3,1.0,4.5,8.8,5.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Corpus Christi,27.8006,-97.3964,54.1,22.9,5.0,4.0,6.8,9.5,6.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Lubbock,33.5779,-101.8552,55.5,23.1,6.0,4.0,6.8,8.8,6.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Wichita,37.6872,-97.3301,57.3,23.4,8.3,2.5,6.8,9.5,6.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Tulsa,36.154,-95.9928,57.1,23.2,8.3,2.5,6.8,9.5,6.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Sioux Falls,43.5446,-96.7311,71.3,23.8,12.7,6.0,10.5,10.5,7.9,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Fargo,46.8772,-96.7898,69.7,23.9,11.7,6.0,9.4,10.5,8.3,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Billings,45.7833,-108.5007,62.8,23.6,9.3,5.0,7.5,10.5,6.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Bozeman,45.677,-111.0429,76.8,23.9,8.3,15.0,13.1,12.5,4.0,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Cheyenne,41.14,-104.8202,60.3,23.6,8.3,4.0,7.5,10.5,6.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Idaho Falls,43.4917,-112.0408,62.2,23.4,7.3,7.5,7.5,10.5,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Provo,40.2338,-111.6585,66.1,23.4,5.0,11.0,10.5,11.2,5.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Ogden,41.223,-111.9738,59.7,23.3,4.0,7.5,8.2,11.2,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+St. George,37.0965,-113.5684,74.7,23.4,7.3,15.0,12.0,12.0,5.0,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Carson City,39.1638,-119.7674,56.7,23.4,5.0,6.0,6.8,11.2,4.3,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Santa Fe,35.687,-105.9378,59.0,23.6,8.3,4.0,6.8,12.0,4.3,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Las Cruces,32.3199,-106.7637,56.2,23.3,7.3,4.0,5.6,9.5,6.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Yuma,32.6927,-114.6277,51.6,23.1,6.0,2.5,4.5,10.0,5.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Flagstaff,35.1983,-111.6513,64.0,23.6,8.3,7.5,8.2,12.0,4.3,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Prescott,34.54,-112.4685,65.8,23.4,7.3,11.0,8.2,11.2,4.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Medford,42.3265,-122.8756,54.5,23.4,6.0,4.0,5.6,11.2,4.3,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Bend,44.0582,-121.3153,71.6,23.8,8.3,12.5,10.5,12.5,4.0,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Corvallis,44.5646,-123.262,56.7,23.6,6.0,4.0,6.8,12.0,4.3,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Salem,44.9429,-123.0351,54.9,23.4,5.0,4.0,6.8,11.2,4.6,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Bellingham,48.7519,-122.4787,64.4,23.8,8.3,7.5,8.2,12.5,4.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Yakima,46.6021,-120.5059,51.8,23.4,6.0,2.5,4.5,10.0,5.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Olympia,47.0379,-122.9007,60.7,23.6,7.3,6.0,7.5,12.0,4.3,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Tri-Cities,46.2396,-119.1006,59.4,23.4,7.3,6.0,6.8,10.5,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Vancouver,45.6387,-122.6615,63.2,23.6,7.3,7.5,8.2,12.5,4.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Everett,47.979,-122.2021,63.0,23.8,8.3,6.0,8.2,13.0,3.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Tacoma,47.2529,-122.4443,61.0,23.6,7.3,6.0,7.5,12.5,4.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Bellevue,47.6101,-122.2015,67.9,23.9,9.3,7.5,10.5,14.5,2.1,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Bradenton,27.4989,-82.5748,48.9,22.2,-7.0,12.5,6.8,11.2,3.1,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Lakeland,28.0395,-81.9498,44.3,22.3,-10.0,10.5,7.9,10.5,3.1,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Fort Myers,26.6406,-81.8723,47.2,22.4,-10.0,12.5,8.2,11.2,2.9,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Naples,26.142,-81.7948,48.7,22.6,-8.3,11.0,8.2,12.0,3.1,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Ocala,29.1872,-82.1401,43.4,22.4,-9.3,10.0,6.8,10.0,3.6,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Palm Beach,26.7056,-80.0364,51.7,22.9,-5.0,10.0,8.2,12.0,3.6,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Miami,25.7617,-80.1918,58.0,23.1,5.0,6.0,8.2,12.5,3.1,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Daytona,29.2108,-81.0228,41.9,22.4,-8.3,7.5,6.8,10.0,3.6,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Melbourne,28.0836,-80.6081,46.3,22.6,-7.3,9.0,7.5,10.5,4.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Gainesville,29.6516,-82.3248,55.9,23.1,5.0,6.0,6.8,10.0,5.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Port St. Lucie,27.273,-80.3582,47.7,22.4,-8.3,12.5,7.5,10.5,3.1,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Pensacola,30.4213,-87.2169,57.6,22.9,5.0,7.5,6.8,10.5,5.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Macon,32.8407,-83.6324,50.8,22.9,5.0,2.5,5.6,8.8,6.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Augusta,33.4735,-82.0105,56.7,23.1,7.3,4.0,6.8,9.5,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Columbus GA,32.461,-84.9877,53.4,23.1,6.7,2.5,5.6,9.5,6.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Athens,33.9519,-83.3576,60.6,23.4,8.3,6.0,7.5,10.0,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Valdosta,30.8327,-83.2785,52.0,23.1,6.0,2.5,5.6,8.8,6.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Birmingham,33.5186,-86.8104,55.2,23.1,7.3,2.5,6.8,9.5,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Mobile,30.6954,-88.0399,51.2,22.9,6.0,2.5,5.6,8.8,5.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Tuscaloosa,33.2098,-87.5692,58.7,23.1,7.3,6.0,6.8,9.5,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Dothan,31.2232,-85.3905,52.0,23.1,6.0,2.5,5.6,8.8,6.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Auburn,32.6099,-85.4808,63.5,23.4,8.3,7.5,8.2,10.0,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Jackson,32.2988,-90.1848,45.6,22.6,4.0,1.0,4.5,8.0,5.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Gulfport,30.3674,-89.0928,50.2,22.9,5.0,2.5,5.6,8.8,5.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Hattiesburg,31.3271,-89.2903,52.0,23.1,6.0,2.5,5.6,8.8,6.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Starkville,33.4504,-88.8184,54.4,23.4,6.7,4.0,5.6,8.8,6.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Little Rock,34.7465,-92.2896,55.2,23.1,7.3,2.5,6.8,9.5,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Fort Smith,35.3859,-94.3985,52.0,23.1,6.0,2.5,5.6,8.8,6.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Jonesboro,35.8423,-90.7043,55.3,23.1,6.7,4.0,6.8,8.8,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Springdale,36.1867,-94.1288,73.6,23.6,11.7,11.0,10.5,10.5,6.4,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Rogers,36.332,-94.1185,77.3,23.6,12.7,12.5,11.2,11.2,6.0,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Bentonville,36.3729,-94.2088,82.9,23.7,13.3,15.0,13.1,12.0,5.7,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Clarksville,36.5298,-87.3595,60.5,23.4,8.3,6.0,6.8,10.0,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Johnson City,36.3134,-82.3535,58.4,23.3,7.3,5.0,6.8,10.0,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Kingsport,36.5484,-82.5618,55.6,23.3,6.7,4.0,5.6,10.0,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Jackson TN,35.6145,-88.8139,53.4,23.1,6.7,2.5,5.6,9.5,6.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Franklin,35.9251,-86.8689,68.9,23.4,5.0,12.5,11.2,12.5,4.3,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Brentwood,36.0331,-86.7828,67.7,23.6,6.0,11.0,10.5,13.0,3.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Murfreesboro,35.8456,-86.3903,65.4,23.1,5.0,11.0,10.5,11.2,4.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Smyrna,35.9829,-86.5186,63.3,23.1,5.0,10.0,9.4,11.2,4.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Spring Hill,35.7512,-86.93,72.9,23.4,6.7,15.0,11.2,12.0,4.6,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Bowling Green,36.9685,-86.4808,61.6,23.4,8.3,6.0,7.5,10.0,6.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Lexington,38.0406,-84.5037,63.8,23.6,10.7,4.0,8.2,10.5,6.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Evansville,37.9716,-87.5711,57.3,23.4,8.3,2.5,6.8,9.5,6.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+South Bend,41.6764,-86.252,55.8,23.4,8.3,2.5,5.6,9.5,6.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Fort Wayne,41.1306,-85.1289,61.9,23.6,10.0,4.0,7.5,10.0,6.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Grand Rapids,42.9634,-85.6681,68.0,23.6,11.7,6.0,9.4,10.5,6.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Ann Arbor,42.2808,-83.743,65.0,24.1,11.7,4.0,8.2,12.5,4.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Lansing,42.7325,-84.5555,57.0,23.4,8.3,2.5,6.8,10.0,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Kalamazoo,42.2917,-85.5872,57.0,23.4,8.3,2.5,6.8,10.0,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Flint,43.0125,-83.6875,39.4,22.6,5.0,-2.5,3.0,6.2,5.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Detroit,42.3314,-83.0458,49.6,22.9,8.3,-1.0,5.6,8.8,5.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Toledo,41.6639,-83.5552,51.3,23.1,7.3,1.0,5.6,8.8,5.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Akron,41.0814,-81.519,51.3,23.1,7.3,1.0,5.6,8.8,5.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Dayton,39.7589,-84.1916,51.3,23.1,7.3,1.0,5.6,8.8,5.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Cincinnati,39.1031,-84.512,61.3,23.4,10.7,2.5,8.2,10.5,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Cleveland,41.4993,-81.6944,52.5,23.1,8.3,0.5,5.6,9.5,5.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Pittsburgh,40.4406,-79.9959,56.4,23.4,9.3,1.0,6.8,10.5,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Providence,41.824,-71.4128,60.9,23.9,11.7,2.5,6.8,12.5,3.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Hartford,41.7658,-72.6851,54.8,23.6,9.3,1.0,5.6,11.2,4.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Bridgeport,41.1865,-73.1952,55.3,23.8,9.3,1.0,5.6,12.0,3.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Springfield MA,42.1015,-72.5898,55.3,23.6,10.0,1.0,5.6,10.5,4.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Worcester,42.2626,-71.8023,60.4,23.9,11.7,2.5,6.8,12.0,3.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Syracuse,43.0481,-76.1474,55.7,23.6,10.0,1.0,5.6,10.0,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Rochester,43.1566,-77.6088,55.7,23.6,10.0,1.0,5.6,10.0,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Albany,42.6526,-73.7562,59.2,23.8,10.7,2.5,6.8,10.5,5.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Buffalo,42.8864,-78.8784,55.2,23.6,10.0,1.0,5.6,10.0,5.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Yonkers,40.9312,-73.8988,56.1,24.1,8.3,2.5,5.6,13.0,2.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Newark,40.7357,-74.1724,55.5,23.9,8.3,2.5,5.6,12.5,2.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Paterson,40.9168,-74.1719,53.0,23.8,7.3,2.5,4.5,12.0,2.9,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Anchorage,61.2181,-149.9003,54.4,23.4,7.3,2.5,5.6,11.2,4.3,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Honolulu,21.3069,-157.8583,55.5,24.1,8.3,2.5,5.6,13.8,1.1,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Wichita Falls,33.9137,-98.4934,50.5,23.1,6.0,1.0,5.6,8.8,6.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Midland,31.9973,-102.0779,65.1,23.4,8.3,7.5,9.4,10.5,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Odessa,31.8457,-102.3676,58.7,23.1,6.7,6.0,7.5,10.0,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Tyler,32.3513,-95.3011,56.0,23.1,6.7,4.0,6.8,9.5,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Waco,31.5493,-97.1467,56.0,23.1,6.7,4.0,6.8,9.5,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Beaumont,30.086,-94.1018,48.7,22.9,5.0,1.0,5.6,8.8,5.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Abilene,32.4487,-99.7331,52.0,23.1,6.0,2.5,5.6,8.8,6.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Laredo,27.5306,-99.4803,52.9,23.1,6.0,4.0,5.6,8.8,5.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+McAllen,26.2034,-98.23,56.1,23.1,6.0,6.0,6.8,8.8,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Brownsville,25.9017,-97.4975,52.5,23.1,6.0,4.0,5.6,8.8,5.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Killeen,31.1171,-97.7278,56.0,23.1,6.7,4.0,6.8,9.5,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Bryan-College Station,30.628,-96.3344,63.5,23.4,8.3,7.5,8.2,10.0,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Victoria,28.8053,-97.0036,52.0,23.1,6.0,2.5,5.6,8.8,6.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Longview,32.5007,-94.7405,53.4,23.1,6.7,2.5,5.6,9.5,6.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Nacogdoches,31.6035,-94.6552,52.0,23.1,6.0,2.5,5.6,8.8,6.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Lufkin,31.3382,-94.7291,48.8,23.1,6.0,1.0,4.5,8.8,5.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Huntsville TX,30.7235,-95.5508,56.0,23.1,6.7,4.0,6.8,9.5,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Texarkana,33.4251,-94.0477,48.8,23.1,6.0,1.0,4.5,8.8,5.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Paris TX,33.6609,-95.5555,48.8,23.1,6.0,1.0,4.5,8.8,5.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Amarillo,35.222,-101.8313,56.5,23.1,6.7,4.0,6.8,9.5,6.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Deltona,28.9005,-81.2637,46.9,22.6,-7.3,10.0,7.5,10.5,3.6,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Daytona Beach,29.2108,-81.0228,41.9,22.4,-8.3,7.5,6.8,10.0,3.6,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Kissimmee,28.2919,-81.4076,52.2,22.6,-6.0,12.5,8.2,11.2,3.6,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Sanford,28.8005,-81.2731,49.6,22.6,-6.0,11.0,7.5,10.5,4.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Clearwater,27.9659,-82.8001,46.7,22.9,-6.0,7.5,7.5,11.2,3.6,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Cape Coral,26.5629,-81.9495,48.7,22.4,-10.0,14.0,8.2,11.2,2.9,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Homestead,25.4687,-80.4776,55.5,22.9,4.0,7.5,6.8,11.2,3.1,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Doral,25.8195,-80.3556,67.3,23.4,6.7,12.5,9.4,12.5,2.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Aventura,25.9565,-80.1392,62.3,23.6,7.3,7.5,8.2,13.0,2.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Boca Raton,26.3683,-80.1289,62.3,23.4,6.0,9.0,8.2,12.5,3.1,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+West Palm Beach,26.7153,-80.0534,61.9,23.1,5.0,10.0,8.2,12.0,3.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Delray Beach,26.4615,-80.0728,61.9,23.1,5.0,10.0,8.2,12.0,3.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Boynton Beach,26.5317,-80.0905,59.4,23.1,4.0,10.0,7.5,11.2,3.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Pompano Beach,26.2379,-80.1248,58.3,23.1,5.0,7.5,7.5,12.0,3.1,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Hollywood,26.0112,-80.1495,58.3,23.1,5.0,7.5,7.5,12.0,3.1,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Coral Springs,26.2707,-80.2707,59.9,23.4,6.0,7.5,7.5,12.0,3.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Miramar,25.986,-80.233,61.0,23.4,6.0,9.0,7.5,12.0,3.1,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Pembroke Pines,26.007,-86.1527,61.4,23.4,6.0,9.0,7.5,12.0,3.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Sunrise,26.167,-80.2561,57.8,23.4,5.0,7.5,7.5,11.2,3.1,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Plantation,26.1276,-80.2331,59.9,23.4,6.0,7.5,7.5,12.0,3.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Davie,26.0765,-80.2521,59.9,23.4,6.0,7.5,7.5,12.0,3.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Weston,26.1003,-80.3998,62.1,23.6,6.7,7.5,8.2,12.5,3.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Deerfield Beach,26.3184,-80.0998,57.5,23.1,5.0,7.5,7.5,11.2,3.1,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Margate,26.2445,-80.2062,54.3,23.1,4.0,6.0,6.8,11.2,3.1,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Lauderhill,26.1401,-80.2131,50.1,23.1,4.0,4.0,5.6,10.5,2.9,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Tamarac,26.2129,-80.2497,53.5,23.1,4.0,6.0,6.8,10.5,3.1,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Coconut Creek,26.2712,-80.1793,57.4,23.4,5.0,7.5,6.8,11.2,3.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+North Miami,25.8897,-80.1868,55.0,23.1,5.0,6.0,6.8,11.2,2.9,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Miami Gardens,25.942,-80.2456,52.1,23.1,4.0,6.0,5.6,10.5,2.9,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Hialeah,25.8576,-80.2781,52.1,23.1,4.0,6.0,5.6,10.5,2.9,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Greenville SC,34.8526,-82.394,67.6,23.4,9.3,9.0,9.4,10.5,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Columbia SC,34.0007,-81.0348,58.6,23.4,8.3,4.0,7.5,10.0,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Spartanburg,34.9496,-81.932,60.6,23.4,8.3,6.0,7.5,10.0,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Rock Hill,34.9249,-81.0251,68.3,23.4,9.3,10.0,9.4,10.5,5.7,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+North Charleston,32.8546,-79.9748,65.7,23.2,7.3,10.0,9.4,11.2,4.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Mount Pleasant,32.8323,-79.8284,71.5,23.4,8.3,12.5,10.5,12.5,4.3,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Wilmington NC,34.2257,-77.9447,64.1,23.3,7.3,9.0,8.2,11.2,5.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Gastonia,35.2621,-81.1873,59.6,23.1,6.0,7.5,7.5,10.0,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Concord NC,35.4088,-80.5795,68.3,23.4,8.3,11.0,9.4,11.2,5.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Huntersville,35.4107,-80.8429,71.3,23.4,8.3,12.5,10.5,12.0,4.6,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Mooresville,35.5746,-80.8098,71.3,23.4,8.3,12.5,10.5,12.0,4.6,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Cary,35.7915,-78.7811,72.8,23.6,8.3,12.5,11.2,12.5,4.6,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Durham,35.994,-78.8986,70.3,23.4,7.3,11.0,12.0,12.0,4.6,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Chapel Hill,35.9132,-79.0558,66.9,23.9,9.3,7.5,9.4,12.5,4.3,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Apex,35.7327,-78.8503,76.0,23.6,8.3,15.0,12.0,12.5,4.6,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Morrisville,35.8237,-78.8253,75.0,23.6,8.3,14.0,12.0,12.5,4.6,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+High Point,35.9557,-80.0053,57.9,23.4,7.3,5.0,6.8,10.0,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Winston-Salem,36.0999,-80.2442,56.9,23.4,7.3,4.0,6.8,10.0,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Greensboro,36.0726,-79.792,56.9,23.4,7.3,4.0,6.8,10.0,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Richmond VA,37.5407,-77.436,66.7,23.4,10.7,6.0,9.4,11.2,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Newport News,37.0871,-76.473,56.9,23.4,8.3,2.5,6.8,10.5,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Chesapeake,36.7682,-76.2875,61.3,23.6,9.3,4.0,7.5,11.2,5.7,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Virginia Beach,36.8529,-75.978,59.1,23.6,9.3,2.5,6.8,11.2,5.7,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Hampton,37.0299,-76.3452,54.3,23.4,8.3,1.0,5.6,10.5,5.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Alexandria VA,38.8048,-77.0469,62.9,23.9,10.0,5.0,7.5,13.0,3.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Madison WI,43.0731,-89.4012,64.5,23.9,11.7,4.0,8.2,11.2,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Green Bay,44.5133,-88.0133,59.7,23.6,10.0,2.5,6.8,10.0,6.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Kenosha,42.5847,-87.8212,60.0,23.6,10.7,2.5,6.8,10.5,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Racine,42.7261,-87.7829,54.3,23.4,9.3,1.0,5.6,9.5,5.4,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Appleton,44.2619,-88.4154,64.9,23.8,11.7,4.0,7.5,10.5,7.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Eau Claire,44.8113,-91.4985,64.3,23.8,11.7,4.0,7.5,10.5,6.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+La Crosse,43.8014,-91.2396,60.6,23.8,10.7,2.5,6.8,10.5,6.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Janesville,42.6828,-89.0187,58.9,23.6,10.0,2.5,6.8,10.0,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Cedar Rapids,41.9779,-91.6656,64.3,23.8,11.7,4.0,7.5,10.5,6.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Iowa City,41.6611,-91.5302,66.3,24.1,12.7,4.0,7.5,11.2,6.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Sioux City,42.4999,-96.4003,58.8,23.6,10.0,2.5,6.8,9.5,6.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Waterloo,42.4928,-92.3426,55.8,23.6,10.0,1.0,5.6,9.5,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Ames,42.0308,-93.6319,69.1,24.1,12.7,6.0,8.2,11.2,6.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Dubuque,42.5006,-90.6646,61.1,23.8,10.7,2.5,6.8,10.5,6.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Olathe,38.8814,-94.8191,74.5,23.6,11.7,11.0,10.5,11.2,6.4,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Lawrence KS,38.9717,-95.2353,63.9,23.8,11.7,4.0,7.5,10.5,6.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Shawnee,39.0228,-94.7152,72.3,23.6,11.7,10.0,9.4,11.2,6.4,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Lenexa,38.9536,-94.7336,78.5,23.7,12.7,12.5,11.2,12.0,6.4,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Lincoln NE,40.8136,-96.7026,68.6,23.8,12.7,6.0,8.2,10.5,7.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Grand Island,40.925,-98.342,63.1,23.8,11.7,4.0,6.8,10.0,6.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Rapid City,44.0805,-103.231,69.6,23.9,12.7,7.5,8.2,10.5,6.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Bismarck,46.8083,-100.7837,66.0,23.9,11.7,5.0,7.5,10.5,7.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Grand Forks,47.9253,-97.0329,64.2,23.9,11.7,4.0,6.8,10.5,7.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Minot,48.2325,-101.2963,59.4,23.8,10.7,2.5,5.6,10.0,6.9,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Missoula,46.8721,-113.994,67.3,23.9,9.3,10.0,8.2,11.2,4.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Great Falls,47.5002,-111.3008,56.1,23.6,8.3,2.5,5.6,10.0,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Helena MT,46.5958,-112.027,60.4,23.8,9.3,4.0,6.8,10.5,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Kalispell,48.192,-114.3168,69.8,23.9,9.3,12.5,8.2,11.2,4.6,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Casper,42.8501,-106.3252,55.0,23.6,7.3,2.5,5.6,10.0,6.0,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Laramie,41.3114,-105.5911,59.4,23.8,8.3,4.0,6.8,10.5,6.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Nampa,43.5407,-116.5635,55.5,22.9,-2.7,12.5,7.5,11.2,4.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Meridian,43.6121,-116.3915,61.7,22.9,-1.7,15.0,9.4,12.0,4.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Coeur d'Alene,47.6777,-116.7805,68.8,23.4,5.0,15.0,9.4,12.0,4.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Twin Falls,42.5629,-114.4609,61.4,23.4,5.0,10.0,7.5,10.5,5.0,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Pocatello,42.8713,-112.4455,56.6,23.4,5.0,6.0,6.8,10.0,5.4,Tier 2,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+West Valley City,40.6916,-112.001,48.2,22.9,-6.0,7.5,8.2,11.2,4.3,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+West Jordan,40.6097,-111.9391,52.8,23.1,-5.0,9.0,9.4,12.0,4.3,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Sandy,40.5649,-111.8389,51.3,23.1,-5.0,7.5,9.4,12.0,4.3,Tier 3,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com
+Lehi,40.3916,-111.8507,73.6,23.4,5.0,15.0,13.1,12.5,4.6,Tier 1,Composite - CoStar/BLS/Census,2025-Q4,https://www.costar.com

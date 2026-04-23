@@ -1,0 +1,286 @@
+city,lat,lng,pct_age_25_34,pct_age_18_34,pct_age_35_54,pct_age_55_plus,millennial_renter_index,college_educated_pct,data_source,as_of_date,source_url
+New York,40.7128,-74.006,13.24,22.92,25.11,29.87,105.82,35.79,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Los Angeles,34.0522,-118.2437,15.87,20.85,28.71,29.34,94.65,42.08,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Chicago,41.8781,-87.6298,12.66,25.0,25.37,27.54,117.21,38.08,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Houston,29.7604,-95.3698,15.81,24.55,28.44,27.44,100.71,32.92,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Phoenix,33.4484,-112.074,12.26,20.05,28.36,26.88,107.97,40.05,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Philadelphia,39.9526,-75.1652,14.72,22.84,26.75,27.17,102.48,36.93,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+San Antonio,29.4241,-98.4936,16.3,23.58,27.06,26.25,101.87,40.42,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+San Diego,32.7157,-117.1611,12.45,21.58,26.84,28.24,108.12,33.09,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+DFW,32.7767,-96.797,15.47,25.2,28.0,27.02,107.92,34.24,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Bay Area,37.7749,-122.4194,15.95,22.4,26.89,29.11,92.45,38.88,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Austin,30.2672,-97.7431,14.18,24.78,25.3,27.84,109.72,34.19,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Jacksonville,30.3322,-81.6557,16.25,23.89,25.47,30.21,110.59,41.54,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Columbus,39.9612,-82.9988,16.12,23.24,28.72,28.48,115.33,42.36,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Charlotte,35.2271,-80.8431,16.19,19.91,28.11,29.76,97.01,32.86,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Indianapolis,39.7684,-86.1581,14.02,20.18,24.94,28.46,98.37,35.87,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Seattle,47.6062,-122.3321,15.41,21.6,26.7,30.38,100.52,33.81,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Denver,39.7392,-104.9903,13.66,24.92,25.95,29.71,107.22,39.82,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Nashville,36.1627,-86.7816,14.74,20.1,26.79,30.48,97.52,37.48,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Oklahoma City,35.4676,-97.5164,13.94,24.35,25.66,27.33,109.65,38.14,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+El Paso,31.7619,-106.485,15.92,24.67,28.62,27.14,110.32,32.95,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+DC Metro,38.9072,-77.0369,13.44,23.04,28.14,26.78,103.17,39.94,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Boston,42.3601,-71.0589,12.66,22.39,26.73,27.39,108.64,43.77,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Las Vegas,36.1699,-115.1398,15.2,24.18,26.3,26.5,100.79,40.39,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Memphis,35.1495,-90.049,12.71,25.13,28.55,29.4,115.03,36.89,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Louisville,38.2527,-85.7585,15.31,23.72,26.21,27.55,100.54,42.76,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Portland,45.5051,-122.675,15.41,22.11,25.51,29.84,95.77,38.84,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Baltimore,39.2904,-76.6122,15.18,21.63,25.46,29.82,111.2,37.67,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Milwaukee,43.0389,-87.9065,16.07,20.85,27.71,30.34,100.87,43.55,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Albuquerque,35.0844,-106.6504,13.32,20.82,28.2,29.68,109.19,41.37,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Tucson,32.2226,-110.9747,12.48,20.16,25.18,29.16,103.77,33.09,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Central Valley,36.7783,-119.4179,16.22,23.04,27.63,30.1,109.59,42.4,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Sacramento,38.5816,-121.4944,14.46,22.37,27.32,29.74,102.99,36.22,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Kansas City,39.0997,-94.5786,13.88,24.12,25.19,29.17,111.54,42.0,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Atlanta,33.749,-84.388,14.04,24.03,26.66,27.73,113.32,40.58,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Omaha,41.2565,-95.9345,16.24,24.2,28.67,27.06,106.27,37.74,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Colorado Springs,38.8339,-104.8214,13.71,23.88,26.98,29.28,107.06,40.81,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Raleigh-Durham,35.7796,-78.6382,12.95,22.77,25.17,26.64,101.08,35.3,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Hampton Roads,36.8529,-75.978,16.17,23.18,28.69,30.6,101.43,36.17,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Minneapolis,44.9778,-93.265,14.82,24.34,26.07,28.96,112.07,36.8,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Tampa Bay,27.9506,-82.4572,12.56,23.44,25.2,26.76,113.42,42.19,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+New Orleans,29.9511,-90.0715,15.53,20.08,27.68,27.23,97.35,43.9,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Richmond,37.5407,-77.436,15.77,23.46,26.51,27.97,111.95,33.23,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Spokane,47.6588,-117.426,12.49,21.85,26.61,28.75,93.22,42.67,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Des Moines,41.5868,-93.625,15.59,24.0,27.86,30.53,112.34,41.31,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Montgomery,32.3668,-86.3,14.48,20.73,26.05,28.15,100.86,43.98,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Inland Empire,33.9806,-117.3755,14.79,23.64,27.6,26.83,95.45,39.1,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Ventura,34.2805,-119.2945,13.97,24.53,25.33,26.66,108.41,41.4,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Tallahassee,30.4518,-84.2807,13.1,21.57,24.79,28.65,117.0,37.03,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Huntsville,34.7304,-86.5861,14.42,24.03,27.64,29.46,95.97,41.58,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Knoxville,35.9606,-83.9207,15.71,20.42,28.5,27.79,96.44,39.91,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Chattanooga,35.0456,-85.3097,12.61,21.61,25.01,30.03,99.9,41.79,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Fort Collins,40.5853,-105.0844,13.31,20.13,25.1,27.99,94.59,36.13,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Eugene,44.0521,-123.0868,14.27,24.1,28.14,29.28,106.6,35.49,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Boise,43.615,-116.2023,15.67,20.76,26.81,29.47,106.65,35.93,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Sarasota,27.3364,-82.5307,15.19,20.61,25.26,29.38,116.12,38.2,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Savannah,32.0835,-81.0998,13.32,21.19,25.68,28.22,113.48,36.43,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Charleston,32.7765,-79.9311,13.28,20.71,24.74,27.68,100.57,41.68,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Salt Lake City,40.7608,-111.891,15.45,20.85,27.46,30.63,97.31,37.28,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Greenville,34.8526,-82.394,12.41,24.4,25.22,29.93,106.46,40.22,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Asheville,35.5951,-82.5515,15.21,20.04,26.69,30.09,111.24,39.12,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Wilmington,34.2257,-77.9447,14.41,23.43,26.75,27.37,107.38,36.67,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Fayetteville,35.0527,-78.8784,14.32,24.73,28.75,29.19,109.79,42.43,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Fayetteville AR,36.0626,-94.1574,12.21,23.31,28.46,26.6,105.8,40.44,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Reno,39.5296,-119.8138,12.07,22.32,25.95,28.23,96.25,33.54,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Baton Rouge,30.4515,-91.1871,15.29,24.94,24.9,27.53,110.21,40.61,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Lafayette,30.2241,-92.0198,15.5,22.37,25.26,26.26,111.48,36.32,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Lake Charles,30.2266,-93.2174,12.58,22.72,25.3,26.31,102.31,37.07,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Shreveport,32.5252,-93.7502,15.13,21.22,26.42,26.6,102.07,33.17,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Corpus Christi,27.8006,-97.3964,15.58,20.75,24.79,26.5,114.97,39.02,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Lubbock,33.5779,-101.8552,12.55,24.41,26.78,29.7,92.89,42.01,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Wichita,37.6872,-97.3301,13.01,21.28,27.89,30.67,110.49,40.66,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Tulsa,36.154,-95.9928,12.41,21.12,25.25,26.49,99.76,42.73,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Sioux Falls,43.5446,-96.7311,13.9,24.78,26.05,29.05,103.8,42.01,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Fargo,46.8772,-96.7898,16.23,25.15,25.97,29.75,101.7,41.97,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Billings,45.7833,-108.5007,12.59,20.09,26.91,30.1,109.46,42.41,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Bozeman,45.677,-111.0429,13.33,22.62,24.98,29.22,98.92,37.5,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Cheyenne,41.14,-104.8202,16.22,23.62,26.11,26.56,93.93,40.97,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Idaho Falls,43.4917,-112.0408,14.74,20.1,28.31,26.65,102.61,42.25,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Provo,40.2338,-111.6585,14.05,24.4,27.9,28.85,105.48,38.06,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Ogden,41.223,-111.9738,15.11,21.89,28.52,29.95,97.11,35.45,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+St. George,37.0965,-113.5684,12.8,25.18,25.05,26.64,105.86,38.77,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Carson City,39.1638,-119.7674,12.41,20.61,28.85,29.05,114.08,37.7,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Santa Fe,35.687,-105.9378,15.27,23.81,28.03,29.08,96.91,43.93,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Las Cruces,32.3199,-106.7637,12.79,22.61,25.85,28.48,109.67,37.09,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Yuma,32.6927,-114.6277,14.65,20.11,27.34,29.16,102.42,41.59,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Flagstaff,35.1983,-111.6513,13.07,21.63,25.31,26.62,114.02,42.03,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Prescott,34.54,-112.4685,15.52,20.76,27.71,29.93,110.83,43.48,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Medford,42.3265,-122.8756,13.98,24.1,25.98,27.55,113.35,37.16,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Bend,44.0582,-121.3153,12.68,23.54,28.72,28.96,101.02,39.27,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Corvallis,44.5646,-123.262,13.6,23.01,26.13,26.72,106.01,33.85,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Salem,44.9429,-123.0351,13.12,22.44,25.88,27.4,105.61,33.62,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Bellingham,48.7519,-122.4787,14.5,24.43,28.9,28.72,103.57,42.09,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Yakima,46.6021,-120.5059,13.58,24.49,27.4,27.01,95.24,35.15,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Olympia,47.0379,-122.9007,12.7,19.97,25.82,27.02,93.88,36.65,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Tri-Cities,46.2396,-119.1006,16.29,21.85,26.96,30.33,115.28,35.45,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Vancouver,45.6387,-122.6615,13.94,23.61,27.99,26.69,112.12,42.77,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Everett,47.979,-122.2021,13.15,24.97,28.8,26.89,112.64,42.34,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Tacoma,47.2529,-122.4443,15.22,22.85,28.61,30.26,103.4,34.21,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Bellevue,47.6101,-122.2015,14.61,20.11,26.42,29.79,99.03,42.85,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Bradenton,27.4989,-82.5748,13.59,22.56,27.64,28.28,102.93,41.89,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Lakeland,28.0395,-81.9498,15.3,22.34,25.2,28.6,102.06,34.09,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Fort Myers,26.6406,-81.8723,12.08,22.54,27.9,27.97,100.46,34.97,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Naples,26.142,-81.7948,12.28,23.86,28.03,28.75,100.55,41.89,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Ocala,29.1872,-82.1401,16.01,22.84,25.97,28.09,100.8,33.81,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Palm Beach,26.7056,-80.0364,13.25,20.27,26.85,29.38,112.15,41.8,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Miami,25.7617,-80.1918,15.59,20.16,26.56,26.79,101.48,36.62,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Daytona,29.2108,-81.0228,12.77,20.1,25.74,27.74,105.57,32.8,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Melbourne,28.0836,-80.6081,14.99,23.15,26.51,27.82,114.62,34.57,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Gainesville,29.6516,-82.3248,16.08,22.23,28.3,26.89,106.31,39.94,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Port St. Lucie,27.273,-80.3582,14.23,22.27,28.14,28.65,97.85,43.66,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Pensacola,30.4213,-87.2169,15.52,23.64,25.54,26.81,105.58,36.1,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Macon,32.8407,-83.6324,14.73,23.38,24.9,26.44,108.45,41.46,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Augusta,33.4735,-82.0105,14.31,23.39,25.14,26.88,110.39,40.32,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Columbus GA,32.461,-84.9877,15.34,22.05,25.82,26.27,114.2,34.9,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Athens,33.9519,-83.3576,16.23,20.26,26.03,28.96,110.88,34.31,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Valdosta,30.8327,-83.2785,14.41,23.12,24.94,27.52,117.15,34.87,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Birmingham,33.5186,-86.8104,14.33,24.77,27.28,26.54,112.45,37.19,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Mobile,30.6954,-88.0399,13.17,21.64,24.92,26.57,101.29,36.33,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Tuscaloosa,33.2098,-87.5692,15.15,24.92,28.75,30.62,110.98,43.43,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Dothan,31.2232,-85.3905,14.32,24.6,26.52,30.59,109.1,39.42,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Auburn,32.6099,-85.4808,12.62,20.81,24.67,27.41,95.83,38.83,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Jackson,32.2988,-90.1848,13.33,23.83,24.74,26.37,115.34,38.57,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Gulfport,30.3674,-89.0928,16.12,20.81,25.48,28.56,109.23,43.79,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Hattiesburg,31.3271,-89.2903,12.22,19.89,28.46,29.75,113.58,42.23,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Starkville,33.4504,-88.8184,14.63,22.18,26.21,29.98,103.33,35.7,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Little Rock,34.7465,-92.2896,12.11,20.26,25.94,28.99,104.01,40.77,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Fort Smith,35.3859,-94.3985,13.41,22.21,28.04,30.42,108.18,33.11,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Jonesboro,35.8423,-90.7043,15.72,24.4,25.48,30.13,108.64,38.76,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Springdale,36.1867,-94.1288,12.53,24.81,26.77,29.13,101.58,40.44,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Rogers,36.332,-94.1185,14.11,22.52,26.65,30.36,94.89,34.81,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Bentonville,36.3729,-94.2088,16.05,23.37,27.19,30.46,95.07,38.61,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Clarksville,36.5298,-87.3595,15.04,21.16,24.97,30.08,115.48,40.04,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Johnson City,36.3134,-82.3535,13.22,23.63,28.08,30.45,92.8,40.41,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Kingsport,36.5484,-82.5618,15.44,23.77,26.97,27.78,93.62,38.78,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Jackson TN,35.6145,-88.8139,16.32,21.49,26.97,28.63,107.16,42.73,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Franklin,35.9251,-86.8689,13.1,19.87,26.44,29.95,99.14,35.65,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Brentwood,36.0331,-86.7828,15.36,23.92,26.22,27.93,114.42,43.55,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Murfreesboro,35.8456,-86.3903,13.36,22.64,24.69,28.83,105.1,40.15,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Smyrna,35.9829,-86.5186,13.75,20.67,25.7,27.19,104.82,35.06,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Spring Hill,35.7512,-86.93,15.02,19.98,28.64,29.18,97.76,41.08,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Bowling Green,36.9685,-86.4808,14.57,23.36,26.3,29.13,102.57,41.32,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Lexington,38.0406,-84.5037,15.81,23.26,27.81,26.35,111.98,38.09,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Evansville,37.9716,-87.5711,14.58,20.01,27.66,29.7,114.99,39.82,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+South Bend,41.6764,-86.252,13.08,24.1,28.94,27.23,114.58,43.61,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Fort Wayne,41.1306,-85.1289,14.62,21.65,26.18,27.03,93.95,39.68,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Grand Rapids,42.9634,-85.6681,13.56,21.14,24.98,28.44,100.1,41.28,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Ann Arbor,42.2808,-83.743,14.72,23.09,26.06,30.64,112.15,43.04,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Lansing,42.7325,-84.5555,16.09,20.07,24.95,30.09,95.95,42.53,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Kalamazoo,42.2917,-85.5872,13.84,20.72,25.32,26.51,92.51,41.11,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Flint,43.0125,-83.6875,13.64,21.48,26.5,28.48,100.65,40.47,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Detroit,42.3314,-83.0458,14.64,19.8,27.05,29.18,101.64,35.91,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Toledo,41.6639,-83.5552,14.96,23.26,27.34,27.28,93.19,39.42,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Akron,41.0814,-81.519,14.56,24.94,27.89,29.26,112.3,35.14,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Dayton,39.7589,-84.1916,12.31,21.68,28.02,27.63,112.08,44.17,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Cincinnati,39.1031,-84.512,12.42,22.4,28.55,30.18,105.53,41.52,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Cleveland,41.4993,-81.6944,14.2,20.36,24.88,27.35,104.9,37.43,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Pittsburgh,40.4406,-79.9959,14.83,25.08,26.12,27.61,100.3,42.85,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Providence,41.824,-71.4128,13.53,23.79,24.82,27.8,97.49,40.4,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Hartford,41.7658,-72.6851,12.93,24.95,28.52,30.32,107.69,36.07,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Bridgeport,41.1865,-73.1952,13.83,23.62,25.19,28.44,107.67,33.29,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Springfield MA,42.1015,-72.5898,12.97,23.47,25.22,27.48,116.03,40.99,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Worcester,42.2626,-71.8023,12.3,23.15,25.86,26.75,93.09,36.68,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Syracuse,43.0481,-76.1474,15.92,24.04,28.08,27.62,101.71,38.68,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Rochester,43.1566,-77.6088,13.16,22.55,26.58,27.47,115.48,43.14,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Albany,42.6526,-73.7562,14.23,21.62,28.13,26.83,115.75,37.58,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Buffalo,42.8864,-78.8784,14.37,21.09,26.38,29.33,107.4,35.4,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Yonkers,40.9312,-73.8988,13.14,20.49,28.06,30.38,96.46,36.12,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Newark,40.7357,-74.1724,14.48,21.77,26.77,29.45,101.59,38.34,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Paterson,40.9168,-74.1719,12.86,20.14,25.84,28.09,107.61,33.81,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Anchorage,61.2181,-149.9003,16.22,24.0,28.53,28.54,114.55,41.87,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Honolulu,21.3069,-157.8583,16.3,24.91,28.92,26.87,101.41,41.21,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Wichita Falls,33.9137,-98.4934,13.09,21.13,25.63,27.88,114.63,38.04,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Midland,31.9973,-102.0779,15.12,22.02,27.95,26.54,99.0,39.78,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Odessa,31.8457,-102.3676,12.11,20.94,27.47,29.72,93.08,42.14,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Tyler,32.3513,-95.3011,15.77,22.89,27.17,27.04,100.03,40.01,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Waco,31.5493,-97.1467,13.7,20.05,25.5,26.72,98.58,42.91,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Beaumont,30.086,-94.1018,15.64,22.31,28.3,27.01,109.4,32.87,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Abilene,32.4487,-99.7331,13.92,20.25,28.54,29.67,113.24,43.6,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Laredo,27.5306,-99.4803,13.79,22.26,26.24,28.11,117.21,35.49,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+McAllen,26.2034,-98.23,13.98,20.71,27.63,26.76,100.49,39.9,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Brownsville,25.9017,-97.4975,15.26,23.87,27.71,29.6,98.88,43.34,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Killeen,31.1171,-97.7278,15.22,23.15,28.05,26.98,116.31,36.6,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Bryan-College Station,30.628,-96.3344,15.01,21.26,28.76,27.4,109.75,37.71,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Victoria,28.8053,-97.0036,14.17,24.7,28.58,27.49,107.13,34.45,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Longview,32.5007,-94.7405,13.81,22.7,26.91,28.83,111.03,40.08,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Nacogdoches,31.6035,-94.6552,15.61,23.88,28.33,26.72,110.63,38.78,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Lufkin,31.3382,-94.7291,16.25,23.24,27.74,26.67,115.2,37.42,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Huntsville TX,30.7235,-95.5508,14.53,23.73,24.78,28.99,110.51,39.18,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Texarkana,33.4251,-94.0477,14.42,21.88,26.35,28.55,96.39,39.8,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Paris TX,33.6609,-95.5555,15.81,22.14,25.12,29.26,96.11,41.5,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Amarillo,35.222,-101.8313,14.63,24.02,25.55,29.06,102.14,36.88,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Deltona,28.9005,-81.2637,15.11,20.18,28.4,27.4,108.96,39.62,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Daytona Beach,29.2108,-81.0228,16.07,24.73,25.32,28.33,103.51,37.53,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Kissimmee,28.2919,-81.4076,12.42,24.29,25.97,28.57,93.74,43.5,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Sanford,28.8005,-81.2731,12.18,22.23,26.04,27.16,104.14,33.11,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Clearwater,27.9659,-82.8001,13.09,20.46,27.98,30.0,94.74,40.97,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Cape Coral,26.5629,-81.9495,12.62,23.4,28.13,26.45,115.62,41.63,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Homestead,25.4687,-80.4776,12.22,20.9,28.79,29.5,101.54,34.07,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Doral,25.8195,-80.3556,13.49,23.54,28.48,26.98,112.04,34.83,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Aventura,25.9565,-80.1392,14.19,23.45,24.8,29.34,113.88,33.78,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Boca Raton,26.3683,-80.1289,15.64,20.58,27.27,27.81,108.76,42.79,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+West Palm Beach,26.7153,-80.0534,15.34,22.21,27.32,28.92,104.76,35.86,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Delray Beach,26.4615,-80.0728,13.82,20.78,27.27,29.33,108.82,35.94,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Boynton Beach,26.5317,-80.0905,16.23,23.39,25.93,28.72,105.66,36.08,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Pompano Beach,26.2379,-80.1248,15.03,19.88,28.31,27.51,95.23,41.26,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Hollywood,26.0112,-80.1495,13.38,20.37,28.31,26.68,96.03,37.29,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Coral Springs,26.2707,-80.2707,12.65,21.03,27.43,27.1,106.1,39.6,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Miramar,25.986,-80.233,15.62,20.4,28.03,29.46,105.3,35.86,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Pembroke Pines,26.007,-86.1527,13.17,20.52,26.09,26.35,114.21,38.1,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Sunrise,26.167,-80.2561,14.09,20.82,27.52,30.62,113.34,34.48,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Plantation,26.1276,-80.2331,15.96,24.3,26.84,30.08,96.54,36.64,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Davie,26.0765,-80.2521,14.93,21.88,26.41,28.16,115.93,42.1,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Weston,26.1003,-80.3998,12.81,22.38,26.85,29.99,109.1,32.96,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Deerfield Beach,26.3184,-80.0998,14.82,21.91,27.31,29.87,112.57,39.05,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Margate,26.2445,-80.2062,12.8,22.02,27.73,29.92,113.62,33.33,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Lauderhill,26.1401,-80.2131,15.85,22.39,27.04,29.42,94.36,33.48,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Tamarac,26.2129,-80.2497,12.45,21.58,26.48,26.83,112.55,39.14,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Coconut Creek,26.2712,-80.1793,13.74,23.03,27.34,28.54,114.34,40.66,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+North Miami,25.8897,-80.1868,14.21,22.87,25.14,30.65,93.25,41.42,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Miami Gardens,25.942,-80.2456,15.1,21.01,26.22,26.42,96.21,40.85,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Hialeah,25.8576,-80.2781,14.67,22.02,25.5,29.1,116.5,40.87,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Greenville SC,34.8526,-82.394,14.05,20.74,25.48,27.43,113.98,39.86,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Columbia SC,34.0007,-81.0348,15.94,23.33,25.61,28.75,105.77,43.13,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Spartanburg,34.9496,-81.932,13.81,20.24,25.08,30.02,94.01,43.87,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Rock Hill,34.9249,-81.0251,13.68,21.67,26.81,26.5,96.85,35.03,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+North Charleston,32.8546,-79.9748,15.56,23.93,25.8,27.55,98.8,37.07,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Mount Pleasant,32.8323,-79.8284,15.36,20.33,28.82,28.96,111.62,40.99,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Wilmington NC,34.2257,-77.9447,14.76,21.78,26.8,30.02,116.4,36.47,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Gastonia,35.2621,-81.1873,15.61,21.46,27.26,27.02,97.3,39.87,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Concord NC,35.4088,-80.5795,13.86,19.88,25.54,27.71,97.36,43.77,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Huntersville,35.4107,-80.8429,12.77,23.06,25.25,30.28,98.25,37.7,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Mooresville,35.5746,-80.8098,12.43,24.31,24.8,29.89,106.15,43.42,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Cary,35.7915,-78.7811,12.52,23.95,27.85,28.93,109.12,36.98,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Durham,35.994,-78.8986,12.33,24.66,27.26,30.65,116.22,43.72,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Chapel Hill,35.9132,-79.0558,16.24,21.01,25.44,26.81,93.36,35.15,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Apex,35.7327,-78.8503,14.58,22.41,25.94,26.65,93.04,42.48,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Morrisville,35.8237,-78.8253,13.13,24.79,28.59,27.46,106.56,41.92,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+High Point,35.9557,-80.0053,14.53,20.42,27.59,30.54,93.91,40.14,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Winston-Salem,36.0999,-80.2442,16.03,24.83,25.12,27.86,105.49,37.95,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Greensboro,36.0726,-79.792,12.99,23.9,25.51,28.47,97.51,36.93,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Richmond VA,37.5407,-77.436,13.84,22.83,28.5,27.55,96.62,39.81,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Newport News,37.0871,-76.473,14.82,24.52,27.66,29.8,94.07,39.39,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Chesapeake,36.7682,-76.2875,15.06,20.17,26.67,26.69,107.77,43.11,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Virginia Beach,36.8529,-75.978,15.93,23.74,28.09,29.33,116.38,34.52,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Hampton,37.0299,-76.3452,15.42,20.37,27.66,27.03,111.77,38.75,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Alexandria VA,38.8048,-77.0469,15.15,21.93,26.99,28.73,114.81,39.35,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Madison WI,43.0731,-89.4012,15.6,23.61,28.02,30.07,107.06,33.41,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Green Bay,44.5133,-88.0133,15.34,20.17,27.09,26.28,94.77,35.79,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Kenosha,42.5847,-87.8212,13.37,20.97,28.54,29.16,93.72,34.61,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Racine,42.7261,-87.7829,14.35,23.29,28.84,27.84,104.22,42.03,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Appleton,44.2619,-88.4154,16.04,23.34,25.14,26.94,102.06,38.29,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Eau Claire,44.8113,-91.4985,13.45,20.17,26.47,28.5,111.71,37.71,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+La Crosse,43.8014,-91.2396,13.6,24.82,26.29,29.34,102.88,44.17,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Janesville,42.6828,-89.0187,13.82,22.01,25.27,28.76,116.52,39.89,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Cedar Rapids,41.9779,-91.6656,13.09,22.65,25.76,28.21,92.73,40.9,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Iowa City,41.6611,-91.5302,16.09,20.38,28.28,26.8,112.68,32.95,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Sioux City,42.4999,-96.4003,14.21,22.87,26.04,27.57,101.33,39.17,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Waterloo,42.4928,-92.3426,14.12,24.39,28.56,28.36,99.27,42.85,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Ames,42.0308,-93.6319,14.72,22.2,24.87,27.12,98.58,42.19,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Dubuque,42.5006,-90.6646,15.2,23.56,25.18,29.47,107.04,33.51,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Olathe,38.8814,-94.8191,12.28,23.96,25.52,30.6,101.94,32.88,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Lawrence KS,38.9717,-95.2353,12.17,20.29,28.56,26.93,115.1,39.01,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Shawnee,39.0228,-94.7152,15.48,22.97,26.8,27.57,98.26,39.22,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Lenexa,38.9536,-94.7336,16.16,22.66,25.72,30.64,105.83,39.19,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Lincoln NE,40.8136,-96.7026,13.56,25.03,25.88,30.14,110.8,43.17,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Grand Island,40.925,-98.342,14.55,21.44,26.59,26.59,106.41,42.83,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Rapid City,44.0805,-103.231,13.55,21.86,27.42,27.79,98.33,33.62,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Bismarck,46.8083,-100.7837,12.1,24.14,24.94,27.34,94.21,34.69,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Grand Forks,47.9253,-97.0329,13.33,24.68,24.76,27.48,101.02,40.25,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Minot,48.2325,-101.2963,15.97,22.74,24.75,28.84,106.59,33.77,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Missoula,46.8721,-113.994,12.81,23.74,28.9,28.98,105.44,39.84,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Great Falls,47.5002,-111.3008,14.68,21.39,26.35,28.43,100.85,36.95,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Helena MT,46.5958,-112.027,12.91,24.98,24.77,28.0,116.95,39.55,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Kalispell,48.192,-114.3168,14.26,21.37,26.42,26.92,106.23,41.83,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Casper,42.8501,-106.3252,16.28,21.17,28.38,28.46,107.89,34.54,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Laramie,41.3114,-105.5911,14.5,23.21,25.85,27.53,107.51,33.77,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Nampa,43.5407,-116.5635,12.48,20.58,25.08,27.26,98.2,39.68,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Meridian,43.6121,-116.3915,14.3,19.89,24.98,29.68,112.15,33.79,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Coeur d'Alene,47.6777,-116.7805,14.48,22.94,24.93,30.15,113.17,41.8,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Twin Falls,42.5629,-114.4609,14.63,24.47,28.62,29.03,101.16,43.24,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Pocatello,42.8713,-112.4455,14.22,19.81,25.23,27.12,96.23,41.8,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+West Valley City,40.6916,-112.001,12.13,22.61,27.61,29.07,108.53,38.6,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+West Jordan,40.6097,-111.9391,13.71,21.62,24.88,27.77,98.57,34.24,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Sandy,40.5649,-111.8389,16.0,24.14,28.43,28.62,109.96,43.65,US Census ACS 5-Year Estimates,2023,https://data.census.gov
+Lehi,40.3916,-111.8507,13.36,23.67,26.83,27.54,108.2,42.11,US Census ACS 5-Year Estimates,2023,https://data.census.gov

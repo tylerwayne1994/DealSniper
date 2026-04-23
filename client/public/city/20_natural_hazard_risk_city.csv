@@ -1,0 +1,286 @@
+city,lat,lng,primary_hazard,hazard_severity,fema_flood_zone,wildfire_risk_score_1_10,earthquake_risk_score_1_10,hurricane_risk_score_1_10,tornado_risk_score_1_10,composite_hazard_score_1_10,data_source,as_of_date,source_url
+New York,40.7128,-74.006,Low,No major hazard designation,X,1,1,1,1,3.51,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Los Angeles,34.0522,-118.2437,Wildfire/Earthquake,High,X,6,9,1,1,2.77,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Chicago,41.8781,-87.6298,Low,No major hazard designation,X,1,1,1,1,2.93,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Houston,29.7604,-95.3698,Flood,High,AE,1,1,1,1,4.47,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Phoenix,33.4484,-112.074,Extreme Heat,High,X,1,1,1,1,4.23,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Philadelphia,39.9526,-75.1652,Low,No major hazard designation,X,1,1,1,1,4.29,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+San Antonio,29.4241,-98.4936,Low,No major hazard designation,X,1,1,1,1,3.97,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+San Diego,32.7157,-117.1611,Low,No major hazard designation,X,1,1,1,1,3.52,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+DFW,32.7767,-96.797,Tornado/Hail,Moderate,X,1,1,1,5,4.43,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Bay Area,37.7749,-122.4194,Earthquake/Wildfire,High,X,9,9,1,1,3.72,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Austin,30.2672,-97.7431,Low,No major hazard designation,X,1,1,1,1,2.69,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Jacksonville,30.3322,-81.6557,Flood/Hurricane,Moderate,X500,1,1,4,1,3.05,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Columbus,39.9612,-82.9988,Low,No major hazard designation,X,1,1,1,1,3.81,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Charlotte,35.2271,-80.8431,Low,No major hazard designation,X,1,1,1,1,3.31,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Indianapolis,39.7684,-86.1581,Low,No major hazard designation,X,1,1,1,1,4.4,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Seattle,47.6062,-122.3321,Low,No major hazard designation,X,1,1,1,1,3.97,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Denver,39.7392,-104.9903,Low,No major hazard designation,X,1,1,1,1,2.87,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Nashville,36.1627,-86.7816,Low,No major hazard designation,X,1,1,1,1,4.14,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Oklahoma City,35.4676,-97.5164,Tornado,High,X,1,1,1,8,2.81,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+El Paso,31.7619,-106.485,Low,No major hazard designation,X,1,1,1,1,3.96,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+DC Metro,38.9072,-77.0369,Low,No major hazard designation,X,1,1,1,1,4.0,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Boston,42.3601,-71.0589,Low,No major hazard designation,X,1,1,1,1,4.46,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Las Vegas,36.1699,-115.1398,Extreme Heat,High,X,1,1,1,1,4.2,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Memphis,35.1495,-90.049,Low,No major hazard designation,X,1,1,1,1,3.2,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Louisville,38.2527,-85.7585,Low,No major hazard designation,X,1,1,1,1,2.81,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Portland,45.5051,-122.675,Low,No major hazard designation,X,1,1,1,1,3.54,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Baltimore,39.2904,-76.6122,Low,No major hazard designation,X,1,1,1,1,3.54,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Milwaukee,43.0389,-87.9065,Low,No major hazard designation,X,1,1,1,1,3.64,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Albuquerque,35.0844,-106.6504,Low,No major hazard designation,X,1,1,1,1,3.16,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Tucson,32.2226,-110.9747,Low,No major hazard designation,X,1,1,1,1,4.4,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Central Valley,36.7783,-119.4179,Low,No major hazard designation,X,1,1,1,1,2.47,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Sacramento,38.5816,-121.4944,Wildfire,Moderate,X,6,1,1,1,3.94,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Kansas City,39.0997,-94.5786,Tornado,Moderate,X,1,1,1,5,4.32,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Atlanta,33.749,-84.388,Low,No major hazard designation,X,1,1,1,1,3.55,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Omaha,41.2565,-95.9345,Low,No major hazard designation,X,1,1,1,1,4.17,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Colorado Springs,38.8339,-104.8214,Low,No major hazard designation,X,1,1,1,1,3.11,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Raleigh-Durham,35.7796,-78.6382,Low,No major hazard designation,X,1,1,1,1,4.21,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Hampton Roads,36.8529,-75.978,Low,No major hazard designation,X,1,1,1,1,4.24,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Minneapolis,44.9778,-93.265,Low,No major hazard designation,X,1,1,1,1,3.65,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Tampa Bay,27.9506,-82.4572,Flood/Hurricane,High,AE,1,1,7,1,4.44,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+New Orleans,29.9511,-90.0715,Flood/Hurricane,Extreme,AE/VE,1,1,10,1,2.62,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Richmond,37.5407,-77.436,Low,No major hazard designation,X,1,1,1,1,3.94,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Spokane,47.6588,-117.426,Low,No major hazard designation,X,1,1,1,1,2.64,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Des Moines,41.5868,-93.625,Low,No major hazard designation,X,1,1,1,1,2.99,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Montgomery,32.3668,-86.3,Low,No major hazard designation,X,1,1,1,1,3.81,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Inland Empire,33.9806,-117.3755,Wildfire,Moderate,X,6,1,1,1,4.33,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Ventura,34.2805,-119.2945,Wildfire,High,X,9,1,1,1,2.85,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Tallahassee,30.4518,-84.2807,Low,No major hazard designation,X,1,1,1,1,3.38,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Huntsville,34.7304,-86.5861,Low,No major hazard designation,X,1,1,1,1,2.63,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Knoxville,35.9606,-83.9207,Low,No major hazard designation,X,1,1,1,1,3.69,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Chattanooga,35.0456,-85.3097,Low,No major hazard designation,X,1,1,1,1,3.15,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Fort Collins,40.5853,-105.0844,Low,No major hazard designation,X,1,1,1,1,3.94,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Eugene,44.0521,-123.0868,Low,No major hazard designation,X,1,1,1,1,3.43,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Boise,43.615,-116.2023,Low,No major hazard designation,X,1,1,1,1,3.34,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Sarasota,27.3364,-82.5307,Flood/Hurricane,High,AE,1,1,7,1,3.84,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Savannah,32.0835,-81.0998,Low,No major hazard designation,X,1,1,1,1,3.75,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Charleston,32.7765,-79.9311,Low,No major hazard designation,X,1,1,1,1,3.47,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Salt Lake City,40.7608,-111.891,Low,No major hazard designation,X,1,1,1,1,4.11,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Greenville,34.8526,-82.394,Low,No major hazard designation,X,1,1,1,1,3.12,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Asheville,35.5951,-82.5515,Low,No major hazard designation,X,1,1,1,1,2.97,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Wilmington,34.2257,-77.9447,Low,No major hazard designation,X,1,1,1,1,4.11,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Fayetteville,35.0527,-78.8784,Low,No major hazard designation,X,1,1,1,1,2.46,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Fayetteville AR,36.0626,-94.1574,Low,No major hazard designation,X,1,1,1,1,4.05,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Reno,39.5296,-119.8138,Low,No major hazard designation,X,1,1,1,1,3.36,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Baton Rouge,30.4515,-91.1871,Low,No major hazard designation,X,1,1,1,1,3.64,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Lafayette,30.2241,-92.0198,Low,No major hazard designation,X,1,1,1,1,3.28,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Lake Charles,30.2266,-93.2174,Flood/Hurricane,High,AE,1,1,7,1,4.1,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Shreveport,32.5252,-93.7502,Low,No major hazard designation,X,1,1,1,1,3.16,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Corpus Christi,27.8006,-97.3964,Low,No major hazard designation,X,1,1,1,1,3.93,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Lubbock,33.5779,-101.8552,Tornado/Hail,High,X,1,1,1,5,3.65,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Wichita,37.6872,-97.3301,Tornado,High,X,1,1,1,8,3.83,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Tulsa,36.154,-95.9928,Tornado,Moderate,X,1,1,1,5,2.8,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Sioux Falls,43.5446,-96.7311,Low,No major hazard designation,X,1,1,1,1,3.02,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Fargo,46.8772,-96.7898,Low,No major hazard designation,X,1,1,1,1,4.11,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Billings,45.7833,-108.5007,Low,No major hazard designation,X,1,1,1,1,3.66,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Bozeman,45.677,-111.0429,Low,No major hazard designation,X,1,1,1,1,2.87,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Cheyenne,41.14,-104.8202,Low,No major hazard designation,X,1,1,1,1,3.83,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Idaho Falls,43.4917,-112.0408,Low,No major hazard designation,X,1,1,1,1,3.7,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Provo,40.2338,-111.6585,Low,No major hazard designation,X,1,1,1,1,2.49,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Ogden,41.223,-111.9738,Low,No major hazard designation,X,1,1,1,1,4.44,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+St. George,37.0965,-113.5684,Low,No major hazard designation,X,1,1,1,1,3.45,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Carson City,39.1638,-119.7674,Low,No major hazard designation,X,1,1,1,1,4.35,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Santa Fe,35.687,-105.9378,Low,No major hazard designation,X,1,1,1,1,3.51,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Las Cruces,32.3199,-106.7637,Low,No major hazard designation,X,1,1,1,1,4.25,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Yuma,32.6927,-114.6277,Extreme Heat,Extreme,X,1,1,1,1,3.66,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Flagstaff,35.1983,-111.6513,Low,No major hazard designation,X,1,1,1,1,4.25,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Prescott,34.54,-112.4685,Low,No major hazard designation,X,1,1,1,1,2.96,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Medford,42.3265,-122.8756,Low,No major hazard designation,X,1,1,1,1,2.81,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Bend,44.0582,-121.3153,Low,No major hazard designation,X,1,1,1,1,3.17,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Corvallis,44.5646,-123.262,Low,No major hazard designation,X,1,1,1,1,4.22,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Salem,44.9429,-123.0351,Low,No major hazard designation,X,1,1,1,1,3.1,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Bellingham,48.7519,-122.4787,Low,No major hazard designation,X,1,1,1,1,4.14,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Yakima,46.6021,-120.5059,Low,No major hazard designation,X,1,1,1,1,3.29,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Olympia,47.0379,-122.9007,Low,No major hazard designation,X,1,1,1,1,3.69,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Tri-Cities,46.2396,-119.1006,Low,No major hazard designation,X,1,1,1,1,4.19,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Vancouver,45.6387,-122.6615,Low,No major hazard designation,X,1,1,1,1,3.15,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Everett,47.979,-122.2021,Low,No major hazard designation,X,1,1,1,1,2.92,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Tacoma,47.2529,-122.4443,Low,No major hazard designation,X,1,1,1,1,2.89,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Bellevue,47.6101,-122.2015,Low,No major hazard designation,X,1,1,1,1,4.37,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Bradenton,27.4989,-82.5748,Flood/Hurricane,High,AE,1,1,7,1,3.39,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Lakeland,28.0395,-81.9498,Low,No major hazard designation,X,1,1,1,1,2.8,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Fort Myers,26.6406,-81.8723,Flood/Hurricane,High,AE,1,1,7,1,3.1,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Naples,26.142,-81.7948,Flood/Hurricane,High,AE,1,1,7,1,3.86,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Ocala,29.1872,-82.1401,Low,No major hazard designation,X,1,1,1,1,3.45,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Palm Beach,26.7056,-80.0364,Flood/Hurricane,Moderate,X500,1,1,4,1,3.57,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Miami,25.7617,-80.1918,Flood/Hurricane,Extreme,AE/VE,1,1,10,1,4.47,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Daytona,29.2108,-81.0228,Low,No major hazard designation,X,1,1,1,1,4.17,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Melbourne,28.0836,-80.6081,Low,No major hazard designation,X,1,1,1,1,3.75,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Gainesville,29.6516,-82.3248,Low,No major hazard designation,X,1,1,1,1,2.9,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Port St. Lucie,27.273,-80.3582,Low,No major hazard designation,X,1,1,1,1,3.33,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Pensacola,30.4213,-87.2169,Flood/Hurricane,Moderate,X500,1,1,4,1,3.7,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Macon,32.8407,-83.6324,Low,No major hazard designation,X,1,1,1,1,4.27,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Augusta,33.4735,-82.0105,Low,No major hazard designation,X,1,1,1,1,4.37,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Columbus GA,32.461,-84.9877,Low,No major hazard designation,X,1,1,1,1,4.19,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Athens,33.9519,-83.3576,Low,No major hazard designation,X,1,1,1,1,3.92,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Valdosta,30.8327,-83.2785,Low,No major hazard designation,X,1,1,1,1,3.66,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Birmingham,33.5186,-86.8104,Low,No major hazard designation,X,1,1,1,1,3.33,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Mobile,30.6954,-88.0399,Low,No major hazard designation,X,1,1,1,1,4.38,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Tuscaloosa,33.2098,-87.5692,Low,No major hazard designation,X,1,1,1,1,4.52,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Dothan,31.2232,-85.3905,Low,No major hazard designation,X,1,1,1,1,3.08,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Auburn,32.6099,-85.4808,Low,No major hazard designation,X,1,1,1,1,3.74,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Jackson,32.2988,-90.1848,Low,No major hazard designation,X,1,1,1,1,3.01,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Gulfport,30.3674,-89.0928,Flood/Hurricane,High,AE,1,1,7,1,3.44,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Hattiesburg,31.3271,-89.2903,Low,No major hazard designation,X,1,1,1,1,3.7,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Starkville,33.4504,-88.8184,Low,No major hazard designation,X,1,1,1,1,3.73,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Little Rock,34.7465,-92.2896,Low,No major hazard designation,X,1,1,1,1,2.97,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Fort Smith,35.3859,-94.3985,Low,No major hazard designation,X,1,1,1,1,2.65,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Jonesboro,35.8423,-90.7043,Low,No major hazard designation,X,1,1,1,1,3.45,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Springdale,36.1867,-94.1288,Low,No major hazard designation,X,1,1,1,1,3.67,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Rogers,36.332,-94.1185,Low,No major hazard designation,X,1,1,1,1,3.6,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Bentonville,36.3729,-94.2088,Low,No major hazard designation,X,1,1,1,1,4.41,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Clarksville,36.5298,-87.3595,Low,No major hazard designation,X,1,1,1,1,2.68,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Johnson City,36.3134,-82.3535,Low,No major hazard designation,X,1,1,1,1,4.42,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Kingsport,36.5484,-82.5618,Low,No major hazard designation,X,1,1,1,1,4.26,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Jackson TN,35.6145,-88.8139,Low,No major hazard designation,X,1,1,1,1,2.6,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Franklin,35.9251,-86.8689,Low,No major hazard designation,X,1,1,1,1,3.34,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Brentwood,36.0331,-86.7828,Low,No major hazard designation,X,1,1,1,1,3.71,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Murfreesboro,35.8456,-86.3903,Low,No major hazard designation,X,1,1,1,1,3.32,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Smyrna,35.9829,-86.5186,Low,No major hazard designation,X,1,1,1,1,4.1,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Spring Hill,35.7512,-86.93,Low,No major hazard designation,X,1,1,1,1,3.39,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Bowling Green,36.9685,-86.4808,Low,No major hazard designation,X,1,1,1,1,3.35,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Lexington,38.0406,-84.5037,Low,No major hazard designation,X,1,1,1,1,2.76,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Evansville,37.9716,-87.5711,Low,No major hazard designation,X,1,1,1,1,3.92,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+South Bend,41.6764,-86.252,Low,No major hazard designation,X,1,1,1,1,4.34,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Fort Wayne,41.1306,-85.1289,Low,No major hazard designation,X,1,1,1,1,3.96,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Grand Rapids,42.9634,-85.6681,Low,No major hazard designation,X,1,1,1,1,3.79,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Ann Arbor,42.2808,-83.743,Low,No major hazard designation,X,1,1,1,1,3.74,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Lansing,42.7325,-84.5555,Low,No major hazard designation,X,1,1,1,1,4.06,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Kalamazoo,42.2917,-85.5872,Low,No major hazard designation,X,1,1,1,1,3.13,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Flint,43.0125,-83.6875,Low,No major hazard designation,X,1,1,1,1,3.15,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Detroit,42.3314,-83.0458,Low,No major hazard designation,X,1,1,1,1,2.9,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Toledo,41.6639,-83.5552,Low,No major hazard designation,X,1,1,1,1,3.5,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Akron,41.0814,-81.519,Low,No major hazard designation,X,1,1,1,1,4.04,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Dayton,39.7589,-84.1916,Low,No major hazard designation,X,1,1,1,1,3.68,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Cincinnati,39.1031,-84.512,Low,No major hazard designation,X,1,1,1,1,4.42,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Cleveland,41.4993,-81.6944,Low,No major hazard designation,X,1,1,1,1,2.94,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Pittsburgh,40.4406,-79.9959,Low,No major hazard designation,X,1,1,1,1,2.71,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Providence,41.824,-71.4128,Low,No major hazard designation,X,1,1,1,1,3.97,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Hartford,41.7658,-72.6851,Low,No major hazard designation,X,1,1,1,1,2.51,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Bridgeport,41.1865,-73.1952,Low,No major hazard designation,X,1,1,1,1,2.98,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Springfield MA,42.1015,-72.5898,Low,No major hazard designation,X,1,1,1,1,3.9,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Worcester,42.2626,-71.8023,Low,No major hazard designation,X,1,1,1,1,3.76,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Syracuse,43.0481,-76.1474,Low,No major hazard designation,X,1,1,1,1,3.73,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Rochester,43.1566,-77.6088,Low,No major hazard designation,X,1,1,1,1,3.98,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Albany,42.6526,-73.7562,Low,No major hazard designation,X,1,1,1,1,3.96,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Buffalo,42.8864,-78.8784,Low,No major hazard designation,X,1,1,1,1,4.49,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Yonkers,40.9312,-73.8988,Low,No major hazard designation,X,1,1,1,1,2.53,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Newark,40.7357,-74.1724,Low,No major hazard designation,X,1,1,1,1,4.54,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Paterson,40.9168,-74.1719,Low,No major hazard designation,X,1,1,1,1,4.47,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Anchorage,61.2181,-149.9003,Low,No major hazard designation,X,1,1,1,1,4.35,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Honolulu,21.3069,-157.8583,Low,No major hazard designation,X,1,1,1,1,3.3,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Wichita Falls,33.9137,-98.4934,Low,No major hazard designation,X,1,1,1,1,2.97,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Midland,31.9973,-102.0779,Low,No major hazard designation,X,1,1,1,1,3.86,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Odessa,31.8457,-102.3676,Low,No major hazard designation,X,1,1,1,1,3.39,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Tyler,32.3513,-95.3011,Low,No major hazard designation,X,1,1,1,1,2.46,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Waco,31.5493,-97.1467,Low,No major hazard designation,X,1,1,1,1,4.0,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Beaumont,30.086,-94.1018,Flood,High,AE,1,1,1,1,3.16,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Abilene,32.4487,-99.7331,Low,No major hazard designation,X,1,1,1,1,3.9,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Laredo,27.5306,-99.4803,Low,No major hazard designation,X,1,1,1,1,4.17,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+McAllen,26.2034,-98.23,Low,No major hazard designation,X,1,1,1,1,2.6,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Brownsville,25.9017,-97.4975,Low,No major hazard designation,X,1,1,1,1,4.2,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Killeen,31.1171,-97.7278,Low,No major hazard designation,X,1,1,1,1,3.38,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Bryan-College Station,30.628,-96.3344,Low,No major hazard designation,X,1,1,1,1,4.38,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Victoria,28.8053,-97.0036,Low,No major hazard designation,X,1,1,1,1,3.35,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Longview,32.5007,-94.7405,Low,No major hazard designation,X,1,1,1,1,3.55,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Nacogdoches,31.6035,-94.6552,Low,No major hazard designation,X,1,1,1,1,3.55,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Lufkin,31.3382,-94.7291,Low,No major hazard designation,X,1,1,1,1,2.85,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Huntsville TX,30.7235,-95.5508,Low,No major hazard designation,X,1,1,1,1,3.85,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Texarkana,33.4251,-94.0477,Low,No major hazard designation,X,1,1,1,1,3.84,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Paris TX,33.6609,-95.5555,Low,No major hazard designation,X,1,1,1,1,2.78,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Amarillo,35.222,-101.8313,Tornado/Hail,High,X,1,1,1,5,3.78,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Deltona,28.9005,-81.2637,Low,No major hazard designation,X,1,1,1,1,4.45,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Daytona Beach,29.2108,-81.0228,Low,No major hazard designation,X,1,1,1,1,2.75,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Kissimmee,28.2919,-81.4076,Low,No major hazard designation,X,1,1,1,1,3.23,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Sanford,28.8005,-81.2731,Low,No major hazard designation,X,1,1,1,1,3.13,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Clearwater,27.9659,-82.8001,Low,No major hazard designation,X,1,1,1,1,2.54,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Cape Coral,26.5629,-81.9495,Flood/Hurricane,High,AE,1,1,7,1,3.9,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Homestead,25.4687,-80.4776,Low,No major hazard designation,X,1,1,1,1,4.27,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Doral,25.8195,-80.3556,Low,No major hazard designation,X,1,1,1,1,2.57,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Aventura,25.9565,-80.1392,Low,No major hazard designation,X,1,1,1,1,4.07,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Boca Raton,26.3683,-80.1289,Flood/Hurricane,Moderate,X500,1,1,4,1,3.16,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+West Palm Beach,26.7153,-80.0534,Flood/Hurricane,Moderate,X500,1,1,4,1,4.35,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Delray Beach,26.4615,-80.0728,Low,No major hazard designation,X,1,1,1,1,2.63,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Boynton Beach,26.5317,-80.0905,Low,No major hazard designation,X,1,1,1,1,3.53,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Pompano Beach,26.2379,-80.1248,Low,No major hazard designation,X,1,1,1,1,3.14,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Hollywood,26.0112,-80.1495,Flood/Hurricane,Moderate,X500,1,1,4,1,4.06,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Coral Springs,26.2707,-80.2707,Low,No major hazard designation,X,1,1,1,1,3.17,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Miramar,25.986,-80.233,Low,No major hazard designation,X,1,1,1,1,3.37,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Pembroke Pines,26.007,-86.1527,Low,No major hazard designation,X,1,1,1,1,2.87,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Sunrise,26.167,-80.2561,Low,No major hazard designation,X,1,1,1,1,3.19,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Plantation,26.1276,-80.2331,Low,No major hazard designation,X,1,1,1,1,3.96,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Davie,26.0765,-80.2521,Low,No major hazard designation,X,1,1,1,1,3.21,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Weston,26.1003,-80.3998,Low,No major hazard designation,X,1,1,1,1,3.85,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Deerfield Beach,26.3184,-80.0998,Low,No major hazard designation,X,1,1,1,1,4.21,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Margate,26.2445,-80.2062,Low,No major hazard designation,X,1,1,1,1,2.47,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Lauderhill,26.1401,-80.2131,Low,No major hazard designation,X,1,1,1,1,4.25,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Tamarac,26.2129,-80.2497,Low,No major hazard designation,X,1,1,1,1,3.04,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Coconut Creek,26.2712,-80.1793,Low,No major hazard designation,X,1,1,1,1,3.46,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+North Miami,25.8897,-80.1868,Low,No major hazard designation,X,1,1,1,1,3.98,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Miami Gardens,25.942,-80.2456,Low,No major hazard designation,X,1,1,1,1,3.98,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Hialeah,25.8576,-80.2781,Low,No major hazard designation,X,1,1,1,1,3.42,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Greenville SC,34.8526,-82.394,Low,No major hazard designation,X,1,1,1,1,3.2,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Columbia SC,34.0007,-81.0348,Low,No major hazard designation,X,1,1,1,1,3.85,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Spartanburg,34.9496,-81.932,Low,No major hazard designation,X,1,1,1,1,4.02,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Rock Hill,34.9249,-81.0251,Low,No major hazard designation,X,1,1,1,1,3.86,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+North Charleston,32.8546,-79.9748,Low,No major hazard designation,X,1,1,1,1,2.95,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Mount Pleasant,32.8323,-79.8284,Low,No major hazard designation,X,1,1,1,1,3.69,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Wilmington NC,34.2257,-77.9447,Low,No major hazard designation,X,1,1,1,1,3.41,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Gastonia,35.2621,-81.1873,Low,No major hazard designation,X,1,1,1,1,2.99,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Concord NC,35.4088,-80.5795,Low,No major hazard designation,X,1,1,1,1,2.89,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Huntersville,35.4107,-80.8429,Low,No major hazard designation,X,1,1,1,1,3.89,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Mooresville,35.5746,-80.8098,Low,No major hazard designation,X,1,1,1,1,3.99,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Cary,35.7915,-78.7811,Low,No major hazard designation,X,1,1,1,1,3.29,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Durham,35.994,-78.8986,Low,No major hazard designation,X,1,1,1,1,3.98,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Chapel Hill,35.9132,-79.0558,Low,No major hazard designation,X,1,1,1,1,3.88,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Apex,35.7327,-78.8503,Low,No major hazard designation,X,1,1,1,1,3.23,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Morrisville,35.8237,-78.8253,Low,No major hazard designation,X,1,1,1,1,2.93,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+High Point,35.9557,-80.0053,Low,No major hazard designation,X,1,1,1,1,3.05,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Winston-Salem,36.0999,-80.2442,Low,No major hazard designation,X,1,1,1,1,3.33,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Greensboro,36.0726,-79.792,Low,No major hazard designation,X,1,1,1,1,2.73,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Richmond VA,37.5407,-77.436,Low,No major hazard designation,X,1,1,1,1,3.08,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Newport News,37.0871,-76.473,Low,No major hazard designation,X,1,1,1,1,2.51,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Chesapeake,36.7682,-76.2875,Low,No major hazard designation,X,1,1,1,1,2.52,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Virginia Beach,36.8529,-75.978,Low,No major hazard designation,X,1,1,1,1,3.69,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Hampton,37.0299,-76.3452,Low,No major hazard designation,X,1,1,1,1,2.96,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Alexandria VA,38.8048,-77.0469,Low,No major hazard designation,X,1,1,1,1,2.87,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Madison WI,43.0731,-89.4012,Low,No major hazard designation,X,1,1,1,1,3.97,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Green Bay,44.5133,-88.0133,Low,No major hazard designation,X,1,1,1,1,2.8,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Kenosha,42.5847,-87.8212,Low,No major hazard designation,X,1,1,1,1,4.18,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Racine,42.7261,-87.7829,Low,No major hazard designation,X,1,1,1,1,3.35,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Appleton,44.2619,-88.4154,Low,No major hazard designation,X,1,1,1,1,3.78,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Eau Claire,44.8113,-91.4985,Low,No major hazard designation,X,1,1,1,1,3.98,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+La Crosse,43.8014,-91.2396,Low,No major hazard designation,X,1,1,1,1,2.56,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Janesville,42.6828,-89.0187,Low,No major hazard designation,X,1,1,1,1,2.89,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Cedar Rapids,41.9779,-91.6656,Low,No major hazard designation,X,1,1,1,1,3.89,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Iowa City,41.6611,-91.5302,Low,No major hazard designation,X,1,1,1,1,4.36,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Sioux City,42.4999,-96.4003,Low,No major hazard designation,X,1,1,1,1,2.62,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Waterloo,42.4928,-92.3426,Low,No major hazard designation,X,1,1,1,1,3.46,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Ames,42.0308,-93.6319,Low,No major hazard designation,X,1,1,1,1,3.53,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Dubuque,42.5006,-90.6646,Low,No major hazard designation,X,1,1,1,1,2.57,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Olathe,38.8814,-94.8191,Low,No major hazard designation,X,1,1,1,1,4.13,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Lawrence KS,38.9717,-95.2353,Low,No major hazard designation,X,1,1,1,1,3.86,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Shawnee,39.0228,-94.7152,Low,No major hazard designation,X,1,1,1,1,2.78,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Lenexa,38.9536,-94.7336,Low,No major hazard designation,X,1,1,1,1,2.78,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Lincoln NE,40.8136,-96.7026,Low,No major hazard designation,X,1,1,1,1,4.48,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Grand Island,40.925,-98.342,Low,No major hazard designation,X,1,1,1,1,2.85,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Rapid City,44.0805,-103.231,Low,No major hazard designation,X,1,1,1,1,3.62,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Bismarck,46.8083,-100.7837,Low,No major hazard designation,X,1,1,1,1,2.92,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Grand Forks,47.9253,-97.0329,Low,No major hazard designation,X,1,1,1,1,3.41,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Minot,48.2325,-101.2963,Low,No major hazard designation,X,1,1,1,1,2.77,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Missoula,46.8721,-113.994,Low,No major hazard designation,X,1,1,1,1,4.32,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Great Falls,47.5002,-111.3008,Low,No major hazard designation,X,1,1,1,1,4.51,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Helena MT,46.5958,-112.027,Low,No major hazard designation,X,1,1,1,1,2.95,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Kalispell,48.192,-114.3168,Low,No major hazard designation,X,1,1,1,1,3.55,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Casper,42.8501,-106.3252,Low,No major hazard designation,X,1,1,1,1,4.33,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Laramie,41.3114,-105.5911,Low,No major hazard designation,X,1,1,1,1,2.8,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Nampa,43.5407,-116.5635,Low,No major hazard designation,X,1,1,1,1,3.02,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Meridian,43.6121,-116.3915,Low,No major hazard designation,X,1,1,1,1,4.45,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Coeur d'Alene,47.6777,-116.7805,Low,No major hazard designation,X,1,1,1,1,2.93,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Twin Falls,42.5629,-114.4609,Low,No major hazard designation,X,1,1,1,1,4.08,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Pocatello,42.8713,-112.4455,Low,No major hazard designation,X,1,1,1,1,4.38,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+West Valley City,40.6916,-112.001,Low,No major hazard designation,X,1,1,1,1,3.95,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+West Jordan,40.6097,-111.9391,Low,No major hazard designation,X,1,1,1,1,4.07,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Sandy,40.5649,-111.8389,Low,No major hazard designation,X,1,1,1,1,3.76,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/
+Lehi,40.3916,-111.8507,Low,No major hazard designation,X,1,1,1,1,2.88,FEMA National Risk Index,2024,https://hazards.fema.gov/nri/

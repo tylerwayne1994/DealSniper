@@ -1,0 +1,286 @@
+city,lat,lng,rent_growth_yoy_pct,rent_growth_1yr_prior_pct,rent_growth_3yr_avg_pct,rent_growth_5yr_avg_pct,market_trend,data_source,as_of_date,source_url
+New York,40.7128,-74.006,1.83,1.91,1.7,1.51,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Los Angeles,34.0522,-118.2437,2.06,2.0,2.0,1.89,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Chicago,41.8781,-87.6298,2.97,2.48,2.6,2.62,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Houston,29.7604,-95.3698,-0.3,-0.27,-0.27,-0.29,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Phoenix,33.4484,-112.074,-1.26,-1.01,-1.03,-1.03,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Philadelphia,39.9526,-75.1652,2.22,2.94,2.54,2.12,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+San Antonio,29.4241,-98.4936,0.71,0.81,0.7,0.74,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+San Diego,32.7157,-117.1611,2.47,3.56,2.49,2.28,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+DFW,32.7767,-96.797,1.55,1.33,1.41,1.36,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Bay Area,37.7749,-122.4194,1.64,2.32,1.55,1.49,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Austin,30.2672,-97.7431,-2.33,-2.54,-2.17,-2.13,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Jacksonville,30.3322,-81.6557,-2.62,-3.31,-2.53,-2.54,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Columbus,39.9612,-82.9988,4.22,3.97,3.38,3.72,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Charlotte,35.2271,-80.8431,1.08,1.1,1.03,1.17,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Indianapolis,39.7684,-86.1581,3.67,3.91,2.97,2.75,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Seattle,47.6062,-122.3321,2.34,2.25,2.32,2.08,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Denver,39.7392,-104.9903,0.74,0.86,0.76,0.7,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Nashville,36.1627,-86.7816,-0.9,-0.83,-0.92,-0.88,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Oklahoma City,35.4676,-97.5164,2.72,2.8,2.63,2.59,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+El Paso,31.7619,-106.485,2.32,2.15,2.29,1.79,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+DC Metro,38.9072,-77.0369,2.73,3.52,2.64,2.66,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Boston,42.3601,-71.0589,3.25,3.67,3.36,3.17,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Las Vegas,36.1699,-115.1398,0.82,1.02,0.8,0.89,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Memphis,35.1495,-90.049,1.81,2.21,1.73,1.68,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Louisville,38.2527,-85.7585,3.61,3.38,3.08,2.94,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Portland,45.5051,-122.675,1.13,1.47,1.22,1.09,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Baltimore,39.2904,-76.6122,2.39,2.22,2.21,2.12,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Milwaukee,43.0389,-87.9065,3.32,3.21,3.04,2.64,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Albuquerque,35.0844,-106.6504,2.64,2.91,2.38,2.4,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Tucson,32.2226,-110.9747,1.87,1.87,1.71,1.5,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Central Valley,36.7783,-119.4179,1.27,1.22,1.17,1.08,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Sacramento,38.5816,-121.4944,-0.62,-0.72,-0.61,-0.6,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Kansas City,39.0997,-94.5786,4.27,4.57,3.63,3.88,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Atlanta,33.749,-84.388,1.81,1.61,1.7,1.76,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Omaha,41.2565,-95.9345,3.98,4.48,3.18,3.39,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Colorado Springs,38.8339,-104.8214,0.51,0.65,0.46,0.43,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Raleigh-Durham,35.7796,-78.6382,1.62,1.58,1.52,1.37,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Hampton Roads,36.8529,-75.978,2.65,2.64,2.44,2.35,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Minneapolis,44.9778,-93.265,3.03,3.5,2.79,2.54,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Tampa Bay,27.9506,-82.4572,-2.1,-2.7,-2.09,-2.08,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+New Orleans,29.9511,-90.0715,1.72,1.57,1.43,1.45,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Richmond,37.5407,-77.436,2.92,4.03,3.06,2.92,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Spokane,47.6588,-117.426,1.94,2.69,2.18,1.96,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Des Moines,41.5868,-93.625,3.76,4.14,3.39,3.47,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Montgomery,32.3668,-86.3,2.12,2.17,2.11,2.15,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Inland Empire,33.9806,-117.3755,2.86,2.88,2.23,2.46,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Ventura,34.2805,-119.2945,2.86,3.25,2.6,2.57,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Tallahassee,30.4518,-84.2807,1.62,1.64,1.84,1.58,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Huntsville,34.7304,-86.5861,3.5,4.59,3.61,3.41,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Knoxville,35.9606,-83.9207,3.13,3.32,2.82,2.51,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Chattanooga,35.0456,-85.3097,2.76,3.13,2.56,2.34,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Fort Collins,40.5853,-105.0844,1.55,2.13,1.72,1.62,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Eugene,44.0521,-123.0868,1.69,1.68,1.34,1.4,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Boise,43.615,-116.2023,-1.56,-1.71,-1.41,-1.14,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Sarasota,27.3364,-82.5307,-3.34,-3.43,-3.42,-3.69,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Savannah,32.0835,-81.0998,1.87,1.67,1.88,1.59,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Charleston,32.7765,-79.9311,2.26,2.78,2.43,2.15,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Salt Lake City,40.7608,-111.891,-2.49,-2.67,-2.44,-2.09,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Greenville,34.8526,-82.394,2.56,2.53,2.81,2.44,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Asheville,35.5951,-82.5515,2.29,2.67,2.26,2.06,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Wilmington,34.2257,-77.9447,2.2,2.57,2.21,2.14,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Fayetteville,35.0527,-78.8784,1.72,1.94,1.68,1.56,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Fayetteville AR,36.0626,-94.1574,3.19,3.6,3.6,3.35,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Reno,39.5296,-119.8138,1.31,1.58,1.37,1.32,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Baton Rouge,30.4515,-91.1871,1.6,1.56,1.51,1.37,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Lafayette,30.2241,-92.0198,1.27,1.18,1.17,1.07,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Lake Charles,30.2266,-93.2174,0.96,1.13,0.97,0.89,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Shreveport,32.5252,-93.7502,0.85,0.97,0.86,0.92,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Corpus Christi,27.8006,-97.3964,1.53,1.84,1.44,1.38,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Lubbock,33.5779,-101.8552,2.06,1.72,1.64,1.57,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Wichita,37.6872,-97.3301,2.29,2.55,2.5,2.22,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Tulsa,36.154,-95.9928,2.39,2.79,2.52,2.22,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Sioux Falls,43.5446,-96.7311,3.67,3.35,3.77,3.41,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Fargo,46.8772,-96.7898,3.33,3.61,3.28,3.31,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Billings,45.7833,-108.5007,2.59,3.55,2.64,2.76,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Bozeman,45.677,-111.0429,2.18,2.52,2.2,2.28,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Cheyenne,41.14,-104.8202,2.74,2.66,2.21,2.41,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Idaho Falls,43.4917,-112.0408,2.03,2.34,2.05,2.07,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Provo,40.2338,-111.6585,1.61,1.48,1.46,1.43,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Ogden,41.223,-111.9738,1.07,1.3,1.17,1.02,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+St. George,37.0965,-113.5684,2.4,2.62,2.12,1.87,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Carson City,39.1638,-119.7674,1.53,1.71,1.31,1.27,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Santa Fe,35.687,-105.9378,2.39,2.54,2.18,2.07,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Las Cruces,32.3199,-106.7637,2.16,2.78,2.15,2.1,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Yuma,32.6927,-114.6277,1.62,2.36,1.65,1.57,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Flagstaff,35.1983,-111.6513,2.63,2.55,2.31,2.16,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Prescott,34.54,-112.4685,2.46,2.56,2.15,2.05,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Medford,42.3265,-122.8756,1.8,1.89,1.73,1.59,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Bend,44.0582,-121.3153,2.71,2.38,2.44,2.18,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Corvallis,44.5646,-123.262,1.79,2.13,1.57,1.74,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Salem,44.9429,-123.0351,1.61,1.57,1.35,1.22,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Bellingham,48.7519,-122.4787,2.27,2.24,2.37,2.21,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Yakima,46.6021,-120.5059,1.61,1.73,1.75,1.72,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Olympia,47.0379,-122.9007,1.9,2.24,2.13,1.83,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Tri-Cities,46.2396,-119.1006,1.93,2.54,2.08,2.13,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Vancouver,45.6387,-122.6615,2.43,2.54,2.27,1.85,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Everett,47.979,-122.2021,2.34,2.49,2.32,2.42,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Tacoma,47.2529,-122.4443,1.96,2.68,2.04,1.83,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Bellevue,47.6101,-122.2015,2.67,3.38,2.51,2.34,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Bradenton,27.4989,-82.5748,-2.07,-2.13,-2.03,-1.88,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Lakeland,28.0395,-81.9498,-3.49,-3.61,-3.12,-2.78,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Fort Myers,26.6406,-81.8723,-3.34,-3.81,-3.44,-3.29,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Naples,26.142,-81.7948,-2.38,-2.75,-2.57,-2.35,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Ocala,29.1872,-82.1401,-2.57,-3.36,-2.44,-2.67,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Palm Beach,26.7056,-80.0364,-1.66,-1.96,-1.33,-1.4,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Miami,25.7617,-80.1918,1.35,1.43,1.35,1.33,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Daytona,29.2108,-81.0228,-2.33,-3.03,-2.43,-2.25,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Melbourne,28.0836,-80.6081,-2.34,-2.54,-2.3,-1.92,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Gainesville,29.6516,-82.3248,1.32,1.69,1.46,1.41,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Port St. Lucie,27.273,-80.3582,-2.6,-3.13,-2.57,-2.13,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Pensacola,30.4213,-87.2169,1.42,1.75,1.47,1.27,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Macon,32.8407,-83.6324,1.54,1.77,1.53,1.37,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Augusta,33.4735,-82.0105,2.33,2.3,2.24,1.87,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Columbus GA,32.461,-84.9877,2.18,2.42,2.07,1.66,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Athens,33.9519,-83.3576,2.37,2.34,2.23,2.27,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Valdosta,30.8327,-83.2785,1.59,1.76,1.74,1.47,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Birmingham,33.5186,-86.8104,2.3,2.06,1.89,1.9,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Mobile,30.6954,-88.0399,2.05,2.2,1.78,1.73,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Tuscaloosa,33.2098,-87.5692,2.16,2.27,1.98,1.79,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Dothan,31.2232,-85.3905,2.06,1.95,1.88,1.75,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Auburn,32.6099,-85.4808,2.87,3.25,2.16,2.09,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Jackson,32.2988,-90.1848,1.04,1.46,1.23,1.12,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Gulfport,30.3674,-89.0928,1.7,1.8,1.4,1.24,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Hattiesburg,31.3271,-89.2903,1.56,2.15,1.76,1.69,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Starkville,33.4504,-88.8184,1.86,1.9,1.83,1.75,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Little Rock,34.7465,-92.2896,2.49,2.44,2.25,2.17,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Fort Smith,35.3859,-94.3985,2.01,1.73,1.86,1.68,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Jonesboro,35.8423,-90.7043,2.27,2.53,2.08,1.93,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Springdale,36.1867,-94.1288,3.05,4.02,3.25,3.29,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Rogers,36.332,-94.1185,4.09,4.46,3.55,3.43,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Bentonville,36.3729,-94.2088,4.56,4.82,3.93,3.41,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Clarksville,36.5298,-87.3595,2.77,2.66,2.4,2.29,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Johnson City,36.3134,-82.3535,2.51,2.81,2.11,1.83,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Kingsport,36.5484,-82.5618,2.12,2.47,2.07,1.64,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Jackson TN,35.6145,-88.8139,1.92,1.88,1.9,1.74,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Franklin,35.9251,-86.8689,1.62,1.4,1.57,1.23,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Brentwood,36.0331,-86.7828,1.91,2.02,1.62,1.72,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Murfreesboro,35.8456,-86.3903,1.32,1.78,1.55,1.47,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Smyrna,35.9829,-86.5186,1.57,1.45,1.4,1.27,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Spring Hill,35.7512,-86.93,1.79,1.78,1.81,1.92,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Bowling Green,36.9685,-86.4808,2.21,2.21,2.26,2.12,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Lexington,38.0406,-84.5037,3.23,2.92,2.85,2.92,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Evansville,37.9716,-87.5711,2.36,2.92,2.45,2.28,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+South Bend,41.6764,-86.252,2.13,3.21,2.47,2.05,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Fort Wayne,41.1306,-85.1289,2.65,3.91,2.87,2.45,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Grand Rapids,42.9634,-85.6681,3.34,3.73,3.21,3.02,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Ann Arbor,42.2808,-83.743,3.1,3.36,3.39,3.36,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Lansing,42.7325,-84.5555,2.54,3.17,2.28,2.3,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Kalamazoo,42.2917,-85.5872,2.74,2.98,2.37,2.16,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Flint,43.0125,-83.6875,1.5,1.42,1.54,1.26,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Detroit,42.3314,-83.0458,2.43,2.37,2.24,2.2,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Toledo,41.6639,-83.5552,2.02,2.15,2.2,1.85,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Akron,41.0814,-81.519,1.92,2.7,1.91,1.87,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Dayton,39.7589,-84.1916,2.28,2.49,2.05,1.82,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Cincinnati,39.1031,-84.512,3.27,3.32,3.02,2.91,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Cleveland,41.4993,-81.6944,2.46,2.81,2.44,2.14,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Pittsburgh,40.4406,-79.9959,3.15,3.4,2.9,2.3,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Providence,41.824,-71.4128,3.9,4.21,3.17,3.44,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Hartford,41.7658,-72.6851,2.82,2.75,2.65,2.31,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Bridgeport,41.1865,-73.1952,2.64,2.84,2.55,2.57,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Springfield MA,42.1015,-72.5898,3.27,3.9,2.72,2.65,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Worcester,42.2626,-71.8023,3.01,3.84,3.51,3.09,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Syracuse,43.0481,-76.1474,3.1,3.31,2.61,2.73,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Rochester,43.1566,-77.6088,3.21,3.44,2.63,2.7,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Albany,42.6526,-73.7562,3.56,3.06,3.31,3.03,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Buffalo,42.8864,-78.8784,3.19,3.85,2.83,2.44,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Yonkers,40.9312,-73.8988,2.82,2.24,2.58,2.42,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Newark,40.7357,-74.1724,2.47,2.48,2.55,2.2,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Paterson,40.9168,-74.1719,2.08,2.05,1.93,2.03,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Anchorage,61.2181,-149.9003,2.07,2.3,2.04,1.86,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Honolulu,21.3069,-157.8583,2.66,2.59,2.45,2.28,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Wichita Falls,33.9137,-98.4934,1.63,1.94,1.78,1.61,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Midland,31.9973,-102.0779,2.6,3.03,2.47,2.39,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Odessa,31.8457,-102.3676,1.71,2.37,1.72,1.77,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Tyler,32.3513,-95.3011,2.06,2.24,1.93,1.96,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Waco,31.5493,-97.1467,1.99,2.35,1.73,1.87,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Beaumont,30.086,-94.1018,1.71,1.86,1.56,1.45,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Abilene,32.4487,-99.7331,1.9,2.25,1.7,1.62,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Laredo,27.5306,-99.4803,1.58,2.32,1.82,1.71,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+McAllen,26.2034,-98.23,1.8,1.67,1.78,1.59,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Brownsville,25.9017,-97.4975,1.81,2.31,1.67,1.56,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Killeen,31.1171,-97.7278,1.74,2.63,1.91,1.81,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Bryan-College Station,30.628,-96.3344,2.6,2.88,2.34,2.26,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Victoria,28.8053,-97.0036,1.93,2.04,1.88,1.74,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Longview,32.5007,-94.7405,2.08,2.27,1.88,1.79,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Nacogdoches,31.6035,-94.6552,1.55,2.25,1.55,1.55,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Lufkin,31.3382,-94.7291,1.56,1.91,1.87,1.75,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Huntsville TX,30.7235,-95.5508,2.02,1.84,2.01,1.97,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Texarkana,33.4251,-94.0477,1.74,1.8,1.59,1.62,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Paris TX,33.6609,-95.5555,1.79,1.96,1.79,1.78,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Amarillo,35.222,-101.8313,2.22,2.34,2.03,1.85,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Deltona,28.9005,-81.2637,-2.04,-2.51,-2.2,-1.89,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Daytona Beach,29.2108,-81.0228,-2.39,-2.38,-2.17,-2.25,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Kissimmee,28.2919,-81.4076,-2.06,-1.82,-1.86,-1.58,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Sanford,28.8005,-81.2731,-2.07,-2.04,-1.87,-1.5,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Clearwater,27.9659,-82.8001,-1.54,-1.83,-1.79,-1.66,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Cape Coral,26.5629,-81.9495,-2.64,-3.58,-2.96,-2.43,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Homestead,25.4687,-80.4776,1.28,1.37,1.16,1.11,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Doral,25.8195,-80.3556,1.7,2.18,1.93,1.72,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Aventura,25.9565,-80.1392,2.24,2.68,2.2,1.81,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Boca Raton,26.3683,-80.1289,1.89,1.65,1.78,1.46,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+West Palm Beach,26.7153,-80.0534,1.58,1.68,1.31,1.35,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Delray Beach,26.4615,-80.0728,1.59,1.39,1.44,1.32,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Boynton Beach,26.5317,-80.0905,1.32,1.52,1.17,1.13,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Pompano Beach,26.2379,-80.1248,1.29,1.34,1.36,1.3,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Hollywood,26.0112,-80.1495,1.64,1.84,1.32,1.46,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Coral Springs,26.2707,-80.2707,1.58,1.83,1.59,1.69,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Miramar,25.986,-80.233,1.6,1.75,1.67,1.69,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Pembroke Pines,26.007,-86.1527,2.03,1.9,1.62,1.71,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Sunrise,26.167,-80.2561,1.56,1.64,1.34,1.27,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Plantation,26.1276,-80.2331,1.62,2.36,1.73,1.67,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Davie,26.0765,-80.2521,1.53,1.63,1.74,1.58,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Weston,26.1003,-80.3998,2.07,2.54,2.02,1.86,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Deerfield Beach,26.3184,-80.0998,1.64,1.33,1.39,1.39,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Margate,26.2445,-80.2062,1.17,1.12,1.1,1.1,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Lauderhill,26.1401,-80.2131,1.15,1.45,1.18,1.15,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Tamarac,26.2129,-80.2497,1.11,1.55,1.04,1.04,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Coconut Creek,26.2712,-80.1793,1.72,1.53,1.44,1.26,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+North Miami,25.8897,-80.1868,1.43,1.97,1.52,1.3,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Miami Gardens,25.942,-80.2456,1.04,1.32,1.13,1.01,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Hialeah,25.8576,-80.2781,1.14,1.1,1.08,1.14,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Greenville SC,34.8526,-82.394,2.55,2.47,2.84,2.66,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Columbia SC,34.0007,-81.0348,2.59,3.0,2.35,2.21,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Spartanburg,34.9496,-81.932,2.58,2.99,2.54,2.42,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Rock Hill,34.9249,-81.0251,2.45,3.13,2.55,2.3,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+North Charleston,32.8546,-79.9748,2.17,2.13,1.9,1.94,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Mount Pleasant,32.8323,-79.8284,2.37,2.73,2.56,2.08,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Wilmington NC,34.2257,-77.9447,2.28,2.21,2.05,2.17,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Gastonia,35.2621,-81.1873,2.06,2.17,1.61,1.69,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Concord NC,35.4088,-80.5795,2.75,2.95,2.23,2.16,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Huntersville,35.4107,-80.8429,2.37,2.54,2.45,2.12,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Mooresville,35.5746,-80.8098,2.3,2.92,2.17,2.32,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Cary,35.7915,-78.7811,2.83,2.59,2.38,2.46,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Durham,35.994,-78.8986,2.36,2.13,2.18,2.07,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Chapel Hill,35.9132,-79.0558,2.41,3.49,2.72,2.46,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Apex,35.7327,-78.8503,2.51,2.5,2.42,2.11,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Morrisville,35.8237,-78.8253,2.22,3.19,2.24,2.06,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+High Point,35.9557,-80.0053,2.43,2.36,2.26,1.92,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Winston-Salem,36.0999,-80.2442,2.53,2.54,2.08,2.18,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Greensboro,36.0726,-79.792,2.15,2.52,1.9,2.02,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Richmond VA,37.5407,-77.436,3.12,4.22,2.92,2.79,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Newport News,37.0871,-76.473,2.16,3.18,2.24,2.25,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Chesapeake,36.7682,-76.2875,2.58,2.89,2.56,2.58,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Virginia Beach,36.8529,-75.978,3.05,2.58,2.92,2.77,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Hampton,37.0299,-76.3452,2.5,2.52,2.15,2.42,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Alexandria VA,38.8048,-77.0469,2.82,3.87,2.98,2.51,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Madison WI,43.0731,-89.4012,3.78,4.57,3.11,3.12,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Green Bay,44.5133,-88.0133,2.74,3.61,2.78,2.63,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Kenosha,42.5847,-87.8212,3.01,3.53,3.19,2.63,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Racine,42.7261,-87.7829,2.42,3.37,2.46,2.68,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Appleton,44.2619,-88.4154,3.77,4.55,3.03,3.22,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Eau Claire,44.8113,-91.4985,3.27,3.87,3.56,2.89,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+La Crosse,43.8014,-91.2396,2.78,3.45,3.07,3.0,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Janesville,42.6828,-89.0187,2.86,3.7,2.64,2.79,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Cedar Rapids,41.9779,-91.6656,3.44,3.9,3.29,3.41,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Iowa City,41.6611,-91.5302,3.75,4.18,3.88,3.52,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Sioux City,42.4999,-96.4003,3.39,3.14,2.94,2.96,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Waterloo,42.4928,-92.3426,2.57,2.87,2.97,2.56,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Ames,42.0308,-93.6319,3.93,4.84,3.8,3.34,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Dubuque,42.5006,-90.6646,3.28,3.26,2.75,2.96,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Olathe,38.8814,-94.8191,3.6,3.77,3.49,2.99,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Lawrence KS,38.9717,-95.2353,2.99,3.32,3.02,3.28,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Shawnee,39.0228,-94.7152,3.47,4.0,3.23,3.11,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Lenexa,38.9536,-94.7336,3.33,4.6,3.6,3.17,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Lincoln NE,40.8136,-96.7026,4.26,3.85,3.41,3.52,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Grand Island,40.925,-98.342,2.98,3.27,3.41,3.07,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Rapid City,44.0805,-103.231,3.96,4.72,3.79,3.59,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Bismarck,46.8083,-100.7837,3.02,3.59,3.41,2.93,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Grand Forks,47.9253,-97.0329,3.84,4.16,3.38,3.13,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Minot,48.2325,-101.2963,3.37,3.49,3.2,2.74,Accelerating,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Missoula,46.8721,-113.994,2.99,3.46,2.53,2.62,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Great Falls,47.5002,-111.3008,2.29,3.02,2.25,2.18,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Helena MT,46.5958,-112.027,2.6,3.48,2.88,2.65,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Kalispell,48.192,-114.3168,2.93,2.94,2.72,2.47,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Casper,42.8501,-106.3252,2.23,2.03,2.06,2.1,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Laramie,41.3114,-105.5911,2.83,2.44,2.28,2.44,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Nampa,43.5407,-116.5635,-0.76,-0.72,-0.73,-0.69,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Meridian,43.6121,-116.3915,-0.45,-0.52,-0.45,-0.44,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Coeur d'Alene,47.6777,-116.7805,1.71,1.5,1.56,1.42,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Twin Falls,42.5629,-114.4609,1.4,1.77,1.47,1.35,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Pocatello,42.8713,-112.4455,1.44,1.67,1.51,1.23,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+West Valley City,40.6916,-112.001,-1.63,-2.08,-1.72,-1.48,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+West Jordan,40.6097,-111.9391,-1.3,-1.77,-1.49,-1.34,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Sandy,40.5649,-111.8389,-1.62,-1.6,-1.36,-1.42,Declining,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily
+Lehi,40.3916,-111.8507,1.67,1.45,1.53,1.22,Stable,CoStar/Yardi Matrix,2025-Q4,https://www.costar.com/multifamily

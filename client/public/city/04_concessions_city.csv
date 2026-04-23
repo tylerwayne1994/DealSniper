@@ -1,0 +1,286 @@
+city,lat,lng,concession_rate_pct,avg_free_rent_weeks,pct_units_offering_concessions,net_effective_discount_pct,concession_trend,data_source,as_of_date,source_url
+New York,40.7128,-74.006,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Los Angeles,34.0522,-118.2437,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Chicago,41.8781,-87.6298,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Houston,29.7604,-95.3698,0.9,0.7,7.2,0.5,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Phoenix,33.4484,-112.074,1.2,1.0,9.6,0.7,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Philadelphia,39.9526,-75.1652,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+San Antonio,29.4241,-98.4936,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+San Diego,32.7157,-117.1611,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+DFW,32.7767,-96.797,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Bay Area,37.7749,-122.4194,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Austin,30.2672,-97.7431,1.9,1.5,15.2,1.1,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Jacksonville,30.3322,-81.6557,2.1,1.7,16.8,1.3,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Columbus,39.9612,-82.9988,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Charlotte,35.2271,-80.8431,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Indianapolis,39.7684,-86.1581,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Seattle,47.6062,-122.3321,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Denver,39.7392,-104.9903,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Nashville,36.1627,-86.7816,1.1,0.9,8.8,0.7,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Oklahoma City,35.4676,-97.5164,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+El Paso,31.7619,-106.485,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+DC Metro,38.9072,-77.0369,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Boston,42.3601,-71.0589,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Las Vegas,36.1699,-115.1398,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Memphis,35.1495,-90.049,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Louisville,38.2527,-85.7585,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Portland,45.5051,-122.675,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Baltimore,39.2904,-76.6122,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Milwaukee,43.0389,-87.9065,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Albuquerque,35.0844,-106.6504,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Tucson,32.2226,-110.9747,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Central Valley,36.7783,-119.4179,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Sacramento,38.5816,-121.4944,1.0,0.8,8.0,0.6,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Kansas City,39.0997,-94.5786,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Atlanta,33.749,-84.388,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Omaha,41.2565,-95.9345,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Colorado Springs,38.8339,-104.8214,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Raleigh-Durham,35.7796,-78.6382,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Hampton Roads,36.8529,-75.978,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Minneapolis,44.9778,-93.265,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Tampa Bay,27.9506,-82.4572,1.8,1.4,14.4,1.1,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+New Orleans,29.9511,-90.0715,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Richmond,37.5407,-77.436,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Spokane,47.6588,-117.426,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Des Moines,41.5868,-93.625,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Montgomery,32.3668,-86.3,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Inland Empire,33.9806,-117.3755,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Ventura,34.2805,-119.2945,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Tallahassee,30.4518,-84.2807,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Huntsville,34.7304,-86.5861,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Knoxville,35.9606,-83.9207,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Chattanooga,35.0456,-85.3097,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Fort Collins,40.5853,-105.0844,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Eugene,44.0521,-123.0868,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Boise,43.615,-116.2023,1.4,1.1,11.2,0.8,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Sarasota,27.3364,-82.5307,2.6,2.1,20.8,1.6,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Savannah,32.0835,-81.0998,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Charleston,32.7765,-79.9311,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Salt Lake City,40.7608,-111.891,1.9,1.5,15.2,1.1,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Greenville,34.8526,-82.394,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Asheville,35.5951,-82.5515,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Wilmington,34.2257,-77.9447,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Fayetteville,35.0527,-78.8784,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Fayetteville AR,36.0626,-94.1574,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Reno,39.5296,-119.8138,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Baton Rouge,30.4515,-91.1871,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Lafayette,30.2241,-92.0198,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Lake Charles,30.2266,-93.2174,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Shreveport,32.5252,-93.7502,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Corpus Christi,27.8006,-97.3964,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Lubbock,33.5779,-101.8552,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Wichita,37.6872,-97.3301,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Tulsa,36.154,-95.9928,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Sioux Falls,43.5446,-96.7311,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Fargo,46.8772,-96.7898,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Billings,45.7833,-108.5007,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Bozeman,45.677,-111.0429,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Cheyenne,41.14,-104.8202,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Idaho Falls,43.4917,-112.0408,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Provo,40.2338,-111.6585,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Ogden,41.223,-111.9738,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+St. George,37.0965,-113.5684,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Carson City,39.1638,-119.7674,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Santa Fe,35.687,-105.9378,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Las Cruces,32.3199,-106.7637,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Yuma,32.6927,-114.6277,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Flagstaff,35.1983,-111.6513,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Prescott,34.54,-112.4685,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Medford,42.3265,-122.8756,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Bend,44.0582,-121.3153,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Corvallis,44.5646,-123.262,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Salem,44.9429,-123.0351,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Bellingham,48.7519,-122.4787,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Yakima,46.6021,-120.5059,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Olympia,47.0379,-122.9007,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Tri-Cities,46.2396,-119.1006,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Vancouver,45.6387,-122.6615,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Everett,47.979,-122.2021,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Tacoma,47.2529,-122.4443,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Bellevue,47.6101,-122.2015,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Bradenton,27.4989,-82.5748,1.8,1.4,14.4,1.1,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Lakeland,28.0395,-81.9498,2.3,1.8,18.4,1.4,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Fort Myers,26.6406,-81.8723,2.5,2.0,20.0,1.5,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Naples,26.142,-81.7948,1.9,1.5,15.2,1.1,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Ocala,29.1872,-82.1401,2.1,1.7,16.8,1.3,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Palm Beach,26.7056,-80.0364,1.4,1.1,11.2,0.8,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Miami,25.7617,-80.1918,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Daytona,29.2108,-81.0228,2.0,1.6,16.0,1.2,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Melbourne,28.0836,-80.6081,1.8,1.4,14.4,1.1,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Gainesville,29.6516,-82.3248,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Port St. Lucie,27.273,-80.3582,2.0,1.6,16.0,1.2,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Pensacola,30.4213,-87.2169,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Macon,32.8407,-83.6324,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Augusta,33.4735,-82.0105,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Columbus GA,32.461,-84.9877,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Athens,33.9519,-83.3576,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Valdosta,30.8327,-83.2785,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Birmingham,33.5186,-86.8104,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Mobile,30.6954,-88.0399,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Tuscaloosa,33.2098,-87.5692,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Dothan,31.2232,-85.3905,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Auburn,32.6099,-85.4808,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Jackson,32.2988,-90.1848,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Gulfport,30.3674,-89.0928,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Hattiesburg,31.3271,-89.2903,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Starkville,33.4504,-88.8184,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Little Rock,34.7465,-92.2896,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Fort Smith,35.3859,-94.3985,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Jonesboro,35.8423,-90.7043,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Springdale,36.1867,-94.1288,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Rogers,36.332,-94.1185,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Bentonville,36.3729,-94.2088,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Clarksville,36.5298,-87.3595,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Johnson City,36.3134,-82.3535,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Kingsport,36.5484,-82.5618,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Jackson TN,35.6145,-88.8139,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Franklin,35.9251,-86.8689,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Brentwood,36.0331,-86.7828,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Murfreesboro,35.8456,-86.3903,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Smyrna,35.9829,-86.5186,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Spring Hill,35.7512,-86.93,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Bowling Green,36.9685,-86.4808,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Lexington,38.0406,-84.5037,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Evansville,37.9716,-87.5711,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+South Bend,41.6764,-86.252,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Fort Wayne,41.1306,-85.1289,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Grand Rapids,42.9634,-85.6681,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Ann Arbor,42.2808,-83.743,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Lansing,42.7325,-84.5555,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Kalamazoo,42.2917,-85.5872,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Flint,43.0125,-83.6875,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Detroit,42.3314,-83.0458,0.7,0.6,5.6,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Toledo,41.6639,-83.5552,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Akron,41.0814,-81.519,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Dayton,39.7589,-84.1916,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Cincinnati,39.1031,-84.512,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Cleveland,41.4993,-81.6944,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Pittsburgh,40.4406,-79.9959,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Providence,41.824,-71.4128,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Hartford,41.7658,-72.6851,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Bridgeport,41.1865,-73.1952,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Springfield MA,42.1015,-72.5898,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Worcester,42.2626,-71.8023,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Syracuse,43.0481,-76.1474,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Rochester,43.1566,-77.6088,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Albany,42.6526,-73.7562,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Buffalo,42.8864,-78.8784,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Yonkers,40.9312,-73.8988,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Newark,40.7357,-74.1724,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Paterson,40.9168,-74.1719,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Anchorage,61.2181,-149.9003,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Honolulu,21.3069,-157.8583,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Wichita Falls,33.9137,-98.4934,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Midland,31.9973,-102.0779,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Odessa,31.8457,-102.3676,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Tyler,32.3513,-95.3011,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Waco,31.5493,-97.1467,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Beaumont,30.086,-94.1018,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Abilene,32.4487,-99.7331,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Laredo,27.5306,-99.4803,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+McAllen,26.2034,-98.23,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Brownsville,25.9017,-97.4975,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Killeen,31.1171,-97.7278,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Bryan-College Station,30.628,-96.3344,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Victoria,28.8053,-97.0036,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Longview,32.5007,-94.7405,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Nacogdoches,31.6035,-94.6552,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Lufkin,31.3382,-94.7291,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Huntsville TX,30.7235,-95.5508,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Texarkana,33.4251,-94.0477,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Paris TX,33.6609,-95.5555,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Amarillo,35.222,-101.8313,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Deltona,28.9005,-81.2637,1.8,1.4,14.4,1.1,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Daytona Beach,29.2108,-81.0228,2.0,1.6,16.0,1.2,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Kissimmee,28.2919,-81.4076,1.6,1.3,12.8,1.0,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Sanford,28.8005,-81.2731,1.6,1.3,12.8,1.0,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Clearwater,27.9659,-82.8001,1.6,1.3,12.8,1.0,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Cape Coral,26.5629,-81.9495,2.2,1.8,17.6,1.3,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Homestead,25.4687,-80.4776,0.7,0.6,5.6,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Doral,25.8195,-80.3556,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Aventura,25.9565,-80.1392,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Boca Raton,26.3683,-80.1289,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+West Palm Beach,26.7153,-80.0534,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Delray Beach,26.4615,-80.0728,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Boynton Beach,26.5317,-80.0905,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Pompano Beach,26.2379,-80.1248,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Hollywood,26.0112,-80.1495,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Coral Springs,26.2707,-80.2707,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Miramar,25.986,-80.233,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Pembroke Pines,26.007,-86.1527,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Sunrise,26.167,-80.2561,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Plantation,26.1276,-80.2331,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Davie,26.0765,-80.2521,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Weston,26.1003,-80.3998,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Deerfield Beach,26.3184,-80.0998,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Margate,26.2445,-80.2062,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Lauderhill,26.1401,-80.2131,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Tamarac,26.2129,-80.2497,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Coconut Creek,26.2712,-80.1793,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+North Miami,25.8897,-80.1868,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Miami Gardens,25.942,-80.2456,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Hialeah,25.8576,-80.2781,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Greenville SC,34.8526,-82.394,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Columbia SC,34.0007,-81.0348,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Spartanburg,34.9496,-81.932,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Rock Hill,34.9249,-81.0251,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+North Charleston,32.8546,-79.9748,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Mount Pleasant,32.8323,-79.8284,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Wilmington NC,34.2257,-77.9447,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Gastonia,35.2621,-81.1873,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Concord NC,35.4088,-80.5795,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Huntersville,35.4107,-80.8429,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Mooresville,35.5746,-80.8098,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Cary,35.7915,-78.7811,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Durham,35.994,-78.8986,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Chapel Hill,35.9132,-79.0558,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Apex,35.7327,-78.8503,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Morrisville,35.8237,-78.8253,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+High Point,35.9557,-80.0053,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Winston-Salem,36.0999,-80.2442,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Greensboro,36.0726,-79.792,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Richmond VA,37.5407,-77.436,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Newport News,37.0871,-76.473,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Chesapeake,36.7682,-76.2875,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Virginia Beach,36.8529,-75.978,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Hampton,37.0299,-76.3452,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Alexandria VA,38.8048,-77.0469,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Madison WI,43.0731,-89.4012,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Green Bay,44.5133,-88.0133,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Kenosha,42.5847,-87.8212,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Racine,42.7261,-87.7829,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Appleton,44.2619,-88.4154,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Eau Claire,44.8113,-91.4985,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+La Crosse,43.8014,-91.2396,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Janesville,42.6828,-89.0187,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Cedar Rapids,41.9779,-91.6656,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Iowa City,41.6611,-91.5302,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Sioux City,42.4999,-96.4003,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Waterloo,42.4928,-92.3426,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Ames,42.0308,-93.6319,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Dubuque,42.5006,-90.6646,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Olathe,38.8814,-94.8191,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Lawrence KS,38.9717,-95.2353,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Shawnee,39.0228,-94.7152,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Lenexa,38.9536,-94.7336,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Lincoln NE,40.8136,-96.7026,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Grand Island,40.925,-98.342,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Rapid City,44.0805,-103.231,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Bismarck,46.8083,-100.7837,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Grand Forks,47.9253,-97.0329,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Minot,48.2325,-101.2963,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Missoula,46.8721,-113.994,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Great Falls,47.5002,-111.3008,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Helena MT,46.5958,-112.027,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Kalispell,48.192,-114.3168,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Casper,42.8501,-106.3252,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Laramie,41.3114,-105.5911,0.6,0.5,4.8,0.4,Decreasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Nampa,43.5407,-116.5635,1.1,0.9,8.8,0.7,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Meridian,43.6121,-116.3915,0.9,0.7,7.2,0.5,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Coeur d'Alene,47.6777,-116.7805,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Twin Falls,42.5629,-114.4609,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Pocatello,42.8713,-112.4455,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+West Valley City,40.6916,-112.001,1.6,1.3,12.8,1.0,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+West Jordan,40.6097,-111.9391,1.4,1.1,11.2,0.8,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Sandy,40.5649,-111.8389,1.4,1.1,11.2,0.8,Increasing,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com
+Lehi,40.3916,-111.8507,0.6,0.5,4.8,0.4,Stable,Yardi Matrix/RealPage,2025-Q4,https://www.yardimatrix.com

@@ -1,0 +1,286 @@
+city,lat,lng,gross_rent_multiplier,grm_class_a,grm_class_b,grm_class_c,grm_5yr_avg,grm_trend,data_source,as_of_date,source_url
+New York,40.7128,-74.006,19.1,22.8,18.5,13.6,20.8,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Los Angeles,34.0522,-118.2437,15.23,19.8,15.5,12.1,17.7,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Chicago,41.8781,-87.6298,10.41,12.6,9.7,8.0,12.0,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Houston,29.7604,-95.3698,9.63,11.8,8.9,6.5,10.1,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Phoenix,33.4484,-112.074,11.77,14.2,11.3,8.3,13.1,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Philadelphia,39.9526,-75.1652,11.13,13.7,11.0,8.2,12.0,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+San Antonio,29.4241,-98.4936,9.55,11.5,9.2,7.1,10.7,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+San Diego,32.7157,-117.1611,17.07,20.8,16.1,12.5,17.8,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+DFW,32.7767,-96.797,10.56,12.9,9.6,7.6,11.6,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Bay Area,37.7749,-122.4194,18.77,22.3,18.1,13.3,19.5,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Austin,30.2672,-97.7431,13.13,14.1,11.3,8.6,12.9,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Jacksonville,30.3322,-81.6557,9.75,11.4,10.1,7.5,11.1,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Columbus,39.9612,-82.9988,9.94,11.1,9.5,7.0,10.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Charlotte,35.2271,-80.8431,11.78,13.9,11.1,7.7,11.9,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Indianapolis,39.7684,-86.1581,8.96,11.2,9.2,6.9,9.8,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Seattle,47.6062,-122.3321,15.64,17.8,14.9,10.7,16.2,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Denver,39.7392,-104.9903,12.96,14.6,12.3,8.7,13.9,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Nashville,36.1627,-86.7816,12.74,15.3,11.9,8.8,13.0,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Oklahoma City,35.4676,-97.5164,8.82,9.4,8.2,6.1,8.9,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+El Paso,31.7619,-106.485,8.61,9.9,7.8,5.7,9.0,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+DC Metro,38.9072,-77.0369,15.48,18.6,14.3,11.0,16.6,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Boston,42.3601,-71.0589,17.77,21.3,15.7,12.0,19.7,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Las Vegas,36.1699,-115.1398,11.49,13.4,11.1,8.4,11.6,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Memphis,35.1495,-90.049,8.66,10.1,8.1,6.2,9.6,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Louisville,38.2527,-85.7585,9.24,10.6,8.5,6.1,9.9,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Portland,45.5051,-122.675,12.55,16.3,12.7,9.9,13.9,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Baltimore,39.2904,-76.6122,11.39,14.3,11.0,8.4,11.8,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Milwaukee,43.0389,-87.9065,8.58,11.2,9.0,6.6,9.7,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Albuquerque,35.0844,-106.6504,9.02,10.8,9.0,6.4,10.0,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Tucson,32.2226,-110.9747,9.72,10.7,9.1,6.9,9.8,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Central Valley,36.7783,-119.4179,10.63,12.7,9.3,7.2,10.9,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Sacramento,38.5816,-121.4944,13.46,15.6,12.5,9.3,14.6,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Kansas City,39.0997,-94.5786,9.57,10.6,9.0,6.6,9.5,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Atlanta,33.749,-84.388,10.49,12.2,10.4,7.3,11.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Omaha,41.2565,-95.9345,8.66,10.4,9.1,6.3,9.6,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Colorado Springs,38.8339,-104.8214,11.36,12.3,10.3,8.3,11.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Raleigh-Durham,35.7796,-78.6382,13.24,14.6,12.1,8.9,13.8,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Hampton Roads,36.8529,-75.978,10.48,11.7,10.2,7.4,11.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Minneapolis,44.9778,-93.265,12.0,13.1,11.1,8.5,12.9,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Tampa Bay,27.9506,-82.4572,13.06,15.6,12.2,8.5,13.0,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+New Orleans,29.9511,-90.0715,9.85,11.3,9.2,6.8,10.4,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Richmond,37.5407,-77.436,10.58,13.0,10.1,7.8,11.5,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Spokane,47.6588,-117.426,10.25,11.3,9.4,6.7,10.7,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Des Moines,41.5868,-93.625,9.18,10.6,8.4,6.4,9.2,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Montgomery,32.3668,-86.3,8.03,10.2,8.4,6.2,9.2,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Inland Empire,33.9806,-117.3755,13.09,15.9,12.6,10.1,14.0,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Ventura,34.2805,-119.2945,16.25,17.8,15.5,10.8,17.3,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Tallahassee,30.4518,-84.2807,9.41,11.2,8.7,6.9,10.6,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Huntsville,34.7304,-86.5861,9.92,11.6,9.9,7.1,10.2,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Knoxville,35.9606,-83.9207,10.3,11.6,9.3,7.1,11.0,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Chattanooga,35.0456,-85.3097,10.33,11.1,9.5,6.8,10.2,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Fort Collins,40.5853,-105.0844,12.61,14.2,12.0,9.5,13.3,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Eugene,44.0521,-123.0868,11.25,14.0,11.4,8.0,12.1,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Boise,43.615,-116.2023,12.68,15.0,11.5,9.4,12.9,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Sarasota,27.3364,-82.5307,13.48,16.1,13.1,9.7,15.0,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Savannah,32.0835,-81.0998,11.19,12.4,10.0,7.8,11.9,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Charleston,32.7765,-79.9311,12.52,13.7,12.0,9.1,13.1,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Salt Lake City,40.7608,-111.891,12.79,15.0,12.0,8.9,14.2,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Greenville,34.8526,-82.394,10.61,12.5,9.8,7.0,11.4,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Asheville,35.5951,-82.5515,13.17,15.6,11.2,8.9,13.1,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Wilmington,34.2257,-77.9447,11.23,12.9,10.9,8.1,11.9,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Fayetteville,35.0527,-78.8784,8.93,11.0,8.8,6.8,9.8,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Fayetteville AR,36.0626,-94.1574,10.43,12.6,9.1,7.3,11.1,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Reno,39.5296,-119.8138,12.65,14.2,11.9,8.9,13.4,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Baton Rouge,30.4515,-91.1871,8.71,11.4,9.1,6.9,10.4,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Lafayette,30.2241,-92.0198,8.85,10.1,8.7,6.8,9.5,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Lake Charles,30.2266,-93.2174,8.16,9.6,8.2,5.8,9.6,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Shreveport,32.5252,-93.7502,8.06,10.4,7.6,5.9,9.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Corpus Christi,27.8006,-97.3964,9.48,10.3,8.7,6.9,10.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Lubbock,33.5779,-101.8552,8.55,9.9,8.3,6.1,9.1,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Wichita,37.6872,-97.3301,8.86,10.2,8.3,6.1,9.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Tulsa,36.154,-95.9928,8.75,9.7,8.2,6.3,8.8,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Sioux Falls,43.5446,-96.7311,9.21,11.3,8.3,6.6,9.9,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Fargo,46.8772,-96.7898,9.11,10.6,8.3,6.6,10.0,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Billings,45.7833,-108.5007,9.34,10.7,8.9,6.5,10.1,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Bozeman,45.677,-111.0429,14.31,16.8,12.7,9.8,14.8,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Cheyenne,41.14,-104.8202,9.38,10.9,8.7,6.5,10.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Idaho Falls,43.4917,-112.0408,10.29,11.9,9.8,7.2,10.6,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Provo,40.2338,-111.6585,10.58,12.3,10.3,7.9,11.8,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Ogden,41.223,-111.9738,10.72,12.1,9.8,7.7,10.7,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+St. George,37.0965,-113.5684,11.62,14.9,11.3,8.5,12.8,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Carson City,39.1638,-119.7674,11.38,14.0,11.5,7.9,12.1,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Santa Fe,35.687,-105.9378,11.92,14.6,11.5,8.5,13.1,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Las Cruces,32.3199,-106.7637,8.81,10.6,7.9,6.2,9.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Yuma,32.6927,-114.6277,9.43,10.5,8.7,6.1,9.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Flagstaff,35.1983,-111.6513,12.35,15.1,12.3,9.1,12.8,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Prescott,34.54,-112.4685,11.45,12.8,10.5,7.8,12.1,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Medford,42.3265,-122.8756,11.38,14.2,11.1,8.5,11.8,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Bend,44.0582,-121.3153,13.71,15.7,12.1,10.0,14.2,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Corvallis,44.5646,-123.262,11.15,12.9,11.4,8.4,12.9,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Salem,44.9429,-123.0351,11.42,13.2,9.9,8.2,11.1,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Bellingham,48.7519,-122.4787,13.72,15.5,12.8,9.7,14.3,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Yakima,46.6021,-120.5059,9.0,11.0,8.3,6.6,9.5,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Olympia,47.0379,-122.9007,12.82,15.0,11.8,8.8,13.6,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Tri-Cities,46.2396,-119.1006,10.4,12.3,10.0,7.6,11.0,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Vancouver,45.6387,-122.6615,14.2,15.7,12.8,9.5,14.4,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Everett,47.979,-122.2021,14.52,17.9,14.0,10.4,15.6,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Tacoma,47.2529,-122.4443,12.95,15.1,12.8,9.3,14.3,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Bellevue,47.6101,-122.2015,17.5,21.5,17.4,12.9,18.7,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Bradenton,27.4989,-82.5748,11.98,13.3,11.2,8.5,13.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Lakeland,28.0395,-81.9498,9.97,12.8,10.0,7.4,11.1,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Fort Myers,26.6406,-81.8723,13.0,14.1,12.1,9.1,13.4,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Naples,26.142,-81.7948,13.77,17.6,13.9,9.9,15.6,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Ocala,29.1872,-82.1401,10.39,12.2,9.4,7.0,10.7,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Palm Beach,26.7056,-80.0364,15.34,16.7,14.0,10.4,15.4,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Miami,25.7617,-80.1918,15.07,17.4,13.9,10.9,16.6,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Daytona,29.2108,-81.0228,10.64,11.7,9.9,7.7,11.2,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Melbourne,28.0836,-80.6081,11.12,12.9,11.0,8.7,12.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Gainesville,29.6516,-82.3248,10.22,11.5,9.6,7.4,10.7,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Port St. Lucie,27.273,-80.3582,12.53,15.1,12.2,9.5,13.9,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Pensacola,30.4213,-87.2169,9.97,11.8,10.2,7.6,11.6,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Macon,32.8407,-83.6324,8.27,9.6,8.5,6.0,9.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Augusta,33.4735,-82.0105,9.24,10.3,9.2,6.9,9.5,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Columbus GA,32.461,-84.9877,8.48,10.6,8.5,6.5,9.4,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Athens,33.9519,-83.3576,10.43,12.4,9.8,7.7,10.7,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Valdosta,30.8327,-83.2785,8.59,9.9,8.5,6.2,9.0,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Birmingham,33.5186,-86.8104,9.26,10.6,8.5,6.8,10.1,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Mobile,30.6954,-88.0399,8.12,9.7,7.8,6.5,9.1,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Tuscaloosa,33.2098,-87.5692,8.9,10.0,8.8,6.2,9.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Dothan,31.2232,-85.3905,8.52,9.8,7.8,6.2,9.1,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Auburn,32.6099,-85.4808,10.63,11.9,10.1,7.6,11.1,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Jackson,32.2988,-90.1848,8.2,9.5,7.9,6.1,8.6,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Gulfport,30.3674,-89.0928,8.95,10.1,8.6,6.3,10.0,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Hattiesburg,31.3271,-89.2903,8.77,10.5,8.2,5.8,9.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Starkville,33.4504,-88.8184,8.06,10.5,8.1,6.4,9.0,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Little Rock,34.7465,-92.2896,8.64,10.6,8.7,6.3,9.5,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Fort Smith,35.3859,-94.3985,8.5,10.2,7.6,5.9,9.4,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Jonesboro,35.8423,-90.7043,8.56,9.8,8.1,6.4,9.2,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Springdale,36.1867,-94.1288,10.76,11.4,9.5,7.2,10.7,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Rogers,36.332,-94.1185,11.12,13.1,10.0,8.0,12.0,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Bentonville,36.3729,-94.2088,11.94,13.9,11.0,8.4,12.5,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Clarksville,36.5298,-87.3595,8.95,10.6,8.6,6.5,10.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Johnson City,36.3134,-82.3535,9.27,10.7,8.7,6.8,10.1,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Kingsport,36.5484,-82.5618,9.38,11.4,8.6,6.3,9.9,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Jackson TN,35.6145,-88.8139,8.5,10.3,8.2,6.2,9.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Franklin,35.9251,-86.8689,15.3,16.4,13.9,10.3,15.6,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Brentwood,36.0331,-86.7828,16.79,19.2,15.0,12.0,17.5,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Murfreesboro,35.8456,-86.3903,11.03,13.7,11.4,7.9,12.3,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Smyrna,35.9829,-86.5186,11.54,14.3,10.9,8.7,12.9,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Spring Hill,35.7512,-86.93,12.59,15.1,11.8,8.5,12.9,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Bowling Green,36.9685,-86.4808,9.45,11.3,9.2,6.5,10.4,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Lexington,38.0406,-84.5037,9.61,12.1,9.5,7.1,10.8,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Evansville,37.9716,-87.5711,8.08,10.6,7.7,6.2,9.0,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+South Bend,41.6764,-86.252,8.96,9.6,8.2,5.9,9.1,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Fort Wayne,41.1306,-85.1289,8.35,9.7,7.6,6.1,9.6,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Grand Rapids,42.9634,-85.6681,9.85,12.4,9.7,7.5,10.9,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Ann Arbor,42.2808,-83.743,13.84,15.7,13.3,10.1,15.1,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Lansing,42.7325,-84.5555,9.06,11.1,9.0,6.5,9.7,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Kalamazoo,42.2917,-85.5872,9.24,11.4,9.0,6.5,9.8,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Flint,43.0125,-83.6875,7.61,9.2,6.7,5.6,8.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Detroit,42.3314,-83.0458,8.85,11.0,8.3,6.5,10.4,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Toledo,41.6639,-83.5552,8.59,10.5,8.2,6.0,8.8,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Akron,41.0814,-81.519,8.99,9.7,7.6,6.2,9.5,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Dayton,39.7589,-84.1916,8.41,9.5,8.2,6.3,9.2,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Cincinnati,39.1031,-84.512,10.67,11.4,9.3,7.0,11.4,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Cleveland,41.4993,-81.6944,9.04,11.1,8.5,6.4,9.7,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Pittsburgh,40.4406,-79.9959,10.19,13.4,10.6,7.8,12.0,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Providence,41.824,-71.4128,13.92,16.9,12.3,10.0,14.0,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Hartford,41.7658,-72.6851,12.51,15.3,11.3,8.7,13.9,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Bridgeport,41.1865,-73.1952,13.79,15.1,12.2,10.0,14.1,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Springfield MA,42.1015,-72.5898,10.82,13.5,10.7,8.0,11.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Worcester,42.2626,-71.8023,13.43,15.3,13.3,9.9,15.2,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Syracuse,43.0481,-76.1474,10.24,11.5,9.3,7.5,11.5,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Rochester,43.1566,-77.6088,10.63,12.4,10.1,7.5,10.9,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Albany,42.6526,-73.7562,11.07,12.9,10.1,7.8,11.5,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Buffalo,42.8864,-78.8784,10.04,12.7,9.4,7.7,11.4,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Yonkers,40.9312,-73.8988,15.7,18.8,14.6,11.6,16.4,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Newark,40.7357,-74.1724,15.03,17.9,13.4,10.1,15.1,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Paterson,40.9168,-74.1719,13.33,16.3,12.1,10.2,14.7,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Anchorage,61.2181,-149.9003,12.53,15.2,12.0,8.7,14.0,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Honolulu,21.3069,-157.8583,19.5,21.9,16.9,12.6,19.5,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Wichita Falls,33.9137,-98.4934,8.76,10.4,8.4,6.4,9.6,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Midland,31.9973,-102.0779,10.23,13.3,9.7,7.4,12.2,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Odessa,31.8457,-102.3676,10.03,11.9,9.7,7.0,10.6,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Tyler,32.3513,-95.3011,8.7,11.5,8.5,6.7,9.8,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Waco,31.5493,-97.1467,9.36,10.8,9.1,6.4,10.4,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Beaumont,30.086,-94.1018,8.83,11.2,8.2,6.3,9.8,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Abilene,32.4487,-99.7331,8.0,10.5,8.5,6.2,9.4,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Laredo,27.5306,-99.4803,8.7,10.3,8.0,5.9,9.6,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+McAllen,26.2034,-98.23,8.76,10.6,8.0,6.2,8.8,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Brownsville,25.9017,-97.4975,8.0,10.4,8.0,6.0,9.4,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Killeen,31.1171,-97.7278,9.35,10.7,8.8,6.7,9.7,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Bryan-College Station,30.628,-96.3344,9.92,11.1,9.3,6.9,10.0,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Victoria,28.8053,-97.0036,8.53,9.6,7.8,5.9,9.0,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Longview,32.5007,-94.7405,9.32,10.2,8.5,6.7,9.5,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Nacogdoches,31.6035,-94.6552,8.25,9.6,7.7,6.5,8.9,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Lufkin,31.3382,-94.7291,8.68,9.5,8.1,5.9,9.1,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Huntsville TX,30.7235,-95.5508,8.6,10.7,8.9,6.9,9.7,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Texarkana,33.4251,-94.0477,8.1,10.2,8.0,6.4,9.2,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Paris TX,33.6609,-95.5555,8.27,10.5,8.5,5.9,9.0,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Amarillo,35.222,-101.8313,9.29,10.0,8.3,6.4,9.9,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Deltona,28.9005,-81.2637,11.06,14.0,10.3,8.2,12.4,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Daytona Beach,29.2108,-81.0228,10.12,12.2,9.6,8.0,11.2,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Kissimmee,28.2919,-81.4076,12.39,15.4,12.4,9.3,13.8,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Sanford,28.8005,-81.2731,11.93,14.2,10.7,8.4,12.6,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Clearwater,27.9659,-82.8001,13.4,15.2,13.4,9.2,13.9,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Cape Coral,26.5629,-81.9495,13.05,13.9,11.8,9.2,12.9,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Homestead,25.4687,-80.4776,12.86,15.4,11.4,9.0,13.6,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Doral,25.8195,-80.3556,15.99,20.6,16.1,11.3,17.0,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Aventura,25.9565,-80.1392,17.03,20.8,16.3,12.2,18.4,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Boca Raton,26.3683,-80.1289,15.22,18.9,13.9,11.6,16.8,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+West Palm Beach,26.7153,-80.0534,14.76,16.3,13.7,10.8,15.7,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Delray Beach,26.4615,-80.0728,14.79,17.1,13.6,10.8,15.8,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Boynton Beach,26.5317,-80.0905,13.73,15.9,12.5,9.7,14.8,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Pompano Beach,26.2379,-80.1248,14.09,16.1,14.6,10.4,15.0,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Hollywood,26.0112,-80.1495,15.31,17.3,14.5,10.7,15.5,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Coral Springs,26.2707,-80.2707,14.34,17.4,13.4,11.1,15.6,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Miramar,25.986,-80.233,14.79,17.1,14.4,10.0,14.9,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Pembroke Pines,26.007,-86.1527,13.76,16.6,14.3,10.7,15.3,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Sunrise,26.167,-80.2561,13.52,16.9,13.5,10.1,14.8,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Plantation,26.1276,-80.2331,14.8,17.5,13.5,10.2,15.3,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Davie,26.0765,-80.2521,15.2,17.2,13.7,10.9,14.9,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Weston,26.1003,-80.3998,15.81,18.1,15.2,11.4,17.2,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Deerfield Beach,26.3184,-80.0998,13.79,16.3,13.5,9.7,14.5,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Margate,26.2445,-80.2062,13.59,16.3,12.7,9.6,14.0,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Lauderhill,26.1401,-80.2131,13.78,16.5,12.7,9.5,15.3,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Tamarac,26.2129,-80.2497,13.58,15.9,13.1,10.1,13.9,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Coconut Creek,26.2712,-80.1793,13.64,16.7,13.2,9.4,15.1,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+North Miami,25.8897,-80.1868,13.78,15.5,13.2,9.8,15.0,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Miami Gardens,25.942,-80.2456,13.51,15.4,13.3,10.1,14.9,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Hialeah,25.8576,-80.2781,13.96,15.5,13.0,10.2,14.1,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Greenville SC,34.8526,-82.394,10.08,11.3,10.0,7.3,11.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Columbia SC,34.0007,-81.0348,9.85,11.5,9.4,7.5,10.6,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Spartanburg,34.9496,-81.932,10.78,12.6,9.6,7.6,11.2,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Rock Hill,34.9249,-81.0251,11.4,13.2,10.7,8.1,12.2,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+North Charleston,32.8546,-79.9748,12.41,13.6,11.4,8.7,12.2,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Mount Pleasant,32.8323,-79.8284,15.36,18.1,14.0,10.7,16.1,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Wilmington NC,34.2257,-77.9447,10.82,12.8,11.0,8.1,13.0,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Gastonia,35.2621,-81.1873,10.35,11.6,9.8,7.0,10.8,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Concord NC,35.4088,-80.5795,11.54,13.5,11.0,8.0,12.4,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Huntersville,35.4107,-80.8429,11.87,14.7,11.7,9.4,13.0,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Mooresville,35.5746,-80.8098,11.83,15.6,12.2,9.1,13.4,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Cary,35.7915,-78.7811,13.05,16.2,12.3,9.9,15.0,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Durham,35.994,-78.8986,12.87,14.1,11.9,8.6,13.6,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Chapel Hill,35.9132,-79.0558,13.22,16.1,13.3,9.8,14.0,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Apex,35.7327,-78.8503,13.45,16.8,12.9,9.1,14.2,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Morrisville,35.8237,-78.8253,13.72,16.6,12.8,9.5,15.2,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+High Point,35.9557,-80.0053,10.16,11.4,9.6,7.6,11.5,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Winston-Salem,36.0999,-80.2442,10.03,11.8,10.0,7.4,11.5,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Greensboro,36.0726,-79.792,9.9,11.8,9.9,7.0,11.6,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Richmond VA,37.5407,-77.436,11.13,12.5,9.9,7.4,12.0,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Newport News,37.0871,-76.473,10.49,12.7,9.5,7.4,11.5,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Chesapeake,36.7682,-76.2875,11.51,14.1,10.7,8.3,12.1,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Virginia Beach,36.8529,-75.978,11.46,13.3,10.7,8.8,11.9,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Hampton,37.0299,-76.3452,10.19,11.7,9.7,7.3,11.2,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Alexandria VA,38.8048,-77.0469,15.48,18.3,13.9,11.6,17.4,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Madison WI,43.0731,-89.4012,11.88,13.2,10.4,8.0,12.5,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Green Bay,44.5133,-88.0133,9.13,10.5,8.4,6.4,9.5,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Kenosha,42.5847,-87.8212,9.84,12.1,10.2,7.0,10.7,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Racine,42.7261,-87.7829,8.87,11.2,9.0,7.0,10.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Appleton,44.2619,-88.4154,9.12,10.3,8.8,6.9,10.2,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Eau Claire,44.8113,-91.4985,8.71,10.6,8.2,6.2,9.5,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+La Crosse,43.8014,-91.2396,8.86,10.3,8.3,7.0,9.9,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Janesville,42.6828,-89.0187,9.62,10.7,9.2,6.7,9.5,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Cedar Rapids,41.9779,-91.6656,9.68,10.4,8.8,6.5,9.7,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Iowa City,41.6611,-91.5302,10.36,12.1,10.0,7.7,11.1,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Sioux City,42.4999,-96.4003,8.19,9.5,8.4,6.2,9.6,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Waterloo,42.4928,-92.3426,8.83,9.8,8.2,6.3,8.8,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Ames,42.0308,-93.6319,10.41,12.3,10.1,7.3,11.2,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Dubuque,42.5006,-90.6646,9.32,10.3,8.6,6.2,10.1,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Olathe,38.8814,-94.8191,10.38,13.3,10.6,8.2,11.7,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Lawrence KS,38.9717,-95.2353,10.54,12.2,9.9,7.0,11.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Shawnee,39.0228,-94.7152,11.17,12.4,10.8,7.7,11.3,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Lenexa,38.9536,-94.7336,11.4,14.1,11.0,8.4,12.6,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Lincoln NE,40.8136,-96.7026,9.64,10.9,9.2,6.8,10.0,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Grand Island,40.925,-98.342,8.43,10.1,7.7,6.1,9.0,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Rapid City,44.0805,-103.231,10.36,11.8,9.7,7.1,10.6,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Bismarck,46.8083,-100.7837,10.23,11.6,9.3,7.7,11.1,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Grand Forks,47.9253,-97.0329,8.65,10.4,8.9,6.3,9.7,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Minot,48.2325,-101.2963,9.31,10.7,8.5,6.3,10.0,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Missoula,46.8721,-113.994,11.92,12.8,10.7,7.8,12.2,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Great Falls,47.5002,-111.3008,8.95,10.8,9.3,6.9,9.7,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Helena MT,46.5958,-112.027,10.73,11.7,9.7,7.8,10.9,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Kalispell,48.192,-114.3168,12.15,13.5,11.3,7.9,12.1,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Casper,42.8501,-106.3252,9.34,10.6,8.3,7.0,10.4,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Laramie,41.3114,-105.5911,10.59,12.2,9.5,7.2,11.2,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Nampa,43.5407,-116.5635,10.65,12.2,10.3,7.8,12.1,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Meridian,43.6121,-116.3915,11.92,12.9,10.8,8.7,12.4,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Coeur d'Alene,47.6777,-116.7805,13.2,15.3,11.4,8.6,13.7,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Twin Falls,42.5629,-114.4609,10.09,11.4,9.8,7.0,10.8,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Pocatello,42.8713,-112.4455,9.33,11.1,8.9,6.8,10.4,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+West Valley City,40.6916,-112.001,10.47,12.3,10.6,7.8,11.8,Expanding,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+West Jordan,40.6097,-111.9391,10.94,14.1,11.3,7.9,12.2,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Sandy,40.5649,-111.8389,11.11,13.3,10.8,8.1,12.0,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily
+Lehi,40.3916,-111.8507,12.26,14.7,11.7,9.3,14.1,Compressing,CoStar/Real Capital Analytics,2025-Q4,https://www.costar.com/multifamily

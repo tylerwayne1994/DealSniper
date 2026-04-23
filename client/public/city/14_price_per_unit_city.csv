@@ -1,0 +1,286 @@
+city,lat,lng,price_per_unit,price_per_unit_class_a,price_per_unit_class_b,price_per_unit_class_c,price_per_unit_yoy_chg_pct,price_per_sf,data_source,as_of_date,source_url
+New York,40.7128,-74.006,443957.76,642329.0,423080.0,329497.0,-4.4,530.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Los Angeles,34.0522,-118.2437,381331.52,525878.0,351545.0,258267.0,-4.24,417.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Chicago,41.8781,-87.6298,205124.4,265133.0,194681.0,136209.0,-2.47,214.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Houston,29.7604,-95.3698,159490.32,226831.0,154924.0,99065.0,-6.06,183.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Phoenix,33.4484,-112.074,230208.24,308190.0,202263.0,139817.0,-4.5,247.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Philadelphia,39.9526,-75.1652,209731.2,299385.0,200553.0,128432.0,-2.33,230.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+San Antonio,29.4241,-98.4936,169552.96,215638.0,153515.0,106897.0,-2.87,175.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+San Diego,32.7157,-117.1611,427170.24,601719.0,409342.0,287524.0,-6.74,449.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+DFW,32.7767,-96.797,181590.08,263001.0,186478.0,112011.0,-5.92,215.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Bay Area,37.7749,-122.4194,448573.44,682650.0,452906.0,295162.0,-5.82,549.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Austin,30.2672,-97.7431,207532.8,284145.0,210231.0,143468.0,-5.28,253.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Jacksonville,30.3322,-81.6557,178897.6,228115.0,160103.0,108869.0,-3.5,204.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Columbus,39.9612,-82.9988,166579.12,197368.0,151913.0,104077.0,-5.94,168.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Charlotte,35.2271,-80.8431,211251.68,276644.0,201443.0,124984.0,-4.98,234.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Indianapolis,39.7684,-86.1581,148909.2,186432.0,131363.0,88980.0,-2.98,163.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Seattle,47.6062,-122.3321,379580.48,495845.0,336388.0,241562.0,-3.59,403.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Denver,39.7392,-104.9903,267849.84,358667.0,250151.0,174470.0,-6.49,320.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Nashville,36.1627,-86.7816,222498.0,302083.0,220169.0,145146.0,-5.11,244.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Oklahoma City,35.4676,-97.5164,133486.59,167140.0,127340.0,82158.0,-3.47,144.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+El Paso,31.7619,-106.485,112457.12,164210.0,113034.0,71484.0,-3.61,125.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+DC Metro,38.9072,-77.0369,377805.12,499957.0,340616.0,237970.0,-2.72,418.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Boston,42.3601,-71.0589,485049.6,589285.0,408847.0,270312.0,-4.54,513.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Las Vegas,36.1699,-115.1398,186373.2,266561.0,184242.0,135572.0,-2.93,225.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Memphis,35.1495,-90.049,113412.16,151962.0,118039.0,71294.0,-3.36,131.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Louisville,38.2527,-85.7585,133486.85,178747.0,125747.0,87661.0,-5.84,153.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Portland,45.5051,-122.675,294220.32,411350.0,288901.0,187722.0,-2.98,315.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Baltimore,39.2904,-76.6122,195923.52,274766.0,189696.0,131932.0,-6.16,208.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Milwaukee,43.0389,-87.9065,125353.44,174508.0,137974.0,86291.0,-4.8,156.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Albuquerque,35.0844,-106.6504,143336.74,179388.0,121675.0,87399.0,-3.99,157.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Tucson,32.2226,-110.9747,136390.48,187027.0,129421.0,101494.0,-5.39,167.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Central Valley,36.7783,-119.4179,153370.8,216623.0,150377.0,112489.0,-2.71,188.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Sacramento,38.5816,-121.4944,248363.04,302748.0,233241.0,154234.0,-2.78,264.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Kansas City,39.0997,-94.5786,142213.68,181327.0,142808.0,89528.0,-5.17,164.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Atlanta,33.749,-84.388,188192.16,253019.0,188309.0,127886.0,-4.17,207.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Omaha,41.2565,-95.9345,148730.56,197100.0,134248.0,88707.0,-4.81,167.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Colorado Springs,38.8339,-104.8214,185618.64,244907.0,175365.0,112883.0,-4.32,204.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Raleigh-Durham,35.7796,-78.6382,236582.96,293169.0,218288.0,158271.0,-5.37,261.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Hampton Roads,36.8529,-75.978,174394.75,227083.0,155925.0,110077.0,-2.93,193.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Minneapolis,44.9778,-93.265,188441.76,284070.0,194095.0,131157.0,-3.8,208.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Tampa Bay,27.9506,-82.4572,228371.28,298521.0,190812.0,141859.0,-3.48,236.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+New Orleans,29.9511,-90.0715,147195.44,211969.0,149978.0,95806.0,-3.06,167.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Richmond,37.5407,-77.436,191425.47,235779.0,158643.0,122227.0,-3.72,196.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Spokane,47.6588,-117.426,164580.24,211356.0,156276.0,100378.0,-4.12,169.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Des Moines,41.5868,-93.625,135663.94,176893.0,134408.0,86924.0,-5.35,156.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Montgomery,32.3668,-86.3,108969.7,150336.0,119845.0,73745.0,-3.29,126.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Inland Empire,33.9806,-117.3755,306318.56,368614.0,263435.0,193302.0,-5.29,330.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Ventura,34.2805,-119.2945,366222.72,487522.0,355120.0,246838.0,-4.95,424.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Tallahassee,30.4518,-84.2807,139247.87,194228.0,143918.0,101449.0,-4.11,171.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Huntsville,34.7304,-86.5861,159052.32,218474.0,143480.0,108588.0,-2.9,178.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Knoxville,35.9606,-83.9207,157494.88,208815.0,154575.0,99196.0,-2.58,168.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Chattanooga,35.0456,-85.3097,161537.28,207998.0,136987.0,107229.0,-3.95,180.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Fort Collins,40.5853,-105.0844,236364.24,319224.0,247456.0,161158.0,-6.67,275.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Eugene,44.0521,-123.0868,227455.2,314408.0,213357.0,153003.0,-5.89,257.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Boise,43.615,-116.2023,217610.96,308663.0,197969.0,139757.0,-3.84,247.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Sarasota,27.3364,-82.5307,266812.29,356452.0,235800.0,159046.0,-4.63,285.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Savannah,32.0835,-81.0998,178189.04,246541.0,173270.0,117603.0,-3.64,209.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Charleston,32.7765,-79.9311,243918.08,329856.0,239144.0,166249.0,-5.36,263.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Salt Lake City,40.7608,-111.891,218235.6,280432.0,217645.0,144734.0,-5.29,256.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Greenville,34.8526,-82.394,159360.96,228538.0,151982.0,111688.0,-6.05,192.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Asheville,35.5951,-82.5515,257348.0,334862.0,231696.0,158012.0,-5.9,269.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Wilmington,34.2257,-77.9447,207253.12,267847.0,211191.0,131124.0,-2.98,230.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Fayetteville,35.0527,-78.8784,147397.25,180401.0,139337.0,90187.0,-3.35,151.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Fayetteville AR,36.0626,-94.1574,166797.84,213245.0,163840.0,104829.0,-5.34,175.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Reno,39.5296,-119.8138,243153.68,357014.0,250517.0,151560.0,-4.15,277.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Baton Rouge,30.4515,-91.1871,131908.13,179870.0,125592.0,86624.0,-2.35,153.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Lafayette,30.2241,-92.0198,123522.43,166986.0,125292.0,81318.0,-5.03,152.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Lake Charles,30.2266,-93.2174,108646.85,151368.0,111618.0,78844.0,-4.61,131.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Shreveport,32.5252,-93.7502,116468.83,152818.0,111255.0,77439.0,-6.07,133.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Corpus Christi,27.8006,-97.3964,130629.7,184899.0,126951.0,92862.0,-6.51,153.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Lubbock,33.5779,-101.8552,116421.63,168277.0,116177.0,74841.0,-4.33,128.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Wichita,37.6872,-97.3301,117573.31,168583.0,106934.0,71643.0,-4.78,134.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Tulsa,36.154,-95.9928,118900.58,170647.0,114659.0,81933.0,-5.62,133.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Sioux Falls,43.5446,-96.7311,152465.76,191547.0,146694.0,98319.0,-5.2,157.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Fargo,46.8772,-96.7898,155611.68,201732.0,141517.0,97144.0,-4.51,167.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Billings,45.7833,-108.5007,149649.28,204682.0,140324.0,88373.0,-2.3,155.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Bozeman,45.677,-111.0429,273002.64,388813.0,288182.0,195585.0,-4.29,314.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Cheyenne,41.14,-104.8202,152364.22,196773.0,138087.0,90771.0,-4.79,159.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Idaho Falls,43.4917,-112.0408,165086.16,213900.0,145429.0,104251.0,-2.39,164.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Provo,40.2338,-111.6585,190067.28,258179.0,193694.0,133822.0,-6.34,226.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Ogden,41.223,-111.9738,162010.8,220858.0,158430.0,114478.0,-6.22,197.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+St. George,37.0965,-113.5684,222498.0,308493.0,210221.0,142689.0,-4.4,251.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Carson City,39.1638,-119.7674,202244.48,274516.0,194724.0,136018.0,-3.35,235.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Santa Fe,35.687,-105.9378,225533.28,329782.0,233227.0,154279.0,-5.06,281.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Las Cruces,32.3199,-106.7637,108565.66,158061.0,110925.0,80085.0,-3.07,138.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Yuma,32.6927,-114.6277,131592.38,189311.0,140986.0,94063.0,-2.62,150.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Flagstaff,35.1983,-111.6513,249374.72,355675.0,219113.0,168792.0,-3.39,261.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Prescott,34.54,-112.4685,221157.6,267253.0,207361.0,140251.0,-5.23,249.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Medford,42.3265,-122.8756,198116.48,309040.0,191024.0,130128.0,-4.68,246.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Bend,44.0582,-121.3153,274261.2,378982.0,270832.0,189948.0,-2.76,311.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Corvallis,44.5646,-123.262,208185.36,276787.0,205015.0,145628.0,-2.96,230.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Salem,44.9429,-123.0351,193206.0,247906.0,194518.0,123799.0,-4.85,218.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Bellingham,48.7519,-122.4787,297462.48,398576.0,289165.0,175226.0,-3.69,316.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Yakima,46.6021,-120.5059,132292.32,196742.0,140894.0,95363.0,-3.38,157.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Olympia,47.0379,-122.9007,237748.0,307232.0,229063.0,166239.0,-5.75,275.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Tri-Cities,46.2396,-119.1006,168814.8,239832.0,147661.0,109319.0,-4.6,178.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Vancouver,45.6387,-122.6615,281256.24,397154.0,256459.0,175931.0,-6.14,326.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Everett,47.979,-122.2021,338067.6,453359.0,328154.0,200082.0,-3.55,377.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Tacoma,47.2529,-122.4443,305214.48,384024.0,250619.0,170679.0,-5.98,310.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Bellevue,47.6101,-122.2015,468367.2,619533.0,445517.0,275226.0,-4.19,512.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Bradenton,27.4989,-82.5748,187064.06,258143.0,200885.0,128801.0,-3.1,228.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Lakeland,28.0395,-81.9498,157729.15,217249.0,164411.0,110371.0,-4.21,182.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Fort Myers,26.6406,-81.8723,234820.8,296849.0,209287.0,139136.0,-5.01,243.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Naples,26.142,-81.7948,321937.2,420035.0,310637.0,201046.0,-3.53,351.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Ocala,29.1872,-82.1401,157284.08,193755.0,152789.0,105198.0,-3.42,167.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Palm Beach,26.7056,-80.0364,350963.6,441628.0,307303.0,195023.0,-4.14,376.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Miami,25.7617,-80.1918,402254.16,551792.0,389170.0,245149.0,-5.12,416.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Daytona,29.2108,-81.0228,153964.8,205632.0,167489.0,105359.0,-3.42,187.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Melbourne,28.0836,-80.6081,191355.12,243460.0,181529.0,110724.0,-6.35,201.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Gainesville,29.6516,-82.3248,150960.08,221641.0,138085.0,102159.0,-5.33,170.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Port St. Lucie,27.273,-80.3582,227366.8,274730.0,209060.0,143182.0,-4.32,228.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Pensacola,30.4213,-87.2169,174609.6,206302.0,168884.0,100745.0,-6.52,189.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Macon,32.8407,-83.6324,117913.15,167234.0,112755.0,79111.0,-5.81,137.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Augusta,33.4735,-82.0105,131746.94,176487.0,140319.0,95246.0,-2.75,151.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Columbus GA,32.461,-84.9877,140836.61,191755.0,129702.0,81087.0,-5.91,147.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Athens,33.9519,-83.3576,162291.2,193973.0,153067.0,93166.0,-4.08,174.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Valdosta,30.8327,-83.2785,116780.35,162086.0,116288.0,72588.0,-4.33,135.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Birmingham,33.5186,-86.8104,142175.62,178217.0,117415.0,86604.0,-6.69,147.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Mobile,30.6954,-88.0399,122699.23,165481.0,111705.0,79099.0,-5.08,135.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Tuscaloosa,33.2098,-87.5692,124895.23,188302.0,135107.0,89593.0,-5.55,146.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Dothan,31.2232,-85.3905,124643.87,158777.0,118740.0,71444.0,-4.97,127.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Auburn,32.6099,-85.4808,163117.04,212842.0,146619.0,98801.0,-5.5,169.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Jackson,32.2988,-90.1848,113618.18,163289.0,112970.0,71487.0,-6.26,118.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Gulfport,30.3674,-89.0928,136910.85,170489.0,127641.0,86907.0,-3.81,140.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Hattiesburg,31.3271,-89.2903,123556.38,149421.0,118476.0,77490.0,-4.23,129.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Starkville,33.4504,-88.8184,117594.08,160722.0,108606.0,72195.0,-2.44,129.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Little Rock,34.7465,-92.2896,139499.71,184222.0,122906.0,84906.0,-5.18,149.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Fort Smith,35.3859,-94.3985,117694.14,161856.0,119816.0,78997.0,-3.53,131.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Jonesboro,35.8423,-90.7043,111720.51,161637.0,107299.0,70903.0,-4.57,137.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Springdale,36.1867,-94.1288,162956.64,233706.0,159765.0,106888.0,-3.06,175.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Rogers,36.332,-94.1185,179888.08,260116.0,189023.0,113585.0,-4.53,214.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Bentonville,36.3729,-94.2088,232172.48,302245.0,200466.0,138131.0,-6.07,246.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Clarksville,36.5298,-87.3595,154609.44,189777.0,135855.0,97960.0,-3.03,158.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Johnson City,36.3134,-82.3535,149261.84,195258.0,128242.0,87879.0,-4.13,161.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Kingsport,36.5484,-82.5618,147317.76,191200.0,123945.0,87493.0,-5.34,148.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Jackson TN,35.6145,-88.8139,122814.91,178345.0,135005.0,89873.0,-3.35,140.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Franklin,35.9251,-86.8689,303898.4,454685.0,309204.0,194512.0,-5.69,375.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Brentwood,36.0331,-86.7828,392299.6,542004.0,368875.0,240492.0,-5.97,440.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Murfreesboro,35.8456,-86.3903,229599.36,305780.0,195969.0,146809.0,-2.29,228.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Smyrna,35.9829,-86.5186,220934.0,297992.0,208956.0,140725.0,-2.37,244.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Spring Hill,35.7512,-86.93,239080.8,319150.0,218815.0,170082.0,-3.16,275.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Bowling Green,36.9685,-86.4808,144290.59,195839.0,134202.0,86883.0,-5.7,148.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Lexington,38.0406,-84.5037,177994.08,229425.0,164216.0,108341.0,-6.64,176.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Evansville,37.9716,-87.5711,118911.9,155209.0,117918.0,82592.0,-3.6,130.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+South Bend,41.6764,-86.252,117796.1,153958.0,116229.0,78196.0,-4.66,135.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Fort Wayne,41.1306,-85.1289,110040.19,169829.0,120826.0,80726.0,-6.44,131.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Grand Rapids,42.9634,-85.6681,154540.32,234283.0,165884.0,100166.0,-2.61,181.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Ann Arbor,42.2808,-83.743,287736.0,362890.0,279769.0,197094.0,-5.86,327.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Lansing,42.7325,-84.5555,138999.17,170182.0,117972.0,79879.0,-6.39,145.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Kalamazoo,42.2917,-85.5872,128099.14,179423.0,126672.0,88086.0,-3.06,149.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Flint,43.0125,-83.6875,90061.52,135537.0,87199.0,61304.0,-2.36,109.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Detroit,42.3314,-83.0458,132595.58,185878.0,134355.0,92551.0,-3.7,141.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Toledo,41.6639,-83.5552,104335.62,153626.0,101473.0,69584.0,-2.6,125.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Akron,41.0814,-81.519,106916.1,153914.0,103074.0,73311.0,-2.35,130.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Dayton,39.7589,-84.1916,114752.51,146531.0,103404.0,68855.0,-5.24,120.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Cincinnati,39.1031,-84.512,150099.52,207268.0,156912.0,98674.0,-2.47,181.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Cleveland,41.4993,-81.6944,135831.17,185679.0,115567.0,79121.0,-6.63,149.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Pittsburgh,40.4406,-79.9959,166103.52,227907.0,152544.0,113965.0,-4.41,187.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Providence,41.824,-71.4128,288702.72,401008.0,282334.0,184275.0,-5.17,311.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Hartford,41.7658,-72.6851,206186.72,303044.0,216090.0,135853.0,-5.63,247.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Bridgeport,41.1865,-73.1952,247704.8,313122.0,225794.0,161925.0,-4.3,273.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Springfield MA,42.1015,-72.5898,178704.4,249132.0,169054.0,114565.0,-2.66,203.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Worcester,42.2626,-71.8023,307635.84,377184.0,271053.0,190615.0,-6.74,324.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Syracuse,43.0481,-76.1474,154409.76,221644.0,143250.0,94167.0,-2.87,166.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Rochester,43.1566,-77.6088,151897.52,202628.0,153548.0,97790.0,-2.97,176.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Albany,42.6526,-73.7562,164763.2,238938.0,153112.0,110772.0,-2.62,198.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Buffalo,42.8864,-78.8784,151557.76,224339.0,136075.0,101222.0,-3.63,167.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Yonkers,40.9312,-73.8988,365973.44,494852.0,369040.0,263638.0,-3.26,402.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Newark,40.7357,-74.1724,321874.8,440568.0,295417.0,196797.0,-3.94,358.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Paterson,40.9168,-74.1719,255633.84,332181.0,242389.0,179424.0,-6.3,302.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Anchorage,61.2181,-149.9003,212230.8,271795.0,220012.0,136966.0,-4.7,230.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Honolulu,21.3069,-157.8583,679276.0,914622.0,618231.0,405309.0,-4.74,730.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Wichita Falls,33.9137,-98.4934,110166.78,151664.0,105331.0,67251.0,-5.99,125.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Midland,31.9973,-102.0779,180420.8,221992.0,153455.0,112764.0,-3.13,199.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Odessa,31.8457,-102.3676,159325.12,223653.0,158589.0,97610.0,-2.27,170.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Tyler,32.3513,-95.3011,131693.76,166732.0,121490.0,86897.0,-5.68,142.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Waco,31.5493,-97.1467,135182.78,190409.0,120605.0,88941.0,-6.23,144.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Beaumont,30.086,-94.1018,136908.8,164793.0,126052.0,89088.0,-2.72,143.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Abilene,32.4487,-99.7331,120327.9,160694.0,113216.0,74066.0,-4.88,126.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Laredo,27.5306,-99.4803,118399.23,140171.0,106248.0,71759.0,-6.17,123.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+McAllen,26.2034,-98.23,115748.86,149066.0,108564.0,69436.0,-3.12,128.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Brownsville,25.9017,-97.4975,106367.74,139784.0,107467.0,75828.0,-5.3,122.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Killeen,31.1171,-97.7278,125275.39,180250.0,128889.0,91906.0,-6.13,152.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Bryan-College Station,30.628,-96.3344,147517.2,201297.0,134484.0,87992.0,-6.71,153.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Victoria,28.8053,-97.0036,123192.0,154885.0,104427.0,74792.0,-4.13,127.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Longview,32.5007,-94.7405,129735.94,178203.0,116393.0,90370.0,-4.06,142.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Nacogdoches,31.6035,-94.6552,112845.82,157035.0,111213.0,76144.0,-6.55,121.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Lufkin,31.3382,-94.7291,116987.14,145077.0,108114.0,67317.0,-6.01,129.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Huntsville TX,30.7235,-95.5508,142441.73,189773.0,127796.0,83118.0,-4.77,142.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Texarkana,33.4251,-94.0477,111727.62,156612.0,110736.0,73071.0,-5.37,126.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Paris TX,33.6609,-95.5555,115670.02,159348.0,113259.0,68588.0,-5.44,122.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Amarillo,35.222,-101.8313,122217.22,174186.0,132007.0,87390.0,-6.72,151.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Deltona,28.9005,-81.2637,181208.24,241562.0,183764.0,114861.0,-2.29,205.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Daytona Beach,29.2108,-81.0228,165285.12,240492.0,159938.0,114977.0,-3.6,188.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Kissimmee,28.2919,-81.4076,220077.44,274971.0,206185.0,137366.0,-4.23,232.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Sanford,28.8005,-81.2731,183306.24,251503.0,185455.0,124552.0,-5.42,208.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Clearwater,27.9659,-82.8001,227312.96,336746.0,215787.0,148566.0,-5.52,267.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Cape Coral,26.5629,-81.9495,216730.8,303726.0,229096.0,134730.0,-6.39,254.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Homestead,25.4687,-80.4776,235206.0,296650.0,218562.0,134938.0,-5.63,259.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Doral,25.8195,-80.3556,382954.88,486577.0,378139.0,240336.0,-4.01,424.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Aventura,25.9565,-80.1392,456098.4,621623.0,440489.0,271234.0,-3.93,490.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Boca Raton,26.3683,-80.1289,414986.88,480939.0,360302.0,262654.0,-4.92,437.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+West Palm Beach,26.7153,-80.0534,324745.2,469687.0,294745.0,210040.0,-4.45,348.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Delray Beach,26.4615,-80.0728,301397.2,411133.0,319860.0,196378.0,-4.75,349.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Boynton Beach,26.5317,-80.0905,306605.28,415308.0,292150.0,182911.0,-6.57,317.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Pompano Beach,26.2379,-80.1248,293361.2,418200.0,283575.0,189854.0,-4.5,337.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Hollywood,26.0112,-80.1495,309323.68,404187.0,276088.0,208039.0,-6.65,351.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Coral Springs,26.2707,-80.2707,321621.28,440665.0,266589.0,188214.0,-6.41,322.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Miramar,25.986,-80.233,310328.96,407843.0,310946.0,192356.0,-5.6,344.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Pembroke Pines,26.007,-86.1527,320801.44,429953.0,288113.0,188696.0,-6.14,334.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Sunrise,26.167,-80.2561,302729.28,375522.0,279189.0,199243.0,-2.33,313.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Plantation,26.1276,-80.2331,301886.56,388916.0,310626.0,198485.0,-5.89,330.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Davie,26.0765,-80.2521,320332.96,410531.0,294942.0,188271.0,-5.71,341.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Weston,26.1003,-80.3998,359275.84,542694.0,341804.0,245982.0,-5.36,447.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Deerfield Beach,26.3184,-80.0998,275998.56,359289.0,254384.0,186115.0,-5.67,326.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Margate,26.2445,-80.2062,250915.28,348605.0,237208.0,158835.0,-3.88,277.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Lauderhill,26.1401,-80.2131,210024.0,302005.0,202912.0,151138.0,-2.84,250.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Tamarac,26.2129,-80.2497,210855.6,319185.0,216209.0,135224.0,-5.75,251.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Coconut Creek,26.2712,-80.1793,283312.8,394458.0,249913.0,175350.0,-4.79,331.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+North Miami,25.8897,-80.1868,279818.8,329565.0,249631.0,172269.0,-5.79,282.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Miami Gardens,25.942,-80.2456,241380.0,279989.0,224003.0,137477.0,-2.61,238.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Hialeah,25.8576,-80.2781,212184.0,286011.0,198374.0,138268.0,-3.9,257.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Greenville SC,34.8526,-82.394,155327.04,234640.0,145173.0,110799.0,-4.07,185.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Columbia SC,34.0007,-81.0348,163263.36,216673.0,140611.0,93054.0,-4.55,175.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Spartanburg,34.9496,-81.932,156966.64,201416.0,139680.0,108333.0,-4.85,177.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Rock Hill,34.9249,-81.0251,164029.6,224774.0,154115.0,108183.0,-3.26,195.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+North Charleston,32.8546,-79.9748,231247.12,270917.0,210554.0,130500.0,-3.5,238.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Mount Pleasant,32.8323,-79.8284,308053.2,442176.0,308389.0,221586.0,-3.56,361.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Wilmington NC,34.2257,-77.9447,225946.08,311636.0,205678.0,149571.0,-3.93,241.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Gastonia,35.2621,-81.1873,143572.16,206207.0,158434.0,108015.0,-4.91,174.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Concord NC,35.4088,-80.5795,226589.36,294495.0,212629.0,150548.0,-4.53,231.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Huntersville,35.4107,-80.8429,230786.08,337032.0,238384.0,149445.0,-2.92,276.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Mooresville,35.5746,-80.8098,261271.92,310259.0,247099.0,165238.0,-6.56,261.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Cary,35.7915,-78.7811,277124.88,405748.0,291375.0,178507.0,-2.91,305.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Durham,35.994,-78.8986,261797.2,332549.0,235889.0,160784.0,-4.28,263.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Chapel Hill,35.9132,-79.0558,278114.4,392100.0,266149.0,188333.0,-2.95,325.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Apex,35.7327,-78.8503,280476.48,367889.0,267817.0,172330.0,-2.64,302.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Morrisville,35.8237,-78.8253,272149.92,412840.0,273678.0,173622.0,-3.09,327.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+High Point,35.9557,-80.0053,153812.08,216421.0,148402.0,95290.0,-2.45,176.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Winston-Salem,36.0999,-80.2442,145003.12,224423.0,152000.0,100803.0,-2.61,170.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Greensboro,36.0726,-79.792,163977.6,223784.0,155981.0,98754.0,-4.23,178.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Richmond VA,37.5407,-77.436,184382.37,228104.0,174173.0,109634.0,-3.48,203.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Newport News,37.0871,-76.473,155541.12,231053.0,165200.0,112967.0,-5.5,190.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Chesapeake,36.7682,-76.2875,187802.16,276775.0,191765.0,119186.0,-2.46,206.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Virginia Beach,36.8529,-75.978,198366.48,266455.0,196558.0,122288.0,-5.0,219.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Hampton,37.0299,-76.3452,177104.26,234319.0,148780.0,111894.0,-5.18,196.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Alexandria VA,38.8048,-77.0469,358233.6,486940.0,386270.0,249648.0,-2.3,401.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Madison WI,43.0731,-89.4012,221350.24,309049.0,200763.0,146724.0,-5.35,244.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Green Bay,44.5133,-88.0133,136033.92,171964.0,123687.0,90528.0,-6.24,151.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Kenosha,42.5847,-87.8212,154680.08,220868.0,154719.0,98669.0,-3.89,169.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Racine,42.7261,-87.7829,138806.98,192313.0,129780.0,83446.0,-6.6,150.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Appleton,44.2619,-88.4154,128836.8,186762.0,140162.0,82824.0,-6.3,154.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Eau Claire,44.8113,-91.4985,127598.11,183701.0,135824.0,91335.0,-2.26,156.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+La Crosse,43.8014,-91.2396,139854.72,185078.0,138093.0,82996.0,-3.72,157.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Janesville,42.6828,-89.0187,132629.38,173276.0,117848.0,81363.0,-2.27,153.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Cedar Rapids,41.9779,-91.6656,144297.22,200954.0,132778.0,83529.0,-5.87,157.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Iowa City,41.6611,-91.5302,170839.68,235684.0,159913.0,114504.0,-5.19,185.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Sioux City,42.4999,-96.4003,124577.79,170568.0,114062.0,77366.0,-5.86,128.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Waterloo,42.4928,-92.3426,107620.35,151234.0,101737.0,74261.0,-3.96,122.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Ames,42.0308,-93.6319,160187.28,209481.0,151473.0,114255.0,-6.6,185.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Dubuque,42.5006,-90.6646,128551.97,194500.0,138209.0,91211.0,-3.17,148.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Olathe,38.8814,-94.8191,170978.48,240475.0,175593.0,121237.0,-3.66,198.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Lawrence KS,38.9717,-95.2353,173223.6,219325.0,151265.0,102914.0,-6.12,186.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Shawnee,39.0228,-94.7152,195661.92,253039.0,165658.0,123590.0,-3.44,214.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Lenexa,38.9536,-94.7336,198278.16,306072.0,206165.0,139050.0,-2.33,229.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Lincoln NE,40.8136,-96.7026,145789.82,175581.0,133953.0,85590.0,-5.37,148.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Grand Island,40.925,-98.342,120505.38,165277.0,120166.0,78234.0,-6.33,137.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Rapid City,44.0805,-103.231,162309.84,213690.0,168495.0,100927.0,-4.16,183.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Bismarck,46.8083,-100.7837,177843.6,222294.0,144702.0,100178.0,-5.69,182.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Grand Forks,47.9253,-97.0329,132517.54,191937.0,127884.0,82742.0,-3.59,147.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Minot,48.2325,-101.2963,137736.19,169270.0,132569.0,92087.0,-3.86,149.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Missoula,46.8721,-113.994,214140.0,270959.0,197322.0,135967.0,-5.32,245.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Great Falls,47.5002,-111.3008,139740.48,175469.0,124678.0,88697.0,-6.44,140.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Helena MT,46.5958,-112.027,163739.52,206317.0,151609.0,100518.0,-2.82,178.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Kalispell,48.192,-114.3168,206795.6,271813.0,218355.0,133172.0,-4.35,243.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Casper,42.8501,-106.3252,127985.09,181353.0,134967.0,87185.0,-5.45,150.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Laramie,41.3114,-105.5911,160723.84,219960.0,150709.0,105986.0,-2.59,178.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Nampa,43.5407,-116.5635,195068.64,246870.0,187802.0,119956.0,-5.73,224.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Meridian,43.6121,-116.3915,206496.32,305891.0,206538.0,134050.0,-2.8,240.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Coeur d'Alene,47.6777,-116.7805,248477.04,311826.0,221023.0,154659.0,-3.79,266.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Twin Falls,42.5629,-114.4609,176621.28,214506.0,161059.0,105960.0,-3.45,174.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Pocatello,42.8713,-112.4455,143126.98,200423.0,122651.0,89648.0,-5.0,149.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+West Valley City,40.6916,-112.001,182984.88,250096.0,193105.0,122453.0,-2.89,224.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+West Jordan,40.6097,-111.9391,202354.56,300574.0,217701.0,145365.0,-6.58,230.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Sandy,40.5649,-111.8389,219502.96,311292.0,205515.0,134451.0,-2.8,234.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
+Lehi,40.3916,-111.8507,283117.52,361957.0,240117.0,174543.0,-3.1,288.0,CoStar/Real Capital Analytics,2025-Q4,https://www.rcanalytics.com
