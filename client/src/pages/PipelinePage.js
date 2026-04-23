@@ -4,30 +4,23 @@ import {
   Building2, 
   DollarSign, 
   TrendingUp, 
-  Eye, 
-  FileText, 
   Trash2,
   Layers,
   ArrowLeft,
   RefreshCw,
   Search,
-  ClipboardCheck,
-  Presentation,
   X,
   ChevronDown,
   ChevronRight,
   Filter,
   ArrowUpDown,
   Columns,
-  Wrench,
   LayoutGrid,
   List,
-  Copy,
   GripVertical,
-  BrainCircuit
-    ,BookOpen
+  BookOpen
 } from 'lucide-react';
-import { loadPipelineDeals as loadDealsFromSupabase, loadRapidFireDeals as loadRapidFireDealsFromSupabase, deleteDeal, updateDeal, bulkDeleteDeals, duplicateDeal } from '../lib/dealsService';
+import { loadPipelineDeals as loadDealsFromSupabase, loadRapidFireDeals as loadRapidFireDealsFromSupabase, deleteDeal, updateDeal, bulkDeleteDeals } from '../lib/dealsService';
 import DealComparisonModal from '../components/DealComparisonModal';
 import DealPhotoGallery, { DealThumbnail } from '../components/DealPhotoGallery';
 
@@ -262,9 +255,7 @@ function PipelinePage() {
   const [showComparison, setShowComparison] = useState(false);
   const [photoGalleryDeal, setPhotoGalleryDeal] = useState(null);
 
-  const handleViewDeal = (deal) => navigate(`/underwrite?viewDeal=${deal.dealId}`);
-  const handleOpenInAIUnderwriter = (deal) => navigate(`/claude-underwriter?dealId=${deal.dealId}`);
-    const handleOpenDealRoom = (deal) => navigate(`/deal-room/${deal.dealId}`);
+  const handleOpenDealRoom = (deal) => navigate(`/deal-room/${deal.dealId}`);
 
   const loadPipelineDeals = async () => {
     try {
@@ -285,26 +276,6 @@ function PipelinePage() {
   };
 
   useEffect(() => { loadPipelineDeals(); loadRapidFireDeals(); }, []);
-
-  const handleDeleteDeal = async (dealId) => {
-    if (window.confirm('Are you sure you want to remove this deal from the pipeline?')) {
-      try {
-        if (dealId.startsWith('sample-')) {
-          setPipelineDeals(prev => prev.filter(d => d.dealId !== dealId));
-        } else {
-          await deleteDeal(dealId);
-          setPipelineDeals(prev => prev.filter(d => d.dealId !== dealId));
-        }
-        window.dispatchEvent(new Event('pipelineDealsUpdated'));
-      } catch (error) {
-        console.error('Error deleting deal:', error);
-        alert('Failed to delete deal: ' + error.message);
-      }
-    }
-  };
-
-  const handleGenerateLOI = (deal) => navigate(`/loi?dealId=${deal.dealId}`);
-  const handleDueDiligence = (deal) => navigate(`/due-diligence?dealId=${deal.dealId}`);
 
   const filteredDeals = pipelineDeals.filter(deal =>
     deal.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -372,17 +343,6 @@ function PipelinePage() {
     } catch (error) {
       console.error('Error bulk deleting deals:', error);
       alert('Failed to delete deals: ' + error.message);
-    }
-  };
-
-  const handleDuplicateDeal = async (deal) => {
-    try {
-      const duplicated = await duplicateDeal(deal.dealId);
-      setPipelineDeals(prev => [...prev, duplicated]);
-      window.dispatchEvent(new Event('pipelineDealsUpdated'));
-    } catch (error) {
-      console.error('Error duplicating deal:', error);
-      alert('Failed to duplicate deal: ' + error.message);
     }
   };
 
@@ -777,13 +737,7 @@ function PipelinePage() {
                                   <span>{fmtCompact(deal.purchasePrice)}</span>
                                   <span style={{ color: (deal.dayOneCashFlow || 0) >= 0 ? '#00854d' : '#d83a52', fontWeight: '600' }}>CF: {fmtCompact(deal.dayOneCashFlow)}</span>
                                 </div>
-                                <div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
-                                  <button onClick={() => handleViewDeal(deal)} title="View" style={{ flex: 1, padding: '4px', backgroundColor: '#00854d', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}><Eye size={10} />View</button>
-                                  <button onClick={() => handleOpenInAIUnderwriter(deal)} title="AI Underwriter" style={{ flex: 1, padding: '4px', background: 'linear-gradient(135deg, #0f172a, #1e3a5f)', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}><BrainCircuit size={10} />AI</button>
-                                  <button onClick={() => handleDuplicateDeal(deal)} title="Clone" style={{ flex: 1, padding: '4px', backgroundColor: '#6366f1', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}><Copy size={10} />Clone</button>
-                                  <button onClick={() => handleDeleteDeal(deal.dealId)} title="Delete" style={{ padding: '4px 6px', backgroundColor: '#ffefef', color: '#d83a52', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={10} /></button>
-                                </div>
-                                  <button onClick={() => handleOpenDealRoom(deal)} title="Open Deal Room" style={{ marginTop: '4px', width: '100%', padding: '5px', backgroundColor: '#0073ea', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}><BookOpen size={10} />Deal Room</button>
+                                <button onClick={() => handleOpenDealRoom(deal)} title="Open Deal Room" style={{ marginTop: '8px', width: '100%', padding: '6px', backgroundColor: '#0073ea', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}><BookOpen size={10} />Deal Room</button>
                               </div>
                             );
                           })}
@@ -827,7 +781,6 @@ function PipelinePage() {
                         <th style={thStyle}>Refi Value</th>
                         <th style={thStyle}>Post-Refi CF</th>
                         <th style={thStyle}>Broker</th>
-                        <th style={{ ...thStyle, textAlign: 'center' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -837,7 +790,7 @@ function PipelinePage() {
                           <React.Fragment key={group.stage}>
                             {/* Group header row */}
                             <tr>
-                              <td colSpan={21} style={{ padding: 0 }}>
+                              <td colSpan={20} style={{ padding: 0 }}>
                                 <div onClick={() => setCollapsedGroups(prev => ({ ...prev, [group.stage]: !prev[group.stage] }))}
                                   style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', cursor: 'pointer', backgroundColor: '#fff', borderBottom: '1px solid #e6e9ef', userSelect: 'none' }}>
                                   {isCollapsed ? <ChevronRight size={16} color={group.color} /> : <ChevronDown size={16} color={group.color} />}
@@ -940,21 +893,6 @@ function PipelinePage() {
                                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '2px' }}>
                                       {deal.brokerPhone && <a href={`tel:${deal.brokerPhone}`} style={{ color: '#579bfc', textDecoration: 'none', fontSize: '11px' }}>{deal.brokerPhone}</a>}
                                       {deal.brokerEmail && <a href={`mailto:${deal.brokerEmail}`} style={{ color: '#579bfc', textDecoration: 'none', fontSize: '11px' }}>{deal.brokerEmail}</a>}
-                                    </div>
-                                  </td>
-                                  {/* Actions */}
-                                  <td style={{ ...cs, textAlign: 'center' }}>
-                                    <div style={{ display: 'flex', gap: '3px', justifyContent: 'center', flexWrap: 'nowrap' }}>
-                                      <button onClick={() => handleViewDeal(deal)} title="Underwrite" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#00854d', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><Eye size={13} /></button>
-                                        <button onClick={() => handleOpenDealRoom(deal)} title="Deal Room" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#0073ea', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><BookOpen size={13} /></button>
-                                      <button onClick={() => handleOpenInAIUnderwriter(deal)} title="Open in AI Underwriter" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', background: 'linear-gradient(135deg, #0f172a, #1e3a5f)', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><BrainCircuit size={13} /></button>
-                                      <button onClick={() => handleGenerateLOI(deal)} title="Generate LOI" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#a25ddc', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><FileText size={13} /></button>
-                                      <button onClick={() => handleDueDiligence(deal)} title="Due Diligence" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#fdab3d', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><ClipboardCheck size={13} /></button>
-                                      <button onClick={() => navigate(`/pitch-deck?dealId=${deal.dealId}`)} title="Pitch Deck" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#579bfc', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><Presentation size={13} /></button>
-                                      <button onClick={() => navigate(`/contract?dealId=${deal.dealId}`)} title="Contracts" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#0d9488', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><FileText size={13} /></button>
-                                      <button onClick={() => setPhotoGalleryDeal(deal)} title="CapEx AI" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', background: 'linear-gradient(135deg, #f97316, #ea580c)', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><Wrench size={13} /></button>
-                                      <button onClick={() => handleDuplicateDeal(deal)} title="Clone" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#6366f1', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><Copy size={13} /></button>
-                                      <button onClick={() => handleDeleteDeal(deal.dealId)} title="Delete" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px', backgroundColor: '#ffefef', color: '#d83a52', border: 'none', borderRadius: '5px', cursor: 'pointer' }}><Trash2 size={13} /></button>
                                     </div>
                                   </td>
                                 </tr>
