@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import Uploadpage from './pages/Uploadpage';
 import PipelinePage from './pages/PipelinePage';
@@ -10,7 +10,6 @@ import PaymentSuccessRedirect from './pages/PaymentSuccessRedirect';
 import UnderwriteV2Page from './pages/UnderwriteV2Page.jsx'; // V2 Underwriter (explicit .jsx to avoid legacy .js)
 import UnderwriteAnalysisPage from './pages/UnderwriteAnalysisPage'; // AI Analysis Page
 import MaxAIUnderwritePage from './pages/MaxAIUnderwritePage'; // MAX AI Underwriting
-import DealBuilderPage from './pages/DealBuilderPage'; // Deal Builder AI
 import DueDiligencePage from './pages/DueDiligencePage'; // Due Diligence Checklist
 import EmailDealsPage from './pages/EmailDealsPage'; // Email Deal Screener
 import EmailUnderwritePage from './pages/EmailUnderwritePage'; // Email Underwrite Pipeline
@@ -22,7 +21,7 @@ import ManualEntryPage from './pages/ManualEntryPage'; // Manual Entry
 import PitchDeckPage from './pages/PitchDeckPage'; // Pitch Deck Generator
 import ContractPage from './pages/ContractPage'; // Contract Generator
 import MapViewPage from './pages/MapViewPage'; // Map View
-import ClaudeUnderwritePage from './pages/ClaudeUnderwritePage'; // AI Underwriter Chat
+import ClaudeUnderwritePage from './pages/ClaudeUnderwritePage'; // Unified Deal Builder + AI Workspace
 import InvestorPortalPage from './pages/InvestorPortalPage'; // Investor Portal / LP Dashboard
 import UpdatesPage from './pages/UpdatesPage'; // Updates Notification Center
 import AgentBuilderPage from './pages/AgentBuilderPage'; // Agent Builder (Rapid Fire replacement)
@@ -49,12 +48,12 @@ function App() {
         <Route path="/underwrite" element={<UnderwriteV2Page />} /> {/* V2 Underwriter */}
         <Route path="/underwrite/analysis" element={<UnderwriteAnalysisPage />} /> {/* AI Analysis */}
         <Route path="/underwrite/max" element={<MaxAIUnderwritePage />} /> {/* MAX AI Underwriting */}
-        <Route path="/market-research" element={<DealBuilderPage />} /> {/* Deal Builder */}
+        <Route path="/market-research" element={<ClaudeUnderwritePage />} /> {/* Deal Builder (Unified AI Workspace) */}
         <Route path="/due-diligence" element={<DueDiligencePage />} /> {/* Due Diligence Checklist */}
         <Route path="/email-deals" element={<EmailDealsPage />} /> {/* Email Deal Screener */}
         <Route path="/email-underwrite" element={<EmailUnderwritePage />} /> {/* Email Underwrite Pipeline */}
         <Route path="/templates" element={<TemplatesPage />} /> {/* Deal Templates */}
-        <Route path="/claude-underwriter" element={<ClaudeUnderwritePage />} /> {/* AI Underwriter Chat */}
+        <Route path="/claude-underwriter" element={<Navigate to="/market-research" replace />} /> {/* Legacy redirect */}
         <Route path="/agent-builder" element={<AgentBuilderPage />} /> {/* Agent Builder */}
         <Route path="/investor-portal" element={<InvestorPortalPage />} /> {/* Investor Portal / LP Dashboard */}
         <Route path="/updates" element={<UpdatesPage />} /> {/* Updates Notification Center */}
