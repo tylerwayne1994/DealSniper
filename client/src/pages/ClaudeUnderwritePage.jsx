@@ -596,9 +596,6 @@ export default function ClaudeUnderwritePage() {
   // File state
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStatusText, setUploadStatusText] = useState('Preparing upload...');
-  const [uploadFileCount, setUploadFileCount] = useState({ current: 0, total: 0 });
   const [selectedFileForPreview, setSelectedFileForPreview] = useState(null);
   const [previewData, setPreviewData] = useState(null);
   const [spreadsheetTemplateData, setSpreadsheetTemplateData] = useState(null);
@@ -783,17 +780,8 @@ export default function ClaudeUnderwritePage() {
     if (!sessionId || files.length === 0) return;
 
     setIsUploading(true);
-    setUploadProgress(4);
-    setUploadStatusText('Preparing upload...');
-    setUploadFileCount({ current: 0, total: files.length });
 
-    for (let index = 0; index < files.length; index += 1) {
-      const file = files[index];
-      const base = Math.round((index / files.length) * 100);
-      setUploadFileCount({ current: index + 1, total: files.length });
-      setUploadStatusText(`Uploading ${file.name}...`);
-      setUploadProgress(Math.max(6, Math.min(95, base + 8)));
-
+    for (const file of files) {
       try {
         const formData = new FormData();
         formData.append('file', file);
@@ -806,9 +794,6 @@ export default function ClaudeUnderwritePage() {
 
         const data = await res.json();
         if (data.success) {
-          setUploadStatusText(`Processing ${data.filename}...`);
-          setUploadProgress(Math.max(10, Math.min(97, Math.round(((index + 0.65) / files.length) * 100))));
-
           setUploadedFiles(prev => [...prev, {
             file_id: data.file_id,
             filename: data.filename,
@@ -857,7 +842,6 @@ export default function ClaudeUnderwritePage() {
             file_id: data.file_id,
           });
           setActiveCanvasTab('spreadsheet');
-          setUploadProgress(Math.max(15, Math.min(99, Math.round(((index + 1) / files.length) * 100))));
         }
       } catch (err) {
         console.error('Upload error:', err);
@@ -868,8 +852,6 @@ export default function ClaudeUnderwritePage() {
       }
     }
 
-    setUploadStatusText('Upload complete. Building model...');
-    setUploadProgress(100);
     setIsUploading(false);
   };
 
@@ -1419,73 +1401,6 @@ export default function ClaudeUnderwritePage() {
                 </div>
               )}
 
-              {/* Enhanced Upload Progress */}
-              {isUploading && (
-                <div style={{
-                  marginBottom: 12,
-                  padding: '14px 14px 12px',
-                  borderRadius: 14,
-                  border: `1px solid ${COLORS.border}`,
-                  background: 'linear-gradient(180deg, #f8fafc 0%, #eff6ff 100%)',
-                  boxShadow: '0 8px 20px rgba(15, 23, 42, 0.08)',
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 8,
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Loader size={16} style={{ animation: 'spin 1s linear infinite', color: COLORS.primary }} />
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
-                        Uploading and parsing files
-                      </span>
-                    </div>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: COLORS.primary }}>
-                      {Math.max(1, Math.min(100, uploadProgress))}%
-                    </span>
-                  </div>
-
-                  <div style={{
-                    position: 'relative',
-                    height: 14,
-                    borderRadius: 999,
-                    background: '#dbeafe',
-                    overflow: 'hidden',
-                    border: '1px solid #bfdbfe',
-                  }}>
-                    <div style={{
-                      width: `${Math.max(2, Math.min(100, uploadProgress))}%`,
-                      height: '100%',
-                      borderRadius: 999,
-                      background: 'linear-gradient(90deg, #2563eb 0%, #38bdf8 70%, #60a5fa 100%)',
-                      transition: 'width 0.35s ease',
-                    }} />
-                    <div style={{
-                      position: 'absolute',
-                      inset: 0,
-                      background: 'linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.45) 50%, transparent 80%)',
-                      animation: 'progressShimmer 1.35s linear infinite',
-                      pointerEvents: 'none',
-                    }} />
-                  </div>
-
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginTop: 8,
-                    fontSize: 12,
-                    color: '#334155',
-                  }}>
-                    <span>{uploadStatusText}</span>
-                    <span style={{ color: '#64748b' }}>
-                      {uploadFileCount.current > 0 ? `${uploadFileCount.current}/${uploadFileCount.total} files` : `0/${uploadFileCount.total || 0} files`}
-                    </span>
-                  </div>
-                </div>
-              )}
-
               {/* Input Box */}
               <div style={{
                 display: 'flex',
@@ -1925,10 +1840,6 @@ export default function ClaudeUnderwritePage() {
         @keyframes blink {
           0%, 100% { opacity: 1; }
           50% { opacity: 0; }
-        }
-        @keyframes progressShimmer {
-          from { transform: translateX(-60%); }
-          to { transform: translateX(60%); }
         }
         .markdown-content a {
           color: ${COLORS.primary};
