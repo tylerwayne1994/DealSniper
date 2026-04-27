@@ -87,17 +87,17 @@ function SheetSection({ title, rows, columns, accent, sectionIdx, overrides, onC
   const colCount = columns ? columns.length : 1;
   const gridCols = `minmax(220px,2.5fr) repeat(${colCount},minmax(100px,1fr))`;
   return (
-    <div className="mb-3 mx-3 rounded-xl overflow-hidden border border-gray-200/80 shadow-sm">
+    <div className="mx-3 mb-0.5 overflow-hidden border border-gray-300 bg-white">
       {/* Section header */}
-      <div className={`px-4 py-2.5 text-[11px] font-semibold tracking-widest uppercase select-none ${accent ? 'bg-gradient-to-r from-[#1e293b] to-[#334155] text-white' : 'bg-gradient-to-r from-gray-50 to-gray-100 text-gray-500 border-b border-gray-200/60'}`}>
+      <div className={`px-3 py-1.5 text-[10px] font-semibold tracking-wider uppercase select-none ${accent ? 'bg-[#1f4e78] text-white' : 'bg-[#2f75b5] text-white border-b border-blue-800/40'}`}>
         {title}
       </div>
       {/* Column headers */}
       {columns && columns.length > 0 && (
-        <div className="grid bg-gray-50/80 border-b border-gray-200/60" style={{ gridTemplateColumns: gridCols }}>
+        <div className="grid bg-[#eaf2fb] border-b border-gray-300" style={{ gridTemplateColumns: gridCols }}>
           <div className="px-4 py-1.5" />
           {columns.map((c, i) => (
-            <div key={i} className="px-4 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-widest text-right select-none">{c}</div>
+            <div key={i} className="px-3 py-1 text-[10px] font-semibold text-slate-700 uppercase tracking-wider text-right select-none">{c}</div>
           ))}
         </div>
       )}
@@ -109,21 +109,21 @@ function SheetSection({ title, rows, columns, accent, sectionIdx, overrides, onC
         return (
           <div
             key={i}
-            className={`grid transition-colors duration-150 ${isTotal ? 'bg-gradient-to-r from-slate-50 to-blue-50/40 border-b-2 border-gray-300/60' : 'border-b border-gray-100 hover:bg-blue-50/30'}`}
+            className={`grid transition-colors duration-150 ${isTotal ? 'bg-[#f3f6fb] border-b border-gray-300' : 'border-b border-gray-200 hover:bg-blue-50/20'}`}
             style={{ gridTemplateColumns: gridCols }}
           >
-            <div className={`px-4 py-[7px] text-[12.5px] truncate ${isTotal ? 'font-bold text-slate-800' : isSub ? 'font-semibold text-slate-700' : 'text-slate-500 pl-6'}`}>
+            <div className={`px-3 py-[5px] text-[11px] truncate ${isTotal ? 'font-bold text-slate-800' : isSub ? 'font-semibold text-slate-700' : 'text-slate-600 pl-5'}`}>
               {row.label}
             </div>
             {row.values ? row.values.map((v, j) => {
               const ck = `${sectionIdx}-${i}-${j}`;
               return (
-                <div key={j} className={`px-4 py-[7px] text-[13px] text-right tabular-nums ${isTotal ? 'font-semibold text-slate-800' : 'font-medium text-slate-600'} ${typeof v === 'string' && v.startsWith('(') ? '!text-rose-500' : ''}`}>
+                <div key={j} className={`px-3 py-[5px] text-[11px] text-right tabular-nums ${isTotal ? 'font-semibold text-slate-800' : 'font-medium text-slate-700'} ${typeof v === 'string' && v.startsWith('(') ? '!text-rose-500' : ''}`}>
                   <EditableCell value={v} cellKey={ck} overrides={overrides} onEdit={onCellEdit} isTotal={isTotal} />
                 </div>
               );
             }) : (
-              <div className={`px-4 py-[7px] text-[13px] text-right tabular-nums ${isTotal ? 'font-semibold text-slate-800' : 'font-medium text-slate-600'} ${typeof row.value === 'string' && row.value.startsWith('(') ? '!text-rose-500' : ''}`}>
+              <div className={`px-3 py-[5px] text-[11px] text-right tabular-nums ${isTotal ? 'font-semibold text-slate-800' : 'font-medium text-slate-700'} ${typeof row.value === 'string' && row.value.startsWith('(') ? '!text-rose-500' : ''}`}>
                 <EditableCell value={row.value || '—'} cellKey={`${sectionIdx}-${i}-0`} overrides={overrides} onEdit={onCellEdit} isTotal={isTotal} />
               </div>
             )}
@@ -134,9 +134,181 @@ function SheetSection({ title, rows, columns, accent, sectionIdx, overrides, onC
   );
 }
 
+const BLANK_WORKBOOK_SECTIONS = [
+  {
+    title: 'Deal Assumptions',
+    accent: true,
+    rows: [
+      { label: 'Purchase Price', value: '—', sub: true },
+      { label: 'Down Payment %', value: '—' },
+      { label: 'Loan Amount', value: '—' },
+      { label: 'Down Payment $', value: '—' },
+      { label: 'Interest Rate', value: '—' },
+      { label: 'Amortization', value: '—' },
+      { label: 'Monthly Debt Service', value: '—' },
+      { label: 'Annual Debt Service', value: '—', total: true },
+    ]
+  },
+  {
+    title: 'Income Statement',
+    columns: ['Day 1', 'Stabilized'],
+    rows: [
+      { label: 'Gross Potential Rent', values: ['—', '—'] },
+      { label: 'Vacancy & Credit Loss', values: ['—', '—'] },
+      { label: 'RUBS / Utility Recovery', values: ['—', '—'] },
+      { label: 'Other Income', values: ['—', '—'] },
+      { label: 'TOTAL OPERATING INCOME', values: ['—', '—'], total: true },
+      { label: ' ', values: ['', ''] },
+      { label: 'TOTAL OPERATING EXPENSES', values: ['—', '—'], total: true },
+      { label: 'NET OPERATING INCOME (NOI)', values: ['—', '—'], total: true },
+    ]
+  },
+  {
+    title: 'Debt Service & Cash Flow',
+    columns: ['Day 1', 'Stabilized'],
+    rows: [
+      { label: 'Annual Debt Service', values: ['—', '—'] },
+      { label: 'CASH FLOW BEFORE TAX', values: ['—', '—'], total: true },
+      { label: 'Monthly Cash Flow', values: ['—', '—'] },
+    ]
+  },
+  {
+    title: 'Key Metrics',
+    columns: ['Day 1', 'Stabilized'],
+    rows: [
+      { label: 'DSCR', values: ['—', '—'], sub: true },
+      { label: 'Cap Rate', values: ['—', '—'] },
+      { label: 'GRM', values: ['—', '—'] },
+      { label: 'Price Per Unit', values: ['—', '—'] },
+      { label: 'Expense Ratio', values: ['—', '—'] },
+      { label: 'Cash-on-Cash Return', values: ['—', '—'], total: true },
+    ]
+  },
+  {
+    title: 'Stabilized Value & Cash-Out Refi',
+    rows: [
+      { label: 'Refi Cap Rate Assumption', value: '—', sub: true },
+      { label: 'Stabilized Value (NOI ÷ Cap Rate)', value: '—', total: true },
+      { label: '65% LTV — Conservative', value: '—' },
+      { label: '70% LTV — Moderate', value: '—' },
+      { label: '75% LTV — Standard', value: '—', sub: true },
+      { label: '80% LTV — Aggressive', value: '—' },
+    ]
+  },
+  {
+    title: 'Investor Structure & Cash-Out (75% LTV)',
+    rows: [
+      { label: 'Return of Principal', value: '—' },
+      { label: 'Bonus Payment', value: '—' },
+      { label: 'TOTAL TO INVESTOR AT REFI', value: '—', total: true },
+      { label: 'Cash Out Proceeds (75% LTV)', value: '—' },
+      { label: 'YOUR NET AFTER INVESTOR PAY', value: '—', total: true },
+      { label: 'Covers Investor?', value: '—', sub: true },
+    ]
+  },
+  {
+    title: 'Acquisition Costs',
+    rows: [
+      { label: 'Origination Fee (1% of loan)', value: '—' },
+      { label: 'Closing Costs (title, attorney)', value: '—' },
+      { label: 'Inspection / Due Diligence', value: '—' },
+      { label: '3-Month Payment Reserve', value: '—' },
+      { label: 'TOTAL CASH NEEDED (INVESTOR)', value: '—', total: true },
+    ]
+  },
+  {
+    title: 'Income Assumptions',
+    rows: [
+      { label: 'Gross Potential Rent', value: '—', sub: true },
+      { label: 'Vacancy & Credit Loss', value: '—' },
+      { label: 'Other Income', value: '—' },
+      { label: 'Effective Gross Income', value: '—', total: true },
+      { label: 'RUBS — Water + Gas (est.)', value: '—' },
+      { label: 'CapEx Reserve ($500/unit)', value: '—' },
+    ]
+  },
+  {
+    title: 'Post-Refi Monthly Cash Flow',
+    rows: [
+      { label: '65% LTV', value: '—' },
+      { label: '70% LTV', value: '—' },
+      { label: '75% LTV', value: '—', sub: true },
+      { label: '80% LTV', value: '—' },
+    ]
+  },
+  {
+    title: 'Investor Return Metrics',
+    rows: [
+      { label: 'Investor Total Return', value: '—' },
+      { label: 'Investor ROI', value: '—' },
+      { label: 'Investor CAGR (5yr est.)', value: '—' },
+    ]
+  },
+  {
+    title: 'Value Add Summary',
+    rows: [
+      { label: 'RUBS — Water + Gas Billback', value: '—' },
+      { label: 'Trash Cost Shift', value: '—' },
+      { label: 'Rent Recapture', value: '—' },
+      { label: 'CapEx Reserve (cost)', value: '—' },
+      { label: 'TOTAL NET VALUE ADD', value: '—', total: true },
+    ]
+  },
+  {
+    title: 'Investor Timeline — Strategy A',
+    rows: [
+      { label: 'Close (Month 0)', value: '—', sub: true },
+      { label: 'Year 1', value: '—' },
+      { label: 'Year 2', value: '—' },
+      { label: 'Year 3', value: '—' },
+      { label: 'Year 4', value: '—' },
+      { label: 'Year 5 (Cash-Out Refi)', value: '—', total: true },
+      { label: 'Post-Refi (ongoing)', value: '—' },
+    ]
+  },
+  {
+    title: 'Investor Timeline — Strategy B',
+    rows: [
+      { label: 'Close (Month 0)', value: '—', sub: true },
+      { label: 'Year 1', value: '—' },
+      { label: 'Year 2', value: '—' },
+      { label: 'Year 3', value: '—' },
+      { label: 'Year 4', value: '—' },
+      { label: 'Year 5 (Cash-Out Refi)', value: '—', total: true },
+      { label: 'Post-Refi (50/50 split)', value: '—' },
+    ]
+  },
+];
+
+function normalizeClaudeWorkbookSections(rawSections) {
+  if (!Array.isArray(rawSections)) return null;
+  const normalized = rawSections
+    .filter(s => s && typeof s === 'object')
+    .map((s) => ({
+      title: s.title || 'Section',
+      accent: !!s.accent,
+      columns: Array.isArray(s.columns) ? s.columns : undefined,
+      rows: Array.isArray(s.rows)
+        ? s.rows.map((r) => ({
+            label: r?.label || '—',
+            value: r?.value,
+            values: Array.isArray(r?.values) ? r.values : undefined,
+            total: !!r?.total,
+            sub: !!r?.sub,
+          }))
+        : [],
+    }))
+    .filter((s) => Array.isArray(s.rows) && s.rows.length > 0);
+  return normalized.length ? normalized : null;
+}
+
 /* ─────── Build workbook sections from parsed deal ──────── */
 function buildWorkbook(d) {
-  if (!d) return null;
+  if (!d) return BLANK_WORKBOOK_SECTIONS;
+
+  const claudeSections = normalizeClaudeWorkbookSections(d.workbook_sections);
+  if (claudeSections) return claudeSections;
+
   const fin = d.financials || {};
   const exp = d.expenses || {};
   const inc = d.income || {};
@@ -373,32 +545,18 @@ function WorkbookPanel({ dealData, overrides, onCellEdit }) {
   const sections = useMemo(() => buildWorkbook(dealData), [dealData]);
   const prop = dealData?.property || {};
 
-  if (!sections) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-white to-gray-50">
-        <div className="text-center select-none">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-            <span className="text-3xl opacity-40">📊</span>
-          </div>
-          <div className="text-sm font-semibold text-gray-400">Underwriting Workbook</div>
-          <div className="text-xs text-gray-300 mt-1">Upload an OM to populate the model</div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex-1 overflow-y-auto overflow-x-auto bg-gradient-to-b from-white to-gray-50/50">
+    <div className="flex-1 overflow-y-auto overflow-x-auto bg-[#ececec]">
       {/* Property header bar */}
-      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200/60 px-5 py-3 shadow-sm">
-        <div className="text-[15px] font-bold text-slate-800 truncate tracking-tight">{prop.name || prop.address || 'Underwriting Model'}</div>
-        <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5">
-          <span>{[prop.address, prop.city, prop.state, prop.zip].filter(Boolean).join(', ')}</span>
+      <div className="sticky top-0 z-10 bg-[#1f4e78] border-b border-blue-950/40 px-4 py-2 shadow-sm">
+        <div className="text-[12px] font-bold text-white truncate tracking-wide uppercase">{prop.name || prop.address || 'Commercial Real Estate Underwriting'}</div>
+        <div className="text-[10px] text-blue-100 mt-0.5 flex items-center gap-1.5">
+          <span>{[prop.address, prop.city, prop.state, prop.zip].filter(Boolean).join(', ') || 'Upload a deal to populate values'}</span>
           {prop.units ? <><span className="text-gray-300">·</span><span>{prop.units} units</span></> : ''}
           {prop.year_built ? <><span className="text-gray-300">·</span><span>Built {prop.year_built}</span></> : ''}
         </div>
       </div>
-      <div className="min-w-[420px] py-3">
+      <div className="min-w-[420px] py-2">
         {sections.map((s, i) => (
           <SheetSection key={i} title={s.title} rows={s.rows} columns={s.columns} accent={s.accent} sectionIdx={i} overrides={overrides} onCellEdit={onCellEdit} />
         ))}

@@ -904,6 +904,131 @@ Keep tables compact. Use | pipes | for all tables. Bold key numbers. Be direct �
     return response.content[0].text
 
 
+def _extract_json_object(text: str) -> Optional[Dict[str, Any]]:
+    """Best-effort JSON object extraction from a model response."""
+    if not text:
+        return None
+    try:
+        return json.loads(text)
+    except Exception:
+        pass
+
+    import re
+    match = re.search(r'\{[\s\S]*\}', text)
+    if not match:
+        return None
+    try:
+        return json.loads(match.group())
+    except Exception:
+        return None
+
+
+def _normalize_workbook_sections(raw_sections: Any) -> List[Dict[str, Any]]:
+    """Normalize workbook sections into a UI-safe shape."""
+    if not isinstance(raw_sections, list):
+        return []
+
+    normalized: List[Dict[str, Any]] = []
+    for sec in raw_sections:
+        if not isinstance(sec, dict):
+            continue
+        title = str(sec.get("title") or "Section").strip() or "Section"
+        columns = sec.get("columns") if isinstance(sec.get("columns"), list) else None
+        rows_in = sec.get("rows") if isinstance(sec.get("rows"), list) else []
+
+        rows_out: List[Dict[str, Any]] = []
+        for row in rows_in:
+            if not isinstance(row, dict):
+                continue
+            label = str(row.get("label") or "").strip() or "—"
+            out_row: Dict[str, Any] = {
+                "label": label,
+                "total": bool(row.get("total", False)),
+                "sub": bool(row.get("sub", False)),
+            }
+
+            values = row.get("values")
+            if isinstance(values, list):
+                out_row["values"] = ["—" if v is None or v == "" else str(v) for v in values]
+            else:
+                v = row.get("value")
+                out_row["value"] = "—" if v is None or v == "" else str(v)
+
+            rows_out.append(out_row)
+
+        normalized.append({
+            "title": title,
+            "columns": columns,
+            "rows": rows_out,
+            "accent": bool(sec.get("accent", False)),
+        })
+
+    return normalized
+
+
+async def build_workbook_sections_with_claude(deal_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Generate right-panel underwriting workbook sections from parsed deal data."""
+    client = get_anthropic_client()
+    deal_context = json.dumps(deal_data or {}, indent=2)
+
+    prompt = f"""You are generating spreadsheet-ready underwriting sections for a multifamily deal UI.
+
+Input parsed deal JSON:
+```json
+{deal_context}
+```
+
+Return ONLY valid JSON using this exact root shape:
+{{
+  "sections": [
+    {{
+      "title": "string",
+      "accent": true,
+      "columns": ["optional", "column", "labels"],
+      "rows": [
+        {{ "label": "string", "value": "formatted string", "total": false, "sub": false }},
+        {{ "label": "string", "values": ["formatted", "formatted"], "total": false, "sub": false }}
+      ]
+    }}
+  ]
+}}
+
+Rules:
+1) Build these sections in this order:
+- Deal Assumptions
+- Acquisition Costs
+- Income Assumptions
+- Income Statement (Day 1 vs Stabilized)
+- Debt Service & Cash Flow (Day 1 vs Stabilized)
+- Key Metrics (Day 1 vs Stabilized)
+- Stabilized Value & Cash-Out Refi
+- Post-Refi Monthly Cash Flow
+- Investor Structure & Cash-Out (75% LTV)
+- Investor Return Metrics
+- Value Add Summary
+- Investor Timeline - Strategy A
+- Investor Timeline - Strategy B
+2) Compute all values from provided data. If a source value is missing, use conservative CRE defaults and keep output complete.
+3) Use human-friendly formatting strings (for example "$325,433", "8.0%", "1.70x", "—").
+4) Keep rows concise and spreadsheet-like. Mark major subtotal/final rows with "total": true.
+5) Do not include commentary, markdown, or code fences in output.
+"""
+
+    try:
+        response = client.messages.create(
+            model=ANTHROPIC_MODEL,
+            max_tokens=5000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = response.content[0].text if response.content else ""
+        parsed = _extract_json_object(text) or {}
+        sections = _normalize_workbook_sections(parsed.get("sections"))
+        return sections
+    except Exception as e:
+        log.warning(f"[DealBuilder] Workbook section generation failed, using frontend fallback: {e}")
+        return []
+
+
 # ============================================================================
 # API Endpoints
 # ============================================================================
@@ -934,13 +1059,19 @@ async def upload_om(
         # Parse OM with Claude
         parsed_data = await parse_om_with_claude(file_bytes, file_type, filename)
         
+        # Generate underwriting analysis + workbook sections in parallel
+        analysis_task = asyncio.create_task(underwrite_deal(parsed_data))
+        workbook_task = asyncio.create_task(build_workbook_sections_with_claude(parsed_data))
+        analysis = await analysis_task
+        workbook_sections = await workbook_task
+
+        if workbook_sections:
+            parsed_data["workbook_sections"] = workbook_sections
+
         # Store in session
         session = get_session(session_id)
         session["deal_data"] = parsed_data
         session["filename"] = filename
-        
-        # Generate initial underwriting analysis
-        analysis = await underwrite_deal(parsed_data)
         
         # Add to conversation
         session["conversation"].append({
