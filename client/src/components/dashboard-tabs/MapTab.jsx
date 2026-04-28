@@ -576,6 +576,45 @@ function createBubbleIcon(color = '#ef4444', textColor = '#fff', units = null) {
   });
 }
 
+// Spread markers that share the same lat/lng so they are all clickable/visible.
+function spreadOverlappingPins(pins = []) {
+  const groups = new Map();
+
+  pins.forEach((pin) => {
+    const [lat, lng] = pin.position || [];
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    const key = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(pin);
+  });
+
+  const result = [];
+  groups.forEach((group) => {
+    if (group.length === 1) {
+      result.push(group[0]);
+      return;
+    }
+
+    group.forEach((pin, idx) => {
+      // Golden-angle spiral, ~40-250m offsets depending on overlap count.
+      const [lat, lng] = pin.position;
+      const angle = idx * 2.399963229728653; // radians
+      const radiusDeg = 0.00035 * Math.sqrt(idx + 1);
+      const cosLat = Math.max(0.2, Math.cos((lat * Math.PI) / 180));
+      const dLat = radiusDeg * Math.cos(angle);
+      const dLng = (radiusDeg * Math.sin(angle)) / cosLat;
+
+      result.push({
+        ...pin,
+        originalPosition: pin.position,
+        position: [lat + dLat, lng + dLng],
+      });
+    });
+  });
+
+  return result;
+}
+
 // ─── Flood Zone Card (renders inside popups) ────────────────
 function FloodZoneCard({ lat, lng }) {
   const [data, setData] = useState(null);
@@ -1243,7 +1282,7 @@ function DashboardMapTab() {
         }).catch(e => console.warn('Backfill geocode error:', e));
       }
       
-      const pipelinePins = dealsWithCoords.map(d => ({
+      const pipelinePinsRaw = dealsWithCoords.map(d => ({
         id: `pipeline-${d.dealId}`,
         name: d.address || 'Pipeline Property',
         category: 'pipeline',
@@ -1253,6 +1292,8 @@ function DashboardMapTab() {
         dealId: d.dealId,
         units: d.units || null
       }));
+
+      const pipelinePins = spreadOverlappingPins(pipelinePinsRaw);
       
       console.log('🔍 Pipeline pins created:', pipelinePins);
       
