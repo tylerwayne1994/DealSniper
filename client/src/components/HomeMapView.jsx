@@ -13,6 +13,47 @@ const TIGERWEB_ZCTA_URL = `${API_URL}/api/tigerweb/zcta`;
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN || '';
 
+function spreadOverlappingProperties(items = []) {
+  const groups = new Map();
+
+  items.forEach((item) => {
+    const lat = Number(item.latitude);
+    const lng = Number(item.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    const key = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(item);
+  });
+
+  const spread = [];
+  groups.forEach((group) => {
+    if (group.length === 1) {
+      spread.push(group[0]);
+      return;
+    }
+
+    group.forEach((item, idx) => {
+      const lat = Number(item.latitude);
+      const lng = Number(item.longitude);
+      const angle = idx * 2.399963229728653; // golden angle
+      const radiusDeg = 0.00035 * Math.sqrt(idx + 1);
+      const cosLat = Math.max(0.2, Math.cos((lat * Math.PI) / 180));
+      const dLat = radiusDeg * Math.cos(angle);
+      const dLng = (radiusDeg * Math.sin(angle)) / cosLat;
+
+      spread.push({
+        ...item,
+        _originalLatitude: lat,
+        _originalLongitude: lng,
+        latitude: lat + dLat,
+        longitude: lng + dLng,
+      });
+    });
+  });
+
+  return spread;
+}
+
 function HomeMapView() {
   const navigate = useNavigate();
   const mapContainer = useRef(null);
@@ -799,9 +840,11 @@ function HomeMapView() {
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
 
-    console.log('📍 Adding', properties.length, 'markers to map');
+    const markerProperties = spreadOverlappingProperties(properties);
+
+    console.log('📍 Adding', markerProperties.length, 'markers to map');
     // Add new markers
-    properties.forEach((property, idx) => {
+    markerProperties.forEach((property, idx) => {
       console.log(`  📌 Marker ${idx + 1}: ${property.address} at [${property.longitude}, ${property.latitude}]`);
       
       const el = document.createElement('div');
@@ -847,7 +890,7 @@ function HomeMapView() {
     if (properties.length > 0 && markersRef.current.length > 0) {
       try {
         const bounds = new mapboxgl.LngLatBounds();
-        properties.forEach(prop => {
+        markerProperties.forEach(prop => {
           bounds.extend([prop.longitude, prop.latitude]);
         });
         console.log('🎯 Fitting map to bounds');
