@@ -5,7 +5,7 @@ import {
   Eye, BrainCircuit, ClipboardCheck, Presentation, Wrench,
   DollarSign, Home, X, StickyNote,
   Folder, FileCheck, BarChart3, AlertTriangle,
-  ChevronRight, RefreshCw, Star, Percent, Hash, Calendar,
+  ChevronRight, RefreshCw, Percent, Hash, Calendar,
   Phone, Mail, Layers, Lock, Link2
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -159,17 +159,6 @@ const computeScore = (metrics) => {
 // ============================================================================
 // Sub-components
 // ============================================================================
-
-const MetricTile = ({ label, value, sub, color, bg }) => (
-  <div style={{
-    backgroundColor: bg || '#f6f7fb', borderRadius: '10px', padding: '14px 16px',
-    display: 'flex', flexDirection: 'column', gap: '4px',
-  }}>
-    <div style={{ fontSize: '11px', fontWeight: '600', color: '#676879', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{label}</div>
-    <div style={{ fontSize: '22px', fontWeight: '700', color: color || '#323338' }}>{value}</div>
-    {sub && <div style={{ fontSize: '11px', color: '#9699a6' }}>{sub}</div>}
-  </div>
-);
 
 const BreakdownRow = ({ label, value, isTotal, color }) => (
   <div style={{
@@ -562,6 +551,7 @@ function DealRoomPage() {
     const fin = full?.financing || {};
     const current = full?.current || {};
     const stabilized = full?.stabilized || {};
+    const hasMultiLoanStack = Array.isArray(sc?.financing?.loans) && sc.financing.loans.length > 0;
 
     const price = pickNum(deal.purchasePrice, pricing.purchase_price, pricing.price, acq.purchasePrice, current.price, 0) || 0;
     const units = pickNum(deal.units, prop.total_units, prop.units, prop.unit_count, 1) || 1;
@@ -569,6 +559,8 @@ function DealRoomPage() {
     // Rent & income
     let annualGrossRent = pickNum(y1.potentialGrossIncome, income.annual_gross_rent, income.gross_potential_rent, calc.grossAnnualRent, calc.gross_annual_rent, 0) || 0;
     let monthlyRent = pickNum(income.monthly_rent, calc.grossRent, calc.gross_monthly_rent, income.gross_rents, annualGrossRent > 0 ? annualGrossRent / 12 : 0) || 0;
+    const otherIncomeAnnual = pickNum(y1.otherIncome, income.other_income, 0) || 0;
+    const grossOperatingIncome = annualGrossRent + otherIncomeAnnual;
 
     // Normalize annual/monthly rent to prevent mixed-unit values from parsed sources.
     if (annualGrossRent > 0 && monthlyRent > annualGrossRent) {
@@ -583,24 +575,34 @@ function DealRoomPage() {
     const vacancyRate = vacancyRateRaw > 1 ? vacancyRateRaw / 100 : vacancyRateRaw;
     const expenseRatioRaw = pickNum(assumptions.expenseRatio, sc.pnl?.expense_ratio_t12, sc.pnl?.expense_ratio, 0.45);
     const expenseRatio = expenseRatioRaw > 1 ? expenseRatioRaw / 100 : expenseRatioRaw;
-    const annualVacancyLoss = annualGrossRent * vacancyRate;
-    const annualExpenses = pickNum(y1.totalOperatingExpenses, sc.pnl?.operating_expenses_t12, sc.pnl?.operating_expenses, (annualGrossRent - annualVacancyLoss) * expenseRatio) || 0;
-    const annualNOI = pickNum(y1.noi, current.noi, sc.pnl?.noi_t12, sc.pnl?.noi, calc.noi, annualGrossRent - annualVacancyLoss - annualExpenses) || 0;
+    const annualVacancyLoss = pickNum(y1.vacancyLoss, annualGrossRent * vacancyRate) || 0;
+    const effectiveGrossIncome = pickNum(y1.effectiveGrossIncome, grossOperatingIncome - annualVacancyLoss) || 0;
+    const annualExpenses = pickNum(y1.totalOperatingExpenses, sc.pnl?.operating_expenses_t12, sc.pnl?.operating_expenses, effectiveGrossIncome * expenseRatio) || 0;
+    const annualNOI = pickNum(y1.noi, current.noi, sc.pnl?.noi_t12, sc.pnl?.noi, calc.noi, effectiveGrossIncome - annualExpenses) || 0;
 
     // Financing
     const downPctRaw = pickNum(assumptions.downPaymentPercent, assumptions.downPayment, sc.financing?.down_payment_pct, 20);
     const downPct = downPctRaw > 1 ? downPctRaw / 100 : downPctRaw;
-    const downPayment = pickNum(fin.downPayment, price * downPct) || 0;
-    const loanAmount = pickNum(fin.loanAmount, sc.financing?.loan_amount, price - downPayment) || 0;
-    const interestRate = pickNum(fin.interestRate, assumptions.interestRate, sc.financing?.interest_rate, 7.0);
+    const downPayment = hasMultiLoanStack
+      ? (pickNum(sc.financing?.down_payment, fin.downPayment, price * downPct) || 0)
+      : (pickNum(fin.downPayment, price * downPct) || 0);
+    const loanAmount = hasMultiLoanStack
+      ? (pickNum(sc.financing?.total_loan_amount, fin.loanAmount, sc.financing?.loan_amount, price - downPayment) || 0)
+      : (pickNum(fin.loanAmount, sc.financing?.loan_amount, price - downPayment) || 0);
+    const seniorLoan = hasMultiLoanStack ? (sc.financing?.loans || []).find(l => l.type === 'Senior Loan' && l.enabled !== false) : null;
+    const interestRate = pickNum(seniorLoan?.rate, fin.interestRate, assumptions.interestRate, sc.financing?.interest_rate, 7.0);
     const iRate = interestRate > 1 ? interestRate / 100 : interestRate;
     const monthlyRate = iRate / 12;
     const termMonths = (pickNum(assumptions.loanTerm, sc.financing?.loan_term, 30) || 30) * 12;
     const monthlyPIComputed = loanAmount > 0 && monthlyRate > 0
       ? loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, termMonths)) / (Math.pow(1 + monthlyRate, termMonths) - 1)
       : 0;
-    const annualDebtService = pickNum(y1.debtService, fin.annualDebtService, calc.annualDebtService, monthlyPIComputed * 12) || 0;
-    const monthlyPI = pickNum(calc.monthlyMortgagePayment, calc.monthly_mortgage_payment, annualDebtService / 12, monthlyPIComputed) || 0;
+    const annualDebtService = hasMultiLoanStack
+      ? (pickNum(calc.annualDebtService, calc.annual_debt_service, fin.annualDebtService, y1.debtService, monthlyPIComputed * 12) || 0)
+      : (pickNum(y1.debtService, fin.annualDebtService, calc.annualDebtService, monthlyPIComputed * 12) || 0);
+    const monthlyPI = hasMultiLoanStack
+      ? (annualDebtService / 12)
+      : (pickNum(calc.monthlyMortgagePayment, calc.monthly_mortgage_payment, fin.monthlyPayment, annualDebtService / 12, monthlyPIComputed) || 0);
 
     // Monthly operating assumptions used by the One Sheet breakdown.
     const annualTaxes = pickNum(
@@ -635,8 +637,8 @@ function DealRoomPage() {
     const monthlyCFBreakdown = monthlyRent - monthlyPI - monthlyTaxes - monthlyInsurance - monthlyMaintenance - monthlyMgmt - monthlyVacancyReserve;
 
     // Key ratios
-    const capRate = pickNum(calc.capRate, calc.cap_rate, y1.capRate, current.capRate, price > 0 && annualNOI > 0 ? (annualNOI / price) * 100 : null);
-    const dscr = pickNum(calc.dscr, y1.dscr, current.dscr, annualDebtService > 0 ? annualNOI / annualDebtService : null);
+    const capRate = pickNum(y1.capRate, calc.capRate, calc.cap_rate, current.capRate, price > 0 && annualNOI > 0 ? (annualNOI / price) * 100 : null);
+    const dscr = pickNum(y1.dscr, calc.dscr, current.dscr, annualDebtService > 0 ? annualNOI / annualDebtService : null);
     const annualCFFallback = (annualNOI - annualDebtService);
     const monthlyCFCandidate = pickNum(deal.dayOneCashFlow, calc.monthlyCashFlow, calc.monthly_cash_flow, current.cashflow, y1.cashFlow, null);
     let monthlyCF = monthlyCFBreakdown;
@@ -650,18 +652,40 @@ function DealRoomPage() {
     } else if (Number.isFinite(annualCFFallback)) {
       monthlyCF = annualCFFallback / 12;
     }
-    const closingCosts = price * 0.03;
+    const closingCosts = pickNum(acq.closingCosts, price * 0.02, price * 0.03) || 0;
     const renovations = pickNum(assumptions.renovationCost, calc.renovationCost, calc.upfrontCapEx, sc.capex?.upfront, 0) || 0;
-    const totalInvestment = pickNum(fin.totalEquityRequired, calc.totalInvestment, downPayment + closingCosts + renovations) || 0;
+    const totalInvestment = hasMultiLoanStack
+      ? (pickNum(fin.totalEquityRequired, downPayment + closingCosts + renovations) || 0)
+      : (pickNum(fin.totalEquityRequired, calc.totalInvestment, downPayment + closingCosts + renovations) || 0);
     const roi = totalInvestment > 0 ? ((monthlyCF * 12) / totalInvestment) * 100 : null;
-    const cashOnCash = pickNum(calc.cashOnCash, calc.cash_on_cash, y1.cashOnCash, roi);
-    const ltv = pickNum(fin.ltv, calc.ltv, price > 0 ? (loanAmount / price) * 100 : null);
+    const cashOnCash = hasMultiLoanStack
+      ? (totalInvestment > 0 ? ((annualNOI - annualDebtService) / totalInvestment) * 100 : 0)
+      : pickNum(y1.cashOnCash, calc.cashOnCash, calc.cash_on_cash, roi);
+    const ltv = hasMultiLoanStack
+      ? (price > 0 ? (loanAmount / price) * 100 : 0)
+      : pickNum(fin.ltv, calc.ltv, price > 0 ? (loanAmount / price) * 100 : null);
+
+    const irr = pickNum(full?.returns?.leveredIRR, calc.irr, sc?.returns?.irr, 0) || 0;
+    const equityMultiple = pickNum(full?.returns?.leveredEquityMultiple, calc.equityMultiple, sc?.returns?.equity_multiple, 0) || 0;
+    const grm = annualGrossRent > 0 ? (price / annualGrossRent) : 0;
+    const nim = annualExpenses > 0 ? (annualNOI / annualExpenses) : 0;
+    const expenseRatioPct = pickNum(y1.expenseRatio, grossOperatingIncome > 0 ? (annualExpenses / grossOperatingIncome) * 100 : 0, 0) || 0;
+
+    const baseCapRate = capRate > 0 ? capRate : 5.0;
+    const baseIdx = 3;
+    const capRates = Array.from({ length: 7 }, (_, i) => Number((baseCapRate + (i - baseIdx) * 0.25).toFixed(2)));
+    const optimizedNOI = pickNum(stabilized.noi, annualNOI * 1.15) || 0;
+    const valuationStarting = capRates.map(cr => (cr > 0 ? annualNOI / (cr / 100) : 0));
+    const valuationOptimized = capRates.map(cr => (cr > 0 ? optimizedNOI / (cr / 100) : 0));
 
     return {
       price, units, monthlyRent, annualGrossRent, annualNOI,
       monthlyPI, annualDebtService, capRate, dscr, monthlyCF,
       cashOnCash, roi, ltv, downPayment, closingCosts, renovations,
       totalInvestment, loanAmount, annualVacancyLoss, annualExpenses,
+      grossOperatingIncome, effectiveGrossIncome, otherIncomeAnnual,
+      irr, equityMultiple, grm, nim, expenseRatioPct,
+      capRates, valuationStarting, valuationOptimized,
       pricePerUnit: pickNum(acq.pricePerUnit, units ? price / units : 0) || 0,
       interestRate, downPct: downPct * 100,
       monthlyTaxes, monthlyInsurance, monthlyMaintenance, monthlyMgmt, monthlyVacancyReserve,
@@ -898,6 +922,112 @@ function DealRoomPage() {
                       <div style={{ fontSize: '18px', fontWeight: '700', color: color || '#323338' }}>{value}</div>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              {/* Financials (synced from Results Overview model) */}
+              <div style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e6e9ef', padding: '20px' }}>
+                <h3 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '700', color: '#323338' }}>Financials</h3>
+                <div style={{ marginBottom: '12px', fontSize: '12px', color: '#676879' }}>Income & Expenses</div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #e6e9ef' }}>
+                        <th style={{ padding: '8px 10px', textAlign: 'left', fontSize: '11px', color: '#676879', textTransform: 'uppercase' }}>Description</th>
+                        <th style={{ padding: '8px 10px', textAlign: 'right', fontSize: '11px', color: '#676879', textTransform: 'uppercase' }}>Current Month</th>
+                        <th style={{ padding: '8px 10px', textAlign: 'right', fontSize: '11px', color: '#676879', textTransform: 'uppercase' }}>Current Year</th>
+                        <th style={{ padding: '8px 10px', textAlign: 'right', fontSize: '11px', color: '#4f46e5', textTransform: 'uppercase' }}>Pro Forma Month</th>
+                        <th style={{ padding: '8px 10px', textAlign: 'right', fontSize: '11px', color: '#4f46e5', textTransform: 'uppercase' }}>Pro Forma Year</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { label: 'Rental Income', month: metrics.monthlyRent, year: metrics.annualGrossRent, color: '#111827' },
+                        { label: 'Other Income', month: metrics.otherIncomeAnnual / 12, year: metrics.otherIncomeAnnual, color: '#111827' },
+                        { label: 'Gross Operating Income (GOI)', month: metrics.grossOperatingIncome / 12, year: metrics.grossOperatingIncome, color: '#4f46e5', bold: true },
+                        { label: 'Less: Vacancy Loss', month: -metrics.annualVacancyLoss / 12, year: -metrics.annualVacancyLoss, color: '#111827' },
+                        { label: 'Effective Gross Income (EGI)', month: metrics.effectiveGrossIncome / 12, year: metrics.effectiveGrossIncome, color: '#4f46e5', bold: true },
+                        { label: 'Operating Expenses', month: metrics.annualExpenses / 12, year: metrics.annualExpenses, color: '#111827' },
+                        { label: 'Net Operating Income (NOI)', month: metrics.annualNOI / 12, year: metrics.annualNOI, color: '#16a34a', bold: true },
+                        { label: 'Debt Service', month: metrics.monthlyPI, year: metrics.annualDebtService, color: '#111827' },
+                        { label: 'Cash Flow (Bottom Line)', month: metrics.monthlyCF, year: metrics.monthlyCF * 12, color: metrics.monthlyCF >= 0 ? '#16a34a' : '#e2445c', bold: true, highlight: true },
+                      ].map((row) => (
+                        <tr key={row.label} style={{ borderBottom: '1px solid #eef1f6', backgroundColor: row.highlight ? '#f0fdf4' : 'transparent' }}>
+                          <td style={{ padding: '10px', fontSize: '13px', color: row.color, fontWeight: row.bold ? 700 : 500 }}>{row.label}</td>
+                          <td style={{ padding: '10px', textAlign: 'right', fontSize: '13px', color: row.color, fontWeight: row.bold ? 700 : 600 }}>{fmt$full(row.month)}</td>
+                          <td style={{ padding: '10px', textAlign: 'right', fontSize: '13px', color: row.color, fontWeight: row.bold ? 700 : 600 }}>{fmt$full(row.year)}</td>
+                          <td style={{ padding: '10px', textAlign: 'right', fontSize: '13px', color: row.color, fontWeight: row.bold ? 700 : 600 }}>{fmt$full(row.month)}</td>
+                          <td style={{ padding: '10px', textAlign: 'right', fontSize: '13px', color: row.color, fontWeight: row.bold ? 700 : 600 }}>{fmt$full(row.year)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Key Operating Ratios + Loan + Mortgage */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                <div style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e6e9ef', padding: '18px' }}>
+                  <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: '700', color: '#111827' }}>Key Operating Ratios</h3>
+                  <BreakdownRow label="Internal Rate Of Return (IRR)" value={fmtPct(metrics.irr)} />
+                  <BreakdownRow label="Equity Multiple (EM)" value={metrics.equityMultiple ? Number(metrics.equityMultiple).toFixed(2) : '—'} />
+                  <BreakdownRow label="Capitalization Rate (CAP)" value={fmtPct(metrics.capRate)} />
+                  <BreakdownRow label="Gross Rent Multiplier (GRM)" value={metrics.grm ? Number(metrics.grm).toFixed(2) : '—'} />
+                  <BreakdownRow label="Net Income Multiplier (NIM)" value={metrics.nim ? Number(metrics.nim).toFixed(2) : '—'} />
+                  <BreakdownRow label="Expense Ratio (ER)" value={fmtPct(metrics.expenseRatioPct)} />
+                </div>
+
+                <div style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e6e9ef', padding: '18px' }}>
+                  <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: '700', color: '#111827' }}>Loan</h3>
+                  <BreakdownRow label="Loan" value={`${fmt$full(metrics.loanAmount)} (${fmtPct(metrics.ltv)} LTV)`} />
+                  <BreakdownRow label="Down Pymt" value={`${fmt$full(metrics.downPayment)} (${fmtPct(metrics.downPct)})`} />
+                  <BreakdownRow label="Closing Cost" value={`${fmt$full(metrics.closingCosts)} (${fmtPct(metrics.price > 0 ? (metrics.closingCosts / metrics.price) * 100 : 0)})`} />
+                  <BreakdownRow label="Closing Reserve" value={fmt$full(0)} />
+                  <BreakdownRow label="Non-Financed CapEx" value={fmt$full(metrics.renovations || 0)} />
+                  <BreakdownRow label="Total Equity" value={fmt$full(metrics.totalInvestment)} isTotal />
+                </div>
+
+                <div style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e6e9ef', padding: '18px' }}>
+                  <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: '700', color: '#111827' }}>Mortgage</h3>
+                  <BreakdownRow label="Avg Interest Rate" value={fmtPct(metrics.interestRate)} />
+                  <BreakdownRow label="Debt Cost (DC)" value={fmt$full(metrics.annualDebtService)} />
+                  <BreakdownRow label="Payment (month)" value={fmt$full(metrics.monthlyPI)} />
+                  <div style={{ marginTop: '12px', backgroundColor: '#f8fafc', border: '1px solid #e6e9ef', borderRadius: '8px', padding: '10px 12px' }}>
+                    <BreakdownRow label="DSCR" value={fmtX(metrics.dscr)} color={metrics.dscr >= 1.25 ? '#16a34a' : metrics.dscr >= 1 ? '#f59e0b' : '#e2445c'} />
+                    <BreakdownRow label="Cash Flow After Debt" value={fmt$full(metrics.monthlyCF * 12)} color={metrics.monthlyCF >= 0 ? '#16a34a' : '#e2445c'} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Project Valuation */}
+              <div style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e6e9ef', padding: '20px' }}>
+                <h3 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '700', color: '#111827' }}>Project Valuation</h3>
+                <div style={{ marginBottom: '10px', fontSize: '12px', color: '#676879', fontStyle: 'italic' }}>Implied property value at each cap rate (Value = NOI ÷ Cap Rate)</div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ padding: '10px', textAlign: 'left', fontSize: '12px', color: '#676879', borderBottom: '2px solid #e6e9ef' }}>Cap Rate → Implied Value</th>
+                        {(metrics.capRates || []).map((cr, idx) => (
+                          <th key={cr} style={{ padding: '10px', textAlign: 'center', fontSize: '12px', color: idx === 3 ? '#4f46e5' : '#676879', borderBottom: idx === 3 ? '2px solid #4f46e5' : '2px solid #e6e9ef', backgroundColor: idx === 3 ? '#eef2ff' : 'transparent' }}>{cr.toFixed(2)}%</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style={{ borderBottom: '1px solid #eef1f6' }}>
+                        <td style={{ padding: '10px', fontSize: '12px', color: '#676879', fontWeight: 600 }}>Based on Starting NOI</td>
+                        {(metrics.valuationStarting || []).map((v, idx) => (
+                          <td key={`start-${idx}`} style={{ padding: '10px', textAlign: 'center', fontSize: '13px', fontWeight: 600, color: idx === 3 ? '#4f46e5' : '#111827', backgroundColor: idx === 3 ? '#eef2ff' : 'transparent' }}>{fmt$full(v)}</td>
+                        ))}
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '10px', fontSize: '12px', color: '#676879', fontWeight: 700 }}>Based on Optimized NOI</td>
+                        {(metrics.valuationOptimized || []).map((v, idx) => (
+                          <td key={`opt-${idx}`} style={{ padding: '10px', textAlign: 'center', fontSize: '13px', fontWeight: 700, color: idx === 3 ? '#4f46e5' : '#111827', backgroundColor: idx === 3 ? '#eef2ff' : 'transparent' }}>{fmt$full(v)}</td>
+                        ))}
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
