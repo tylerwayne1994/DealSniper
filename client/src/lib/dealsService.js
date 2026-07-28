@@ -172,39 +172,15 @@ export async function saveDeal(dealData) {
  * @param {string} dealId - The deal ID to load
  * @returns {Object|null} - The deal data or null if not found
  */
-export async function loadDeal(dealId) {
-  const userId = await getCurrentUserId();
-  let data, error;
-  try {
-    const resp = await supabase
-      .from('deals')
-      .select('*')
-      .eq('deal_id', dealId)
-      .eq('user_id', userId)
-      .single();
-    data = resp.data;
-    error = resp.error;
-  } catch (e) {
-    const resp = await supabase
-      .from('deals')
-      .select('*')
-      .eq('deal_id', dealId)
-      .single();
-    data = resp.data;
-    error = resp.error;
-  }
-
-  if (error) {
-    if (error.code === 'PGRST116') {
-      // No rows returned
-      return null;
-    }
-    throw error;
-  }
-
+/**
+ * Transform a raw `deals` table row (snake_case, as returned by Supabase)
+ * into the camelCase shape the rest of the app expects. Exported so the
+ * public investor pitch-deck view (which fetches a deal via a backend
+ * proxy rather than the authenticated Supabase client) can produce an
+ * identical `deal` object without duplicating this mapping.
+ */
+export function mapDealRow(data) {
   if (!data) return null;
-
-  // Transform to camelCase format for frontend
   const rawImages = Array.isArray(data.images) ? data.images : [];
   const parsedImages = Array.isArray(data.parsed_data?.images) ? data.parsed_data.images : [];
   const mergedImages = [...rawImages, ...parsedImages];
@@ -241,6 +217,41 @@ export async function loadDeal(dealId) {
   };
 }
 
+export async function loadDeal(dealId) {
+  const userId = await getCurrentUserId();
+  let data, error;
+  try {
+    const resp = await supabase
+      .from('deals')
+      .select('*')
+      .eq('deal_id', dealId)
+      .eq('user_id', userId)
+      .single();
+    data = resp.data;
+    error = resp.error;
+  } catch (e) {
+    const resp = await supabase
+      .from('deals')
+      .select('*')
+      .eq('deal_id', dealId)
+      .single();
+    data = resp.data;
+    error = resp.error;
+  }
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      // No rows returned
+      return null;
+    }
+    throw error;
+  }
+
+  if (!data) return null;
+
+  return mapDealRow(data);
+}
+
 /**
  * Load all deals from pipeline
  * @returns {Array} - Array of deal summaries
@@ -271,17 +282,35 @@ export async function loadPipelineDeals() {
         death_reason,
         images
       `;
+  // preferred_return_pct / gp_promote_pct are optional columns (added by a
+  // migration the user may not have run yet) — request them separately so a
+  // missing column never breaks loading every other deal list in the app.
+  const dealTermsSelect = `${baseSelect}, preferred_return_pct, gp_promote_pct`;
+
   let query = supabase
     .from('deals')
-    .select(baseSelect)
+    .select(dealTermsSelect)
     .eq('pipeline_status', 'pipeline')
     .order('created_at', { ascending: false });
   if (userId) {
     query = query.eq('user_id', userId);
   }
-  const resp = await query;
+  let resp = await query;
   data = resp.data;
   error = resp.error;
+
+  if (error) {
+    // Fall back to the base column set (e.g. deal terms migration not run yet)
+    let fallbackQuery = supabase
+      .from('deals')
+      .select(baseSelect)
+      .eq('pipeline_status', 'pipeline')
+      .order('created_at', { ascending: false });
+    if (userId) fallbackQuery = fallbackQuery.eq('user_id', userId);
+    const fallbackResp = await fallbackQuery;
+    data = fallbackResp.data;
+    error = fallbackResp.error;
+  }
 
   if (error) throw error;
 
@@ -305,6 +334,9 @@ export async function loadPipelineDeals() {
     cashOutRefiAmount: deal.scenario_data?.calculations?.cashOutRefiAmount || 0,
     userTotalInPocket: deal.scenario_data?.calculations?.userTotalInPocket || 0,
     postRefiCashFlow: deal.scenario_data?.calculations?.postRefiCashFlow || 0,
+    // Sponsor-set deal terms (used to default investor allocations)
+    preferredReturnPct: deal.preferred_return_pct ?? 8,
+    gpPromotePct: deal.gp_promote_pct ?? 20,
     // Pipeline CRM stage tracking
     deal_stage: deal.deal_stage || 'underwritten',
     stage_changed_at: deal.stage_changed_at,

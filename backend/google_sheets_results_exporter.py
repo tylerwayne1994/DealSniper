@@ -22,12 +22,20 @@ def _prefixed_title(base_title, sheet_title):
     return _sanitize_title(sheet_title)
 
 
-def _existing_sheet_titles(service, spreadsheet_id):
+def _existing_sheet_ids(service, spreadsheet_id):
+    """Returns {title: numeric_sheet_id} for every tab currently in the spreadsheet."""
     response = service.spreadsheets().get(
         spreadsheetId=spreadsheet_id,
-        fields='sheets.properties.title'
+        fields='sheets.properties.title,sheets.properties.sheetId'
     ).execute()
-    return [sheet['properties']['title'] for sheet in response.get('sheets', [])]
+    return {
+        sheet['properties']['title']: sheet['properties']['sheetId']
+        for sheet in response.get('sheets', [])
+    }
+
+
+def _existing_sheet_titles(service, spreadsheet_id):
+    return list(_existing_sheet_ids(service, spreadsheet_id).keys())
 
 
 def _ensure_sheet(service, spreadsheet_id, title, existing_titles):
@@ -131,6 +139,21 @@ def export_full_results_workbook(workbook, sheet_id, base_tab_name=None):
             'rowCount': total_rows,
         }
     except HttpError as error:
+        status = getattr(getattr(error, 'resp', None), 'status', None)
+        if status in (403, 404):
+            try:
+                from spreadsheet_ai_builder import _service_account_email
+                email = _service_account_email() or 'the DealSniper service account'
+            except Exception:
+                email = 'the DealSniper service account'
+            return {
+                'success': False,
+                'errorCode': status,
+                'message': (
+                    f'DealSniper can\'t access that spreadsheet. Open it in Google Sheets, '
+                    f'click Share, and add {email} as an Editor — then export again.'
+                ),
+            }
         return {
             'success': False,
             'message': f'Google Sheets API error: {error}'

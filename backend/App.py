@@ -288,15 +288,6 @@ app.include_router(v2_router)
 from v2_underwriter.llm_usage import router as llm_usage_router
 app.include_router(llm_usage_router)
 
-# Email Deals: Gmail integration & auto-screening
-from email_deals import router as email_deals_router, auth_router as google_auth_router
-app.include_router(email_deals_router)
-app.include_router(google_auth_router)
-
-# Email → Auto-underwrite: email_underwrite_jobs pipeline
-from email_underwrite import router as email_underwrite_router
-app.include_router(email_underwrite_router)
-
 # Token Management: AI operation billing
 from token_manager import router as token_router
 app.include_router(token_router)
@@ -320,6 +311,11 @@ app.include_router(token_purchase_router)
 # Investor Portal: LP dashboard, distributions, K-1 uploads
 from investor_portal import router as investor_portal_router
 app.include_router(investor_portal_router)
+
+# Investor Access Links: sponsor-created access codes that route an investor
+# straight to a single deal's read-only pitch deck, with no login required.
+from investor_access import router as investor_access_router
+app.include_router(investor_access_router)
 
 # Deal Builder: AI-powered full deal underwriting + pitch deck + spreadsheet
 try:
@@ -348,6 +344,16 @@ try:
     log.info("[RED FLAG SCANNER] Router loaded successfully")
 except Exception as _rfs_err:
     log.error("[RED FLAG SCANNER] Failed to load: %s", _rfs_err)
+
+# Financial Due Diligence Auditor: LLM-powered T-12/Expenses/Rent Roll anomaly detection
+try:
+    import financial_audit
+    financial_audit.ANTHROPIC_CLIENT = ANTHROPIC
+    from financial_audit import router as financial_audit_router
+    app.include_router(financial_audit_router)
+    log.info("[FINANCIAL AUDIT] Router loaded successfully")
+except Exception as _fa_err:
+    log.error("[FINANCIAL AUDIT] Failed to load: %s", _fa_err)
 
 # Claude Chat Underwriter: Direct Claude API chat with streaming + document canvas
 try:
@@ -400,6 +406,18 @@ from google_sheets_results_exporter import export_full_results_workbook
 
 # Excel template export
 from llm_excel_export import llm_export_to_excel
+
+# AI workbook builder: one Claude-designed spec rendered to Excel or Google Sheets
+try:
+    from spreadsheet_ai_builder import (
+        build_workbook_spec,
+        render_spec_to_excel,
+        render_spec_to_google_sheets,
+    )
+    SPREADSHEET_AI_AVAILABLE = True
+except Exception:
+    log.exception("Failed to import spreadsheet_ai_builder")
+    SPREADSHEET_AI_AVAILABLE = False
 
 # HUD API proxy router (provides /api/hud/* endpoints)
 try:
@@ -669,6 +687,11 @@ async def _init_clients():
             try:
                 import red_flag_scanner
                 red_flag_scanner.ANTHROPIC_CLIENT = ANTHROPIC
+            except Exception:
+                pass
+            try:
+                import financial_audit
+                financial_audit.ANTHROPIC_CLIENT = ANTHROPIC
             except Exception:
                 pass
         except Exception as e:
@@ -4072,14 +4095,34 @@ async def export_results_to_google_sheet(request: Request):
     try:
         body = await request.json()
         workbook = body.get('workbook')
+        deal_data = body.get('dealData')
         sheet_id = body.get('sheetId')
         sheet_tab = body.get('sheetTab')
 
-        if not workbook:
-            return JSONResponse(status_code=400, content={"success": False, "message": "workbook payload required"})
+        if not workbook and not deal_data:
+            return JSONResponse(status_code=400, content={"success": False, "message": "workbook or dealData payload required"})
 
         if not sheet_id:
             return JSONResponse(status_code=400, content={"success": False, "message": "sheetId required - configure your Google Sheet in Dashboard settings"})
+
+        # Preferred path: Claude designs one curated workbook spec from the raw
+        # deal data, rendered with real formatting. Falls back to the legacy
+        # pre-built workbook dump if the AI path fails and one was provided.
+        if deal_data and SPREADSHEET_AI_AVAILABLE:
+            try:
+                spec = build_workbook_spec(deal_data)
+                result = render_spec_to_google_sheets(spec, sheet_id=sheet_id, base_tab_name=sheet_tab)
+                if result.get('success'):
+                    return JSONResponse(content=result)
+                if result.get('errorCode') in (403, 404):
+                    # Sharing/permission problem — the legacy path would hit the
+                    # exact same wall, so surface the actionable message now.
+                    return JSONResponse(content=result)
+                log.error(f"AI sheets export failed: {result.get('message')}")
+            except Exception as ai_err:
+                log.exception(f"AI sheets export raised, falling back to legacy export: {ai_err}")
+            if not workbook:
+                return JSONResponse(status_code=500, content={"success": False, "message": "AI workbook export failed and no fallback workbook was provided"})
 
         result = export_full_results_workbook(workbook, sheet_id=sheet_id, base_tab_name=sheet_tab)
         return JSONResponse(content=result)
@@ -4132,14 +4175,36 @@ async def export_to_excel_endpoint(request: Request):
         
         if not scenario_data:
             return JSONResponse(status_code=400, content={"success": False, "message": "scenarioData required"})
-        
-        # Generate the Excel file using LLM
-        excel_buffer = llm_export_to_excel(
-            scenario_data=scenario_data,
-            full_calcs=full_calcs,
-            sensitivity_data=sensitivity_data,
-            waterfall_data=waterfall_data
-        )
+
+        # Preferred path: Claude designs one curated workbook spec from all the
+        # deal data and it's rendered from scratch with openpyxl. Falls back to
+        # the legacy template-fill exporter if the AI path fails.
+        deal_payload = {
+            'scenarioData': scenario_data,
+            'fullCalcs': full_calcs,
+            'sensitivityData': sensitivity_data,
+            'waterfallData': waterfall_data,
+        }
+        for extra_key in ('rentcastData', 'marketData', 'countyTaxEntry', 'sensitivity',
+                          'selectedStructureMetrics', 'recommendedStructure', 'underwritingResult'):
+            if body.get(extra_key):
+                deal_payload[extra_key] = body[extra_key]
+
+        excel_buffer = None
+        if SPREADSHEET_AI_AVAILABLE:
+            try:
+                spec = build_workbook_spec(deal_payload)
+                excel_buffer = render_spec_to_excel(spec)
+            except Exception as ai_err:
+                log.exception(f"AI Excel export failed, falling back to template export: {ai_err}")
+
+        if excel_buffer is None:
+            excel_buffer = llm_export_to_excel(
+                scenario_data=scenario_data,
+                full_calcs=full_calcs,
+                sensitivity_data=sensitivity_data,
+                waterfall_data=waterfall_data
+            )
         
         # Deduct token after successful generation
         if profile_id and profile:
@@ -4170,6 +4235,84 @@ async def export_to_excel_endpoint(request: Request):
         
     except Exception as e:
         log.error(f"Error exporting to Excel: {str(e)}")
+        import traceback
+        log.error(traceback.format_exc())
+        return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Deal Room — grounded investment narrative (real market data + real strategy)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.post("/api/deal-room/narrative")
+async def deal_room_narrative_endpoint(request: Request):
+    """
+    Generates the Deal Room's narrative sections (Why This Market, Why This
+    Asset, Upside Plays, Operational Plan) from real data only:
+      - the deal's own parsed property/financing/strategy data
+      - the platform's own calculated returns
+      - real local-market data (population, employment, migration, FMR, cap
+        rate) pulled from the same pipeline as the Market Analysis tab
+    The LLM is instructed to omit any category it wasn't given data for, and
+    to describe whatever strategy is actually present rather than assume a
+    generic value-add playbook.
+    """
+    try:
+        from deal_room_narrative import build_market_context, build_investment_narrative, build_narrative_payload
+
+        body = await request.json()
+        scenario_data = body.get('scenarioData', {})
+        calculations = body.get('calculations') or body.get('fullCalcs')
+
+        if not scenario_data:
+            return JSONResponse(status_code=400, content={"success": False, "message": "scenarioData required"})
+
+        market_context = await build_market_context(scenario_data.get('property', {}) or {})
+        payload = build_narrative_payload(scenario_data, calculations, market_context)
+        narrative = build_investment_narrative(payload)
+
+        return JSONResponse(content={"success": True, "narrative": narrative})
+    except Exception as e:
+        log.error(f"Error generating deal room narrative: {str(e)}")
+        import traceback
+        log.error(traceback.format_exc())
+        return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
+
+
+@app.post("/api/deal-room/chat")
+async def deal_room_chat_endpoint(request: Request):
+    """
+    Free-form Q&A chat scoped to one deal. Grounded in the deal's own real
+    data (property/financing/strategy + the platform's calculated returns)
+    plus real local-market data (Census/FMR/migration/cap rate) from the same
+    pipeline as the Market Analysis tab — same grounding approach as the
+    narrative endpoint above, just conversational instead of one-shot.
+    Stateless per-request: the frontend resends the running conversation
+    history each turn.
+    """
+    try:
+        from deal_room_narrative import build_market_context, build_narrative_payload, chat_about_deal
+
+        body = await request.json()
+        scenario_data = body.get('scenarioData', {})
+        calculations = body.get('calculations') or body.get('fullCalcs')
+        message = body.get('message', '')
+        history = body.get('history') or []
+
+        if not scenario_data:
+            return JSONResponse(status_code=400, content={"success": False, "message": "scenarioData required"})
+        if not message or not message.strip():
+            return JSONResponse(status_code=400, content={"success": False, "message": "message required"})
+
+        market_context = await build_market_context(scenario_data.get('property', {}) or {})
+        payload = build_narrative_payload(scenario_data, calculations, market_context)
+        reply = chat_about_deal(payload, message, history)
+
+        return JSONResponse(content={"success": True, "reply": reply})
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"success": False, "message": str(e)})
+    except Exception as e:
+        log.error(f"Error in deal room chat: {str(e)}")
         import traceback
         log.error(traceback.format_exc())
         return JSONResponse(status_code=500, content={"success": False, "message": str(e)})

@@ -2661,6 +2661,89 @@ async def chat_with_deal(deal_id: str, request: ChatRequest):
         raise HTTPException(status_code=500, detail="OpenAI chat error")
 
 
+@router.post("/deals/{deal_id}/board")
+async def board_of_advisors(deal_id: str, request: Request):
+    """AI Board of Advisors — convenes 4-6 real-estate investor personas to
+    deliberate a deal using its real scenarioData + calculateFullAnalysis
+    output. Advisor content is read from board_of_advisors/advisors/*.md at
+    runtime; nothing about the deal or the advisors is hardcoded here."""
+    log.info(f"[V2] Board of Advisors: {deal_id}")
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    scenario_data = body.get("scenarioData")
+    analysis = body.get("analysis")
+    max_advisors = body.get("maxAdvisors") or 4
+
+    if not scenario_data:
+        try:
+            deal = storage.upsert_deal_stub(deal_id)
+            scenario_data = getattr(deal, "scenario_json", None) or deal.parsed_json
+        except Exception as e:
+            log.exception(f"[V2] Board: failed to load deal {deal_id}: {e}")
+            raise HTTPException(status_code=404, detail="Deal not found and no scenarioData provided")
+
+    if not scenario_data:
+        raise HTTPException(status_code=400, detail="No scenarioData available for this deal")
+
+    from board_of_advisors_engine import run_board_deliberation
+
+    try:
+        result = run_board_deliberation(scenario_data, analysis, max_advisors=max_advisors)
+        return JSONResponse(result)
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=502, detail="Board of Advisors returned an unparseable response. Try again.")
+    except Exception as e:
+        log.exception(f"[V2] Board of Advisors failed: {e}")
+        raise HTTPException(status_code=500, detail="Board of Advisors deliberation failed")
+
+
+@router.post("/deals/{deal_id}/board/chat")
+async def board_of_advisors_chat(deal_id: str, request: Request):
+    """Follow-up chat with one convened advisor or the whole board ('All').
+    Reuses the same Deal Brief the initial /board call used."""
+    log.info(f"[V2] Board chat: {deal_id}")
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    scenario_data = body.get("scenarioData")
+    analysis = body.get("analysis")
+    convened = body.get("convened") or []
+    target = body.get("target") or "All"
+    message = body.get("message")
+    history = body.get("history") or []
+
+    if not scenario_data:
+        try:
+            deal = storage.upsert_deal_stub(deal_id)
+            scenario_data = getattr(deal, "scenario_json", None) or deal.parsed_json
+        except Exception as e:
+            log.exception(f"[V2] Board chat: failed to load deal {deal_id}: {e}")
+            raise HTTPException(status_code=404, detail="Deal not found and no scenarioData provided")
+
+    if not scenario_data:
+        raise HTTPException(status_code=400, detail="No scenarioData available for this deal")
+
+    from board_of_advisors_engine import chat_with_advisors
+
+    try:
+        result = chat_with_advisors(scenario_data, analysis, convened, target, message, history)
+        return JSONResponse(result)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=502, detail="Board chat returned an unparseable response. Try again.")
+    except Exception as e:
+        log.exception(f"[V2] Board chat failed: {e}")
+        raise HTTPException(status_code=500, detail="Board chat failed")
+
+
 @router.post("/sheet/chat")
 async def chat_with_sheet(request: Request):
     """Chat endpoint for the spreadsheet-style underwriting model.
@@ -2885,7 +2968,9 @@ async def get_rentcast_data(deal_id: str, request: Request):
         profile = None
         get_token_supabase = None
 
-    RENTCAST_API_KEY = "a4a69093ad93468e8ffc6aa804dff4ce"
+    # Allow overriding via env var (Render/local .env) without a code change;
+    # falls back to the previous shared demo key if none is set.
+    RENTCAST_API_KEY = os.environ.get("RENTCAST_API_KEY", "a4a69093ad93468e8ffc6aa804dff4ce")
     
     log.info(f"[V2] RentCast request for deal: {deal_id}")
     
@@ -3067,6 +3152,137 @@ async def get_rentcast_data(deal_id: str, request: Request):
             "success": False,
             "error": f"Failed to fetch rent data: {str(e)}",
             "address_searched": address
+        }, status_code=200)
+
+
+@router.post("/deals/{deal_id}/repliers")
+async def get_repliers_comps(deal_id: str, request: Request):
+    """
+    Fetch nearby comparable listings from the Repliers MLS API
+    (https://api.repliers.io/listings), centered on the deal's
+    property location.
+
+    NOTE: Repliers primarily aggregates Canadian MLS/DDF board data.
+    Coverage for US properties depends on which boards your Repliers
+    account has access to — if this returns zero listings for a US
+    address, check board access in the Repliers Developer Portal
+    before assuming something is broken.
+    """
+    import httpx
+
+    REPLIERS_API_KEY = os.environ.get("REPLIERS_API_KEY", "")
+    if not REPLIERS_API_KEY:
+        return JSONResponse({
+            "success": False,
+            "error": "REPLIERS_API_KEY is not configured on the backend.",
+        }, status_code=200)
+
+    body = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+
+    lat = body.get("lat") or body.get("latitude")
+    lng = body.get("lng") or body.get("longitude")
+
+    # Fall back to the deal's stored property lat/lng if the request didn't include one
+    if not (lat and lng):
+        deal = storage.get_deal(deal_id)
+        if deal:
+            scenario = deal.scenario_json or {}
+            deal_property = scenario.get("property", {}) or deal.parsed_json.get("property", {})
+            lat = lat or deal_property.get("lat") or deal_property.get("latitude")
+            lng = lng or deal_property.get("lng") or deal_property.get("longitude")
+
+    if not (lat and lng):
+        return JSONResponse({
+            "success": False,
+            "error": "No latitude/longitude available for this deal. Fetch RentCast data first (it resolves the address to coordinates) or add lat/lng to the property.",
+        }, status_code=200)
+
+    radius_km = body.get("radius_km", 3)
+    status = body.get("status", "A")  # A = active, U = unavailable/sold
+    results_per_page = body.get("results_per_page", 20)
+
+    params = {
+        "lat": lat,
+        "long": lng,
+        "radius": radius_km,
+        "status": status,
+        "resultsPerPage": results_per_page,
+        "sortBy": "distanceAsc",
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://api.repliers.io/listings",
+                params=params,
+                headers={
+                    "REPLIERS-API-KEY": REPLIERS_API_KEY,
+                    "Accept": "application/json",
+                },
+                timeout=30.0,
+            )
+
+            if response.status_code != 200:
+                log.error(f"[V2] Repliers API error: {response.status_code} - {response.text[:300]}")
+                return JSONResponse({
+                    "success": False,
+                    "error": f"Repliers API returned {response.status_code}: {response.text[:200]}",
+                }, status_code=200)
+
+            data = response.json()
+            raw_listings = data.get("listings", []) if isinstance(data, dict) else []
+
+            # Normalize into the same shape the frontend already uses for
+            # RentCast comparables, so both sources render on one map/list.
+            def _addr(listing):
+                a = listing.get("address") or {}
+                parts = [a.get("streetNumber"), a.get("streetName"), a.get("streetSuffix")]
+                street = " ".join([p for p in parts if p])
+                city = a.get("city") or a.get("area") or ""
+                return ", ".join([p for p in [street, city] if p]) or listing.get("mlsNumber", "")
+
+            def _coord(listing, key_a, key_b):
+                m = listing.get("map") or {}
+                return m.get(key_a) or listing.get(key_a) or listing.get(key_b)
+
+            normalized = []
+            for listing in raw_listings:
+                latv = _coord(listing, "latitude", "lat")
+                lngv = _coord(listing, "longitude", "long")
+                if not (latv and lngv):
+                    continue
+                details = listing.get("details") or {}
+                normalized.append({
+                    "latitude": latv,
+                    "longitude": lngv,
+                    "price": listing.get("listPrice") or listing.get("soldPrice"),
+                    "bedrooms": details.get("numBedrooms"),
+                    "bathrooms": details.get("numBathrooms"),
+                    "squareFootage": details.get("sqft"),
+                    "formattedAddress": _addr(listing),
+                    "mlsNumber": listing.get("mlsNumber"),
+                    "source": "Repliers",
+                })
+
+            return JSONResponse({
+                "success": True,
+                "data": {"comparables": normalized, "count": len(normalized)},
+            })
+
+    except httpx.TimeoutException:
+        return JSONResponse({
+            "success": False,
+            "error": "Repliers API timeout - try again",
+        }, status_code=200)
+    except Exception as e:
+        log.exception(f"[V2] Repliers request failed: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": f"Failed to fetch Repliers comps: {str(e)}",
         }, status_code=200)
 
 

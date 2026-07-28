@@ -66,7 +66,7 @@ const PipelineTable = ({
       setShowComingSoonPopup(true);
       setTimeout(() => setShowComingSoonPopup(false), 2000);
     } else {
-      navigate(`/pitch-deck?dealId=${deal.dealId}`);
+      navigate(`/deal-room/${deal.dealId}?tab=dealroom`);
     }
   };
 

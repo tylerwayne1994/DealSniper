@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  ArrowLeft, FileText, Upload, Download, Trash2,
-  Eye, BrainCircuit, ClipboardCheck, Presentation, Wrench,
+  ArrowLeft, Upload, Download, Trash2,
+  Eye, BrainCircuit, ClipboardCheck, Presentation,
   DollarSign, Home, X, StickyNote,
   Folder, FileCheck, BarChart3, AlertTriangle,
   ChevronRight, RefreshCw, Percent, Hash, Calendar,
@@ -10,7 +10,14 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { loadDeal, updateDeal } from '../lib/dealsService';
-import { calculateFullAnalysis } from '../utils/realEstateCalculations';
+import { listAllocations, listDistributions } from '../lib/investorService';
+import { buildDealRoomData } from '../lib/dealRoomData';
+import { fetchDealRoomNarrative } from '../lib/dealRoomNarrativeService';
+import BoardOfAdvisors from '../components/BoardOfAdvisors';
+import DealChat from '../components/DealChat';
+import InvestorDealRoom from '../components/dealroom/InvestorDealRoom';
+import { computeDealMetrics, normalizeDealImages, computeDealScore } from '../lib/dealMetrics';
+import ShareWithInvestorPanel from '../components/dealroom/ShareWithInvestorPanel';
 
 // ============================================================================
 // Constants & Helpers
@@ -78,40 +85,6 @@ const fileIcon = (type = '') => {
   return '📁';
 };
 
-const pickNum = (...vals) => {
-  for (const v of vals) {
-    if (v === null || v === undefined || v === '') continue;
-    const n = Number(v);
-    if (!Number.isNaN(n) && Number.isFinite(n)) return n;
-  }
-  return null;
-};
-
-const normalizeImages = (deal) => {
-  const fromDeal = Array.isArray(deal?.images) ? deal.images : [];
-  const fromParsed = Array.isArray(deal?.parsedData?.images) ? deal.parsedData.images : [];
-  const all = [...fromDeal, ...fromParsed];
-
-  return all
-    .map((img, idx) => {
-      if (typeof img === 'string') {
-        return { id: `img-${idx}`, url: img, storage_path: '', page_number: null };
-      }
-      if (img && typeof img === 'object') {
-        const url = img.url || img.public_url || img.image_url || img.src || '';
-        if (!url) return null;
-        return {
-          id: img.id || `img-${idx}`,
-          url,
-          storage_path: img.storage_path || '',
-          page_number: img.page_number || null,
-        };
-      }
-      return null;
-    })
-    .filter(Boolean);
-};
-
 const normalizeGoogleDocCategory = (url, selected) => {
   if (!url) return selected || 'other';
   const u = url.toLowerCase();
@@ -120,41 +93,9 @@ const normalizeGoogleDocCategory = (url, selected) => {
   return selected || 'other';
 };
 
-// Simple financial score 0-10
-const computeScore = (metrics) => {
-  const { capRate, dscr, cashOnCash, monthlyCF, units } = metrics;
-  let score = 0;
-  let count = 0;
-
-  if (capRate != null) {
-    score += Math.min(10, (capRate / 7) * 10);
-    count++;
-  }
-  if (dscr != null) {
-    score += dscr >= 1.5 ? 10 : dscr >= 1.25 ? 8 : dscr >= 1.0 ? 5 : 2;
-    count++;
-  }
-  if (cashOnCash != null) {
-    score += Math.min(10, (cashOnCash / 12) * 10);
-    count++;
-  }
-  if (monthlyCF != null && units) {
-    const cfPerUnit = monthlyCF / units;
-    score += cfPerUnit >= 200 ? 10 : cfPerUnit >= 100 ? 7 : cfPerUnit >= 0 ? 4 : 1;
-    count++;
-  }
-
-  const raw = count > 0 ? score / count : 5;
-  const clamped = Math.max(0, Math.min(10, raw));
-  const grade =
-    clamped >= 9 ? 'A+'  : clamped >= 8.5 ? 'A'  : clamped >= 7.5 ? 'B+' :
-    clamped >= 7 ? 'B'   : clamped >= 6.5 ? 'C+' : clamped >= 5.5 ? 'C'  :
-    clamped >= 4 ? 'D'   : 'F';
-  const color =
-    clamped >= 7.5 ? '#00c875' : clamped >= 6 ? '#fdab3d' : '#e2445c';
-
-  return { score: clamped.toFixed(1), grade, color };
-};
+// Simple financial score 0-10 (shared implementation lives in dealMetrics.js;
+// aliasing here keeps existing call sites in this file unchanged).
+const computeScore = computeDealScore;
 
 // ============================================================================
 // Sub-components
@@ -198,7 +139,7 @@ const ActionCard = ({ icon: Icon, label, desc, color, onClick }) => (
 // ============================================================================
 // Document Row
 // ============================================================================
-const DocRow = ({ doc, onDelete, onDownload }) => {
+const DocRow = ({ doc, onDelete, onDownload, onToggleVisibility }) => {
   const cat = DOC_CATEGORIES.find(c => c.value === doc.category) || DOC_CATEGORIES[DOC_CATEGORIES.length - 1];
   return (
     <div style={{
@@ -223,6 +164,18 @@ const DocRow = ({ doc, onDelete, onDownload }) => {
           </span>
         </div>
       </div>
+      <label title="Show this file in the investor Deal Room document vault" style={{
+        display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: '600',
+        color: doc.visible_to_investors ? '#00c875' : '#9699a6', cursor: 'pointer', flexShrink: 0, userSelect: 'none',
+      }}>
+        <input
+          type="checkbox"
+          checked={!!doc.visible_to_investors}
+          onChange={() => onToggleVisibility(doc)}
+          style={{ accentColor: '#00c875' }}
+        />
+        Investor vault
+      </label>
       <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
         <button onClick={() => onDownload(doc)} title="Download / Open"
           style={{ padding: '6px', borderRadius: '6px', border: '1px solid #e6e9ef', backgroundColor: '#f6f7fb', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#323338' }}>
@@ -243,10 +196,11 @@ const DocRow = ({ doc, onDelete, onDownload }) => {
 function DealRoomPage() {
   const { dealId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [deal, setDeal] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('onesheet');
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'onesheet');
   const [documents, setDocuments] = useState([]);
   const [docsLoading, setDocsLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -261,6 +215,10 @@ function DealRoomPage() {
   const [notesSaved, setNotesSaved] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [allocations, setAllocations] = useState([]);
+  const [distributions, setDistributions] = useState([]);
+  const [investorDataLoaded, setInvestorDataLoaded] = useState(false);
+  const [generatingNarrative, setGeneratingNarrative] = useState(false);
   const fileInputRef = useRef(null);
 
   // ---- Load deal -----------------------------------------------------------
@@ -330,6 +288,51 @@ function DealRoomPage() {
   }, [dealId, deal?.parsedData]);
 
   useEffect(() => { loadDocuments(); }, [loadDocuments]);
+
+  // Lazy-load the real per-deal investor allocations/distributions the
+  // first time the Deal Room tab is opened (avoids an unnecessary call on
+  // every page load, and requires the backend's Supabase service key).
+  useEffect(() => {
+    if (activeTab !== 'dealroom' || investorDataLoaded) return;
+    (async () => {
+      try {
+        const [a, d] = await Promise.all([
+          listAllocations(dealId).catch(() => []),
+          listDistributions(dealId).catch(() => []),
+        ]);
+        setAllocations(a || []);
+        setDistributions(d || []);
+      } catch (e) {
+        console.warn('DealRoom: failed to load investor data', e);
+      } finally {
+        setInvestorDataLoaded(true);
+      }
+    })();
+  }, [activeTab, dealId, investorDataLoaded]);
+
+  // Generate (or regenerate) the AI investment thesis, then cache it on the
+  // deal record so it doesn't need to be regenerated on every visit.
+  const handleGenerateNarrative = async () => {
+    if (!deal?.scenarioData) {
+      alert('This deal has no parsed data to generate a thesis from yet.');
+      return;
+    }
+    setGeneratingNarrative(true);
+    try {
+      const narrative = await fetchDealRoomNarrative({
+        scenarioData: deal.scenarioData,
+        calculations: deal.scenarioData?.calculations,
+      });
+      const nextParsedData = { ...(deal.parsedData || {}), dealRoomNarrative: narrative };
+      await updateDeal(dealId, { parsed_data: nextParsedData });
+      setDeal((prev) => (prev ? { ...prev, parsedData: nextParsedData } : prev));
+    } catch (e) {
+      console.error('Failed to generate investment thesis:', e);
+      alert('Failed to generate investment thesis: ' + e.message);
+    } finally {
+      setGeneratingNarrative(false);
+    }
+  };
 
   const saveDocumentsToDealRecord = async (nextDocs) => {
     const nextParsedData = {
@@ -457,6 +460,38 @@ function DealRoomPage() {
     }
   };
 
+  // ---- Toggle a document's visibility in the investor Deal Room vault ------
+  const handleToggleDocVisibility = async (doc) => {
+    const nextVisible = !doc.visible_to_investors;
+    try {
+      if (docStoreMode === 'table') {
+        const { error } = await supabase
+          .from('deal_documents')
+          .update({ visible_to_investors: nextVisible })
+          .eq('id', doc.id);
+        if (!error) {
+          setDocuments(prev => prev.map(d => (d.id === doc.id ? { ...d, visible_to_investors: nextVisible } : d)));
+          return;
+        }
+      }
+      const nextDocs = (documents || []).map(d => (d.id === doc.id ? { ...d, visible_to_investors: nextVisible } : d));
+      await saveDocumentsToDealRecord(nextDocs);
+    } catch (e) {
+      console.error('Failed to update document visibility:', e);
+    }
+  };
+
+  // ---- Deal Room closing date (offering deadline shown to investors) ------
+  const handleSetCloseDate = async (dateStr) => {
+    const nextParsedData = { ...(deal?.parsedData || {}), dealRoomCloseDate: dateStr || null };
+    try {
+      await updateDeal(dealId, { parsed_data: nextParsedData });
+      setDeal(prev => (prev ? { ...prev, parsedData: nextParsedData } : prev));
+    } catch (e) {
+      console.error('Failed to save closing date:', e);
+    }
+  };
+
   // ---- Download document ---------------------------------------------------
   const handleDownloadDoc = (doc) => {
     const target = doc.public_url || doc.external_url || doc.url;
@@ -527,177 +562,10 @@ function DealRoomPage() {
   };
 
   // ---- Compute financial metrics -------------------------------------------
-  const getMetrics = () => {
-    if (!deal) return {};
-    const sc = deal.scenarioData || deal.parsedData || {};
-    const calc = sc.calculations || {};
-    const assumptions = sc.assumptions || {};
-    const pd = deal.parsedData || {};
-    const prop = pd.property || {};
-    const pricing = pd.pricing_financing || {};
-    const income = pd.income_expenses || pd.income || {};
-    const expenses = pd.expenses || pd.income_expenses || {};
-
-    let full = null;
-    try {
-      full = calculateFullAnalysis(sc);
-    } catch (e) {
-      full = null;
-      console.warn('DealRoom: calculateFullAnalysis failed, using fallback metrics', e);
-    }
-
-    const y1 = full?.year1 || {};
-    const acq = full?.acquisition || {};
-    const fin = full?.financing || {};
-    const current = full?.current || {};
-    const stabilized = full?.stabilized || {};
-    const hasMultiLoanStack = Array.isArray(sc?.financing?.loans) && sc.financing.loans.length > 0;
-
-    const price = pickNum(deal.purchasePrice, pricing.purchase_price, pricing.price, acq.purchasePrice, current.price, 0) || 0;
-    const units = pickNum(deal.units, prop.total_units, prop.units, prop.unit_count, 1) || 1;
-
-    // Rent & income
-    let annualGrossRent = pickNum(y1.potentialGrossIncome, income.annual_gross_rent, income.gross_potential_rent, calc.grossAnnualRent, calc.gross_annual_rent, 0) || 0;
-    let monthlyRent = pickNum(income.monthly_rent, calc.grossRent, calc.gross_monthly_rent, income.gross_rents, annualGrossRent > 0 ? annualGrossRent / 12 : 0) || 0;
-    const otherIncomeAnnual = pickNum(y1.otherIncome, income.other_income, 0) || 0;
-    const grossOperatingIncome = annualGrossRent + otherIncomeAnnual;
-
-    // Normalize annual/monthly rent to prevent mixed-unit values from parsed sources.
-    if (annualGrossRent > 0 && monthlyRent > annualGrossRent) {
-      monthlyRent = annualGrossRent / 12;
-    }
-    if (annualGrossRent <= 0 && monthlyRent > 0) {
-      annualGrossRent = monthlyRent * 12;
-    }
-
-    // Expenses
-    const vacancyRateRaw = pickNum(assumptions.vacancyRate, sc.pnl?.vacancy_rate, 0.05);
-    const vacancyRate = vacancyRateRaw > 1 ? vacancyRateRaw / 100 : vacancyRateRaw;
-    const expenseRatioRaw = pickNum(assumptions.expenseRatio, sc.pnl?.expense_ratio_t12, sc.pnl?.expense_ratio, 0.45);
-    const expenseRatio = expenseRatioRaw > 1 ? expenseRatioRaw / 100 : expenseRatioRaw;
-    const annualVacancyLoss = pickNum(y1.vacancyLoss, annualGrossRent * vacancyRate) || 0;
-    const effectiveGrossIncome = pickNum(y1.effectiveGrossIncome, grossOperatingIncome - annualVacancyLoss) || 0;
-    const annualExpenses = pickNum(y1.totalOperatingExpenses, sc.pnl?.operating_expenses_t12, sc.pnl?.operating_expenses, effectiveGrossIncome * expenseRatio) || 0;
-    const annualNOI = pickNum(y1.noi, current.noi, sc.pnl?.noi_t12, sc.pnl?.noi, calc.noi, effectiveGrossIncome - annualExpenses) || 0;
-
-    // Financing
-    const downPctRaw = pickNum(assumptions.downPaymentPercent, assumptions.downPayment, sc.financing?.down_payment_pct, 20);
-    const downPct = downPctRaw > 1 ? downPctRaw / 100 : downPctRaw;
-    const downPayment = hasMultiLoanStack
-      ? (pickNum(sc.financing?.down_payment, fin.downPayment, price * downPct) || 0)
-      : (pickNum(fin.downPayment, price * downPct) || 0);
-    const loanAmount = hasMultiLoanStack
-      ? (pickNum(sc.financing?.total_loan_amount, fin.loanAmount, sc.financing?.loan_amount, price - downPayment) || 0)
-      : (pickNum(fin.loanAmount, sc.financing?.loan_amount, price - downPayment) || 0);
-    const seniorLoan = hasMultiLoanStack ? (sc.financing?.loans || []).find(l => l.type === 'Senior Loan' && l.enabled !== false) : null;
-    const interestRate = pickNum(seniorLoan?.rate, fin.interestRate, assumptions.interestRate, sc.financing?.interest_rate, 7.0);
-    const iRate = interestRate > 1 ? interestRate / 100 : interestRate;
-    const monthlyRate = iRate / 12;
-    const termMonths = (pickNum(assumptions.loanTerm, sc.financing?.loan_term, 30) || 30) * 12;
-    const monthlyPIComputed = loanAmount > 0 && monthlyRate > 0
-      ? loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, termMonths)) / (Math.pow(1 + monthlyRate, termMonths) - 1)
-      : 0;
-    const annualDebtService = hasMultiLoanStack
-      ? (pickNum(calc.annualDebtService, calc.annual_debt_service, fin.annualDebtService, y1.debtService, monthlyPIComputed * 12) || 0)
-      : (pickNum(y1.debtService, fin.annualDebtService, calc.annualDebtService, monthlyPIComputed * 12) || 0);
-    const monthlyPI = hasMultiLoanStack
-      ? (annualDebtService / 12)
-      : (pickNum(calc.monthlyMortgagePayment, calc.monthly_mortgage_payment, fin.monthlyPayment, annualDebtService / 12, monthlyPIComputed) || 0);
-
-    // Monthly operating assumptions used by the One Sheet breakdown.
-    const annualTaxes = pickNum(
-      expenses.property_taxes_annual,
-      expenses.taxes_annual,
-      expenses.property_taxes,
-      expenses.taxes,
-      sc.expenses?.taxes,
-      sc.pnl?.property_taxes,
-      price * 0.015
-    ) || 0;
-    const annualInsurance = pickNum(
-      expenses.insurance_annual,
-      expenses.insurance,
-      sc.expenses?.insurance,
-      sc.pnl?.insurance,
-      price * 0.005
-    ) || 0;
-    const monthlyTaxes = pickNum(expenses.property_taxes_monthly, expenses.taxes_monthly, annualTaxes / 12) || 0;
-    const monthlyInsurance = pickNum(expenses.insurance_monthly, annualInsurance / 12) || 0;
-
-    const mgmtRateRaw = pickNum(assumptions.managementFeeRate, assumptions.managementFeePercent, sc.pnl?.management_fee_rate, 0.08);
-    const maintenanceRateRaw = pickNum(assumptions.maintenanceRate, assumptions.maintenancePercent, sc.pnl?.maintenance_rate, 0.05);
-    const vacancyReserveRateRaw = pickNum(assumptions.vacancyReserveRate, assumptions.vacancyReservePercent, vacancyRate, 0.05);
-    const mgmtRate = mgmtRateRaw > 1 ? mgmtRateRaw / 100 : mgmtRateRaw;
-    const maintenanceRate = maintenanceRateRaw > 1 ? maintenanceRateRaw / 100 : maintenanceRateRaw;
-    const vacancyReserveRate = vacancyReserveRateRaw > 1 ? vacancyReserveRateRaw / 100 : vacancyReserveRateRaw;
-
-    const monthlyMaintenance = monthlyRent * maintenanceRate;
-    const monthlyMgmt = monthlyRent * mgmtRate;
-    const monthlyVacancyReserve = monthlyRent * vacancyReserveRate;
-    const monthlyCFBreakdown = monthlyRent - monthlyPI - monthlyTaxes - monthlyInsurance - monthlyMaintenance - monthlyMgmt - monthlyVacancyReserve;
-
-    // Key ratios
-    const capRate = pickNum(y1.capRate, calc.capRate, calc.cap_rate, current.capRate, price > 0 && annualNOI > 0 ? (annualNOI / price) * 100 : null);
-    const dscr = pickNum(y1.dscr, calc.dscr, current.dscr, annualDebtService > 0 ? annualNOI / annualDebtService : null);
-    const annualCFFallback = (annualNOI - annualDebtService);
-    const monthlyCFCandidate = pickNum(deal.dayOneCashFlow, calc.monthlyCashFlow, calc.monthly_cash_flow, current.cashflow, y1.cashFlow, null);
-    let monthlyCF = monthlyCFBreakdown;
-    if (monthlyCFCandidate != null) {
-      // If the candidate is annual-sized, normalize to monthly.
-      const normalizedCandidate = Math.abs(monthlyCFCandidate) > Math.abs(annualCFFallback) * 0.6 ? (monthlyCFCandidate / 12) : monthlyCFCandidate;
-      const deltaToBreakdown = Math.abs(normalizedCandidate - monthlyCFBreakdown);
-      monthlyCF = deltaToBreakdown <= Math.max(5000, Math.abs(monthlyCFBreakdown) * 0.75)
-        ? normalizedCandidate
-        : monthlyCFBreakdown;
-    } else if (Number.isFinite(annualCFFallback)) {
-      monthlyCF = annualCFFallback / 12;
-    }
-    const closingCosts = pickNum(acq.closingCosts, price * 0.02, price * 0.03) || 0;
-    const renovations = pickNum(assumptions.renovationCost, calc.renovationCost, calc.upfrontCapEx, sc.capex?.upfront, 0) || 0;
-    const totalInvestment = hasMultiLoanStack
-      ? (pickNum(fin.totalEquityRequired, downPayment + closingCosts + renovations) || 0)
-      : (pickNum(fin.totalEquityRequired, calc.totalInvestment, downPayment + closingCosts + renovations) || 0);
-    const roi = totalInvestment > 0 ? ((monthlyCF * 12) / totalInvestment) * 100 : null;
-    const cashOnCash = hasMultiLoanStack
-      ? (totalInvestment > 0 ? ((annualNOI - annualDebtService) / totalInvestment) * 100 : 0)
-      : pickNum(y1.cashOnCash, calc.cashOnCash, calc.cash_on_cash, roi);
-    const ltv = hasMultiLoanStack
-      ? (price > 0 ? (loanAmount / price) * 100 : 0)
-      : pickNum(fin.ltv, calc.ltv, price > 0 ? (loanAmount / price) * 100 : null);
-
-    const irr = pickNum(full?.returns?.leveredIRR, calc.irr, sc?.returns?.irr, 0) || 0;
-    const equityMultiple = pickNum(full?.returns?.leveredEquityMultiple, calc.equityMultiple, sc?.returns?.equity_multiple, 0) || 0;
-    const grm = annualGrossRent > 0 ? (price / annualGrossRent) : 0;
-    const nim = annualExpenses > 0 ? (annualNOI / annualExpenses) : 0;
-    const expenseRatioPct = pickNum(y1.expenseRatio, grossOperatingIncome > 0 ? (annualExpenses / grossOperatingIncome) * 100 : 0, 0) || 0;
-
-    const baseCapRate = capRate > 0 ? capRate : 5.0;
-    const baseIdx = 3;
-    const capRates = Array.from({ length: 7 }, (_, i) => Number((baseCapRate + (i - baseIdx) * 0.25).toFixed(2)));
-    const optimizedNOI = pickNum(stabilized.noi, annualNOI * 1.15) || 0;
-    const valuationStarting = capRates.map(cr => (cr > 0 ? annualNOI / (cr / 100) : 0));
-    const valuationOptimized = capRates.map(cr => (cr > 0 ? optimizedNOI / (cr / 100) : 0));
-
-    return {
-      price, units, monthlyRent, annualGrossRent, annualNOI,
-      monthlyPI, annualDebtService, capRate, dscr, monthlyCF,
-      cashOnCash, roi, ltv, downPayment, closingCosts, renovations,
-      totalInvestment, loanAmount, annualVacancyLoss, annualExpenses,
-      grossOperatingIncome, effectiveGrossIncome, otherIncomeAnnual,
-      irr, equityMultiple, grm, nim, expenseRatioPct,
-      capRates, valuationStarting, valuationOptimized,
-      pricePerUnit: pickNum(acq.pricePerUnit, units ? price / units : 0) || 0,
-      interestRate, downPct: downPct * 100,
-      monthlyTaxes, monthlyInsurance, monthlyMaintenance, monthlyMgmt, monthlyVacancyReserve,
-      // Property details
-      beds: prop.bedrooms || prop.beds || sc.property?.beds || '',
-      baths: prop.bathrooms || prop.baths || sc.property?.baths || '',
-      sqft: prop.square_feet || prop.sqft || sc.property?.net_rentable_sf || '',
-      yearBuilt: prop.year_built || prop.built || sc.property?.year_built || '',
-      lotSize: prop.lot_size || '',
-      stabilizedValue: pickNum(stabilized.value, calc.refiValue, calc.refi_value, deal.refiValue, 0) || 0,
-    };
-  };
+  // Shared implementation lives in lib/dealMetrics.js so the public investor
+  // pitch-deck view (InvestorPitchDeckView.jsx) can compute identical metrics
+  // from a deal object without duplicating this logic.
+  const getMetrics = () => computeDealMetrics(deal);
 
   const metrics = getMetrics();
   const scoreData = computeScore({
@@ -738,7 +606,7 @@ function DealRoomPage() {
     );
   }
 
-  const normalizedImages = normalizeImages(deal);
+  const normalizedImages = normalizeDealImages(deal);
   const heroImage = normalizedImages.length > 0 ? normalizedImages[0].url : null;
 
   return (
@@ -818,6 +686,7 @@ function DealRoomPage() {
           <div style={{ display: 'flex', gap: '4px', marginBottom: '16px', backgroundColor: '#fff', borderRadius: '10px', padding: '5px', border: '1px solid #e6e9ef', width: 'fit-content' }}>
             {[
               { id: 'onesheet',  label: 'One Sheet',  icon: BarChart3 },
+              { id: 'dealroom',  label: 'Deal Room',  icon: Presentation },
               { id: 'documents', label: `Documents${documents.length > 0 ? ` (${documents.length})` : ''}`, icon: Folder },
               { id: 'notes',     label: 'Notes',      icon: StickyNote },
             ].map(({ id, label, icon: Icon }) => (
@@ -864,8 +733,10 @@ function DealRoomPage() {
               <div style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e6e9ef', padding: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: '#323338' }}>The Essentials</h3>
-                  {/* Score badge */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {/* Board of Advisors + Score badge */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <DealChat scenarioData={deal.scenarioData} calculations={metrics._full} />
+                    <BoardOfAdvisors dealId={dealId} scenarioData={deal.scenarioData} analysis={metrics._full} />
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ fontSize: '10px', fontWeight: '600', color: '#9699a6', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Overall Score</div>
                       <div style={{ fontSize: '22px', fontWeight: '800', color: scoreData.color }}>{scoreData.score}<span style={{ fontSize: '14px', color: '#9699a6' }}>/10</span></div>
@@ -1097,6 +968,46 @@ function DealRoomPage() {
           )}
 
           {/* ============================================================ */}
+          {/* DEAL ROOM TAB (investor-facing document) */}
+          {/* ============================================================ */}
+          {activeTab === 'dealroom' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#676879' }}>
+                  Closing date shown to investors
+                  <input
+                    type="date"
+                    value={deal?.parsedData?.dealRoomCloseDate || ''}
+                    onChange={(e) => handleSetCloseDate(e.target.value)}
+                    style={{ fontSize: '12px', padding: '5px 8px', border: '1px solid #d1d5db', borderRadius: '5px', color: '#374151' }}
+                  />
+                </label>
+                <ShareWithInvestorPanel dealId={dealId} />
+              </div>
+              <div style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e6e9ef', overflow: 'hidden' }}>
+                <InvestorDealRoom
+                  data={buildDealRoomData({
+                    deal,
+                    full: metrics._full,
+                    metrics,
+                    allocations,
+                    distributions,
+                    images: normalizedImages.map((img) => ({ url: img.url })),
+                    narrative: deal?.parsedData?.dealRoomNarrative || null,
+                  })}
+                  full={metrics._full}
+                  metrics={metrics}
+                  scenarioData={deal?.scenarioData || deal?.parsedData}
+                  documents={(documents || []).filter((d) => d.visible_to_investors)}
+                  closeDate={deal?.parsedData?.dealRoomCloseDate}
+                  onGenerateNarrative={handleGenerateNarrative}
+                  generatingNarrative={generatingNarrative}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* ============================================================ */}
           {/* DOCUMENTS TAB */}
           {/* ============================================================ */}
           {activeTab === 'documents' && (
@@ -1230,7 +1141,7 @@ function DealRoomPage() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {filteredDocs.map(doc => (
-                    <DocRow key={doc.id} doc={doc} onDelete={handleDeleteDoc} onDownload={handleDownloadDoc} />
+                    <DocRow key={doc.id} doc={doc} onDelete={handleDeleteDoc} onDownload={handleDownloadDoc} onToggleVisibility={handleToggleDocVisibility} />
                   ))}
                 </div>
               )}
@@ -1313,11 +1224,9 @@ function DealRoomPage() {
               Deal Tools
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <ActionCard icon={FileText}    label="LOI Generator"   desc="Draft letter of intent"       color="#a25ddc" onClick={() => navigate(`/loi?dealId=${dealId}`)} />
-              <ActionCard icon={Presentation} label="Pitch Deck"     desc="Investor presentation"        color="#579bfc" onClick={() => navigate(`/pitch-deck?dealId=${dealId}`)} />
+              <ActionCard icon={Presentation} label="Deal Room"      desc="Investor presentation"        color="#579bfc" onClick={() => setActiveTab('dealroom')} />
               <ActionCard icon={ClipboardCheck} label="Due Diligence" desc="Checklist & tracker"         color="#fdab3d" onClick={() => navigate(`/due-diligence?dealId=${dealId}`)} />
               <ActionCard icon={FileCheck}   label="Contracts"      desc="Purchase agreements"           color="#0d9488" onClick={() => navigate(`/contract?dealId=${dealId}`)} />
-              <ActionCard icon={Wrench}      label="CapEx AI"       desc="Renovation cost estimator"     color="#f97316" onClick={() => setActiveTab('documents')} />
             </div>
           </div>
 

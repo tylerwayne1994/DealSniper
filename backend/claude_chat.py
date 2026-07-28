@@ -594,6 +594,76 @@ async def chat_non_streaming(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class DraftRequest(BaseModel):
+    doc_type: str  # "email" or "loi"
+    topic: Optional[str] = None
+    deal_name: Optional[str] = ""
+    address: Optional[str] = ""
+    units: Optional[int] = None
+    findings: Optional[List[Dict[str, Any]]] = None
+    extra_context: Optional[str] = ""
+
+
+@router.post("/draft")
+async def draft_document(payload: DraftRequest):
+    """
+    One-shot Claude draft for broker emails / LOI cover notes.
+    Stateless — no chat session required.
+    """
+    client = get_anthropic_client()
+
+    findings_text = ""
+    if payload.findings:
+        findings_text = "\n".join(
+            f"- [{(f.get('severity') or 'note').upper()}] {f.get('label', '')}: {f.get('detail', '')}"
+            for f in payload.findings
+        )
+
+    if payload.doc_type == "loi":
+        system = (
+            "You are a commercial real estate acquisitions professional drafting a "
+            "concise, professional Letter of Intent (LOI) cover email to a listing broker. "
+            "Be direct and businesslike. Do not invent numbers that were not provided — "
+            "reference them generically (e.g. 'per our proposed terms') if missing."
+        )
+        user_msg = (
+            f"Draft a short LOI submission cover email for this deal.\n\n"
+            f"Property: {payload.deal_name or 'the property'}\n"
+            f"Address: {payload.address or 'N/A'}\n"
+            f"Units: {payload.units if payload.units is not None else 'N/A'}\n"
+            f"{payload.extra_context or ''}\n\n"
+            "Keep it under 200 words. Sign off as 'the Buyer'."
+        )
+    else:
+        topic_line = f"Focus specifically on: {payload.topic}." if payload.topic else "Cover all findings below."
+        system = (
+            "You are a commercial real estate analyst drafting a concise, professional email "
+            "to a listing broker summarizing due-diligence findings from a rent roll review. "
+            "Be factual and specific, avoid alarmist language, and do not invent findings "
+            "that were not provided."
+        )
+        user_msg = (
+            f"Draft a brief email to the listing broker about the rent roll for "
+            f"{payload.deal_name or 'this property'} ({payload.address or 'N/A'}).\n"
+            f"{topic_line}\n\n"
+            f"Findings:\n{findings_text or 'No specific findings provided — ask general clarifying questions about the rent roll.'}\n\n"
+            "Keep it under 180 words, professional tone, end with a request for clarification/documentation."
+        )
+
+    try:
+        response = client.messages.create(
+            model=ANTHROPIC_MODEL,
+            max_tokens=1024,
+            system=system,
+            messages=[{"role": "user", "content": user_msg}],
+        )
+        draft_text = response.content[0].text
+        return JSONResponse({"success": True, "draft": draft_text})
+    except Exception as e:
+        log.exception(f"[Claude Draft] error: {e}")
+        return JSONResponse({"success": False, "error": str(e)}, status_code=200)
+
+
 @router.delete("/session/{session_id}/file/{file_id}")
 async def delete_file(session_id: str, file_id: str):
     """Remove a file from a session."""

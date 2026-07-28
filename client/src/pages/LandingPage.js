@@ -20,6 +20,7 @@ import {
   Brain,
   Clock,
   DollarSign,
+  Users,
 } from 'lucide-react';
 
 // ============================================================================
@@ -79,7 +80,7 @@ function LandingPage() {
     {
       id: 'email-flow',
       q: 'How does the email underwriting work?',
-      a: 'Forward any broker email with an OM PDF to deals@dealsniper.org. Our AI reads the PDF, extracts financials, and creates a full underwrite automatically \u2014 no uploads, no data entry.',
+      a: 'Forward any broker email with an OM PDF to deals@dealsniper.org. We read the PDF, extract the financials, and create a full underwrite automatically \u2014 no uploads, no data entry.',
     },
     {
       id: 'export',
@@ -106,23 +107,38 @@ function LandingPage() {
       <section
         style={{
           minHeight: '100vh',
-          backgroundImage:
-            'url(/Gemini_Generated_Image_h1bn6ch1bn6ch1bn.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
           overflow: 'hidden',
         }}
       >
+        {/* Background video */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          poster="/Gemini_Generated_Image_h1bn6ch1bn6ch1bn.png"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            zIndex: 0,
+          }}
+        >
+          <source src="/hero-bg.mp4" type="video/mp4" />
+        </video>
+
         {/* Overlay */}
         <div
           style={{
             position: 'absolute',
             inset: 0,
             background:
-              'linear-gradient(160deg, rgba(2, 6, 23, 0.92) 0%, rgba(15, 23, 42, 0.85) 50%, rgba(6, 78, 59, 0.7) 100%)',
+              'linear-gradient(160deg, rgba(2, 6, 23, 0.92) 0%, rgba(15, 23, 42, 0.85) 50%, rgba(15, 23, 42, 0.7) 100%)',
             zIndex: 1,
           }}
         />
@@ -180,6 +196,22 @@ function LandingPage() {
               }}
             >
               Testimonials
+            </button>
+            <button
+              onClick={() => navigate('/investor')}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: 'transparent',
+                color: '#94a3b8',
+                border: 'none',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => { e.target.style.color = '#ffffff'; }}
+              onMouseLeave={(e) => { e.target.style.color = '#94a3b8'; }}
+            >
+              Investor Access
             </button>
             <button
               onClick={() => navigate('/login')}
@@ -273,7 +305,7 @@ function LandingPage() {
                 letterSpacing: '0.3px',
               }}
             >
-              AI-Powered Commercial Real Estate Underwriting
+              Redefined Multifamily Underwriting
             </span>
           </div>
 
@@ -311,9 +343,10 @@ function LandingPage() {
               maxWidth: '680px',
             }}
           >
-            Forward a broker email, upload an OM, or paste a link. Our AI
-            extracts every number, compares financing structures, and delivers an
-            institutional-quality underwrite &mdash; automatically.
+            Forward a broker email, upload an OM, or paste a link. We extract
+            every number, compare financing structures, and build an
+            institutional-quality underwrite &mdash; then hand you an interactive
+            one-page deal room to bring investors into it with you.
           </p>
 
           {/* Bullet Benefits */}
@@ -329,7 +362,8 @@ function LandingPage() {
             {[
               'Email an OM \u2192 get a full underwrite back',
               'Compare 7 financing structures side-by-side',
-              'AI-powered market research & comps',
+              'Invite investors into an interactive one-page deal room',
+              'Get a read from top-earning multifamily investors on every deal',
             ].map((benefit, i) => (
               <div
                 key={i}
@@ -432,6 +466,27 @@ function LandingPage() {
               See How It Works
             </button>
           </div>
+
+          {/* Investor entry point */}
+          <div style={{ marginTop: '20px', textAlign: 'center' }}>
+            <button
+              onClick={() => navigate('/investor')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#94a3b8',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                textUnderlineOffset: '3px',
+              }}
+              onMouseEnter={(e) => { e.target.style.color = '#e2e8f0'; }}
+              onMouseLeave={(e) => { e.target.style.color = '#94a3b8'; }}
+            >
+              Have an investor access code? Enter it here &rarr;
+            </button>
+          </div>
         </div>
 
         {/* Stats Bar */}
@@ -455,7 +510,7 @@ function LandingPage() {
               { value: '2 min', label: 'Average underwrite time' },
               { value: '7', label: 'Financing structures compared' },
               { value: '500+', label: 'Deals underwritten' },
-              { value: '100%', label: 'Automated from email' },
+              { value: '50-75%', label: 'Less than legacy platforms' },
             ].map((stat, i) => (
               <div key={i} style={{ textAlign: 'center' }}>
                 <div
@@ -557,7 +612,7 @@ function LandingPage() {
                 step: '01',
                 icon: <Mail size={28} color="#10b981" />,
                 title: 'Forward the Email',
-                desc: 'Got a broker blast with an OM PDF? Forward it to deals@dealsniper.org. Our AI reads every page, extracts rent rolls, financials, and property details \u2014 then builds a full underwrite automatically.',
+                desc: 'Got a broker blast with an OM PDF? Forward it to deals@dealsniper.org. We read every page, extract rent rolls, financials, and property details \u2014 then build a full underwrite automatically.',
               },
               {
                 step: '02',
@@ -703,8 +758,7 @@ function LandingPage() {
                 lineHeight: '1.6',
               }}
             >
-              From deal intake to execution playbook &mdash; all powered by AI, all in
-              one place.
+              From deal intake to investor-ready pitch &mdash; all in one place.
             </p>
           </div>
 
@@ -718,8 +772,8 @@ function LandingPage() {
             {[
               {
                 icon: <Brain size={24} color="#10b981" />,
-                title: 'AI PDF Extraction',
-                desc: 'Claude Vision reads your OM PDFs page by page \u2014 rent rolls, T12 financials, expense breakdowns, cap rates. No manual data entry.',
+                title: 'Automatic Deal Extraction',
+                desc: 'We read your OM PDFs page by page \u2014 rent rolls, T12 financials, expense breakdowns, cap rates \u2014 and fill in every field automatically. No manual data entry.',
               },
               {
                 icon: <Layers size={24} color="#10b981" />,
@@ -733,7 +787,7 @@ function LandingPage() {
               },
               {
                 icon: <BarChart3 size={24} color="#10b981" />,
-                title: 'Market Research AI',
+                title: 'Market Research & Comps',
                 desc: 'Automated comp pulls, demographic analysis, rent trends, and submarket scoring. Know the market before you make an offer.',
               },
               {
@@ -752,14 +806,14 @@ function LandingPage() {
                 desc: 'DSCR, cash-on-cash, cap rate, IRR, amortization \u2014 all transparent and auditable. No hidden formulas, no black boxes.',
               },
               {
-                icon: <Shield size={24} color="#10b981" />,
-                title: 'Contract & LOI Generator',
-                desc: 'Generate Letters of Intent and purchase contracts directly from your underwrite. Pre-filled with deal terms \u2014 ready to send.',
+                icon: <Download size={24} color="#10b981" />,
+                title: 'Interactive Investor Deal Room',
+                desc: 'Turn any underwrite into a live, interactive one-page deal room. Send investors a link and let them explore the numbers, market data, and deal structure themselves \u2014 no static PDF required.',
               },
               {
-                icon: <Download size={24} color="#10b981" />,
-                title: 'Pitch Deck Builder',
-                desc: 'Turn any underwrite into an investor-ready pitch deck. Export to PDF with financials, market data, and deal structure baked in.',
+                icon: <Users size={24} color="#10b981" />,
+                title: 'Board of Advisors',
+                desc: 'Get a candid read on every deal from a panel modeled on top-earning multifamily investors \u2014 weighing in on your deal\u2019s real numbers, risks, and structure before you commit.',
               },
             ].map((feature, i) => (
               <div
@@ -884,7 +938,7 @@ function LandingPage() {
               {
                 icon: <Clock size={24} color="#10b981" />,
                 title: 'Zero data entry',
-                desc: 'Other tools make you type in every number from the OM. Deal Sniper reads the PDF with AI Vision and fills everything in \u2014 rent rolls, T12 expenses, cap rates, unit mixes. You review, not re-type.',
+                desc: 'Other tools make you type in every number from the OM. Deal Sniper reads the PDF and fills everything in \u2014 rent rolls, T12 expenses, cap rates, unit mixes. You review, not re-type.',
                 highlight: 'What used to take 2 hours takes 2 minutes.',
               },
               {
@@ -897,7 +951,13 @@ function LandingPage() {
                 icon: <Mail size={24} color="#10b981" />,
                 title: 'Fully automated email pipeline',
                 desc: "No other underwriting tool lets you forward a broker email and get a complete underwrite back without lifting a finger. Forward to deals@dealsniper.org and the deal shows up in your pipeline, fully modeled, within minutes.",
-                highlight: "Your broker doesn't even know you're using AI.",
+                highlight: "Your broker never even knows you did all this analysis.",
+              },
+              {
+                icon: <Shield size={24} color="#10b981" />,
+                title: 'A fraction of the cost',
+                desc: "Enterprise underwriting platforms charge tens of thousands of dollars a year for a fraction of what Deal Sniper does out of the box. You get the same institutional-grade modeling, plus the financing comparisons, deal room, and advisor read they don't have — for 50-75% less.",
+                highlight: 'Institutional-quality underwriting without the institutional price tag.',
               },
               {
                 icon: <DollarSign size={24} color="#10b981" />,
@@ -1091,21 +1151,21 @@ function LandingPage() {
               },
               {
                 quote:
-                  "The email pipeline is insane. I set up a rule in Gmail to auto-forward any email with 'OM' or 'offering memorandum' to deals@dealsniper.org. Now every deal that hits my inbox is automatically underwritten before I even see it.",
+                  "I used to build a separate PDF every time I brought a new investor into a deal. Now I just send them a link to the interactive deal room — they can dig into the numbers, the market data, and the whole structure themselves. It's made raising capital so much easier.",
                 name: 'Rachel T.',
                 role: 'LP/GP Hybrid, Midwest Markets',
                 stars: 5,
               },
               {
                 quote:
-                  "We were using a $50K/year enterprise underwriting platform. Deal Sniper does everything it does and more \u2014 the AI extraction alone saves my team 20+ hours per week. The execution playbooks are something our old tool never had.",
+                  "We were using a $50K/year enterprise underwriting platform. Deal Sniper does everything it does and more for a fraction of the price \u2014 the automatic extraction alone saves my team 20+ hours per week. The execution playbooks are something our old tool never had.",
                 name: 'Michael S.',
                 role: 'Director of Acquisitions, PE Fund',
                 stars: 5,
               },
               {
                 quote:
-                  "I'm a newer investor and was intimidated by underwriting. Deal Sniper doesn't just crunch numbers \u2014 it tells me what to do next. The step-by-step playbooks for each financing structure gave me the confidence to put in my first LOI.",
+                  "I'm a newer investor and was intimidated by underwriting. Before I make an offer, I get a read on the deal from a panel modeled on top-earning multifamily investors \u2014 it flags risks I never would have thought to ask about. It gave me the confidence to put in my first LOI.",
                 name: 'Priya N.',
                 role: 'First-Time Multifamily Investor',
                 stars: 5,

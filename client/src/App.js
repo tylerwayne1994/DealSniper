@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import Uploadpage from './pages/Uploadpage';
 import PipelinePage from './pages/PipelinePage';
@@ -9,36 +9,33 @@ import DashboardPage from './pages/DashboardPage';
 import PaymentSuccessRedirect from './pages/PaymentSuccessRedirect';
 import UnderwriteV2Page from './pages/UnderwriteV2Page.jsx'; // V2 Underwriter (explicit .jsx to avoid legacy .js)
 import UnderwriteAnalysisPage from './pages/UnderwriteAnalysisPage'; // AI Analysis Page
-import MaxAIUnderwritePage from './pages/MaxAIUnderwritePage'; // MAX AI Underwriting
-import DealBuilderPage from './pages/DealBuilderPage'; // Deal Builder AI
+
 import DueDiligencePage from './pages/DueDiligencePage'; // Due Diligence Checklist
 import EmailDealsPage from './pages/EmailDealsPage'; // Email Deal Screener
-import EmailUnderwritePage from './pages/EmailUnderwritePage'; // Email Underwrite Pipeline
 import TemplatesPage from './pages/TemplatesPage'; // Deal Templates
 import SignUpPage from './pages/SignUpPage'; // Sign Up
 import SignupCompletePage from './pages/SignupCompletePage'; // Signup Complete
 import LoginPage from './pages/LoginPage'; // Login
 import ManualEntryPage from './pages/ManualEntryPage'; // Manual Entry
 import PitchDeckPage from './pages/PitchDeckPage'; // Pitch Deck Generator
-import ContractPage from './pages/ContractPage'; // Contract Generator
-import MapViewPage from './pages/MapViewPage'; // Map View
+import MapView from './components/maps/Mapview'; // Mapbox Deal Map
 import InvestorPortalPage from './pages/InvestorPortalPage'; // Investor Portal / LP Dashboard
 import UpdatesPage from './pages/UpdatesPage'; // Updates Notification Center
-import AgentBuilderPage from './pages/AgentBuilderPage'; // Agent Builder (Rapid Fire replacement)
 import DealRoomPage from './pages/DealRoomPage'; // Deal Room
+import InvestorGatewayPage from './pages/InvestorGatewayPage'; // Public investor access code entry
+import InvestorPitchDeckView from './pages/InvestorPitchDeckView'; // Public read-only investor pitch deck
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/map" element={<MapViewPage />} />
+        <Route path="/map" element={<MapView />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/signup-complete" element={<SignupCompletePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/manual-entry" element={<ManualEntryPage />} />
         <Route path="/pitch-deck" element={<PitchDeckPage />} />
-        <Route path="/contract" element={<ContractPage />} />
         <Route path="/upload" element={<Uploadpage />} />
         <Route path="/pipeline" element={<PipelinePage />} />
         <Route path="/loi" element={<LOIPage />} />
@@ -47,17 +44,14 @@ function App() {
         <Route path="/payment-success" element={<PaymentSuccessRedirect />} />
         <Route path="/underwrite" element={<UnderwriteV2Page />} /> {/* V2 Underwriter */}
         <Route path="/underwrite/analysis" element={<UnderwriteAnalysisPage />} /> {/* AI Analysis */}
-        <Route path="/underwrite/max" element={<MaxAIUnderwritePage />} /> {/* MAX AI Underwriting */}
-        <Route path="/market-research" element={<DealBuilderPage />} /> {/* Deal Builder */}
         <Route path="/due-diligence" element={<DueDiligencePage />} /> {/* Due Diligence Checklist */}
         <Route path="/email-deals" element={<EmailDealsPage />} /> {/* Email Deal Screener */}
-        <Route path="/email-underwrite" element={<EmailUnderwritePage />} /> {/* Email Underwrite Pipeline */}
         <Route path="/templates" element={<TemplatesPage />} /> {/* Deal Templates */}
-        <Route path="/claude-underwriter" element={<Navigate to="/market-research" replace />} /> {/* Legacy redirect */}
-        <Route path="/agent-builder" element={<AgentBuilderPage />} /> {/* Agent Builder */}
         <Route path="/investor-portal" element={<InvestorPortalPage />} /> {/* Investor Portal / LP Dashboard */}
         <Route path="/updates" element={<UpdatesPage />} /> {/* Updates Notification Center */}
           <Route path="/deal-room/:dealId" element={<DealRoomPage />} /> {/* Deal Room */}
+          <Route path="/investor" element={<InvestorGatewayPage />} /> {/* Public investor access gateway */}
+          <Route path="/investor/view/:code" element={<InvestorPitchDeckView />} /> {/* Public read-only pitch deck */}
       </Routes>
     </Router>
   );

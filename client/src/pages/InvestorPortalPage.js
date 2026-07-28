@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardShell from '../components/DashboardShell';
 import { supabase } from '../lib/supabase';
-import { loadPipelineDeals } from '../lib/dealsService';
+import { loadPipelineDeals, updateDeal } from '../lib/dealsService';
 import {
   listInvestors, createInvestor, updateInvestor, deleteInvestor,
   listAllocations, createAllocation, updateAllocation, deleteAllocation,
@@ -24,6 +24,13 @@ const fmt = (v) => {
   return '$' + Math.round(Number(v)).toLocaleString();
 };
 const pct = (v) => (v != null && !isNaN(v) ? Number(v).toFixed(2) + '%' : '0%');
+// Some saved calc fields come through as a decimal fraction (0.065) and others
+// as a whole percentage (6.5) depending on which underwriting engine produced
+// them — normalize to a whole percentage for display.
+const asPct = (v) => {
+  const n = Number(v) || 0;
+  return n > 0 && n < 1 ? n * 100 : n;
+};
 
 // ── Styles ──
 const card = {
@@ -40,7 +47,7 @@ const metricCard = (color) => ({
 });
 const btnPrimary = {
   padding: '8px 16px',
-  backgroundColor: '#2563eb',
+  background: 'linear-gradient(90deg, #34d399 0%, #22d3ee 100%)',
   color: '#fff',
   border: 'none',
   borderRadius: 8,
@@ -53,13 +60,13 @@ const btnPrimary = {
 };
 const btnDanger = {
   ...btnPrimary,
-  backgroundColor: '#ef4444',
+  background: '#ef4444',
   padding: '6px 10px',
   fontSize: 12,
 };
 const btnGhost = {
   ...btnPrimary,
-  backgroundColor: 'transparent',
+  background: '#ffffff',
   color: '#6b7280',
   border: '1px solid #e5e7eb',
 };
@@ -105,14 +112,23 @@ export default function InvestorPortalPage() {
   const [docForm, setDocForm] = useState({ deal_investor_id: '', document_type: 'k1', tax_year: new Date().getFullYear(), quarter: '' });
   const [docFile, setDocFile] = useState(null);
   const [updateForm, setUpdateForm] = useState({ title: '', body: '', quarter: '' });
+  // Deal Terms — the sponsor's actual negotiated preferred return / GP promote
+  // for the selected deal (saved on the deals table, not derived from the demo
+  // underwriting engine). Used to default new investor allocations.
+  const [dealTermsForm, setDealTermsForm] = useState({ preferred_return_pct: '8', gp_promote_pct: '20' });
+  const [savingDealTerms, setSavingDealTerms] = useState(false);
 
   // ── Load data ──
   const loadAll = useCallback(async () => {
     try {
       setLoading(true);
+      // Each call is caught independently — a failure in one (e.g. the
+      // investors API, which needs the backend's Supabase service key)
+      // must never block the others (e.g. the deal pipeline dropdown,
+      // which talks to Supabase directly from the browser) from loading.
       const [inv, pDeals, dash] = await Promise.all([
-        listInvestors(),
-        loadPipelineDeals(),
+        listInvestors().catch((err) => { console.error('Failed to load investors:', err); return []; }),
+        loadPipelineDeals().catch((err) => { console.error('Failed to load pipeline deals:', err); return []; }),
         getDashboardSummary().catch(() => null),
       ]);
       setInvestors(inv || []);
@@ -126,6 +142,48 @@ export default function InvestorPortalPage() {
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
+
+  // ── Pull underwriting data from the selected pipeline deal ──
+  // Reads the same calculations that were saved when the deal was pushed to
+  // pipeline from the underwriting Results page (NOI, cap rate, DSCR, LTV,
+  // stabilized/ARV value, cash-on-cash) and estimates the equity required so
+  // the Investor Portal fields can be pre-filled instead of typed by hand.
+  const dealUnderwriting = React.useMemo(() => {
+    if (!selectedDeal) return null;
+    const scn = selectedDeal.fullScenarioData || {};
+    const calc = scn.calculations || {};
+    const pf = scn.pricing_financing || {};
+    const purchasePrice = selectedDeal.purchasePrice || pf.purchase_price || pf.price || 0;
+    const ltv = calc.ltv || pf.ltv || 75;
+    const loanAmount = pf.loan_amount || (purchasePrice * (ltv / 100));
+    const capex = pf.capex_budget || pf.renovation_budget || 0;
+    const totalEquityRequired = Math.max(purchasePrice - loanAmount + capex, 0);
+    return {
+      purchasePrice,
+      units: selectedDeal.units || 0,
+      noiYear1: calc.noiYear1 || 0,
+      goingInCapRate: calc.inPlaceCapRate || 0,
+      dscr: calc.dscr || 0,
+      ltv,
+      stabilizedValue: calc.refiValue || 0,
+      valueCreation: calc.valueCreation || 0,
+      avgCashOnCash: calc.avgCashOnCash || 0,
+      dayOneCashFlow: calc.dayOneCashFlow || 0,
+      stabilizedCashFlow: calc.stabilizedCashFlow || 0,
+      totalEquityRequired,
+      preferredReturnPct: selectedDeal.preferredReturnPct ?? 8,
+      gpPromotePct: selectedDeal.gpPromotePct ?? 20,
+    };
+  }, [selectedDeal]);
+
+  // Sync the editable Deal Terms form whenever a different deal is selected
+  useEffect(() => {
+    if (!selectedDeal) return;
+    setDealTermsForm({
+      preferred_return_pct: String(selectedDeal.preferredReturnPct ?? 8),
+      gp_promote_pct: String(selectedDeal.gpPromotePct ?? 20),
+    });
+  }, [selectedDeal]);
 
   // Load deal-specific data when a deal is selected
   useEffect(() => {
@@ -153,91 +211,183 @@ export default function InvestorPortalPage() {
   // ── Handlers ──
   const handleAddInvestor = async () => {
     if (!invForm.email) return;
-    await createInvestor(invForm);
-    setInvForm({ email: '', first_name: '', last_name: '', company: '', phone: '', investor_type: 'lp' });
-    setShowAddInvestor(false);
-    loadAll();
+    try {
+      await createInvestor(invForm);
+      setInvForm({ email: '', first_name: '', last_name: '', company: '', phone: '', investor_type: 'lp' });
+      setShowAddInvestor(false);
+      loadAll();
+    } catch (err) {
+      console.error('Failed to add investor:', err);
+      alert('Failed to add investor: ' + err.message);
+    }
   };
 
   const handleDeleteInvestor = async (id) => {
     if (!window.confirm('Delete this investor and all their allocations?')) return;
-    await deleteInvestor(id);
-    loadAll();
+    try {
+      await deleteInvestor(id);
+      loadAll();
+    } catch (err) {
+      console.error('Failed to delete investor:', err);
+      alert('Failed to delete investor: ' + err.message);
+    }
   };
 
   const handleAddAllocation = async () => {
     if (!allocForm.investor_id || !selectedDeal) return;
     const dealId = selectedDeal.dealId || selectedDeal.id;
-    await createAllocation(dealId, {
-      investor_id: allocForm.investor_id,
-      commitment_amount: parseFloat(allocForm.commitment_amount) || 0,
-      contributed_amount: parseFloat(allocForm.contributed_amount) || 0,
-      ownership_pct: parseFloat(allocForm.ownership_pct) || 0,
-      preferred_return_pct: parseFloat(allocForm.preferred_return_pct) || 8,
-    });
-    setAllocForm({ investor_id: '', commitment_amount: '', contributed_amount: '', ownership_pct: '', preferred_return_pct: '8' });
-    setShowAddAllocation(false);
-    // Reload deal data
-    setSelectedDeal({ ...selectedDeal });
-    loadAll();
+    try {
+      await createAllocation(dealId, {
+        investor_id: allocForm.investor_id,
+        commitment_amount: parseFloat(allocForm.commitment_amount) || 0,
+        contributed_amount: parseFloat(allocForm.contributed_amount) || 0,
+        ownership_pct: parseFloat(allocForm.ownership_pct) || 0,
+        preferred_return_pct: parseFloat(allocForm.preferred_return_pct) || 8,
+      });
+      setAllocForm({ investor_id: '', commitment_amount: '', contributed_amount: '', ownership_pct: '', preferred_return_pct: '8' });
+      setShowAddAllocation(false);
+      // Reload deal data
+      setSelectedDeal({ ...selectedDeal });
+      loadAll();
+    } catch (err) {
+      console.error('Failed to add investor to deal:', err);
+      alert('Failed to add investor to deal: ' + err.message);
+    }
   };
 
   const handleDeleteAllocation = async (allocId) => {
     if (!window.confirm('Remove this investor from the deal?')) return;
     const dealId = selectedDeal.dealId || selectedDeal.id;
-    await deleteAllocation(dealId, allocId);
-    setSelectedDeal({ ...selectedDeal });
-    loadAll();
+    try {
+      await deleteAllocation(dealId, allocId);
+      setSelectedDeal({ ...selectedDeal });
+      loadAll();
+    } catch (err) {
+      console.error('Failed to remove investor from deal:', err);
+      alert('Failed to remove investor from deal: ' + err.message);
+    }
+  };
+
+  // Persist the sponsor's real deal terms (preferred return / GP promote) to
+  // the deals table so they carry forward as the default for every investor
+  // allocated to this deal.
+  const handleSaveDealTerms = async () => {
+    if (!selectedDeal) return;
+    const dealId = selectedDeal.dealId || selectedDeal.id;
+    setSavingDealTerms(true);
+    try {
+      await updateDeal(dealId, {
+        preferred_return_pct: parseFloat(dealTermsForm.preferred_return_pct) || 8,
+        gp_promote_pct: parseFloat(dealTermsForm.gp_promote_pct) || 20,
+      });
+      await loadAll();
+    } catch (err) {
+      console.error('Failed to save deal terms:', err);
+      alert('Failed to save deal terms: ' + err.message);
+    } finally {
+      setSavingDealTerms(false);
+    }
+  };
+
+  // Open the allocation modal pre-filled with the remaining equity needed for
+  // this deal (pulled from the underwriting snapshot), so the user doesn't
+  // have to look up and retype numbers that already live in the underwriting model.
+  const openAddAllocationModal = () => {
+    setAllocForm((f) => ({
+      ...f,
+      preferred_return_pct: String(dealUnderwriting?.preferredReturnPct ?? 8),
+    }));
+    if (dealUnderwriting && dealUnderwriting.totalEquityRequired > 0) {
+      const alreadyCommitted = allocations.reduce((s, a) => s + (parseFloat(a.commitment_amount) || 0), 0);
+      const remaining = Math.max(dealUnderwriting.totalEquityRequired - alreadyCommitted, 0);
+      setAllocForm((f) => ({
+        ...f,
+        commitment_amount: remaining > 0 ? String(Math.round(remaining)) : f.commitment_amount,
+        contributed_amount: remaining > 0 ? String(Math.round(remaining)) : f.contributed_amount,
+        ownership_pct: remaining > 0 ? ((remaining / dealUnderwriting.totalEquityRequired) * 100).toFixed(2) : f.ownership_pct,
+      }));
+    }
+    setShowAddAllocation(true);
   };
 
   const handleAddDistribution = async () => {
     if (!distForm.deal_investor_id || !distForm.amount) return;
     const dealId = selectedDeal.dealId || selectedDeal.id;
-    await createDistribution(dealId, {
-      ...distForm,
-      amount: parseFloat(distForm.amount) || 0,
-    });
-    setDistForm({ deal_investor_id: '', amount: '', distribution_type: 'cash_flow', distribution_date: new Date().toISOString().split('T')[0], memo: '', quarter: '' });
-    setShowAddDistribution(false);
-    setSelectedDeal({ ...selectedDeal });
-    loadAll();
+    try {
+      await createDistribution(dealId, {
+        ...distForm,
+        amount: parseFloat(distForm.amount) || 0,
+      });
+      setDistForm({ deal_investor_id: '', amount: '', distribution_type: 'cash_flow', distribution_date: new Date().toISOString().split('T')[0], memo: '', quarter: '' });
+      setShowAddDistribution(false);
+      setSelectedDeal({ ...selectedDeal });
+      loadAll();
+    } catch (err) {
+      console.error('Failed to record distribution:', err);
+      alert('Failed to record distribution: ' + err.message);
+    }
   };
 
   const handleDeleteDistribution = async (distId) => {
     if (!window.confirm('Delete this distribution?')) return;
-    await deleteDistribution(distId);
-    setSelectedDeal({ ...selectedDeal });
+    try {
+      await deleteDistribution(distId);
+      setSelectedDeal({ ...selectedDeal });
+    } catch (err) {
+      console.error('Failed to delete distribution:', err);
+      alert('Failed to delete distribution: ' + err.message);
+    }
   };
 
   const handleUploadDoc = async () => {
     if (!docFile || !docForm.deal_investor_id || !selectedDeal) return;
     const dealId = selectedDeal.dealId || selectedDeal.id;
-    await uploadDocument(dealId, docFile, docForm.deal_investor_id, docForm.document_type, docForm.tax_year, docForm.quarter);
-    setDocFile(null);
-    setDocForm({ deal_investor_id: '', document_type: 'k1', tax_year: new Date().getFullYear(), quarter: '' });
-    setShowUploadDoc(false);
-    setSelectedDeal({ ...selectedDeal });
+    try {
+      await uploadDocument(dealId, docFile, docForm.deal_investor_id, docForm.document_type, docForm.tax_year, docForm.quarter);
+      setDocFile(null);
+      setDocForm({ deal_investor_id: '', document_type: 'k1', tax_year: new Date().getFullYear(), quarter: '' });
+      setShowUploadDoc(false);
+      setSelectedDeal({ ...selectedDeal });
+    } catch (err) {
+      console.error('Failed to upload document:', err);
+      alert('Failed to upload document: ' + err.message);
+    }
   };
 
   const handleDeleteDoc = async (docId) => {
     if (!window.confirm('Delete this document?')) return;
-    await deleteDocument(docId);
-    setSelectedDeal({ ...selectedDeal });
+    try {
+      await deleteDocument(docId);
+      setSelectedDeal({ ...selectedDeal });
+    } catch (err) {
+      console.error('Failed to delete document:', err);
+      alert('Failed to delete document: ' + err.message);
+    }
   };
 
   const handleAddUpdate = async () => {
     if (!updateForm.title || !updateForm.body || !selectedDeal) return;
     const dealId = selectedDeal.dealId || selectedDeal.id;
-    await createUpdate(dealId, updateForm);
-    setUpdateForm({ title: '', body: '', quarter: '' });
-    setShowAddUpdate(false);
-    setSelectedDeal({ ...selectedDeal });
+    try {
+      await createUpdate(dealId, updateForm);
+      setUpdateForm({ title: '', body: '', quarter: '' });
+      setShowAddUpdate(false);
+      setSelectedDeal({ ...selectedDeal });
+    } catch (err) {
+      console.error('Failed to post update:', err);
+      alert('Failed to post update: ' + err.message);
+    }
   };
 
   const handleDeleteUpdate = async (uid) => {
     if (!window.confirm('Delete this update?')) return;
-    await deleteUpdate(uid);
-    setSelectedDeal({ ...selectedDeal });
+    try {
+      await deleteUpdate(uid);
+      setSelectedDeal({ ...selectedDeal });
+    } catch (err) {
+      console.error('Failed to delete update:', err);
+      alert('Failed to delete update: ' + err.message);
+    }
   };
 
   // ── Tab navigation ──
@@ -301,7 +451,7 @@ export default function InvestorPortalPage() {
       <div>
         {/* Metrics row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
-          <div style={metricCard('#2563eb')}>
+          <div style={metricCard('#059669')}>
             <div style={subtle}>Total Investors</div>
             <div style={{ fontSize: 28, fontWeight: 700, color: '#111827' }}>{totalInvestors}</div>
           </div>
@@ -476,10 +626,67 @@ export default function InvestorPortalPage() {
             <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#374151' }}>
               {selectedDeal.address || selectedDeal.parsed_data?.property?.address || 'Deal'} — Investors
             </h4>
-            <button style={btnPrimary} onClick={() => setShowAddAllocation(true)}>
+            <button style={btnPrimary} onClick={openAddAllocationModal}>
               <Plus size={14} /> Add Investor to Deal
             </button>
           </div>
+
+          {/* Underwriting snapshot — pulled straight from the underwritten deal */}
+          {dealUnderwriting && (
+            <div style={card}>
+              <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: '#111827' }}>Underwriting Snapshot</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 16, marginBottom: 16 }}>
+                <div><div style={subtle}>Purchase Price</div><div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>{fmt(dealUnderwriting.purchasePrice)}</div></div>
+                <div><div style={subtle}>NOI (Year 1)</div><div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>{fmt(dealUnderwriting.noiYear1)}</div></div>
+                <div><div style={subtle}>Going-In Cap Rate</div><div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>{pct(asPct(dealUnderwriting.goingInCapRate))}</div></div>
+                <div><div style={subtle}>Stabilized / ARV Value</div><div style={{ fontSize: 16, fontWeight: 700, color: '#059669' }}>{fmt(dealUnderwriting.stabilizedValue)}</div></div>
+                <div><div style={subtle}>Value Creation</div><div style={{ fontSize: 16, fontWeight: 700, color: '#059669' }}>{fmt(dealUnderwriting.valueCreation)}</div></div>
+                <div><div style={subtle}>Cash-on-Cash</div><div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>{pct(asPct(dealUnderwriting.avgCashOnCash))}</div></div>
+                <div><div style={subtle}>DSCR</div><div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>{(Number(dealUnderwriting.dscr) || 0).toFixed(2)}x</div></div>
+                <div><div style={subtle}>LTV</div><div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>{pct(dealUnderwriting.ltv)}</div></div>
+                <div><div style={subtle}>Est. Total Equity Required</div><div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>{fmt(dealUnderwriting.totalEquityRequired)}</div></div>
+              </div>
+              {(() => {
+                const raised = allocations.reduce((s, a) => s + (parseFloat(a.contributed_amount) || 0), 0);
+                const target = dealUnderwriting.totalEquityRequired;
+                const raisedPct = target > 0 ? Math.min((raised / target) * 100, 100) : 0;
+                return (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
+                      <span>Equity Raised: {fmt(raised)} ({raisedPct.toFixed(0)}%)</span>
+                      <span>Remaining: {fmt(Math.max(target - raised, 0))}</span>
+                    </div>
+                    <div style={{ height: 8, borderRadius: 999, backgroundColor: '#f3f4f6', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${raisedPct}%`, background: 'linear-gradient(90deg, #34d399 0%, #22d3ee 100%)' }} />
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Deal Terms — the sponsor's actual negotiated terms, saved to the deal */}
+              <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #f3f4f6' }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8 }}>Deal Terms</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 12, alignItems: 'end' }}>
+                  <div>
+                    <label style={labelStyle}>Preferred Return %</label>
+                    <input style={inputStyle} type="number" step="0.01" value={dealTermsForm.preferred_return_pct}
+                      onChange={e => setDealTermsForm({ ...dealTermsForm, preferred_return_pct: e.target.value })} placeholder="8" />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>GP Promote %</label>
+                    <input style={inputStyle} type="number" step="0.01" value={dealTermsForm.gp_promote_pct}
+                      onChange={e => setDealTermsForm({ ...dealTermsForm, gp_promote_pct: e.target.value })} placeholder="20" />
+                  </div>
+                  <button style={btnPrimary} onClick={handleSaveDealTerms} disabled={savingDealTerms}>
+                    {savingDealTerms ? 'Saving…' : 'Save Terms'}
+                  </button>
+                </div>
+                <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>
+                  These are the terms you've negotiated for this deal — new investors added below default to this preferred return.
+                </div>
+              </div>
+            </div>
+          )}
 
           {allocations.length === 0 ? (
             <div style={{ ...card, textAlign: 'center', padding: 32 }}>
@@ -522,7 +729,7 @@ export default function InvestorPortalPage() {
               <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600 }}>Capital Stack</h4>
               <div style={{ display: 'flex', gap: 4, height: 40, borderRadius: 8, overflow: 'hidden' }}>
                 {allocations.map((a, i) => {
-                  const colors = ['#2563eb', '#059669', '#8b5cf6', '#f59e0b', '#ec4899', '#06b6d4'];
+                  const colors = ['#059669', '#22d3ee', '#8b5cf6', '#f59e0b', '#ec4899', '#0ea5e9'];
                   const ownershipPct = parseFloat(a.ownership_pct) || 0;
                   return (
                     <div key={a.id} style={{ width: `${Math.max(ownershipPct, 5)}%`, backgroundColor: colors[i % colors.length], display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 600 }}
@@ -545,6 +752,11 @@ export default function InvestorPortalPage() {
       {/* Add Allocation Modal */}
       <Modal show={showAddAllocation} onClose={() => setShowAddAllocation(false)} title="Add Investor to Deal">
         <div style={{ display: 'grid', gap: 12 }}>
+          {dealUnderwriting && dealUnderwriting.totalEquityRequired > 0 && (
+            <div style={{ fontSize: 12, color: '#6b7280', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 10px' }}>
+              Total equity required for this deal: <strong style={{ color: '#111827' }}>{fmt(dealUnderwriting.totalEquityRequired)}</strong>
+            </div>
+          )}
           <div>
             <label style={labelStyle}>Investor</label>
             <select style={selectStyle} value={allocForm.investor_id} onChange={e => setAllocForm({ ...allocForm, investor_id: e.target.value })}>
@@ -557,14 +769,23 @@ export default function InvestorPortalPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={labelStyle}>Commitment Amount</label>
-              <input style={inputStyle} type="number" value={allocForm.commitment_amount} onChange={e => setAllocForm({ ...allocForm, commitment_amount: e.target.value })} placeholder="250000" />
+              <input style={inputStyle} type="number" value={allocForm.commitment_amount} onChange={e => {
+                const val = e.target.value;
+                setAllocForm((f) => {
+                  const next = { ...f, commitment_amount: val };
+                  if (dealUnderwriting && dealUnderwriting.totalEquityRequired > 0) {
+                    next.ownership_pct = ((parseFloat(val) || 0) / dealUnderwriting.totalEquityRequired * 100).toFixed(2);
+                  }
+                  return next;
+                });
+              }} placeholder="250000" />
             </div>
             <div>
               <label style={labelStyle}>Contributed Amount</label>
               <input style={inputStyle} type="number" value={allocForm.contributed_amount} onChange={e => setAllocForm({ ...allocForm, contributed_amount: e.target.value })} placeholder="250000" />
             </div>
             <div>
-              <label style={labelStyle}>Ownership %</label>
+              <label style={labelStyle}>Ownership %{dealUnderwriting?.totalEquityRequired > 0 ? ' (auto)' : ''}</label>
               <input style={inputStyle} type="number" step="0.01" value={allocForm.ownership_pct} onChange={e => setAllocForm({ ...allocForm, ownership_pct: e.target.value })} placeholder="10" />
             </div>
             <div>
@@ -712,7 +933,7 @@ export default function InvestorPortalPage() {
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
           <button style={btnGhost} onClick={() => setShowAddDistribution(false)}>Cancel</button>
-          <button style={{ ...btnPrimary, backgroundColor: '#059669' }} onClick={handleAddDistribution}>Record Distribution</button>
+          <button style={{ ...btnPrimary, background: '#059669' }} onClick={handleAddDistribution}>Record Distribution</button>
         </div>
       </Modal>
     </div>
@@ -747,7 +968,7 @@ export default function InvestorPortalPage() {
                     return (
                       <tr key={doc.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                         <td style={{ padding: '10px 12px' }}>
-                          <a href={doc.file_url} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <a href={doc.file_url} target="_blank" rel="noopener noreferrer" style={{ color: '#059669', textDecoration: 'none', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
                             <FileText size={14} /> {doc.file_name}
                           </a>
                         </td>
@@ -895,7 +1116,7 @@ export default function InvestorPortalPage() {
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
           <button style={btnGhost} onClick={() => setShowAddUpdate(false)}>Cancel</button>
-          <button style={{ ...btnPrimary, backgroundColor: '#059669' }} onClick={handleAddUpdate}>Post Update</button>
+          <button style={{ ...btnPrimary, background: '#059669' }} onClick={handleAddUpdate}>Post Update</button>
         </div>
       </Modal>
     </div>
@@ -935,8 +1156,8 @@ export default function InvestorPortalPage() {
                   display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px',
                   border: 'none', backgroundColor: 'transparent', cursor: 'pointer',
                   fontSize: 13, fontWeight: isActive ? 600 : 500,
-                  color: isActive ? '#2563eb' : '#6b7280',
-                  borderBottom: isActive ? '2px solid #2563eb' : '2px solid transparent',
+                  color: isActive ? '#059669' : '#6b7280',
+                  borderBottom: isActive ? '2px solid #059669' : '2px solid transparent',
                   marginBottom: -2, transition: 'all 0.15s',
                 }}>
                 <Icon size={15} /> {t.label}

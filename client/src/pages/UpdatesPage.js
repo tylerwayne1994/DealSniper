@@ -7,49 +7,67 @@ import DashboardShell from '../components/DashboardShell';
 // ============================================================================
 const DEFAULT_UPDATES = [
   {
-    id: 'update-001',
-    title: 'AI Underwriter Enhancement',
-    description: 'The Claude AI Underwriter now supports streaming responses for faster analysis on complex deals.',
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+    id: 'update-2026-07-01',
+    title: 'Investor Deal Rooms + Shareable Access Links',
+    description: 'Turn any underwrite into a live, interactive one-page Deal Room. Generate a passcode link from the Deal Room tab and send it to investors — no login required for them.',
+    timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     type: 'feature',
     icon: 'zap',
     read: false,
   },
   {
-    id: 'update-002',
-    title: 'Email Underwriting Improvements',
-    description: 'Email underwriting pipeline now extracts rehab budgets and cost segregation analysis automatically.',
-    timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+    id: 'update-2026-07-02',
+    title: 'Document Vault for Investors',
+    description: 'Opt specific uploaded files into a due-diligence vault investors can see and download right inside the Deal Room.',
+    timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     type: 'feature',
     icon: 'zap',
     read: false,
   },
   {
-    id: 'update-003',
-    title: 'Market Analysis Dashboard',
-    description: 'New MSA heatmap visualization helps identify emerging market opportunities in seconds.',
-    timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+    id: 'update-2026-07-03',
+    title: 'Closing Countdown + Sensitivity Toggle',
+    description: 'Deal Rooms now show a countdown banner to your offering close date, plus Conservative/Base/Upside preset buttons on the investor calculator that re-run real return numbers.',
+    timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     type: 'feature',
     icon: 'zap',
     read: false,
   },
   {
-    id: 'update-004',
-    title: 'System Maintenance Completed',
-    description: 'Backend optimization improved calculation speeds by 40%. All underwriting operations are now faster.',
-    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+    id: 'update-2026-07-04',
+    title: 'AI Board of Advisors',
+    description: 'Convene a panel of veteran investor personas to debate your deal\'s real numbers and give you a recommendation — plus follow-up chat with any advisor.',
+    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    type: 'feature',
+    icon: 'zap',
+    read: false,
+  },
+  {
+    id: 'update-2026-07-05',
+    title: '"Ask About This Deal" AI Chat',
+    description: 'A new chat box on every deal answers questions about that deal\'s numbers and its real local market — grounded in your actual data, not guesses.',
+    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    type: 'feature',
+    icon: 'zap',
+    read: false,
+  },
+  {
+    id: 'update-2026-07-06',
+    title: 'Market Analysis Rebuilt',
+    description: 'The Comps tab\'s Market Analysis view was rebuilt as clean data tables (no more map or drive-time picker) matching the rest of the app\'s design.',
+    timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    type: 'feature',
+    icon: 'zap',
+    read: false,
+  },
+  {
+    id: 'update-2026-07-07',
+    title: 'Investor Access on the Landing Page',
+    description: 'Investors can now get straight to a passcode entry screen from the landing page nav or hero — no need to send them a raw link.',
+    timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     type: 'info',
     icon: 'check-check',
     read: false,
-  },
-  {
-    id: 'update-005',
-    title: 'New Export Format Available',
-    description: 'You can now export analyses directly to PowerPoint presentations. Perfect for investor meetings.',
-    timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
-    type: 'feature',
-    icon: 'zap',
-    read: true,
   },
 ];
 
@@ -289,7 +307,10 @@ function UpdatesPage() {
     const stored = localStorage.getItem('dealsniper_updates');
     if (stored) {
       try {
-        setUpdates(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        const existingIds = new Set(parsed.map((u) => u.id));
+        const newOnes = DEFAULT_UPDATES.filter((u) => !existingIds.has(u.id));
+        setUpdates(newOnes.length > 0 ? [...newOnes, ...parsed] : parsed);
       } catch {
         setUpdates(DEFAULT_UPDATES);
       }

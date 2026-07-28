@@ -450,7 +450,7 @@ export default function DealPhotoGallery({ deal, images, onClose, onImagesUpdate
                       AI Inspecting {allImages.length} Photos...
                     </div>
                     <div style={{ color: '#f97316', fontSize: '13px', marginTop: '4px' }}>
-                      {capexTimer < 5 ? 'Downloading images...' : capexTimer < 15 ? 'Claude Vision analyzing conditions...' : capexTimer < 25 ? 'Estimating costs & identifying repairs...' : 'Finalizing CapEx report...'}
+                      {capexTimer < 5 ? 'Downloading images...' : capexTimer < 15 ? 'Analyzing property conditions...' : capexTimer < 25 ? 'Estimating costs & identifying repairs...' : 'Finalizing CapEx report...'}
                     </div>
                     <div style={{ color: '#9ca3af', fontSize: '12px', marginTop: '8px' }}>{capexTimer}s</div>
                   </div>

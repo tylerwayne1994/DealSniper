@@ -65,3 +65,11 @@ logs/
 client/public/parcels/
 
 client/build2/
+
+# Local JSON-file deal storage (runtime/test data, not app code)
+backend/data/deals_v2/
+
+# Scratch/debug artifacts generated while testing locally
+backend/_route_test.xlsx
+backend/_spec_debug.json
+backend/_test_export.xlsx

@@ -18,13 +18,13 @@ import { getLoanPresets, LOAN_CATEGORIES } from '../utils/loanPrograms';
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8010";
 
-// Styles (keeping consistent with V1)
+// Styles — flat, utilitarian design (no gradients/glow)
 const styles = {
   page: {
     minHeight: '100vh',
-    background: 'linear-gradient(to bottom, #f8fafc, #ffffff)',
-    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-    padding: '40px 20px'
+    background: '#f9fafb',
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+    padding: '32px 20px'
   },
   container: {
     maxWidth: 1400,
@@ -34,64 +34,61 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 40
+    marginBottom: 24
   },
   title: {
-    fontSize: '2.5rem',
-    fontWeight: 900,
+    fontSize: '1.375rem',
+    fontWeight: 700,
     color: '#111827',
-    letterSpacing: '-0.03em'
+    letterSpacing: '-0.01em'
   },
   homeButton: {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: 8,
-    padding: '10px 18px',
+    gap: 6,
+    padding: '6px 12px',
     background: '#ffffff',
     color: '#374151',
-    border: '1px solid #e5e7eb',
-    borderRadius: 10,
-    fontSize: 14,
-    fontWeight: 700,
+    border: '1px solid #d1d5db',
+    borderRadius: 6,
+    fontSize: 13,
+    fontWeight: 500,
     cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+    transition: 'background-color 0.15s ease'
   },
   card: {
     background: '#fff',
     border: '1px solid #e5e7eb',
-    boxShadow: '0 4px 6px rgba(0,0,0,.04)',
-    borderRadius: 16,
-    padding: 32,
-    marginBottom: 24
+    borderRadius: 8,
+    padding: 28,
+    marginBottom: 20
   },
   uploadZone: {
-    border: '2px dashed #d1d5db',
-    borderRadius: 16,
-    padding: 60,
+    border: '1px dashed #d1d5db',
+    borderRadius: 8,
+    padding: 48,
     textAlign: 'center',
     cursor: 'pointer',
-    transition: 'all 0.3s ease',
-    background: '#f9fafb'
+    transition: 'border-color 0.15s ease, background-color 0.15s ease',
+    background: '#fafafa'
   },
   uploadZoneActive: {
-    borderColor: '#3b82f6',
+    borderColor: '#2563eb',
     background: '#eff6ff'
   },
   button: {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 8,
-    padding: '12px 24px',
-    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+    padding: '9px 18px',
+    background: '#2563eb',
     color: '#fff',
-    border: 'none',
-    borderRadius: 10,
-    fontSize: 15,
-    fontWeight: 700,
+    border: '1px solid #2563eb',
+    borderRadius: 6,
+    fontSize: 14,
+    fontWeight: 600,
     cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    boxShadow: '0 4px 6px rgba(37, 99, 235, 0.3)'
+    transition: 'background-color 0.15s ease'
   },
   input: {
     width: '100%',
@@ -149,6 +146,15 @@ const styles = {
   }
 };
 
+// Stages shown to the user while a document is uploading/parsing.
+// Purely cosmetic (client-timed) — no internal tooling/vendor names are surfaced.
+const PARSE_STAGES = [
+  { label: 'Uploading document', pct: 15 },
+  { label: 'Reading pages & extracting text', pct: 40 },
+  { label: 'Identifying rent roll, T-12 & expenses', pct: 65 },
+  { label: 'Building underwriting model', pct: 90 },
+];
+
 function UnderwriteV2Page() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -165,7 +171,8 @@ function UnderwriteV2Page() {
   const [uploadError, setUploadError] = useState(null);
   const [uploadedFileUrl, setUploadedFileUrl] = useState(null);
   const [uploadedFileData, setUploadedFileData] = useState(null);
-  
+  const [parseStageIndex, setParseStageIndex] = useState(0);
+
   // Parse result
   const [dealId, setDealId] = useState(null);
   
@@ -297,6 +304,18 @@ function UnderwriteV2Page() {
         setVerifiedData(dealData);
         setModifiedFields({});
         setStep('results');
+
+        // This deal was loaded from storage — there is no live PDF file in
+        // memory for it. Clear out any stale uploadedFileData/Url left over
+        // from a previous upload in this same browser session, otherwise the
+        // Parsed Data "view in source PDF" feature would try to open the
+        // WRONG (or now-invalid) document for this deal.
+        setUploadedFileUrl((prevUrl) => {
+          if (prevUrl) { try { URL.revokeObjectURL(prevUrl); } catch (_) { /* ignore */ } }
+          return null;
+        });
+        setUploadedFileData(null);
+        setFile(null);
 
         // For email-underwritten deals, check for missing critical fields
         const isEmailDeal2 = params.get('source') === 'email';
@@ -511,6 +530,14 @@ function UnderwriteV2Page() {
 
     setIsUploading(true);
     setUploadError(null);
+    setParseStageIndex(0);
+
+    // Advance through cosmetic stage labels while the request is in flight.
+    // The backend call is a single request/response, so this gives the user
+    // a sense of progress without fabricating real percentages.
+    const stageTimer = setInterval(() => {
+      setParseStageIndex(prev => Math.min(prev + 1, PARSE_STAGES.length - 1));
+    }, 2200);
 
     try {
       const formData = new FormData();
@@ -640,7 +667,9 @@ function UnderwriteV2Page() {
       console.error('Upload error:', err);
       setUploadError(err.message || 'Failed to upload and parse document');
     } finally {
+      clearInterval(stageTimer);
       setIsUploading(false);
+      setParseStageIndex(0);
     }
   };
 
@@ -1045,35 +1074,36 @@ function UnderwriteV2Page() {
   if (step === 'upload') {
     return (
       <div style={styles.page}>
-        <div style={styles.container}>
+        <div style={{ ...styles.container, maxWidth: 640 }}>
           <div style={styles.header}>
-            <h1 style={styles.title}>V2 Automatic Underwriter</h1>
+            <h1 style={styles.title}>Automatic Underwriter</h1>
             <button 
               style={styles.homeButton}
               onClick={() => navigate('/')}
             >
-              <Home size={18} />
+              <Home size={14} />
               Home
             </button>
           </div>
 
           <div style={styles.card}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: 24, color: '#111827' }}>
+            <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16, color: '#111827' }}>
               Upload Offering Memorandum
             </h2>
             
             <div
               style={{
                 ...styles.uploadZone,
-                ...(file ? styles.uploadZoneActive : {})
+                ...(file ? styles.uploadZoneActive : {}),
+                ...(isUploading ? { cursor: 'not-allowed', opacity: 0.6 } : {})
               }}
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => { if (!isUploading) fileInputRef.current?.click(); }}
             >
-              <Upload style={{ width: 64, height: 64, color: '#9ca3af', margin: '0 auto 16px' }} />
-              <div style={{ fontSize: 18, fontWeight: 600, color: '#374151', marginBottom: 8 }}>
+              <Upload style={{ width: 36, height: 36, color: '#9ca3af', margin: '0 auto 12px' }} />
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
                 {file ? file.name : 'Drop file here or click to browse'}
               </div>
-              <div style={{ fontSize: 14, color: '#6b7280' }}>
+              <div style={{ fontSize: 12, color: '#6b7280' }}>
                 PDF, Excel (.xlsx/.xls), or CSV • Maximum 50MB
               </div>
               <input
@@ -1082,56 +1112,81 @@ function UnderwriteV2Page() {
                 accept="application/pdf,.pdf,.xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
                 style={{ display: 'none' }}
                 onChange={handleFileChange}
+                disabled={isUploading}
               />
             </div>
 
-            {file && (
-              <div style={{ marginTop: 24, textAlign: 'center' }}>
+            {file && !isUploading && (
+              <div style={{ marginTop: 16, textAlign: 'center' }}>
                 <button
-                  style={{
-                    ...styles.button,
-                    ...(isUploading ? { opacity: 0.5, cursor: 'not-allowed' } : {})
-                  }}
+                  style={styles.button}
                   onClick={handleUpload}
-                  disabled={isUploading}
                 >
-                  {isUploading ? (
-                    <>
-                      <Loader size={18} className="spin" />
-                      Parsing with Claude...
-                    </>
-                  ) : (
-                    <>
-                      <Upload size={18} />
-                      Parse & Underwrite
-                    </>
-                  )}
+                  <Upload size={15} />
+                  Parse & Underwrite
                 </button>
               </div>
             )}
 
+            {isUploading && (
+              <div style={{ marginTop: 16, padding: '14px 16px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <Loader size={14} className="spin" style={{ color: '#2563eb', flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>
+                    {PARSE_STAGES[parseStageIndex].label}…
+                  </span>
+                </div>
+                <div style={{ width: '100%', height: 6, background: '#e5e7eb', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{
+                    width: `${PARSE_STAGES[parseStageIndex].pct}%`,
+                    height: '100%',
+                    background: '#2563eb',
+                    borderRadius: 3,
+                    transition: 'width 0.4s ease'
+                  }} />
+                </div>
+                <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {PARSE_STAGES.map((s, i) => (
+                    <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: i <= parseStageIndex ? '#374151' : '#9ca3af' }}>
+                      {i < parseStageIndex ? (
+                        <CheckCircle size={12} style={{ color: '#16a34a', flexShrink: 0 }} />
+                      ) : i === parseStageIndex ? (
+                        <Loader size={12} className="spin" style={{ color: '#2563eb', flexShrink: 0 }} />
+                      ) : (
+                        <span style={{ width: 12, height: 12, borderRadius: '50%', border: '1px solid #d1d5db', flexShrink: 0, display: 'inline-block' }} />
+                      )}
+                      {s.label}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* OR divider + Manual Entry button */}
-            <div style={{ margin: '32px 0', textAlign: 'center', position: 'relative' }}>
+            <div style={{ margin: '20px 0', textAlign: 'center', position: 'relative' }}>
               <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', height: 1, background: '#e5e7eb' }} />
-              <span style={{ position: 'relative', background: '#fff', padding: '0 16px', color: '#6b7280', fontSize: 14, fontWeight: 600 }}>OR</span>
+              <span style={{ position: 'relative', background: '#fff', padding: '0 12px', color: '#9ca3af', fontSize: 12, fontWeight: 600 }}>OR</span>
             </div>
             <div style={{ textAlign: 'center' }}>
               <button
                 onClick={() => navigate('/manual-entry')}
-                style={{ 
-                  ...styles.button, 
-                  background: 'linear-gradient(135deg, #10b981, #059669)', 
-                  boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)' 
+                disabled={isUploading}
+                style={{
+                  ...styles.button,
+                  background: '#fff',
+                  color: '#374151',
+                  border: '1px solid #d1d5db',
+                  ...(isUploading ? { opacity: 0.5, cursor: 'not-allowed' } : {})
                 }}
               >
-                <FileText size={18} /> Enter Manually
+                <FileText size={15} /> Enter Manually
               </button>
             </div>
 
             {uploadError && (
-              <div style={{ marginTop: 24, padding: 16, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
-                <AlertCircle size={20} color="#b91c1c" />
-                <span style={{ color: '#991b1b', fontSize: 14 }}>{uploadError}</span>
+              <div style={{ marginTop: 16, padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <AlertCircle size={16} color="#b91c1c" />
+                <span style={{ color: '#991b1b', fontSize: 13 }}>{uploadError}</span>
               </div>
             )}
           </div>
@@ -1701,6 +1756,8 @@ function UnderwriteV2Page() {
           onGoHome={() => navigate('/')}
           isChatMinimized={isChatMinimized}
           setIsChatMinimized={setIsChatMinimized}
+          uploadedFileData={uploadedFileData}
+          uploadedFileUrl={uploadedFileUrl}
         />
       </>
     );

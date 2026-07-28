@@ -1,8 +1,8 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker, GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { API_ENDPOINTS } from '../../config/api';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
@@ -24,6 +24,10 @@ import {
   Plus,
   X
 } from 'lucide-react';
+
+if (process.env.REACT_APP_MAPBOX_TOKEN) {
+  mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
+}
 
 const CITY_METRIC_DATASET_FILES = [
   '01_rent_growth_yoy_city.csv',
@@ -158,8 +162,8 @@ const metricColorForCategory = (value) => {
   return METRIC_CATEGORICAL_COLORS[hashString(text) % METRIC_CATEGORICAL_COLORS.length];
 };
 
-// ─── Zone color by prefix ────────────────
-// ─── Zoning Category Colors (legend-driven) ─────────────────────────────────
+// â”€â”€â”€ Zone color by prefix â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ Zoning Category Colors (legend-driven) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const CATEGORY_COLORS = {
   'Residential':               '#22c55e', // vivid green
   'Commercial':                '#ef4444', // bold red
@@ -197,7 +201,7 @@ function zoneColor(zoneCode, legend) {
   return ZONE_PREFIX_COLORS[prefix] || DEFAULT_ZONE_COLOR;
 }
 
-// ─── ZoningOverlayLayer (child of MapContainer, uses useMap) ─────────
+// â”€â”€â”€ ZoningOverlayLayer (child of MapContainer, uses useMap) â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ZoningOverlayLayer({ serviceKey, enabled, zoneFilter }) {
   const map = useMap();
   const layerRef = useRef(null);
@@ -238,7 +242,7 @@ function ZoningOverlayLayer({ serviceKey, enabled, zoneFilter }) {
         },
         onEachFeature: (feature, lyr) => {
           const props = feature.properties || {};
-          // ── Build clean zoning popup ──
+          // â”€â”€ Build clean zoning popup â”€â”€
           const zoneVal = props[zoneField] || 'Unknown';
           const labelVal = config.label_field && props[config.label_field] && props[config.label_field] !== zoneVal
             ? props[config.label_field] : '';
@@ -363,7 +367,7 @@ function ZoningOverlayLayer({ serviceKey, enabled, zoneFilter }) {
   return null; // Imperative-only; no JSX rendered
 }
 
-// ─── AgentZoningOverlayLayer (AI-discovered cities, pre-cached GeoJSON) ──────
+// â”€â”€â”€ AgentZoningOverlayLayer (AI-discovered cities, pre-cached GeoJSON) â”€â”€â”€â”€â”€â”€
 function AgentZoningOverlayLayer({ slug, enabled, zoneFilter }) {
   const map = useMap();
   const layerRef = useRef(null);
@@ -500,7 +504,7 @@ function createBubbleIcon(color = '#ef4444', textColor = '#fff', units = null) {
   const hasUnits = units != null && units !== '' && units !== '?' && units !== 0;
   
   if (!hasUnits) {
-    // ── Pin-drop marker for properties without units ──
+    // â”€â”€ Pin-drop marker for properties without units â”€â”€
     return L.divIcon({
       className: 'bubble-marker-icon',
       html: `
@@ -527,7 +531,7 @@ function createBubbleIcon(color = '#ef4444', textColor = '#fff', units = null) {
     });
   }
 
-  // ── Rounded bubble with unit count ──
+  // â”€â”€ Rounded bubble with unit count â”€â”€
   const displayText = `${units}u`;
   const width = displayText.length > 3 ? 52 : displayText.length > 2 ? 44 : 38;
   return L.divIcon({
@@ -615,7 +619,7 @@ function spreadOverlappingPins(pins = []) {
   return result;
 }
 
-// ─── Flood Zone Card (renders inside popups) ────────────────
+// â”€â”€â”€ Flood Zone Card (renders inside popups) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function FloodZoneCard({ lat, lng }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -643,14 +647,14 @@ function FloodZoneCard({ lat, lng }) {
   if (loading) {
     return (
       <div style={{ borderRadius: '10px', padding: '10px 12px', backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', fontSize: '12px', color: '#0369a1' }}>
-        🌊 Loading flood zone data...
+        ðŸŒŠ Loading flood zone data...
       </div>
     );
   }
   if (error || !data || data.status === 'no_data' || data.status === 'no_geocode') {
     return (
       <div style={{ borderRadius: '10px', padding: '10px 12px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', fontSize: '12px', color: '#6b7280' }}>
-        🌊 No flood data available
+        ðŸŒŠ No flood data available
       </div>
     );
   }
@@ -666,7 +670,7 @@ function FloodZoneCard({ lat, lng }) {
   return (
     <div style={{ borderRadius: '10px', padding: '12px', backgroundColor: bgColor, border: `1px solid ${borderColor}`, fontSize: '12px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-        <span style={{ fontWeight: '700', color: '#111827', fontSize: '13px' }}>🌊 Flood Zone</span>
+        <span style={{ fontWeight: '700', color: '#111827', fontSize: '13px' }}>ðŸŒŠ Flood Zone</span>
         <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: '700', backgroundColor: badgeBg, color: badgeColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{riskLabel}</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -706,7 +710,7 @@ function DashboardMapTab() {
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // Collapsible map panel state — default collapsed on mobile
+  // Collapsible map panel state â€” default collapsed on mobile
   const [panelOpen, setPanelOpen] = useState(() => window.innerWidth >= 768);
   const [panelTab, setPanelTab] = useState('layers'); // 'layers' | 'pins' | 'upload' | 'add'
 
@@ -817,7 +821,7 @@ function DashboardMapTab() {
       .catch(err => console.error('[Data Centers] Load error:', err));
   }, []);
 
-  // Load development pipeline CSV when first enabled — uses the rich national pipeline CSV
+  // Load development pipeline CSV when first enabled â€” uses the rich national pipeline CSV
   useEffect(() => {
     if (!devPipelineEnabled || devPipelineData.length > 0) return;
     Papa.parse('/Multifamily_ClassA_National_Pipeline_FINAL.csv', {
@@ -977,7 +981,7 @@ function DashboardMapTab() {
         if (res.ok) {
           const data = await res.json();
           setZoningServices(data);
-          // Don't auto-select — let user pick from 85 services
+          // Don't auto-select â€” let user pick from 85 services
         }
       } catch (err) {
         console.error('[Zoning] Failed to load services:', err);
@@ -1078,7 +1082,7 @@ function DashboardMapTab() {
     return [
       'all',
       ...Array.from(tiers).sort(),
-      '──────',
+      'â”€â”€â”€â”€â”€â”€',
       ...['Very High', 'High', 'Moderate', 'Low', 'Very Low'].filter(d => demand.has(d)),
     ];
   }, [capRateData]);
@@ -1159,7 +1163,7 @@ function DashboardMapTab() {
       .map(([label]) => ({ color: metricColorForCategory(label), label }));
   }, [zipMetricV2, zipMetricsData, zipMetricV2Meta]);
 
-  // Color by cap rate value — green = low (good for buyers), red = high
+  // Color by cap rate value â€” green = low (good for buyers), red = high
   const capRateColor = (rate) => {
     const r = Number(rate) || 0;
     if (r <= 4.75) return '#22c55e'; // low / gateway
@@ -1243,29 +1247,41 @@ function DashboardMapTab() {
   // Load pipeline properties and add to map
   const loadPipelineProperties = async () => {
     try {
-      console.log('🔍 Fetching pipeline deals from database...');
+      console.log('ðŸ” Fetching pipeline deals from database...');
       const deals = await loadPipelineDeals();
-      console.log('🔍 Raw pipeline deals:', deals);
-      console.log(`🔍 Found ${deals?.length || 0} total pipeline deals`);
+      console.log('ðŸ” Raw pipeline deals:', deals);
+      console.log(`ðŸ” Found ${deals?.length || 0} total pipeline deals`);
       
       if (!deals || deals.length === 0) {
-        console.warn('⚠️ No pipeline deals found in database');
+        console.warn('âš ï¸ No pipeline deals found in database');
         setCustomPins(prev => prev.filter(p => p.category !== 'pipeline'));
         return;
       }
       
       const dealsWithCoords = deals
-        .map(d => ({
-          ...d,
-          latitude: Number(d.latitude),
-          longitude: Number(d.longitude),
-        }))
+        .map(d => {
+          const rawLat = d.latitude;
+          const rawLng = d.longitude;
+          const latitude = Number(rawLat);
+          const longitude = Number(rawLng);
+          const latProvided = rawLat !== null && rawLat !== undefined && String(rawLat).trim() !== '';
+          const lngProvided = rawLng !== null && rawLng !== undefined && String(rawLng).trim() !== '';
+          const hasNumericCoords = Number.isFinite(latitude) && Number.isFinite(longitude);
+          const inValidRange = latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
+          const isZeroPair = latitude === 0 && longitude === 0;
+
+          return {
+            ...d,
+            latitude,
+            longitude,
+            _hasUsableCoords: latProvided && lngProvided && hasNumericCoords && inValidRange && !isZeroPair,
+          };
+        })
         .filter(d => {
-          const hasCoords = Number.isFinite(d.latitude) && Number.isFinite(d.longitude);
-          if (!hasCoords) {
+          if (!d._hasUsableCoords) {
             console.warn(`Deal missing valid coords:`, d.address, d);
           }
-          return hasCoords;
+          return d._hasUsableCoords;
         });
       console.log(`${dealsWithCoords.length} deals have valid coordinates`);
 
@@ -1287,7 +1303,7 @@ function DashboardMapTab() {
         name: d.address || 'Pipeline Property',
         category: 'pipeline',
         position: [d.latitude, d.longitude],
-        insight: `${d.units || '?'} units • $${(d.purchasePrice || 0).toLocaleString()}`,
+        insight: `${d.units || '?'} units â€¢ $${(d.purchasePrice || 0).toLocaleString()}`,
         source: 'pipeline',
         dealId: d.dealId,
         units: d.units || null
@@ -1295,32 +1311,32 @@ function DashboardMapTab() {
 
       const pipelinePins = spreadOverlappingPins(pipelinePinsRaw);
       
-      console.log('🔍 Pipeline pins created:', pipelinePins);
+      console.log('ðŸ” Pipeline pins created:', pipelinePins);
       
       setCustomPins(prev => {
-        console.log('🔍 Current pins before adding pipeline:', prev.length, prev);
+        console.log('ðŸ” Current pins before adding pipeline:', prev.length, prev);
         // Remove existing pipeline pins and add new ones
         const nonPipeline = prev.filter(p => p.category !== 'pipeline');
         const newPins = [...nonPipeline, ...pipelinePins];
-        console.log('🔍 New pins array after adding pipeline:', newPins.length, newPins);
+        console.log('ðŸ” New pins array after adding pipeline:', newPins.length, newPins);
         return newPins;
       });
-      console.log(`✅ Loaded ${pipelinePins.length} pipeline properties to map`);
+      console.log(`âœ… Loaded ${pipelinePins.length} pipeline properties to map`);
     } catch (error) {
-      console.error('❌ Failed to load pipeline properties:', error);
-      console.error('❌ Error details:', error.message, error.stack);
+      console.error('âŒ Failed to load pipeline properties:', error);
+      console.error('âŒ Error details:', error.message, error.stack);
     }
   };
 
   // Load pipeline properties and rapid fire queue on mount
   useEffect(() => {
-    console.log('🗺️ MapTab mounting - loading pipeline and rapid fire...');
+    console.log('ðŸ—ºï¸ MapTab mounting - loading pipeline and rapid fire...');
     loadPipelineProperties();
     loadRapidFireQueue();
     
     // Listen for pipeline updates
     const handlePipelineUpdate = () => {
-      console.log('🔄 Pipeline update event received');
+      console.log('ðŸ”„ Pipeline update event received');
       loadPipelineProperties();
     };
     window.addEventListener('pipelineDealsUpdated', handlePipelineUpdate);
@@ -1330,10 +1346,10 @@ function DashboardMapTab() {
 
   const baseMarkers = useMemo(() => ([]), []);
 
-  // ═══ MapLibre GL 3D Map Initialization ═══
+  // â•â•â• Mapbox GL 3D Map Initialization (real mapbox-gl, not MapLibre) â•â•â•
   useEffect(() => {
     if (mapStyle !== '3d') {
-      // Cleanup MapLibre when not in 3D mode
+      // Cleanup when not in 3D mode
       if (maplibreMapRef.current) {
         maplibreMapRef.current.remove();
         maplibreMapRef.current = null;
@@ -1348,40 +1364,15 @@ function DashboardMapTab() {
     // Don't re-initialize if already created
     if (maplibreMapRef.current) return;
 
-    const map = new maplibregl.Map({
+    if (!mapboxgl.accessToken) {
+      // No token configured â€” nothing we can render for the 3D globe view
+      return;
+    }
+
+    const map = new mapboxgl.Map({
       container: maplibreContainerRef.current,
-      style: {
-        version: 8,
-        sources: {
-          'satellite': {
-            type: 'raster',
-            tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-            tileSize: 256,
-            maxzoom: 19,
-            attribution: '© Esri, Maxar, Earthstar Geographics'
-          },
-          'terrain-dem': {
-            type: 'raster-dem',
-            tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            encoding: 'terrarium',
-            maxzoom: 15
-          }
-        },
-        layers: [
-          {
-            id: 'satellite-layer',
-            type: 'raster',
-            source: 'satellite',
-            minzoom: 0,
-            maxzoom: 22
-          }
-        ],
-        terrain: {
-          source: 'terrain-dem',
-          exaggeration: 1.5
-        }
-      },
+      style: 'mapbox://styles/mapbox/standard-satellite',
+      projection: 'globe',
       center: [-98.5795, 39.8283],
       zoom: 5,
       pitch: 50,
@@ -1390,8 +1381,24 @@ function DashboardMapTab() {
       antialias: true
     });
 
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
-    map.addControl(new maplibregl.ScaleControl(), 'bottom-right');
+    map.on('style.load', () => {
+      // Native Mapbox terrain-DEM â€” resolved correctly since this is the
+      // real mapbox-gl library (mapbox:// urls need it). The Standard
+      // style already ships its own atmosphere/fog/lighting, so we only
+      // need to layer 3D terrain on top of it.
+      if (!map.getSource('mapbox-dem')) {
+        map.addSource('mapbox-dem', {
+          type: 'raster-dem',
+          url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+          tileSize: 512,
+          maxzoom: 14,
+        });
+      }
+      map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
+    });
+
+    map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), 'top-right');
+    map.addControl(new mapboxgl.ScaleControl(), 'bottom-right');
 
     maplibreMapRef.current = map;
 
@@ -1403,7 +1410,7 @@ function DashboardMapTab() {
     };
   }, [mapStyle]);
 
-  // ═══ Sync markers onto the MapLibre 3D map ═══
+  // â•â•â• Sync markers onto the MapLibre 3D map â•â•â•
   useEffect(() => {
     if (mapStyle !== '3d' || !maplibreMapRef.current) return;
 
@@ -1437,7 +1444,7 @@ function DashboardMapTab() {
           el.style.width = '18px';
           el.style.height = '18px';
           el.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`;
-          const popup = new maplibregl.Popup({ offset: 12, maxWidth: '380px' })
+          const popup = new mapboxgl.Popup({ offset: 12, maxWidth: '380px' })
             .setHTML(`
               <div style="font-family:Inter,-apple-system,sans-serif;padding:8px;">
                 <div style="font-weight:700;font-size:14px;color:#111827;margin-bottom:4px;">${proj.project_name || 'Unknown'}</div>
@@ -1457,11 +1464,11 @@ function DashboardMapTab() {
                   ${proj.cap_rate_overall ? `<div><span style="color:#9ca3af;font-weight:600;font-size:10px;">CAP RATE</span><br/><strong style="color:${capRateColor(proj.cap_rate_overall)}">${proj.cap_rate_overall}%</strong></div>` : ''}
                   ${proj.investor_demand ? `<div><span style="color:#9ca3af;font-weight:600;font-size:10px;">DEMAND</span><br/>${proj.investor_demand}</div>` : ''}
                 </div>
-                ${proj.description ? `<div style="margin-top:6px;font-size:11px;color:#6b7280;line-height:1.4;border-top:1px solid #e5e7eb;padding-top:6px;">${proj.description.substring(0, 150)}${proj.description.length > 150 ? '…' : ''}</div>` : ''}
-                ${proj.source_url ? `<a href="${proj.source_url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6;margin-top:4px;display:block;font-weight:600;">View Source →</a>` : ''}
+                ${proj.description ? `<div style="margin-top:6px;font-size:11px;color:#6b7280;line-height:1.4;border-top:1px solid #e5e7eb;padding-top:6px;">${proj.description.substring(0, 150)}${proj.description.length > 150 ? 'â€¦' : ''}</div>` : ''}
+                ${proj.source_url ? `<a href="${proj.source_url}" target="_blank" rel="noopener" style="font-size:11px;color:#3b82f6;margin-top:4px;display:block;font-weight:600;">View Source â†’</a>` : ''}
               </div>
             `);
-          const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+          const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
             .setLngLat([lng, lat])
             .setPopup(popup)
             .addTo(map);
@@ -1481,7 +1488,7 @@ function DashboardMapTab() {
           el.style.width = `${radius}px`;
           el.style.height = `${radius}px`;
           el.innerHTML = `<div style="width:${radius}px;height:${radius}px;border-radius:50%;background:${color};opacity:0.7;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;"><span style="font-size:9px;font-weight:700;color:#fff;">${msa.Absorption_Rate_Pct || ''}%</span></div>`;
-          const popup = new maplibregl.Popup({ offset: 12, maxWidth: '380px' })
+          const popup = new mapboxgl.Popup({ offset: 12, maxWidth: '380px' })
             .setHTML(`
               <div style="font-family:Inter,-apple-system,sans-serif;padding:10px;">
                 <div style="font-weight:700;font-size:15px;color:#111827;margin-bottom:2px;">${msa.MSA}</div>
@@ -1513,11 +1520,11 @@ function DashboardMapTab() {
                   <div><span style="color:#9ca3af;font-weight:600;font-size:10px;">DELIVERED 2024</span><br/><strong>${Number(msa.Units_Delivered_2024 || 0).toLocaleString()}</strong></div>
                   <div><span style="color:#9ca3af;font-weight:600;font-size:10px;">DELIVERED 2025</span><br/><strong>${Number(msa.Units_Delivered_2025 || 0).toLocaleString()}</strong></div>
                 </div>
-                ${msa.Market_Commentary ? `<div style="margin-top:8px;font-size:11px;color:#6b7280;line-height:1.5;border-top:1px solid #e5e7eb;padding-top:6px;">${msa.Market_Commentary.substring(0, 200)}${msa.Market_Commentary.length > 200 ? '…' : ''}</div>` : ''}
+                ${msa.Market_Commentary ? `<div style="margin-top:8px;font-size:11px;color:#6b7280;line-height:1.5;border-top:1px solid #e5e7eb;padding-top:6px;">${msa.Market_Commentary.substring(0, 200)}${msa.Market_Commentary.length > 200 ? 'â€¦' : ''}</div>` : ''}
                 ${msa.Absorption_Data_Source ? `<div style="margin-top:4px;font-size:10px;color:#9ca3af;">Source: ${msa.Absorption_Data_Source}</div>` : ''}
               </div>
             `);
-          const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+          const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
             .setLngLat([lng, lat])
             .setPopup(popup)
             .addTo(map);
@@ -1538,7 +1545,7 @@ function DashboardMapTab() {
           el.style.width = `${radius}px`;
           el.style.height = `${radius}px`;
           el.innerHTML = `<div style="width:${radius}px;height:${radius}px;border-radius:50%;background:${color};opacity:0.75;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;"><span style="font-size:9px;font-weight:700;color:#fff;">${rate}%</span></div>`;
-          const popup = new maplibregl.Popup({ offset: 12, maxWidth: '400px' })
+          const popup = new mapboxgl.Popup({ offset: 12, maxWidth: '400px' })
             .setHTML(`
               <div style="font-family:Inter,-apple-system,sans-serif;padding:10px;">
                 <div style="font-weight:700;font-size:15px;color:#111827;margin-bottom:2px;">${msa.MSA}</div>
@@ -1558,15 +1565,15 @@ function DashboardMapTab() {
                   ${msa.CapRate_ClassC_Stab_Range ? `<div style="padding:5px 8px;background:#fdf2f8;border-radius:6px;font-size:11px;"><div style="font-weight:600;color:#6b7280;font-size:10px;">CLASS C STAB</div><div style="font-weight:700;color:#111827;">${msa.CapRate_ClassC_Stab_Range}</div></div>` : ''}
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:12px;color:#374151;padding-top:6px;border-top:1px solid #e5e7eb;">
-                  <div><span style="color:#9ca3af;font-weight:600;font-size:10px;">INVESTOR DEMAND</span><br/><strong>${msa.Investor_Demand || '–'}</strong></div>
-                  <div><span style="color:#9ca3af;font-weight:600;font-size:10px;">MARKET TIER</span><br/><strong>${msa.Market_Tier || '–'}</strong></div>
+                  <div><span style="color:#9ca3af;font-weight:600;font-size:10px;">INVESTOR DEMAND</span><br/><strong>${msa.Investor_Demand || 'â€“'}</strong></div>
+                  <div><span style="color:#9ca3af;font-weight:600;font-size:10px;">MARKET TIER</span><br/><strong>${msa.Market_Tier || 'â€“'}</strong></div>
                   ${msa.Typical_Price_Per_Unit_USD ? `<div><span style="color:#9ca3af;font-weight:600;font-size:10px;">PRICE/UNIT (A)</span><br/><strong>$${Number(msa.Typical_Price_Per_Unit_USD).toLocaleString()}</strong></div>` : ''}
                   ${msa.Typical_Price_Per_Unit_ClassB_USD ? `<div><span style="color:#9ca3af;font-weight:600;font-size:10px;">PRICE/UNIT (B)</span><br/><strong>$${Number(msa.Typical_Price_Per_Unit_ClassB_USD).toLocaleString()}</strong></div>` : ''}
                 </div>
-                ${msa.CapRate_Notes ? `<div style="margin-top:6px;font-size:11px;color:#6b7280;line-height:1.4;border-top:1px solid #e5e7eb;padding-top:6px;">${msa.CapRate_Notes.substring(0, 200)}${msa.CapRate_Notes.length > 200 ? '…' : ''}</div>` : ''}
+                ${msa.CapRate_Notes ? `<div style="margin-top:6px;font-size:11px;color:#6b7280;line-height:1.4;border-top:1px solid #e5e7eb;padding-top:6px;">${msa.CapRate_Notes.substring(0, 200)}${msa.CapRate_Notes.length > 200 ? 'â€¦' : ''}</div>` : ''}
               </div>
             `);
-          const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+          const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
             .setLngLat([lng, lat])
             .setPopup(popup)
             .addTo(map);
@@ -1592,9 +1599,9 @@ function DashboardMapTab() {
           </svg>
         `;
 
-        const categoryLabel = pin.category === 'pipeline' ? '📋 Pipeline' :
-          pin.source === 'uploaded' ? '📊 Uploaded' :
-          pin.category === 'rapidfire' ? '🔥 Rapid Fire' : '🏘️ Prospect';
+        const categoryLabel = pin.category === 'pipeline' ? 'ðŸ“‹ Pipeline' :
+          pin.source === 'uploaded' ? 'ðŸ“Š Uploaded' :
+          pin.category === 'rapidfire' ? 'ðŸ”¥ Rapid Fire' : 'ðŸ˜ï¸ Prospect';
 
         const badgeBg = pin.category === 'pipeline' ? '#d1fae5' :
           pin.source === 'uploaded' ? '#cffafe' :
@@ -1614,7 +1621,7 @@ function DashboardMapTab() {
               </div>`).join('')
           : '';
 
-        const popup = new maplibregl.Popup({ offset: 25, maxWidth: '350px' })
+        const popup = new mapboxgl.Popup({ offset: 25, maxWidth: '350px' })
           .setHTML(`
             <div style="font-family: Inter, -apple-system, sans-serif; padding: 8px;">
               <div style="font-weight: 700; font-size: 14px; color: #111827; margin-bottom: 6px;">
@@ -1631,7 +1638,7 @@ function DashboardMapTab() {
             </div>
           `);
 
-        const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+        const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
           .setLngLat([pin.position[1], pin.position[0]])
           .setPopup(popup)
           .addTo(map);
@@ -1683,14 +1690,17 @@ function DashboardMapTab() {
         };
         setCustomPins((prev) => [...prev, newPin]);
         setForm({ name: '', address: '', units: '', notes: '' });
-        console.log('✅ Manual property added to map:', newPin);
+        console.log('âœ… Manual property added to map:', newPin);
       } catch (error) {
         console.error('Failed to save manual property:', error);
       }
     }
   };
 
-  // Map tile layer configurations (all free, no API key needed)
+  // Map tile layer configurations
+  // Satellite uses Mapbox (higher-res imagery) when a token is configured,
+  // falling back to free Esri World Imagery tiles if it isn't.
+  const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
   const tileConfigs = {
     voyager: {
       url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
@@ -1700,7 +1710,11 @@ function DashboardMapTab() {
       url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
       attribution: '&copy; Esri, HERE, Garmin, USGS'
     },
-    satellite: {
+    satellite: MAPBOX_TOKEN ? {
+      url: `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`,
+      attribution: '&copy; Mapbox &copy; OpenStreetMap',
+      maxNativeZoom: 20,
+    } : {
       url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       attribution: '&copy; Esri, Maxar, Earthstar Geographics',
       labelsUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'
@@ -1717,7 +1731,7 @@ function DashboardMapTab() {
   const tileUrl = currentTile.url;
   const attribution = currentTile.attribution;
 
-  // Marker styles by category — clean bubble markers showing unit count
+  // Marker styles by category â€” clean bubble markers showing unit count
   const categoryIcon = (cat, source, units) => {
     let color;
     
@@ -2115,7 +2129,7 @@ function DashboardMapTab() {
     if (dbId) {
       try {
         await supabase.from('map_prospects').delete().eq('id', dbId);
-        console.log(`🗑️ Deleted pin from database: ${dbId}`);
+        console.log(`ðŸ—‘ï¸ Deleted pin from database: ${dbId}`);
       } catch (error) {
         console.error('Failed to delete pin from database:', error);
       }
@@ -2166,7 +2180,7 @@ function DashboardMapTab() {
       let resultCalled = false;
       const safeOnResult = (result) => {
         if (resultCalled) {
-          console.warn('⚠️ Geocode callback already called for:', address);
+          console.warn('âš ï¸ Geocode callback already called for:', address);
           return;
         }
         resultCalled = true;
@@ -2178,7 +2192,7 @@ function DashboardMapTab() {
         const res = await fetch(url, { headers: { 'Accept-Language': 'en-US' } });
         
         if (!res.ok) {
-          console.error(`❌ Geocode API error ${res.status} for:`, address);
+          console.error(`âŒ Geocode API error ${res.status} for:`, address);
           safeOnResult(null);
           setTimeout(step, 1100);
           return;
@@ -2192,15 +2206,15 @@ function DashboardMapTab() {
           if (!isNaN(lat) && !isNaN(lng)) {
             safeOnResult({ lat, lng });
           } else {
-            console.error('❌ Invalid coordinates for:', address, best);
+            console.error('âŒ Invalid coordinates for:', address, best);
             safeOnResult(null);
           }
         } else {
-          console.warn('⚠️ No results for:', address);
+          console.warn('âš ï¸ No results for:', address);
           safeOnResult(null);
         }
       } catch (e) {
-        console.error('❌ Geocode exception for:', address, e.message);
+        console.error('âŒ Geocode exception for:', address, e.message);
         safeOnResult(null);
       }
       setTimeout(step, 1100); // ~1 req/sec
@@ -2251,7 +2265,7 @@ function DashboardMapTab() {
     }
     
     setProcessingStatus(`Processing ${rapidFireQueue.length} properties...`);
-    console.log('🗺️ Starting to add all Rapid Fire items to map:', rapidFireQueue.length);
+    console.log('ðŸ—ºï¸ Starting to add all Rapid Fire items to map:', rapidFireQueue.length);
     
     let processed = 0;
     let succeeded = 0;
@@ -2263,7 +2277,7 @@ function DashboardMapTab() {
       const addr = item.address;
       
       if (!addr || !addr.trim()) {
-        console.warn(`⚠️ [${processed + 1}/${rapidFireQueue.length}] Skipping - no address:`, item.name);
+        console.warn(`âš ï¸ [${processed + 1}/${rapidFireQueue.length}] Skipping - no address:`, item.name);
         processed++;
         failed++;
         failedAddresses.push({ name: item.name, reason: 'No address' });
@@ -2276,7 +2290,7 @@ function DashboardMapTab() {
         processed++;
         if (latlng) {
           succeeded++;
-          console.log(`✅ [${itemIndex}/${rapidFireQueue.length}] Geocoded:`, item.name, `(${latlng.lat}, ${latlng.lng})`);
+          console.log(`âœ… [${itemIndex}/${rapidFireQueue.length}] Geocoded:`, item.name, `(${latlng.lat}, ${latlng.lng})`);
           
           try {
             // Save to Supabase first to get ID
@@ -2307,30 +2321,30 @@ function DashboardMapTab() {
             setCustomPins(prev => [...prev, pin]);
             
             if (insertError) {
-              console.error('⚠️ Supabase insert failed for:', item.name, insertError.message);
+              console.error('âš ï¸ Supabase insert failed for:', item.name, insertError.message);
             }
           } catch (err) {
-            console.error('❌ Error creating pin for:', item.name, err);
+            console.error('âŒ Error creating pin for:', item.name, err);
             failed++;
             succeeded--;
             failedAddresses.push({ name: item.name, reason: err.message });
           }
           
-          setProcessingStatus(`✅ Added ${succeeded} of ${rapidFireQueue.length} (${failed} failed)`);
+          setProcessingStatus(`âœ… Added ${succeeded} of ${rapidFireQueue.length} (${failed} failed)`);
         } else {
           failed++;
           failedAddresses.push({ name: item.name, address: addr, reason: 'Geocoding failed' });
-          console.error(`❌ [${itemIndex}/${rapidFireQueue.length}] Failed to geocode:`, item.name, addr);
-          setProcessingStatus(`⚠️ Added ${succeeded} of ${rapidFireQueue.length} (${failed} failed)`);
+          console.error(`âŒ [${itemIndex}/${rapidFireQueue.length}] Failed to geocode:`, item.name, addr);
+          setProcessingStatus(`âš ï¸ Added ${succeeded} of ${rapidFireQueue.length} (${failed} failed)`);
         }
         
         // Log summary when complete
         if (processed === rapidFireQueue.length) {
-          console.log(`\n📊 GEOCODING COMPLETE:`);
-          console.log(`   ✅ Succeeded: ${succeeded}`);
-          console.log(`   ❌ Failed: ${failed}`);
+          console.log(`\nðŸ“Š GEOCODING COMPLETE:`);
+          console.log(`   âœ… Succeeded: ${succeeded}`);
+          console.log(`   âŒ Failed: ${failed}`);
           if (failedAddresses.length > 0) {
-            console.log(`\n❌ Failed properties:`);
+            console.log(`\nâŒ Failed properties:`);
             failedAddresses.forEach((item, idx) => {
               console.log(`   ${idx + 1}. ${item.name} - ${item.reason}${item.address ? ` (${item.address})` : ''}`);
             });
@@ -2339,7 +2353,7 @@ function DashboardMapTab() {
       });
     }
     
-    setProcessingStatus(`⏳ Queued ${rapidFireQueue.length} properties. Geocoding at ~1/sec...`);
+    setProcessingStatus(`â³ Queued ${rapidFireQueue.length} properties. Geocoding at ~1/sec...`);
   };
 
   // Upload Prospects: parse file and add pins
@@ -2413,19 +2427,19 @@ function DashboardMapTab() {
   // Load saved prospects from Supabase (includes rapid fire pins)
   const loadSavedProspects = async () => {
     try {
-      console.log('🔍 Fetching saved prospects from map_prospects table...');
+      console.log('ðŸ” Fetching saved prospects from map_prospects table...');
       const { data, error } = await supabase
         .from('map_prospects')
         .select('id,name,address,units,lat,lng,source')
         .order('created_at', { ascending: false })
         .limit(500);
       
-      console.log('🔍 Supabase query result:', { data, error });
-      console.log(`🔍 Found ${data?.length || 0} rows in map_prospects`);
+      console.log('ðŸ” Supabase query result:', { data, error });
+      console.log(`ðŸ” Found ${data?.length || 0} rows in map_prospects`);
       
       if (!error && Array.isArray(data)) {
         const validPins = data.filter(r => Number.isFinite(r.lat) && Number.isFinite(r.lng));
-        console.log(`🔍 ${validPins.length} have valid coordinates`);
+        console.log(`ðŸ” ${validPins.length} have valid coordinates`);
         
         const pins = validPins.map(r => ({ 
           id: `saved-${r.id}`, 
@@ -2438,28 +2452,28 @@ function DashboardMapTab() {
           units: r.units || null
         }));
         
-        console.log('🔍 Saved prospect pins created:', pins);
+        console.log('ðŸ” Saved prospect pins created:', pins);
         
         setCustomPins(prev => {
-          console.log('🔍 Current pins before adding saved:', prev);
+          console.log('ðŸ” Current pins before adding saved:', prev);
           // Remove old saved pins, keep pipeline pins, add new saved pins
           const nonSaved = prev.filter(p => p.source !== 'saved');
           const newPins = [...nonSaved, ...pins];
-          console.log('🔍 New pins array after adding saved:', newPins);
+          console.log('ðŸ” New pins array after adding saved:', newPins);
           return newPins;
         });
-        console.log(`✅ Loaded ${pins.length} saved properties from database`);
+        console.log(`âœ… Loaded ${pins.length} saved properties from database`);
       } else if (error) {
-        console.error('❌ Supabase error loading prospects:', error);
+        console.error('âŒ Supabase error loading prospects:', error);
       }
     } catch (e) {
-      console.error('❌ Failed to load saved prospects:', e);
+      console.error('âŒ Failed to load saved prospects:', e);
     }
   };
 
   // Auto-load saved prospects on mount
   useEffect(() => {
-    console.log('🗺️ MapTab mounting - loading saved prospects...');
+    console.log('ðŸ—ºï¸ MapTab mounting - loading saved prospects...');
     loadSavedProspects();
   }, []);
 
@@ -2642,7 +2656,7 @@ function DashboardMapTab() {
     console.log('[Save] saveUploadedProperties called, count:', properties.length, 'uploadName:', uploadName);
     if (!userId) {
       console.error('[Save] No userId, cannot save');
-      addToast('❌ You must be logged in to save properties', 'error');
+      addToast('âŒ You must be logged in to save properties', 'error');
       return;
     }
 
@@ -2689,9 +2703,9 @@ function DashboardMapTab() {
       setShowPreviewModal(false);
       setSheetPreview(null);
       
-      addToast(`✅ ${newPins.length} properties added to map!`, 'success');
+      addToast(`âœ… ${newPins.length} properties added to map!`, 'success');
 
-      // ── Background: Fetch parcel polygons ──
+      // â”€â”€ Background: Fetch parcel polygons â”€â”€
       if (data.length > 0) {
         setIsFetchingParcels(true);
         setBgProcessing({ fileName: uploadName, stage: 'parcels', geocoded: data.length, total: data.length, parcelsFound: 0 });
@@ -2735,9 +2749,9 @@ function DashboardMapTab() {
           const finalFound = parcelResult?.found || 0;
           console.log('[Parcel] Batch complete. Found:', finalFound);
           if (finalFound > 0) {
-            addToast(`🗺️ ${finalFound} parcel boundaries drawn on map`, 'info');
+            addToast(`ðŸ—ºï¸ ${finalFound} parcel boundaries drawn on map`, 'info');
           } else {
-            addToast(`ℹ️ No parcel boundaries found for these properties`, 'warning', 5000);
+            addToast(`â„¹ï¸ No parcel boundaries found for these properties`, 'warning', 5000);
           }
         } catch (err) {
           console.error('[Parcel] Batch fetch error:', err);
@@ -2747,7 +2761,7 @@ function DashboardMapTab() {
       }
     } catch (error) {
       console.error('Error saving properties:', error);
-      addToast('❌ Failed to save properties. Please try again.', 'error');
+      addToast('âŒ Failed to save properties. Please try again.', 'error');
     }
   };
 
@@ -2808,7 +2822,7 @@ function DashboardMapTab() {
             return [...nonUploaded, ...pins];
           });
 
-          console.log(`✅ Loaded ${pins.length} uploaded properties`);
+          console.log(`âœ… Loaded ${pins.length} uploaded properties`);
         }
       } catch (error) {
         console.error('Error loading uploaded properties:', error);
@@ -2847,7 +2861,7 @@ function DashboardMapTab() {
           image-rendering: auto;
         }
       `}</style>
-      {/* ═══════════════ MAIN MAP AREA (takes full space) ═══════════════ */}
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• MAIN MAP AREA (takes full space) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
 
         {/* ─── Floating Collapsible Panel (left side, inside map) ─── */}
@@ -2858,29 +2872,28 @@ function DashboardMapTab() {
           zIndex: 1000,
           width: panelOpen ? (isMobile ? 'calc(100% - 16px)' : 320) : 44,
           maxHeight: isMobile ? 'calc(100% - 60px)' : 'calc(100% - 24px)',
-          backgroundColor: 'rgba(15, 23, 42, 0.95)',
-          backdropFilter: 'blur(16px)',
+          backgroundColor: '#ffffff',
           borderRadius: 12,
-          border: '1px solid rgba(255,255,255,0.08)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          border: '1px solid #e5e7eb',
+          boxShadow: '0 8px 24px rgba(15, 23, 42, 0.16)',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           transition: 'width 0.25s cubic-bezier(.4,0,.2,1)',
-          color: '#e2e8f0',
+          color: '#374151',
         }}>
           {/* Panel Header */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: panelOpen ? '10px 14px' : '10px 11px',
-            borderBottom: panelOpen ? '1px solid rgba(255,255,255,0.06)' : 'none',
+            borderBottom: panelOpen ? '1px solid #e5e7eb' : 'none',
             flexShrink: 0,
           }}>
-            {panelOpen && <span style={{ fontSize: 13, fontWeight: 700, color: '#f1f5f9', letterSpacing: '0.3px' }}>Map Controls</span>}
+            {panelOpen && <span style={{ fontSize: 13, fontWeight: 700, color: '#111827', letterSpacing: '0.3px' }}>Map Controls</span>}
             <button onClick={() => setPanelOpen(v => !v)} style={{
-              background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: 6,
+              background: '#f3f4f6', border: 'none', borderRadius: 6,
               width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: '#94a3b8', flexShrink: 0,
+              cursor: 'pointer', color: '#6b7280', flexShrink: 0,
             }}>
               {panelOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
             </button>
@@ -2897,9 +2910,9 @@ function DashboardMapTab() {
               ].map(({ tab, icon, tip }) => (
                 <button key={tab} title={tip} onClick={() => { setPanelTab(tab); setPanelOpen(true); }} style={{
                   width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: panelTab === tab ? 'rgba(59,130,246,0.2)' : 'transparent',
+                  background: panelTab === tab ? 'rgba(16,185,129,0.12)' : 'transparent',
                   border: 'none', borderRadius: 8, cursor: 'pointer',
-                  color: panelTab === tab ? '#60a5fa' : '#64748b',
+                  color: panelTab === tab ? '#059669' : '#9ca3af',
                 }}>
                   {icon}
                 </button>
@@ -2911,7 +2924,7 @@ function DashboardMapTab() {
           {panelOpen && (
             <div style={{
               display: 'flex', gap: 2, padding: '6px 10px',
-              borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0,
+              borderBottom: '1px solid #e5e7eb', flexShrink: 0,
             }}>
               {[
                 { tab: 'layers', label: 'Layers', icon: <Layers size={13} /> },
@@ -2922,10 +2935,10 @@ function DashboardMapTab() {
                 <button key={tab} onClick={() => setPanelTab(tab)} style={{
                   flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
                   padding: '6px 0', fontSize: 11, fontWeight: panelTab === tab ? 600 : 500,
-                  color: panelTab === tab ? '#60a5fa' : '#94a3b8',
-                  background: panelTab === tab ? 'rgba(59,130,246,0.1)' : 'transparent',
+                  color: panelTab === tab ? '#059669' : '#6b7280',
+                  background: panelTab === tab ? 'rgba(16,185,129,0.08)' : 'transparent',
                   border: 'none', borderRadius: 6, cursor: 'pointer',
-                  borderBottom: panelTab === tab ? '2px solid #3b82f6' : '2px solid transparent',
+                  borderBottom: panelTab === tab ? '2px solid #059669' : '2px solid transparent',
                 }}>
                   {icon} {label}
                 </button>
@@ -2937,12 +2950,12 @@ function DashboardMapTab() {
           {panelOpen && (
             <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', minHeight: 0 }}>
 
-              {/* ═══ LAYERS TAB ═══ */}
+              {/* â•â•â• LAYERS TAB â•â•â• */}
               {panelTab === 'layers' && (
                 <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {/* Data Layers */}
                   <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#64748b', marginBottom: 6 }}>Data Layers</div>
+                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#9ca3af', marginBottom: 6 }}>Data Layers</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                       {[
                         { label: 'Developments', active: devPipelineEnabled, color: '#f59e0b', count: devPipelineEnabled ? filteredPipeline.length : null, toggle: () => setDevPipelineEnabled(v => !v) },
@@ -2961,13 +2974,13 @@ function DashboardMapTab() {
                         <button key={label} onClick={toggle} style={{
                           display: 'inline-flex', alignItems: 'center', gap: 4,
                           padding: '4px 10px', borderRadius: 20,
-                          border: active ? `1.5px solid ${color}` : '1.5px solid rgba(255,255,255,0.1)',
+                          border: active ? `1.5px solid ${color}` : '1.5px solid #e5e7eb',
                           cursor: 'pointer', fontSize: 11, fontWeight: active ? 600 : 500,
-                          color: active ? color : '#94a3b8',
+                          color: active ? color : '#6b7280',
                           backgroundColor: active ? `${color}18` : 'transparent',
                           transition: 'all 0.15s', lineHeight: 1,
                         }}>
-                          <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, backgroundColor: active ? color : '#475569' }} />
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, backgroundColor: active ? color : '#d1d5db' }} />
                           {label}
                           {count != null && <span style={{ fontSize: 9, fontWeight: 700, color: '#fff', backgroundColor: color, borderRadius: 8, padding: '1px 5px', marginLeft: 1 }}>{count > 999 ? `${(count/1000).toFixed(1)}k` : count}</span>}
                         </button>
@@ -2977,15 +2990,15 @@ function DashboardMapTab() {
 
                   {/* Active Layer Settings */}
                   {(countyOverlay || zipOverlay || cityMetricsEnabled || zipMetricsEnabled || zipHeatmap || devPipelineEnabled || absorptionEnabled || capRateEnabled || zoningEnabled || sfrSalesEnabled || mfSalesEnabled) && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5, paddingTop: 6, borderTop: '1px solid #e5e7eb' }}>
                       {devPipelineEnabled && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span style={{ fontSize: 9, fontWeight: 600, color: '#f59e0b', minWidth: 36 }}>DEV</span>
                           <select value={devPipelineFilter} onChange={(e) => setDevPipelineFilter(e.target.value)} style={{
-                            flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
-                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
+                            flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid #d1d5db', borderRadius: 5,
+                            backgroundColor: '#ffffff', color: '#111827',
                           }}>
-                            {pipelineStatuses.map(s => <option key={s} value={s} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{s === 'all' ? 'All Statuses' : s}</option>)}
+                            {pipelineStatuses.map(s => <option key={s} value={s}>{s === 'all' ? 'All Statuses' : s}</option>)}
                           </select>
                         </div>
                       )}
@@ -2993,10 +3006,10 @@ function DashboardMapTab() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span style={{ fontSize: 9, fontWeight: 600, color: '#059669', minWidth: 36 }}>ABS</span>
                           <select value={absorptionFilter} onChange={(e) => setAbsorptionFilter(e.target.value)} style={{
-                            flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
-                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
+                            flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid #d1d5db', borderRadius: 5,
+                            backgroundColor: '#ffffff', color: '#111827',
                           }}>
-                            {absorptionTrends.map(t => <option key={t} value={t} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{t === 'all' ? 'All Trends' : t}</option>)}
+                            {absorptionTrends.map(t => <option key={t} value={t}>{t === 'all' ? 'All Trends' : t}</option>)}
                           </select>
                         </div>
                       )}
@@ -3004,10 +3017,10 @@ function DashboardMapTab() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span style={{ fontSize: 9, fontWeight: 600, color: '#ec4899', minWidth: 36 }}>CAP</span>
                           <select value={capRateFilter} onChange={(e) => setCapRateFilter(e.target.value)} style={{
-                            flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
-                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
+                            flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid #d1d5db', borderRadius: 5,
+                            backgroundColor: '#ffffff', color: '#111827',
                           }}>
-                            {capRateFilterOptions.map(o => <option key={o} value={o} disabled={o === '──────'} style={{ backgroundColor: '#1e293b', color: o === '──────' ? '#475569' : '#e2e8f0' }}>{o === 'all' ? 'All Markets' : o}</option>)}
+                            {capRateFilterOptions.map(o => <option key={o} value={o} disabled={o === '──────'}>{o === 'all' ? 'All Markets' : o}</option>)}
                           </select>
                         </div>
                       )}
@@ -3015,10 +3028,10 @@ function DashboardMapTab() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span style={{ fontSize: 9, fontWeight: 600, color: '#6366f1', minWidth: 36 }}>CTY</span>
                           <select value={countyMetric} onChange={(e) => setCountyMetric(e.target.value)} style={{
-                            flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
-                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
+                            flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid #d1d5db', borderRadius: 5,
+                            backgroundColor: '#ffffff', color: '#111827',
                           }}>
-                            {COUNTY_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{opt.label}</option>)}
+                            {COUNTY_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                           </select>
                         </div>
                       )}
@@ -3026,10 +3039,10 @@ function DashboardMapTab() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span style={{ fontSize: 9, fontWeight: 600, color: '#10b981', minWidth: 36 }}>ZIP</span>
                           <select value={zipMetric} onChange={(e) => setZipMetric(e.target.value)} style={{
-                            flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
-                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
+                            flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid #d1d5db', borderRadius: 5,
+                            backgroundColor: '#ffffff', color: '#111827',
                           }}>
-                            {ZIP_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{opt.label}</option>)}
+                            {ZIP_METRIC_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                           </select>
                         </div>
                       )}
@@ -3038,25 +3051,25 @@ function DashboardMapTab() {
                           <span style={{ fontSize: 9, fontWeight: 600, color: '#14b8a6', minWidth: 36, marginTop: 4 }}>CITY</span>
                           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
                             <select value={cityMetricDataset} onChange={(e) => setCityMetricDataset(e.target.value)} style={{
-                              width: '100%', padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
-                              backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
+                              width: '100%', padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid #d1d5db', borderRadius: 5,
+                              backgroundColor: '#ffffff', color: '#111827',
                             }}>
-                              {CITY_METRIC_DATASETS.map(opt => <option key={opt.value} value={opt.value} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{opt.label}</option>)}
+                              {CITY_METRIC_DATASETS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                             </select>
                             <select value={cityMetric} onChange={(e) => setCityMetric(e.target.value)} style={{
-                              width: '100%', padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
-                              backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
+                              width: '100%', padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid #d1d5db', borderRadius: 5,
+                              backgroundColor: '#ffffff', color: '#111827',
                             }}>
-                              {cityMetricColumns.map(col => <option key={col} value={col} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{metricLabelFromKey(col)}</option>)}
+                              {cityMetricColumns.map(col => <option key={col} value={col}>{metricLabelFromKey(col)}</option>)}
                             </select>
                             {cityMetricLegend.length > 0 && (
-                              <div style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 6px', background: 'rgba(255,255,255,0.03)' }}>
-                                <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', marginBottom: 4 }}>Legend · {metricLabelFromKey(cityMetric || '')}</div>
+                              <div style={{ border: '1px solid #e5e7eb', borderRadius: 6, padding: '5px 6px', background: '#f9fafb' }}>
+                                <div style={{ fontSize: 9, fontWeight: 700, color: '#6b7280', marginBottom: 4 }}>Legend · {metricLabelFromKey(cityMetric || '')}</div>
                                 <div style={{ display: 'grid', gap: 3 }}>
                                   {cityMetricLegend.map((item, idx) => (
                                     <div key={`city-legend-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                      <span style={{ width: 10, height: 10, borderRadius: 3, background: item.color, border: '1px solid rgba(255,255,255,0.4)' }} />
-                                      <span style={{ fontSize: 9, color: '#cbd5e1', lineHeight: 1.2 }}>{item.label}</span>
+                                      <span style={{ width: 10, height: 10, borderRadius: 3, background: item.color, border: '1px solid rgba(0,0,0,0.15)' }} />
+                                      <span style={{ fontSize: 9, color: '#374151', lineHeight: 1.2 }}>{item.label}</span>
                                     </div>
                                   ))}
                                 </div>
@@ -3070,25 +3083,25 @@ function DashboardMapTab() {
                           <span style={{ fontSize: 9, fontWeight: 600, color: '#06b6d4', minWidth: 36, marginTop: 4 }}>ZIP+</span>
                           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
                             <select value={zipMetricDataset} onChange={(e) => setZipMetricDataset(e.target.value)} style={{
-                              width: '100%', padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
-                              backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
+                              width: '100%', padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid #d1d5db', borderRadius: 5,
+                              backgroundColor: '#ffffff', color: '#111827',
                             }}>
-                              {ZIP_METRIC_DATASETS.map(opt => <option key={opt.value} value={opt.value} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{opt.label}</option>)}
+                              {ZIP_METRIC_DATASETS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                             </select>
                             <select value={zipMetricV2} onChange={(e) => setZipMetricV2(e.target.value)} style={{
-                              width: '100%', padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
-                              backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
+                              width: '100%', padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid #d1d5db', borderRadius: 5,
+                              backgroundColor: '#ffffff', color: '#111827',
                             }}>
-                              {zipMetricColumns.map(col => <option key={col} value={col} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{metricLabelFromKey(col)}</option>)}
+                              {zipMetricColumns.map(col => <option key={col} value={col}>{metricLabelFromKey(col)}</option>)}
                             </select>
                             {zipMetricV2Legend.length > 0 && (
-                              <div style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '5px 6px', background: 'rgba(255,255,255,0.03)' }}>
-                                <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', marginBottom: 4 }}>Legend · {metricLabelFromKey(zipMetricV2 || '')}</div>
+                              <div style={{ border: '1px solid #e5e7eb', borderRadius: 6, padding: '5px 6px', background: '#f9fafb' }}>
+                                <div style={{ fontSize: 9, fontWeight: 700, color: '#6b7280', marginBottom: 4 }}>Legend · {metricLabelFromKey(zipMetricV2 || '')}</div>
                                 <div style={{ display: 'grid', gap: 3 }}>
                                   {zipMetricV2Legend.map((item, idx) => (
                                     <div key={`zip-legend-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                      <span style={{ width: 10, height: 10, borderRadius: 3, background: item.color, border: '1px solid rgba(255,255,255,0.4)' }} />
-                                      <span style={{ fontSize: 9, color: '#cbd5e1', lineHeight: 1.2 }}>{item.label}</span>
+                                      <span style={{ width: 10, height: 10, borderRadius: 3, background: item.color, border: '1px solid rgba(0,0,0,0.15)' }} />
+                                      <span style={{ fontSize: 9, color: '#374151', lineHeight: 1.2 }}>{item.label}</span>
                                     </div>
                                   ))}
                                 </div>
@@ -3101,10 +3114,10 @@ function DashboardMapTab() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span style={{ fontSize: 9, fontWeight: 600, color: '#3b82f6', minWidth: 36 }}>HEAT</span>
                           <select value={zipHeatmapMetric} onChange={(e) => setZipHeatmapMetric(e.target.value)} style={{
-                            flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
-                            backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
+                            flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid #d1d5db', borderRadius: 5,
+                            backgroundColor: '#ffffff', color: '#111827',
                           }}>
-                            {(() => { const g = {}; ZIP_HEATMAP_METRIC_OPTIONS.forEach(o => { if (!g[o.group]) g[o.group] = []; g[o.group].push(o); }); return Object.entries(g).map(([gr, os]) => <optgroup key={gr} label={gr} style={{ backgroundColor: '#1e293b', color: '#94a3b8' }}>{os.map(o => <option key={o.value} value={o.value} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{o.label}</option>)}</optgroup>); })()}
+                            {(() => { const g = {}; ZIP_HEATMAP_METRIC_OPTIONS.forEach(o => { if (!g[o.group]) g[o.group] = []; g[o.group].push(o); }); return Object.entries(g).map(([gr, os]) => <optgroup key={gr} label={gr}>{os.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</optgroup>); })()}
                           </select>
                         </div>
                       )}
@@ -3112,12 +3125,12 @@ function DashboardMapTab() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span style={{ fontSize: 9, fontWeight: 600, color: '#0ea5e9', minWidth: 36 }}>ZONE</span>
                           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                            {zoningLoading ? <span style={{ fontSize: 10, color: '#94a3b8' }}>Loading…</span> : (
+                            {zoningLoading ? <span style={{ fontSize: 10, color: '#6b7280' }}>Loading…</span> : (
                               <select value={zoningServiceKey} onChange={(e) => { setZoningServiceKey(e.target.value); setAgentSelectedSlug(''); setZoningFilter(''); }} style={{
-                                width: '100%', padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
-                                backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
+                                width: '100%', padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid #d1d5db', borderRadius: 5,
+                                backgroundColor: '#ffffff', color: '#111827',
                               }}>
-                                <option value="" style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>Select zoning layer</option>
+                                <option value="">Select zoning layer</option>
                                 {(() => {
                                   const groups = {};
                                   Object.entries(zoningServices).forEach(([key, svc]) => {
@@ -3132,10 +3145,10 @@ function DashboardMapTab() {
                                     const byState = {};
                                     items.forEach(item => { const st = item.state || '??'; if (!byState[st]) byState[st] = []; byState[st].push(item); });
                                     return (
-                                      <optgroup key={region} label={`── ${regionNames[region] || region} (${items.length}) ──`} style={{ backgroundColor: '#1e293b', color: '#94a3b8' }}>
+                                      <optgroup key={region} label={`── ${regionNames[region] || region} (${items.length}) ──`}>
                                         {Object.entries(byState).sort(([a],[b]) => a.localeCompare(b)).flatMap(([st, stItems]) =>
                                           stItems.sort((a,b) => a.label.localeCompare(b.label)).map(({ key, label }) => (
-                                            <option key={key} value={key} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{label}, {st}</option>
+                                            <option key={key} value={key}>{label}, {st}</option>
                                           ))
                                         )}
                                       </optgroup>
@@ -3145,39 +3158,39 @@ function DashboardMapTab() {
                               </select>
                             )}
                             {(zoningServiceKey || agentSelectedSlug) && <input type="text" placeholder="Filter zone code…" value={zoningFilter} onChange={(e) => setZoningFilter(e.target.value)} style={{
-                              padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
-                              backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0',
+                              padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid #d1d5db', borderRadius: 5,
+                              backgroundColor: '#ffffff', color: '#111827',
                             }} />}
                             {/* AI Discovery */}
-                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 4, marginTop: 2 }}>
-                              <div style={{ fontSize: 9, fontWeight: 700, color: '#3b82f6', marginBottom: 3, letterSpacing: '0.5px' }}>AI DISCOVER ANY CITY</div>
+                            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 4, marginTop: 2 }}>
+                              <div style={{ fontSize: 9, fontWeight: 700, color: '#059669', marginBottom: 3, letterSpacing: '0.5px' }}>AI DISCOVER ANY CITY</div>
                               <div style={{ display: 'flex', gap: 3 }}>
                                 <input type="text" placeholder="e.g. Raleigh, NC" value={agentCityInput}
                                   onChange={(e) => { setAgentCityInput(e.target.value); setAgentDiscoverError(''); }}
                                   onKeyDown={(e) => { if (e.key === 'Enter') handleDiscoverCity(); }}
                                   disabled={agentDiscovering}
                                   style={{
-                                    flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5,
-                                    backgroundColor: agentDiscovering ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)', color: '#e2e8f0',
+                                    flex: 1, padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid #d1d5db', borderRadius: 5,
+                                    backgroundColor: agentDiscovering ? '#f3f4f6' : '#ffffff', color: '#111827',
                                   }}
                                 />
                                 <button onClick={handleDiscoverCity} disabled={agentDiscovering || !agentCityInput.trim()} style={{
                                   padding: '3px 10px', fontSize: 10, fontWeight: 600, border: 'none', borderRadius: 5,
                                   cursor: agentDiscovering ? 'wait' : 'pointer',
-                                  backgroundColor: agentDiscovering ? '#1e40af' : '#2563eb', color: 'white',
+                                  backgroundColor: agentDiscovering ? '#a7f3d0' : '#059669', color: 'white',
                                   opacity: (!agentCityInput.trim() || agentDiscovering) ? 0.5 : 1,
                                 }}>
                                   {agentDiscovering ? 'Finding…' : 'Discover'}
                                 </button>
                               </div>
-                              {agentDiscoverError && <div style={{ fontSize: 9, color: '#f87171', marginTop: 2 }}>{agentDiscoverError}</div>}
+                              {agentDiscoverError && <div style={{ fontSize: 9, color: '#dc2626', marginTop: 2 }}>{agentDiscoverError}</div>}
                               {agentCities.length > 0 && (
                                 <select value={agentSelectedSlug} onChange={(e) => { setAgentSelectedSlug(e.target.value); if (e.target.value) setZoningServiceKey(''); setZoningFilter(''); }} style={{
-                                  width: '100%', padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5, marginTop: 3,
-                                  backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
+                                  width: '100%', padding: '3px 8px', fontSize: 10, fontWeight: 500, border: '1px solid #d1d5db', borderRadius: 5, marginTop: 3,
+                                  backgroundColor: '#ffffff', color: '#111827',
                                 }}>
-                                  <option value="" style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>Discovered cities ({agentCities.length})</option>
-                                  {agentCities.map(c => <option key={c.slug || c} value={c.slug || c} style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>{c.city || c.slug || c}</option>)}
+                                  <option value="">Discovered cities ({agentCities.length})</option>
+                                  {agentCities.map(c => <option key={c.slug || c} value={c.slug || c}>{c.city || c.slug || c}</option>)}
                                 </select>
                               )}
                             </div>
@@ -3201,10 +3214,10 @@ function DashboardMapTab() {
                 </div>
               )}
 
-              {/* ═══ PINS TAB ═══ */}
+              {/* â•â•â• PINS TAB â•â•â• */}
               {panelTab === 'pins' && (
                 <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#64748b', marginBottom: 2 }}>Pin Visibility</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#9ca3af', marginBottom: 2 }}>Pin Visibility</div>
                   {[
                     { label: 'Pipeline Deals', enabled: showPipelinePins, toggle: () => setShowPipelinePins(v => !v), color: '#22c55e', count: customPins.filter(p => p.category === 'pipeline').length },
                     { label: 'Rapid Fire', enabled: showRapidFirePins, toggle: () => setShowRapidFirePins(v => !v), color: '#ef4444', count: customPins.filter(p => p.category === 'rapidfire').length },
@@ -3215,47 +3228,46 @@ function DashboardMapTab() {
                     <div key={label} onClick={toggle} style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '8px 10px', borderRadius: 8, cursor: 'pointer',
-                      backgroundColor: enabled ? 'rgba(255,255,255,0.04)' : 'transparent',
-                      border: '1px solid rgba(255,255,255,0.06)',
+                      backgroundColor: enabled ? 'rgba(16,185,129,0.06)' : 'transparent',
+                      border: '1px solid #e5e7eb',
                       transition: 'all 0.15s',
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: enabled ? color : '#475569' }} />
-                        <span style={{ fontSize: 12, fontWeight: 500, color: enabled ? '#e2e8f0' : '#64748b' }}>{label}</span>
-                        <span style={{ fontSize: 10, fontWeight: 600, color: '#64748b', backgroundColor: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 8 }}>{count}</span>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: enabled ? color : '#d1d5db' }} />
+                        <span style={{ fontSize: 12, fontWeight: 500, color: enabled ? '#111827' : '#9ca3af' }}>{label}</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: '#6b7280', backgroundColor: '#f3f4f6', padding: '1px 6px', borderRadius: 8 }}>{count}</span>
                       </div>
-                      {enabled ? <Eye size={14} color="#60a5fa" /> : <EyeOff size={14} color="#475569" />}
+                      {enabled ? <Eye size={14} color="#059669" /> : <EyeOff size={14} color="#d1d5db" />}
                     </div>
                   ))}
-                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8, marginTop: 4 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#64748b', marginBottom: 6 }}>Quick Filter</div>
+                  <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 8, marginTop: 4 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#9ca3af', marginBottom: 6 }}>Quick Filter</div>
                     <select value={mapFilter} onChange={(e) => setMapFilter(e.target.value)} style={{
                       width: '100%', padding: '5px 8px', fontSize: 11, fontWeight: 500,
-                      border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6,
-                      backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0',
-                      colorScheme: 'dark', WebkitAppearance: 'none', appearance: 'none',
+                      border: '1px solid #d1d5db', borderRadius: 6,
+                      backgroundColor: '#ffffff', color: '#111827',
                     }}>
-                      <option value="all" style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>All Pins ({customPins.length})</option>
-                      <option value="pipeline" style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>Pipeline Only</option>
-                      <option value="rapidfire" style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>Rapid Fire Only</option>
-                      <option value="prospects" style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}>Prospects Only</option>
+                      <option value="all">All Pins ({customPins.length})</option>
+                      <option value="pipeline">Pipeline Only</option>
+                      <option value="rapidfire">Rapid Fire Only</option>
+                      <option value="prospects">Prospects Only</option>
                     </select>
                   </div>
                 </div>
               )}
 
-              {/* ═══ UPLOAD TAB ═══ */}
+              {/* â•â•â• UPLOAD TAB â•â•â• */}
               {panelTab === 'upload' && (
                 <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {/* Property Spreadsheet Upload */}
-                  <div style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: '10px 12px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 4 }}>Property Spreadsheet</div>
-                    <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 8 }}>CSV/XLSX • Adds blue map pins</div>
+                  <div style={{ backgroundColor: '#f9fafb', borderRadius: 8, padding: '10px 12px', border: '1px solid #e5e7eb' }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#111827', marginBottom: 4 }}>Property Spreadsheet</div>
+                    <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 8 }}>CSV/XLSX • Adds blue map pins</div>
                     <label style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                       padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
-                      border: '1px dashed rgba(59,130,246,0.4)', backgroundColor: 'rgba(59,130,246,0.06)',
-                      color: '#60a5fa', fontSize: 11, fontWeight: 600,
+                      border: '1px dashed #a7f3d0', backgroundColor: 'rgba(16,185,129,0.06)',
+                      color: '#059669', fontSize: 11, fontWeight: 600,
                     }}>
                       <UploadCloud size={14} /> Upload File
                       <input type="file" accept=".csv,.xlsx,.xls" onChange={(e) => {
@@ -3273,35 +3285,35 @@ function DashboardMapTab() {
                     </label>
                   </div>
                   {/* Rapid Fire Upload */}
-                  <div style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: '10px 12px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 4 }}>Rapid Fire Queue</div>
-                    <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 8 }}>CSV/XLSX • Auto geocode, red pins</div>
+                  <div style={{ backgroundColor: '#f9fafb', borderRadius: 8, padding: '10px 12px', border: '1px solid #e5e7eb' }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#111827', marginBottom: 4 }}>Rapid Fire Queue</div>
+                    <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 8 }}>CSV/XLSX • Auto geocode, red pins</div>
                     <label style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                       padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
-                      border: '1px dashed rgba(239,68,68,0.4)', backgroundColor: 'rgba(239,68,68,0.06)',
-                      color: '#f87171', fontSize: 11, fontWeight: 600,
+                      border: '1px dashed #fecaca', backgroundColor: 'rgba(239,68,68,0.06)',
+                      color: '#dc2626', fontSize: 11, fontWeight: 600,
                     }}>
                       <UploadCloud size={14} /> Upload File
                       <input type="file" accept=".csv,.xlsx,.xls" onChange={(e) => handleProspectsFile(e.target.files?.[0])} style={{ display: 'none' }} />
                     </label>
                   </div>
                   {/* Queue Status */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', borderTop: '1px solid #e5e7eb' }}>
                     <div>
-                      <div style={{ fontSize: 10, color: '#64748b' }}>Queue: {rapidFireQueue.length} ready</div>
-                      <div style={{ fontSize: 10, color: '#64748b' }}>{processingStatus || 'Idle'}</div>
+                      <div style={{ fontSize: 10, color: '#9ca3af' }}>Queue: {rapidFireQueue.length} ready</div>
+                      <div style={{ fontSize: 10, color: '#9ca3af' }}>{processingStatus || 'Idle'}</div>
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button onClick={loadRapidFireQueue} style={{
                         padding: '5px 10px', fontSize: 10, fontWeight: 600, borderRadius: 6, cursor: 'pointer',
-                        border: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0',
+                        border: '1px solid #d1d5db', backgroundColor: '#ffffff', color: '#374151',
                       }}>
                         <Download size={12} style={{ marginRight: 4 }} /> Refresh
                       </button>
                       <button onClick={addAllRapidFireToMap} disabled={!rapidFireQueue.length} style={{
                         padding: '5px 10px', fontSize: 10, fontWeight: 600, borderRadius: 6, cursor: rapidFireQueue.length ? 'pointer' : 'not-allowed',
-                        border: 'none', backgroundColor: rapidFireQueue.length ? '#2563eb' : 'rgba(255,255,255,0.05)', color: rapidFireQueue.length ? '#fff' : '#64748b',
+                        border: 'none', backgroundColor: rapidFireQueue.length ? '#059669' : '#f3f4f6', color: rapidFireQueue.length ? '#fff' : '#9ca3af',
                       }}>
                         Add All
                       </button>
@@ -3310,35 +3322,35 @@ function DashboardMapTab() {
                 </div>
               )}
 
-              {/* ═══ ADD PIN TAB ═══ */}
+              {/* â•â•â• ADD PIN TAB â•â•â• */}
               {panelTab === 'add' && (
                 <div style={{ padding: '10px 12px' }}>
                   <form onSubmit={handleSubmitProperty} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <input placeholder="Property Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={{
-                      width: '100%', padding: '7px 10px', fontSize: 12, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6,
-                      backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', outline: 'none',
+                      width: '100%', padding: '7px 10px', fontSize: 12, border: '1px solid #d1d5db', borderRadius: 6,
+                      backgroundColor: '#ffffff', color: '#111827', outline: 'none',
                     }} />
                     <div style={{ position: 'relative' }}>
                       <input placeholder="Street Address, City, ST ZIP" value={form.address}
                         onChange={(e) => handleAddressChange(e.target.value)}
                         onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                         type="text" name="address" style={{
-                          width: '100%', padding: '7px 10px', fontSize: 12, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6,
-                          backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', outline: 'none',
+                          width: '100%', padding: '7px 10px', fontSize: 12, border: '1px solid #d1d5db', borderRadius: 6,
+                          backgroundColor: '#ffffff', color: '#111827', outline: 'none',
                         }}
                       />
                       {showSuggestions && addressSuggestions.length > 0 && (
                         <div style={{
                           position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, zIndex: 1000,
-                          backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6,
-                          maxHeight: 160, overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                          backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 6,
+                          maxHeight: 160, overflowY: 'auto', boxShadow: '0 4px 16px rgba(15,23,42,0.15)',
                         }}>
                           {addressSuggestions.map((suggestion, idx) => (
                             <div key={idx} onClick={() => selectSuggestion(suggestion)} style={{
-                              padding: '6px 10px', cursor: 'pointer', fontSize: 11, color: '#e2e8f0',
-                              borderBottom: idx < addressSuggestions.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                              padding: '6px 10px', cursor: 'pointer', fontSize: 11, color: '#111827',
+                              borderBottom: idx < addressSuggestions.length - 1 ? '1px solid #f3f4f6' : 'none',
                             }}
-                            onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255,255,255,0.06)'}
+                            onMouseEnter={(e) => e.target.style.backgroundColor = '#f9fafb'}
                             onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
                             >
                               {suggestion.label}
@@ -3349,12 +3361,12 @@ function DashboardMapTab() {
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <input placeholder="Units" value={form.units} onChange={(e) => setForm({ ...form, units: e.target.value })} style={{
-                        flex: 1, padding: '7px 10px', fontSize: 12, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6,
-                        backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', outline: 'none',
+                        flex: 1, padding: '7px 10px', fontSize: 12, border: '1px solid #d1d5db', borderRadius: 6,
+                        backgroundColor: '#ffffff', color: '#111827', outline: 'none',
                       }} />
                       <button type="submit" style={{
                         padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 6,
-                        backgroundColor: '#2563eb', color: '#fff', cursor: 'pointer',
+                        backgroundColor: '#059669', color: '#fff', cursor: 'pointer',
                       }}>Add Pin</button>
                     </div>
                   </form>
@@ -3364,7 +3376,7 @@ function DashboardMapTab() {
           )}
         </div>
 
-        {/* ─── Floating Map Style Switcher (top-right) ─── */}
+        {/* â”€â”€â”€ Floating Map Style Switcher (top-right) â”€â”€â”€ */}
         <div style={{
           position: 'absolute',
           top: isMobile ? 8 : 12,
@@ -3433,7 +3445,7 @@ function DashboardMapTab() {
             </Marker>
           ))}
 
-          {/* Custom pins — filtered by visibility toggles */}
+          {/* Custom pins â€” filtered by visibility toggles */}
           {visiblePins.map((p) => (
             <Marker key={p.id} position={p.position} icon={categoryIcon(p.category, p.source, p.units)}>
               <Popup maxWidth={350}>
@@ -3479,11 +3491,11 @@ function DashboardMapTab() {
                           p.category === 'prospect' ? '#92400e' : 
                           '#831843'
                       }}>
-                        {p.source === 'uploaded' ? '📊 Uploaded' :
-                         p.category === 'pipeline' ? '📋 Pipeline' :
-                         p.category === 'rapidfire' ? '🔥 Rapid Fire' : 
-                         p.category === 'prospect' ? '🏘️ Prospect' : 
-                         '📍 Custom'}
+                        {p.source === 'uploaded' ? 'ðŸ“Š Uploaded' :
+                         p.category === 'pipeline' ? 'ðŸ“‹ Pipeline' :
+                         p.category === 'rapidfire' ? 'ðŸ”¥ Rapid Fire' : 
+                         p.category === 'prospect' ? 'ðŸ˜ï¸ Prospect' : 
+                         'ðŸ“ Custom'}
                       </div>
                     </div>
 
@@ -3575,7 +3587,7 @@ function DashboardMapTab() {
                         border: '1px solid #fde68a',
                         color: '#92400e'
                       }}>
-                        ⚠️ No spreadsheet data found for this property.
+                        âš ï¸ No spreadsheet data found for this property.
                         {console.log('[Popup Debug] Pin data:', p.id, 'propertyData:', p.propertyData)}
                       </div>
                     )}
@@ -3601,7 +3613,7 @@ function DashboardMapTab() {
                         onMouseEnter={(e) => e.target.style.backgroundColor = '#dc2626'}
                         onMouseLeave={(e) => e.target.style.backgroundColor = '#ef4444'}
                       >
-                        🗑️ Delete Pin
+                        ðŸ—‘ï¸ Delete Pin
                       </button>
                     )}
                   </div>
@@ -3756,7 +3768,7 @@ function DashboardMapTab() {
                         </div>
                         <div style={{ textAlign: 'center', padding: '6px 4px', background: '#eff6ff', borderRadius: 8 }}>
                           <div style={{ fontSize: 10, color: '#6b7280', fontWeight: 600 }}>OCCUPANCY</div>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>{msa.Occupancy_Rate_Pct || '–'}%</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>{msa.Occupancy_Rate_Pct || 'â€“'}%</div>
                           <div style={{ fontSize: 10, color: '#9ca3af' }}>rate</div>
                         </div>
                         <div style={{ textAlign: 'center', padding: '6px 4px', background: '#fefce8', borderRadius: 8 }}>
@@ -3769,13 +3781,13 @@ function DashboardMapTab() {
                       {/* Detail grid */}
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: 12 }}>
                         <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>VACANCY</span><br/>
-                          <span style={{ color: '#374151' }}>{msa.Vacancy_Rate_Pct || '–'}%</span></div>
+                          <span style={{ color: '#374151' }}>{msa.Vacancy_Rate_Pct || 'â€“'}%</span></div>
                         <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>RENT GROWTH</span><br/>
-                          <span style={{ color: Number(msa.YoY_Rent_Growth_Pct) >= 0 ? '#059669' : '#dc2626' }}>{msa.YoY_Rent_Growth_Pct || '–'}%</span></div>
+                          <span style={{ color: Number(msa.YoY_Rent_Growth_Pct) >= 0 ? '#059669' : '#dc2626' }}>{msa.YoY_Rent_Growth_Pct || 'â€“'}%</span></div>
                         <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>UNDER CONST.</span><br/>
                           <span style={{ color: '#374151' }}>{Number(msa.Total_Units_Under_Construction || 0).toLocaleString()}</span></div>
                         <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>CONCESSIONS</span><br/>
-                          <span style={{ color: '#374151' }}>{msa.Concession_Prevalence || '–'}</span></div>
+                          <span style={{ color: '#374151' }}>{msa.Concession_Prevalence || 'â€“'}</span></div>
                       </div>
 
                       {/* Commentary */}
@@ -3866,9 +3878,9 @@ function DashboardMapTab() {
                       {/* Detail grid */}
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: 12, borderTop: '1px solid #f3f4f6', paddingTop: 8 }}>
                         <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>INVESTOR DEMAND</span><br/>
-                          <span style={{ fontWeight: 600, color: msa.Investor_Demand === 'Very High' || msa.Investor_Demand === 'High' ? '#059669' : msa.Investor_Demand === 'Low' || msa.Investor_Demand === 'Very Low' ? '#dc2626' : '#374151' }}>{msa.Investor_Demand || '–'}</span></div>
+                          <span style={{ fontWeight: 600, color: msa.Investor_Demand === 'Very High' || msa.Investor_Demand === 'High' ? '#059669' : msa.Investor_Demand === 'Low' || msa.Investor_Demand === 'Very Low' ? '#dc2626' : '#374151' }}>{msa.Investor_Demand || 'â€“'}</span></div>
                         <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>MARKET TIER</span><br/>
-                          <span style={{ color: '#374151' }}>{msa.Market_Tier || '–'}</span></div>
+                          <span style={{ color: '#374151' }}>{msa.Market_Tier || 'â€“'}</span></div>
                         {msa.Typical_Price_Per_Unit_USD && (
                           <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>PRICE / UNIT (A)</span><br/>
                             <span style={{ fontWeight: 600, color: '#111827' }}>${Number(msa.Typical_Price_Per_Unit_USD).toLocaleString()}</span></div>
@@ -3928,7 +3940,7 @@ function DashboardMapTab() {
                         ))}
                       </div>
                       <div style={{ marginTop: 8, borderTop: '1px solid #f1f5f9', paddingTop: 6, fontSize: 10, color: '#64748b' }}>
-                        Source: {row.data_source || 'N/A'} · {row.as_of_date || 'N/A'}
+                        Source: {row.data_source || 'N/A'} Â· {row.as_of_date || 'N/A'}
                       </div>
                     </div>
                   </Popup>
@@ -3956,7 +3968,7 @@ function DashboardMapTab() {
                 >
                   <Popup maxWidth={380}>
                     <div style={{ fontFamily: 'Inter, -apple-system, sans-serif', minWidth: 300, padding: 4 }}>
-                      <div style={{ fontWeight: 700, fontSize: 15, color: '#111827', marginBottom: 3 }}>ZIP {row.zip_code || 'N/A'}{row.metro ? ` · ${row.metro}` : ''}</div>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: '#111827', marginBottom: 3 }}>ZIP {row.zip_code || 'N/A'}{row.metro ? ` Â· ${row.metro}` : ''}</div>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                         <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: `${markerColor}20`, color: markerColor, border: `1px solid ${markerColor}50` }}>
                           {metricLabelFromKey(zipMetricV2)}: {rawValue || 'N/A'}
@@ -3971,7 +3983,7 @@ function DashboardMapTab() {
                         ))}
                       </div>
                       <div style={{ marginTop: 8, borderTop: '1px solid #f1f5f9', paddingTop: 6, fontSize: 10, color: '#64748b' }}>
-                        Source: {row.data_source || 'N/A'} · {row.as_of_date || 'N/A'}
+                        Source: {row.data_source || 'N/A'} Â· {row.as_of_date || 'N/A'}
                       </div>
                     </div>
                   </Popup>
@@ -3983,7 +3995,7 @@ function DashboardMapTab() {
             {dataCentersEnabled && dataCentersData.map((dc, idx) => {
               const lat = parseFloat(dc.Latitude), lng = parseFloat(dc.Longitude);
               if (isNaN(lat) || isNaN(lng)) return null;
-              const fmt = (v) => (v != null && v !== '' && v !== 'N/A') ? v : '–';
+              const fmt = (v) => (v != null && v !== '' && v !== 'N/A') ? v : 'â€“';
               const statusColor = dc.Status?.includes('Operational') ? '#16a34a' : dc.Status?.includes('Under Construction') ? '#d97706' : '#6366f1';
               return (
                 <CircleMarker
@@ -4005,11 +4017,11 @@ function DashboardMapTab() {
                       </div>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
                         <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 10, fontWeight: 600, background: `${statusColor}20`, color: statusColor, border: `1px solid ${statusColor}40` }}>{fmt(dc.Status)}</span>
-                        {dc['Parent Company'] && dc['Parent Company'] !== '–' && (
+                        {dc['Parent Company'] && dc['Parent Company'] !== 'â€“' && (
                           <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 10, fontWeight: 600, background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ddd6fe' }}>{dc['Parent Company']}</span>
                         )}
                       </div>
-                      <div style={{ fontSize: 12, color: '#374151', marginBottom: 8 }}>📍 {fmt(dc['Full Address'] || `${dc.City}, ${dc.State}`)}</div>
+                      <div style={{ fontSize: 12, color: '#374151', marginBottom: 8 }}>ðŸ“ {fmt(dc['Full Address'] || `${dc.City}, ${dc.State}`)}</div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: 12 }}>
                         {dc['Investment ($B)'] && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>INVESTMENT</span><br/><span style={{ fontWeight: 700, color: '#111827' }}>${typeof dc['Investment ($B)'] === 'number' ? `$${dc['Investment ($B)']}B` : dc['Investment ($B)']}</span></div>}
                         {dc['Capacity (MW)'] && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>CAPACITY</span><br/><span style={{ fontWeight: 700, color: '#111827' }}>{dc['Capacity (MW)']} MW</span></div>}
@@ -4053,7 +4065,7 @@ function DashboardMapTab() {
               zoneFilter={zoningFilter}
             />
 
-            {/* ─── Parcel Boundary Polygons ─── */}
+            {/* â”€â”€â”€ Parcel Boundary Polygons â”€â”€â”€ */}
             {showParcelPolygons && parcelPolygons.length > 0 && (
               <GeoJSON
                 key={parcelKeyRef.current}
@@ -4082,7 +4094,7 @@ function DashboardMapTab() {
 
       </div>
 
-      {/* ═══════════════ MAX AI SIDEBAR (right side) ═══════════════ */}
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• MAX AI SIDEBAR (right side) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       {/* On mobile: floating button + overlay panel. On desktop: fixed sidebar. */}
       {isMobile ? (
         <>
@@ -4328,10 +4340,10 @@ function DashboardMapTab() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
                 <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>
-                  📊 {sheetPreview.name}
+                  ðŸ“Š {sheetPreview.name}
                 </h2>
                 <div style={{ fontSize: '13px', color: '#6b7280' }}>
-                  {sheetPreview.properties.length} properties found • {selectedProperties.length} selected
+                  {sheetPreview.properties.length} properties found â€¢ {selectedProperties.length} selected
                 </div>
               </div>
               <button
@@ -4351,7 +4363,7 @@ function DashboardMapTab() {
                   fontWeight: '600'
                 }}
               >
-                ×
+                Ã—
               </button>
             </div>
 
@@ -4377,7 +4389,7 @@ function DashboardMapTab() {
                   boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
                 }}
               >
-                {selectedProperties.length === sheetPreview.properties.length ? '✓ Deselect All' : 'Select All'}
+                {selectedProperties.length === sheetPreview.properties.length ? 'âœ“ Deselect All' : 'Select All'}
               </button>
             </div>
 
@@ -4457,9 +4469,9 @@ function DashboardMapTab() {
                             '0 2px 4px rgba(251, 191, 36, 0.3)',
                           transition: 'all 0.3s ease'
                         }}>
-                          {prop.geocodeStatus === 'success' ? '✓ Success' : 
-                           prop.geocodeStatus === 'failed' ? '✗ Failed' : 
-                           '⏳ Pending'}
+                          {prop.geocodeStatus === 'success' ? 'âœ“ Success' : 
+                           prop.geocodeStatus === 'failed' ? 'âœ— Failed' : 
+                           'â³ Pending'}
                         </span>
                       </td>
                     </tr>
@@ -4496,12 +4508,12 @@ function DashboardMapTab() {
                     return;
                   }
                   
-                  // Close modal immediately — everything runs in background
+                  // Close modal immediately â€” everything runs in background
                   const previewSnapshot = { ...sheetPreview };
                   const selectedSnapshot = [...selectedProperties];
                   setShowPreviewModal(false);
                   
-                  addToast(`⏳ Processing ${selectedSnapshot.length} properties in background...`, 'info', 4000);
+                  addToast(`â³ Processing ${selectedSnapshot.length} properties in background...`, 'info', 4000);
                   setBgProcessing({ fileName: previewSnapshot.name, stage: 'geocoding', geocoded: 0, total: selectedSnapshot.length, parcelsFound: 0 });
 
                   // Run geocoding in background
@@ -4550,11 +4562,11 @@ function DashboardMapTab() {
                     await saveUploadedProperties(results, previewSnapshot.name || 'upload');
                   } else {
                     setBgProcessing(null);
-                    addToast('❌ No properties could be geocoded.', 'error');
+                    addToast('âŒ No properties could be geocoded.', 'error');
                   }
 
                   if (failed.length > 0) {
-                    addToast(`⚠️ ${failed.length} properties could not be geocoded`, 'warning', 8000);
+                    addToast(`âš ï¸ ${failed.length} properties could not be geocoded`, 'warning', 8000);
                   }
                 }}
                 disabled={isGeocoding || selectedProperties.length === 0}
@@ -4570,7 +4582,7 @@ function DashboardMapTab() {
                   boxShadow: isGeocoding || selectedProperties.length === 0 ? 'none' : '0 4px 6px -1px rgba(59, 130, 246, 0.3)'
                 }}
               >
-                {isGeocoding ? `⏳ Geocoding (${geocodingProgress.current}/${geocodingProgress.total})` : `✓ Process & Add to Map (${selectedProperties.length})`}
+                {isGeocoding ? `â³ Geocoding (${geocodingProgress.current}/${geocodingProgress.total})` : `âœ“ Process & Add to Map (${selectedProperties.length})`}
               </button>
             </div>
           </div>
@@ -4600,7 +4612,7 @@ function DashboardMapTab() {
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
           }}>
             <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '12px' }}>
-              ⚠️ Unable to Geocode Some Properties
+              âš ï¸ Unable to Geocode Some Properties
             </h3>
             
             <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
@@ -4619,7 +4631,7 @@ function DashboardMapTab() {
             }}>
               {geocodingProgress.failed.map((prop, idx) => (
                 <div key={idx} style={{ fontSize: '12px', color: '#92400e', marginBottom: '4px' }}>
-                  • {prop.address} - {prop.reason}
+                  â€¢ {prop.address} - {prop.reason}
                 </div>
               ))}
             </div>
@@ -4664,7 +4676,7 @@ function DashboardMapTab() {
         </div>
       )}
 
-      {/* ═══════════════ BACKGROUND PROCESSING INDICATOR ═══════════════ */}
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• BACKGROUND PROCESSING INDICATOR â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       {bgProcessing && (
         <div style={{
           position: 'fixed', bottom: 20, left: 20, zIndex: 10001,
@@ -4693,7 +4705,7 @@ function DashboardMapTab() {
         </div>
       )}
 
-      {/* ═══════════════ TOAST NOTIFICATIONS ═══════════════ */}
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• TOAST NOTIFICATIONS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       {toasts.length > 0 && (
         <div style={{
           position: 'fixed', top: 20, right: 20, zIndex: 10002,
@@ -4701,10 +4713,10 @@ function DashboardMapTab() {
         }}>
           {toasts.map(t => {
             const colors = {
-              success: { bg: '#065f46', border: '#10b981', icon: '✓' },
-              info:    { bg: '#1e3a5f', border: '#3b82f6', icon: 'ℹ' },
-              warning: { bg: '#78350f', border: '#f59e0b', icon: '⚠' },
-              error:   { bg: '#7f1d1d', border: '#ef4444', icon: '✕' },
+              success: { bg: '#065f46', border: '#10b981', icon: 'âœ“' },
+              info:    { bg: '#1e3a5f', border: '#3b82f6', icon: 'â„¹' },
+              warning: { bg: '#78350f', border: '#f59e0b', icon: 'âš ' },
+              error:   { bg: '#7f1d1d', border: '#ef4444', icon: 'âœ•' },
             };
             const c = colors[t.type] || colors.info;
             return (
@@ -4719,7 +4731,7 @@ function DashboardMapTab() {
                 <button
                   onClick={() => setToasts(prev => prev.filter(x => x.id !== t.id))}
                   style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 14, padding: 0, lineHeight: '18px' }}
-                >×</button>
+                >Ã—</button>
               </div>
             );
           })}

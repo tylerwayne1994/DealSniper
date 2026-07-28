@@ -464,7 +464,7 @@ const EnhancedUploadPage = () => {
       }
 
       setProgress(30);
-      setProcessingMsg("OCR processing with Mistral...");
+      setProcessingMsg("Reading document pages...");
 
       console.log("[DEBUG] About to send request to:", `${API_BASE}/ocr/underwrite`);
       console.log("[DEBUG] Selected pages:", selectedPages.size);
@@ -493,7 +493,7 @@ const EnhancedUploadPage = () => {
       }
 
       setProgress(60);
-      setProcessingMsg("AI analyzing deal with Claude...");
+      setProcessingMsg("Analyzing deal data...");
 
       console.log("[DEBUG] Backend response status:", res.status);
       console.log("[DEBUG] Backend response ok:", res.ok);

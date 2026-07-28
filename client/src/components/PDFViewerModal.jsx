@@ -2,8 +2,12 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Search, Loader } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 
-// Use CDN worker to avoid bundling issues
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Bundle the worker locally (webpack 5 asset/module URL) instead of fetching
+// from a CDN — avoids network/CORS failures when cdnjs is blocked or offline.
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.js',
+  import.meta.url
+).toString();
 
 /**
  * PDFViewerModal - Displays PDF with highlighted extraction source

@@ -26,6 +26,7 @@ export const API_ENDPOINTS = {
   // Deals V2
   dealUnderwrite: (dealId) => `${API_BASE_URL}/v2/deals/${dealId}/underwrite`,
   dealRentcast: (dealId) => `${API_BASE_URL}/v2/deals/${dealId}/rentcast`,
+  dealRepliers: (dealId) => `${API_BASE_URL}/v2/deals/${dealId}/repliers`,
   dealCostseg: (dealId) => `${API_BASE_URL}/v2/deals/${dealId}/costseg`,
   dealPitchDeck: (dealId) => `${API_BASE_URL}/v2/deals/${dealId}/pitch-deck`,
   dealUploadImages: (dealId) => `${API_BASE_URL}/v2/deals/${dealId}/upload-images`,
@@ -58,6 +59,7 @@ export const API_ENDPOINTS = {
   
   // Due Diligence
   dueDiligenceChat: `${API_BASE_URL}/api/due-diligence/chat`,
+  financialAudit: `${API_BASE_URL}/api/underwrite/financial-audit`,
   
   // Spreadsheet
   spreadsheetTemplate: `${API_BASE_URL}/api/spreadsheet/get-template`,

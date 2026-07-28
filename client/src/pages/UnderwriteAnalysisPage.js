@@ -683,7 +683,7 @@ function UnderwriteAnalysisPage() {
               <div style={styles.spinner} />
               <p style={styles.progressText}>{loadingStep}</p>
               <p style={styles.progressSubtext}>
-                Claude is performing comprehensive deal analysis...
+                Performing comprehensive deal analysis...
               </p>
             </div>
           )}
