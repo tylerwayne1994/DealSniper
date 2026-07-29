@@ -1,0 +1,96 @@
+name: Bug Report
+description: Report an error in a skill — wrong formula, broken reference, incorrect threshold
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: skill
+    attributes:
+      label: Which skill or knowledge base?
+      options:
+        - "Due Diligence: Rent Roll Analyst"
+        - "Due Diligence: OpEx Analyst"
+        - "Due Diligence: Market Study"
+        - "Due Diligence: Physical Inspection"
+        - "Due Diligence: Environmental Review"
+        - "Due Diligence: Legal & Title Review"
+        - "Due Diligence: Tenant Credit"
+        - "Underwriting: Financial Model Builder"
+        - "Underwriting: Scenario Analyst"
+        - "Underwriting: IC Memo Writer"
+        - "Financing: Lender Outreach"
+        - "Financing: Quote Comparator"
+        - "Financing: Term Sheet Builder"
+        - "Legal: PSA Reviewer"
+        - "Legal: Title & Survey Reviewer"
+        - "Legal: Estoppel Tracker"
+        - "Legal: Loan Doc Reviewer"
+        - "Legal: Insurance Coordinator"
+        - "Legal: Transfer Doc Preparer"
+        - "Closing: Closing Coordinator"
+        - "Closing: Funds Flow Manager"
+        - "Document Ingestion: Document Classifier"
+        - "Document Ingestion: Rent Roll Parser"
+        - "Document Ingestion: Financials Parser"
+        - "Document Ingestion: Offering Memo Parser"
+        - "Industrial v1: Any Skill"
+        - "Brokerage v1: Any Skill"
+        - "Asset Management v1: Any Skill"
+        - "Office: Office Market and Flight-to-Quality Study"
+        - "Office: Office Rent Roll and Stacking Plan Analyst"
+        - "Office: Office Lease Abstract Reviewer"
+        - "Office: Office Rollover and Occupancy Cost Analyst"
+        - "Office: Office TI / LC Underwriting Model Builder"
+        - "Office: Office Tenant Credit and Exposure Analyst"
+        - "Office: Office Financing Fit"
+        - "Office: Office IC Memo Writer"
+        - "Capital Markets: Debt Maturity Diagnostic"
+        - "Capital Markets: Refinance Proceeds Gap Analyzer"
+        - "Capital Markets: Extension / Workout Strategy Builder"
+        - "Capital Markets: Rescue Capital Comparator"
+        - "Capital Markets: Capital Stack Term Sheet Comparator"
+        - "Capital Markets: CMBS / Special Servicing Readiness Reviewer"
+        - "Capital Markets: Lender Update Package Builder"
+        - "Capital Markets: Recap IC Memo Writer"
+        - "Knowledge Base: Underwriting Calculations"
+        - "Knowledge Base: Risk Scoring Framework"
+        - "Knowledge Base: Multifamily Benchmarks"
+        - "Knowledge Base: Lender Criteria"
+        - "Knowledge Base: Legal Checklist"
+        - "Knowledge Base: Industrial Benchmarks"
+        - "Knowledge Base: Industrial Lease Structures"
+        - "Knowledge Base: Industrial Lender Criteria"
+        - "Knowledge Base: Brokerage Investment Sales Process"
+        - "Knowledge Base: Broker Opinion of Value Guidance"
+        - "Knowledge Base: Marketing Confidentiality and Buyer Process"
+        - "Knowledge Base: Offer Negotiation and Closing Playbook"
+        - "Knowledge Base: Asset Management Benchmarks"
+        - "Knowledge Base: Renewal Economics"
+        - "Knowledge Base: Asset Management Reporting Standards"
+        - "Knowledge Base: Office Benchmarks"
+        - "Knowledge Base: Office Lease Structures"
+        - "Knowledge Base: Office TI/LC Economics"
+        - "Knowledge Base: Office Lender Criteria"
+        - "Knowledge Base: Capital Markets Benchmarks"
+        - "Knowledge Base: Workout and Extension Structures"
+        - "Knowledge Base: Rescue Capital and Preferred Equity"
+        - "Knowledge Base: CMBS Servicing and Default Playbook"
+        - "Claude Code Plugin"
+        - "README / Documentation"
+    validations:
+      required: true
+  - type: textarea
+    id: bug
+    attributes:
+      label: What's wrong?
+      description: Describe the error — wrong formula, incorrect threshold, broken reference, etc.
+      placeholder: "The DSCR formula in underwriting-calc.md divides by annual debt service but the example uses monthly..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should it be?
+      description: If you know the correct value or formula, include it here.
+    validations:
+      required: false

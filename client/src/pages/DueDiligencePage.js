@@ -26,6 +26,8 @@ import {
   Save
 } from 'lucide-react';
 import { loadDeal, saveDueDiligenceData, loadDueDiligenceData } from '../lib/dealsService';
+import { API_ENDPOINTS } from '../config/api';
+import { uploadNapkinDocument } from '../lib/napkinService';
 
 // ============================================================================
 // Due Diligence Checklist Items
@@ -255,77 +257,46 @@ function DueDiligencePage() {
     return () => clearTimeout(timeoutId);
   }, [checklist, notes, uploadedDocuments, messages, dealId, loading, saveToSupabase]);
 
-  // File upload handlers - parses files and stores summary data (not actual files)
+  // File upload handler — sends each file to the shared /api/napkin/upload
+  // extractor (PDF/XLSX/CSV/TXT) so the DD Assistant gets real document text
+  // instead of a "can't parse client-side" placeholder note.
+  const [uploadingCount, setUploadingCount] = useState(0);
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
-    
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
     for (const file of files) {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        // Create document record with parsed data summary (no raw file content)
-        const documentData = {
-          id: Date.now() + Math.random(),
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          uploadedAt: new Date().toISOString(),
-          parsedData: null,
-          aiSummary: null
-        };
-        
-        // Parse CSV files
-        if (file.name.endsWith('.csv')) {
-          try {
-            const lines = event.target.result.split('\n');
-            const headers = lines[0].split(',').map(h => h.trim());
-            const rows = lines.slice(1).filter(l => l.trim()).map(line => {
-              const values = line.split(',');
-              const row = {};
-              headers.forEach((h, i) => {
-                row[h] = values[i]?.trim() || '';
-              });
-              return row;
-            });
-            documentData.parsedData = { 
-              headers, 
-              rows: rows.slice(0, 100), // Store first 100 rows max
-              totalRows: rows.length
-            };
-          } catch (err) {
-            console.error('Error parsing CSV:', err);
-          }
-        }
-        
-        // For non-CSV files, we'll send to AI for parsing/summarization
-        if (!file.name.endsWith('.csv') && event.target.result) {
-          // Store that file was uploaded, AI will analyze when user asks
-          documentData.parsedData = {
-            type: 'document',
-            note: 'Document uploaded - use DD Assistant to analyze'
-          };
-        }
-        
-        setUploadedDocuments(prev => [...prev, documentData]);
+      const docId = Date.now() + Math.random();
+      const documentData = {
+        id: docId,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        uploadedAt: new Date().toISOString(),
+        parsedData: { type: 'document', note: 'Extracting text…' },
+        extractedText: null,
+        aiSummary: null,
       };
-      
-      if (file.name.endsWith('.csv')) {
-        reader.readAsText(file);
-      } else {
-        // For PDFs/images, we just note the upload (can't parse client-side)
-        const documentData = {
-          id: Date.now() + Math.random(),
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          uploadedAt: new Date().toISOString(),
-          parsedData: { type: 'document', note: 'Document uploaded - use DD Assistant to analyze' },
-          aiSummary: null
-        };
-        setUploadedDocuments(prev => [...prev, documentData]);
+      setUploadedDocuments(prev => [...prev, documentData]);
+      setUploadingCount(prev => prev + 1);
+
+      try {
+        const { text } = await uploadNapkinDocument(file);
+        setUploadedDocuments(prev => prev.map(d => d.id === docId ? {
+          ...d,
+          extractedText: text,
+          parsedData: { type: 'document', note: `${text.length.toLocaleString()} characters extracted` },
+        } : d));
+      } catch (err) {
+        console.error('Error extracting document text:', err);
+        setUploadedDocuments(prev => prev.map(d => d.id === docId ? {
+          ...d,
+          parsedData: { type: 'document', note: `Extraction failed: ${err.message}` },
+        } : d));
+      } finally {
+        setUploadingCount(prev => prev - 1);
       }
     }
-    
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const removeDocument = (docId) => {
@@ -358,13 +329,14 @@ function DueDiligencePage() {
         uploadedDocuments: uploadedDocuments.map(d => ({
           name: d.name,
           parsedData: d.parsedData,
+          extractedText: d.extractedText,
           aiSummary: d.aiSummary
         })),
         checklist: checklist,
         notes: notes
       };
 
-      const response = await fetch('http://localhost:8010/api/due-diligence/chat', {
+      const response = await fetch(API_ENDPOINTS.dueDiligenceChat, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -462,7 +434,7 @@ function DueDiligencePage() {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: '48px', height: '48px', border: '4px solid #e5e7eb', borderTopColor: '#0d9488', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
+          <div style={{ width: '48px', height: '48px', border: '4px solid #e5e7eb', borderTopColor: '#059669', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
           <p style={{ color: '#6b7280' }}>Loading due diligence...</p>
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -479,7 +451,7 @@ function DueDiligencePage() {
           <p style={{ color: '#6b7280', marginBottom: '24px' }}>
             Please select a deal from your pipeline to view its due diligence.
           </p>
-          <button onClick={() => navigate('/pipeline')} style={{ padding: '12px 24px', backgroundColor: '#0d9488', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}>
+          <button onClick={() => navigate('/pipeline')} style={{ padding: '12px 24px', background: 'linear-gradient(90deg, #34d399 0%, #22d3ee 100%)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}>
             Go to Pipeline
           </button>
         </div>
@@ -490,7 +462,7 @@ function DueDiligencePage() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       {/* Header */}
-      <div style={{ backgroundColor: '#1e293b', padding: '20px 32px', color: 'white' }}>
+      <div style={{ background: 'linear-gradient(90deg, #059669 0%, #0891b2 100%)', padding: '20px 32px', color: 'white' }}>
         <div style={{ maxWidth: '1800px', margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -707,7 +679,7 @@ function DueDiligencePage() {
 
             {/* Right: Uploaded/Actual Numbers */}
             <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
-              <div style={{ padding: '16px 20px', backgroundColor: '#0d9488', color: 'white' }}>
+              <div style={{ padding: '16px 20px', background: 'linear-gradient(90deg, #059669 0%, #0891b2 100%)', color: 'white' }}>
                 <h3 style={{ fontSize: '15px', fontWeight: '700', margin: 0 }}>Actual Numbers</h3>
                 <p style={{ fontSize: '12px', opacity: 0.8, margin: '4px 0 0' }}>Upload inspection reports & spreadsheets to compare</p>
               </div>
@@ -727,7 +699,9 @@ function DueDiligencePage() {
                 >
                   <Upload size={32} color="#9ca3af" style={{ marginBottom: '12px' }} />
                   <p style={{ fontSize: '14px', fontWeight: '500', color: '#374151', margin: 0 }}>Click to upload files</p>
-                  <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}>CSV, Excel, PDF, or images</p>
+                  <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}>
+                    {uploadingCount > 0 ? `Extracting text from ${uploadingCount} document${uploadingCount > 1 ? 's' : ''}…` : 'CSV, Excel, PDF, or images'}
+                  </p>
                 </div>
                 <input
                   ref={fileInputRef}
@@ -752,7 +726,11 @@ function DueDiligencePage() {
                           <div style={{ fontSize: '13px', fontWeight: '500', color: '#111827' }}>{doc.name}</div>
                           <div style={{ fontSize: '11px', color: '#6b7280' }}>
                             {(doc.size / 1024).toFixed(1)} KB
-                            {doc.aiSummary && <span style={{ color: '#22c55e', marginLeft: '8px' }}>• AI analyzed</span>}
+                            {doc.extractedText ? (
+                              <span style={{ color: '#059669', marginLeft: '8px' }}>• text extracted</span>
+                            ) : doc.parsedData?.note ? (
+                              <span style={{ color: '#9ca3af', marginLeft: '8px' }}>• {doc.parsedData.note}</span>
+                            ) : null}
                           </div>
                         </div>
                         <button onClick={() => removeDocument(doc.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
@@ -763,11 +741,11 @@ function DueDiligencePage() {
                   </div>
                 )}
 
-                {/* Parsed Data Preview */}
-                {uploadedDocuments.some(d => d.parsedData) && (
+                {/* Extraction status */}
+                {uploadedDocuments.some(d => d.extractedText) && (
                   <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#ecfdf5', borderRadius: '8px', border: '1px solid #a7f3d0' }}>
                     <div style={{ fontSize: '12px', fontWeight: '600', color: '#065f46', marginBottom: '8px' }}>
-                      ✓ Data parsed successfully
+                      ✓ Document text extracted
                     </div>
                     <div style={{ fontSize: '11px', color: '#047857' }}>
                       Use the DD Assistant tab to analyze and compare these numbers with your original underwriting.
@@ -786,8 +764,8 @@ function DueDiligencePage() {
             <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#0d948815', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Bot size={20} color="#0d9488" />
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Bot size={20} color="#059669" />
                   </div>
                   <div>
                     <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#111827', margin: 0 }}>DD Assistant</h3>
@@ -836,7 +814,7 @@ function DueDiligencePage() {
                           maxWidth: '80%',
                           padding: '12px 16px',
                           borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                          backgroundColor: msg.role === 'user' ? '#0d9488' : '#f3f4f6',
+                          backgroundColor: msg.role === 'user' ? '#059669' : '#f3f4f6',
                           color: msg.role === 'user' ? 'white' : '#111827',
                           fontSize: '14px',
                           lineHeight: '1.5',
@@ -874,7 +852,7 @@ function DueDiligencePage() {
                     disabled={!chatInput.trim() || isChatLoading}
                     style={{
                       padding: '12px 20px',
-                      backgroundColor: chatInput.trim() && !isChatLoading ? '#0d9488' : '#d1d5db',
+                      backgroundColor: chatInput.trim() && !isChatLoading ? '#059669' : '#d1d5db',
                       color: 'white',
                       border: 'none',
                       borderRadius: '10px',

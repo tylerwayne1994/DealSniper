@@ -2504,16 +2504,6 @@ async def due_diligence_chat(request: Request):
                 content={"success": False, "error": "No message provided"}
             )
         
-        # Get OpenAI API key
-        openai_key = os.getenv("OPENAI_API_KEY")
-        if not openai_key:
-            return JSONResponse(
-                status_code=500,
-                content={"success": False, "error": "OpenAI API key not configured"}
-            )
-        
-        import httpx
-        
         # Build context string from deal data
         context_parts = []
         
@@ -2562,7 +2552,13 @@ async def due_diligence_chat(request: Request):
                         context_parts.append(f"    - {row_str}")
                 elif parsed.get("note"):
                     context_parts.append(f"  Note: {parsed['note']}")
-            
+
+            # Real extracted text (PDF/XLSX/CSV via /api/napkin/upload) — this
+            # is what actually lets the assistant read inspection reports,
+            # T-12s, etc. instead of just seeing a placeholder note.
+            if doc.get("extractedText"):
+                context_parts.append(f"  Extracted content:\n{doc['extractedText'][:8000]}")
+
             # Include previous AI summary if available
             if doc.get("aiSummary"):
                 context_parts.append(f"  Previous AI Analysis: {doc['aiSummary'][:500]}...")
@@ -2611,49 +2607,40 @@ If you don't have enough data, ask for the specific documents or numbers you nee
 
 Format your responses clearly with sections and bullet points for easy reading."""
 
-        # Build messages for OpenAI
-        messages = [{"role": "system", "content": system_prompt}]
-        
-        # Add conversation history
+        # Build messages for Claude
+        history_messages = []
         for msg in conversation_history[-10:]:  # Last 10 messages for context
-            messages.append({
-                "role": msg["role"],
-                "content": msg["content"]
-            })
-        
-        # Add current message
-        messages.append({"role": "user", "content": message})
-        
-        # Call OpenAI API
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {openai_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": "gpt-4o",
-                    "messages": messages,
-                    "temperature": 0.7,
-                    "max_tokens": 2000
-                }
+            role = msg.get("role")
+            if role in ("user", "assistant") and msg.get("content"):
+                history_messages.append({"role": role, "content": msg["content"]})
+        history_messages.append({"role": "user", "content": message})
+
+        # Call Claude (Anthropic) — the OpenAI key configured for this project
+        # is invalid, and every other AI feature in the app (Board of
+        # Advisors, Deal Chat, Back of the Napkin) already runs on Claude, so
+        # this endpoint is switched to match rather than silently 500'ing.
+        anthropic_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
+        if not anthropic_key:
+            return JSONResponse(
+                status_code=500,
+                content={"success": False, "error": "ANTHROPIC_API_KEY not configured"}
             )
-            
-            if response.status_code != 200:
-                return JSONResponse(
-                    status_code=response.status_code,
-                    content={"success": False, "error": f"OpenAI API error: {response.text}"}
-                )
-            
-            result = response.json()
-            assistant_message = result["choices"][0]["message"]["content"]
-            
-            return JSONResponse(content={
-                "success": True,
-                "response": assistant_message
-            })
-            
+
+        from anthropic import Anthropic
+        client = Anthropic(api_key=anthropic_key)
+        response = client.messages.create(
+            model="claude-sonnet-4-5-20250929",
+            max_tokens=2000,
+            system=system_prompt,
+            messages=history_messages,
+        )
+        assistant_message = response.content[0].text if response.content else "Sorry, I couldn't generate a response."
+
+        return JSONResponse(content={
+            "success": True,
+            "response": assistant_message
+        })
+
     except Exception as e:
         print(f"DD Chat error: {str(e)}")
         return JSONResponse(
@@ -4313,6 +4300,88 @@ async def deal_room_chat_endpoint(request: Request):
         return JSONResponse(status_code=400, content={"success": False, "message": str(e)})
     except Exception as e:
         log.error(f"Error in deal room chat: {str(e)}")
+        import traceback
+        log.error(traceback.format_exc())
+        return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Back of the Napkin — standalone chat-based quick underwrite, driven ONLY by
+#  the CRE Agent Skills library (backend/cre-agent-skills-main/). Fully
+#  separate from the platform's real v2 underwriting engine and deal storage.
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.post("/api/napkin/upload")
+async def napkin_upload_endpoint(file: UploadFile = File(...)):
+    """Extract raw text from an uploaded deal document for the standalone
+    Back of the Napkin chat. Does not touch the main deal storage or parsing
+    pipeline at all — this is a one-off text extraction for the chat."""
+    try:
+        from napkin_engine import extract_document_text
+
+        content = await file.read()
+        if len(content) > 20 * 1024 * 1024:
+            return JSONResponse(status_code=400, content={"success": False, "message": "File too large (20MB max)"})
+
+        text = extract_document_text(file.filename, content)
+        if not text.strip():
+            return JSONResponse(status_code=400, content={"success": False, "message": "Could not extract any text from this file"})
+
+        return JSONResponse(content={"success": True, "filename": file.filename, "text": text})
+    except Exception as e:
+        log.error(f"Error in napkin upload: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
+
+
+@app.post("/api/napkin/chat")
+async def napkin_chat_endpoint(request: Request):
+    """Back of the Napkin — a standalone chat-based quick underwrite driven
+    entirely by the CRE Agent Skills library. Completely separate from the
+    platform's real v2 underwriting engine; nothing here is persisted."""
+    try:
+        from napkin_engine import chat_about_napkin_deal
+
+        body = await request.json()
+        message = body.get('message', '')
+        history = body.get('history') or []
+        document_text = body.get('documentText')
+
+        if not message or not message.strip():
+            return JSONResponse(status_code=400, content={"success": False, "message": "message required"})
+
+        reply = chat_about_napkin_deal(document_text, message, history)
+        return JSONResponse(content={"success": True, "reply": reply})
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"success": False, "message": str(e)})
+    except Exception as e:
+        log.error(f"Error in napkin chat: {str(e)}")
+        import traceback
+        log.error(traceback.format_exc())
+        return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
+
+
+@app.post("/api/napkin/report")
+async def napkin_report_endpoint(request: Request):
+    """Back of the Napkin — the primary flow. Turns an uploaded deal document
+    straight into a full structured underwrite report (OM issues, market
+    outlook, strategy/play, recommended purchase price, investor payback
+    feasibility) in one call. Completely separate from the platform's real
+    v2 underwriting engine; nothing here is persisted."""
+    try:
+        from napkin_engine import generate_napkin_report
+
+        body = await request.json()
+        document_text = body.get('documentText')
+
+        if not document_text or not document_text.strip():
+            return JSONResponse(status_code=400, content={"success": False, "message": "documentText required"})
+
+        report = generate_napkin_report(document_text)
+        return JSONResponse(content={"success": True, "report": report})
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"success": False, "message": str(e)})
+    except Exception as e:
+        log.error(f"Error in napkin report: {str(e)}")
         import traceback
         log.error(traceback.format_exc())
         return JSONResponse(status_code=500, content={"success": False, "message": str(e)})

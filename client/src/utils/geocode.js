@@ -1,23 +1,20 @@
-// Shared geocoding utility using Mapbox Geocoding API
-import mapboxgl from 'mapbox-gl';
+// Shared geocoding utility using the Google Maps Geocoding API
+const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_KEY || '';
 
 export async function geocodeAddress(address) {
-  // Ensure token is set even if map components haven't mounted yet
-  if (!mapboxgl.accessToken) {
-    mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN || '';
-  }
-  if (!address || !mapboxgl.accessToken) return null;
+  if (!address || !GOOGLE_MAPS_API_KEY) return null;
   try {
     const response = await fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${mapboxgl.accessToken}`
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}`
     );
     const data = await response.json();
-    if (data.features && data.features.length > 0) {
-      const [longitude, latitude] = data.features[0].center;
-      return { longitude, latitude };
+    const location = data.results?.[0]?.geometry?.location;
+    if (location) {
+      return { longitude: location.lng, latitude: location.lat };
     }
   } catch (error) {
     console.error('Geocoding error:', error);
   }
   return null;
 }
+

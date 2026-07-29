@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, CircleMarker, GeoJSON, useMap }
 import L from 'leaflet';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { GoogleMap, MarkerF, InfoWindowF, useJsApiLoader } from '@react-google-maps/api';
 import { API_ENDPOINTS } from '../../config/api';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
@@ -1701,6 +1702,27 @@ function DashboardMapTab() {
   // Satellite uses Mapbox (higher-res imagery) when a token is configured,
   // falling back to free Esri World Imagery tiles if it isn't.
   const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
+
+  // ─── Google Maps (default 2D base map + pins) ───────────────────────────
+  // The advanced GIS overlay layers (zoning, dev pipeline, absorption, cap
+  // rate, county/ZIP choropleth, SFR/MF sales, data centers, city/zip
+  // metrics) are all opt-in toggles that default to OFF, and stay on the
+  // existing Leaflet renderer below since they depend on Leaflet's GeoJSON/
+  // bounds APIs. When none of them are active, the map renders on Google
+  // Maps instead — this covers the default, everyday view (base map +
+  // pipeline/uploaded/prospect pins).
+  const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_KEY || '';
+  const { isLoaded: googleMapsLoaded } = useJsApiLoader({
+    id: 'dealsniper-google-maps',
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+  });
+  const googleMapRef = useRef(null);
+  const [activeInfoPinId, setActiveInfoPinId] = useState(null);
+  const anyAdvancedOverlayActive = countyOverlay || zipOverlay || zipHeatmap || devPipelineEnabled ||
+    absorptionEnabled || capRateEnabled || zoningEnabled || sfrSalesEnabled || mfSalesEnabled ||
+    dataCentersEnabled || cityMetricsEnabled || zipMetricsEnabled;
+  const useGoogleMaps = mapStyle !== '3d' && !anyAdvancedOverlayActive && !!GOOGLE_MAPS_API_KEY;
+
   const tileConfigs = {
     voyager: {
       url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
@@ -1719,12 +1741,6 @@ function DashboardMapTab() {
       attribution: '&copy; Esri, Maxar, Earthstar Geographics',
       labelsUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'
     },
-    topo: {
-      url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-      attribution: '&copy; OpenTopoMap, &copy; OpenStreetMap contributors',
-      maxNativeZoom: 17,
-      className: 'dark-topo-tiles'
-    }
   };
 
   const currentTile = tileConfigs[mapStyle] || tileConfigs['satellite'];
@@ -1748,6 +1764,26 @@ function DashboardMapTab() {
     }
     
     return createBubbleIcon(color, '#fff', units);
+  };
+
+  // Same category -> color mapping as categoryIcon(), but returns a Google
+  // Maps marker icon (data-URI SVG pin-drop) instead of a Leaflet divIcon.
+  const googleCategoryIcon = (cat, source) => {
+    if (!window.google) return undefined;
+    let color;
+    if (source === 'uploaded' || cat === 'uploaded') color = '#06b6d4';
+    else if (cat === 'pipeline') color = '#22c55e';
+    else if (cat === 'rapidfire') color = '#ef4444';
+    else if (cat === 'prospect') color = '#f59e0b';
+    else color = '#ef4444';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="36" viewBox="0 0 26 36">` +
+      `<path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 23 13 23s13-13.25 13-23C26 5.82 20.18 0 13 0z" fill="${color}" stroke="#fff" stroke-width="1.5"/>` +
+      `<circle cx="13" cy="13" r="5" fill="#fff" opacity="0.9"/></svg>`;
+    return {
+      url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+      scaledSize: new window.google.maps.Size(26, 36),
+      anchor: new window.google.maps.Point(13, 36),
+    };
   };
 
   // Command executor inside the map
@@ -2851,11 +2887,8 @@ function DashboardMapTab() {
 
   return (
     <div style={{ display: 'flex', height: '100%', backgroundColor: '#0f172a', overflow: 'hidden' }}>
-      {/* Dark topo tile filter + satellite label styles */}
+      {/* Satellite label overlay styles */}
       <style>{`
-        .dark-topo-tiles {
-          filter: brightness(0.35) contrast(1.6) saturate(1.8);
-        }
         .leaflet-tile-pane .leaflet-layer:last-child img {
           /* Keep label overlays crisp */
           image-rendering: auto;
@@ -3388,7 +3421,6 @@ function DashboardMapTab() {
           {[
             { key: 'satellite', label: isMobile ? 'Sat' : 'Satellite' },
             { key: 'voyager', label: 'Base' },
-            { key: 'topo', label: 'Topo' },
             { key: '3d', label: '3D' },
           ].map(({ key, label }, i) => (
             <button key={key} onClick={() => setMapStyle(key)} style={{
@@ -3398,7 +3430,7 @@ function DashboardMapTab() {
               cursor: 'pointer', border: 'none',
               borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none',
               color: mapStyle === key ? '#fff' : '#cbd5e1',
-              background: mapStyle === key ? '#2563eb' : 'rgba(15,23,42,0.85)',
+              background: mapStyle === key ? 'linear-gradient(90deg, #34d399 0%, #22d3ee 100%)' : 'rgba(15,23,42,0.85)',
               backdropFilter: 'blur(8px)', transition: 'all 0.15s',
             }}>
               {label}
@@ -3411,8 +3443,98 @@ function DashboardMapTab() {
           <div ref={maplibreContainerRef} style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }} />
         )}
 
-        {/* Leaflet 2D Map */}
-        {mapStyle !== '3d' && (
+        {/* Google Maps â€” default 2D view (base map + pins), used whenever no
+            advanced GIS overlay layer is toggled on. See useGoogleMaps above. */}
+        {useGoogleMaps && (
+          googleMapsLoaded ? (
+            <GoogleMap
+              mapContainerStyle={{ width: '100%', height: '100%' }}
+              center={{ lat: defaultCenter[0], lng: defaultCenter[1] }}
+              zoom={defaultZoom}
+              onLoad={(map) => { googleMapRef.current = map; }}
+              mapTypeId={mapStyle === 'satellite' ? 'hybrid' : 'roadmap'}
+              options={{ mapTypeControl: false, streetViewControl: false, fullscreenControl: false, maxZoom: 22 }}
+            >
+              {visiblePins.map((p) => (
+                <MarkerF
+                  key={p.id}
+                  position={{ lat: p.position[0], lng: p.position[1] }}
+                  icon={googleCategoryIcon(p.category, p.source)}
+                  onClick={() => setActiveInfoPinId(p.id === activeInfoPinId ? null : p.id)}
+                >
+                  {activeInfoPinId === p.id && (
+                    <InfoWindowF onCloseClick={() => setActiveInfoPinId(null)}>
+                      <div style={{ minWidth: 240, maxWidth: 320, fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif' }}>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: '#111827', marginBottom: 6 }}>{p.name}</div>
+                        <div style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 9px', borderRadius: 10,
+                          fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8,
+                          backgroundColor:
+                            p.source === 'uploaded' ? '#cffafe' :
+                            p.category === 'pipeline' ? '#d1fae5' :
+                            p.category === 'rapidfire' ? '#fecaca' :
+                            p.category === 'prospect' ? '#fef3c7' : '#fce7f3',
+                          color:
+                            p.source === 'uploaded' ? '#0e7490' :
+                            p.category === 'pipeline' ? '#065f46' :
+                            p.category === 'rapidfire' ? '#991b1b' :
+                            p.category === 'prospect' ? '#92400e' : '#831843',
+                        }}>
+                          {p.source === 'uploaded' ? 'Uploaded' :
+                           p.category === 'pipeline' ? 'Pipeline' :
+                           p.category === 'rapidfire' ? 'Rapid Fire' :
+                           p.category === 'prospect' ? 'Prospect' : 'Custom'}
+                        </div>
+                        {p.insight && (
+                          <div style={{ borderRadius: 8, padding: 10, fontSize: 12, lineHeight: 1.5, color: '#374151', backgroundColor: '#f3f4f6', marginBottom: 8 }}>
+                            {p.insight}
+                          </div>
+                        )}
+                        {p.units ? (
+                          <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>{p.units} units</div>
+                        ) : null}
+                        {p.source === 'uploaded' && p.propertyData && Object.keys(p.propertyData).length > 0 && (
+                          <div style={{ borderRadius: 8, padding: 8, backgroundColor: '#f9fafb', fontSize: 11, maxHeight: 180, overflowY: 'auto', border: '1px solid #e5e7eb', marginBottom: 8 }}>
+                            {Object.entries(p.propertyData)
+                              .filter(([, v]) => v !== null && v !== undefined && v !== '')
+                              .map(([key, value]) => (
+                                <div key={key} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '3px 0' }}>
+                                  <span style={{ fontWeight: 600, color: '#6b7280' }}>{key}</span>
+                                  <span style={{ color: '#111827', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{String(value)}</span>
+                                </div>
+                              ))}
+                          </div>
+                        )}
+                        {(p.category === 'rapidfire' || p.category === 'prospect' || p.category === 'custom' || p.source === 'uploaded') && (
+                          <button
+                            onClick={() => { deletePin(p.id, p.dbId); setActiveInfoPinId(null); }}
+                            style={{
+                              width: '100%', padding: '8px 12px', backgroundColor: '#ef4444', color: '#fff',
+                              border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                              textTransform: 'uppercase', letterSpacing: '0.5px',
+                            }}
+                          >
+                            Delete Pin
+                          </button>
+                        )}
+                      </div>
+                    </InfoWindowF>
+                  )}
+                </MarkerF>
+              ))}
+            </GoogleMap>
+          ) : (
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 13, backgroundColor: '#0f172a' }}>
+              {GOOGLE_MAPS_API_KEY ? 'Loading map…' : 'Set REACT_APP_GOOGLE_MAPS_KEY in client/.env to load the map.'}
+            </div>
+          )
+        )}
+
+        {/* Leaflet 2D Map â€” used for the advanced GIS overlay layers (zoning,
+            dev pipeline, absorption, cap rate, county/ZIP choropleth, SFR/MF
+            sales, data centers, city/zip metrics) which depend on Leaflet's
+            GeoJSON/bounds APIs. */}
+        {mapStyle !== '3d' && !useGoogleMaps && (
         <MapContainer center={defaultCenter} zoom={defaultZoom} style={{ width: '100%', height: '100%' }}>
           <TileLayer
             url={tileUrl}
@@ -4105,8 +4227,8 @@ function DashboardMapTab() {
               style={{
                 position: 'fixed', bottom: 20, right: 16, zIndex: 1001,
                 width: 48, height: 48, borderRadius: '50%',
-                backgroundColor: '#2563eb', border: 'none', color: '#fff',
-                boxShadow: '0 4px 16px rgba(37,99,235,0.4)',
+                background: 'linear-gradient(135deg, #34d399 0%, #22d3ee 100%)', border: 'none', color: '#fff',
+                boxShadow: '0 4px 16px rgba(34,211,238,0.4)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer',
               }}
@@ -4128,7 +4250,7 @@ function DashboardMapTab() {
                 fontSize: 14, fontWeight: 700, color: '#f1f5f9',
               }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#34d399', display: 'inline-block' }} />
                   Max AI
                 </span>
                 <button onClick={() => setIsChatMinimized(true)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8', padding: 4 }}>
@@ -4163,7 +4285,7 @@ function DashboardMapTab() {
                     placeholder="Ask about markets, trends, or map commands..."
                     value={chat.input} onChange={(e) => setChat({ ...chat, input: e.target.value })}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMaxMessage(chat.input); } }} />
-                  <button style={{ padding: '10px 16px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: chat.loading ? 0.6 : 1 }}
+                  <button style={{ padding: '10px 16px', background: 'linear-gradient(90deg, #34d399 0%, #22d3ee 100%)', color: 'white', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: chat.loading ? 0.6 : 1 }}
                     disabled={chat.loading} onClick={() => sendMaxMessage(chat.input)}>Send</button>
                 </div>
               </div>
@@ -4291,7 +4413,7 @@ function DashboardMapTab() {
             <button
               style={{
                 padding: '8px 16px',
-                backgroundColor: '#2563eb',
+                background: 'linear-gradient(90deg, #34d399 0%, #22d3ee 100%)',
                 color: 'white',
                 border: 'none',
                 borderRadius: 8,

@@ -764,6 +764,18 @@ const Field = ({ icon, label, children, note }) => (
     <div className="flex flex-col items-end">{children}{note && <span className="text-[11px] text-gray-400 mt-1">{note}</span>}</div>
   </div>
 );
+const SnapRow = ({ label, value, highlight }) => (
+  <div className="flex items-center justify-between gap-2">
+    <span className={`text-[13px] ${highlight ? "text-gray-600 font-medium" : "text-gray-500"}`}>{label}</span>
+    <span className={`font-semibold text-[13px] text-right ${highlight ? "text-emerald-600" : "text-gray-800"}`}>{value}</span>
+  </div>
+);
+const INCOME_METHOD_LABELS = {
+  stabilized: "Stabilized",
+  simple: "Value-Add (Simple)",
+  advanced: "Value-Add (Advanced)",
+  rubs: "Value-Add (RUBS / Utility Bill-Back)",
+};
 const Input = ({ value, onChange, suffix, w = "w-36", readOnly }) => (
   <div className={`flex items-center border rounded-lg overflow-hidden ${readOnly ? "bg-gray-100 border-gray-200" : "bg-white border-gray-300"} ${w}`}>
     <input value={value} readOnly={readOnly} onChange={(e) => onChange && onChange(e.target.value)}
@@ -1480,6 +1492,15 @@ function SummaryTab({ M, S, set }) {
     set({ scenarioKey: k, rateOverride: sc.rate, amort: sc.amort, ioMonths: sc.io });
     setDebtOpen(false);
   };
+  // Value-add impact: NOI/value/cashflow/return uplift attributable to whichever
+  // strategy is currently selected on the Strategy tab (reno premiums or RUBS).
+  const strategyAnnualIncrease = S.incomeMethod === "rubs" ? M.rubsAnnual
+    : (S.incomeMethod === "simple" || S.incomeMethod === "advanced") ? M.totalPremiumYr : 0;
+  const strategyNewNOI = M.T12.noi + strategyAnnualIncrease;
+  const strategyValueAdd = strategyAnnualIncrease / S.exitCap;
+  const strategyNewValue = M.purchasePrice + strategyValueAdd;
+  const strategyNewMonthlyCF = M.lev[1] / 12;
+  const strategyNewCoC = M.avgCoC;
   const ADD = <span className="italic text-gray-400 text-[13px]">Click to add…</span>;
   const info = [
     [I.bldg, "Property Name", CFG.deal.name], [I.pin, "Address", CFG.deal.address], [I.tag, "Property Type", <>{CFG.deal.type} ▾</>], [I.grid, "Total Units", fm(CFG.deal.units)],
@@ -1608,15 +1629,63 @@ function SummaryTab({ M, S, set }) {
         </div>
       </div>
       <div>
-        <GradBanner className="mb-4"><span className="font-bold">Returns</span></GradBanner>
-        <div className="grid grid-cols-2 gap-4 max-w-2xl">
-          {[["GOING-IN CAP", pct(M.goingInCap), I.pctI], ["IRR", M.leveredIRR === null ? "—" : pct(M.leveredIRR), I.chart],
-            ["EQUITY MULTIPLE", `${fm(M.equityMultiple, 2)}x`, I.card], ["CASH-ON-CASH", pct(M.avgCoC), I.cash]].map(([l, v, ic]) => (
-            <Card key={l} className="p-4 flex flex-col gap-1">
-              <div className="flex items-center gap-2 text-[11px] font-bold text-gray-400 uppercase"><span className="w-6 h-6 rounded-md bg-emerald-100 text-emerald-600 flex items-center justify-center">{ic}</span>{l}</div>
-              <div className="text-2xl font-bold text-gray-900">{v}</div>
-            </Card>
-          ))}
+        <GradPill className="mb-4">Financing, Strategy &amp; Returns Snapshot</GradPill>
+        <div className="text-xs text-gray-400 -mt-2 mb-3">Reflects whatever you've currently selected on the Financing, Strategy, and Returns tabs</div>
+        <div className="grid grid-cols-3 gap-5">
+          <Card className="overflow-hidden">
+            <GradBanner className="rounded-b-none"><span className="font-bold text-sm">Financing</span></GradBanner>
+            <div className="p-4 flex flex-col gap-2 text-sm">
+              <SnapRow label="Scenario" value={CFG.scenarios[S.scenarioKey].label} />
+              <SnapRow label="Loan Amount" value={$f(M.loan)} />
+              <SnapRow label="Rate / LTV" value={`${pct(M.rate, 2)} · ${pct(S.ltv, 0)} LTV`} />
+              <SnapRow label="Amort / IO" value={`${S.amort}yr / ${S.ioMonths}mo IO`} />
+              <SnapRow label="DSCR" value={M.metrics.dscr === null ? "—" : `${fm(M.metrics.dscr, 2)}x`} />
+              <SnapRow label="Refinance"
+                value={S.refiOn ? `Year ${S.refiYear} @ ${pct(S.refiLTV, 0)} LTV, ${pct(S.refiRate, 2)}` : "Not modeled"} />
+            </div>
+          </Card>
+          <Card className="overflow-hidden">
+            <GradBanner className="rounded-b-none"><span className="font-bold text-sm">Value-Add Strategy</span></GradBanner>
+            <div className="p-4 flex flex-col gap-2 text-sm">
+              <SnapRow label="Method" value={INCOME_METHOD_LABELS[S.incomeMethod] || S.incomeMethod} />
+              {S.incomeMethod === "stabilized" && (
+                <div className="text-gray-500 text-[13px]">In-place market rents, no renovation program modeled.</div>
+              )}
+              {(S.incomeMethod === "simple" || S.incomeMethod === "advanced") && (<>
+                <SnapRow label="Units Renovated" value={`${M.renoCount} / ${CFG.deal.units}`} />
+                <SnapRow label="Avg Premium / Unit" value={`${$f(S.renoPremium)}/mo`} />
+                <SnapRow label="Total Premium / Yr (Increase)" value={`+${$f(M.totalPremiumYr)}`} />
+                <SnapRow label="Reno Schedule" value={`Month ${S.scheduleStart} – ${S.scheduleEnd}`} />
+                <SnapRow label="Total Reno Cost" value={$f(M.totalRenoCost)} />
+                <div className="border-t border-gray-100 my-1" />
+                <SnapRow label="New NOI" value={$f(Math.round(strategyNewNOI))} highlight />
+                <SnapRow label="New Property Value" value={$f(Math.round(strategyNewValue))} highlight />
+                <SnapRow label="New Cash Flow / Mo" value={$f(Math.round(strategyNewMonthlyCF))} highlight />
+                <SnapRow label="New Cash-on-Cash Return" value={pct(strategyNewCoC)} highlight />
+              </>)}
+              {S.incomeMethod === "rubs" && (<>
+                <SnapRow label="Items Selected" value={`${S.rubsSelected.size} of ${CFG.rubs.items.length}`} />
+                <SnapRow label="Recovery Rate" value={pct(S.rubsRecoveryPct, 0)} />
+                <SnapRow label="Recovered / Yr (Increase to NOI)" value={`+${$f(Math.round(M.rubsAnnual))}`} />
+                <div className="border-t border-gray-100 my-1" />
+                <SnapRow label="New NOI" value={$f(Math.round(strategyNewNOI))} highlight />
+                <SnapRow label="New Property Value" value={$f(Math.round(strategyNewValue))} highlight />
+                <SnapRow label="New Cash Flow / Mo" value={$f(Math.round(strategyNewMonthlyCF))} highlight />
+                <SnapRow label="New Cash-on-Cash Return" value={pct(strategyNewCoC)} highlight />
+              </>)}
+            </div>
+          </Card>
+          <Card className="overflow-hidden">
+            <GradBanner className="rounded-b-none"><span className="font-bold text-sm">Returns</span></GradBanner>
+            <div className="p-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <SnapRow label="Going-In Cap" value={pct(M.goingInCap)} />
+              <SnapRow label="Levered IRR" value={M.leveredIRR === null ? "—" : pct(M.leveredIRR)} />
+              <SnapRow label="Equity Multiple" value={`${fm(M.equityMultiple, 2)}x`} />
+              <SnapRow label="Avg Cash-on-Cash" value={pct(M.avgCoC)} />
+              <SnapRow label="Exit Cap Rate" value={pct(S.exitCap, 2)} />
+              <SnapRow label="Hold Period" value={`${CFG.acq.holdYears} yrs`} />
+            </div>
+          </Card>
         </div>
       </div>
       {toast && <div className="fixed bottom-5 right-5 bg-white border border-gray-200 rounded-2xl shadow-lg p-4 w-72 z-20">
@@ -2882,8 +2951,173 @@ Thanks,
   );
 }
 
+/* -------- Real expense data (from the actual uploaded deal document,
+   independent of the demo T-12 model above) -------- */
+const UTIL_BREAKDOWN_LABELS = {
+  water_sewer: "Water / Sewer", electric: "Electric", gas: "Gas",
+  trash: "Trash / Refuse", cable_internet: "Cable / Internet", other_utility: "Other Utility",
+};
+const EXPENSE_LINE_LABELS = {
+  taxes: "Property Taxes", insurance: "Insurance", utilities: "Utilities",
+  repairs_maintenance: "Repairs & Maintenance", management: "Management Fee",
+  payroll: "Payroll", admin: "Administrative", marketing: "Marketing", other: "Other",
+};
+
+function RealExpenseDataCard({ scenarioData }) {
+  const exp = scenarioData?.expenses || null;
+  const units = Number(scenarioData?.property?.units) || 0;
+  if (!exp || !(Number(exp.utilities) > 0)) return null;
+
+  const breakdown = exp.utilities_breakdown || {};
+  const breakdownEntries = Object.entries(UTIL_BREAKDOWN_LABELS)
+    .map(([k, label]) => [k, label, Number(breakdown[k]) || 0])
+    .filter(([, , v]) => v > 0);
+  const hasBreakdown = breakdownEntries.length > 0;
+  const utilitiesTotal = Number(exp.utilities) || 0;
+
+  return (
+    <Card className="overflow-hidden">
+      <GradBanner>
+        <span className="font-bold text-sm">Utilities — As Reported In Source Document</span>
+        <Pill tone={hasBreakdown ? "green" : "gray"}>{hasBreakdown ? "Itemized" : "Combined Total"}</Pill>
+      </GradBanner>
+      <div className="p-4">
+        {hasBreakdown ? (
+          <table className="w-full text-[13px]">
+            <thead><tr className="text-left text-gray-500"><th className="py-2">Utility</th><th className="text-right py-2">Annual</th><th className="text-right py-2">Per Unit / Yr</th></tr></thead>
+            <tbody>
+              {breakdownEntries.map(([k, label, v]) => (
+                <tr key={k} className="border-t border-gray-50">
+                  <td className="py-2">{label}</td>
+                  <td className="text-right py-2"><Mono v={v} /></td>
+                  <td className="text-right py-2 text-gray-500">{units ? $f(v / units) : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t border-gray-200 font-bold">
+                <td className="py-2">Total Utilities</td>
+                <td className="text-right py-2"><Mono v={utilitiesTotal} bold /></td>
+                <td className="text-right py-2">{units ? $f(utilitiesTotal / units) : "—"}</td>
+              </tr>
+            </tfoot>
+          </table>
+        ) : (
+          <div className="text-sm text-gray-500">
+            The source document reported utilities as a single combined total (<b>{$f(utilitiesTotal)}</b>/yr) with no
+            itemized water/electric/gas/trash breakdown. Re-upload a T-12 or expense schedule that itemizes utilities
+            to see a per-utility breakdown here.
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+/* -------- Expense pass-through / RUBS calculator — driven entirely by the
+   deal's real reported expenses, not the demo model. Lets the user select
+   ANY expense line item (or utility sub-item, when broken out) to bill back
+   to tenants and see the resulting NOI impact. -------- */
+function ExpensePassThroughCalculator({ scenarioData }) {
+  const exp = scenarioData?.expenses || null;
+  const pnl = scenarioData?.pnl || {};
+  const units = Number(scenarioData?.property?.units) || 0;
+  const baseNOI = Number(pnl.noi_t12 ?? pnl.noi) || 0;
+
+  const items = useMemo(() => {
+    if (!exp) return [];
+    const breakdown = exp.utilities_breakdown || {};
+    const hasBreakdown = Object.values(breakdown).some((v) => Number(v) > 0);
+    const rows = [];
+    Object.entries(EXPENSE_LINE_LABELS).forEach(([key, label]) => {
+      if (key === "utilities" && hasBreakdown) {
+        Object.entries(UTIL_BREAKDOWN_LABELS).forEach(([uk, ulabel]) => {
+          const v = Number(breakdown[uk]) || 0;
+          if (v > 0) rows.push({ key: `utilities.${uk}`, label: `Utilities — ${ulabel}`, value: v });
+        });
+      } else {
+        const v = Number(exp[key]) || 0;
+        if (v > 0) rows.push({ key, label, value: v });
+      }
+    });
+    return rows;
+  }, [exp]);
+
+  const [selected, setSelected] = useState({});
+  const [recovery, setRecovery] = useState({});
+  const toggle = (key) => setSelected((p) => ({ ...p, [key]: !p[key] }));
+  const setRec = (key, val) => setRecovery((p) => ({ ...p, [key]: Math.max(0, Math.min(100, val)) }));
+
+  if (!exp || items.length === 0) {
+    return (
+      <Card className="p-6 text-sm text-gray-500">
+        Upload this deal's T-12 or expense schedule to enable the expense pass-through (RUBS) calculator.
+      </Card>
+    );
+  }
+
+  const totalAnnualIncrease = items.reduce((s, it) => {
+    if (!selected[it.key]) return s;
+    const p = recovery[it.key] ?? 100;
+    return s + it.value * (p / 100);
+  }, 0);
+  const newNOI = baseNOI + totalAnnualIncrease;
+  const perUnitYear = units ? totalAnnualIncrease / units : 0;
+  const perUnitMonth = units ? totalAnnualIncrease / units / 12 : 0;
+  const anySelected = items.some((it) => selected[it.key]);
+
+  return (
+    <Card className="overflow-hidden">
+      <GradBanner>
+        <span className="font-bold text-sm">Expense Pass-Through to Tenants (RUBS)</span>
+        <span className="text-xs opacity-90">Based on actual reported expenses</span>
+      </GradBanner>
+      <div className="p-4 flex flex-col gap-4">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className="text-left text-gray-500">
+              <th className="py-2 w-8"></th><th className="py-2">Expense</th>
+              <th className="text-right py-2">Annual Amount</th>
+              <th className="text-right py-2 w-32">Recovery %</th>
+              <th className="text-right py-2">Recovered / Yr</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((it) => {
+              const isOn = !!selected[it.key];
+              const pctVal = recovery[it.key] ?? 100;
+              const recovered = isOn ? it.value * (pctVal / 100) : 0;
+              return (
+                <tr key={it.key} className={`border-t border-gray-50 ${isOn ? "bg-emerald-50/50" : ""}`}>
+                  <td className="py-2"><input type="checkbox" checked={isOn} onChange={() => toggle(it.key)} className="accent-emerald-500 w-4 h-4" /></td>
+                  <td className="py-2">{it.label}</td>
+                  <td className="text-right py-2"><Mono v={it.value} /></td>
+                  <td className="text-right py-2">
+                    <input type="number" min={0} max={100} value={pctVal} disabled={!isOn}
+                      onChange={(e) => setRec(it.key, Number(e.target.value))}
+                      className="w-16 text-right border border-gray-200 rounded px-1.5 py-0.5 text-xs disabled:bg-gray-50 disabled:text-gray-300" />
+                    <span className="text-gray-400 text-xs ml-0.5">%</span>
+                  </td>
+                  <td className="text-right py-2"><Mono v={recovered} green={recovered > 0} /></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <div className="flex gap-4 flex-wrap">
+          <StatCard label="Total Annual NOI Increase" value={$f(totalAnnualIncrease)} valueClass="text-emerald-600" />
+          <StatCard label="New NOI (Est.)" value={$f(newNOI)} sub={baseNOI ? `from ${$f(baseNOI)}` : undefined} />
+          <StatCard label="Per Unit / Month" value={units ? $f(perUnitMonth) : "—"} />
+          <StatCard label="Per Unit / Year" value={units ? $f(perUnitYear) : "—"} />
+        </div>
+        {!anySelected && <div className="text-xs text-gray-400">Select one or more expense line items above to see the NOI impact of billing them back to tenants.</div>}
+      </div>
+    </Card>
+  );
+}
+
 /* -------- Expenses -------- */
-function ExpensesTab({ M }) {
+function ExpensesTab({ M, scenarioData }) {
   const y1 = M.years[0];
   const keys = Object.keys(T12_LABELS);
   const dd = useDueDiligence();
@@ -2975,6 +3209,8 @@ function ExpensesTab({ M }) {
         <SourceVerificationPanel t={M.t12} M={M} fieldKey={verifyKey} month={0}
           onNavigate={(k) => setVerifyKey(k)} onClose={() => setVerify(false)} />
       )}
+      <RealExpenseDataCard scenarioData={scenarioData} />
+      <ExpensePassThroughCalculator scenarioData={scenarioData} />
     </div>
   );
 }
@@ -4083,7 +4319,7 @@ export default function App({
     income: <IncomeTab M={M} />,
     rentroll: <RentRollTab M={M} />,
     t12: <T12Tab M={M} />,
-    expenses: <ExpensesTab M={M} />,
+    expenses: <ExpensesTab M={M} scenarioData={mergedParsedData} />,
     cashflow: <CashflowTab M={M} S={S} cfView={cfView} />,
     renovations: <RenovationsTab M={M} S={S} set={set} />,
     waterfall: <WaterfallTab M={M} S={S} set={set} />,

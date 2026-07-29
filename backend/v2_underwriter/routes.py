@@ -1490,6 +1490,26 @@ def _post_process_parsed_data(data: dict) -> dict:
     # ------------------------------------------------------------------
     expense_keys = ['taxes', 'insurance', 'utilities', 'repairs_maintenance', 
                     'management', 'payroll', 'admin', 'marketing', 'other']
+
+    # Normalize utilities_breakdown first — if the source document broke
+    # utilities into sub-items (water/sewer, electric, gas, trash, etc.),
+    # this drives expenses.utilities rather than the other way around.
+    UTIL_BREAKDOWN_KEYS = ['water_sewer', 'electric', 'gas', 'trash', 'cable_internet', 'other_utility']
+    utilities_breakdown = expenses.get('utilities_breakdown') or {}
+    breakdown_total = 0
+    has_breakdown = False
+    normalized_breakdown = {}
+    for key in UTIL_BREAKDOWN_KEYS:
+        val = to_num(utilities_breakdown.get(key))
+        normalized_breakdown[key] = val if val is not None else 0
+        if val:
+            breakdown_total += val
+            has_breakdown = True
+    expenses['utilities_breakdown'] = normalized_breakdown if has_breakdown else {}
+    if has_breakdown:
+        expenses['utilities'] = breakdown_total
+        log.info(f"[post_process] Computed expenses.utilities = {breakdown_total} from utilities_breakdown")
+
     line_item_total = 0
     has_line_items = False
     for key in expense_keys:
@@ -1935,7 +1955,8 @@ Return JSON matching this schema:
     "expense_ratio_t12": 0,
     "expense_ratio_proforma": 0
   },
-  "expenses": {"taxes": 0, "insurance": 0, "utilities": 0, "repairs_maintenance": 0, "management": 0, "payroll": 0, "admin": 0, "marketing": 0, "other": 0, "total": 0},
+  "expenses": {"taxes": 0, "insurance": 0, "utilities": 0, "repairs_maintenance": 0, "management": 0, "payroll": 0, "admin": 0, "marketing": 0, "other": 0, "total": 0,
+    "utilities_breakdown": {"water_sewer": 0, "electric": 0, "gas": 0, "trash": 0, "cable_internet": 0, "other_utility": 0}},
   "underwriting": {"holding_period": 0, "exit_cap_rate": 0},
   "unit_mix": [{"type": "", "units": 0, "mix_pct": 0, "unit_sf": 0, "rent_current": 0, "rent_psf": 0, "rent_market": 0, "rent_market_psf": 0, "rent_max": 0, "total_current_monthly": 0, "total_market_monthly": 0}],
   "_confidence": {
@@ -2025,6 +2046,17 @@ NET OPERATING INCOME EXTRACTION — THIS IS CRITICAL, DO NOT SKIP:
 - If you find NOI from an income statement or financial summary: put it in BOTH pnl.noi AND pnl.noi_t12.
 - If NOI is not explicitly stated but you have EGI/GPR and Total Expenses, CALCULATE it: NOI = EGI - Total Expenses (or GPR - Vacancy - Expenses).
 - If you find a cap rate and a price but no NOI, CALCULATE it: NOI = Cap Rate × Price.
+
+UTILITIES BREAKDOWN — BREAK IT OUT WHEN THE SOURCE DATA HAS IT:
+- Some OMs/T-12s list ONE combined "Utilities" total. Others break it into separate line items
+  (Water, Sewer, Water/Sewer combined, Electric, Electric-Common Area, Gas, Trash/Refuse, Cable/Internet, etc.).
+- If the document shows utilities as SEPARATE line items, fill in expenses.utilities_breakdown with
+  each sub-item you found (map to the closest of: water_sewer, electric, gas, trash, cable_internet;
+  anything that doesn't fit those buckets goes in other_utility). Leave any sub-item you did NOT find at 0.
+  Then set expenses.utilities to the SUM of everything in utilities_breakdown.
+- If the document shows only ONE combined "Utilities" total with no sub-items, do NOT guess a breakdown —
+  leave utilities_breakdown all at 0 and just set expenses.utilities to that single lumped total.
+- Never invent a split (e.g. don't assume a 45/25/20/10 ratio) when the source only gives one number.
 """
         
         content_items.append({

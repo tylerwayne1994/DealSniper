@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Upload, Download, Trash2,
-  Eye, BrainCircuit, ClipboardCheck, Presentation,
+  Eye, ClipboardCheck, Presentation,
   DollarSign, Home, X, StickyNote,
   Folder, FileCheck, BarChart3, AlertTriangle,
   ChevronRight, RefreshCw, Percent, Hash, Calendar,
@@ -1204,16 +1204,6 @@ function DealRoomPage() {
                 }}
               >
                 <Eye size={16} /> View Full Underwriting
-              </button>
-              <button
-                onClick={() => navigate(`/market-research?dealId=${dealId}`)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '12px 14px',
-                  borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #0f172a, #1e3a5f)',
-                  color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: '700', textAlign: 'left',
-                }}
-              >
-                <BrainCircuit size={16} /> Deal Builder AI Workspace
               </button>
             </div>
           </div>

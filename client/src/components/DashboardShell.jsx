@@ -16,6 +16,7 @@ import {
   Phone,
   Bell,
   Sparkles,
+  NotebookPen,
 } from 'lucide-react';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useUpdates } from '../hooks/useUpdates';
@@ -202,6 +203,7 @@ const tabs = [
   { id: 'updates', label: 'Updates', icon: Bell, section: 'main' },
   { id: 'pipeline', label: 'Pipeline', icon: Layers, section: 'deals' },
   { id: 'underwrite', label: 'Underwrite', icon: FileSpreadsheet, section: 'deals' },
+  { id: 'napkin', label: 'Back of the Napkin', icon: NotebookPen, section: 'deals' },
   { id: 'templates', label: 'Templates', icon: FileText, section: 'deals' },
   { id: 'pitch-deck', label: 'Pitch Deck', icon: Presentation, section: 'analysis' },
   { id: 'investor-portal', label: 'Investor Portal', icon: Users, section: 'analysis' },
@@ -235,6 +237,8 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
       navigate('/pipeline');
     } else if (tabId === 'underwrite') {
       navigate('/underwrite');
+    } else if (tabId === 'napkin') {
+      navigate('/napkin');
     } else if (tabId === 'agent-builder') {
       navigate('/agent-builder');
     } else if (tabId === 'email-underwrite') {

@@ -1,13 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import { GoogleMap, MarkerF, InfoWindowF, useJsApiLoader } from '@react-google-maps/api';
 import { loadPipelineDeals, updateDeal } from '../../lib/dealsService';
 import { geocodeAddress } from '../../utils/geocode';
 
-const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN ||
-  'pk.eyJ1IjoidHlsZXJ3YXluZTEiLCJhIjoiY21oNzlqb2xwMHBybjJscHR5ZXVqcHZ2aCJ9.jHao1snG3bwXFRVWcA8tuQ';
-mapboxgl.accessToken = MAPBOX_TOKEN;
+const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_KEY || '';
 
 const containerStyle = {
   display: 'flex',
@@ -91,6 +88,8 @@ const propertyPriceStyle = {
 
 const inputStyle = { padding: '8px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px' };
 
+const DEFAULT_CENTER = { lat: 39.0997, lng: -94.5786 };
+
 function formatShortPrice(price) {
   if (!Number.isFinite(price) || price <= 0) return null;
   if (price >= 1_000_000) return `$${(price / 1_000_000).toFixed(price >= 10_000_000 ? 0 : 1)}M`;
@@ -115,13 +114,12 @@ function dealCityState(deal) {
 
 export default function MapView() {
   const navigate = useNavigate();
-  const mapContainer = useRef(null);
-  const map = useRef(null);
-  const markers = useRef([]);
+  const mapRef = useRef(null);
   const [deals, setDeals] = useState([]);
   const [allDeals, setAllDeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [activeDealId, setActiveDealId] = useState(null);
 
   // Filter states
   const [cityFilter, setCityFilter] = useState('');
@@ -131,6 +129,11 @@ export default function MapView() {
   const [capRateMax, setCapRateMax] = useState('');
   const [unitsMin, setUnitsMin] = useState('');
   const [unitsMax, setUnitsMax] = useState('');
+
+  const { isLoaded } = useJsApiLoader({
+    id: 'dealsniper-google-maps',
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+  });
 
   const loadDeals = useCallback(async () => {
     setLoading(true);
@@ -172,78 +175,27 @@ export default function MapView() {
     loadDeals();
   }, [loadDeals]);
 
+  const located = deals.filter(
+    (d) => Number.isFinite(d.longitude) && Number.isFinite(d.latitude)
+  );
+
+  // Fit the map to the visible pins whenever the filtered deal list changes
   useEffect(() => {
-    if (map.current) return;
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [-94.5786, 39.0997],
-      zoom: 4,
-    });
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-  }, []);
-
-  useEffect(() => {
-    if (!map.current) return;
-
-    markers.current.forEach((marker) => marker.remove());
-    markers.current = [];
-
-    const located = deals.filter(
-      (d) => Number.isFinite(d.longitude) && Number.isFinite(d.latitude)
-    );
-
-    located.forEach((deal) => {
-      // Zillow-style price pill marker
-      const el = document.createElement('div');
-      const label = formatShortPrice(deal.purchasePrice) || `${deal.units || '?'} units`;
-      el.textContent = label;
-      Object.assign(el.style, {
-        padding: '4px 10px',
-        borderRadius: '999px',
-        background: '#0F172A',
-        color: '#fff',
-        fontSize: '12px',
-        fontWeight: '700',
-        border: '2px solid #fff',
-        boxShadow: '0 2px 6px rgba(0,0,0,0.35)',
-        cursor: 'pointer',
-        whiteSpace: 'nowrap',
-      });
-
-      const capRate = dealCapRate(deal);
-      const popupHTML = `
-        <div style="padding: 12px; min-width: 220px; font-family: inherit;">
-          <h3 style="margin: 0 0 8px; font-size: 15px; font-weight: 700;">${deal.address || 'Deal'}</h3>
-          <p style="margin: 0 0 4px; font-size: 13px; color: #666;">
-            ${deal.units ? `${deal.units} Units` : ''}${capRate ? ` &bull; ${capRate.toFixed(1)}% Cap` : ''}
-          </p>
-          ${deal.purchasePrice ? `<p style="margin: 0 0 8px; font-size: 17px; font-weight: 700;">$${deal.purchasePrice.toLocaleString()}</p>` : ''}
-          <button
-            onclick="window.location.href='/underwrite?viewDeal=${deal.dealId}'"
-            style="width: 100%; padding: 8px; background: #000; color: #fff; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;"
-          >
-            View Deal
-          </button>
-        </div>
-      `;
-
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([deal.longitude, deal.latitude])
-        .setPopup(new mapboxgl.Popup({ offset: 18 }).setHTML(popupHTML))
-        .addTo(map.current);
-      markers.current.push(marker);
-    });
-
-    // Fit the map to the visible pins
+    if (!mapRef.current || located.length === 0) return;
     if (located.length === 1) {
-      map.current.flyTo({ center: [located[0].longitude, located[0].latitude], zoom: 12 });
-    } else if (located.length > 1) {
-      const bounds = new mapboxgl.LngLatBounds();
-      located.forEach((d) => bounds.extend([d.longitude, d.latitude]));
-      map.current.fitBounds(bounds, { padding: 80, maxZoom: 12 });
+      mapRef.current.panTo({ lat: located[0].latitude, lng: located[0].longitude });
+      mapRef.current.setZoom(12);
+      return;
     }
+    const bounds = new window.google.maps.LatLngBounds();
+    located.forEach((d) => bounds.extend({ lat: d.latitude, lng: d.longitude }));
+    mapRef.current.fitBounds(bounds, 80);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deals]);
+
+  const onMapLoad = useCallback((map) => {
+    mapRef.current = map;
+  }, []);
 
   const applyFilters = () => {
     let filtered = [...allDeals];
@@ -285,10 +237,14 @@ export default function MapView() {
   };
 
   const handleCardClick = (deal) => {
-    if (Number.isFinite(deal.longitude) && Number.isFinite(deal.latitude)) {
-      map.current.flyTo({ center: [deal.longitude, deal.latitude], zoom: 14 });
+    if (mapRef.current && Number.isFinite(deal.longitude) && Number.isFinite(deal.latitude)) {
+      mapRef.current.panTo({ lat: deal.latitude, lng: deal.longitude });
+      mapRef.current.setZoom(14);
+      setActiveDealId(deal.dealId);
     }
   };
+
+  const activeDeal = located.find((d) => d.dealId === activeDealId) || null;
 
   return (
     <div style={containerStyle}>
@@ -312,7 +268,61 @@ export default function MapView() {
       </div>
 
       <div style={bodyStyle}>
-        <div ref={mapContainer} style={mapContainerStyle} />
+        <div style={mapContainerStyle}>
+          {!GOOGLE_MAPS_API_KEY ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6b7280', fontSize: 14, padding: 24, textAlign: 'center' }}>
+              Set REACT_APP_GOOGLE_MAPS_KEY in client/.env to load the map.
+            </div>
+          ) : !isLoaded ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6b7280', fontSize: 14 }}>
+              Loading map…
+            </div>
+          ) : (
+            <GoogleMap
+              mapContainerStyle={{ width: '100%', height: '100%' }}
+              center={DEFAULT_CENTER}
+              zoom={4}
+              onLoad={onMapLoad}
+              options={{ mapTypeControl: true, streetViewControl: false, fullscreenControl: false }}
+            >
+              {located.map((deal) => (
+                <MarkerF
+                  key={deal.dealId}
+                  position={{ lat: deal.latitude, lng: deal.longitude }}
+                  label={{
+                    text: formatShortPrice(deal.purchasePrice) || `${deal.units || '?'} units`,
+                    className: 'gm-price-pill',
+                  }}
+                  onClick={() => setActiveDealId(deal.dealId)}
+                />
+              ))}
+
+              {activeDeal && (
+                <InfoWindowF
+                  position={{ lat: activeDeal.latitude, lng: activeDeal.longitude }}
+                  onCloseClick={() => setActiveDealId(null)}
+                >
+                  <div style={{ padding: 4, minWidth: 200, fontFamily: 'inherit' }}>
+                    <h3 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 700 }}>{activeDeal.address || 'Deal'}</h3>
+                    <p style={{ margin: '0 0 4px', fontSize: 13, color: '#666' }}>
+                      {activeDeal.units ? `${activeDeal.units} Units` : ''}
+                      {dealCapRate(activeDeal) ? ` • ${dealCapRate(activeDeal).toFixed(1)}% Cap` : ''}
+                    </p>
+                    {activeDeal.purchasePrice ? (
+                      <p style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 700 }}>${activeDeal.purchasePrice.toLocaleString()}</p>
+                    ) : null}
+                    <button
+                      onClick={() => navigate(`/underwrite?viewDeal=${activeDeal.dealId}`)}
+                      style={{ width: '100%', padding: 8, background: '#000', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      View Deal
+                    </button>
+                  </div>
+                </InfoWindowF>
+              )}
+            </GoogleMap>
+          )}
+        </div>
         <div style={sidebarStyle}>
           {/* Filter Bar */}
           <div style={{ background: '#fff', borderBottom: '1px solid #ddd' }}>

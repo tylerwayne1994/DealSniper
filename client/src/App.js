@@ -8,6 +8,7 @@ import DealDetailPage from './pages/DealDetailPage';
 import DashboardPage from './pages/DashboardPage';
 import PaymentSuccessRedirect from './pages/PaymentSuccessRedirect';
 import UnderwriteV2Page from './pages/UnderwriteV2Page.jsx'; // V2 Underwriter (explicit .jsx to avoid legacy .js)
+import BackOfTheNapkinPage from './pages/BackOfTheNapkinPage.jsx'; // Standalone CRE Agent Skills chat underwrite
 import UnderwriteAnalysisPage from './pages/UnderwriteAnalysisPage'; // AI Analysis Page
 
 import DueDiligencePage from './pages/DueDiligencePage'; // Due Diligence Checklist
@@ -43,6 +44,7 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/payment-success" element={<PaymentSuccessRedirect />} />
         <Route path="/underwrite" element={<UnderwriteV2Page />} /> {/* V2 Underwriter */}
+        <Route path="/napkin" element={<BackOfTheNapkinPage />} /> {/* Back of the Napkin — CRE Agent Skills chat underwrite */}
         <Route path="/underwrite/analysis" element={<UnderwriteAnalysisPage />} /> {/* AI Analysis */}
         <Route path="/due-diligence" element={<DueDiligencePage />} /> {/* Due Diligence Checklist */}
         <Route path="/email-deals" element={<EmailDealsPage />} /> {/* Email Deal Screener */}
