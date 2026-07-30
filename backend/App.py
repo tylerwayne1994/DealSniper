@@ -685,6 +685,15 @@ async def get_checkout_session(session_id: str):
             "metadata": session.get("metadata", {}),
             "subscription_status": subscription_status,
             "trial_ends_at": trial_ends_at,
+            # Needed by PaymentSuccessRedirect.js for the legacy email/password
+            # flow: the account (and profiles row) is only created AFTER
+            # checkout completes, so the checkout.session.completed webhook's
+            # find-profile-by-email fallback hits nothing and never stamps
+            # stripe_customer_id. The frontend stamps it itself right after
+            # creating the account — it's the signal RequireSubscription.jsx
+            # and the /auth/callback gate use to recognize a paid account.
+            "customer_id": session.get("customer"),
+            "subscription_id": subscription_id,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

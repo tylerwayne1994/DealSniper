@@ -17,7 +17,7 @@ export default function PaymentSuccessRedirect() {
     return normalized;
   };
 
-  const finishSignupWithPassword = async (metadata, stripeTrialEndsAt, rawPassword) => {
+  const finishSignupWithPassword = async (metadata, stripeTrialEndsAt, rawPassword, stripeIds) => {
     const { email, first_name, last_name, phone, company, title, city, state, plan } = metadata;
     const subscriptionTier = normalizePlan(plan);
 
@@ -44,7 +44,16 @@ export default function PaymentSuccessRedirect() {
           token_balance: monthly,
           monthly_token_limit: monthly,
           subscription_status: 'trialing',
-          trial_ends_at: trialEndsAt
+          trial_ends_at: trialEndsAt,
+          // Stamp the Stripe ids from the verified checkout session. In this
+          // flow the account is created AFTER checkout completes, so the
+          // checkout.session.completed webhook's find-profile-by-email
+          // fallback found no row and never set these — and without
+          // stripe_customer_id, the paid-access gate (RequireSubscription.jsx
+          // / AuthCallbackPage.js) would treat this paying user as unpaid and
+          // bounce them into a second checkout.
+          ...(stripeIds?.customerId ? { stripe_customer_id: stripeIds.customerId } : {}),
+          ...(stripeIds?.subscriptionId ? { stripe_subscription_id: stripeIds.subscriptionId } : {})
         })
         .eq('id', authData.user.id);
 
@@ -75,7 +84,8 @@ export default function PaymentSuccessRedirect() {
         const res = await fetch(`${API_BASE}/api/get-checkout-session?session_id=${sessionId}`);
         if (!res.ok) throw new Error('Failed to retrieve payment metadata');
 
-        const { metadata, trial_ends_at: stripeTrialEndsAt } = await res.json();
+        const { metadata, trial_ends_at: stripeTrialEndsAt, customer_id: customerId, subscription_id: subscriptionId } = await res.json();
+        const stripeIds = { customerId, subscriptionId };
 
         // If this checkout was started by an already-authenticated user (Google/OAuth
         // sign-in, which creates the Supabase account before any Stripe checkout),
@@ -95,11 +105,11 @@ export default function PaymentSuccessRedirect() {
         const stored = storedRaw ? JSON.parse(storedRaw) : null;
 
         if (stored?.password && stored?.email?.toLowerCase() === metadata?.email?.toLowerCase()) {
-          await finishSignupWithPassword(metadata, stripeTrialEndsAt, stored.password);
+          await finishSignupWithPassword(metadata, stripeTrialEndsAt, stored.password, stripeIds);
           return;
         }
 
-        setCheckoutMeta({ metadata, stripeTrialEndsAt });
+        setCheckoutMeta({ metadata, stripeTrialEndsAt, stripeIds });
         setMessage('Payment succeeded. Set your password to finish creating the account.');
       } catch (err) {
         console.error('Payment success handling error:', err);
@@ -126,7 +136,7 @@ export default function PaymentSuccessRedirect() {
 
     setSubmitting(true);
     try {
-      await finishSignupWithPassword(checkoutMeta.metadata, checkoutMeta.stripeTrialEndsAt, password);
+      await finishSignupWithPassword(checkoutMeta.metadata, checkoutMeta.stripeTrialEndsAt, password, checkoutMeta.stripeIds);
     } catch (err) {
       console.error('Finalize signup error:', err);
       setMessage('Account creation failed: ' + (err.message || 'Unknown error'));
