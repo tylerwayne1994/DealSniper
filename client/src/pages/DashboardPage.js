@@ -438,6 +438,17 @@ function DashboardPage() {
       try {
         const data = await loadProfile();
         if (data) {
+          // Guard against unpaid access: /auth/callback (Google/OAuth sign-in)
+          // is supposed to gate brand-new accounts into Stripe checkout before
+          // they ever reach here, but a user can still land on /dashboard
+          // directly (e.g. cancelling out of Stripe and typing the URL) —
+          // re-run the same real-payment check here so that path isn't a
+          // free-access loophole. stripeCustomerId is only ever set by the
+          // Stripe webhook after an actual subscription checkout completes.
+          if (!data.stripeCustomerId) {
+            navigate('/auth/callback');
+            return;
+          }
           setProfile(data);
         }
       } catch (error) {
@@ -445,7 +456,7 @@ function DashboardPage() {
       }
     };
     fetchProfile();
-  }, []);
+  }, [navigate]);
 
   // Load token balance
   useEffect(() => {

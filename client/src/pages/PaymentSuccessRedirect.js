@@ -62,9 +62,6 @@ export default function PaymentSuccessRedirect() {
   useEffect(() => {
     const finishSignup = async () => {
       try {
-        // Ensure we aren't using any existing session (old account)
-        try { await supabase.auth.signOut(); } catch {}
-
         const params = new URLSearchParams(location.search);
         const sessionId = params.get('session_id') || params.get('session');
 
@@ -79,6 +76,21 @@ export default function PaymentSuccessRedirect() {
         if (!res.ok) throw new Error('Failed to retrieve payment metadata');
 
         const { metadata, trial_ends_at: stripeTrialEndsAt } = await res.json();
+
+        // If this checkout was started by an already-authenticated user (Google/OAuth
+        // sign-in, which creates the Supabase account before any Stripe checkout),
+        // metadata.user_id is set and the webhook has already activated that exact
+        // profile — there's no password to create and no old session to clear.
+        if (metadata?.user_id) {
+          setMessage('Subscription activated. Redirecting to your dashboard...');
+          setTimeout(() => navigate('/dashboard'), 1200);
+          return;
+        }
+
+        // Ensure we aren't using any existing session (old account) for the
+        // legacy email/password flow below.
+        try { await supabase.auth.signOut(); } catch {}
+
         const storedRaw = sessionStorage.getItem('pendingSignup');
         const stored = storedRaw ? JSON.parse(storedRaw) : null;
 
@@ -98,6 +110,7 @@ export default function PaymentSuccessRedirect() {
 
     finishSignup();
   }, [location.search, navigate]);
+
 
   const handleFinalizeSignup = async (e) => {
     e.preventDefault();

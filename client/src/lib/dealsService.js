@@ -819,7 +819,14 @@ export async function loadProfile() {
     brandCompanyName: data.brand_company_name || '',
     brandLetterheadText: data.brand_letterhead_text || '',
     googleSheetId: data.google_sheet_id || '',
-    googleSheetTab: data.google_sheet_tab || 'Model'
+    googleSheetTab: data.google_sheet_tab || 'Model',
+    // Only ever set by the Stripe webhook after a real checkout completes —
+    // the canonical "has this account actually paid" signal used to gate
+    // access post-login (see DashboardPage.js and AuthCallbackPage.js).
+    // Do NOT use subscription_status for this — it defaults to 'trialing'
+    // at the DB column level for every brand-new profile row regardless of
+    // payment (see backend/migrations/add_trial_columns.sql).
+    stripeCustomerId: data.stripe_customer_id || null
   };
 }
 

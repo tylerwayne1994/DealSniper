@@ -25,9 +25,15 @@ module.exports = function(app) {
     })
   );
 
-  // Google OAuth routes - must proxy /auth/* to backend
+  // Google OAuth routes (Gmail/Sheets connection flow) - must proxy
+  // /auth/google/* to the backend. Scoped to /auth/google specifically
+  // (not the whole /auth prefix) so it doesn't swallow client-side React
+  // Router routes like /auth/callback (the Supabase Google Sign-In landing
+  // page) - Express strips the mount prefix before this middleware ever
+  // sees the request, so a broader '/auth' mount here would forward
+  // '/auth/callback' to the backend as '/callback', which doesn't exist.
   app.use(
-    '/auth',
+    '/auth/google',
     createProxyMiddleware({
       target: 'http://localhost:8010',
       changeOrigin: true,

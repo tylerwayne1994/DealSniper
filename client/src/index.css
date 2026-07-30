@@ -44,6 +44,32 @@ body { @apply bg-slate-50; }
   }
 }
 
+/* Landing page — keep the nav/hero/CTA from overflowing on phones */
+@media (max-width: 640px) {
+  .ls-nav {
+    padding: 14px 16px !important;
+  }
+  .ls-nav-links {
+    display: none !important;
+  }
+  .ls-nav-cta {
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+  }
+  .ls-hero-h1 {
+    font-size: 34px !important;
+    letter-spacing: -1px !important;
+  }
+  .ls-final-cta {
+    padding: 60px 20px !important;
+  }
+  .ls-final-cta-h2 {
+    font-size: 30px !important;
+    letter-spacing: -1px !important;
+  }
+}
+
+
 @media (max-width: 1023px) {
   /* Slightly smaller popups on tablet */
   .leaflet-popup-content-wrapper {

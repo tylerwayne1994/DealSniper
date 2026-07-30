@@ -609,7 +609,15 @@ async def create_checkout_session(request: Request):
     title = data.get("title", "")
     city = data.get("city", "")
     state = data.get("state", "")
-    
+    # Set when an already-authenticated user (e.g. via Google/OAuth sign-in,
+    # which creates the Supabase auth user + profile row immediately, before
+    # any Stripe checkout) is starting their subscription. When present, the
+    # webhook's checkout.session.completed handler updates this exact profile
+    # by id instead of falling back to matching by email — see
+    # stripe_webhook_handler.py's `metadata.get("user_id")` branch, which
+    # already supports this and needed no changes.
+    user_id = data.get("userId")
+
     if not email:
         raise HTTPException(status_code=400, detail="Missing required field: email")
 
@@ -618,7 +626,22 @@ async def create_checkout_session(request: Request):
 
     try:
         stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-        checkout_session = stripe.checkout.Session.create(
+        metadata = {
+            "email": email,
+            "first_name": first_name,
+            "last_name": last_name,
+            "phone": phone,
+            "company": company,
+            "title": title,
+            "city": city,
+            "state": state,
+            "plan": "standard",
+            "trial_days": str(STRIPE_TRIAL_DAYS),
+        }
+        if user_id:
+            metadata["user_id"] = user_id
+
+        session_kwargs = dict(
             payment_method_types=["card"],
             line_items=[{
                 "price": price_id,
@@ -629,21 +652,14 @@ async def create_checkout_session(request: Request):
                 "trial_period_days": STRIPE_TRIAL_DAYS,
             },
             customer_email=email,
-            metadata={
-                "email": email,
-                "first_name": first_name,
-                "last_name": last_name,
-                "phone": phone,
-                "company": company,
-                "title": title,
-                "city": city,
-                "state": state,
-                "plan": "standard",
-                "trial_days": str(STRIPE_TRIAL_DAYS),
-            },
+            metadata=metadata,
             success_url=os.getenv("FRONTEND_URL", "http://localhost:3000") + f"/payment-success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=os.getenv("FRONTEND_URL", "http://localhost:3000") + "/signup?canceled=true",
         )
+        if user_id:
+            session_kwargs["client_reference_id"] = user_id
+
+        checkout_session = stripe.checkout.Session.create(**session_kwargs)
         return {"url": checkout_session.url}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

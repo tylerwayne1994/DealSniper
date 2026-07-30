@@ -145,6 +145,7 @@ function LandingPage() {
 
         {/* Nav */}
         <nav
+          className="ls-nav"
           style={{
             padding: '20px 48px',
             display: 'flex',
@@ -165,54 +166,56 @@ function LandingPage() {
             DEAL<span style={{ color: '#10b981' }}>SNIPER</span>
           </div>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <button
-              onClick={() => onClickSeeHowItWorks()}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: 'transparent',
-                color: '#94a3b8',
-                border: 'none',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer',
-              }}
-            >
-              Features
-            </button>
-            <button
-              onClick={() =>
-                document
-                  .getElementById('testimonials')
-                  ?.scrollIntoView({ behavior: 'smooth' })
-              }
-              style={{
-                padding: '10px 20px',
-                backgroundColor: 'transparent',
-                color: '#94a3b8',
-                border: 'none',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer',
-              }}
-            >
-              Testimonials
-            </button>
-            <button
-              onClick={() => navigate('/investor')}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: 'transparent',
-                color: '#94a3b8',
-                border: 'none',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={(e) => { e.target.style.color = '#ffffff'; }}
-              onMouseLeave={(e) => { e.target.style.color = '#94a3b8'; }}
-            >
-              Investor Access
-            </button>
+            <div className="ls-nav-links" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              <button
+                onClick={() => onClickSeeHowItWorks()}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: 'transparent',
+                  color: '#94a3b8',
+                  border: 'none',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                }}
+              >
+                Features
+              </button>
+              <button
+                onClick={() =>
+                  document
+                    .getElementById('testimonials')
+                    ?.scrollIntoView({ behavior: 'smooth' })
+                }
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: 'transparent',
+                  color: '#94a3b8',
+                  border: 'none',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                }}
+              >
+                Testimonials
+              </button>
+              <button
+                onClick={() => navigate('/investor')}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: 'transparent',
+                  color: '#94a3b8',
+                  border: 'none',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => { e.target.style.color = '#ffffff'; }}
+                onMouseLeave={(e) => { e.target.style.color = '#94a3b8'; }}
+              >
+                Investor Access
+              </button>
+            </div>
             <button
               onClick={() => navigate('/login')}
               style={{
@@ -239,6 +242,7 @@ function LandingPage() {
             </button>
             <button
               onClick={() => onClickPrimaryCTA('nav')}
+              className="ls-nav-cta"
               style={{
                 padding: '10px 24px',
                 backgroundColor: '#10b981',
@@ -311,6 +315,7 @@ function LandingPage() {
 
           {/* Headline */}
           <h1
+            className="ls-hero-h1"
             style={{
               fontSize: '64px',
               fontWeight: '900',
@@ -1397,6 +1402,7 @@ function LandingPage() {
           FINAL CTA
       ================================================================= */}
       <section
+        className="ls-final-cta"
         style={{
           padding: '100px 48px',
           background:
@@ -1406,6 +1412,7 @@ function LandingPage() {
       >
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
           <h2
+            className="ls-final-cta-h2"
             style={{
               fontSize: '48px',
               fontWeight: '900',

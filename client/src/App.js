@@ -17,6 +17,7 @@ import TemplatesPage from './pages/TemplatesPage'; // Deal Templates
 import SignUpPage from './pages/SignUpPage'; // Sign Up
 import SignupCompletePage from './pages/SignupCompletePage'; // Signup Complete
 import LoginPage from './pages/LoginPage'; // Login
+import AuthCallbackPage from './pages/AuthCallbackPage'; // Google/OAuth callback + subscription gate
 import ManualEntryPage from './pages/ManualEntryPage'; // Manual Entry
 import PitchDeckPage from './pages/PitchDeckPage'; // Pitch Deck Generator
 import MapView from './components/maps/Mapview'; // Mapbox Deal Map
@@ -35,6 +36,7 @@ function App() {
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/signup-complete" element={<SignupCompletePage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/manual-entry" element={<ManualEntryPage />} />
         <Route path="/pitch-deck" element={<PitchDeckPage />} />
         <Route path="/upload" element={<Uploadpage />} />
