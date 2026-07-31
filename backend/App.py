@@ -698,6 +698,78 @@ async def get_checkout_session(session_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/reconcile-subscription")
+async def reconcile_subscription(request: Request):
+    """
+    Self-heal for profiles missing stripe_customer_id.
+
+    Accounts created before PaymentSuccessRedirect started stamping Stripe ids
+    (or where the checkout.session.completed webhook's find-profile-by-email
+    fallback fired before the profiles row existed) are real paying customers
+    whose profile has no stripe_customer_id — which the paid-access gate
+    (RequireSubscription.jsx / AuthCallbackPage.js) reads as "never paid" and
+    bounces into a second checkout.
+
+    Called by AuthCallbackPage.js before it creates a checkout session: look
+    the caller up in Stripe by the email on their VERIFIED auth token (never
+    a client-supplied email — otherwise anyone could claim a paying member's
+    subscription), and if Stripe has a live subscription for it, stamp the
+    profile so the gate recognizes them from then on. Deliberately does NOT
+    touch token_balance — existing members have real balances.
+    """
+    from stripe_webhook_handler import get_supabase
+
+    auth_header = request.headers.get("authorization") or ""
+    token = auth_header[7:].strip() if auth_header.lower().startswith("bearer ") else ""
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing auth token")
+
+    supabase = get_supabase()
+    try:
+        user_res = supabase.auth.get_user(token)
+        user = getattr(user_res, "user", None)
+    except Exception:
+        user = None
+    if not user or not user.email:
+        raise HTTPException(status_code=401, detail="Invalid auth token")
+
+    try:
+        stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+
+        live_sub = None
+        live_customer_id = None
+        customers = stripe.Customer.list(email=user.email, limit=10)
+        for customer in customers.get("data", []):
+            subs = stripe.Subscription.list(customer=customer["id"], status="all", limit=10)
+            for sub in subs.get("data", []):
+                if sub.get("status") in ("active", "trialing", "past_due"):
+                    live_sub = sub
+                    live_customer_id = customer["id"]
+                    break
+            if live_sub:
+                break
+
+        if not live_sub:
+            return {"active": False}
+
+        update_data = {
+            "stripe_customer_id": live_customer_id,
+            "stripe_subscription_id": live_sub["id"],
+            "subscription_status": live_sub.get("status"),
+        }
+        trial_end = live_sub.get("trial_end")
+        if trial_end:
+            from datetime import datetime
+            update_data["trial_ends_at"] = datetime.fromtimestamp(trial_end).isoformat()
+
+        supabase.table("profiles").update(update_data).eq("id", user.id).execute()
+        log.info("[RECONCILE] Stamped stripe_customer_id %s onto profile %s (%s), status=%s",
+                 live_customer_id, user.id, user.email, live_sub.get("status"))
+        return {"active": True, "status": live_sub.get("status")}
+    except Exception as e:
+        log.error("[RECONCILE] Failed for %s: %s", user.email, e)
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.on_event("startup")
 async def _init_clients():
     global ANTHROPIC

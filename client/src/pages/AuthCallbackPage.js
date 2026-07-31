@@ -56,10 +56,36 @@ export default function AuthCallbackPage() {
           return;
         }
 
+        const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
+
+        // No stripe_customer_id on the profile — but that is NOT proof they
+        // never paid. Accounts from before PaymentSuccessRedirect stamped
+        // Stripe ids (webhook's find-by-email fallback fired before the
+        // profiles row existed) are real paying members with a bare profile.
+        // Ask the backend to check Stripe directly (by the email on the
+        // verified auth token) and stamp the profile if a live subscription
+        // exists, so we never push a paying customer into a second checkout.
+        try {
+          const reconcileRes = await fetch(`${API_BASE}/api/reconcile-subscription`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          if (reconcileRes.ok) {
+            const { active } = await reconcileRes.json();
+            if (active) {
+              setMessage('Welcome back! Redirecting to your dashboard...');
+              setTimeout(() => navigate('/dashboard'), 600);
+              return;
+            }
+          }
+        } catch (reconcileErr) {
+          // Reconcile is best-effort — fall through to checkout on failure.
+          console.warn('Subscription reconcile check failed:', reconcileErr);
+        }
+
         // New (or never-subscribed) user — send them to start a subscription,
         // same plan/trial as the standard signup flow.
         setMessage('Almost there — setting up your subscription...');
-        const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
         const nameParts = (user.user_metadata?.full_name || user.user_metadata?.name || '').split(' ');
         const res = await fetch(`${API_BASE}/api/create-checkout-session`, {
           method: 'POST',
