@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker, GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import mapboxgl from 'mapbox-gl';
@@ -697,6 +698,7 @@ function DashboardMapTab() {
   const defaultCenter = [39.8283, -98.5795]; // Geographic center of US
   const defaultZoom = 5;
   const { isMobile, isTablet } = useIsMobile();
+  const navigate = useNavigate();
 
   const [customPins, setCustomPins] = useState([]);
   const [form, setForm] = useState({ name: '', address: '', units: '', notes: '' });
@@ -1307,7 +1309,15 @@ function DashboardMapTab() {
         insight: `${d.units || '?'} units â€¢ $${(d.purchasePrice || 0).toLocaleString()}`,
         source: 'pipeline',
         dealId: d.dealId,
-        units: d.units || null
+        units: d.units || null,
+        purchasePrice: d.purchasePrice || null,
+        dealStage: d.deal_stage || null,
+        image: Array.isArray(d.images) && d.images.length > 0 ? (d.images[0].url || d.images[0]) : null,
+        brokerName: d.brokerName || null,
+        brokerPhone: d.brokerPhone || null,
+        brokerEmail: d.brokerEmail || null,
+        dayOneCashFlow: d.dayOneCashFlow || null,
+        stabilizedCashFlow: d.stabilizedCashFlow || null,
       }));
 
       const pipelinePins = spreadOverlappingPins(pipelinePinsRaw);
@@ -3464,62 +3474,129 @@ function DashboardMapTab() {
                 >
                   {activeInfoPinId === p.id && (
                     <InfoWindowF onCloseClick={() => setActiveInfoPinId(null)}>
-                      <div style={{ minWidth: 240, maxWidth: 320, fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif' }}>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: '#111827', marginBottom: 6 }}>{p.name}</div>
-                        <div style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 9px', borderRadius: 10,
-                          fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8,
-                          backgroundColor:
-                            p.source === 'uploaded' ? '#cffafe' :
-                            p.category === 'pipeline' ? '#d1fae5' :
-                            p.category === 'rapidfire' ? '#fecaca' :
-                            p.category === 'prospect' ? '#fef3c7' : '#fce7f3',
-                          color:
-                            p.source === 'uploaded' ? '#0e7490' :
-                            p.category === 'pipeline' ? '#065f46' :
-                            p.category === 'rapidfire' ? '#991b1b' :
-                            p.category === 'prospect' ? '#92400e' : '#831843',
-                        }}>
-                          {p.source === 'uploaded' ? 'Uploaded' :
-                           p.category === 'pipeline' ? 'Pipeline' :
-                           p.category === 'rapidfire' ? 'Rapid Fire' :
-                           p.category === 'prospect' ? 'Prospect' : 'Custom'}
-                        </div>
-                        {p.insight && (
-                          <div style={{ borderRadius: 8, padding: 10, fontSize: 12, lineHeight: 1.5, color: '#374151', backgroundColor: '#f3f4f6', marginBottom: 8 }}>
-                            {p.insight}
+                      <div style={{ width: 280, fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif', margin: -8 }}>
+                        {p.image ? (
+                          <div style={{ position: 'relative', width: '100%', height: 110, overflow: 'hidden' }}>
+                            <img src={p.image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 60%)' }} />
+                            {p.purchasePrice ? (
+                              <div style={{ position: 'absolute', bottom: 8, left: 10, color: '#fff', fontSize: 15, fontWeight: 800 }}>
+                                ${Number(p.purchasePrice).toLocaleString()}
+                              </div>
+                            ) : null}
                           </div>
-                        )}
-                        {p.units ? (
-                          <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>{p.units} units</div>
                         ) : null}
-                        {p.source === 'uploaded' && p.propertyData && Object.keys(p.propertyData).length > 0 && (
-                          <div style={{ borderRadius: 8, padding: 8, backgroundColor: '#f9fafb', fontSize: 11, maxHeight: 180, overflowY: 'auto', border: '1px solid #e5e7eb', marginBottom: 8 }}>
-                            {Object.entries(p.propertyData)
-                              .filter(([, v]) => v !== null && v !== undefined && v !== '')
-                              .map(([key, value]) => (
-                                <div key={key} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '3px 0' }}>
-                                  <span style={{ fontWeight: 600, color: '#6b7280' }}>{key}</span>
-                                  <span style={{ color: '#111827', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{String(value)}</span>
-                                </div>
-                              ))}
+                        <div style={{ padding: '12px 14px 14px' }}>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: '#111827', marginBottom: 6, lineHeight: 1.3 }}>{p.name}</div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                            <div style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 9px', borderRadius: 10,
+                              fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px',
+                              backgroundColor:
+                                p.source === 'uploaded' ? '#cffafe' :
+                                p.category === 'pipeline' ? '#d1fae5' :
+                                p.category === 'rapidfire' ? '#fecaca' :
+                                p.category === 'prospect' ? '#fef3c7' : '#fce7f3',
+                              color:
+                                p.source === 'uploaded' ? '#0e7490' :
+                                p.category === 'pipeline' ? '#065f46' :
+                                p.category === 'rapidfire' ? '#991b1b' :
+                                p.category === 'prospect' ? '#92400e' : '#831843',
+                            }}>
+                              {p.category === 'pipeline' && p.dealStage
+                                ? p.dealStage.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+                                : p.source === 'uploaded' ? 'Uploaded'
+                                : p.category === 'pipeline' ? 'Pipeline'
+                                : p.category === 'rapidfire' ? 'Rapid Fire'
+                                : p.category === 'prospect' ? 'Prospect' : 'Custom'}
+                            </div>
                           </div>
-                        )}
-                        {(p.category === 'rapidfire' || p.category === 'prospect' || p.category === 'custom' || p.source === 'uploaded') && (
-                          <button
-                            onClick={() => { deletePin(p.id, p.dbId); setActiveInfoPinId(null); }}
-                            style={{
-                              width: '100%', padding: '8px 12px', backgroundColor: '#ef4444', color: '#fff',
-                              border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                              textTransform: 'uppercase', letterSpacing: '0.5px',
-                            }}
-                          >
-                            Delete Pin
-                          </button>
-                        )}
+
+                          {/* Real stat grid — only fields that actually have data */}
+                          {(p.units || (p.purchasePrice && !p.image) || p.dayOneCashFlow) && (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))', gap: 6, marginBottom: 8 }}>
+                              {p.units ? (
+                                <div style={{ backgroundColor: '#f9fafb', borderRadius: 6, padding: '6px 8px' }}>
+                                  <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Units</div>
+                                  <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{p.units}</div>
+                                </div>
+                              ) : null}
+                              {p.purchasePrice && !p.image ? (
+                                <div style={{ backgroundColor: '#f9fafb', borderRadius: 6, padding: '6px 8px' }}>
+                                  <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Price</div>
+                                  <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>${Number(p.purchasePrice).toLocaleString()}</div>
+                                </div>
+                              ) : null}
+                              {p.dayOneCashFlow ? (
+                                <div style={{ backgroundColor: '#f9fafb', borderRadius: 6, padding: '6px 8px' }}>
+                                  <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Day-1 CF</div>
+                                  <div style={{ fontSize: 13, fontWeight: 700, color: p.dayOneCashFlow >= 0 ? '#059669' : '#dc2626' }}>
+                                    ${Math.round(Number(p.dayOneCashFlow)).toLocaleString()}
+                                  </div>
+                                </div>
+                              ) : null}
+                            </div>
+                          )}
+
+                          {!p.image && p.insight && (
+                            <div style={{ borderRadius: 8, padding: 10, fontSize: 12, lineHeight: 1.5, color: '#374151', backgroundColor: '#f3f4f6', marginBottom: 8 }}>
+                              {p.insight}
+                            </div>
+                          )}
+
+                          {(p.brokerName || p.brokerPhone || p.brokerEmail) && (
+                            <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              {p.brokerName && <span><strong style={{ color: '#374151' }}>Broker:</strong> {p.brokerName}</span>}
+                              <div style={{ display: 'flex', gap: 10 }}>
+                                {p.brokerPhone && <a href={`tel:${p.brokerPhone}`} style={{ color: '#059669', textDecoration: 'none', fontWeight: 600 }}>{p.brokerPhone}</a>}
+                                {p.brokerEmail && <a href={`mailto:${p.brokerEmail}`} style={{ color: '#059669', textDecoration: 'none', fontWeight: 600 }}>Email</a>}
+                              </div>
+                            </div>
+                          )}
+
+                          {p.source === 'uploaded' && p.propertyData && Object.keys(p.propertyData).length > 0 && (
+                            <div style={{ borderRadius: 8, padding: 8, backgroundColor: '#f9fafb', fontSize: 11, maxHeight: 180, overflowY: 'auto', border: '1px solid #e5e7eb', marginBottom: 8 }}>
+                              {Object.entries(p.propertyData)
+                                .filter(([, v]) => v !== null && v !== undefined && v !== '')
+                                .map(([key, value]) => (
+                                  <div key={key} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '3px 0' }}>
+                                    <span style={{ fontWeight: 600, color: '#6b7280' }}>{key}</span>
+                                    <span style={{ color: '#111827', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{String(value)}</span>
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {p.category === 'pipeline' && p.dealId && (
+                              <button
+                                onClick={() => navigate(`/deal-room/${p.dealId}`)}
+                                style={{
+                                  width: '100%', padding: '8px 12px', backgroundColor: '#059669', color: '#fff',
+                                  border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                                }}
+                              >
+                                View Deal Room →
+                              </button>
+                            )}
+                            {(p.category === 'rapidfire' || p.category === 'prospect' || p.category === 'custom' || p.source === 'uploaded') && (
+                              <button
+                                onClick={() => { deletePin(p.id, p.dbId); setActiveInfoPinId(null); }}
+                                style={{
+                                  width: '100%', padding: '8px 12px', backgroundColor: '#ef4444', color: '#fff',
+                                  border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                                  textTransform: 'uppercase', letterSpacing: '0.5px',
+                                }}
+                              >
+                                Delete Pin
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </InfoWindowF>
                   )}
+
                 </MarkerF>
               ))}
             </GoogleMap>
