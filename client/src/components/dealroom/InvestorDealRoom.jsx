@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Download, Lock, Clock } from 'lucide-react';
+import { Download, Lock, Clock, Camera, X, TrendingUp, Building2, Sparkles } from 'lucide-react';
 import { buildDealRoomCss, DEAL_ROOM_ACCENT_DEFAULT } from './DealRoomStyles';
 import { exportDealRoomHtml } from '../../lib/dealRoomExport';
 import { NoiCashflowChart, ValueCreationBridge, ReturnsComparisonChart } from './DealRoomCharts';
@@ -287,10 +287,11 @@ function InvestorCalculator({ full, scenarioData, accent }) {
  * rule. `full`/`metrics` (calculateFullAnalysis + DealRoomPage's metrics)
  * are passed through separately for the chart components.
  */
-export default function InvestorDealRoom({ data, full, metrics, scenarioData, documents, closeDate, accent = DEAL_ROOM_ACCENT_DEFAULT, onGenerateNarrative, generatingNarrative = false, readOnly = false }) {
+export default function InvestorDealRoom({ data, full, metrics, scenarioData, documents, closeDate, accent = DEAL_ROOM_ACCENT_DEFAULT, onGenerateNarrative, generatingNarrative = false, readOnly = false, onUploadImages, onDeleteImage, uploadingImages = false, imageUploadError = '' }) {
   const containerRef = useRef(null);
   const [activeSection, setActiveSection] = useState('');
   const [progress, setProgress] = useState(0);
+  const photoInputRef = useRef(null);
   const [exporting, setExporting] = useState(false);
   const [gateEnabled, setGateEnabled] = useState(false);
   const [gatePassword, setGatePassword] = useState('');
@@ -394,7 +395,14 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
       <div ref={containerRef}>
         {/* Hero */}
         <div className="dr-hero">
-          {hero ? <img src={hero.url} alt={data.property.name} /> : <div style={{ background: '#111', width: '100%', height: '100%' }} />}
+          {hero ? (
+            <img src={hero.url} alt={data.property.name} />
+          ) : (
+            <div className="dr-hero-empty">
+              <Camera size={28} />
+              {!readOnly && <span>No property photos yet</span>}
+            </div>
+          )}
           <div className="dr-hero-overlay" />
           <div className="dr-hero-content">
             <div className="dr-hero-title dr-serif">{data.property.name}</div>
@@ -403,7 +411,56 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
               <div className="dr-hero-sub" style={{ marginTop: 4 }}>Prepared by {data.meta.preparerName} &middot; {new Date(data.meta.generatedAt).toLocaleDateString()}</div>
             )}
           </div>
+          {!readOnly && onUploadImages && (
+            <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }} data-export-exclude>
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                style={{ display: 'none' }}
+                onChange={(e) => { if (e.target.files?.length) onUploadImages(e.target.files); e.target.value = ''; }}
+              />
+              <button
+                onClick={() => photoInputRef.current?.click()}
+                disabled={uploadingImages}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700,
+                  padding: '7px 14px', borderRadius: 7, border: 'none',
+                  background: 'rgba(255,255,255,0.95)', color: '#111', cursor: uploadingImages ? 'default' : 'pointer',
+                }}
+              >
+                <Camera size={13} /> {uploadingImages ? 'Uploading…' : (data.property.images?.length ? 'Add Photos' : 'Add Property Photos')}
+              </button>
+              {imageUploadError && (
+                <span style={{ fontSize: 11, color: '#fecaca', background: 'rgba(0,0,0,0.6)', padding: '3px 8px', borderRadius: 5 }}>{imageUploadError}</span>
+              )}
+            </div>
+          )}
         </div>
+
+        {!readOnly && data.property.images?.length > 0 && (
+          <div className="dr-photo-strip" data-export-exclude>
+            {data.property.images.map((img, i) => (
+              <div key={img.storage_path || img.url || i} className="dr-photo-thumb">
+                <img src={img.url} alt="" />
+                {onDeleteImage && (
+                  <button
+                    onClick={() => onDeleteImage(img.storage_path)}
+                    title="Remove photo"
+                    style={{
+                      position: 'absolute', top: 4, right: 4, width: 18, height: 18, borderRadius: '50%',
+                      border: 'none', background: 'rgba(0,0,0,0.65)', color: '#fff', display: 'flex',
+                      alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0,
+                    }}
+                  >
+                    <X size={11} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
 
         {data.snapshotStats?.length > 0 && (
           <div className="dr-stat-bar">
@@ -442,13 +499,13 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
             <div className="dr-two-col">
               {data.whyMarket?.length > 0 && (
                 <div className="dr-card">
-                  <h3>Why This Market</h3>
+                  <h3><TrendingUp size={16} /> Why This Market</h3>
                   {data.whyMarket.map((p, i) => <p key={i} style={{ fontSize: 14, marginTop: i ? 10 : 0 }}>{p}</p>)}
                 </div>
               )}
               {data.whyAsset?.length > 0 && (
                 <div className="dr-card">
-                  <h3>Why This Asset</h3>
+                  <h3><Building2 size={16} /> Why This Asset</h3>
                   {data.whyAsset.map((p, i) => <p key={i} style={{ fontSize: 14, marginTop: i ? 10 : 0 }}>{p}</p>)}
                 </div>
               )}
@@ -457,7 +514,7 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
               <div className="dr-two-col" style={{ marginTop: 20 }}>
                 {data.upsidePlays.map((play) => (
                   <div key={play.title} className="dr-card">
-                    <h3>{play.title}</h3>
+                    <h3><Sparkles size={16} /> {play.title}</h3>
                     {(play.paragraphs || []).map((p, i) => <p key={i} style={{ fontSize: 14, marginTop: i ? 10 : 0 }}>{p}</p>)}
                   </div>
                 ))}

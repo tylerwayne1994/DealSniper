@@ -3153,6 +3153,26 @@ async def get_rentcast_data(deal_id: str, request: Request):
                     except Exception as e:
                         log.error(f"[V2] Failed to deduct token for rentcast: {e}")
 
+                # ----- Cache the result on the deal so this address doesn't hit
+                # RentCast (and cost a token) again just from reopening the deal.
+                # The frontend reads scenarioData.rentcast_cache directly and only
+                # calls this endpoint again when the user explicitly clicks
+                # "Refresh Comps" for a fresh pull. -----
+                try:
+                    from token_manager import get_supabase as _get_supabase_for_cache
+                    cache_sb = _get_supabase_for_cache()
+                    existing_row = cache_sb.table("deals").select("scenario_data").eq("deal_id", deal_id).single().execute()
+                    existing_scenario = (existing_row.data or {}).get("scenario_data") or {}
+                    existing_scenario["rentcast_cache"] = {
+                        "data": rent_data,
+                        "address_searched": address,
+                        "fetched_at": datetime.utcnow().isoformat(),
+                    }
+                    cache_sb.table("deals").update({"scenario_data": existing_scenario}).eq("deal_id", deal_id).execute()
+                    log.info(f"[V2] Cached rentcast result for deal {deal_id}")
+                except Exception as cache_err:
+                    log.warning(f"[V2] Failed to cache rentcast result for deal {deal_id}: {cache_err}")
+
                 return JSONResponse({
                     "success": True,
                     "data": rent_data,

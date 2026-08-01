@@ -323,6 +323,13 @@ function DashboardPage() {
   // Token state
   const [tokenBalance, setTokenBalance] = useState(null);
   const [tokenLoading, setTokenLoading] = useState(true);
+
+  // Cancellation feedback state
+  const [showCancelFlow, setShowCancelFlow] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelComments, setCancelComments] = useState('');
+  const [cancelSubmitting, setCancelSubmitting] = useState(false);
+  const [cancelFeedbackSaved, setCancelFeedbackSaved] = useState(false);
   
   // Profile state
   const [profile, setProfile] = useState({
@@ -510,6 +517,50 @@ function DashboardPage() {
       setTimeout(() => setSaveMessage(''), 3000);
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Reasons shown depend on whether the account is still in its free trial
+  // or is an active paid subscription — captured for churn analysis before
+  // the user completes the (still email-based) cancellation itself.
+  const isTrialingAccount = tokenBalance?.subscription_status === 'trialing';
+  const CANCEL_REASON_OPTIONS = isTrialingAccount ? [
+    { value: 'too_early', label: "Wasn't ready to commit yet" },
+    { value: 'trial_too_short', label: "Didn't get to fully try it before deciding" },
+    { value: 'too_expensive', label: 'Price is too high' },
+    { value: 'missing_feature', label: "Missing a feature I need" },
+    { value: 'found_alternative', label: 'Found a tool that fits better' },
+    { value: 'not_ready_business', label: "Not actively underwriting deals right now" },
+    { value: 'other', label: 'Other' },
+  ] : [
+    { value: 'too_expensive', label: 'Too expensive' },
+    { value: 'not_using_enough', label: "Not using it enough to justify the cost" },
+    { value: 'missing_feature', label: 'Missing a feature I need' },
+    { value: 'found_alternative', label: 'Switched to another tool' },
+    { value: 'technical_issues', label: 'Ran into technical issues/bugs' },
+    { value: 'other', label: 'Other' },
+  ];
+
+  const handleSubmitCancelFeedback = async () => {
+    if (!cancelReason) return;
+    setCancelSubmitting(true);
+    try {
+      await fetch(API_ENDPOINTS.cancellationFeedback, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Profile-ID': profile.id || '' },
+        body: JSON.stringify({
+          reason: cancelReason,
+          comments: cancelComments,
+          email: profile.email,
+          subscription_status: tokenBalance?.subscription_status,
+          subscription_tier: tokenBalance?.subscription_tier,
+        }),
+      });
+    } catch (error) {
+      console.error('Failed to save cancellation feedback:', error);
+    } finally {
+      setCancelSubmitting(false);
+      setCancelFeedbackSaved(true);
     }
   };
 
@@ -961,58 +1012,142 @@ function DashboardPage() {
             <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '700', color: '#dc2626' }}>
               Cancel Subscription
             </h3>
-            <p style={{ margin: 0, fontSize: '14px', color: '#6b7280', lineHeight: '1.5' }}>
-              To cancel your subscription, send an email to:
-            </p>
-          <div style={{
-            padding: '16px',
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            border: '2px solid #fecaca',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '12px'
-          }}>
-            <span style={{ 
-              fontSize: '16px', 
-              fontWeight: '700',
-              color: '#dc2626',
-              fontFamily: 'monospace',
-              userSelect: 'all'
-            }}>
-              terrainvestai@gmail.com
-            </span>
-            <button
-              onClick={(e) => {
-                navigator.clipboard.writeText('terrainvestai@gmail.com');
-                const btn = e.currentTarget;
-                const originalText = btn.textContent;
-                btn.textContent = '✓ Copied!';
-                btn.style.backgroundColor = '#10b981';
-                btn.style.color = 'white';
-                setTimeout(() => {
-                  btn.textContent = originalText;
-                  btn.style.backgroundColor = '#dc2626';
-                  btn.style.color = 'white';
-                }, 2000);
-              }}
-              style={{
-                padding: '10px 20px',
-                fontSize: '14px',
-                fontWeight: '600',
-                backgroundColor: '#dc2626',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              Copy Email
-            </button>
+
+            {!showCancelFlow && (
+              <>
+                <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#6b7280', lineHeight: '1.5' }}>
+                  {isTrialingAccount
+                    ? "Thinking about cancelling your free trial? We'd love a quick reason why before you go."
+                    : 'Sorry to see you go. Before you cancel, mind telling us why?'}
+                </p>
+                <button
+                  onClick={() => setShowCancelFlow(true)}
+                  style={{
+                    padding: '10px 20px', fontSize: '14px', fontWeight: '600',
+                    backgroundColor: '#dc2626', color: 'white', border: 'none',
+                    borderRadius: '6px', cursor: 'pointer',
+                  }}
+                >
+                  Cancel Subscription
+                </button>
+              </>
+            )}
+
+            {showCancelFlow && !cancelFeedbackSaved && (
+              <div>
+                <p style={{ margin: '0 0 14px 0', fontSize: '14px', color: '#374151', fontWeight: '600' }}>
+                  What's the main reason you're cancelling?
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
+                  {CANCEL_REASON_OPTIONS.map((opt) => (
+                    <label key={opt.value} style={{
+                      display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#374151',
+                      padding: '10px 12px', borderRadius: '8px', border: '1.5px solid',
+                      borderColor: cancelReason === opt.value ? '#dc2626' : '#e5e7eb',
+                      backgroundColor: cancelReason === opt.value ? '#fef2f2' : 'white', cursor: 'pointer',
+                    }}>
+                      <input
+                        type="radio" name="cancelReason" value={opt.value}
+                        checked={cancelReason === opt.value}
+                        onChange={() => setCancelReason(opt.value)}
+                      />
+                      {opt.label}
+                    </label>
+                  ))}
+                </div>
+                <textarea
+                  value={cancelComments}
+                  onChange={(e) => setCancelComments(e.target.value)}
+                  placeholder="Anything else you want us to know? (optional)"
+                  rows={3}
+                  style={{
+                    width: '100%', padding: '10px 12px', fontSize: '14px', borderRadius: '8px',
+                    border: '1.5px solid #e5e7eb', marginBottom: '14px', resize: 'vertical', boxSizing: 'border-box',
+                  }}
+                />
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <button
+                    onClick={handleSubmitCancelFeedback}
+                    disabled={!cancelReason || cancelSubmitting}
+                    style={{
+                      padding: '10px 20px', fontSize: '14px', fontWeight: '600',
+                      backgroundColor: !cancelReason || cancelSubmitting ? '#fca5a5' : '#dc2626',
+                      color: 'white', border: 'none', borderRadius: '6px',
+                      cursor: !cancelReason || cancelSubmitting ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {cancelSubmitting ? 'Submitting…' : 'Submit & Continue to Cancel'}
+                  </button>
+                  <button
+                    onClick={() => { setShowCancelFlow(false); setCancelReason(''); setCancelComments(''); }}
+                    style={{
+                      padding: '10px 16px', fontSize: '13px', fontWeight: '600',
+                      backgroundColor: 'transparent', color: '#6b7280', border: 'none', cursor: 'pointer',
+                    }}
+                  >
+                    Never mind, keep my subscription
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {cancelFeedbackSaved && (
+              <>
+                <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#6b7280', lineHeight: '1.5' }}>
+                  Thanks for the feedback. To finish cancelling your subscription, send an email to:
+                </p>
+                <div style={{
+                  padding: '16px',
+                  backgroundColor: 'white',
+                  borderRadius: '8px',
+                  border: '2px solid #fecaca',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px'
+                }}>
+                  <span style={{
+                    fontSize: '16px',
+                    fontWeight: '700',
+                    color: '#dc2626',
+                    fontFamily: 'monospace',
+                    userSelect: 'all'
+                  }}>
+                    terrainvestai@gmail.com
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      navigator.clipboard.writeText('terrainvestai@gmail.com');
+                      const btn = e.currentTarget;
+                      const originalText = btn.textContent;
+                      btn.textContent = '✓ Copied!';
+                      btn.style.backgroundColor = '#10b981';
+                      btn.style.color = 'white';
+                      setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.style.backgroundColor = '#dc2626';
+                        btn.style.color = 'white';
+                      }, 2000);
+                    }}
+                    style={{
+                      padding: '10px 20px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      backgroundColor: '#dc2626',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    Copy Email
+                  </button>
+                </div>
+              </>
+            )}
           </div>
-        </div>
+
 
       {/* Personal Information Card */}
       <div style={cardStyle}>

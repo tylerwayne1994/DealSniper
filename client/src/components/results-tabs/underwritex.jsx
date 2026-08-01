@@ -4014,7 +4014,17 @@ function CompsFitBounds({ center, comps }) {
   return null;
 }
 function CompsTab({ M, scenarioData, dealId, marketData, marketDataLoading, onRefetchMarketData }) {
-  const [rc, setRc] = useState({ loading: false, error: null, data: null });
+  // Seed from the deal's saved rentcast_cache (written by the backend the
+  // first time "Refresh Comps" is clicked for this deal) so reopening a deal
+  // shows the same comps instantly, with zero extra RentCast API calls or
+  // token cost — the button below only re-hits the live API when the user
+  // explicitly wants a fresh pull.
+  const cachedRentcast = scenarioData?.rentcast_cache;
+  const [rc, setRc] = useState(() => (
+    cachedRentcast?.data
+      ? { loading: false, error: null, data: cachedRentcast.data, cachedAt: cachedRentcast.fetched_at }
+      : { loading: false, error: null, data: null }
+  ));
   const [repliers, setRepliers] = useState({ loading: false, error: null, comps: [] });
   const [hoveredComp, setHoveredComp] = useState(null);
   const [selectedComp, setSelectedComp] = useState(null);
@@ -4041,12 +4051,13 @@ function CompsTab({ M, scenarioData, dealId, marketData, marketDataLoading, onRe
         }),
       });
       const json = await res.json();
-      if (json.success) setRc({ loading: false, error: null, data: json.data });
+      if (json.success) setRc({ loading: false, error: null, data: json.data, cachedAt: new Date().toISOString() });
       else setRc({ loading: false, error: json.error || "Failed to fetch comps from RentCast", data: null });
     } catch (e) {
       setRc({ loading: false, error: e.message || "Failed to fetch comps from RentCast", data: null });
     }
   };
+
 
   const fetchRepliersComps = async (lat, lng) => {
     if (!dealId || lat == null || lng == null) return;
@@ -4111,9 +4122,12 @@ function CompsTab({ M, scenarioData, dealId, marketData, marketDataLoading, onRe
     <div className="p-6 flex flex-col gap-5 w-full">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Comps</h1>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          {rc.cachedAt && !rc.loading && (
+            <span className="text-[11px] text-gray-400">Saved {new Date(rc.cachedAt).toLocaleDateString()}</span>
+          )}
           <Ghost onClick={() => { fetchComps(); if (mapCenter) fetchRepliersComps(mapCenter.lat, mapCenter.lng); }}>
-            {rc.loading || repliers.loading ? "Fetching…" : "🔄 Refresh Comps"}
+            {rc.loading || repliers.loading ? "Fetching…" : (rc.data ? "🔄 Get Fresh Comps" : "🔄 Refresh Comps")}
           </Ghost>
           <Ghost active={showAnalytics} onClick={() => setShowAnalytics((v) => !v)}>
             📊 Analytics

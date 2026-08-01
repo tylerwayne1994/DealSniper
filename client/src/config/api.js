@@ -22,6 +22,7 @@ export const API_ENDPOINTS = {
   tokensUse: `${API_BASE_URL}/api/tokens/use`,
   createTokenCheckout: `${API_BASE_URL}/api/create-token-checkout`,
   creditTokens: `${API_BASE_URL}/api/credit-tokens`,
+  cancellationFeedback: `${API_BASE_URL}/api/cancellation-feedback`,
   
   // Deals V2
   dealUnderwrite: (dealId) => `${API_BASE_URL}/v2/deals/${dealId}/underwrite`,

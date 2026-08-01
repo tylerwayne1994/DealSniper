@@ -664,6 +664,47 @@ async def create_checkout_session(request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@app.post("/api/cancellation-feedback")
+async def submit_cancellation_feedback(request: Request):
+    """Save why a user is cancelling (or considering cancelling) their
+    subscription, whether they're mid free-trial or on an active paid plan.
+    Does NOT itself cancel anything in Stripe — cancellation still happens
+    via the existing email flow; this just captures the reason first."""
+    try:
+        body = await request.json()
+        reason = body.get("reason")
+        if not reason:
+            raise HTTPException(status_code=400, detail="reason is required")
+
+        from token_manager import get_current_profile_id, get_profile, get_supabase as get_token_supabase
+
+        profile_id = None
+        profile = None
+        try:
+            profile_id = get_current_profile_id(request)
+            profile = get_profile(profile_id)
+        except Exception as e:
+            log.warning(f"[Cancellation Feedback] Could not resolve profile: {e}")
+
+        sb = get_token_supabase()
+        sb.table("cancellation_feedback").insert({
+            "profile_id": profile_id,
+            "email": (profile or {}).get("email") or body.get("email"),
+            "subscription_status": (profile or {}).get("subscription_status") or body.get("subscription_status"),
+            "subscription_tier": (profile or {}).get("subscription_tier") or body.get("subscription_tier"),
+            "reason": reason,
+            "comments": body.get("comments") or None,
+        }).execute()
+
+        return JSONResponse({"success": True})
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(f"[Cancellation Feedback] Failed to save: {e}")
+        return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
+
+
 @app.get("/api/get-checkout-session")
 async def get_checkout_session(session_id: str):
     try:

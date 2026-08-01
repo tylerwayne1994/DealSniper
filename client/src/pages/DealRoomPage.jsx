@@ -18,6 +18,7 @@ import DealChat from '../components/DealChat';
 import InvestorDealRoom from '../components/dealroom/InvestorDealRoom';
 import { computeDealMetrics, normalizeDealImages, computeDealScore } from '../lib/dealMetrics';
 import ShareWithInvestorPanel from '../components/dealroom/ShareWithInvestorPanel';
+import { API_ENDPOINTS } from '../config/api';
 
 // ============================================================================
 // Constants & Helpers
@@ -343,6 +344,55 @@ function DealRoomPage() {
     setDeal(prev => prev ? ({ ...prev, parsedData: nextParsedData }) : prev);
     setDocuments(nextDocs);
     setDocStoreMode('deal');
+  };
+
+  // Property photo upload/delete for the Deal Room's hero image + gallery.
+  // The backend already persists these onto the deal's `images` column
+  // (v2_underwriter/routes.py's upload/delete-images routes) — this just
+  // keeps local state (and therefore normalizedImages/heroImage) in sync
+  // without a full page reload.
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState('');
+
+  const handleUploadImages = async (fileList) => {
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+    setUploadingImages(true);
+    setImageUploadError('');
+    try {
+      const formData = new FormData();
+      files.forEach((f) => formData.append('files', f));
+      const res = await fetch(API_ENDPOINTS.dealUploadImages(dealId), { method: 'POST', body: formData });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok || !result.success) {
+        throw new Error(result.detail || result.message || `Upload failed (${res.status})`);
+      }
+      setDeal((prev) => prev ? ({ ...prev, images: [...(prev.images || []), ...(result.uploaded || [])] }) : prev);
+    } catch (e) {
+      console.error('Failed to upload property photos:', e);
+      setImageUploadError(e.message || 'Failed to upload photos');
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const handleDeleteImage = async (storagePath) => {
+    if (!storagePath) return;
+    try {
+      const res = await fetch(API_ENDPOINTS.dealDeleteImage(dealId), {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storage_path: storagePath }),
+      });
+      if (!res.ok) throw new Error(`Delete failed (${res.status})`);
+      setDeal((prev) => prev ? ({
+        ...prev,
+        images: (prev.images || []).filter((img) => (img.storage_path || img) !== storagePath),
+      }) : prev);
+    } catch (e) {
+      console.error('Failed to delete property photo:', e);
+      alert('Failed to delete photo: ' + e.message);
+    }
   };
 
   const persistDocumentRecord = async (record, userId) => {
@@ -992,7 +1042,7 @@ function DealRoomPage() {
                     metrics,
                     allocations,
                     distributions,
-                    images: normalizedImages.map((img) => ({ url: img.url })),
+                    images: normalizedImages.map((img) => ({ url: img.url, storage_path: img.storage_path })),
                     narrative: deal?.parsedData?.dealRoomNarrative || null,
                   })}
                   full={metrics._full}
@@ -1002,6 +1052,10 @@ function DealRoomPage() {
                   closeDate={deal?.parsedData?.dealRoomCloseDate}
                   onGenerateNarrative={handleGenerateNarrative}
                   generatingNarrative={generatingNarrative}
+                  onUploadImages={handleUploadImages}
+                  onDeleteImage={handleDeleteImage}
+                  uploadingImages={uploadingImages}
+                  imageUploadError={imageUploadError}
                 />
               </div>
             </div>
