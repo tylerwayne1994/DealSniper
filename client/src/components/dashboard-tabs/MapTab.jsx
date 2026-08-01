@@ -649,14 +649,14 @@ function FloodZoneCard({ lat, lng }) {
   if (loading) {
     return (
       <div style={{ borderRadius: '10px', padding: '10px 12px', backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', fontSize: '12px', color: '#0369a1' }}>
-        ðŸŒŠ Loading flood zone data...
+        Loading flood zone data...
       </div>
     );
   }
   if (error || !data || data.status === 'no_data' || data.status === 'no_geocode') {
     return (
       <div style={{ borderRadius: '10px', padding: '10px 12px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', fontSize: '12px', color: '#6b7280' }}>
-        ðŸŒŠ No flood data available
+        No flood data available
       </div>
     );
   }
@@ -672,7 +672,7 @@ function FloodZoneCard({ lat, lng }) {
   return (
     <div style={{ borderRadius: '10px', padding: '12px', backgroundColor: bgColor, border: `1px solid ${borderColor}`, fontSize: '12px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-        <span style={{ fontWeight: '700', color: '#111827', fontSize: '13px' }}>ðŸŒŠ Flood Zone</span>
+        <span style={{ fontWeight: '700', color: '#111827', fontSize: '13px' }}>Flood Zone</span>
         <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: '700', backgroundColor: badgeBg, color: badgeColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{riskLabel}</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -3648,175 +3648,136 @@ function DashboardMapTab() {
           {visiblePins.map((p) => (
             <Marker key={p.id} position={p.position} icon={categoryIcon(p.category, p.source, p.units)}>
               <Popup maxWidth={350}>
-                <div style={{ 
-                  minWidth: '280px', 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  gap: '12px',
-                  fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
+                <div style={{ width: 280, fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif' }}>
+                  {p.image ? (
+                    <div style={{ position: 'relative', width: '100%', height: 110, overflow: 'hidden', borderRadius: '8px 8px 0 0', marginBottom: 10 }}>
+                      <img src={p.image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 60%)' }} />
+                      {p.purchasePrice ? (
+                        <div style={{ position: 'absolute', bottom: 8, left: 10, color: '#fff', fontSize: 15, fontWeight: 800 }}>
+                          ${Number(p.purchasePrice).toLocaleString()}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827', marginBottom: 6, lineHeight: 1.3 }}>{p.name}</div>
+
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 9px', borderRadius: 10,
+                    fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8,
+                    backgroundColor:
+                      p.source === 'uploaded' ? '#cffafe' :
+                      p.category === 'pipeline' ? '#d1fae5' :
+                      p.category === 'rapidfire' ? '#fecaca' :
+                      p.category === 'prospect' ? '#fef3c7' : '#fce7f3',
+                    color:
+                      p.source === 'uploaded' ? '#0e7490' :
+                      p.category === 'pipeline' ? '#065f46' :
+                      p.category === 'rapidfire' ? '#991b1b' :
+                      p.category === 'prospect' ? '#92400e' : '#831843',
                   }}>
-                    {/* Header */}
-                    <div style={{ 
-                      borderBottom: '2px solid #e5e7eb', 
-                      paddingBottom: '10px' 
-                    }}>
-                      <div style={{ 
-                        fontSize: '16px', 
-                        fontWeight: '700', 
-                        color: '#111827',
-                        marginBottom: '6px',
-                        lineHeight: '1.4'
-                      }}>{p.name}</div>
-                      <div style={{ 
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '4px 10px',
-                        borderRadius: '12px',
-                        fontSize: '11px',
-                        fontWeight: '600',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                        backgroundColor: 
-                          p.source === 'uploaded' ? '#cffafe' :
-                          p.category === 'pipeline' ? '#d1fae5' :
-                          p.category === 'rapidfire' ? '#fecaca' : 
-                          p.category === 'prospect' ? '#fef3c7' : 
-                          '#fce7f3',
-                        color:
-                          p.source === 'uploaded' ? '#0e7490' :
-                          p.category === 'pipeline' ? '#065f46' :
-                          p.category === 'rapidfire' ? '#991b1b' : 
-                          p.category === 'prospect' ? '#92400e' : 
-                          '#831843'
-                      }}>
-                        {p.source === 'uploaded' ? 'ðŸ“Š Uploaded' :
-                         p.category === 'pipeline' ? 'ðŸ“‹ Pipeline' :
-                         p.category === 'rapidfire' ? 'ðŸ”¥ Rapid Fire' : 
-                         p.category === 'prospect' ? 'ðŸ˜ï¸ Prospect' : 
-                         'ðŸ“ Custom'}
+                    {p.category === 'pipeline' && p.dealStage
+                      ? p.dealStage.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+                      : p.source === 'uploaded' ? 'Uploaded'
+                      : p.category === 'pipeline' ? 'Pipeline'
+                      : p.category === 'rapidfire' ? 'Rapid Fire'
+                      : p.category === 'prospect' ? 'Prospect' : 'Custom'}
+                  </div>
+
+                  {(p.units || (p.purchasePrice && !p.image) || p.dayOneCashFlow) && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))', gap: 6, marginBottom: 8 }}>
+                      {p.units ? (
+                        <div style={{ backgroundColor: '#f9fafb', borderRadius: 6, padding: '6px 8px' }}>
+                          <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Units</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{p.units}</div>
+                        </div>
+                      ) : null}
+                      {p.purchasePrice && !p.image ? (
+                        <div style={{ backgroundColor: '#f9fafb', borderRadius: 6, padding: '6px 8px' }}>
+                          <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Price</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>${Number(p.purchasePrice).toLocaleString()}</div>
+                        </div>
+                      ) : null}
+                      {p.dayOneCashFlow ? (
+                        <div style={{ backgroundColor: '#f9fafb', borderRadius: 6, padding: '6px 8px' }}>
+                          <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Day-1 CF</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: p.dayOneCashFlow >= 0 ? '#059669' : '#dc2626' }}>
+                            ${Math.round(Number(p.dayOneCashFlow)).toLocaleString()}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+
+                  {!p.image && p.insight && (
+                    <div style={{ borderRadius: 8, padding: 10, fontSize: 12, lineHeight: 1.5, color: '#374151', backgroundColor: '#f3f4f6', marginBottom: 8 }}>
+                      {p.insight}
+                    </div>
+                  )}
+
+                  {(p.brokerName || p.brokerPhone || p.brokerEmail) && (
+                    <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {p.brokerName && <span><strong style={{ color: '#374151' }}>Broker:</strong> {p.brokerName}</span>}
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        {p.brokerPhone && <a href={`tel:${p.brokerPhone}`} style={{ color: '#059669', textDecoration: 'none', fontWeight: 600 }}>{p.brokerPhone}</a>}
+                        {p.brokerEmail && <a href={`mailto:${p.brokerEmail}`} style={{ color: '#059669', textDecoration: 'none', fontWeight: 600 }}>Email</a>}
                       </div>
                     </div>
+                  )}
 
-                    {/* Insight Box */}
-                    {p.insight && (
-                      <div style={{
-                        borderRadius: '10px',
-                        padding: '12px',
-                        fontSize: '13px',
-                        lineHeight: '1.5',
-                        fontWeight: '500',
-                        color: '#374151',
-                        background: 
-                          p.source === 'uploaded' ? 'linear-gradient(135deg, #ecfeff 0%, #cffafe 100%)' :
-                          p.category === 'pipeline' ? 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)' :
-                          p.category === 'rapidfire' ? 'linear-gradient(135deg, #fef2f2 0%, #fecaca 100%)' : 
-                          'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
-                        border: '1px solid',
-                        borderColor:
-                          p.source === 'uploaded' ? '#a5f3fc' :
-                          p.category === 'pipeline' ? '#a7f3d0' :
-                          p.category === 'rapidfire' ? '#fca5a5' : 
-                          '#fcd34d'
-                      }}>
-                        {p.insight}
-                      </div>
-                    )}
-
-                    {/* Flood Zone */}
+                  <div style={{ marginBottom: 8 }}>
                     <FloodZoneCard lat={p.position[0]} lng={p.position[1]} />
+                  </div>
 
-                    {/* Property Data Table */}
-                    {p.source === 'uploaded' && p.propertyData && Object.keys(p.propertyData).length > 0 && (
-                      <div style={{
-                        borderRadius: '10px',
-                        padding: '12px',
-                        backgroundColor: '#f9fafb',
-                        fontSize: '12px',
-                        maxHeight: '240px',
-                        overflowY: 'auto',
-                        border: '2px solid #e5e7eb'
-                      }}>
-                        <div style={{ 
-                          fontWeight: '700', 
-                          marginBottom: '10px', 
-                          color: '#111827',
-                          fontSize: '13px',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}>Property Details</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {Object.entries(p.propertyData)
-                            .filter(([, v]) => v !== null && v !== undefined && v !== '')
-                            .map(([key, value]) => (
-                            <div key={key} style={{ 
-                              display: 'flex', 
-                              justifyContent: 'space-between',
-                              padding: '6px 8px',
-                              backgroundColor: 'white',
-                              borderRadius: '6px',
-                              border: '1px solid #e5e7eb'
-                            }}>
-                              <span style={{ 
-                                fontWeight: '600', 
-                                color: '#6b7280',
-                                fontSize: '11px'
-                              }}>{key}</span>
-                              <span style={{ 
-                                color: '#111827',
-                                fontWeight: '500',
-                                textAlign: 'right',
-                                maxWidth: '60%',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                              }}>{String(value)}</span>
-                            </div>
-                          ))}
-                        </div>
+                  {p.source === 'uploaded' && p.propertyData && Object.keys(p.propertyData).length > 0 && (
+                    <div style={{
+                      borderRadius: '10px', padding: '10px', backgroundColor: '#f9fafb', fontSize: '12px',
+                      maxHeight: '200px', overflowY: 'auto', border: '1px solid #e5e7eb', marginBottom: 8,
+                    }}>
+                      <div style={{ fontWeight: 700, marginBottom: 8, color: '#111827', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Property Details</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {Object.entries(p.propertyData)
+                          .filter(([, v]) => v !== null && v !== undefined && v !== '')
+                          .map(([key, value]) => (
+                          <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 8px', backgroundColor: 'white', borderRadius: 6, border: '1px solid #e5e7eb' }}>
+                            <span style={{ fontWeight: 600, color: '#6b7280', fontSize: 11 }}>{key}</span>
+                            <span style={{ color: '#111827', fontWeight: 500, textAlign: 'right', maxWidth: '60%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{String(value)}</span>
+                          </div>
+                        ))}
                       </div>
-                    )}
-                    {/* Debug: show if propertyData is missing */}
-                    {p.source === 'uploaded' && (!p.propertyData || Object.keys(p.propertyData).length === 0) && (
-                      <div style={{
-                        borderRadius: '10px',
-                        padding: '12px',
-                        backgroundColor: '#fef3c7',
-                        fontSize: '12px',
-                        border: '1px solid #fde68a',
-                        color: '#92400e'
-                      }}>
-                        âš ï¸ No spreadsheet data found for this property.
-                        {console.log('[Popup Debug] Pin data:', p.id, 'propertyData:', p.propertyData)}
-                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {p.category === 'pipeline' && p.dealId && (
+                      <button
+                        onClick={() => navigate(`/deal-room/${p.dealId}`)}
+                        style={{
+                          width: '100%', padding: '9px 12px', backgroundColor: '#059669', color: '#fff',
+                          border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                        }}
+                      >
+                        View Deal Room &rarr;
+                      </button>
                     )}
                     {(p.category === 'rapidfire' || p.category === 'prospect' || p.category === 'custom' || p.source === 'uploaded') && (
                       <button
                         onClick={() => deletePin(p.id, p.dbId)}
                         style={{
-                          width: '100%',
-                          padding: '10px 16px',
-                          backgroundColor: '#ef4444',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                          fontWeight: '700',
-                          cursor: 'pointer',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px',
-                          boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)',
-                          transition: 'all 0.2s',
-                          marginTop: '4px'
+                          width: '100%', padding: '9px 12px', backgroundColor: '#ef4444', color: 'white',
+                          border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                          textTransform: 'uppercase', letterSpacing: '0.5px',
                         }}
                         onMouseEnter={(e) => e.target.style.backgroundColor = '#dc2626'}
                         onMouseLeave={(e) => e.target.style.backgroundColor = '#ef4444'}
                       >
-                        ðŸ—‘ï¸ Delete Pin
+                        Delete Pin
                       </button>
                     )}
                   </div>
-                </Popup>
+                </div>
+              </Popup>
               </Marker>
             ))}
 
