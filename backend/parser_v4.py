@@ -116,6 +116,11 @@ class RealEstateParser:
         """
         Extract images from PDF using PyMuPDF (fitz)
         
+        Filters out non-photo image XObjects that OMs/flyers commonly embed
+        (soft-mask/gradient layers, letterhead color bars, background
+        textures) and fixes CMYK JPEGs PyMuPDF hands back inverted (renders
+        solid black), so only real property photos get saved.
+
         Args:
             file_path: Path to PDF file
             output_dir: Directory to save extracted images
@@ -124,7 +129,48 @@ class RealEstateParser:
             List of extracted image metadata
         """
         import fitz  # local import for image extraction utility
+        import io
+        try:
+            from PIL import Image, ImageChops
+        except ImportError:
+            Image = None
+            ImageChops = None
         images = []
+
+        def _looks_like_real_photo(raw_bytes):
+            """Returns cleaned JPEG bytes if this is a real photo, else None."""
+            if Image is None:
+                return raw_bytes
+            try:
+                pil_img = Image.open(io.BytesIO(raw_bytes))
+                pil_img.load()
+            except Exception:
+                return None
+
+            width, height = pil_img.size
+            if width < 250 or height < 180:
+                return None
+            aspect = (width / height) if height else 0
+            if aspect > 6 or aspect < 0.17:
+                return None
+
+            if pil_img.mode == 'CMYK':
+                pil_img = ImageChops.invert(pil_img)
+            pil_img = pil_img.convert('RGB')
+
+            sample = pil_img.resize((32, 32))
+            pixels = list(sample.getdata())
+            if pixels:
+                avg = [sum(px[i] for px in pixels) / len(pixels) for i in range(3)]
+                variance = sum(
+                    sum((px[i] - avg[i]) ** 2 for i in range(3)) for px in pixels
+                ) / len(pixels)
+                if variance < 400:
+                    return None
+
+            out_buf = io.BytesIO()
+            pil_img.save(out_buf, format="JPEG", quality=88)
+            return out_buf.getvalue()
         
         try:
             # Create output directory if it doesn't exist
@@ -136,10 +182,14 @@ class RealEstateParser:
             for page_num in range(len(pdf_document)):
                 page = pdf_document[page_num]
                 image_list = page.get_images(full=True)
+                smask_xrefs = {img[1] for img in image_list if img[1]}
                 
                 for img_index, img in enumerate(image_list):
                     try:
                         xref = img[0]
+                        if xref in smask_xrefs:
+                            continue
+
                         base_image = pdf_document.extract_image(xref)
                         image_bytes = base_image["image"]
                         image_ext = base_image["ext"]
@@ -147,6 +197,13 @@ class RealEstateParser:
                         # Skip very small images (likely logos/icons)
                         if len(image_bytes) < 10000:  # 10KB threshold
                             continue
+
+                        cleaned = _looks_like_real_photo(image_bytes)
+                        if cleaned is None:
+                            continue
+                        if Image is not None:
+                            image_bytes = cleaned
+                            image_ext = "jpg"
                         
                         # Generate unique filename using hash
                         image_hash = hashlib.md5(image_bytes).hexdigest()[:8]

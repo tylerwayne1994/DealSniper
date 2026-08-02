@@ -1689,17 +1689,33 @@ def _extract_and_upload_pdf_images(pdf_bytes: bytes, deal_id: str) -> list:
     """Extract images from PDF bytes using PyMuPDF and upload to Supabase Storage.
     
     Returns list of uploaded image metadata dicts with public URLs.
-    Skips small images (<15KB) which are typically logos/icons.
-    Prioritizes large images (likely building/property photos).
+
+    OMs/flyers embed a lot of non-photo image XObjects alongside the actual
+    property photos: soft-mask (alpha/gradient) layers, letterhead color bars,
+    background textures, and occasionally CMYK JPEGs that PyMuPDF hands back
+    inverted (renders solid black). Raw byte-size filtering alone lets all of
+    that junk through, so on top of the size threshold this also:
+      - skips xrefs that are actually the soft-mask of another image
+      - decodes each candidate with PIL to verify it's a real, reasonably
+        sized, non-degenerate-aspect-ratio image
+      - fixes inverted CMYK JPEGs
+      - rejects near-solid-color/gradient images (not real photos)
     """
-    import tempfile
+    import io
     import hashlib
-    
+
     try:
         import fitz  # PyMuPDF
     except ImportError:
         log.warning("[Images] PyMuPDF (fitz) not installed — skipping image extraction")
         return []
+
+    try:
+        from PIL import Image, ImageChops
+    except ImportError:
+        log.warning("[Images] Pillow not installed — falling back to unfiltered extraction")
+        Image = None
+        ImageChops = None
     
     try:
         from token_manager import get_supabase as _get_supabase
@@ -1726,6 +1742,47 @@ def _extract_and_upload_pdf_images(pdf_bytes: bytes, deal_id: str) -> list:
     
     uploaded = []
     seen_hashes = set()
+
+    def _looks_like_real_photo(raw_bytes):
+        """Decode with PIL, fix CMYK inversion, and reject junk (too small,
+        degenerate aspect ratio, or near-solid-color). Returns cleaned JPEG
+        bytes on success, or None if this isn't a real photo / can't decode."""
+        if Image is None:
+            return raw_bytes  # Pillow unavailable — can't filter further, pass through
+        try:
+            pil_img = Image.open(io.BytesIO(raw_bytes))
+            pil_img.load()
+        except Exception:
+            return None  # corrupt/undecodable image stream
+
+        width, height = pil_img.size
+        if width < 250 or height < 180:
+            return None  # too small to be a real property photo (icon/logo/divider)
+        aspect = (width / height) if height else 0
+        if aspect > 6 or aspect < 0.17:
+            return None  # thin banner/divider strip, not a photo
+
+        if pil_img.mode == 'CMYK':
+            # Adobe-generated CMYK JPEGs come out of PyMuPDF inverted
+            # (renders as solid black) unless corrected.
+            pil_img = ImageChops.invert(pil_img)
+        pil_img = pil_img.convert('RGB')
+
+        # Reject near-solid-color / gradient images (background textures,
+        # letterhead color bars) — real photos have far higher pixel variance.
+        sample = pil_img.resize((32, 32))
+        pixels = list(sample.getdata())
+        if pixels:
+            avg = [sum(px[i] for px in pixels) / len(pixels) for i in range(3)]
+            variance = sum(
+                sum((px[i] - avg[i]) ** 2 for i in range(3)) for px in pixels
+            ) / len(pixels)
+            if variance < 400:
+                return None
+
+        out_buf = io.BytesIO()
+        pil_img.save(out_buf, format="JPEG", quality=88)
+        return out_buf.getvalue()
     
     try:
         pdf_doc = fitz.open(stream=pdf_bytes, filetype="pdf")
@@ -1733,10 +1790,17 @@ def _extract_and_upload_pdf_images(pdf_bytes: bytes, deal_id: str) -> list:
         for page_num in range(len(pdf_doc)):
             page = pdf_doc[page_num]
             image_list = page.get_images(full=True)
+
+            # Soft-mask xrefs are the alpha/gradient mask attached to another
+            # image, not standalone photos — skip extracting them on their own.
+            smask_xrefs = {img[1] for img in image_list if img[1]}
             
             for img_idx, img in enumerate(image_list):
                 try:
                     xref = img[0]
+                    if xref in smask_xrefs:
+                        continue
+
                     base_image = pdf_doc.extract_image(xref)
                     image_bytes = base_image["image"]
                     image_ext = base_image["ext"]
@@ -1744,6 +1808,13 @@ def _extract_and_upload_pdf_images(pdf_bytes: bytes, deal_id: str) -> list:
                     # Skip small images (logos, icons, decorations)
                     if len(image_bytes) < 15000:  # 15KB threshold
                         continue
+
+                    cleaned = _looks_like_real_photo(image_bytes)
+                    if cleaned is None:
+                        continue
+                    if Image is not None:
+                        image_bytes = cleaned
+                        image_ext = "jpg"
                     
                     # Deduplicate by hash (same image can appear on multiple pages)
                     img_hash = hashlib.md5(image_bytes).hexdigest()[:12]
