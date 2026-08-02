@@ -3516,19 +3516,19 @@ function DashboardMapTab() {
                           {(p.units || (p.purchasePrice && !p.image) || p.dayOneCashFlow) && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))', gap: 6, marginBottom: 8 }}>
                               {p.units ? (
-                                <div style={{ backgroundColor: '#f9fafb', borderRadius: 6, padding: '6px 8px' }}>
+                                <div style={{ backgroundColor: '#ffffff', border: '1px solid #a7f3d0', borderRadius: 6, padding: '6px 8px' }}>
                                   <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Units</div>
                                   <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{p.units}</div>
                                 </div>
                               ) : null}
                               {p.purchasePrice && !p.image ? (
-                                <div style={{ backgroundColor: '#f9fafb', borderRadius: 6, padding: '6px 8px' }}>
+                                <div style={{ backgroundColor: '#ffffff', border: '1px solid #a7f3d0', borderRadius: 6, padding: '6px 8px' }}>
                                   <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Price</div>
                                   <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>${Number(p.purchasePrice).toLocaleString()}</div>
                                 </div>
                               ) : null}
                               {p.dayOneCashFlow ? (
-                                <div style={{ backgroundColor: '#f9fafb', borderRadius: 6, padding: '6px 8px' }}>
+                                <div style={{ backgroundColor: '#ffffff', border: '1px solid #a7f3d0', borderRadius: 6, padding: '6px 8px' }}>
                                   <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Day-1 CF</div>
                                   <div style={{ fontSize: 13, fontWeight: 700, color: p.dayOneCashFlow >= 0 ? '#059669' : '#dc2626' }}>
                                     ${Math.round(Number(p.dayOneCashFlow)).toLocaleString()}
@@ -3539,7 +3539,7 @@ function DashboardMapTab() {
                           )}
 
                           {!p.image && p.insight && (
-                            <div style={{ borderRadius: 8, padding: 10, fontSize: 12, lineHeight: 1.5, color: '#374151', backgroundColor: '#f3f4f6', marginBottom: 8 }}>
+                            <div style={{ borderRadius: 8, padding: 10, fontSize: 12, lineHeight: 1.5, color: '#374151', backgroundColor: '#ffffff', border: '1px solid #a7f3d0', marginBottom: 8 }}>
                               {p.insight}
                             </div>
                           )}
@@ -3555,7 +3555,7 @@ function DashboardMapTab() {
                           )}
 
                           {p.source === 'uploaded' && p.propertyData && Object.keys(p.propertyData).length > 0 && (
-                            <div style={{ borderRadius: 8, padding: 8, backgroundColor: '#f9fafb', fontSize: 11, maxHeight: 180, overflowY: 'auto', border: '1px solid #e5e7eb', marginBottom: 8 }}>
+                            <div style={{ borderRadius: 8, padding: 8, backgroundColor: '#ffffff', fontSize: 11, maxHeight: 180, overflowY: 'auto', border: '1px solid #a7f3d0', marginBottom: 8 }}>
                               {Object.entries(p.propertyData)
                                 .filter(([, v]) => v !== null && v !== undefined && v !== '')
                                 .map(([key, value]) => (
@@ -3688,19 +3688,19 @@ function DashboardMapTab() {
                   {(p.units || (p.purchasePrice && !p.image) || p.dayOneCashFlow) && (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))', gap: 6, marginBottom: 8 }}>
                       {p.units ? (
-                        <div style={{ backgroundColor: '#f9fafb', borderRadius: 6, padding: '6px 8px' }}>
+                        <div style={{ backgroundColor: '#ffffff', border: '1px solid #a7f3d0', borderRadius: 6, padding: '6px 8px' }}>
                           <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Units</div>
                           <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{p.units}</div>
                         </div>
                       ) : null}
                       {p.purchasePrice && !p.image ? (
-                        <div style={{ backgroundColor: '#f9fafb', borderRadius: 6, padding: '6px 8px' }}>
+                        <div style={{ backgroundColor: '#ffffff', border: '1px solid #a7f3d0', borderRadius: 6, padding: '6px 8px' }}>
                           <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Price</div>
                           <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>${Number(p.purchasePrice).toLocaleString()}</div>
                         </div>
                       ) : null}
                       {p.dayOneCashFlow ? (
-                        <div style={{ backgroundColor: '#f9fafb', borderRadius: 6, padding: '6px 8px' }}>
+                        <div style={{ backgroundColor: '#ffffff', border: '1px solid #a7f3d0', borderRadius: 6, padding: '6px 8px' }}>
                           <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Day-1 CF</div>
                           <div style={{ fontSize: 13, fontWeight: 700, color: p.dayOneCashFlow >= 0 ? '#059669' : '#dc2626' }}>
                             ${Math.round(Number(p.dayOneCashFlow)).toLocaleString()}
@@ -3711,7 +3711,7 @@ function DashboardMapTab() {
                   )}
 
                   {!p.image && p.insight && (
-                    <div style={{ borderRadius: 8, padding: 10, fontSize: 12, lineHeight: 1.5, color: '#374151', backgroundColor: '#f3f4f6', marginBottom: 8 }}>
+                    <div style={{ borderRadius: 8, padding: 10, fontSize: 12, lineHeight: 1.5, color: '#374151', backgroundColor: '#ffffff', border: '1px solid #a7f3d0', marginBottom: 8 }}>
                       {p.insight}
                     </div>
                   )}
@@ -3732,15 +3732,15 @@ function DashboardMapTab() {
 
                   {p.source === 'uploaded' && p.propertyData && Object.keys(p.propertyData).length > 0 && (
                     <div style={{
-                      borderRadius: '10px', padding: '10px', backgroundColor: '#f9fafb', fontSize: '12px',
-                      maxHeight: '200px', overflowY: 'auto', border: '1px solid #e5e7eb', marginBottom: 8,
+                      borderRadius: '10px', padding: '10px', backgroundColor: '#ffffff', fontSize: '12px',
+                      maxHeight: '200px', overflowY: 'auto', border: '1px solid #a7f3d0', marginBottom: 8,
                     }}>
                       <div style={{ fontWeight: 700, marginBottom: 8, color: '#111827', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Property Details</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                         {Object.entries(p.propertyData)
                           .filter(([, v]) => v !== null && v !== undefined && v !== '')
                           .map(([key, value]) => (
-                          <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 8px', backgroundColor: 'white', borderRadius: 6, border: '1px solid #e5e7eb' }}>
+                          <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 8px', backgroundColor: 'white', borderRadius: 6, border: '1px solid #d1fae5' }}>
                             <span style={{ fontWeight: 600, color: '#6b7280', fontSize: 11 }}>{key}</span>
                             <span style={{ color: '#111827', fontWeight: 500, textAlign: 'right', maxWidth: '60%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{String(value)}</span>
                           </div>
