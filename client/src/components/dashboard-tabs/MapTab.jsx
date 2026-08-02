@@ -3429,7 +3429,7 @@ function DashboardMapTab() {
           right: isMobile ? 8 : 12,
           zIndex: 1000,
           display: 'flex', borderRadius: 8, overflow: 'hidden',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)', border: '1px solid #e5e7eb',
         }}>
           {[
             { key: 'satellite', label: isMobile ? 'Sat' : 'Satellite' },
@@ -3441,13 +3441,14 @@ function DashboardMapTab() {
               fontSize: isMobile ? 11 : 12,
               fontWeight: mapStyle === key ? 700 : 500,
               cursor: 'pointer', border: 'none',
-              borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none',
-              color: mapStyle === key ? '#fff' : '#cbd5e1',
-              background: mapStyle === key ? 'linear-gradient(90deg, #34d399 0%, #22d3ee 100%)' : 'rgba(15,23,42,0.85)',
-              backdropFilter: 'blur(8px)', transition: 'all 0.15s',
+              borderLeft: i > 0 ? '1px solid #e5e7eb' : 'none',
+              color: mapStyle === key ? '#fff' : '#374151',
+              background: mapStyle === key ? 'linear-gradient(90deg, #34d399 0%, #22d3ee 100%)' : '#ffffff',
+              transition: 'all 0.15s',
             }}>
               {label}
             </button>
+
           ))}
         </div>
 
@@ -4282,47 +4283,47 @@ function DashboardMapTab() {
             <div style={{
               position: 'fixed', inset: 0, zIndex: 2000,
               display: 'flex', flexDirection: 'column',
-              backgroundColor: '#0f172a',
+              backgroundColor: '#ffffff',
             }}>
               <div style={{
                 padding: '10px 14px',
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                borderBottom: '1px solid #e5e7eb',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                fontSize: 14, fontWeight: 700, color: '#f1f5f9',
+                fontSize: 14, fontWeight: 700, color: '#111827',
               }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#34d399', display: 'inline-block' }} />
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
                   Max AI
                 </span>
-                <button onClick={() => setIsChatMinimized(true)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8', padding: 4 }}>
+                <button onClick={() => setIsChatMinimized(true)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#6b7280', padding: 4 }}>
                   <X size={20} />
                 </button>
               </div>
               <div style={{ flex: 1, padding: '12px 14px', overflowY: 'auto', minHeight: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 8, color: '#94a3b8' }}>
+                <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 8, color: '#6b7280' }}>
                   Ask Max about property clusters, market trends, or new investment markets.
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {chat.messages.map((msg, idx) => (
                     <div key={idx} style={{
                       marginBottom: 8, padding: '10px 12px', borderRadius: 8,
-                      backgroundColor: msg.role === 'user' ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.04)',
-                      color: '#e2e8f0', fontSize: 13, lineHeight: 1.5,
-                      border: msg.role === 'user' ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(255,255,255,0.06)',
+                      backgroundColor: msg.role === 'user' ? '#ecfdf5' : '#ffffff',
+                      color: '#111827', fontSize: 13, lineHeight: 1.5,
+                      border: msg.role === 'user' ? '1px solid #a7f3d0' : '1px solid #e5e7eb',
                     }}>
                       {msg.role === 'assistant' ? <FormattedMessage text={msg.content} /> : msg.content}
                     </div>
                   ))}
                   {chat.loading && (
-                    <div style={{ padding: '10px 12px', borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.04)', color: '#94a3b8', fontSize: 13, fontStyle: 'italic', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ padding: '10px 12px', borderRadius: 8, backgroundColor: '#ffffff', color: '#6b7280', fontSize: 13, fontStyle: 'italic', border: '1px solid #e5e7eb' }}>
                       Max is thinking...
                     </div>
                   )}
                 </div>
               </div>
-              <div style={{ padding: '12px 14px', borderTop: '1px solid rgba(255,255,255,0.06)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+              <div style={{ padding: '12px 14px', borderTop: '1px solid #e5e7eb', backgroundColor: '#ffffff' }}>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <input style={{ flex: 1, padding: '10px 12px', fontSize: 14, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.05)', color: '#e2e8f0', outline: 'none' }}
+                  <input style={{ flex: 1, padding: '10px 12px', fontSize: 14, border: '1px solid #d1d5db', borderRadius: 8, backgroundColor: '#ffffff', color: '#111827', outline: 'none' }}
                     placeholder="Ask about markets, trends, or map commands..."
                     value={chat.input} onChange={(e) => setChat({ ...chat, input: e.target.value })}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMaxMessage(chat.input); } }} />
@@ -4340,23 +4341,23 @@ function DashboardMapTab() {
         maxWidth: isChatMinimized ? 40 : (isTablet ? 320 : 380),
         height: '100%',
         flexShrink: 0,
-        borderLeft: '1px solid rgba(255,255,255,0.06)',
+        borderLeft: '1px solid #e5e7eb',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: '#0f172a',
+        backgroundColor: '#ffffff',
         overflow: 'hidden',
         transition: 'width 0.2s ease, min-width 0.2s ease, max-width 0.2s ease'
       }}>
         {/* AI Header */}
         <div style={{
           padding: isChatMinimized ? '8px' : '10px 14px',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          borderBottom: '1px solid #e5e7eb',
           display: 'flex',
           alignItems: 'center',
           justifyContent: isChatMinimized ? 'center' : 'space-between',
           fontSize: 14,
           fontWeight: 700,
-          color: '#f1f5f9',
+          color: '#111827',
         }}>
           {!isChatMinimized && <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
@@ -4366,7 +4367,7 @@ function DashboardMapTab() {
             type="button"
             onClick={() => setIsChatMinimized(!isChatMinimized)}
             title={isChatMinimized ? 'Expand chat' : 'Minimize chat'}
-            style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8' }}
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#6b7280' }}
           >
             <MessageSquare size={15} />
           </button>
@@ -4380,7 +4381,7 @@ function DashboardMapTab() {
           overflowY: 'auto',
           minHeight: 0,
         }}>
-          <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 8, color: '#94a3b8' }}>
+          <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 8, color: '#6b7280' }}>
             Ask Max about property clusters, market trends, or new investment markets.
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -4391,11 +4392,11 @@ function DashboardMapTab() {
                   marginBottom: 8,
                   padding: '10px 12px',
                   borderRadius: 8,
-                  backgroundColor: msg.role === 'user' ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.04)',
-                  color: '#e2e8f0',
+                  backgroundColor: msg.role === 'user' ? '#ecfdf5' : '#ffffff',
+                  color: '#111827',
                   fontSize: 13,
                   lineHeight: 1.5,
-                  border: msg.role === 'user' ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(255,255,255,0.06)',
+                  border: msg.role === 'user' ? '1px solid #a7f3d0' : '1px solid #e5e7eb',
                 }}
               >
                 {msg.role === 'assistant' ? (
@@ -4409,11 +4410,11 @@ function DashboardMapTab() {
               <div style={{
                 padding: '10px 12px',
                 borderRadius: 8,
-                backgroundColor: 'rgba(255,255,255,0.04)',
-                color: '#94a3b8',
+                backgroundColor: '#ffffff',
+                color: '#6b7280',
                 fontSize: 13,
                 fontStyle: 'italic',
-                border: '1px solid rgba(255,255,255,0.06)',
+                border: '1px solid #e5e7eb',
               }}>
                 Max is thinking...
               </div>
@@ -4426,8 +4427,8 @@ function DashboardMapTab() {
         {!isChatMinimized && (
         <div style={{
           padding: '12px 14px',
-          borderTop: '1px solid rgba(255,255,255,0.06)',
-          backgroundColor: 'rgba(255,255,255,0.02)',
+          borderTop: '1px solid #e5e7eb',
+          backgroundColor: '#ffffff',
         }}>
           <div style={{ display: 'flex', gap: 8 }}>
             <input
@@ -4435,10 +4436,10 @@ function DashboardMapTab() {
                 flex: 1,
                 padding: '8px 12px',
                 fontSize: 13,
-                border: '1px solid rgba(255,255,255,0.1)',
+                border: '1px solid #d1d5db',
                 borderRadius: 8,
-                backgroundColor: 'rgba(255,255,255,0.05)',
-                color: '#e2e8f0',
+                backgroundColor: '#ffffff',
+                color: '#111827',
                 outline: 'none',
               }}
               placeholder="Ask about markets, trends, or map commands..."
