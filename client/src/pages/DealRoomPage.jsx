@@ -769,10 +769,40 @@ function DealRoomPage() {
                     <div style={{ color: '#fff', fontSize: '22px', fontWeight: '700' }}>{fmt$full(metrics.price)}</div>
                     <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '13px' }}>{deal.address}</div>
                   </div>
+                  {normalizedImages[0]?.storage_path && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteImage(normalizedImages[0].storage_path)}
+                      title="Delete photo"
+                      style={{
+                        position: 'absolute', top: '10px', left: '10px',
+                        width: '24px', height: '24px', borderRadius: '50%',
+                        border: 'none', backgroundColor: 'rgba(0,0,0,0.55)', color: '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer', fontSize: '14px', lineHeight: 1, padding: 0,
+                      }}
+                    >×</button>
+                  )}
                   {normalizedImages.length > 1 && (
                     <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '4px' }}>
                       {normalizedImages.slice(1, 5).map((img, i) => (
-                        <img key={i} src={img.url} alt="" style={{ width: '52px', height: '52px', objectFit: 'cover', borderRadius: '6px', border: '2px solid rgba(255,255,255,0.8)' }} />
+                        <div key={i} style={{ position: 'relative', width: '52px', height: '52px' }}>
+                          <img src={img.url} alt="" style={{ width: '52px', height: '52px', objectFit: 'cover', borderRadius: '6px', border: '2px solid rgba(255,255,255,0.8)' }} />
+                          {img.storage_path && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteImage(img.storage_path)}
+                              title="Delete photo"
+                              style={{
+                                position: 'absolute', top: '-6px', right: '-6px',
+                                width: '18px', height: '18px', borderRadius: '50%',
+                                border: '2px solid #fff', backgroundColor: 'rgba(0,0,0,0.65)', color: '#fff',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                cursor: 'pointer', fontSize: '11px', lineHeight: 1, padding: 0,
+                              }}
+                            >×</button>
+                          )}
+                        </div>
                       ))}
                     </div>
                   )}
