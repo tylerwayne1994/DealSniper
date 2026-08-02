@@ -1,11 +1,25 @@
 // Deals Service - Supabase integration for saving/loading deals
 import { supabase } from './supabase';
+import { geocodeAddress as googleGeocodeAddress } from '../utils/geocode';
 
 // Helper: get current authenticated user id
 async function getCurrentUserId() {
   const { data, error } = await supabase.auth.getUser();
   if (error) throw error;
   return data?.user?.id || null;
+}
+
+// Nominatim/Google both choke on a few common real-world address quirks:
+// address ranges ("1611-1629 Fairfax Rd") and a literal "(Copy)" suffix left
+// over from duplicating a deal. Strip those before geocoding so the address
+// actually resolves instead of silently failing.
+function normalizeAddressForGeocoding(address) {
+  if (!address) return address;
+  return address
+    .replace(/\s*\(copy(?:\s*\d+)?\)\s*/gi, ' ') // "123 Main St (Copy)" -> "123 Main St"
+    .replace(/^(\d+)\s*-\s*\d+(\s)/, '$1$2')     // "1611-1629 Fairfax Rd" -> "1611 Fairfax Rd"
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 // Simple geocoder using Nominatim (no external dependencies)
@@ -27,6 +41,25 @@ async function nominatimGeocode(address) {
     console.warn('Nominatim geocode failed:', e);
   }
   return null;
+}
+
+/**
+ * Geocode an address trying Google Maps first (handles messy/range addresses
+ * much better) and falling back to Nominatim if Google is unavailable (e.g.
+ * REACT_APP_GOOGLE_MAPS_KEY not configured in this environment) or returns
+ * no result. Always normalizes the address first. Exported so callers like
+ * ResultsPageV2's push-to-pipeline flow get the same reliability.
+ */
+export async function robustGeocodeAddress(rawAddress) {
+  const address = normalizeAddressForGeocoding(rawAddress);
+  if (!address) return null;
+  try {
+    const fromGoogle = await googleGeocodeAddress(address);
+    if (fromGoogle && fromGoogle.latitude && fromGoogle.longitude) return fromGoogle;
+  } catch (e) {
+    console.warn('Google geocode failed, falling back to Nominatim:', e);
+  }
+  return nominatimGeocode(address);
 }
 
 /**
@@ -83,7 +116,7 @@ export async function saveDeal(dealData) {
   if (!finalLat || !finalLng) {
     const fullAddress = address || parsedData?.property?.address || '';
     if (fullAddress && fullAddress !== 'Unknown Address') {
-      const coords = await nominatimGeocode(fullAddress);
+      const coords = await robustGeocodeAddress(fullAddress);
       if (coords) {
         finalLat = coords.latitude;
         finalLng = coords.longitude;
@@ -379,7 +412,7 @@ export async function geocodeExistingDeals() {
     if (!addr || addr === 'Unknown Address') continue;
 
     try {
-      const coords = await nominatimGeocode(addr);
+      const coords = await robustGeocodeAddress(addr);
       if (coords && coords.latitude && coords.longitude) {
         const { error: updateErr } = await supabase
           .from('deals')

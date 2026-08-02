@@ -16,7 +16,7 @@ import { CostSegAnalysisView } from '../components/CostSegAnalysis';
 import SummaryTab from '../components/results-tabs/SummaryTab';
 import PropertySpreadsheet from '../components/PropertySpreadsheet';
 import UnderwritingSpreadsheetTemplate from '../components/UnderwritingSpreadsheetTemplate';
-import { saveDeal, loadDeal } from '../lib/dealsService';
+import { saveDeal, loadDeal, robustGeocodeAddress } from '../lib/dealsService';
 import { mapParsedDataToSpreadsheet } from '../utils/propertySpreadsheetMapper';
 // Removed unused GoogleSheetsSpreadsheet import
 
@@ -1579,7 +1579,11 @@ function UnderwritingTablePage({ initialScenarioData, initialCalculations }) {
       const purchasePrice = activeScenario?.pricing_financing?.purchase_price || activeScenario?.pricing_financing?.price || 0;
       const dealStructure = activeScenario?.deal_structure?.recommended || 'Traditional';
       const broker = activeScenario?.broker || {};
-      
+
+      // Geocode address for map pin so the deal shows up on the map
+      // immediately after being pushed to the pipeline.
+      const coords = await robustGeocodeAddress(address);
+
       await saveDeal({
         dealId: dealId || `deal-${Date.now()}`,
         address,
@@ -1587,6 +1591,8 @@ function UnderwritingTablePage({ initialScenarioData, initialCalculations }) {
         purchasePrice,
         dealStructure,
         parsedData: activeScenario,
+        latitude: coords?.latitude,
+        longitude: coords?.longitude,
         scenarioData: {
           ...activeScenario,
           calculations: fullCalcs

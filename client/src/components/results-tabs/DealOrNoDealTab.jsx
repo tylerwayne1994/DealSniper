@@ -13,8 +13,7 @@ import {
   Layers,
   Rocket
 } from 'lucide-react';
-import { saveDeal } from '../../lib/dealsService';
-import { geocodeAddress } from '../../utils/geocode';
+import { saveDeal, robustGeocodeAddress } from '../../lib/dealsService';
 
 // ============================================================================
 // Helper Functions
@@ -416,8 +415,9 @@ const DealOrNoDealTab = ({ scenarioData, calculations, dealId, marketCapRate, ma
     setIsPushing(true);
     
     try {
-      // Geocode address for map pin
-      const coords = await geocodeAddress(address);
+      // Geocode address for map pin — tries Google first, falls back to
+      // Nominatim so the deal always ends up with coordinates.
+      const coords = await robustGeocodeAddress(address);
 
       // Save to Supabase with all data needed to reconstruct Results page
       await saveDeal({

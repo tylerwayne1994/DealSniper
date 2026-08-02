@@ -39,8 +39,7 @@ import WaterfallTab from './results-tabs/WaterfallTab';
 import ExitStrategyTab from './results-tabs/ExitStrategyTab';
 import CompressedTab from './results-tabs/CompressedTab';
 import UnderwritingTablePage from '../pages/UnderwritingTablePage';
-import { saveDeal, updateDeal, loadDeal, loadProfile } from '../lib/dealsService';
-import { geocodeAddress } from '../utils/geocode';
+import { saveDeal, updateDeal, loadDeal, loadProfile, robustGeocodeAddress } from '../lib/dealsService';
 import ScenarioSheet from './ScenarioSheet';
 import { supabase } from '../lib/supabase';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
@@ -729,8 +728,11 @@ const ResultsPageV2 = ({
 
       const dealStructure = recommendedStructure || scenarioData?.recommended_structure || scenarioData?.deal_structure?.recommended || 'Traditional Financing';
 
-      // Geocode address for map pin
-      const coords = await geocodeAddress(address);
+      // Geocode address for map pin — tries Google first, falls back to
+      // Nominatim if Google is unavailable (e.g. no API key configured in
+      // this environment) or returns nothing, so the deal always ends up
+      // with coordinates and shows on the map immediately.
+      const coords = await robustGeocodeAddress(address);
 
       await saveDeal({
         dealId,
