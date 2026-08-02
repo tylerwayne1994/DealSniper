@@ -777,150 +777,63 @@ function DashboardPage() {
 
       {/* Token Balance Card */}
       <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '18px' }}>
           <div style={{ 
-            width: '40px', 
-            height: '40px', 
-            borderRadius: '10px', 
+            width: '36px', 
+            height: '36px', 
+            borderRadius: '8px', 
             backgroundColor: '#fef3c7', 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center',
-            marginRight: '12px'
+            marginRight: '10px'
           }}>
-            <Zap size={20} color="#d97706" />
+            <Zap size={16} color="#d97706" />
           </div>
-          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827' }}>
-            AI Token Balance
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#111827' }}>
+            AI Tokens
           </h3>
         </div>
 
         {tokenLoading ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>
+          <div style={{ textAlign: 'center', padding: '30px', color: '#9ca3af' }}>
             <div style={{ fontSize: '14px' }}>Loading your subscription...</div>
           </div>
         ) : tokenBalance ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* Top Section: Plan Badge & Token Count */}
-            <div style={{ 
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Balance row: count, monthly limit, reset date all in one line */}
+            <div style={{
               display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              gap: '20px'
+              flexWrap: 'wrap',
+              alignItems: 'baseline',
+              gap: isMobile ? '8px' : '10px',
+              padding: '14px 16px',
+              backgroundColor: '#f9fafb',
+              borderRadius: '10px',
+              border: '1px solid #e5e7eb',
             }}>
-              {/* Plan Badge */}
-              <div style={{ 
-                padding: '12px 24px',
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                color: 'white',
-                borderRadius: '12px',
-                fontSize: '18px',
-                fontWeight: '700',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                display: 'inline-block'
-              }}>
-                Member
-              </div>
-
-              {/* Token Counter */}
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ 
-                  fontSize: '56px', 
-                  fontWeight: '800', 
-                  color: '#111827',
-                  lineHeight: '1',
-                  marginBottom: '8px'
-                }}>
-                  {tokenBalance.token_balance !== undefined ? tokenBalance.token_balance : '—'}
-                </div>
-                <div style={{ fontSize: '14px', color: '#6b7280', fontWeight: '500' }}>
-                  tokens remaining
-                </div>
-              </div>
+              <span style={{ fontSize: '32px', fontWeight: '800', color: '#111827', lineHeight: 1 }}>
+                {tokenBalance.token_balance !== undefined ? tokenBalance.token_balance : '—'}
+              </span>
+              <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: '500' }}>
+                of {tokenBalance.monthly_limit || 55} tokens left
+              </span>
+              <span style={{ fontSize: '13px', color: '#9ca3af', marginLeft: 'auto' }}>
+                Resets {tokenBalance.tokens_reset_at ? new Date(tokenBalance.tokens_reset_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}
+              </span>
             </div>
 
-            {/* Token Stats Cards */}
-            <div style={{ 
-              display: 'grid',
-              gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
-              gap: isMobile ? '10px' : '16px'
-            }}>
-              {/* Monthly Limit */}
-              <div style={{ 
-                padding: '16px',
-                backgroundColor: '#f9fafb',
-                borderRadius: '10px',
-                border: '1px solid #e5e7eb'
-              }}>
-                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', fontWeight: '600' }}>
-                  MONTHLY LIMIT
-                </div>
-                <div style={{ fontSize: '24px', fontWeight: '700', color: '#111827' }}>
-                  {tokenBalance.monthly_limit || 25}
-                </div>
-              </div>
-
-              {/* Reset Date */}
-              <div style={{ 
-                padding: '16px',
-                backgroundColor: '#f9fafb',
-                borderRadius: '10px',
-                border: '1px solid #e5e7eb'
-              }}>
-                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', fontWeight: '600' }}>
-                  RESETS ON
-                </div>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginTop: '4px' }}>
-                  {tokenBalance.tokens_reset_at ? new Date(tokenBalance.tokens_reset_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}
-                </div>
-              </div>
-            </div>
-
-            {/* Token Usage Info */}
-            <div style={{ 
-              padding: '20px',
-              background: 'linear-gradient(135deg, #667eea15 0%, #764ba215 100%)',
-              borderRadius: '12px',
-              border: '2px solid #e0e7ff'
-            }}>
-              <div style={{ fontSize: '13px', fontWeight: '700', color: '#4338ca', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Token Usage
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px', fontSize: '14px' }}>
-                <div style={{ color: '#374151' }}>
-                  <span style={{ fontWeight: '600' }}>LOI Generation:</span>
-                  <span style={{ color: '#6366f1', fontWeight: '700', marginLeft: '6px' }}>1 token</span>
-                </div>
-                <div style={{ color: '#374151' }}>
-                  <span style={{ fontWeight: '600' }}>Market Report (Results v2):</span>
-                  <span style={{ color: '#6366f1', fontWeight: '700', marginLeft: '6px' }}>1 token</span>
-                </div>
-                <div style={{ color: '#374151' }}>
-                  <span style={{ fontWeight: '600' }}>Market Report (Dashboard):</span>
-                  <span style={{ color: '#6366f1', fontWeight: '700', marginLeft: '6px' }}>1 token</span>
-                </div>
-                <div style={{ color: '#374151' }}>
-                  <span style={{ fontWeight: '600' }}>Pitch Deck:</span>
-                  <span style={{ color: '#6366f1', fontWeight: '700', marginLeft: '6px' }}>1 token</span>
-                </div>
-                <div style={{ color: '#374151' }}>
-                  <span style={{ fontWeight: '600' }}>Deal Structure:</span>
-                  <span style={{ color: '#6366f1', fontWeight: '700', marginLeft: '6px' }}>1 token</span>
-                </div>
-                <div style={{ color: '#374151' }}>
-                  <span style={{ fontWeight: '600' }}>Rapid Fire (Reonomy AI):</span>
-                  <span style={{ color: '#6366f1', fontWeight: '700', marginLeft: '6px' }}>1 token</span>
-                </div>
-                <div style={{ color: '#374151' }}>
-                  <span style={{ fontWeight: '600' }}>OM Parsing:</span>
-                  <span style={{ color: '#10b981', fontWeight: '700', marginLeft: '6px' }}>FREE</span>
-                </div>
-                <div style={{ color: '#374151' }}>
-                  <span style={{ fontWeight: '600' }}>Max:</span>
-                  <span style={{ color: '#10b981', fontWeight: '700', marginLeft: '6px' }}>FREE</span>
-                </div>
+            {/* Token Usage Info — only the operations that actually cost tokens */}
+            <div style={{ fontSize: '13px', color: '#6b7280' }}>
+              <span style={{ fontWeight: '600', color: '#374151' }}>LOI Generation:</span> 1 token
+              <span style={{ margin: '0 8px', color: '#d1d5db' }}>·</span>
+              <span style={{ fontWeight: '600', color: '#374151' }}>Contract Generation:</span> 1 token
+              <span style={{ margin: '0 8px', color: '#d1d5db' }}>·</span>
+              <span style={{ fontWeight: '600', color: '#374151' }}>Pitch Deck:</span> 2 tokens
+              <span style={{ margin: '0 8px', color: '#d1d5db' }}>·</span>
+              <span style={{ fontWeight: '600', color: '#374151' }}>Document Analysis:</span> 2 tokens
+              <div style={{ marginTop: '4px' }}>
+                Everything else — Market Reports, Deal Structure, Rapid Fire, Max AI, OM Parsing — is free.
               </div>
             </div>
           </div>
