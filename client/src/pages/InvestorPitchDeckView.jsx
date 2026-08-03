@@ -45,6 +45,7 @@ export default function InvestorPitchDeckView() {
             metrics,
             scenarioData: deal?.scenarioData || deal?.parsedData,
             documents: res.documents || [],
+            layout: res.layout || null,
             closeDate: deal?.parsedData?.dealRoomCloseDate || null,
           },
         });
@@ -97,7 +98,7 @@ export default function InvestorPitchDeckView() {
     );
   }
 
-  const { data, full, metrics, scenarioData, documents, closeDate } = state.viewModel;
+  const { data, full, metrics, scenarioData, documents, layout, closeDate } = state.viewModel;
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f6f7fb', padding: '24px 16px' }}>
@@ -111,6 +112,7 @@ export default function InvestorPitchDeckView() {
           metrics={metrics}
           scenarioData={scenarioData}
           documents={documents}
+          layout={layout}
           closeDate={closeDate}
           readOnly
         />

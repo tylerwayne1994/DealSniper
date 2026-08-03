@@ -18,6 +18,7 @@ import DealChat from '../components/DealChat';
 import InvestorDealRoom from '../components/dealroom/InvestorDealRoom';
 import { computeDealMetrics, normalizeDealImages, computeDealScore } from '../lib/dealMetrics';
 import ShareWithInvestorPanel from '../components/dealroom/ShareWithInvestorPanel';
+import { getDealRoomLayout } from '../lib/dealRoomLayoutService';
 import { API_ENDPOINTS } from '../config/api';
 
 // ============================================================================
@@ -219,6 +220,7 @@ function DealRoomPage() {
   const [allocations, setAllocations] = useState([]);
   const [distributions, setDistributions] = useState([]);
   const [investorDataLoaded, setInvestorDataLoaded] = useState(false);
+  const [dealRoomLayout, setDealRoomLayout] = useState(null);
   const [generatingNarrative, setGeneratingNarrative] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -310,6 +312,21 @@ function DealRoomPage() {
       }
     })();
   }, [activeTab, dealId, investorDataLoaded]);
+
+  // Lazy-load the sponsor's saved widget layout (Comps/Market Data section
+  // widgets, etc.) the first time the Deal Room tab is opened — falls back
+  // to the backend's generated default if the sponsor hasn't customized it.
+  useEffect(() => {
+    if (activeTab !== 'dealroom' || dealRoomLayout || !dealId) return;
+    (async () => {
+      try {
+        const res = await getDealRoomLayout(dealId);
+        setDealRoomLayout(res.layout);
+      } catch (e) {
+        console.warn('DealRoom: failed to load layout', e);
+      }
+    })();
+  }, [activeTab, dealId, dealRoomLayout]);
 
   // Generate (or regenerate) the AI investment thesis, then cache it on the
   // deal record so it doesn't need to be regenerated on every visit.
@@ -1079,6 +1096,7 @@ function DealRoomPage() {
                   metrics={metrics}
                   scenarioData={deal?.scenarioData || deal?.parsedData}
                   documents={(documents || []).filter((d) => d.visible_to_investors)}
+                  layout={dealRoomLayout}
                   closeDate={deal?.parsedData?.dealRoomCloseDate}
                   onGenerateNarrative={handleGenerateNarrative}
                   generatingNarrative={generatingNarrative}

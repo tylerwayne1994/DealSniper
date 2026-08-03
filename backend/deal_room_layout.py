@@ -65,19 +65,24 @@ def _get_user_id(request: Request) -> str:
 
 def _default_layout() -> list:
     """Mirrors InvestorDealRoom.jsx's original hardcoded section order, with
-    the widget-editable sections seeded with the widgets that already exist
-    today (e.g. Financial Overview's tables, the Investor Calculator's
-    slider) so upgrading a deal to the new layout system doesn't change
-    what an investor already sees. Comps and Market Data start with no
-    widgets — nothing was ever shown to investors for those, so an empty
-    section (hidden until the sponsor adds a widget) is correct, not a bug.
+    the widget-editable sections seeded with sensible default widgets so
+    the room is fully populated out of the box (real data, real widgets)
+    even before a sponsor ever opens the drag-drop editor. Comps defaults
+    to a table bound to the deal's cached RentCast comps; Market Data
+    defaults to a summary-card grid bound to the static public-data lookup
+    (see client/src/lib/marketDataLookup.js) — neither existed in the
+    investor-facing room before this system, so these are net-new sections.
     """
     return [
         {"id": "financials", "title": SECTION_LABELS["financials"], "widgets": [
             {"id": "financials-tables", "type": "table", "dataBinding": "financialOverview", "config": {}},
         ]},
-        {"id": "comps", "title": SECTION_LABELS["comps"], "widgets": []},
-        {"id": "marketData", "title": SECTION_LABELS["marketData"], "widgets": []},
+        {"id": "comps", "title": SECTION_LABELS["comps"], "widgets": [
+            {"id": "comps-table", "type": "table", "dataBinding": "comps", "config": {}},
+        ]},
+        {"id": "marketData", "title": SECTION_LABELS["marketData"], "widgets": [
+            {"id": "marketdata-summary", "type": "summaryCard", "dataBinding": "marketMetrics", "config": {}},
+        ]},
         {"id": "participation", "title": SECTION_LABELS["participation"], "widgets": [
             {"id": "participation-table", "type": "table", "dataBinding": "investorOptions", "config": {}},
         ]},

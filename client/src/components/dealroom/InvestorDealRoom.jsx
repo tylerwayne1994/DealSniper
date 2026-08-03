@@ -3,7 +3,9 @@ import { Download, Lock, Clock, Camera, X, TrendingUp, Building2, Sparkles } fro
 import { buildDealRoomCss, DEAL_ROOM_ACCENT_DEFAULT } from './DealRoomStyles';
 import { exportDealRoomHtml } from '../../lib/dealRoomExport';
 import { NoiCashflowChart, ValueCreationBridge, ReturnsComparisonChart } from './DealRoomCharts';
+import { renderWidget } from './DealRoomWidgets';
 import { calculateFullAnalysis } from '../../utils/realEstateCalculations';
+import { loadMarketDataForLocation } from '../../lib/marketDataLookup';
 
 const fmtMoney = (v) => {
   if (v == null || Number.isNaN(Number(v))) return '';
@@ -285,16 +287,120 @@ function InvestorCalculator({ full, scenarioData, accent }) {
  * `data` (see lib/dealRoomData.js) — a section simply isn't rendered when
  * its underlying data is absent, per the "no empty headers, no N/A walls"
  * rule. `full`/`metrics` (calculateFullAnalysis + DealRoomPage's metrics)
- * are passed through separately for the chart components.
+ * are passed through separately for the chart components. `layout` (from
+ * deal_room_layouts, see backend/deal_room_layout.py) drives the two
+ * widget-based sections below (Comps, Market Data) — falls back to a
+ * generated default (same shape the backend returns) if not provided so
+ * this component still works for any caller that hasn't wired it up yet.
  */
-export default function InvestorDealRoom({ data, full, metrics, scenarioData, documents, closeDate, accent = DEAL_ROOM_ACCENT_DEFAULT, onGenerateNarrative, generatingNarrative = false, readOnly = false, onUploadImages, onDeleteImage, uploadingImages = false, imageUploadError = '' }) {
+export default function InvestorDealRoom({ data, full, metrics, scenarioData, documents, closeDate, layout, accent = DEAL_ROOM_ACCENT_DEFAULT, onGenerateNarrative, generatingNarrative = false, readOnly = false, onUploadImages, onDeleteImage, uploadingImages = false, imageUploadError = '' }) {
   const containerRef = useRef(null);
   const [activeSection, setActiveSection] = useState('');
   const [progress, setProgress] = useState(0);
   const photoInputRef = useRef(null);
   const [exporting, setExporting] = useState(false);
   const [gateEnabled, setGateEnabled] = useState(false);
+  const [marketMetrics, setMarketMetrics] = useState([]);
+
+  const layoutSections = layout?.sections || [];
+  const getSectionWidgets = (sectionId) => layoutSections.find((s) => s.id === sectionId)?.widgets || [];
+
+  // ---- Comps (from the deal's cached RentCast pull, see scenario_data.rentcast_cache) ----
+  const comps = useMemo(() => {
+    const raw = scenarioData?.rentcast_cache?.data?.comparables;
+    return Array.isArray(raw) ? raw : [];
+  }, [scenarioData]);
+
+  const property = scenarioData?.property || {};
+  const propertyCity = property.city || '';
+  const propertyState = property.state || '';
+  const propertyZip = property.zip || property.zipcode || '';
+
+  // ---- Market Data (from the static public CSVs, see lib/marketDataLookup.js) ----
+  useEffect(() => {
+    if (getSectionWidgets('marketData').length === 0) return;
+    if (!propertyCity && !propertyZip) return;
+    let cancelled = false;
+    loadMarketDataForLocation({ city: propertyCity, state: propertyState, zip: propertyZip }).then((m) => {
+      if (!cancelled) setMarketMetrics(m);
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyCity, propertyState, propertyZip, layout]);
   const [gatePassword, setGatePassword] = useState('');
+
+  // Resolves a widget's dataBinding into the shape its renderer needs
+  // (rows/columns for table, items for summaryCard, data for charts, points
+  // for map). Only covers the two net-new sections (Comps, Market Data) —
+  // the pre-existing sections (financials/participation/calculator/
+  // documents) keep their own polished hand-built JSX below, unchanged.
+  const resolveWidgetDataset = (sectionId, widget) => {
+    if (sectionId === 'comps') {
+      if (widget.type === 'table') {
+        return {
+          rows: comps,
+          columns: [
+            { key: 'formattedAddress', label: 'Address' },
+            { key: 'price', label: 'Rent/mo', format: 'money' },
+            { key: 'bedrooms', label: 'Bed' },
+            { key: 'bathrooms', label: 'Bath' },
+            { key: 'squareFootage', label: 'SqFt', format: 'number' },
+            { key: 'distance', label: 'Miles' },
+          ],
+        };
+      }
+      if (widget.type === 'map') {
+        const subjectLat = property.lat ?? property.latitude;
+        const subjectLng = property.lng ?? property.longitude;
+        const points = comps
+          .filter((c) => c.latitude != null && c.longitude != null)
+          .map((c) => ({ lat: c.latitude, lng: c.longitude, label: c.formattedAddress || c.addressLine1 }));
+        if (subjectLat != null && subjectLng != null) {
+          points.unshift({ lat: subjectLat, lng: subjectLng, label: 'Subject Property', isSubject: true });
+        }
+        return { points };
+      }
+      if (widget.type === 'barChart') {
+        return {
+          data: comps.slice(0, 10).map((c) => ({
+            category: (c.formattedAddress || c.addressLine1 || 'Comp').split(',')[0],
+            value: c.price,
+            format: 'money',
+          })),
+        };
+      }
+      if (widget.type === 'summaryCard') {
+        const rents = comps.map((c) => Number(c.price)).filter((v) => !Number.isNaN(v));
+        const avgRent = rents.length ? rents.reduce((a, b) => a + b, 0) / rents.length : null;
+        return {
+          items: [
+            { label: 'Comps Found', value: comps.length, format: 'number' },
+            avgRent != null ? { label: 'Avg Comp Rent', value: avgRent, format: 'money' } : null,
+          ].filter(Boolean),
+        };
+      }
+    }
+    if (sectionId === 'marketData') {
+      if (widget.type === 'summaryCard') {
+        return {
+          items: marketMetrics.map((m) => ({
+            label: m.label,
+            value: m.value,
+            format: m.format === 'text' ? undefined : m.format,
+            sourceLabel: m.dataSource,
+          })),
+        };
+      }
+      if (widget.type === 'barChart') {
+        return {
+          data: marketMetrics
+            .filter((m) => m.format === 'pct' || m.format === 'number')
+            .map((m) => ({ category: m.label, value: m.value, format: m.format })),
+        };
+      }
+    }
+    return null;
+  };
 
   const css = useMemo(() => buildDealRoomCss(accent), [accent]);
 
@@ -303,6 +409,8 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
     list.push({ id: 'summary', label: 'Executive Summary', show: data.executiveSummary?.length > 0 });
     list.push({ id: 'thesis', label: 'Investment Thesis', show: data.whyMarket?.length > 0 || data.whyAsset?.length > 0 || data.upsidePlays?.length > 0 });
     list.push({ id: 'financials', label: 'Financial Overview', show: data.financialOverview?.length > 0 });
+    list.push({ id: 'comps', label: 'Comps', show: getSectionWidgets('comps').length > 0 && comps.length > 0 });
+    list.push({ id: 'marketData', label: 'Market Data', show: getSectionWidgets('marketData').length > 0 && marketMetrics.length > 0 });
     list.push({ id: 'documents', label: 'Document Vault', show: (documents?.length || 0) > 0 });
     list.push({ id: 'participation', label: 'Investor Participation', show: data.investorOptions?.length > 0 });
     list.push({ id: 'calculator', label: 'Investor Calculator', show: (full?.financing?.totalEquityRequired || 0) > 0 && (full?.returns?.exitScenarios?.length || 0) > 0 });
@@ -310,7 +418,8 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
     list.push({ id: 'projections', label: '5-Year Projections', show: data.projections?.length > 0 });
     list.push({ id: 'risks', label: 'Risk Factors', show: data.risks?.length > 0 });
     return list.filter((s) => s.show);
-  }, [data, full, documents]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, full, documents, comps, marketMetrics, layout]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -530,6 +639,28 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
             <h2 className="dr-h2 dr-serif">Acquisition &amp; Operations</h2>
             <div className="dr-two-col">
               {data.financialOverview.map((t) => <TableCard key={t.title} title={t.title} rows={t.rows} />)}
+            </div>
+          </section>
+        )}
+
+        {/* Comps — sponsor-configurable widgets bound to the deal's cached RentCast comps */}
+        {sections.some((s) => s.id === 'comps') && (
+          <section id="comps" className="dr-section">
+            <div className="dr-eyebrow">Comps</div>
+            <h2 className="dr-h2 dr-serif">Nearby Comparables</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {getSectionWidgets('comps').map((w) => renderWidget(w, resolveWidgetDataset('comps', w), accent))}
+            </div>
+          </section>
+        )}
+
+        {/* Market Data — sponsor-configurable widgets bound to the local market lookup (client/public CSVs) */}
+        {sections.some((s) => s.id === 'marketData') && (
+          <section id="marketData" className="dr-section">
+            <div className="dr-eyebrow">Market Data</div>
+            <h2 className="dr-h2 dr-serif">Local Market Snapshot</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {getSectionWidgets('marketData').map((w) => renderWidget(w, resolveWidgetDataset('marketData', w), accent))}
             </div>
           </section>
         )}
