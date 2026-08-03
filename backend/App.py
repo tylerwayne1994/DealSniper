@@ -317,6 +317,11 @@ app.include_router(investor_portal_router)
 from investor_access import router as investor_access_router
 app.include_router(investor_access_router)
 
+# Deal Room Layouts: sponsor-side widget arrangement for the investor-facing
+# Deal Room (section order, widgets, theme) — read by the redeem endpoint above.
+from deal_room_layout import router as deal_room_layout_router
+app.include_router(deal_room_layout_router)
+
 # Deal Builder: AI-powered full deal underwriting + pitch deck + spreadsheet
 try:
     from deal_builder import router as deal_builder_router

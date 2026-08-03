@@ -210,6 +210,23 @@ async def redeem_investor_access_code(code: str):
         embedded = (deal_row.get("parsed_data") or {}).get("deal_room_documents") or []
         documents = [d for d in embedded if d.get("visible_to_investors")]
 
+    # Sponsor's saved widget layout for this deal (section order/widgets/theme).
+    # Falls back to a generated default (matching the original hardcoded
+    # section order) if the sponsor hasn't customized this deal's room yet —
+    # investor rendering always has a layout to work with either way.
+    layout = None
+    try:
+        from deal_room_layout import _default_layout
+        layout_res = sb.table("deal_room_layouts").select("*").eq("deal_id", deal_id).execute()
+        layout_row = (layout_res.data or [None])[0]
+        layout = layout_row if layout_row else {
+            "deal_id": deal_id,
+            "sections": _default_layout(),
+            "theme": {},
+        }
+    except Exception as e:
+        log.warning("[InvestorAccess] deal_room_layouts lookup failed for %s: %s", deal_id, e)
+
     # Log the view (best-effort — never block the redeem on this).
     try:
         sb.table("investor_access_links").update({
@@ -224,5 +241,6 @@ async def redeem_investor_access_code(code: str):
         "allocations": allocations,
         "distributions": distributions,
         "documents": documents,
+        "layout": layout,
         "investorName": link.get("investor_name"),
     })
