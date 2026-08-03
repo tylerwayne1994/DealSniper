@@ -6,7 +6,40 @@
  */
 export const DEAL_ROOM_ACCENT_DEFAULT = '#0f5132'; // deep green/ink
 
-export function buildDealRoomCss(accent = DEAL_ROOM_ACCENT_DEFAULT) {
+// Curated, safe font pairings for the sponsor's theme editor — never
+// free-text (avoids loading arbitrary/unavailable fonts), each a
+// self-contained web-safe stack so the static HTML export renders
+// identically with zero external font requests.
+export const DEAL_ROOM_FONT_OPTIONS = {
+  classic: {
+    label: 'Classic Serif',
+    heading: 'Georgia, "Times New Roman", serif',
+    body: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+  },
+  modern: {
+    label: 'Modern Sans',
+    heading: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+    body: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+  },
+  editorial: {
+    label: 'Editorial',
+    heading: '"Times New Roman", Times, serif',
+    body: 'Georgia, "Times New Roman", serif',
+  },
+};
+export const DEAL_ROOM_FONT_DEFAULT = 'classic';
+
+/**
+ * @param {string|{accent?: string, font?: string}} themeOrAccent Either a
+ *   plain accent color string (legacy callers) or a theme object with an
+ *   `accent` color and a `font` key from DEAL_ROOM_FONT_OPTIONS.
+ */
+export function buildDealRoomCss(themeOrAccent = DEAL_ROOM_ACCENT_DEFAULT) {
+  const isObj = themeOrAccent && typeof themeOrAccent === 'object';
+  const accent = (isObj ? themeOrAccent.accent : themeOrAccent) || DEAL_ROOM_ACCENT_DEFAULT;
+  const fontKey = (isObj && themeOrAccent.font && DEAL_ROOM_FONT_OPTIONS[themeOrAccent.font]) ? themeOrAccent.font : DEAL_ROOM_FONT_DEFAULT;
+  const fonts = DEAL_ROOM_FONT_OPTIONS[fontKey];
+
   return `
 .deal-room {
   --dr-accent: ${accent};
@@ -16,11 +49,11 @@ export function buildDealRoomCss(accent = DEAL_ROOM_ACCENT_DEFAULT) {
   --dr-border: #e5e7eb;
   background: var(--dr-bg);
   color: var(--dr-ink);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: ${fonts.body};
   line-height: 1.55;
 }
 .deal-room * { box-sizing: border-box; }
-.dr-serif { font-family: Georgia, "Times New Roman", serif; }
+.dr-serif { font-family: ${fonts.heading}; }
 
 .dr-nav {
   position: sticky; top: 0; z-index: 50;

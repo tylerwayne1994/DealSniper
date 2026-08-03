@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 
 /**
  * Generic Deal Room widgets — rendered by section-widget layout JSON from
@@ -52,7 +52,7 @@ export function WidgetTable({ title, rows, columns }) {
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={row.id || i}>
+            <tr key={row.id || i} style={{ background: i % 2 === 1 ? '#fafbfc' : 'transparent' }}>
               {cols.map((c) => (
                 <td key={c.key} className={c.format ? 'dr-num' : undefined}>
                   {fmtValue(row[c.key], c.format)}
@@ -88,6 +88,7 @@ export function WidgetSummaryCard({ items, accent = ACCENT_FALLBACK }) {
 
 /** Simple vertical bar chart. data: [{category, value}] */
 export function WidgetBarChart({ title, data, accent = ACCENT_FALLBACK }) {
+  const gradId = useId();
   const valid = (data || []).filter((d) => d.value != null && !Number.isNaN(Number(d.value)));
   if (valid.length < 1) return null;
 
@@ -100,6 +101,12 @@ export function WidgetBarChart({ title, data, accent = ACCENT_FALLBACK }) {
     <div className="dr-card">
       {title && <h3>{title}</h3>}
       <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: 'auto' }}>
+        <defs>
+          <linearGradient id={`drbar-${gradId}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={accent} stopOpacity={1} />
+            <stop offset="100%" stopColor={accent} stopOpacity={0.65} />
+          </linearGradient>
+        </defs>
         {[0, 0.5, 1].map((f) => (
           <line key={f} x1={padL} x2={width - padR} y1={padT + innerH * (1 - f)} y2={padT + innerH * (1 - f)} stroke={GRID} strokeWidth={1} />
         ))}
@@ -110,7 +117,7 @@ export function WidgetBarChart({ title, data, accent = ACCENT_FALLBACK }) {
           const y = padT + innerH - h;
           return (
             <g key={d.category || i}>
-              <rect x={x} y={y} width={barW * 0.7} height={h} fill={accent} rx={2} />
+              <rect x={x} y={y} width={barW * 0.7} height={h} fill={`url(#drbar-${gradId})`} rx={4} />
               <text x={x + barW * 0.35} y={height - padB + 16} fontSize={10} fill={MUTED} textAnchor="middle">
                 {String(d.category || '').slice(0, 10)}
               </text>
@@ -127,6 +134,7 @@ export function WidgetBarChart({ title, data, accent = ACCENT_FALLBACK }) {
 
 /** Simple donut/pie chart. data: [{category, value}] — should sum to a meaningful whole. */
 export function WidgetPieChart({ title, data, accent = ACCENT_FALLBACK }) {
+  const gradId = useId();
   const valid = (data || []).filter((d) => d.value != null && Number(d.value) > 0);
   const total = valid.reduce((s, d) => s + Number(d.value), 0);
   if (valid.length < 1 || total <= 0) return null;
@@ -151,16 +159,25 @@ export function WidgetPieChart({ title, data, accent = ACCENT_FALLBACK }) {
       {title && <h3>{title}</h3>}
       <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
         <svg viewBox={`0 0 ${size} ${size}`} style={{ width: 160, height: 160, flexShrink: 0 }}>
-          {valid.map((d, i) => {
-            const startFrac = cumulative;
-            cumulative += Number(d.value) / total;
-            return <path key={d.category || i} d={arc(startFrac, cumulative)} fill={palette[i % palette.length]} />;
-          })}
+          <defs>
+            <filter id={`drpie-shadow-${gradId}`} x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="1" stdDeviation="2" floodColor="#111827" floodOpacity="0.12" />
+            </filter>
+          </defs>
+          <g filter={`url(#drpie-shadow-${gradId})`}>
+            {valid.map((d, i) => {
+              const startFrac = cumulative;
+              cumulative += Number(d.value) / total;
+              return <path key={d.category || i} d={arc(startFrac, cumulative)} fill={palette[i % palette.length]} stroke="#fff" strokeWidth={1.5} />;
+            })}
+          </g>
+          <text x={cx} y={cy - 4} textAnchor="middle" fontSize={18} fontWeight={800} fill="#111827">{valid.length}</text>
+          <text x={cx} y={cy + 13} textAnchor="middle" fontSize={9} fill={MUTED}>{valid.length === 1 ? 'segment' : 'segments'}</text>
         </svg>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13 }}>
           {valid.map((d, i) => (
             <div key={d.category || i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ width: 10, height: 10, borderRadius: 2, background: palette[i % palette.length], display: 'inline-block' }} />
+              <span style={{ width: 10, height: 10, borderRadius: 3, background: palette[i % palette.length], display: 'inline-block' }} />
               <span style={{ color: '#374151' }}>{d.category}</span>
               <span style={{ fontWeight: 700, color: '#111827' }}>{((Number(d.value) / total) * 100).toFixed(1)}%</span>
             </div>
@@ -173,6 +190,7 @@ export function WidgetPieChart({ title, data, accent = ACCENT_FALLBACK }) {
 
 /** Simple time-series line chart. data: [{x (label/date), y (value)}] */
 export function WidgetLineChart({ title, data, accent = ACCENT_FALLBACK }) {
+  const gradId = useId();
   const valid = (data || []).filter((d) => d.y != null && !Number.isNaN(Number(d.y)));
   if (valid.length < 2) return null;
 
@@ -189,18 +207,26 @@ export function WidgetLineChart({ title, data, accent = ACCENT_FALLBACK }) {
     return { x, y, label: d.x, val: d.y };
   });
   const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+  const areaPath = `${path} L ${points[points.length - 1].x} ${padT + innerH} L ${points[0].x} ${padT + innerH} Z`;
 
   return (
     <div className="dr-card">
       {title && <h3>{title}</h3>}
       <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: 'auto' }}>
+        <defs>
+          <linearGradient id={`drline-${gradId}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={accent} stopOpacity={0.28} />
+            <stop offset="100%" stopColor={accent} stopOpacity={0} />
+          </linearGradient>
+        </defs>
         {[0, 0.5, 1].map((f) => (
           <line key={f} x1={padL} x2={width - padR} y1={padT + innerH * (1 - f)} y2={padT + innerH * (1 - f)} stroke={GRID} strokeWidth={1} />
         ))}
-        <path d={path} fill="none" stroke={accent} strokeWidth={2.5} />
+        <path d={areaPath} fill={`url(#drline-${gradId})`} stroke="none" />
+        <path d={path} fill="none" stroke={accent} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
         {points.map((p, i) => (
           <g key={i}>
-            <circle cx={p.x} cy={p.y} r={3.5} fill={accent} />
+            <circle cx={p.x} cy={p.y} r={4} fill="#fff" stroke={accent} strokeWidth={2.5} />
             <text x={p.x} y={height - padB + 16} fontSize={10} fill={MUTED} textAnchor="middle">{p.label}</text>
           </g>
         ))}
@@ -214,10 +240,11 @@ export function WidgetLineChart({ title, data, accent = ACCENT_FALLBACK }) {
  * fully self-contained for the static HTML export. Positions points by
  * normalizing lat/lng into the plot's bounding box. */
 export function WidgetMap({ title, points, accent = ACCENT_FALLBACK }) {
+  const gradId = useId();
   const valid = (points || []).filter((p) => p.lat != null && p.lng != null && !Number.isNaN(Number(p.lat)) && !Number.isNaN(Number(p.lng)));
   if (valid.length < 1) return null;
 
-  const width = 400, height = 300, pad = 20;
+  const width = 400, height = 300, pad = 28;
   const lats = valid.map((p) => Number(p.lat)), lngs = valid.map((p) => Number(p.lng));
   const minLat = Math.min(...lats), maxLat = Math.max(...lats);
   const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
@@ -233,15 +260,26 @@ export function WidgetMap({ title, points, accent = ACCENT_FALLBACK }) {
   return (
     <div className="dr-card">
       {title && <h3>{title}</h3>}
-      <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', maxWidth: 400, height: 'auto', background: '#f9fafb', borderRadius: 6 }}>
+      <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', maxWidth: 400, height: 'auto', background: '#f8fafc', borderRadius: 8 }}>
+        <defs>
+          <radialGradient id={`drmap-glow-${gradId}`}>
+            <stop offset="0%" stopColor="#ef4444" stopOpacity={0.35} />
+            <stop offset="100%" stopColor="#ef4444" stopOpacity={0} />
+          </radialGradient>
+          <pattern id={`drmap-grid-${gradId}`} width={24} height={24} patternUnits="userSpaceOnUse">
+            <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#e5e7eb" strokeWidth={1} />
+          </pattern>
+        </defs>
+        <rect x={0} y={0} width={width} height={height} fill={`url(#drmap-grid-${gradId})`} />
         {valid.map((p, i) => {
           const { x, y } = project(p.lat, p.lng);
           const isSubject = !!p.isSubject;
           return (
             <g key={i}>
+              {isSubject && <circle cx={x} cy={y} r={22} fill={`url(#drmap-glow-${gradId})`} />}
               <circle cx={x} cy={y} r={isSubject ? 8 : 5} fill={isSubject ? '#ef4444' : accent} stroke="#fff" strokeWidth={2} />
               {p.label && (
-                <text x={x} y={y - (isSubject ? 12 : 9)} fontSize={9} fill="#374151" textAnchor="middle">
+                <text x={x} y={y - (isSubject ? 13 : 10)} fontSize={9} fontWeight={isSubject ? 700 : 500} fill="#374151" textAnchor="middle">
                   {String(p.label).slice(0, 14)}
                 </text>
               )}

@@ -5,7 +5,7 @@ import { exportDealRoomHtml } from '../../lib/dealRoomExport';
 import { NoiCashflowChart, ValueCreationBridge, ReturnsComparisonChart } from './DealRoomCharts';
 import { renderWidget } from './DealRoomWidgets';
 import { calculateFullAnalysis } from '../../utils/realEstateCalculations';
-import { loadMarketDataForLocation } from '../../lib/marketDataLookup';
+import { useDealRoomWidgetData, resolveWidgetDataset as resolveWidgetDatasetShared } from '../../lib/dealRoomWidgetData';
 
 const fmtMoney = (v) => {
   if (v == null || Number.isNaN(Number(v))) return '';
@@ -293,116 +293,39 @@ function InvestorCalculator({ full, scenarioData, accent }) {
  * generated default (same shape the backend returns) if not provided so
  * this component still works for any caller that hasn't wired it up yet.
  */
-export default function InvestorDealRoom({ data, full, metrics, scenarioData, documents, closeDate, layout, accent = DEAL_ROOM_ACCENT_DEFAULT, onGenerateNarrative, generatingNarrative = false, readOnly = false, onUploadImages, onDeleteImage, uploadingImages = false, imageUploadError = '' }) {
+export default function InvestorDealRoom({ data, full, metrics, scenarioData, documents, closeDate, layout, accent = DEAL_ROOM_ACCENT_DEFAULT, onGenerateNarrative, generatingNarrative = false, readOnly = false, onUploadImages, onDeleteImage, onReorderImages, uploadingImages = false, imageUploadError = '' }) {
   const containerRef = useRef(null);
   const [activeSection, setActiveSection] = useState('');
   const [progress, setProgress] = useState(0);
   const photoInputRef = useRef(null);
   const [exporting, setExporting] = useState(false);
   const [gateEnabled, setGateEnabled] = useState(false);
-  const [marketMetrics, setMarketMetrics] = useState([]);
+  const [gatePassword, setGatePassword] = useState('');
+  const dragImageIndex = useRef(null);
+  const [dragOverImageIndex, setDragOverImageIndex] = useState(null);
 
   const layoutSections = layout?.sections || [];
   const getSectionWidgets = (sectionId) => layoutSections.find((s) => s.id === sectionId)?.widgets || [];
 
-  // ---- Comps (from the deal's cached RentCast pull, see scenario_data.rentcast_cache) ----
-  const comps = useMemo(() => {
-    const raw = scenarioData?.rentcast_cache?.data?.comparables;
-    return Array.isArray(raw) ? raw : [];
-  }, [scenarioData]);
-
+  // Comps + Market Data, shared with the sponsor-side layout editor so both
+  // always agree on the real data behind each widget (see lib/dealRoomWidgetData.js).
+  const { comps, marketMetrics } = useDealRoomWidgetData({
+    scenarioData,
+    enableMarketData: getSectionWidgets('marketData').length > 0,
+  });
   const property = scenarioData?.property || {};
-  const propertyCity = property.city || '';
-  const propertyState = property.state || '';
-  const propertyZip = property.zip || property.zipcode || '';
 
-  // ---- Market Data (from the static public CSVs, see lib/marketDataLookup.js) ----
-  useEffect(() => {
-    if (getSectionWidgets('marketData').length === 0) return;
-    if (!propertyCity && !propertyZip) return;
-    let cancelled = false;
-    loadMarketDataForLocation({ city: propertyCity, state: propertyState, zip: propertyZip }).then((m) => {
-      if (!cancelled) setMarketMetrics(m);
-    });
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [propertyCity, propertyState, propertyZip, layout]);
-  const [gatePassword, setGatePassword] = useState('');
+  const resolveWidgetDataset = (sectionId, widget) =>
+    resolveWidgetDatasetShared(sectionId, widget, { comps, marketMetrics, property });
 
-  // Resolves a widget's dataBinding into the shape its renderer needs
-  // (rows/columns for table, items for summaryCard, data for charts, points
-  // for map). Only covers the two net-new sections (Comps, Market Data) —
-  // the pre-existing sections (financials/participation/calculator/
-  // documents) keep their own polished hand-built JSX below, unchanged.
-  const resolveWidgetDataset = (sectionId, widget) => {
-    if (sectionId === 'comps') {
-      if (widget.type === 'table') {
-        return {
-          rows: comps,
-          columns: [
-            { key: 'formattedAddress', label: 'Address' },
-            { key: 'price', label: 'Rent/mo', format: 'money' },
-            { key: 'bedrooms', label: 'Bed' },
-            { key: 'bathrooms', label: 'Bath' },
-            { key: 'squareFootage', label: 'SqFt', format: 'number' },
-            { key: 'distance', label: 'Miles' },
-          ],
-        };
-      }
-      if (widget.type === 'map') {
-        const subjectLat = property.lat ?? property.latitude;
-        const subjectLng = property.lng ?? property.longitude;
-        const points = comps
-          .filter((c) => c.latitude != null && c.longitude != null)
-          .map((c) => ({ lat: c.latitude, lng: c.longitude, label: c.formattedAddress || c.addressLine1 }));
-        if (subjectLat != null && subjectLng != null) {
-          points.unshift({ lat: subjectLat, lng: subjectLng, label: 'Subject Property', isSubject: true });
-        }
-        return { points };
-      }
-      if (widget.type === 'barChart') {
-        return {
-          data: comps.slice(0, 10).map((c) => ({
-            category: (c.formattedAddress || c.addressLine1 || 'Comp').split(',')[0],
-            value: c.price,
-            format: 'money',
-          })),
-        };
-      }
-      if (widget.type === 'summaryCard') {
-        const rents = comps.map((c) => Number(c.price)).filter((v) => !Number.isNaN(v));
-        const avgRent = rents.length ? rents.reduce((a, b) => a + b, 0) / rents.length : null;
-        return {
-          items: [
-            { label: 'Comps Found', value: comps.length, format: 'number' },
-            avgRent != null ? { label: 'Avg Comp Rent', value: avgRent, format: 'money' } : null,
-          ].filter(Boolean),
-        };
-      }
-    }
-    if (sectionId === 'marketData') {
-      if (widget.type === 'summaryCard') {
-        return {
-          items: marketMetrics.map((m) => ({
-            label: m.label,
-            value: m.value,
-            format: m.format === 'text' ? undefined : m.format,
-            sourceLabel: m.dataSource,
-          })),
-        };
-      }
-      if (widget.type === 'barChart') {
-        return {
-          data: marketMetrics
-            .filter((m) => m.format === 'pct' || m.format === 'number')
-            .map((m) => ({ category: m.label, value: m.value, format: m.format })),
-        };
-      }
-    }
-    return null;
-  };
-
-  const css = useMemo(() => buildDealRoomCss(accent), [accent]);
+  // The sponsor's saved global theme (accent + font) takes precedence over
+  // the legacy `accent` prop if present, so a customized theme sticks even
+  // if a caller hasn't been updated to pass theme-aware props.
+  const effectiveAccent = layout?.theme?.accent || accent;
+  const css = useMemo(
+    () => buildDealRoomCss({ accent: effectiveAccent, font: layout?.theme?.font }),
+    [effectiveAccent, layout?.theme?.font]
+  );
 
   const sections = useMemo(() => {
     const list = [];
@@ -464,7 +387,7 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
     <div className="deal-room">
       <style>{css}</style>
       <div className="dr-progress" style={{ width: `${progress}%` }} />
-      <CountdownBanner closeDate={closeDate} accent={accent} />
+<CountdownBanner closeDate={closeDate} accent={effectiveAccent} />
 
       <nav className="dr-nav">
         {sections.map((s) => (
@@ -494,7 +417,7 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
           )}
           <button onClick={handleExport} disabled={exporting} style={{
             display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700,
-            padding: '6px 12px', borderRadius: 6, border: 'none', background: accent, color: '#fff', cursor: 'pointer',
+            padding: '6px 12px', borderRadius: 6, border: 'none', background: effectiveAccent, color: '#fff', cursor: 'pointer',
           }}>
             <Download size={13} /> {exporting ? 'Exporting…' : 'Export Investor Link'}
           </button>
@@ -551,8 +474,30 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
         {!readOnly && data.property.images?.length > 0 && (
           <div className="dr-photo-strip" data-export-exclude>
             {data.property.images.map((img, i) => (
-              <div key={img.storage_path || img.url || i} className="dr-photo-thumb">
-                <img src={img.url} alt="" />
+              <div
+                key={img.storage_path || img.url || i}
+                className="dr-photo-thumb"
+                draggable={!!onReorderImages}
+                onDragStart={() => { dragImageIndex.current = i; }}
+                onDragOver={(e) => { e.preventDefault(); if (dragOverImageIndex !== i) setDragOverImageIndex(i); }}
+                onDragLeave={() => setDragOverImageIndex((cur) => (cur === i ? null : cur))}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const from = dragImageIndex.current;
+                  setDragOverImageIndex(null);
+                  dragImageIndex.current = null;
+                  if (from == null || from === i || !onReorderImages) return;
+                  onReorderImages(from, i);
+                }}
+                onDragEnd={() => { dragImageIndex.current = null; setDragOverImageIndex(null); }}
+                style={{
+                  cursor: onReorderImages ? 'grab' : undefined,
+                  outline: dragOverImageIndex === i ? '2px solid var(--dr-accent, #0f5132)' : 'none',
+                  outlineOffset: 2,
+                  transition: 'outline 0.1s',
+                }}
+              >
+                <img src={img.url} alt="" draggable={false} />
                 {onDeleteImage && (
                   <button
                     onClick={() => onDeleteImage(img.storage_path)}
@@ -649,7 +594,7 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
             <div className="dr-eyebrow">Comps</div>
             <h2 className="dr-h2 dr-serif">Nearby Comparables</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              {getSectionWidgets('comps').map((w) => renderWidget(w, resolveWidgetDataset('comps', w), accent))}
+              {getSectionWidgets('comps').map((w) => renderWidget(w, resolveWidgetDataset('comps', w), effectiveAccent))}
             </div>
           </section>
         )}
@@ -660,7 +605,7 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
             <div className="dr-eyebrow">Market Data</div>
             <h2 className="dr-h2 dr-serif">Local Market Snapshot</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              {getSectionWidgets('marketData').map((w) => renderWidget(w, resolveWidgetDataset('marketData', w), accent))}
+              {getSectionWidgets('marketData').map((w) => renderWidget(w, resolveWidgetDataset('marketData', w), effectiveAccent))}
             </div>
           </section>
         )}
@@ -714,7 +659,7 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
         )}
 
         {/* Interactive Investor Calculator — slide your own investment amount / hold period */}
-        <InvestorCalculator full={full} scenarioData={scenarioData} accent={accent} />
+        <InvestorCalculator full={full} scenarioData={scenarioData} accent={effectiveAccent} />
 
         {/* Operational Plan */}
         {data.operationalPlan?.length > 0 && (

@@ -18,6 +18,7 @@ import DealChat from '../components/DealChat';
 import InvestorDealRoom from '../components/dealroom/InvestorDealRoom';
 import { computeDealMetrics, normalizeDealImages, computeDealScore } from '../lib/dealMetrics';
 import ShareWithInvestorPanel from '../components/dealroom/ShareWithInvestorPanel';
+import DealRoomLayoutEditor from '../components/dealroom/DealRoomLayoutEditor';
 import { getDealRoomLayout } from '../lib/dealRoomLayoutService';
 import { API_ENDPOINTS } from '../config/api';
 
@@ -221,6 +222,7 @@ function DealRoomPage() {
   const [distributions, setDistributions] = useState([]);
   const [investorDataLoaded, setInvestorDataLoaded] = useState(false);
   const [dealRoomLayout, setDealRoomLayout] = useState(null);
+  const [editingLayout, setEditingLayout] = useState(false);
   const [generatingNarrative, setGeneratingNarrative] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -409,6 +411,25 @@ function DealRoomPage() {
     } catch (e) {
       console.error('Failed to delete property photo:', e);
       alert('Failed to delete photo: ' + e.message);
+    }
+  };
+
+  // Drag-to-reorder the property photo strip. Optimistic (reorders local
+  // state immediately for a snappy drag), persisted to the deal's `images`
+  // column via updateDeal — reverts on failure so the UI never silently
+  // diverges from what's actually saved.
+  const handleReorderImages = async (fromIndex, toIndex) => {
+    const before = deal?.images || [];
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= before.length || toIndex >= before.length) return;
+    const reordered = [...before];
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved);
+    setDeal((prev) => prev ? ({ ...prev, images: reordered }) : prev);
+    try {
+      await updateDeal(dealId, { images: reordered });
+    } catch (e) {
+      console.error('Failed to save photo order:', e);
+      setDeal((prev) => prev ? ({ ...prev, images: before }) : prev);
     }
   };
 
@@ -1079,8 +1100,29 @@ function DealRoomPage() {
                     style={{ fontSize: '12px', padding: '5px 8px', border: '1px solid #d1d5db', borderRadius: '5px', color: '#374151' }}
                   />
                 </label>
-                <ShareWithInvestorPanel dealId={dealId} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button
+                    onClick={() => setEditingLayout((v) => !v)}
+                    style={{
+                      padding: '6px 12px', fontSize: 12, fontWeight: 600, borderRadius: 6,
+                      border: '1px solid #d1d5db', background: editingLayout ? '#111827' : '#fff',
+                      color: editingLayout ? '#fff' : '#374151', cursor: 'pointer',
+                    }}
+                  >
+                    {editingLayout ? 'Preview' : 'Customize Layout'}
+                  </button>
+                  <ShareWithInvestorPanel dealId={dealId} />
+                </div>
               </div>
+              {editingLayout ? (
+                <DealRoomLayoutEditor
+                  dealId={dealId}
+                  initialLayout={dealRoomLayout}
+                  scenarioData={deal?.scenarioData || deal?.parsedData}
+                  onSaved={(layout) => { setDealRoomLayout(layout); setEditingLayout(false); }}
+                  onClose={() => setEditingLayout(false)}
+                />
+              ) : (
               <div style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e6e9ef', overflow: 'hidden' }}>
                 <InvestorDealRoom
                   data={buildDealRoomData({
@@ -1102,10 +1144,12 @@ function DealRoomPage() {
                   generatingNarrative={generatingNarrative}
                   onUploadImages={handleUploadImages}
                   onDeleteImage={handleDeleteImage}
+                  onReorderImages={handleReorderImages}
                   uploadingImages={uploadingImages}
                   imageUploadError={imageUploadError}
                 />
               </div>
+              )}
             </div>
           )}
 
