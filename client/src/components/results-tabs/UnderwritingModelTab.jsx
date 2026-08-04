@@ -15,10 +15,11 @@ import { Send, RotateCcw, Loader2, Upload, FileSpreadsheet, X } from 'lucide-rea
 import { API_BASE_URL } from '../../config/api';
 import { mapScenarioDataToInputs, heuristicPopulateFromLabels } from '../../lib/underwritingModelMapping';
 import { getMyUnderwritingTemplate, uploadMyUnderwritingTemplate, deleteMyUnderwritingTemplate } from '../../lib/underwritingTemplateService';
-import { uploadDealDocument } from '../../lib/dealDocumentsService';
+import { upsertDealDocument } from '../../lib/dealDocumentsService';
 
 const ENGINE_SRC = '/spreadsheet/cre-underwriting.js';
 const MOUNT_ID = 'cre-underwriting-model-mount';
+const AUTO_SAVE_DEBOUNCE_MS = 3000;
 
 function loadEngineScript() {
   if (window.CREUnderwriting) return Promise.resolve();
@@ -49,6 +50,8 @@ export default function UnderwritingModelTab({ scenarioData, deal, dealId }) {
   const mountRef = useRef(null);
   const appRef = useRef(null);
   const templateInputRef = useRef(null);
+  const autoSaveTimerRef = useRef(null);
+  const autoSavingRef = useRef(false);
   const [status, setStatus] = useState('loading'); // loading | ready | error
   const [error, setError] = useState('');
   const [template, setTemplate] = useState(null); // { file_name, public_url, uploaded_at } | null
@@ -56,9 +59,59 @@ export default function UnderwritingModelTab({ scenarioData, deal, dealId }) {
   const [templateMsg, setTemplateMsg] = useState('');
   const [saveBusy, setSaveBusy] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
+  const [autoSaveStatus, setAutoSaveStatus] = useState(''); // '' | 'saving' | 'saved'
   const [chatInput, setChatInput] = useState('');
   const [chatBusy, setChatBusy] = useState(false);
   const [chatLog, setChatLog] = useState([]); // [{role, text}]
+
+  /** Exports the live workbook and saves it as this deal's one always-current
+   * "Underwriting Model" document (upsert — overwrites the same file/row
+   * rather than piling up timestamped copies). Used by both the manual
+   * "Save Model to Documents" button and the auto-save-on-edit below, so by
+   * the time this deal is pushed to pipeline, the latest edits are already
+   * saved regardless of which tab the user happens to be on at that moment. */
+  const saveModelToDocuments = async (silent) => {
+    if (!appRef.current || !dealId) return;
+    try {
+      const blob = await appRef.current.exportXlsxBlob();
+      await upsertDealDocument(dealId, blob, {
+        fileName: 'Underwriting_Model.xlsx',
+        stableKey: 'underwriting_model.xlsx',
+        category: 'underwriting_model',
+      });
+      if (!silent) setSaveMsg('Saved to this deal\u2019s documents.');
+    } catch (err) {
+      if (!silent) setSaveMsg(`Failed to save: ${err.message}`);
+      throw err;
+    }
+  };
+
+  /** Wraps app.renderGrid (called after every real edit: typing, paste, fill,
+   * undo/redo, row/col insert-delete — see cre-underwriting.js's own
+   * call sites) so any change to the model schedules a debounced auto-save,
+   * without needing a live component elsewhere in the app to be watching. */
+  const wireAutoSave = (app) => {
+    const original = app.renderGrid.bind(app);
+    app.renderGrid = (...args) => {
+      original(...args);
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = setTimeout(async () => {
+        if (autoSavingRef.current || appRef.current !== app) return;
+        autoSavingRef.current = true;
+        setAutoSaveStatus('saving');
+        try {
+          await saveModelToDocuments(true);
+          setAutoSaveStatus('saved');
+          setTimeout(() => setAutoSaveStatus(''), 2500);
+        } catch (e) {
+          console.warn('Underwriting model auto-save failed:', e);
+          setAutoSaveStatus('');
+        } finally {
+          autoSavingRef.current = false;
+        }
+      }, AUTO_SAVE_DEBOUNCE_MS);
+    };
+  };
 
   /** Loads the engine, then either the sponsor's saved custom template
    * (best-effort label-scan population) or the stock template (exact
@@ -85,6 +138,7 @@ export default function UnderwritingModelTab({ scenarioData, deal, dealId }) {
         setTemplateMsg(matched > 0
           ? `Filled ${matched} field${matched === 1 ? '' : 's'} from your template's labels.`
           : "Loaded your template — couldn't confidently match any labels to this deal's data, fill in manually.");
+        wireAutoSave(app);
         return;
       } catch (e) {
         console.warn('Failed to load custom template, falling back to stock template:', e);
@@ -93,6 +147,7 @@ export default function UnderwritingModelTab({ scenarioData, deal, dealId }) {
 
     const edits = mapScenarioDataToInputs(scenarioData, deal);
     applyCellEdits(app, edits.map((c) => ({ a1: c.a1, value: c.value })));
+    wireAutoSave(app);
   };
 
   useEffect(() => {
@@ -101,7 +156,10 @@ export default function UnderwritingModelTab({ scenarioData, deal, dealId }) {
     mountAndPopulate()
       .then(() => { if (!cancelled) setStatus('ready'); })
       .catch((e) => { if (!cancelled) { setError(e.message); setStatus('error'); } });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dealId]);
 
@@ -148,12 +206,7 @@ export default function UnderwritingModelTab({ scenarioData, deal, dealId }) {
     setSaveBusy(true);
     setSaveMsg('');
     try {
-      const blob = await appRef.current.exportXlsxBlob();
-      const fileName = `Underwriting_Model_${dealId}.xlsx`;
-      await uploadDealDocument(dealId, blob, { fileName, category: 'underwriting_model' });
-      setSaveMsg('Saved to this deal\u2019s documents.');
-    } catch (err) {
-      setSaveMsg(`Failed to save: ${err.message}`);
+      await saveModelToDocuments(false);
     } finally {
       setSaveBusy(false);
       setTimeout(() => setSaveMsg(''), 4000);
@@ -217,8 +270,10 @@ export default function UnderwritingModelTab({ scenarioData, deal, dealId }) {
         </div>
       </div>
 
-      {(templateMsg || saveMsg) && (
-        <div style={{ fontSize: 12, color: '#374151' }}>{templateMsg || saveMsg}</div>
+      {(templateMsg || saveMsg || autoSaveStatus) && (
+        <div style={{ fontSize: 12, color: '#374151' }}>
+          {templateMsg || saveMsg || (autoSaveStatus === 'saving' ? 'Auto-saving model…' : 'Auto-saved to documents.')}
+        </div>
       )}
 
       {status === 'error' && (
