@@ -5,9 +5,11 @@ import logging
 import re
 from pathlib import Path
 from datetime import datetime
+from typing import Optional, Dict, Any
 from dotenv import load_dotenv
 from fastapi import APIRouter, UploadFile, File, HTTPException, Request, Form
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from openai import OpenAI
 from anthropic import Anthropic
 
@@ -4090,10 +4092,6 @@ Based on current market conditions and comparable transactions, what is the prev
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# =============================================================================
-# LOI (LETTER OF INTENT) GENERATION ENDPOINT
-# =============================================================================
-
 LOI_SYSTEM_PROMPT = """You are an expert commercial real estate attorney and deal-maker. Your job is to generate professional, legally-sound Letters of Intent (LOI) for real estate acquisitions.
 
 Generate a complete, professional LOI that:
@@ -4111,6 +4109,106 @@ For creative deal structures, make sure to include the specific terms:
 - Hybrid structures: Combine relevant terms appropriately
 
 Output ONLY the LOI text - no explanations, no markdown formatting, no code blocks. Just the clean letter text ready to copy/paste or print."""
+
+
+# =============================================================================
+# UNDERWRITING MODEL (SPREADSHEET) CHAT-TO-CELL-EDIT ENDPOINT
+#
+# Lets the user type a plain-English instruction ("change the cap rate to
+# 6%") against the CRE Underwriting spreadsheet (public/spreadsheet/
+# cre-underwriting.js) mounted on the Results page, and get back the exact
+# cell edit(s) to apply. Claude only ever chooses from a fixed whitelist of
+# real "Inputs" sheet cell addresses/labels (the same layout buildTemplate()
+# creates) — it cannot invent a cell reference, and the frontend re-applies
+# edits through the normal Workbook.setCell() path, so this can only ever
+# change input assumptions, never formulas/output cells.
+# =============================================================================
+
+# Mirrors the Inputs sheet layout in public/spreadsheet/cre-underwriting.js's
+# buildTemplate() exactly (cell address -> label). Keep in sync if that
+# template's Inputs sheet layout ever changes.
+UNDERWRITING_MODEL_INPUT_CELLS = {
+    "B4": "Property Name", "B5": "Property Type (Multifamily/Retail/Industrial/Office/Self-Storage/Mixed-Use)",
+    "B6": "Income Basis (UNIT or SF)", "B7": "Units", "B8": "Rentable SF", "B9": "Purchase Price",
+    "B10": "Closing Costs % (decimal, e.g. 0.02 = 2%)", "B11": "CapEx / Renovation Budget",
+    "B14": "Avg Rent / Unit / Month", "B15": "Avg Rent / SF / Year", "B16": "Other Income (Annual)",
+    "B17": "Vacancy % (decimal)", "B18": "Credit Loss % (decimal)", "B19": "Concessions % (decimal)",
+    "B22": "Property Taxes (annual $)", "B23": "Insurance (annual $)", "B24": "Utilities (annual $)",
+    "B25": "Repairs & Maintenance (annual $)", "B26": "Payroll (annual $)", "B27": "Administrative (annual $)",
+    "B28": "Turnover (annual $)", "B29": "Landscaping / Grounds (annual $)", "B30": "Marketing (annual $)",
+    "B31": "Legal & Professional (annual $)", "B32": "Management Fee (% of EGI, decimal)",
+    "B33": "Replacement Reserves ($ / Unit / Yr)", "B36": "Rent Growth (decimal)",
+    "B37": "Other Income Growth (decimal)", "B38": "Expense Growth (decimal)", "B39": "Property Tax Growth (decimal)",
+    "B42": "Manual Loan Amount (0 = auto-size)", "B43": "Max LTV (decimal)", "B44": "Min DSCR (x)",
+    "B45": "Min Debt Yield (decimal)", "B46": "Interest Rate (decimal)", "B47": "Amortization (Years)",
+    "B48": "Interest-Only Period (Years)", "B49": "Loan Fee % (decimal)",
+    "B52": "Hold Period (Years, 1-10)", "B53": "Exit Cap Rate (decimal)", "B54": "Sale Costs % (decimal)",
+    "B57": "LP Equity Share (decimal)", "B58": "Preferred Return (decimal, compounding)",
+    "B59": "LP Residual Split after pref + return of capital (decimal)",
+    "B62": "Exit Cap Step (decimal)", "B63": "Rent Growth Step (decimal)",
+}
+
+UNDERWRITING_MODEL_CHAT_SYSTEM_PROMPT = """You translate a plain-English instruction about a commercial real estate underwriting spreadsheet into exact cell edits.
+
+You may ONLY set cells from this fixed whitelist (cell address -> what it controls):
+{cell_list}
+
+Rules:
+- Percent fields store a raw decimal (6% = 0.06, not 6). Always convert.
+- Only return cells the user's instruction actually asks to change. Do not touch anything else.
+- If the instruction doesn't map to any cell on the list, return an empty edits array and explain why in `reply`.
+- Never invent a cell address that isn't on the whitelist above.
+
+Respond with ONLY this JSON shape, nothing else:
+{{"edits": [{{"cell": "B53", "value": 0.06}}], "reply": "one short sentence confirming what changed"}}"""
+
+
+class UnderwritingModelChatRequest(BaseModel):
+    message: str
+    current_values: Optional[Dict[str, Any]] = None  # {cell: current_value} for context, optional
+
+
+@router.post("/underwriting-model/chat-edit")
+async def underwriting_model_chat_edit(request: Request, body: UnderwritingModelChatRequest):
+    """Turn a plain-English instruction into whitelisted spreadsheet cell edits."""
+    ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
+    if not ANTHROPIC_API_KEY:
+        raise HTTPException(status_code=503, detail="Claude/Anthropic API key not configured")
+
+    cell_list = "\n".join(f"- {cell}: {label}" for cell, label in UNDERWRITING_MODEL_INPUT_CELLS.items())
+    system_prompt = UNDERWRITING_MODEL_CHAT_SYSTEM_PROMPT.format(cell_list=cell_list)
+
+    user_message = f'Instruction: "{body.message}"'
+    if body.current_values:
+        current_lines = "\n".join(f"- {cell}: {val}" for cell, val in body.current_values.items())
+        user_message += f"\n\nCurrent values (for context, e.g. relative changes like \"increase by 1 point\"):\n{current_lines}"
+
+    try:
+        anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
+        response = anthropic_client.messages.create(
+            model="claude-sonnet-4-5-20250929",
+            max_tokens=500,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_message}],
+        )
+        response_text = response.content[0].text.strip()
+        json_match = re.search(r'\{[\s\S]*\}', response_text)
+        if not json_match:
+            raise ValueError("No JSON found in response")
+        result = json.loads(json_match.group())
+    except Exception as e:
+        log.exception(f"[V2] Underwriting model chat-edit failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+    # Re-validate against the whitelist server-side regardless of what the model returned.
+    raw_edits = result.get("edits") or []
+    safe_edits = []
+    for edit in raw_edits:
+        cell = edit.get("cell")
+        if cell in UNDERWRITING_MODEL_INPUT_CELLS and "value" in edit:
+            safe_edits.append({"cell": cell, "value": edit["value"], "label": UNDERWRITING_MODEL_INPUT_CELLS[cell]})
+
+    return JSONResponse({"edits": safe_edits, "reply": result.get("reply", "")})
 
 
 @router.post("/generate-loi")

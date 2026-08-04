@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CRE Underwriting Model</title>
+  <style>
+    html, body { margin: 0; height: 100%; }
+    #cre-underwriting { height: 100vh; }
+  </style>
+</head>
+<body>
+  <!-- The spreadsheet mounts into this div -->
+  <div id="cre-underwriting"></div>
+
+  <script src="cre-underwriting.js"></script>
+  <script>
+    CREUnderwriting.init();
+    /* Options example:
+       CREUnderwriting.init({
+         mountId: "cre-underwriting",
+         exportFileName: "My_Deal_Model.xlsx",
+         sheetJsUrl: "/vendor/xlsx.full.min.js"   // self-hosted SheetJS if your CSP blocks cdnjs
+       });
+    */
+  </script>
+</body>
+</html>

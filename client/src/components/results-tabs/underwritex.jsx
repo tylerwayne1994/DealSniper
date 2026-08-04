@@ -11,6 +11,7 @@ import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaf
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import MarketResearchTab from "./MarketResearchTab";
+import UnderwritingModelTab from "./UnderwritingModelTab";
 
 // Satellite imagery uses Mapbox (higher-res) when a token is configured,
 // falling back to free Esri World Imagery tiles if it isn't.
@@ -1064,6 +1065,7 @@ const NAV = [
   { k: "financing", l: "Financing", i: I.pctI },
   { k: "returns", l: "Returns", i: I.trend },
   { k: "comps", l: "Comps", i: I.bldg },
+  { k: "model", l: "Model", i: I.grid },
 ];
 function Sidebar({ tab, setTab, cfView, setCfView, mode, setMode, onExport, docsSubView, setDocsSubView }) {
   if (mode === "docs") {
@@ -4340,6 +4342,7 @@ export default function App({
     financing: <FinancingTab M={M} S={S} set={set} />,
     returns: <ReturnsTab M={M} />,
     comps: <CompsTab M={M} scenarioData={mergedParsedData} dealId={dealId} marketData={marketData} marketDataLoading={marketDataLoading} onRefetchMarketData={onRefetchMarketData} />,
+    model: <UnderwritingModelTab scenarioData={mergedParsedData} dealId={dealId} />,
   };
   const renderDocsSubView = () => {
     if (docsSubView === "upload") {
