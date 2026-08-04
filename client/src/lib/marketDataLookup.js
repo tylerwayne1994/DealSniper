@@ -6,14 +6,19 @@
 // caching needed, works instantly in the read-only investor view since
 // these are static files shipped with the app bundle.
 //
-// Sources (all real, sourced from CoStar/Yardi Matrix/BLS/US Census — see
-// each row's own data_source/source_url columns, never fabricated):
-//   client/public/zip/09_population_growth_zip.csv
-//   client/public/zip/01_rent_growth_yoy_zip.csv
-//   client/public/zip/03_occupancy_rate_zip.csv
-//   client/public/zip/12_job_growth_zip.csv
-//   client/public/city/25_composite_market_score_city.csv  (city-level only)
-//   client/public/caprates_by_msa_EXPANDED.csv              (MSA-level only)
+// Pulls from a broad slice of the available data sources (real, sourced
+// from CoStar/Yardi Matrix/RealPage/BLS/US Census/FEMA/Real Capital
+// Analytics/HUD — every row carries its own data_source/source_url/
+// as_of_date columns, never fabricated, and a metric simply isn't included
+// if the location isn't covered):
+//   client/public/zip/{01_rent_growth_yoy, 03_occupancy_rate,
+//     09_population_growth, 12_job_growth}_zip.csv   (zip-level, preferred)
+//   client/public/city/{02_effective_rent, 04_concessions,
+//     08_supply_demand_ratio, 11_income_wage_growth, 14_price_per_unit,
+//     17_transaction_volume, 25_composite_market_score}_city.csv
+//   client/public/caprates_by_msa_EXPANDED.csv        (MSA-level cap rates)
+//   client/public/fmr_by_zip_clean.csv                (HUD Fair Market Rent + county lookup)
+//   client/public/county_property_tax_rates.csv       (county-level effective tax rate)
 import Papa from 'papaparse';
 
 const csvCache = new Map();
@@ -34,6 +39,7 @@ function loadCSV(path) {
   return promise;
 }
 
+// Zip-level metrics (most granular — preferred whenever a zip is available).
 const ZIP_METRICS = [
   { file: '/zip/09_population_growth_zip.csv', key: 'populationGrowthYoy', label: 'Population Growth (YoY)', field: 'population_growth_yoy_pct', format: 'pct' },
   { file: '/zip/01_rent_growth_yoy_zip.csv', key: 'rentGrowthYoy', label: 'Rent Growth (YoY)', field: 'rent_growth_yoy_pct', format: 'pct' },
@@ -41,14 +47,27 @@ const ZIP_METRICS = [
   { file: '/zip/12_job_growth_zip.csv', key: 'jobGrowthYoy', label: 'Job Growth (YoY)', field: 'job_growth_yoy_pct', format: 'pct' },
 ];
 
+// City-level metrics — much richer column set than the zip files, used to
+// round out the picture (rents, concessions, supply/demand, incomes,
+// pricing, transaction activity, and an overall composite score).
 const CITY_METRICS = [
+  { file: '/city/02_effective_rent_city.csv', key: 'effectiveRentPerUnit', label: 'Effective Rent / Unit', field: 'effective_rent_per_unit', format: 'money' },
+  { file: '/city/04_concessions_city.csv', key: 'concessionRate', label: 'Concession Rate', field: 'concession_rate_pct', format: 'pct' },
+  { file: '/city/08_supply_demand_ratio_city.csv', key: 'supplyDemandRatio', label: 'Supply/Demand Ratio', field: 'supply_demand_ratio', format: 'number' },
+  { file: '/city/11_income_wage_growth_city.csv', key: 'medianHouseholdIncome', label: 'Median Household Income', field: 'median_household_income', format: 'money' },
+  { file: '/city/11_income_wage_growth_city.csv', key: 'rentToIncomeRatio', label: 'Rent-to-Income Ratio', field: 'rent_to_income_ratio_pct', format: 'pct' },
+  { file: '/city/14_price_per_unit_city.csv', key: 'pricePerUnit', label: 'Market Price / Unit', field: 'price_per_unit', format: 'money' },
+  { file: '/city/17_transaction_volume_city.csv', key: 'capRateTrailing', label: 'Trailing Cap Rate', field: 'cap_rate_trailing_pct', format: 'pct' },
   { file: '/city/25_composite_market_score_city.csv', key: 'compositeMarketScore', label: 'Composite Market Score', field: 'composite_mf_score_100', format: 'number' },
 ];
 
 function matchZipRow(rows, zip) {
   if (!zip) return null;
-  const z = String(zip).trim();
-  return rows.find((r) => String(r.zip_code || '').trim() === z) || null;
+  // PapaParse's dynamicTyping strips leading zeros from numeric-looking zip
+  // codes (e.g. "06510" -> 6510) — pad both sides back to 5 digits so
+  // New England/Puerto Rico zips still match correctly.
+  const z = String(zip).trim().padStart(5, '0');
+  return rows.find((r) => String(r.zip_code ?? r.zip ?? '').trim().padStart(5, '0') === z) || null;
 }
 
 function matchCityRow(rows, city) {
@@ -133,6 +152,38 @@ export async function loadMarketDataForLocation({ city, state, zip } = {}) {
           key: 'msaInvestorDemand', label: 'Investor Demand', value: row.Investor_Demand, format: 'text',
           dataSource: row.CapRate_Data_Source || null, asOfDate: null, sourceUrl: null,
         });
+      }
+    }
+  }
+
+  // HUD Fair Market Rent (2BR benchmark) — also doubles as a zip->county
+  // resolver so we can look up the county-level effective property tax
+  // rate below without needing the user to supply a county name directly.
+  if (zip) {
+    const fmrRows = await loadCSV('/fmr_by_zip_clean.csv');
+    const z = String(zip).trim().padStart(5, '0');
+    const fmrRow = fmrRows.find((r) => String(r.zip || '').trim().padStart(5, '0') === z);
+    if (fmrRow) {
+      if (fmrRow.fmr_2br) {
+        metrics.push({
+          key: 'fmr2br', label: 'HUD Fair Market Rent (2BR)', value: fmrRow.fmr_2br, format: 'money',
+          dataSource: 'HUD Fair Market Rents', asOfDate: null, sourceUrl: null,
+        });
+      }
+      const countyName = fmrRow.county_name;
+      if (countyName) {
+        const taxRows = await loadCSV('/county_property_tax_rates.csv');
+        const countyTarget = String(countyName).trim().toLowerCase();
+        const taxRow = taxRows.find((r) => String(r.county || '').trim().toLowerCase() === countyTarget);
+        if (taxRow && taxRow.effective_tax_rate_pct) {
+          const pct = parseFloat(String(taxRow.effective_tax_rate_pct).replace('%', ''));
+          if (!Number.isNaN(pct)) {
+            metrics.push({
+              key: 'countyPropertyTaxRate', label: 'County Effective Property Tax Rate', value: pct, format: 'pct',
+              dataSource: 'Tax Foundation / County Assessor Data', asOfDate: null, sourceUrl: null,
+            });
+          }
+        }
       }
     }
   }
