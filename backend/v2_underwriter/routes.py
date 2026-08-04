@@ -2107,6 +2107,32 @@ OPERATING EXPENSES EXTRACTION — THIS IS CRITICAL, DO NOT SKIP:
 - If you can only find individual expense line items (taxes, insurance, etc.) but no stated total, SUM them up and put the total in pnl.operating_expenses AND pnl.operating_expenses_t12.
 - Also fill in the "expenses" object with the individual line items (taxes, insurance, utilities, repairs_maintenance, management, payroll, admin, marketing, other, total).
 
+INDIVIDUAL EXPENSE LINE ITEMS — T-12 ACTUAL vs. PRO FORMA/REASSESSED, DO NOT CONFUSE THESE:
+- The SAME failure mode described above for NOI/cap rate/expense ratio (actual vs. pro forma) applies
+  to EVERY individual line item in the "expenses" object, and it is a COMMON, SERIOUS error — get it right.
+- Real estate taxes are the single most common case: an OM's "Offering Summary" / highlights page will
+  often show a "Pro Forma Taxes" or "Taxes at Reassessed Value" figure (estimated post-sale property tax
+  based on the NEW purchase price, frequently 2-4x higher than the seller's current actual tax bill) right
+  next to — or instead of — the T-12/actual tax line from the real operating statement or T-12 schedule.
+  These are TWO DIFFERENT NUMBERS describing two different scenarios, not interchangeable.
+- expenses.taxes (and every other line item: insurance, utilities, repairs_maintenance, management,
+  payroll, admin, marketing, other) MUST be the T-12 ACTUAL / current operating statement figure —
+  i.e., what the seller actually paid over the trailing 12 months, from the T-12 / operating statement /
+  P&L pages — NEVER a "pro forma", "reassessed", "projected", "stabilized", or "at purchase price" estimate
+  from a summary/highlights page, even if that number is larger, more prominent, or appears first in the
+  document. If you are not sure whether a number is the actual T-12 figure or a pro forma estimate, prefer
+  the one that comes from an actual line-item operating statement/T-12 table over one that appears in a
+  one-page "Offering Summary"/highlights box.
+- If the document ALSO shows a pro forma/reassessed estimate for a line item (most commonly taxes), do NOT
+  put it in the "expenses" object — instead note it in that field's _confidence entry, e.g.
+  {"level": "high", "source": "Page 2 T-12 Operating Statement", "page": 2,
+   "note": "OM also shows a pro forma/reassessed tax estimate of $X on the Offering Summary page — used
+   the T-12 actual figure instead per underwriting convention."}
+- If the document covers MULTIPLE properties/parcels being sold together (e.g. a T-12 titled
+  "123 Main St AND 456 Oak St"), and you are underwriting them as one combined deal, SUM each line item
+  across all properties in that document — do not take just one property's figure and label it as the
+  combined total, and do not accidentally pick up a single property's figure when a combined total exists.
+
 NET OPERATING INCOME EXTRACTION — THIS IS CRITICAL, DO NOT SKIP:
 - You MUST search the ENTIRE document thoroughly for NOI.
 - Look for ALL of these keywords and synonyms:

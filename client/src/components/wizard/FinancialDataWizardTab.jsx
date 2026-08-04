@@ -2,7 +2,7 @@
 // Shows extracted income summary, full expense breakdown, and NOI/cap rate metrics
 
 import React, { useMemo, useState } from 'react';
-import { DollarSign, ChevronDown, ChevronUp, Pencil, Check, X } from 'lucide-react';
+import { DollarSign, ChevronDown, ChevronUp, Pencil, Check, X, FileSearch } from 'lucide-react';
 import ExtractedFieldsTable from '../ExtractedFieldsTable';
 
 export default function FinancialDataWizardTab({
@@ -396,7 +396,7 @@ export default function FinancialDataWizardTab({
           {/* Expense table header */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '2.5fr 1fr 1fr 1fr 70px',
+            gridTemplateColumns: '2.3fr 1fr 1fr 1fr 40px 70px',
             padding: '12px 16px',
             background: '#f9fafb',
             borderBottom: '2px solid #e5e7eb',
@@ -410,6 +410,7 @@ export default function FinancialDataWizardTab({
             <div style={{ textAlign: 'right' }}>Annual</div>
             <div style={{ textAlign: 'right' }}>Monthly</div>
             <div style={{ textAlign: 'right' }}>Per Unit</div>
+            <div style={{ textAlign: 'center' }}>Source</div>
             <div style={{ textAlign: 'center' }}>Edit</div>
           </div>
 
@@ -419,13 +420,15 @@ export default function FinancialDataWizardTab({
             const isEditing = editingExpense === item.key;
             const perUnit = totalUnits > 0 ? Math.round(val / totalUnits) : 0;
             const pctOfTotal = expenseTotal > 0 ? ((val / expenseTotal) * 100).toFixed(1) : '0.0';
+            const fieldPath = `expenses.${item.key}`;
+            const confEntry = confidence[fieldPath];
 
             return (
               <div
                 key={item.key}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '2.5fr 1fr 1fr 1fr 70px',
+                  gridTemplateColumns: '2.3fr 1fr 1fr 1fr 40px 70px',
                   padding: '12px 16px',
                   borderBottom: idx < expenseLineItems.length - 1 ? '1px solid #f3f4f6' : 'none',
                   alignItems: 'center',
@@ -444,6 +447,17 @@ export default function FinancialDataWizardTab({
                     {val > 0 && (
                       <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
                         {pctOfTotal}% of total
+                      </div>
+                    )}
+                    {confEntry?.source && (
+                      <div
+                        title={confEntry.note || confEntry.source}
+                        style={{
+                          fontSize: 10, color: '#2563eb', marginTop: 2, maxWidth: 260,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}
+                      >
+                        📄 {confEntry.source}
                       </div>
                     )}
                   </div>
@@ -495,6 +509,27 @@ export default function FinancialDataWizardTab({
                 </div>
 
                 <div style={{ textAlign: 'center' }}>
+                  {onViewSource && (
+                    <button
+                      onClick={() => onViewSource({ path: fieldPath, key: item.key, label: item.label, value: val }, confEntry)}
+                      title={confEntry?.source ? `View source: ${confEntry.source}` : 'No source citation captured for this field'}
+                      disabled={!confEntry}
+                      style={{
+                        padding: 4,
+                        background: confEntry ? '#eff6ff' : '#f3f4f6',
+                        border: `1px solid ${confEntry ? '#bfdbfe' : '#e5e7eb'}`,
+                        borderRadius: 4,
+                        cursor: confEntry ? 'pointer' : 'not-allowed',
+                        display: 'inline-flex',
+                        opacity: confEntry ? 1 : 0.4,
+                      }}
+                    >
+                      <FileSearch size={12} color={confEntry ? '#2563eb' : '#9ca3af'} />
+                    </button>
+                  )}
+                </div>
+
+                <div style={{ textAlign: 'center' }}>
                   {isEditing ? (
                     <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
                       <button
@@ -537,7 +572,7 @@ export default function FinancialDataWizardTab({
           {/* Total row */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '2.5fr 1fr 1fr 1fr 70px',
+            gridTemplateColumns: '2.3fr 1fr 1fr 1fr 40px 70px',
             padding: '14px 16px',
             borderTop: '2px solid #111827',
             background: '#f9fafb',
@@ -555,6 +590,7 @@ export default function FinancialDataWizardTab({
             <div style={{ textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#374151' }}>
               {totalUnits > 0 ? `$${Math.round(expenseTotal / totalUnits).toLocaleString()}/unit` : '—'}
             </div>
+            <div />
             <div />
           </div>
         </div>
