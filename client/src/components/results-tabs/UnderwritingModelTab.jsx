@@ -18,6 +18,12 @@ import { getMyUnderwritingTemplate, uploadMyUnderwritingTemplate, deleteMyUnderw
 import { upsertDealDocument } from '../../lib/dealDocumentsService';
 
 const ENGINE_SRC = '/spreadsheet/cre-underwriting.js';
+// Bump this whenever cre-underwriting.js changes. The file lives in
+// client/public/ (served at a fixed path, not content-hashed like the JS
+// bundle), so browsers/CDNs can cache an old copy indefinitely across
+// deploys unless the URL itself changes — this query string forces a fresh
+// fetch whenever the engine is updated.
+const ENGINE_VERSION = '2';
 const MOUNT_ID = 'cre-underwriting-model-mount';
 const AUTO_SAVE_DEBOUNCE_MS = 3000;
 
@@ -26,7 +32,7 @@ function loadEngineScript() {
   if (window.__creUnderwritingLoading) return window.__creUnderwritingLoading;
   window.__creUnderwritingLoading = new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = ENGINE_SRC;
+    script.src = `${ENGINE_SRC}?v=${ENGINE_VERSION}`;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error('Failed to load the underwriting spreadsheet engine'));
     document.body.appendChild(script);
@@ -57,6 +63,7 @@ export default function UnderwritingModelTab({ scenarioData, deal, dealId }) {
   const [template, setTemplate] = useState(null); // { file_name, public_url, uploaded_at } | null
   const [templateBusy, setTemplateBusy] = useState(false);
   const [templateMsg, setTemplateMsg] = useState('');
+  const [templateMsgIsError, setTemplateMsgIsError] = useState(false);
   const [saveBusy, setSaveBusy] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
   const [autoSaveStatus, setAutoSaveStatus] = useState(''); // '' | 'saving' | 'saved'
@@ -176,11 +183,14 @@ export default function UnderwritingModelTab({ scenarioData, deal, dealId }) {
     if (!file) return;
     setTemplateBusy(true);
     setTemplateMsg('');
+    setTemplateMsgIsError(false);
     try {
       const saved = await uploadMyUnderwritingTemplate(file);
       setTemplate(saved);
+      setTemplateMsg(`Saved your template: ${saved?.file_name || file.name}.`);
       await mountAndPopulate();
     } catch (err) {
+      setTemplateMsgIsError(true);
       setTemplateMsg(`Failed to save template: ${err.message}`);
     } finally {
       setTemplateBusy(false);
@@ -190,11 +200,13 @@ export default function UnderwritingModelTab({ scenarioData, deal, dealId }) {
   const handleUseStandardTemplate = async () => {
     setTemplateBusy(true);
     setTemplateMsg('');
+    setTemplateMsgIsError(false);
     try {
       await deleteMyUnderwritingTemplate();
       setTemplate(null);
       await mountAndPopulate();
     } catch (err) {
+      setTemplateMsgIsError(true);
       setTemplateMsg(`Failed to remove template: ${err.message}`);
     } finally {
       setTemplateBusy(false);
@@ -270,9 +282,19 @@ export default function UnderwritingModelTab({ scenarioData, deal, dealId }) {
         </div>
       </div>
 
-      {(templateMsg || saveMsg || autoSaveStatus) && (
+      {templateMsg && (
+        <div style={{
+          fontSize: 12.5, padding: '8px 12px', borderRadius: 6, fontWeight: 500,
+          color: templateMsgIsError ? '#b91c1c' : '#065f46',
+          background: templateMsgIsError ? '#fef2f2' : '#ecfdf5',
+          border: `1px solid ${templateMsgIsError ? '#fecaca' : '#a7f3d0'}`,
+        }}>
+          {templateMsg}
+        </div>
+      )}
+      {!templateMsg && (saveMsg || autoSaveStatus) && (
         <div style={{ fontSize: 12, color: '#374151' }}>
-          {templateMsg || saveMsg || (autoSaveStatus === 'saving' ? 'Auto-saving model…' : 'Auto-saved to documents.')}
+          {saveMsg || (autoSaveStatus === 'saving' ? 'Auto-saving model…' : 'Auto-saved to documents.')}
         </div>
       )}
 
@@ -288,7 +310,7 @@ export default function UnderwritingModelTab({ scenarioData, deal, dealId }) {
       <div
         id={MOUNT_ID}
         ref={mountRef}
-        style={{ flex: 1, minHeight: 480, border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden', display: status === 'ready' ? 'block' : 'none' }}
+        style={{ flex: 1, minHeight: 760, border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'visible', display: status === 'ready' ? 'block' : 'none' }}
       />
 
       {status === 'ready' && (

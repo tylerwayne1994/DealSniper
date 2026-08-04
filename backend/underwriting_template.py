@@ -46,7 +46,11 @@ async def get_my_template(request: Request):
     """Returns the caller's saved template, or null if they haven't uploaded one."""
     uid = _get_user_id(request)
     sb = _get_sb()
-    res = sb.table("underwriting_templates").select("*").eq("user_id", uid).execute()
+    try:
+        res = sb.table("underwriting_templates").select("*").eq("user_id", uid).execute()
+    except Exception as e:
+        log.warning("[UnderwritingTemplate] Lookup failed (table may not exist yet): %s", e)
+        return {"template": None}
     row = (res.data or [None])[0]
     return {"template": row}
 
@@ -98,7 +102,14 @@ async def upload_my_template(request: Request, file: UploadFile = File(...)):
             res = sb.table("underwriting_templates").insert(row).execute()
     except Exception as e:
         log.exception("[UnderwritingTemplate] Upload failed: %s", e)
-        raise HTTPException(status_code=500, detail="Failed to save template")
+        msg = str(e)
+        if "underwriting_templates" in msg and ("does not exist" in msg or "not find the table" in msg or "PGRST" in msg):
+            raise HTTPException(
+                status_code=500,
+                detail="Server setup incomplete: the 'underwriting_templates' table hasn't been created yet. "
+                       "Run backend/migrations/create_underwriting_templates.sql in the Supabase SQL editor, then try again.",
+            )
+        raise HTTPException(status_code=500, detail=f"Failed to save template: {msg}")
 
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to save template")

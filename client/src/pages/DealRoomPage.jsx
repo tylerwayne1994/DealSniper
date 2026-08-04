@@ -16,7 +16,7 @@ import { fetchDealRoomNarrative } from '../lib/dealRoomNarrativeService';
 import BoardOfAdvisors from '../components/BoardOfAdvisors';
 import DealChat from '../components/DealChat';
 import InvestorDealRoom from '../components/dealroom/InvestorDealRoom';
-import { computeDealMetrics, normalizeDealImages, computeDealScore } from '../lib/dealMetrics';
+import { computeDealMetrics, normalizeDealImages, computeDealScore, bandScore } from '../lib/dealMetrics';
 import ShareWithInvestorPanel from '../components/dealroom/ShareWithInvestorPanel';
 import DealRoomLayoutEditor from '../components/dealroom/DealRoomLayoutEditor';
 import { getDealRoomLayout } from '../lib/dealRoomLayoutService';
@@ -1081,9 +1081,9 @@ function DealRoomPage() {
                   <div style={{ marginTop: '16px' }}>
                     <div style={{ fontSize: '11px', fontWeight: '700', color: '#676879', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '8px' }}>Score Breakdown</div>
                     {[
-                      { label: 'Cap Rate', score: metrics.capRate != null ? Math.min(10, (metrics.capRate / 7) * 10) : 5 },
-                      { label: 'DSCR',     score: metrics.dscr != null ? (metrics.dscr >= 1.5 ? 10 : metrics.dscr >= 1.25 ? 8 : metrics.dscr >= 1.0 ? 5 : 2) : 5 },
-                      { label: 'Cash-on-Cash', score: metrics.cashOnCash != null ? Math.min(10, (metrics.cashOnCash / 12) * 10) : 5 },
+                      { label: 'Cap Rate', score: metrics.capRate != null ? bandScore(metrics.capRate, 3, 10) : 5 },
+                      { label: 'DSCR',     score: metrics.dscr != null ? bandScore(metrics.dscr, 1.0, 2.0) : 5 },
+                      { label: 'Cash-on-Cash', score: metrics.cashOnCash != null ? bandScore(metrics.cashOnCash, 0, 20) : 5 },
                     ].map(({ label, score }) => (
                       <div key={label} style={{ marginBottom: '6px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>

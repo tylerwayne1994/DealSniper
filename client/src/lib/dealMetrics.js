@@ -226,27 +226,41 @@ export function computeDealMetrics(deal) {
   };
 }
 
-/** Simple 0-10 financial score derived from the metrics above. */
+/**
+ * Score a single metric onto a 0-10 scale using a realistic floor/ceiling
+ * band instead of a bucket that most decent deals blow straight through.
+ * Below `lo` = 0, at/above `hi` = 10, linear in between.
+ */
+export function bandScore(value, lo, hi) {
+  if (value == null || Number.isNaN(value)) return null;
+  const pct = (value - lo) / (hi - lo);
+  return Math.max(0, Math.min(10, pct * 10));
+}
+
+/** Simple 0-10 financial score derived from the metrics above. Uses wider,
+ * more realistic bands so scores actually differentiate between deals
+ * instead of every solid deal pinning every metric at 10.0. */
 export function computeDealScore(metrics) {
   const { capRate, dscr, cashOnCash, monthlyCF, units } = metrics;
   let score = 0;
   let count = 0;
 
-  if (capRate != null) {
-    score += Math.min(10, (capRate / 7) * 10);
-    count++;
-  }
-  if (dscr != null) {
-    score += dscr >= 1.5 ? 10 : dscr >= 1.25 ? 8 : dscr >= 1.0 ? 5 : 2;
-    count++;
-  }
-  if (cashOnCash != null) {
-    score += Math.min(10, (cashOnCash / 12) * 10);
-    count++;
-  }
+  // Cap rate: 3% (weak, expensive market) -> 0, 10%+ (strong) -> 10.
+  const capScore = bandScore(capRate, 3, 10);
+  if (capScore != null) { score += capScore; count++; }
+
+  // DSCR: 1.0x (breakeven, risky) -> 0, 2.0x (very safe) -> 10.
+  const dscrScore = bandScore(dscr, 1.0, 2.0);
+  if (dscrScore != null) { score += dscrScore; count++; }
+
+
+  // Cash-on-cash: 0% -> 0, 20%+ -> 10 (was capping at 12%, too easy to max).
+  const cocScore = bandScore(cashOnCash, 0, 20);
+  if (cocScore != null) { score += cocScore; count++; }
+
   if (monthlyCF != null && units) {
     const cfPerUnit = monthlyCF / units;
-    score += cfPerUnit >= 200 ? 10 : cfPerUnit >= 100 ? 7 : cfPerUnit >= 0 ? 4 : 1;
+    score += cfPerUnit >= 300 ? 10 : cfPerUnit >= 150 ? 7 : cfPerUnit >= 0 ? 4 : 1;
     count++;
   }
 
