@@ -168,6 +168,7 @@ function UnderwriteV2Page() {
   // Upload state
   const [file, setFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragActive, setIsDragActive] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const [uploadedFileUrl, setUploadedFileUrl] = useState(null);
   const [uploadedFileData, setUploadedFileData] = useState(null);
@@ -507,21 +508,31 @@ function UnderwriteV2Page() {
     };
   }, [scenarioData]);
 
-  // Handle file selection
+  // Handle file selection (shared by the file input and drag-and-drop)
+  const processSelectedFile = (selectedFile) => {
+    if (!selectedFile) return;
+    setFile(selectedFile);
+    setUploadError(null);
+    // Read file data for reliable PDF viewing
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setUploadedFileData(ev.target.result);
+      const blob = new Blob([ev.target.result], { type: selectedFile.type });
+      setUploadedFileUrl(URL.createObjectURL(blob));
+    };
+    reader.readAsArrayBuffer(selectedFile);
+  };
+
   const handleFileChange = (e) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      setUploadError(null);
-      // Read file data for reliable PDF viewing
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setUploadedFileData(ev.target.result);
-        const blob = new Blob([ev.target.result], { type: selectedFile.type });
-        setUploadedFileUrl(URL.createObjectURL(blob));
-      };
-      reader.readAsArrayBuffer(selectedFile);
-    }
+    processSelectedFile(e.target.files?.[0]);
+  };
+
+  const handleFileDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+    if (isUploading) return;
+    processSelectedFile(e.dataTransfer?.files?.[0]);
   };
 
   // Handle file upload & parse
@@ -1095,9 +1106,13 @@ function UnderwriteV2Page() {
               style={{
                 ...styles.uploadZone,
                 ...(file ? styles.uploadZoneActive : {}),
+                ...(isDragActive ? { borderColor: '#3b82f6', backgroundColor: '#eff6ff' } : {}),
                 ...(isUploading ? { cursor: 'not-allowed', opacity: 0.6 } : {})
               }}
               onClick={() => { if (!isUploading) fileInputRef.current?.click(); }}
+              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); if (!isUploading) setIsDragActive(true); }}
+              onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragActive(false); }}
+              onDrop={handleFileDrop}
             >
               <Upload style={{ width: 36, height: 36, color: '#9ca3af', margin: '0 auto 12px' }} />
               <div style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
