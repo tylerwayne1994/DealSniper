@@ -777,13 +777,32 @@ const INCOME_METHOD_LABELS = {
   advanced: "Value-Add (Advanced)",
   rubs: "Value-Add (RUBS / Utility Bill-Back)",
 };
-const Input = ({ value, onChange, suffix, w = "w-36", readOnly }) => (
-  <div className={`flex items-center border rounded-lg overflow-hidden ${readOnly ? "bg-gray-100 border-gray-200" : "bg-white border-gray-300"} ${w}`}>
-    <input value={value} readOnly={readOnly} onChange={(e) => onChange && onChange(e.target.value)}
-      className="px-3 py-1.5 text-sm w-full outline-none bg-transparent text-right" />
-    {suffix && <span className="px-2 text-xs text-gray-400">{suffix}</span>}
-  </div>
-);
+// Controlled numeric/text field whose displayed `value` prop is usually a
+// FORMATTED string derived from global state (commas, fixed decimals, %
+// rounding, etc. — see `fm()`). If we echoed that formatted value straight
+// back into the input on every keystroke, typing anything beyond a single
+// whole-number digit breaks: decimals get rounded away mid-type, commas get
+// inserted mid-type, and the caret can't keep up — effectively "nothing
+// works". Fix: keep a local, unformatted edit buffer while the field is
+// focused, and only resync to the (reformatted) upstream value on blur.
+const Input = ({ value, onChange, suffix, w = "w-36", readOnly }) => {
+  const [focused, setFocused] = useState(false);
+  const [draft, setDraft] = useState(value);
+  useEffect(() => { if (!focused) setDraft(value); }, [value, focused]);
+  return (
+    <div className={`flex items-center border rounded-lg overflow-hidden ${readOnly ? "bg-gray-100 border-gray-200" : "bg-white border-gray-300"} ${w}`}>
+      <input
+        value={focused ? draft : value}
+        readOnly={readOnly}
+        onFocus={(e) => { setFocused(true); setDraft(value); e.target.select(); }}
+        onChange={(e) => { setDraft(e.target.value); onChange && onChange(e.target.value); }}
+        onBlur={() => setFocused(false)}
+        className="px-3 py-1.5 text-sm w-full outline-none bg-transparent text-right"
+      />
+      {suffix && <span className="px-2 text-xs text-gray-400">{suffix}</span>}
+    </div>
+  );
+};
 const SubHead = ({ children }) => (
   <div className="text-emerald-600 text-xs font-bold tracking-wide uppercase pt-4 pb-1 border-b border-gray-100 flex items-center gap-1.5">{children}</div>
 );
@@ -3706,13 +3725,24 @@ function WaterfallTab({ M, S, set }) {
 function FinancingTab({ M, S, set }) {
   const [hover, setHover] = useState(null);
   const [rateOpen, setRateOpen] = useState(false);
-  const [prefOn, setPrefOn] = useState(true);
-  const [mezzOn, setMezzOn] = useState(false);
-  const [sellerOn, setSellerOn] = useState(false);
+  // Preferred Equity / Mezz / Seller Financing inputs used to be plain local
+  // state, which got wiped back to defaults every time you switched away
+  // from this tab and back (FinancingTab unmounts when another tab is
+  // active). Lifted into the shared `S` scenario state (via set()) so
+  // they persist like every other field on this page.
+  const prefOn = S.prefOn ?? true;
+  const setPrefOn = (v) => set({ prefOn: v });
+  const mezzOn = S.mezzOn ?? false;
+  const setMezzOn = (v) => set({ mezzOn: v });
+  const sellerOn = S.sellerOn ?? false;
+  const setSellerOn = (v) => set({ sellerOn: v });
+  const prefAmt = S.prefAmt ?? 0;
+  const setPrefAmt = (v) => set({ prefAmt: v });
+  const mezzAmt = S.mezzAmt ?? 0;
+  const setMezzAmt = (v) => set({ mezzAmt: v });
+  const sellerAmt = S.sellerAmt ?? 0;
+  const setSellerAmt = (v) => set({ sellerAmt: v });
   const [pmtYr, setPmtYr] = useState(0);
-  const [prefAmt, setPrefAmt] = useState(0);
-  const [mezzAmt, setMezzAmt] = useState(0);
-  const [sellerAmt, setSellerAmt] = useState(0);
   const [treasuryRates, setTreasuryRates] = useState([]);
   const [treasuryAsOf, setTreasuryAsOf] = useState(null);
   const [treasuryLoading, setTreasuryLoading] = useState(false);
@@ -4311,6 +4341,7 @@ export default function App({
     jvOn: false, jvContribPct: 1.0, jvPrefRate: 0.10, jvMode: "current",
     refiYear: 3, refiLTV: 0.70, refiRate: 0.0625, refiOn: false,
     purchasePrice: CFG.acq.price,
+    prefOn: true, mezzOn: false, sellerOn: false, prefAmt: 0, mezzAmt: 0, sellerAmt: 0,
   }));
   const set = (patch) => setS((p) => ({ ...p, ...patch }));
   const M = useModel(S);
