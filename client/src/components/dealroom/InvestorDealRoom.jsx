@@ -500,7 +500,7 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
                 <img src={img.url} alt="" draggable={false} />
                 {onDeleteImage && (
                   <button
-                    onClick={() => onDeleteImage(img.storage_path)}
+                    onClick={() => onDeleteImage(img.storage_path, i)}
                     title="Remove photo"
                     style={{
                       position: 'absolute', top: 4, right: 4, width: 18, height: 18, borderRadius: '50%',

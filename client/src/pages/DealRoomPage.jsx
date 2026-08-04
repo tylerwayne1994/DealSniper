@@ -222,6 +222,7 @@ function DealRoomPage() {
   const [distributions, setDistributions] = useState([]);
   const [investorDataLoaded, setInvestorDataLoaded] = useState(false);
   const [dealRoomLayout, setDealRoomLayout] = useState(null);
+  const [layoutLoaded, setLayoutLoaded] = useState(false);
   const [editingLayout, setEditingLayout] = useState(false);
   const [generatingNarrative, setGeneratingNarrative] = useState(false);
   const fileInputRef = useRef(null);
@@ -326,6 +327,8 @@ function DealRoomPage() {
         setDealRoomLayout(res.layout);
       } catch (e) {
         console.warn('DealRoom: failed to load layout', e);
+      } finally {
+        setLayoutLoaded(true);
       }
     })();
   }, [activeTab, dealId, dealRoomLayout]);
@@ -395,8 +398,26 @@ function DealRoomPage() {
     }
   };
 
-  const handleDeleteImage = async (storagePath) => {
-    if (!storagePath) return;
+  // Some pre-existing images (extracted before storage_path was reliably
+  // tracked) have no storage_path — deleting those used to silently no-op.
+  // Now: if there's a real storage_path, delete it server-side (cleans up
+  // the Storage object too); otherwise just drop that array entry locally
+  // by index so the user can always remove a broken/undeletable thumbnail.
+  const handleDeleteImage = async (storagePath, index) => {
+    if (!storagePath) {
+      if (index == null) return;
+      const before = deal?.images || [];
+      const next = before.filter((_, i) => i !== index);
+      setDeal((prev) => prev ? ({ ...prev, images: next }) : prev);
+      try {
+        await updateDeal(dealId, { images: next });
+      } catch (e) {
+        console.error('Failed to remove photo:', e);
+        setDeal((prev) => prev ? ({ ...prev, images: before }) : prev);
+        alert('Failed to remove photo: ' + e.message);
+      }
+      return;
+    }
     try {
       const res = await fetch(API_ENDPOINTS.dealDeleteImage(dealId), {
         method: 'DELETE',
@@ -807,10 +828,10 @@ function DealRoomPage() {
                     <div style={{ color: '#fff', fontSize: '22px', fontWeight: '700' }}>{fmt$full(metrics.price)}</div>
                     <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '13px' }}>{deal.address}</div>
                   </div>
-                  {normalizedImages[0]?.storage_path && (
+                  {normalizedImages[0] && (
                     <button
                       type="button"
-                      onClick={() => handleDeleteImage(normalizedImages[0].storage_path)}
+                      onClick={() => handleDeleteImage(normalizedImages[0].storage_path, 0)}
                       title="Delete photo"
                       style={{
                         position: 'absolute', top: '10px', left: '10px',
@@ -826,10 +847,10 @@ function DealRoomPage() {
                       {normalizedImages.slice(1, 5).map((img, i) => (
                         <div key={i} style={{ position: 'relative', width: '52px', height: '52px' }}>
                           <img src={img.url} alt="" style={{ width: '52px', height: '52px', objectFit: 'cover', borderRadius: '6px', border: '2px solid rgba(255,255,255,0.8)' }} />
-                          {img.storage_path && (
+                          {(
                             <button
                               type="button"
-                              onClick={() => handleDeleteImage(img.storage_path)}
+                              onClick={() => handleDeleteImage(img.storage_path, i + 1)}
                               title="Delete photo"
                               style={{
                                 position: 'absolute', top: '-6px', right: '-6px',
@@ -1103,10 +1124,13 @@ function DealRoomPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <button
                     onClick={() => setEditingLayout((v) => !v)}
+                    disabled={!(investorDataLoaded && layoutLoaded)}
                     style={{
                       padding: '6px 12px', fontSize: 12, fontWeight: 600, borderRadius: 6,
                       border: '1px solid #d1d5db', background: editingLayout ? '#111827' : '#fff',
-                      color: editingLayout ? '#fff' : '#374151', cursor: 'pointer',
+                      color: editingLayout ? '#fff' : '#374151',
+                      cursor: (investorDataLoaded && layoutLoaded) ? 'pointer' : 'default',
+                      opacity: (investorDataLoaded && layoutLoaded) ? 1 : 0.5,
                     }}
                   >
                     {editingLayout ? 'Preview' : 'Customize Layout'}
@@ -1114,7 +1138,21 @@ function DealRoomPage() {
                   <ShareWithInvestorPanel dealId={dealId} />
                 </div>
               </div>
-              {editingLayout ? (
+              {!(investorDataLoaded && layoutLoaded) ? (
+                <div style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e6e9ef', padding: '60px 24px', textAlign: 'center' }}>
+                  <div style={{ width: '220px', height: '4px', margin: '0 auto 18px', borderRadius: '999px', backgroundColor: '#e6e9ef', overflow: 'hidden' }}>
+                    <div className="dr-loading-bar" style={{ height: '100%', width: '40%', borderRadius: '999px', background: 'linear-gradient(90deg, #10b981, #059669)' }} />
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#676879', fontWeight: 600 }}>Building your Deal Room…</div>
+                  <style>{`
+                    @keyframes dr-loading-slide {
+                      0% { transform: translateX(-100%); }
+                      100% { transform: translateX(350%); }
+                    }
+                    .dr-loading-bar { animation: dr-loading-slide 1.1s ease-in-out infinite; }
+                  `}</style>
+                </div>
+              ) : editingLayout ? (
                 <DealRoomLayoutEditor
                   dealId={dealId}
                   initialLayout={dealRoomLayout}
