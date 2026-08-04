@@ -3738,6 +3738,8 @@ function FinancingTab({ M, S, set }) {
   const setSellerOn = (v) => set({ sellerOn: v });
   const prefAmt = S.prefAmt ?? 0;
   const setPrefAmt = (v) => set({ prefAmt: v });
+  const prefPaymentMode = S.prefPaymentMode ?? "accruing";
+  const setPrefPaymentMode = (v) => set({ prefPaymentMode: v });
   const mezzAmt = S.mezzAmt ?? 0;
   const setMezzAmt = (v) => set({ mezzAmt: v });
   const sellerAmt = S.sellerAmt ?? 0;
@@ -3894,11 +3896,28 @@ function FinancingTab({ M, S, set }) {
                   <div className="py-3">
                     <div className="text-sm font-semibold text-gray-700 mb-2">Payment Mode</div>
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="border border-gray-200 rounded-xl p-3 flex gap-2 items-start"><span className="w-4 h-4 rounded-full border-2 border-gray-300 mt-0.5 shrink-0" /><span><b className="text-sm">Pay-Current</b><span className="block text-[11px] text-gray-500">Periodic interest payments</span></span></div>
-                      <div className="border border-emerald-400 bg-emerald-50 rounded-xl p-3 flex gap-2 items-start"><span className="w-4 h-4 rounded-full border-2 border-emerald-600 flex items-center justify-center mt-0.5 shrink-0"><span className="w-2 h-2 bg-emerald-500 rounded-full" /></span><span><b className="text-sm">Accruing</b><span className="block text-[11px] text-gray-500">Compounds, paid at exit</span></span></div>
+                      {[
+                        { key: "current", label: "Pay-Current", desc: "Periodic interest payments" },
+                        { key: "accruing", label: "Accruing", desc: "Compounds, paid at exit" },
+                      ].map((opt) => {
+                        const active = prefPaymentMode === opt.key;
+                        return (
+                          <button type="button" key={opt.key} onClick={() => setPrefPaymentMode(opt.key)}
+                            className={`text-left border rounded-xl p-3 flex gap-2 items-start transition ${active ? "border-emerald-400 bg-emerald-50" : "border-gray-200 hover:border-gray-300"}`}>
+                            <span className={`w-4 h-4 rounded-full border-2 mt-0.5 shrink-0 flex items-center justify-center ${active ? "border-emerald-600" : "border-gray-300"}`}>
+                              {active && <span className="w-2 h-2 bg-emerald-500 rounded-full" />}
+                            </span>
+                            <span><b className="text-sm">{opt.label}</b><span className="block text-[11px] text-gray-500">{opt.desc}</span></span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-3 my-3"><div className="text-[11px] font-bold text-gray-400 uppercase">Estimated Accrual at Disposition</div>{prefAmt > 0 ? <div className="text-sm font-bold text-gray-800">{$f(Math.round(prefAccrual))} <span className="font-normal text-gray-400 text-xs">over {CFG.acq.holdYears} yrs @ {pct(CFG.waterfall.pref, 0)} compounding</span></div> : <div className="text-sm text-gray-400">Enter a pref amount to see preview</div>}</div>
+                  {prefPaymentMode === "accruing" ? (
+                    <div className="bg-gray-50 rounded-xl p-3 my-3"><div className="text-[11px] font-bold text-gray-400 uppercase">Estimated Accrual at Disposition</div>{prefAmt > 0 ? <div className="text-sm font-bold text-gray-800">{$f(Math.round(prefAccrual))} <span className="font-normal text-gray-400 text-xs">over {CFG.acq.holdYears} yrs @ {pct(CFG.waterfall.pref, 0)} compounding</span></div> : <div className="text-sm text-gray-400">Enter a pref amount to see preview</div>}</div>
+                  ) : (
+                    <div className="bg-gray-50 rounded-xl p-3 my-3"><div className="text-[11px] font-bold text-gray-400 uppercase">Estimated Periodic Payment</div>{prefAmt > 0 ? <div className="text-sm font-bold text-gray-800">{$f(Math.round((prefAmt * CFG.waterfall.pref) / 12))}<span className="font-normal text-gray-400 text-xs">/mo</span> <span className="font-normal text-gray-400 text-xs">({$f(Math.round(prefAmt * CFG.waterfall.pref))}/yr @ {pct(CFG.waterfall.pref, 0)})</span></div> : <div className="text-sm text-gray-400">Enter a pref amount to see preview</div>}</div>
+                  )}
                 </Card>
               )}
               {k === "mezz" && on && (
@@ -4342,6 +4361,7 @@ export default function App({
     refiYear: 3, refiLTV: 0.70, refiRate: 0.0625, refiOn: false,
     purchasePrice: CFG.acq.price,
     prefOn: true, mezzOn: false, sellerOn: false, prefAmt: 0, mezzAmt: 0, sellerAmt: 0,
+    prefPaymentMode: "accruing",
   }));
   const set = (patch) => setS((p) => ({ ...p, ...patch }));
   const M = useModel(S);
