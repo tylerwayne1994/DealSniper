@@ -2102,47 +2102,69 @@
     return sheetJsPromise;
   }
 
+  /** Builds the SheetJS workbook object from the live sheet/cell state
+   * (computed values + formulas). Extracted from download() so callers that
+   * need the raw workbook (e.g. to upload it somewhere instead of
+   * triggering a browser download) can reuse the exact same logic. */
+  App.prototype.toXlsxWorkbook = function (XLSX) {
+    var self = this;
+    self.ev.reset();
+    var out = XLSX.utils.book_new();
+    self.wb.order.forEach(function (name) {
+      var sh = self.wb.sheets[name];
+      var ws = {};
+      var maxR = 0, maxC = 0, has = false;
+      Object.keys(sh.cells).forEach(function (a1) {
+        var p = parseAddr(a1);
+        if (!p) return;
+        has = true;
+        if (p.row > maxR) maxR = p.row;
+        if (p.col > maxC) maxC = p.col;
+        var cell = sh.cells[a1];
+        var v = self.ev.value(name, a1);
+        var o = {};
+        var isScen = cell.f && cell.f.indexOf("SCEN.IRR") >= 0;
+        if (cell.f !== undefined && cell.f !== null && !isScen) o.f = cell.f;
+        if (isErr(v)) { o.t = "e"; o.v = v.__err; }
+        else if (typeof v === "number") { o.t = "n"; o.v = v; }
+        else if (typeof v === "boolean") { o.t = "b"; o.v = v; }
+        else { o.t = "s"; o.v = v === null ? "" : String(v); }
+        var z = fmtToZ(cell.fmt);
+        if (z) o.z = z;
+        ws[a1] = o;
+      });
+      ws["!ref"] = "A1:" + addr(Math.max(maxC, 0), Math.max(maxR, 0));
+      if (!has) ws["A1"] = { t: "s", v: "" };
+      var widths = sh.widths || {};
+      var colsArr = [];
+      for (var c = 0; c <= maxC; c++) {
+        colsArr.push({ wpx: widths[c] !== undefined ? widths[c] : (c === 0 ? CONFIG.colWidthLabel : CONFIG.colWidthDefault) });
+      }
+      ws["!cols"] = colsArr;
+      XLSX.utils.book_append_sheet(out, ws, name.slice(0, 31));
+    });
+    return out;
+  };
+
   App.prototype.download = function () {
     var self = this;
     loadSheetJS().then(function (XLSX) {
-      self.ev.reset();
-      var out = XLSX.utils.book_new();
-      self.wb.order.forEach(function (name) {
-        var sh = self.wb.sheets[name];
-        var ws = {};
-        var maxR = 0, maxC = 0, has = false;
-        Object.keys(sh.cells).forEach(function (a1) {
-          var p = parseAddr(a1);
-          if (!p) return;
-          has = true;
-          if (p.row > maxR) maxR = p.row;
-          if (p.col > maxC) maxC = p.col;
-          var cell = sh.cells[a1];
-          var v = self.ev.value(name, a1);
-          var o = {};
-          var isScen = cell.f && cell.f.indexOf("SCEN.IRR") >= 0;
-          if (cell.f !== undefined && cell.f !== null && !isScen) o.f = cell.f;
-          if (isErr(v)) { o.t = "e"; o.v = v.__err; }
-          else if (typeof v === "number") { o.t = "n"; o.v = v; }
-          else if (typeof v === "boolean") { o.t = "b"; o.v = v; }
-          else { o.t = "s"; o.v = v === null ? "" : String(v); }
-          var z = fmtToZ(cell.fmt);
-          if (z) o.z = z;
-          ws[a1] = o;
-        });
-        ws["!ref"] = "A1:" + addr(Math.max(maxC, 0), Math.max(maxR, 0));
-        if (!has) ws["A1"] = { t: "s", v: "" };
-        var widths = sh.widths || {};
-        var colsArr = [];
-        for (var c = 0; c <= maxC; c++) {
-          colsArr.push({ wpx: widths[c] !== undefined ? widths[c] : (c === 0 ? CONFIG.colWidthLabel : CONFIG.colWidthDefault) });
-        }
-        ws["!cols"] = colsArr;
-        XLSX.utils.book_append_sheet(out, ws, name.slice(0, 31));
-      });
+      var out = self.toXlsxWorkbook(XLSX);
       XLSX.writeFile(out, CONFIG.exportFileName);
       self.notify("Exported " + CONFIG.exportFileName + " with live formulas (opens in Excel; imports into Google Sheets via File \u2192 Import).");
     }).catch(function (e) { self.notify(e.message, true); });
+  };
+
+  /** Returns a Promise<Blob> of the current workbook as a real .xlsx file —
+   * for callers that want the bytes (e.g. to upload somewhere) instead of
+   * triggering a browser download. Lazy-loads SheetJS same as download(). */
+  App.prototype.exportXlsxBlob = function () {
+    var self = this;
+    return loadSheetJS().then(function (XLSX) {
+      var out = self.toXlsxWorkbook(XLSX);
+      var arr = XLSX.write(out, { bookType: "xlsx", type: "array" });
+      return new Blob([arr], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    });
   };
 
   App.prototype.upload = function (file) {

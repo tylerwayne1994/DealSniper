@@ -322,6 +322,11 @@ app.include_router(investor_access_router)
 from deal_room_layout import router as deal_room_layout_router
 app.include_router(deal_room_layout_router)
 
+# Underwriting Templates: sponsor-uploaded .xlsx used as the base workbook for
+# the Underwriting Model tab, instead of the built-in stock template.
+from underwriting_template import router as underwriting_template_router
+app.include_router(underwriting_template_router)
+
 # Deal Builder: AI-powered full deal underwriting + pitch deck + spreadsheet
 try:
     from deal_builder import router as deal_builder_router

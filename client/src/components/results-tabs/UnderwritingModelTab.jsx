@@ -1,14 +1,21 @@
 // Underwriting Model tab — mounts the standalone CRE Underwriting spreadsheet
 // engine (public/spreadsheet/cre-underwriting.js, a dependency-free vanilla
 // JS Google-Sheets-style workbook) inside the Results page, pre-populated
-// with this deal's real parsed data. Includes a chat box that turns plain-
-// English instructions ("change the cap rate to 6%") into cell edits via
-// the backend (/v2/underwriting-model/chat-edit), applied through the same
-// Workbook.setCell()/renderGrid() path a manual edit would use.
+// with this deal's real parsed data. Includes:
+//  - a chat box that turns plain-English instructions ("change the cap rate
+//    to 6%") into cell edits via the backend (/v2/underwriting-model/chat-edit)
+//  - the ability to upload your OWN .xlsx as your default template (saved
+//    per-user), used instead of the stock template on every future deal —
+//    populated via a best-effort label-scan (see heuristicPopulateFromLabels)
+//    since an arbitrary uploaded workbook has no known cell layout
+//  - a "Save Model to Documents" button that exports the current workbook
+//    and attaches it to this deal's document list
 import React, { useEffect, useRef, useState } from 'react';
-import { Send, RotateCcw, Loader2 } from 'lucide-react';
+import { Send, RotateCcw, Loader2, Upload, FileSpreadsheet, X } from 'lucide-react';
 import { API_BASE_URL } from '../../config/api';
-import { mapScenarioDataToInputs } from '../../lib/underwritingModelMapping';
+import { mapScenarioDataToInputs, heuristicPopulateFromLabels } from '../../lib/underwritingModelMapping';
+import { getMyUnderwritingTemplate, uploadMyUnderwritingTemplate, deleteMyUnderwritingTemplate } from '../../lib/underwritingTemplateService';
+import { uploadDealDocument } from '../../lib/dealDocumentsService';
 
 const ENGINE_SRC = '/spreadsheet/cre-underwriting.js';
 const MOUNT_ID = 'cre-underwriting-model-mount';
@@ -29,11 +36,11 @@ function loadEngineScript() {
 /** Applies {a1, value}-shaped cell edits directly via the Workbook API
  * (same mechanism the UI itself uses on a manual edit), preserving each
  * cell's existing number format/style, then repaints the grid. */
-function applyCellEdits(app, edits) {
+function applyCellEdits(app, edits, sheet = 'Inputs') {
   if (!app || !edits?.length) return;
   edits.forEach(({ a1, value }) => {
-    const existing = app.wb.cell('Inputs', a1) || {};
-    app.wb.setCell('Inputs', a1, { v: value, fmt: existing.fmt, style: existing.style });
+    const existing = app.wb.cell(sheet, a1) || {};
+    app.wb.setCell(sheet, a1, { v: value, fmt: existing.fmt, style: existing.style });
   });
   app.renderGrid();
 }
@@ -41,40 +48,116 @@ function applyCellEdits(app, edits) {
 export default function UnderwritingModelTab({ scenarioData, deal, dealId }) {
   const mountRef = useRef(null);
   const appRef = useRef(null);
+  const templateInputRef = useRef(null);
   const [status, setStatus] = useState('loading'); // loading | ready | error
   const [error, setError] = useState('');
+  const [template, setTemplate] = useState(null); // { file_name, public_url, uploaded_at } | null
+  const [templateBusy, setTemplateBusy] = useState(false);
+  const [templateMsg, setTemplateMsg] = useState('');
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [saveMsg, setSaveMsg] = useState('');
   const [chatInput, setChatInput] = useState('');
   const [chatBusy, setChatBusy] = useState(false);
   const [chatLog, setChatLog] = useState([]); // [{role, text}]
 
+  /** Loads the engine, then either the sponsor's saved custom template
+   * (best-effort label-scan population) or the stock template (exact
+   * cell-address mapping from Phase 1). */
+  const mountAndPopulate = async () => {
+    await loadEngineScript();
+    if (!window.CREUnderwriting) return;
+    const mount = document.getElementById(MOUNT_ID);
+    if (mount) mount.innerHTML = '';
+    const app = window.CREUnderwriting.init({ mountId: MOUNT_ID });
+    appRef.current = app;
+
+    let myTemplate = null;
+    try { myTemplate = await getMyUnderwritingTemplate(); } catch { /* not logged in / no template — fall back silently */ }
+
+    if (myTemplate?.public_url) {
+      try {
+        const res = await fetch(myTemplate.public_url);
+        const blob = await res.blob();
+        const file = new File([blob], myTemplate.file_name, { type: blob.type });
+        await app.upload(file);
+        const matched = heuristicPopulateFromLabels(app, scenarioData, deal);
+        setTemplate(myTemplate);
+        setTemplateMsg(matched > 0
+          ? `Filled ${matched} field${matched === 1 ? '' : 's'} from your template's labels.`
+          : "Loaded your template — couldn't confidently match any labels to this deal's data, fill in manually.");
+        return;
+      } catch (e) {
+        console.warn('Failed to load custom template, falling back to stock template:', e);
+      }
+    }
+
+    const edits = mapScenarioDataToInputs(scenarioData, deal);
+    applyCellEdits(app, edits.map((c) => ({ a1: c.a1, value: c.value })));
+  };
+
   useEffect(() => {
     let cancelled = false;
     setStatus('loading');
-    loadEngineScript()
-      .then(() => {
-        if (cancelled || !window.CREUnderwriting) return;
-        const app = window.CREUnderwriting.init({ mountId: MOUNT_ID });
-        appRef.current = app;
-        const edits = mapScenarioDataToInputs(scenarioData, deal);
-        applyCellEdits(app, edits.map((c) => ({ a1: c.a1, value: c.value })));
-        setStatus('ready');
-      })
-      .catch((e) => {
-        if (!cancelled) { setError(e.message); setStatus('error'); }
-      });
+    mountAndPopulate()
+      .then(() => { if (!cancelled) setStatus('ready'); })
+      .catch((e) => { if (!cancelled) { setError(e.message); setStatus('error'); } });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dealId]);
 
   const handleReset = () => {
-    if (!appRef.current || !window.CREUnderwriting) return;
-    // Re-mount fresh (clears any manual edits) then re-apply the deal's real data.
-    const mount = document.getElementById(MOUNT_ID);
-    if (mount) mount.innerHTML = '';
-    const app = window.CREUnderwriting.init({ mountId: MOUNT_ID });
-    appRef.current = app;
-    const edits = mapScenarioDataToInputs(scenarioData, deal);
-    applyCellEdits(app, edits.map((c) => ({ a1: c.a1, value: c.value })));
+    setTemplateMsg('');
+    mountAndPopulate().catch((e) => setError(e.message));
+  };
+
+  const handleUploadTemplateClick = () => templateInputRef.current?.click();
+
+  const handleTemplateFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setTemplateBusy(true);
+    setTemplateMsg('');
+    try {
+      const saved = await uploadMyUnderwritingTemplate(file);
+      setTemplate(saved);
+      await mountAndPopulate();
+    } catch (err) {
+      setTemplateMsg(`Failed to save template: ${err.message}`);
+    } finally {
+      setTemplateBusy(false);
+    }
+  };
+
+  const handleUseStandardTemplate = async () => {
+    setTemplateBusy(true);
+    setTemplateMsg('');
+    try {
+      await deleteMyUnderwritingTemplate();
+      setTemplate(null);
+      await mountAndPopulate();
+    } catch (err) {
+      setTemplateMsg(`Failed to remove template: ${err.message}`);
+    } finally {
+      setTemplateBusy(false);
+    }
+  };
+
+  const handleSaveToDocuments = async () => {
+    if (!appRef.current || !dealId) return;
+    setSaveBusy(true);
+    setSaveMsg('');
+    try {
+      const blob = await appRef.current.exportXlsxBlob();
+      const fileName = `Underwriting_Model_${dealId}.xlsx`;
+      await uploadDealDocument(dealId, blob, { fileName, category: 'underwriting_model' });
+      setSaveMsg('Saved to this deal\u2019s documents.');
+    } catch (err) {
+      setSaveMsg(`Failed to save: ${err.message}`);
+    } finally {
+      setSaveBusy(false);
+      setTimeout(() => setSaveMsg(''), 4000);
+    }
   };
 
   const handleChatSend = async () => {
@@ -108,21 +191,35 @@ export default function UnderwritingModelTab({ scenarioData, deal, dealId }) {
         <div>
           <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>Underwriting Model</div>
           <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
-            A full spreadsheet model of this deal, pre-filled from the parsed data. Edit cells directly, or tell Max below.
+            {template
+              ? <>Using your template <strong>{template.file_name}</strong> — fields matched by label.</>
+              : 'A full spreadsheet model of this deal, pre-filled from the parsed data.'}
+            {' '}Edit cells directly, or tell Max below.
           </div>
         </div>
-        <button
-          onClick={handleReset}
-          title="Re-apply this deal's parsed data (discards manual edits)"
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600,
-            padding: '6px 12px', borderRadius: 6, border: '1px solid #d1d5db', background: '#fff',
-            color: '#374151', cursor: 'pointer',
-          }}
-        >
-          <RotateCcw size={13} /> Reset to Deal Data
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <input ref={templateInputRef} type="file" accept=".xlsx,.xls,.xlsm" style={{ display: 'none' }} onChange={handleTemplateFileChange} />
+          {template ? (
+            <button onClick={handleUseStandardTemplate} disabled={templateBusy} style={btnStyle()}>
+              <X size={13} /> Use Standard Template
+            </button>
+          ) : (
+            <button onClick={handleUploadTemplateClick} disabled={templateBusy} style={btnStyle()}>
+              <Upload size={13} /> Upload Your Template
+            </button>
+          )}
+          <button onClick={handleSaveToDocuments} disabled={saveBusy || status !== 'ready'} style={btnStyle()}>
+            {saveBusy ? <Loader2 size={13} /> : <FileSpreadsheet size={13} />} Save Model to Documents
+          </button>
+          <button onClick={handleReset} title="Re-apply this deal's parsed data (discards manual edits)" style={btnStyle()}>
+            <RotateCcw size={13} /> Reset to Deal Data
+          </button>
+        </div>
       </div>
+
+      {(templateMsg || saveMsg) && (
+        <div style={{ fontSize: 12, color: '#374151' }}>{templateMsg || saveMsg}</div>
+      )}
 
       {status === 'error' && (
         <div style={{ padding: 16, fontSize: 13, color: '#b91c1c', background: '#fef2f2', borderRadius: 8 }}>
@@ -174,4 +271,12 @@ export default function UnderwritingModelTab({ scenarioData, deal, dealId }) {
       )}
     </div>
   );
+}
+
+function btnStyle() {
+  return {
+    display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600,
+    padding: '6px 12px', borderRadius: 6, border: '1px solid #d1d5db', background: '#fff',
+    color: '#374151', cursor: 'pointer', whiteSpace: 'nowrap',
+  };
 }
