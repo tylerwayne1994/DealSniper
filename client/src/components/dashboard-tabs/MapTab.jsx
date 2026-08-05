@@ -24,7 +24,8 @@ import {
   EyeOff,
   Layers,
   Plus,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
 
 if (process.env.REACT_APP_MAPBOX_TOKEN) {
@@ -501,10 +502,9 @@ function createDivIcon({ bgClass, borderClass = 'border-white/60', icon: Icon, i
   });
 }
 
-// Glowing dot marker (blurred halo behind a crisp core dot), with an
-// optional small unit-count badge above it. Color still carries category
-// meaning (pipeline/rapidfire/prospect/uploaded), just rendered as a glow
-// dot instead of a teardrop pin/bubble.
+// Crisp dot marker (no blurred glow halo), with an optional small
+// unit-count badge above it. Color still carries category meaning
+// (pipeline/rapidfire/prospect/uploaded).
 function createBubbleIcon(color = '#ef4444', textColor = '#fff', units = null) {
   const hasUnits = units != null && units !== '' && units !== '?' && units !== 0;
   const badge = hasUnits ? `
@@ -517,15 +517,14 @@ function createBubbleIcon(color = '#ef4444', textColor = '#fff', units = null) {
   return L.divIcon({
     className: 'bubble-marker-icon',
     html: `
-      <div style="position: relative; width: 22px; height: 22px; cursor: pointer;">
-        <div style="position: absolute; inset: -6px; border-radius: 50%; background: ${color}; opacity: 0.45; filter: blur(5px);"></div>
-        <div style="position: absolute; inset: 5px; border-radius: 50%; background: ${color}; box-shadow: 0 0 10px ${color}, 0 1px 3px rgba(0,0,0,0.5); border: 1.5px solid rgba(255,255,255,0.9);"></div>
+      <div style="position: relative; width: 14px; height: 14px; cursor: pointer;">
+        <div style="position: absolute; inset: 0; border-radius: 50%; background: ${color}; box-shadow: 0 1px 3px rgba(0,0,0,0.5); border: 1.5px solid rgba(255,255,255,0.9);"></div>
         ${badge}
       </div>
     `,
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
-    popupAnchor: [0, -14]
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+    popupAnchor: [0, -10]
   });
 }
 
@@ -2136,6 +2135,26 @@ function DashboardMapTab() {
     }
   };
 
+  // Bulk-delete every pin matching a predicate (e.g. all "uploaded" or all
+  // "rapidfire" pins at once) instead of one-by-one. Confirms first since
+  // this can't be undone.
+  const deletePinsByFilter = async (predicate, label) => {
+    const toDelete = customPins.filter(predicate);
+    if (toDelete.length === 0) return;
+    if (!window.confirm(`Delete all ${toDelete.length} ${label} pin${toDelete.length === 1 ? '' : 's'}? This can't be undone.`)) return;
+    setCustomPins(prev => prev.filter(p => !predicate(p)));
+    const dbIds = toDelete.map(p => p.dbId).filter(Boolean);
+    if (dbIds.length > 0) {
+      try {
+        await supabase.from('map_prospects').delete().in('id', dbIds);
+      } catch (error) {
+        console.error(`Failed to bulk-delete ${label} pins from database:`, error);
+      }
+    }
+  };
+  const deleteAllUploadedPins = () => deletePinsByFilter((p) => p.source === 'uploaded', 'Uploaded Properties');
+  const deleteAllRapidFirePins = () => deletePinsByFilter((p) => p.category === 'rapidfire', 'Rapid Fire');
+
   // Heuristic parser for spreadsheet rows -> address + units
   const buildAddressFromRow = (row) => {
     const keys = Object.keys(row);
@@ -2869,28 +2888,29 @@ function DashboardMapTab() {
           zIndex: 1000,
           width: panelOpen ? (isMobile ? 'calc(100% - 16px)' : 320) : 44,
           maxHeight: isMobile ? 'calc(100% - 60px)' : 'calc(100% - 24px)',
-          backgroundColor: '#ffffff',
+          backgroundColor: 'rgba(10, 12, 16, 0.88)',
           borderRadius: 12,
-          border: '1px solid #e5e7eb',
-          boxShadow: '0 8px 24px rgba(15, 23, 42, 0.16)',
+          border: '1px solid rgba(255,255,255,0.14)',
+          boxShadow: '0 8px 28px rgba(0,0,0,0.55)',
+          backdropFilter: 'blur(8px)',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           transition: 'width 0.25s cubic-bezier(.4,0,.2,1)',
-          color: '#374151',
+          color: '#e5e7eb',
         }}>
           {/* Panel Header */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: panelOpen ? '10px 14px' : '10px 11px',
-            borderBottom: panelOpen ? '1px solid #e5e7eb' : 'none',
+            borderBottom: panelOpen ? '1px solid rgba(255,255,255,0.12)' : 'none',
             flexShrink: 0,
           }}>
-            {panelOpen && <span style={{ fontSize: 13, fontWeight: 700, color: '#111827', letterSpacing: '0.3px' }}>Map Controls</span>}
+            {panelOpen && <span style={{ fontSize: 13, fontWeight: 700, color: '#f3f4f6', letterSpacing: '0.3px' }}>Map Controls</span>}
             <button onClick={() => setPanelOpen(v => !v)} style={{
-              background: '#f3f4f6', border: 'none', borderRadius: 6,
+              background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 6,
               width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: '#6b7280', flexShrink: 0,
+              cursor: 'pointer', color: '#d1d5db', flexShrink: 0,
             }}>
               {panelOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
             </button>
@@ -2921,7 +2941,7 @@ function DashboardMapTab() {
           {panelOpen && (
             <div style={{
               display: 'flex', gap: 2, padding: '6px 10px',
-              borderBottom: '1px solid #e5e7eb', flexShrink: 0,
+              borderBottom: '1px solid rgba(255,255,255,0.12)', flexShrink: 0,
             }}>
               {[
                 { tab: 'layers', label: 'Layers', icon: <Layers size={13} /> },
@@ -2932,10 +2952,10 @@ function DashboardMapTab() {
                 <button key={tab} onClick={() => setPanelTab(tab)} style={{
                   flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
                   padding: '6px 0', fontSize: 11, fontWeight: panelTab === tab ? 600 : 500,
-                  color: panelTab === tab ? '#059669' : '#6b7280',
-                  background: panelTab === tab ? 'rgba(16,185,129,0.08)' : 'transparent',
+                  color: panelTab === tab ? '#34d399' : '#9aa0a6',
+                  background: panelTab === tab ? 'rgba(16,185,129,0.12)' : 'transparent',
                   border: 'none', borderRadius: 6, cursor: 'pointer',
-                  borderBottom: panelTab === tab ? '2px solid #059669' : '2px solid transparent',
+                  borderBottom: panelTab === tab ? '2px solid #34d399' : '2px solid transparent',
                 }}>
                   {icon} {label}
                 </button>
@@ -3217,32 +3237,46 @@ function DashboardMapTab() {
                   <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#9ca3af', marginBottom: 2 }}>Pin Visibility</div>
                   {[
                     { label: 'Pipeline Deals', enabled: showPipelinePins, toggle: () => setShowPipelinePins(v => !v), color: '#facc15', count: customPins.filter(p => p.category === 'pipeline').length },
-                    { label: 'Rapid Fire', enabled: showRapidFirePins, toggle: () => setShowRapidFirePins(v => !v), color: '#ef4444', count: customPins.filter(p => p.category === 'rapidfire').length },
-                    { label: 'Uploaded Properties', enabled: showUploadedPins, toggle: () => setShowUploadedPins(v => !v), color: '#06b6d4', count: customPins.filter(p => p.source === 'uploaded').length },
+                    { label: 'Rapid Fire', enabled: showRapidFirePins, toggle: () => setShowRapidFirePins(v => !v), color: '#ef4444', count: customPins.filter(p => p.category === 'rapidfire').length, bulkDelete: deleteAllRapidFirePins },
+                    { label: 'Uploaded Properties', enabled: showUploadedPins, toggle: () => setShowUploadedPins(v => !v), color: '#06b6d4', count: customPins.filter(p => p.source === 'uploaded').length, bulkDelete: deleteAllUploadedPins },
                     { label: 'Parcel Boundaries', enabled: showParcelPolygons, toggle: () => setShowParcelPolygons(v => !v), color: '#f97316', count: parcelPolygons.length },
                     { label: 'Prospect Cities', enabled: showProspectPins, toggle: () => setShowProspectPins(v => !v), color: '#f59e0b', count: customPins.filter(p => p.category === 'prospect').length },
-                  ].map(({ label, enabled, toggle, color, count }) => (
+                  ].map(({ label, enabled, toggle, color, count, bulkDelete }) => (
                     <div key={label} onClick={toggle} style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '8px 10px', borderRadius: 8, cursor: 'pointer',
-                      backgroundColor: enabled ? 'rgba(16,185,129,0.06)' : 'transparent',
-                      border: '1px solid #e5e7eb',
+                      backgroundColor: enabled ? 'rgba(16,185,129,0.1)' : 'transparent',
+                      border: '1px solid rgba(255,255,255,0.12)',
                       transition: 'all 0.15s',
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: enabled ? color : '#d1d5db' }} />
-                        <span style={{ fontSize: 12, fontWeight: 500, color: enabled ? '#111827' : '#9ca3af' }}>{label}</span>
-                        <span style={{ fontSize: 10, fontWeight: 600, color: '#6b7280', backgroundColor: '#f3f4f6', padding: '1px 6px', borderRadius: 8 }}>{count}</span>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: enabled ? color : '#6b7280' }} />
+                        <span style={{ fontSize: 12, fontWeight: 500, color: enabled ? '#f3f4f6' : '#9aa0a6' }}>{label}</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: '#d1d5db', backgroundColor: 'rgba(255,255,255,0.1)', padding: '1px 6px', borderRadius: 8 }}>{count}</span>
                       </div>
-                      {enabled ? <Eye size={14} color="#059669" /> : <EyeOff size={14} color="#d1d5db" />}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {bulkDelete && count > 0 && (
+                          <button
+                            type="button"
+                            title={`Delete all ${label} pins`}
+                            onClick={(e) => { e.stopPropagation(); bulkDelete(); }}
+                            style={{ display: 'flex', alignItems: 'center', padding: 3, border: 'none', borderRadius: 5, backgroundColor: 'transparent', cursor: 'pointer' }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.18)'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          >
+                            <Trash2 size={13} color="#f87171" />
+                          </button>
+                        )}
+                        {enabled ? <Eye size={14} color="#34d399" /> : <EyeOff size={14} color="#6b7280" />}
+                      </div>
                     </div>
                   ))}
-                  <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 8, marginTop: 4 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#9ca3af', marginBottom: 6 }}>Quick Filter</div>
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: 8, marginTop: 4 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#9aa0a6', marginBottom: 6 }}>Quick Filter</div>
                     <select value={mapFilter} onChange={(e) => setMapFilter(e.target.value)} style={{
                       width: '100%', padding: '5px 8px', fontSize: 11, fontWeight: 500,
-                      border: '1px solid #d1d5db', borderRadius: 6,
-                      backgroundColor: '#ffffff', color: '#111827',
+                      border: '1px solid rgba(255,255,255,0.16)', borderRadius: 6,
+                      backgroundColor: 'rgba(255,255,255,0.08)', color: '#f3f4f6',
                     }}>
                       <option value="all">All Pins ({customPins.length})</option>
                       <option value="pipeline">Pipeline Only</option>
@@ -3380,7 +3414,8 @@ function DashboardMapTab() {
           right: isMobile ? 8 : 12,
           zIndex: 1000,
           display: 'flex', borderRadius: 8, overflow: 'hidden',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)', border: '1px solid #e5e7eb',
+          boxShadow: '0 8px 28px rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.14)',
+          backdropFilter: 'blur(8px)',
         }}>
           {[
             { key: 'satellite', label: isMobile ? 'Sat' : 'Satellite' },
@@ -3392,9 +3427,9 @@ function DashboardMapTab() {
               fontSize: isMobile ? 11 : 12,
               fontWeight: mapStyle === key ? 700 : 500,
               cursor: 'pointer', border: 'none',
-              borderLeft: i > 0 ? '1px solid #e5e7eb' : 'none',
-              color: mapStyle === key ? '#fff' : '#374151',
-              background: mapStyle === key ? 'linear-gradient(90deg, #34d399 0%, #22d3ee 100%)' : '#ffffff',
+              borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.14)' : 'none',
+              color: mapStyle === key ? '#fff' : '#d1d5db',
+              background: mapStyle === key ? 'linear-gradient(90deg, #34d399 0%, #22d3ee 100%)' : 'rgba(10, 12, 16, 0.88)',
               transition: 'all 0.15s',
             }}>
               {label}
