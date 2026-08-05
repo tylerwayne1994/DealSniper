@@ -501,84 +501,31 @@ function createDivIcon({ bgClass, borderClass = 'border-white/60', icon: Icon, i
   });
 }
 
-// Create clean Airbnb-style bubble marker showing unit count
+// Glowing dot marker (blurred halo behind a crisp core dot), with an
+// optional small unit-count badge above it. Color still carries category
+// meaning (pipeline/rapidfire/prospect/uploaded), just rendered as a glow
+// dot instead of a teardrop pin/bubble.
 function createBubbleIcon(color = '#ef4444', textColor = '#fff', units = null) {
   const hasUnits = units != null && units !== '' && units !== '?' && units !== 0;
-  
-  if (!hasUnits) {
-    // â”€â”€ Pin-drop marker for properties without units â”€â”€
-    return L.divIcon({
-      className: 'bubble-marker-icon',
-      html: `
+  const badge = hasUnits ? `
         <div style="
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 26px;
-          height: 36px;
-          cursor: pointer;
-          position: relative;
-          filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));
-        ">
-          <svg width="26" height="36" viewBox="0 0 26 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 23 13 23s13-13.25 13-23C26 5.82 20.18 0 13 0z"
-                  fill="${color}" stroke="#fff" stroke-width="1.5"/>
-            <circle cx="13" cy="13" r="5" fill="#fff" opacity="0.9"/>
-          </svg>
-        </div>
-      `,
-      iconSize: [26, 36],
-      iconAnchor: [13, 36],
-      popupAnchor: [0, -36]
-    });
-  }
-
-  // â”€â”€ Rounded bubble with unit count â”€â”€
-  const displayText = `${units}u`;
-  const width = displayText.length > 3 ? 52 : displayText.length > 2 ? 44 : 38;
+          position: absolute; top: -3px; left: 50%; transform: translate(-50%, -100%);
+          background: rgba(10,10,14,0.85); color: #fff; font-size: 10px; font-weight: 700;
+          padding: 1px 6px; border-radius: 6px; white-space: nowrap; letter-spacing: 0.2px;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+        ">${units}u</div>` : '';
   return L.divIcon({
     className: 'bubble-marker-icon',
     html: `
-      <div style="
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-width: ${width}px;
-        height: 30px;
-        padding: 0 10px;
-        background: ${color};
-        border-radius: 16px;
-        border: 2px solid #fff;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.28), 0 0 0 1px rgba(0,0,0,0.08);
-        cursor: pointer;
-        position: relative;
-      ">
-        <span style="
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-          font-size: 12px;
-          font-weight: 700;
-          color: ${textColor};
-          letter-spacing: 0.2px;
-          white-space: nowrap;
-          line-height: 1;
-        ">${displayText}</span>
-        <div style="
-          position: absolute;
-          bottom: -6px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 0;
-          height: 0;
-          border-left: 5px solid transparent;
-          border-right: 5px solid transparent;
-          border-top: 6px solid ${color};
-          filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15));
-        "></div>
+      <div style="position: relative; width: 22px; height: 22px; cursor: pointer;">
+        <div style="position: absolute; inset: -6px; border-radius: 50%; background: ${color}; opacity: 0.45; filter: blur(5px);"></div>
+        <div style="position: absolute; inset: 5px; border-radius: 50%; background: ${color}; box-shadow: 0 0 10px ${color}, 0 1px 3px rgba(0,0,0,0.5); border: 1.5px solid rgba(255,255,255,0.9);"></div>
+        ${badge}
       </div>
     `,
-    iconSize: [width, 36],
-    iconAnchor: [width / 2, 36],
-    popupAnchor: [0, -36]
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+    popupAnchor: [0, -14]
   });
 }
 
@@ -1749,10 +1696,14 @@ function DashboardMapTab() {
       url: `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`,
       attribution: '&copy; Mapbox &copy; OpenStreetMap',
       maxNativeZoom: 20,
+      // Dimmed/darkened look (dark, moody satellite view instead of bright
+      // true-color imagery) — className is applied per-tile-image by Leaflet.
+      className: 'dsm-dark-tiles',
     } : {
       url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       attribution: '&copy; Esri, Maxar, Earthstar Geographics',
-      labelsUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'
+      labelsUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+      className: 'dsm-dark-tiles',
     },
   };
 
@@ -3638,11 +3589,12 @@ function DashboardMapTab() {
           {/* Base categorized markers */}
           {baseMarkers.map((m) => (
             <Marker key={m.id} position={m.position} icon={categoryIcon(m.category, m.source, m.units)}>
-              <Popup>
+              <Popup className="parcel-popup-dark">
                 <div style={{ minWidth: '220px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>{m.name}</div>
-                  <div style={{ fontSize: '12px', color: '#64748b' }}>Influence zone radius ~2 miles</div>
-                  <div style={{ borderRadius: '8px', backgroundColor: '#e0e7ff', padding: '8px', fontSize: '12px', color: '#1e293b' }}>Research Insight: {m.insight}</div>
+                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#9aa0a6', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Property</div>
+                  <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#f3f4f6' }}>{m.name}</div>
+                  <div style={{ fontSize: '12px', color: '#9aa0a6' }}>Influence zone radius ~2 miles</div>
+                  <div style={{ borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', padding: '8px', fontSize: '12px', color: '#d1d5db' }}>Research Insight: {m.insight}</div>
                 </div>
               </Popup>
             </Marker>
@@ -3651,7 +3603,7 @@ function DashboardMapTab() {
           {/* Custom pins â€” filtered by visibility toggles */}
           {visiblePins.map((p) => (
             <Marker key={p.id} position={p.position} icon={categoryIcon(p.category, p.source, p.units)}>
-              <Popup maxWidth={350}>
+              <Popup maxWidth={350} className="parcel-popup-dark">
                 <div style={{ width: 280, fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif' }}>
                   {p.image ? (
                     <div style={{ position: 'relative', width: '100%', height: 110, overflow: 'hidden', borderRadius: '8px 8px 0 0', marginBottom: 10 }}>
@@ -3665,7 +3617,7 @@ function DashboardMapTab() {
                     </div>
                   ) : null}
 
-                  <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827', marginBottom: 6, lineHeight: 1.3 }}>{p.name}</div>
+                  <div style={{ fontSize: '15px', fontWeight: 700, color: '#f3f4f6', marginBottom: 6, lineHeight: 1.3 }}>{p.name}</div>
 
                   <div style={{
                     display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 9px', borderRadius: 10,
@@ -3692,21 +3644,21 @@ function DashboardMapTab() {
                   {(p.units || (p.purchasePrice && !p.image) || p.dayOneCashFlow) && (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))', gap: 6, marginBottom: 8 }}>
                       {p.units ? (
-                        <div style={{ backgroundColor: '#ffffff', border: '1px solid #a7f3d0', borderRadius: 6, padding: '6px 8px' }}>
-                          <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Units</div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{p.units}</div>
+                        <div style={{ backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 6, padding: '6px 8px' }}>
+                          <div style={{ fontSize: 9, fontWeight: 700, color: '#9aa0a6', textTransform: 'uppercase' }}>Units</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#f3f4f6' }}>{p.units}</div>
                         </div>
                       ) : null}
                       {p.purchasePrice && !p.image ? (
-                        <div style={{ backgroundColor: '#ffffff', border: '1px solid #a7f3d0', borderRadius: 6, padding: '6px 8px' }}>
-                          <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Price</div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>${Number(p.purchasePrice).toLocaleString()}</div>
+                        <div style={{ backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 6, padding: '6px 8px' }}>
+                          <div style={{ fontSize: 9, fontWeight: 700, color: '#9aa0a6', textTransform: 'uppercase' }}>Price</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#f3f4f6' }}>${Number(p.purchasePrice).toLocaleString()}</div>
                         </div>
                       ) : null}
                       {p.dayOneCashFlow ? (
-                        <div style={{ backgroundColor: '#ffffff', border: '1px solid #a7f3d0', borderRadius: 6, padding: '6px 8px' }}>
-                          <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Day-1 CF</div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: p.dayOneCashFlow >= 0 ? '#059669' : '#dc2626' }}>
+                        <div style={{ backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 6, padding: '6px 8px' }}>
+                          <div style={{ fontSize: 9, fontWeight: 700, color: '#9aa0a6', textTransform: 'uppercase' }}>Day-1 CF</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: p.dayOneCashFlow >= 0 ? '#34d399' : '#f87171' }}>
                             ${Math.round(Number(p.dayOneCashFlow)).toLocaleString()}
                           </div>
                         </div>
@@ -3715,17 +3667,17 @@ function DashboardMapTab() {
                   )}
 
                   {!p.image && p.insight && (
-                    <div style={{ borderRadius: 8, padding: 10, fontSize: 12, lineHeight: 1.5, color: '#374151', backgroundColor: '#ffffff', border: '1px solid #a7f3d0', marginBottom: 8 }}>
+                    <div style={{ borderRadius: 8, padding: 10, fontSize: 12, lineHeight: 1.5, color: '#d1d5db', backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', marginBottom: 8 }}>
                       {p.insight}
                     </div>
                   )}
 
                   {(p.brokerName || p.brokerPhone || p.brokerEmail) && (
-                    <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      {p.brokerName && <span><strong style={{ color: '#374151' }}>Broker:</strong> {p.brokerName}</span>}
+                    <div style={{ fontSize: 11, color: '#9aa0a6', marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {p.brokerName && <span><strong style={{ color: '#d1d5db' }}>Broker:</strong> {p.brokerName}</span>}
                       <div style={{ display: 'flex', gap: 10 }}>
-                        {p.brokerPhone && <a href={`tel:${p.brokerPhone}`} style={{ color: '#059669', textDecoration: 'none', fontWeight: 600 }}>{p.brokerPhone}</a>}
-                        {p.brokerEmail && <a href={`mailto:${p.brokerEmail}`} style={{ color: '#059669', textDecoration: 'none', fontWeight: 600 }}>Email</a>}
+                        {p.brokerPhone && <a href={`tel:${p.brokerPhone}`} style={{ color: '#34d399', textDecoration: 'none', fontWeight: 600 }}>{p.brokerPhone}</a>}
+                        {p.brokerEmail && <a href={`mailto:${p.brokerEmail}`} style={{ color: '#34d399', textDecoration: 'none', fontWeight: 600 }}>Email</a>}
                       </div>
                     </div>
                   )}
@@ -3736,17 +3688,17 @@ function DashboardMapTab() {
 
                   {p.source === 'uploaded' && p.propertyData && Object.keys(p.propertyData).length > 0 && (
                     <div style={{
-                      borderRadius: '10px', padding: '10px', backgroundColor: '#ffffff', fontSize: '12px',
-                      maxHeight: '200px', overflowY: 'auto', border: '1px solid #a7f3d0', marginBottom: 8,
+                      borderRadius: '10px', padding: '10px', backgroundColor: 'rgba(255,255,255,0.06)', fontSize: '12px',
+                      maxHeight: '200px', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.14)', marginBottom: 8,
                     }}>
-                      <div style={{ fontWeight: 700, marginBottom: 8, color: '#111827', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Property Details</div>
+                      <div style={{ fontWeight: 700, marginBottom: 8, color: '#f3f4f6', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Property Details</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                         {Object.entries(p.propertyData)
                           .filter(([, v]) => v !== null && v !== undefined && v !== '')
                           .map(([key, value]) => (
-                          <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 8px', backgroundColor: 'white', borderRadius: 6, border: '1px solid #d1fae5' }}>
-                            <span style={{ fontWeight: 600, color: '#6b7280', fontSize: 11 }}>{key}</span>
-                            <span style={{ color: '#111827', fontWeight: 500, textAlign: 'right', maxWidth: '60%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{String(value)}</span>
+                          <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 8px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <span style={{ fontWeight: 600, color: '#9aa0a6', fontSize: 11 }}>{key}</span>
+                            <span style={{ color: '#f3f4f6', fontWeight: 500, textAlign: 'right', maxWidth: '60%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{String(value)}</span>
                           </div>
                         ))}
                       </div>
@@ -4913,16 +4865,21 @@ function DashboardMapTab() {
           50% { opacity: 0.3; }
         }
         .parcel-popup-dark .leaflet-popup-content-wrapper {
-          background: #1e1e2e !important;
-          color: #fff !important;
-          border-radius: 8px !important;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+          background: rgba(10, 12, 16, 0.88) !important;
+          color: #f3f4f6 !important;
+          border-radius: 12px !important;
+          border: 1px solid rgba(255,255,255,0.14) !important;
+          box-shadow: 0 8px 28px rgba(0,0,0,0.55) !important;
+          backdrop-filter: blur(8px);
         }
         .parcel-popup-dark .leaflet-popup-tip {
-          background: #1e1e2e !important;
+          background: rgba(10, 12, 16, 0.88) !important;
         }
         .parcel-popup-dark .leaflet-popup-close-button {
-          color: #94a3b8 !important;
+          color: #9aa0a6 !important;
+        }
+        .dsm-dark-tiles {
+          filter: brightness(0.55) saturate(0.6) contrast(1.08);
         }
       `}</style>
     </div>
