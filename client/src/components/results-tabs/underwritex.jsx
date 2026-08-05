@@ -994,7 +994,7 @@ function UploadPage({ onEnter, files, setFiles }) {
    CHROME
    ================================================================ */
 function TopBar({
-  onExportPDF, onExportToSheets, onExportToExcel, onGeneratePitchDeck, onPushToPipeline,
+  onExportPDF, onExportToSheets, onExportToExcel, onGeneratePitchDeck, onGenerateBusinessPlan, onPushToPipeline,
   isSheetsExporting, isExcelExporting, isExportingPDF, isPushingToPipeline,
   sheetsExportStatus, isInPipeline, pipelineSuccess, onGoHome,
 }) {
@@ -1033,6 +1033,11 @@ function TopBar({
         <Ghost onClick={onGeneratePitchDeck} className={isExportingPDF ? "opacity-50 pointer-events-none" : ""}>
           {I.presentation} Pitch Deck
         </Ghost>
+        {onGenerateBusinessPlan && (
+          <Ghost onClick={onGenerateBusinessPlan}>
+            {I.doc} Business Plan
+          </Ghost>
+        )}
         <button onClick={onPushToPipeline} disabled={isPushingToPipeline}
           className={`inline-flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-lg transition whitespace-nowrap ${pipelineSuccess ? "bg-emerald-500 text-white" : isPushingToPipeline ? "bg-gray-300 text-white cursor-not-allowed" : "bg-emerald-600 text-white hover:bg-emerald-700"}`}>
           {I.rocket} {pipelineSuccess ? "In Pipeline" : isPushingToPipeline ? "Pushing…" : isInPipeline ? "Update Pipeline" : "Push to Pipeline"}
@@ -4331,7 +4336,7 @@ function CompsTab({ M, scenarioData, dealId, marketData, marketDataLoading, onRe
    ================================================================ */
 export default function App({
   skipUploadPhase = false, scenarioData = null, dealId = null, pdfData = null, pdfUrl = null,
-  onExportPDF, onExportToSheets, onExportToExcel, onGeneratePitchDeck, onPushToPipeline,
+  onExportPDF, onExportToSheets, onExportToExcel, onGeneratePitchDeck, onGenerateBusinessPlan, onPushToPipeline,
   isSheetsExporting, isExcelExporting, isExportingPDF, isPushingToPipeline,
   sheetsExportStatus, isInPipeline, pipelineSuccess, onGoHome,
   marketData = null, marketDataLoading = false, onRefetchMarketData,
@@ -4418,6 +4423,7 @@ export default function App({
         onExportToSheets={onExportToSheets}
         onExportToExcel={onExportToExcel}
         onGeneratePitchDeck={onGeneratePitchDeck}
+        onGenerateBusinessPlan={onGenerateBusinessPlan}
         onPushToPipeline={onPushToPipeline}
         isSheetsExporting={isSheetsExporting}
         isExcelExporting={isExcelExporting}

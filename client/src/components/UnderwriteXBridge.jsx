@@ -15,6 +15,7 @@ const UnderwriteXBridge = ({
   onExportToSheets,
   onExportToExcel,
   onGeneratePitchDeck,
+  onGenerateBusinessPlan,
   onPushToPipeline,
   isSheetsExporting,
   isExcelExporting,
@@ -47,6 +48,7 @@ const UnderwriteXBridge = ({
       onExportToSheets={onExportToSheets}
       onExportToExcel={onExportToExcel}
       onGeneratePitchDeck={onGeneratePitchDeck}
+      onGenerateBusinessPlan={onGenerateBusinessPlan}
       onPushToPipeline={onPushToPipeline}
       isSheetsExporting={isSheetsExporting}
       isExcelExporting={isExcelExporting}

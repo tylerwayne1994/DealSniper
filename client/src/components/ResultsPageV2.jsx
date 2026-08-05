@@ -1029,6 +1029,18 @@ const ResultsPageV2 = ({
     navigate(`/deal-room/${dealId}?tab=dealroom`);
   };
 
+  // Business Plan — full AI-generated investment memo/business plan (uses
+  // the deal's actual configured underwriting strategy, not a generic
+  // template). Lives on its own chat-style page since the plan can take a
+  // little back-and-forth ("add a timeline", "redo section 3", etc.).
+  const handleGenerateBusinessPlan = () => {
+    if (!dealId) {
+      alert('Push this deal to your pipeline first, then generate its business plan.');
+      return;
+    }
+    navigate(`/business-plan?dealId=${dealId}`);
+  };
+
   // Format helpers
   const fmt = (num) => {
     if (num === null || num === undefined || num === '') return 'N/A';
@@ -1187,6 +1199,7 @@ const ResultsPageV2 = ({
         onExportToSheets={handleExportToSheets}
         onExportToExcel={handleExportToExcel}
         onGeneratePitchDeck={handleGeneratePitchDeck}
+        onGenerateBusinessPlan={handleGenerateBusinessPlan}
         onPushToPipeline={handlePushToPipeline}
         isSheetsExporting={isSheetsExporting}
         isExcelExporting={isExcelExporting}

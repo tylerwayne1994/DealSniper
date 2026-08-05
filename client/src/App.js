@@ -27,6 +27,7 @@ import UpdatesPage from './pages/UpdatesPage'; // Updates Notification Center
 import DealRoomPage from './pages/DealRoomPage'; // Deal Room
 import InvestorGatewayPage from './pages/InvestorGatewayPage'; // Public investor access code entry
 import InvestorPitchDeckView from './pages/InvestorPitchDeckView'; // Public read-only investor pitch deck
+import ClaudeUnderwritePage from './pages/ClaudeUnderwritePage.jsx'; // AI chat-based Business Plan / investment memo generator
 
 function App() {
   return (
@@ -62,6 +63,7 @@ function App() {
         <Route path="/investor-portal" element={<RequireSubscription><InvestorPortalPage /></RequireSubscription>} /> {/* Investor Portal / LP Dashboard */}
         <Route path="/updates" element={<RequireSubscription><UpdatesPage /></RequireSubscription>} /> {/* Updates Notification Center */}
         <Route path="/deal-room/:dealId" element={<RequireSubscription><DealRoomPage /></RequireSubscription>} /> {/* Deal Room (owner view) */}
+        <Route path="/business-plan" element={<RequireSubscription><ClaudeUnderwritePage /></RequireSubscription>} /> {/* AI Business Plan generator (chat + artifact canvas) */}
       </Routes>
     </Router>
   );
