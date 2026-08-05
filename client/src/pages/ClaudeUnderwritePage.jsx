@@ -667,6 +667,7 @@ export default function ClaudeUnderwritePage() {
           body: JSON.stringify({
             session_id: sessionId,
             deal_data: {
+              deal_id: deal.deal_id,
               address: deal.address,
               units: deal.units,
               purchase_price: deal.purchase_price,

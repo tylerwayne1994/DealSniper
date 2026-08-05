@@ -15,6 +15,7 @@ import uuid
 import base64
 import asyncio
 import logging
+import requests
 from datetime import datetime
 from typing import Dict, Any, Optional, List, AsyncGenerator
 from pathlib import Path
@@ -240,6 +241,91 @@ def get_session(session_id: str) -> Dict[str, Any]:
             }
         }
     return _sessions[session_id]
+
+
+def _extract_pdf_text_fast(file_bytes: bytes) -> str:
+    """Cheap, local (no LLM call) text extraction for re-attaching a deal's
+    already-uploaded documents (OM/T12/rent roll/etc.) to a chat session so
+    they can be referenced again later (e.g. business plan generation)
+    without asking the user to re-upload them. Good enough for real-text-
+    layer PDFs; scanned/image-only pages just won't extract much, which is
+    an acceptable tradeoff for avoiding an extra Claude vision call on every
+    single deal load."""
+    try:
+        import pypdf
+        reader = pypdf.PdfReader(io.BytesIO(file_bytes))
+        pages = []
+        for page in reader.pages[:40]:  # cap runaway page counts
+            try:
+                pages.append(page.extract_text() or "")
+            except Exception:
+                continue
+        return "\n\n".join(pages).strip()
+    except Exception as e:
+        log.warning(f"[Claude Chat] Fast PDF text extraction failed: {e}")
+        return ""
+
+
+def _attach_deal_vault_documents(session: Dict[str, Any], deal_id: str) -> int:
+    """Pulls this deal's already-saved documents (Deal Room 'Documents' tab /
+    deal_documents table — the OM, T12, rent roll, etc. the user uploaded
+    while underwriting) into the chat session's file context, so generators
+    like the business plan can actually reference/cite the real source
+    documents instead of only the pre-extracted JSON fields. Skips files
+    already attached (by filename) and caps how many/how large to keep
+    this fast. Returns the number of documents attached."""
+    if not deal_id:
+        return 0
+    try:
+        from token_manager import get_supabase
+        sb = get_supabase()
+        res = (
+            sb.table("deal_documents")
+            .select("file_name, file_type, public_url, storage_path, file_size")
+            .eq("deal_id", deal_id)
+            .order("uploaded_at", desc=True)
+            .limit(8)
+            .execute()
+        )
+        rows = res.data or []
+    except Exception as e:
+        log.warning(f"[Claude Chat] Could not look up deal_documents for {deal_id}: {e}")
+        return 0
+
+    already = {f["filename"] for f in session["files"]}
+    attached = 0
+    for row in rows:
+        filename = row.get("file_name") or "document"
+        if filename in already:
+            continue
+        url = row.get("public_url")
+        file_type = row.get("file_type") or ""
+        if not url or (row.get("file_size") or 0) > 25_000_000:
+            continue
+        if "pdf" not in file_type.lower() and not filename.lower().endswith(".pdf"):
+            continue  # text extraction below only handles PDFs for now
+        try:
+            resp = requests.get(url, timeout=15)
+            resp.raise_for_status()
+            file_bytes = resp.content
+        except Exception as e:
+            log.warning(f"[Claude Chat] Failed to download deal document {filename}: {e}")
+            continue
+
+        extracted_text = _extract_pdf_text_fast(file_bytes)
+        session["files"].append({
+            "file_id": str(uuid.uuid4())[:8],
+            "filename": filename,
+            "file_type": "application/pdf",
+            "size": len(file_bytes),
+            "uploaded_at": datetime.utcnow().isoformat(),
+            "extracted_text": extracted_text,
+            "parsed_data": None,
+            "base64_data": base64.standard_b64encode(file_bytes).decode("utf-8"),
+            "source": "deal_vault",
+        })
+        attached += 1
+    return attached
 
 
 async def stream_claude_response(
@@ -1105,6 +1191,26 @@ BUSINESS_PLAN_PROMPT = """You are generating a professional Investment Underwrit
 Based on the deal data provided in this session, generate a complete business plan document in the following structure. 
 This must be formatted as a document artifact that can be downloaded as a PDF.
 
+CRITICAL — USE THE USER'S ACTUAL UNDERWRITING STRATEGY, DO NOT INVENT ONE:
+The "SCENARIO / ASSUMPTIONS" data below is the EXACT financing and hold/exit strategy the user
+already configured on the Results page of the underwriting model (interest rate/rate override,
+LTV, amortization, IO period, refinance year/LTV/rate if refi is enabled, exit cap rate, hold
+period, cost of sale %, rent growth assumption, and — if present — JV/waterfall structure such as
+preferred return rate, GP promote %, and equity split). This plan must be built AROUND that real,
+user-configured strategy — not a set of generic invented alternatives. If refinance is enabled in
+the scenario data, the plan's exit/hold strategy is the refi described there (at that specific
+year/LTV/rate), not a sale, and vice versa. If a JV/waterfall structure is present, the investor
+returns section must reflect that exact preferred return and promote structure — do not substitute
+a different equity structure. Only if the scenario data is genuinely sparse/missing for a given
+assumption should you note an explicit assumption and flag it as such — never silently replace a
+real user-configured number with a fabricated one.
+
+If the user has any documents attached in this session (OMs, T12s, rent rolls, etc. — provided in
+the UPLOADED DOCUMENTS context), pull real figures from them where the parsed data is incomplete or
+ambiguous, and cite which document/section a figure came from when it materially differs from the
+headline extracted numbers (e.g. "per the T-12, actual property taxes were $X, vs. the pro forma
+figure of $Y").
+
 The document must include ALL of the following sections — do not skip any:
 
 1. **OFFERING HIGHLIGHTS** — property name/address, year built/renovated, total SF, asking price, T12 actual NOI, going-in cap rate, day-1 equity, occupancy, exit strategy
@@ -1117,11 +1223,13 @@ The document must include ALL of the following sections — do not skip any:
 
 5. **SECTION 4: UNDERWRITING — T12 INCOME & EXPENSES** — full income statement (GPR, vacancy, other income, EGI) and expense breakdown (taxes, insurance, utilities, repairs, management, all line items) with NOI
 
-6. **SECTION 5: DEAL SCENARIOS** — generate 2-4 deal scenarios based on the user's deal structure and investor strategy. Each scenario needs: deal structure table (purchase price, down payment, closing costs, total equity, loan amount, rate, amortization, debt service), cash flow analysis (baseline/year1/year2-3 NOI, debt service, cash flow), exit strategy (refi or sale, exit value, cash out, investor repayment, owner proceeds, investor total return), key metrics (going-in cap rate, market cap rate, day-1 equity, DSCR, investor preferred, total return)
+6. **SECTION 5: THE USER'S DEAL STRUCTURE & STRATEGY** — present the ACTUAL financing/exit strategy from the scenario data described above as a single, clearly-labeled deal structure (not multiple invented alternatives): deal structure table (purchase price, down payment, closing costs, total equity, loan amount, rate, amortization, IO period, debt service), cash flow analysis (day-1/year1/stabilized NOI, debt service, cash flow, DSCR), exit strategy exactly as configured (refi at the user's refi year/LTV/rate, OR sale at the user's exit cap rate/hold period — whichever the scenario data specifies), investor returns using the user's actual preferred return/promote/equity split if a JV or waterfall structure is present, key metrics (going-in cap rate, market cap rate, day-1 equity, DSCR, total return, IRR/equity multiple if computable). If (and only if) the user explicitly asked for alternate scenarios to be compared, you may add a second labeled scenario — otherwise present ONE plan matching what they actually built.
 
-7. **SECTION 6: SCENARIO COMPARISON SUMMARY** — side-by-side comparison table of all scenarios + recommendation
+7. **SECTION 6: EXECUTION & STABILIZATION TIMELINE** — a phased timeline table (Phase | Timeline | Key Actions | Target/KPI) covering: Month 1 (closing, transition, initial due diligence follow-ups), Month 2-4 (lease-up / initial value-add rollout), Month 3-6 (utility billback/RUBS implementation if applicable), Month 6-12 (stabilization), Month 12-18 (optimization / rent pushes), Month 18 through the user's hold period (steady-state hold), and the Exit/Refi window matching the user's actual configured exit year. Follow this with a First-90-Days action checklist broken into Month 1 / Month 2 / Month 3 concrete action items.
 
-Use the actual numbers from the deal data. Where data is missing, make reasonable assumptions and note them.
+8. **SECTION 7: DEAL STRUCTURE SUMMARY** — a clean one-page recap table of the strategy from Section 5 (not a multi-scenario comparison, since this plan reflects the one real strategy the user configured) plus a short recommendation/conclusion paragraph.
+
+Use the actual numbers from the deal data. Where data is missing, make reasonable assumptions and note them explicitly as assumptions.
 Format all currency with $ and commas. Format all percentages with %.
 Be thorough — this is a professional investor presentation document."""
 
@@ -1171,22 +1279,32 @@ Notes: {deal_data.get('notes', 'None')}
 FULL PARSED DATA:
 {json.dumps(parsed, indent=2)[:30000]}
 
-SCENARIO / ASSUMPTIONS:
-{json.dumps(scenario, indent=2)[:5000]}
+SCENARIO / ASSUMPTIONS (the user's actual configured underwriting strategy — financing terms, exit/refi assumptions, JV/waterfall structure if any):
+{json.dumps(scenario, indent=2)[:8000]}
 """
         
+        # Pull this deal's already-uploaded documents (OM/T12/rent roll/etc.
+        # saved to the Deal Room's Document Vault) into the session so they
+        # can actually be referenced/cited later (business plan generation,
+        # follow-up chat questions) without asking the user to re-upload.
+        deal_id = deal_data.get("deal_id")
+        attached_count = _attach_deal_vault_documents(session, deal_id) if deal_id else 0
+        if attached_count:
+            deal_summary += f"\n{attached_count} saved document(s) from this deal's Document Vault (OM/T12/rent roll/etc.) are attached below under UPLOADED DOCUMENTS — reference them directly when relevant.\n"
+
         # Store as deal context in session
         session["deal_context"] = deal_summary
         session["deal_data"] = deal_data
         session["deal_address"] = deal_data.get("address", "Deal")
         
-        log.info(f"[Claude Chat] Injected deal context into session {session_id}: {deal_data.get('address', 'unknown')}")
+        log.info(f"[Claude Chat] Injected deal context into session {session_id}: {deal_data.get('address', 'unknown')} ({attached_count} vault documents attached)")
         
         return JSONResponse(content={
             "success": True,
             "session_id": session_id,
             "deal_address": session["deal_address"],
-            "context_length": len(deal_summary)
+            "context_length": len(deal_summary),
+            "documents_attached": attached_count,
         })
         
     except HTTPException:
