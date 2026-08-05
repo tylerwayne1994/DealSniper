@@ -3477,7 +3477,7 @@ function DashboardMapTab() {
                           </div>
                         ) : null}
                         <div style={{ padding: '12px 14px 14px' }}>
-                          <div style={{ fontSize: 15, fontWeight: 700, color: '#111827', marginBottom: 6, lineHeight: 1.3 }}>{p.name}</div>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: '#f3f4f6', marginBottom: 6, lineHeight: 1.3 }}>{p.name}</div>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
                             <div style={{
                               display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 9px', borderRadius: 10,
@@ -3506,21 +3506,21 @@ function DashboardMapTab() {
                           {(p.units || (p.purchasePrice && !p.image) || p.dayOneCashFlow) && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))', gap: 6, marginBottom: 8 }}>
                               {p.units ? (
-                                <div style={{ backgroundColor: '#ffffff', border: '1px solid #a7f3d0', borderRadius: 6, padding: '6px 8px' }}>
-                                  <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Units</div>
-                                  <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{p.units}</div>
+                                <div style={{ backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 6, padding: '6px 8px' }}>
+                                  <div style={{ fontSize: 9, fontWeight: 700, color: '#9aa0a6', textTransform: 'uppercase' }}>Units</div>
+                                  <div style={{ fontSize: 13, fontWeight: 700, color: '#f3f4f6' }}>{p.units}</div>
                                 </div>
                               ) : null}
                               {p.purchasePrice && !p.image ? (
-                                <div style={{ backgroundColor: '#ffffff', border: '1px solid #a7f3d0', borderRadius: 6, padding: '6px 8px' }}>
-                                  <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Price</div>
-                                  <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>${Number(p.purchasePrice).toLocaleString()}</div>
+                                <div style={{ backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 6, padding: '6px 8px' }}>
+                                  <div style={{ fontSize: 9, fontWeight: 700, color: '#9aa0a6', textTransform: 'uppercase' }}>Price</div>
+                                  <div style={{ fontSize: 13, fontWeight: 700, color: '#f3f4f6' }}>${Number(p.purchasePrice).toLocaleString()}</div>
                                 </div>
                               ) : null}
                               {p.dayOneCashFlow ? (
-                                <div style={{ backgroundColor: '#ffffff', border: '1px solid #a7f3d0', borderRadius: 6, padding: '6px 8px' }}>
-                                  <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Day-1 CF</div>
-                                  <div style={{ fontSize: 13, fontWeight: 700, color: p.dayOneCashFlow >= 0 ? '#059669' : '#dc2626' }}>
+                                <div style={{ backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 6, padding: '6px 8px' }}>
+                                  <div style={{ fontSize: 9, fontWeight: 700, color: '#9aa0a6', textTransform: 'uppercase' }}>Day-1 CF</div>
+                                  <div style={{ fontSize: 13, fontWeight: 700, color: p.dayOneCashFlow >= 0 ? '#34d399' : '#f87171' }}>
                                     ${Math.round(Number(p.dayOneCashFlow)).toLocaleString()}
                                   </div>
                                 </div>
@@ -3529,29 +3529,29 @@ function DashboardMapTab() {
                           )}
 
                           {!p.image && p.insight && (
-                            <div style={{ borderRadius: 8, padding: 10, fontSize: 12, lineHeight: 1.5, color: '#374151', backgroundColor: '#ffffff', border: '1px solid #a7f3d0', marginBottom: 8 }}>
+                            <div style={{ borderRadius: 8, padding: 10, fontSize: 12, lineHeight: 1.5, color: '#d1d5db', backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', marginBottom: 8 }}>
                               {p.insight}
                             </div>
                           )}
 
                           {(p.brokerName || p.brokerPhone || p.brokerEmail) && (
-                            <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              {p.brokerName && <span><strong style={{ color: '#374151' }}>Broker:</strong> {p.brokerName}</span>}
+                            <div style={{ fontSize: 11, color: '#9aa0a6', marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              {p.brokerName && <span><strong style={{ color: '#d1d5db' }}>Broker:</strong> {p.brokerName}</span>}
                               <div style={{ display: 'flex', gap: 10 }}>
-                                {p.brokerPhone && <a href={`tel:${p.brokerPhone}`} style={{ color: '#059669', textDecoration: 'none', fontWeight: 600 }}>{p.brokerPhone}</a>}
-                                {p.brokerEmail && <a href={`mailto:${p.brokerEmail}`} style={{ color: '#059669', textDecoration: 'none', fontWeight: 600 }}>Email</a>}
+                                {p.brokerPhone && <a href={`tel:${p.brokerPhone}`} style={{ color: '#34d399', textDecoration: 'none', fontWeight: 600 }}>{p.brokerPhone}</a>}
+                                {p.brokerEmail && <a href={`mailto:${p.brokerEmail}`} style={{ color: '#34d399', textDecoration: 'none', fontWeight: 600 }}>Email</a>}
                               </div>
                             </div>
                           )}
 
                           {p.source === 'uploaded' && p.propertyData && Object.keys(p.propertyData).length > 0 && (
-                            <div style={{ borderRadius: 8, padding: 8, backgroundColor: '#ffffff', fontSize: 11, maxHeight: 180, overflowY: 'auto', border: '1px solid #a7f3d0', marginBottom: 8 }}>
+                            <div style={{ borderRadius: 8, padding: 8, backgroundColor: 'rgba(255,255,255,0.06)', fontSize: 11, maxHeight: 180, overflowY: 'auto', border: '1px solid rgba(255,255,255,0.14)', marginBottom: 8 }}>
                               {Object.entries(p.propertyData)
                                 .filter(([, v]) => v !== null && v !== undefined && v !== '')
                                 .map(([key, value]) => (
                                   <div key={key} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '3px 0' }}>
-                                    <span style={{ fontWeight: 600, color: '#6b7280' }}>{key}</span>
-                                    <span style={{ color: '#111827', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{String(value)}</span>
+                                    <span style={{ fontWeight: 600, color: '#9aa0a6' }}>{key}</span>
+                                    <span style={{ color: '#f3f4f6', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{String(value)}</span>
                                   </div>
                                 ))}
                             </div>
@@ -3784,13 +3784,13 @@ function DashboardMapTab() {
                   radius={7}
                   pathOptions={{ fillColor: color, fillOpacity: 0.85, color: '#fff', weight: 2 }}
                 >
-                  <Popup maxWidth={360}>
+                  <Popup maxWidth={360} className="parcel-popup-dark">
                     <div style={{ fontFamily: 'Inter, -apple-system, sans-serif', minWidth: 280, padding: 4 }}>
                       {/* Header */}
-                      <div style={{ fontWeight: 700, fontSize: 15, color: '#111827', marginBottom: 2 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: '#f3f4f6', marginBottom: 2 }}>
                         {proj.project_name || 'Unknown Project'}
                       </div>
-                      <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
+                      <div style={{ fontSize: 12, color: '#9aa0a6', marginBottom: 8 }}>
                         {proj.address || ''}{proj.address && proj.city ? ', ' : ''}{proj.city || ''}{proj.state ? `, ${proj.state}` : ''}
                       </div>
 
@@ -3818,27 +3818,27 @@ function DashboardMapTab() {
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: 12 }}>
                         {proj.units && (
                           <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>UNITS</span><br/>
-                            <span style={{ fontWeight: 700, color: '#111827' }}>{Number(proj.units).toLocaleString()}</span></div>
+                            <span style={{ fontWeight: 700, color: '#f3f4f6' }}>{Number(proj.units).toLocaleString()}</span></div>
                         )}
                         {proj.cost_display && (
                           <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>EST. COST</span><br/>
-                            <span style={{ fontWeight: 700, color: '#111827' }}>{proj.cost_display}</span></div>
+                            <span style={{ fontWeight: 700, color: '#f3f4f6' }}>{proj.cost_display}</span></div>
                         )}
                         {proj.developer && proj.developer !== 'Unknown' && (
                           <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>DEVELOPER</span><br/>
-                            <span style={{ fontWeight: 600, color: '#374151' }}>{proj.developer}</span></div>
+                            <span style={{ fontWeight: 600, color: '#d1d5db' }}>{proj.developer}</span></div>
                         )}
                         {proj.issue_date && (
                           <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>ISSUE DATE</span><br/>
-                            <span style={{ color: '#374151' }}>{proj.issue_date}</span></div>
+                            <span style={{ color: '#d1d5db' }}>{proj.issue_date}</span></div>
                         )}
                         {proj.occupancy && (
                           <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>OCCUPANCY</span><br/>
-                            <span style={{ color: '#374151' }}>{proj.occupancy}%</span></div>
+                            <span style={{ color: '#d1d5db' }}>{proj.occupancy}%</span></div>
                         )}
                         {proj.avg_rent && (
                           <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>AVG RENT</span><br/>
-                            <span style={{ color: '#374151' }}>${Number(proj.avg_rent).toLocaleString()}</span></div>
+                            <span style={{ color: '#d1d5db' }}>${Number(proj.avg_rent).toLocaleString()}</span></div>
                         )}
                         {proj.cap_rate_overall && (
                           <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>CAP RATE</span><br/>
@@ -3846,19 +3846,19 @@ function DashboardMapTab() {
                         )}
                         {proj.investor_demand && (
                           <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>INVESTOR DEMAND</span><br/>
-                            <span style={{ color: '#374151' }}>{proj.investor_demand}</span></div>
+                            <span style={{ color: '#d1d5db' }}>{proj.investor_demand}</span></div>
                         )}
                         {proj.price_per_unit && (
                           <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>PRICE/UNIT</span><br/>
-                            <span style={{ color: '#374151' }}>${Number(proj.price_per_unit).toLocaleString()}</span></div>
+                            <span style={{ color: '#d1d5db' }}>${Number(proj.price_per_unit).toLocaleString()}</span></div>
                         )}
                       </div>
 
                       {/* Cap rate detail (when available) */}
                       {proj.cap_rate_overall && (
-                        <div style={{ marginTop: 8, padding: '6px 8px', background: '#fdf2f8', borderRadius: 6, fontSize: 11 }}>
+                        <div style={{ marginTop: 8, padding: '6px 8px', background: 'rgba(255,255,255,0.06)', borderRadius: 6, fontSize: 11 }}>
                           <div style={{ fontWeight: 600, color: '#9ca3af', fontSize: 10, marginBottom: 2 }}>MSA CAP RATES</div>
-                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', color: '#374151' }}>
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', color: '#d1d5db' }}>
                             {proj.cap_rate_classA_stab && <span>A Stab: <strong>{proj.cap_rate_classA_stab}</strong></span>}
                             {proj.cap_rate_classA_va && <span>A VA: <strong>{proj.cap_rate_classA_va}</strong></span>}
                             {proj.cap_rate_classB_stab && <span>B Stab: <strong>{proj.cap_rate_classB_stab}</strong></span>}
@@ -3868,8 +3868,8 @@ function DashboardMapTab() {
 
                       {/* Description */}
                       {proj.description && (
-                        <div style={{ marginTop: 8, fontSize: 11, color: '#6b7280', lineHeight: 1.4,
-                          borderTop: '1px solid #f3f4f6', paddingTop: 6 }}>{proj.description}</div>
+                        <div style={{ marginTop: 8, fontSize: 11, color: '#9aa0a6', lineHeight: 1.4,
+                          borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: 6 }}>{proj.description}</div>
                       )}
                     </div>
                   </Popup>
@@ -3891,10 +3891,10 @@ function DashboardMapTab() {
                   radius={radius}
                   pathOptions={{ fillColor: color, fillOpacity: 0.55, color: color, weight: 2, opacity: 0.8 }}
                 >
-                  <Popup maxWidth={380}>
+                  <Popup maxWidth={380} className="parcel-popup-dark">
                     <div style={{ fontFamily: 'Inter, -apple-system, sans-serif', minWidth: 300, padding: 4 }}>
                       {/* Header */}
-                      <div style={{ fontWeight: 700, fontSize: 15, color: '#111827', marginBottom: 2 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: '#f3f4f6', marginBottom: 2 }}>
                         {msa.MSA}
                       </div>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
@@ -3912,19 +3912,19 @@ function DashboardMapTab() {
 
                       {/* 3-col metrics */}
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
-                        <div style={{ textAlign: 'center', padding: '6px 4px', background: '#f0fdf4', borderRadius: 8 }}>
-                          <div style={{ fontSize: 10, color: '#6b7280', fontWeight: 600 }}>ABSORPTION</div>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>{Number(msa.Net_Absorption_Units_Annual || 0).toLocaleString()}</div>
+                        <div style={{ textAlign: 'center', padding: '6px 4px', background: 'rgba(255,255,255,0.06)', borderRadius: 8 }}>
+                          <div style={{ fontSize: 10, color: '#9aa0a6', fontWeight: 600 }}>ABSORPTION</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: '#f3f4f6' }}>{Number(msa.Net_Absorption_Units_Annual || 0).toLocaleString()}</div>
                           <div style={{ fontSize: 10, color: '#9ca3af' }}>units/yr</div>
                         </div>
-                        <div style={{ textAlign: 'center', padding: '6px 4px', background: '#eff6ff', borderRadius: 8 }}>
-                          <div style={{ fontSize: 10, color: '#6b7280', fontWeight: 600 }}>OCCUPANCY</div>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>{msa.Occupancy_Rate_Pct || 'â€“'}%</div>
+                        <div style={{ textAlign: 'center', padding: '6px 4px', background: 'rgba(255,255,255,0.06)', borderRadius: 8 }}>
+                          <div style={{ fontSize: 10, color: '#9aa0a6', fontWeight: 600 }}>OCCUPANCY</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: '#f3f4f6' }}>{msa.Occupancy_Rate_Pct || 'â€“'}%</div>
                           <div style={{ fontSize: 10, color: '#9ca3af' }}>rate</div>
                         </div>
-                        <div style={{ textAlign: 'center', padding: '6px 4px', background: '#fefce8', borderRadius: 8 }}>
-                          <div style={{ fontSize: 10, color: '#6b7280', fontWeight: 600 }}>AVG RENT</div>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>${Number(msa.Avg_Effective_Rent_USD || 0).toLocaleString()}</div>
+                        <div style={{ textAlign: 'center', padding: '6px 4px', background: 'rgba(255,255,255,0.06)', borderRadius: 8 }}>
+                          <div style={{ fontSize: 10, color: '#9aa0a6', fontWeight: 600 }}>AVG RENT</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: '#f3f4f6' }}>${Number(msa.Avg_Effective_Rent_USD || 0).toLocaleString()}</div>
                           <div style={{ fontSize: 10, color: '#9ca3af' }}>effective</div>
                         </div>
                       </div>
@@ -3932,19 +3932,19 @@ function DashboardMapTab() {
                       {/* Detail grid */}
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: 12 }}>
                         <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>VACANCY</span><br/>
-                          <span style={{ color: '#374151' }}>{msa.Vacancy_Rate_Pct || 'â€“'}%</span></div>
+                          <span style={{ color: '#d1d5db' }}>{msa.Vacancy_Rate_Pct || 'â€“'}%</span></div>
                         <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>RENT GROWTH</span><br/>
-                          <span style={{ color: Number(msa.YoY_Rent_Growth_Pct) >= 0 ? '#059669' : '#dc2626' }}>{msa.YoY_Rent_Growth_Pct || 'â€“'}%</span></div>
+                          <span style={{ color: Number(msa.YoY_Rent_Growth_Pct) >= 0 ? '#34d399' : '#f87171' }}>{msa.YoY_Rent_Growth_Pct || 'â€“'}%</span></div>
                         <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>UNDER CONST.</span><br/>
-                          <span style={{ color: '#374151' }}>{Number(msa.Total_Units_Under_Construction || 0).toLocaleString()}</span></div>
+                          <span style={{ color: '#d1d5db' }}>{Number(msa.Total_Units_Under_Construction || 0).toLocaleString()}</span></div>
                         <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>CONCESSIONS</span><br/>
-                          <span style={{ color: '#374151' }}>{msa.Concession_Prevalence || 'â€“'}</span></div>
+                          <span style={{ color: '#d1d5db' }}>{msa.Concession_Prevalence || 'â€“'}</span></div>
                       </div>
 
                       {/* Commentary */}
                       {msa.Market_Commentary && (
-                        <div style={{ marginTop: 8, fontSize: 11, color: '#6b7280', lineHeight: 1.4,
-                          borderTop: '1px solid #f3f4f6', paddingTop: 6 }}>{msa.Market_Commentary}</div>
+                        <div style={{ marginTop: 8, fontSize: 11, color: '#9aa0a6', lineHeight: 1.4,
+                          borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: 6 }}>{msa.Market_Commentary}</div>
                       )}
                     </div>
                   </Popup>
@@ -3966,10 +3966,10 @@ function DashboardMapTab() {
                   radius={radius}
                   pathOptions={{ fillColor: color, fillOpacity: 0.7, color: '#fff', weight: 2, opacity: 0.9 }}
                 >
-                  <Popup maxWidth={400}>
+                  <Popup maxWidth={400} className="parcel-popup-dark">
                     <div style={{ fontFamily: 'Inter, -apple-system, sans-serif', minWidth: 320, padding: 4 }}>
                       {/* Header */}
-                      <div style={{ fontWeight: 700, fontSize: 15, color: '#111827', marginBottom: 2 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: '#f3f4f6', marginBottom: 2 }}>
                         {msa.MSA}
                       </div>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
@@ -3991,61 +3991,61 @@ function DashboardMapTab() {
                       </div>
 
                       {/* Main cap rate display */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 0', marginBottom: 10, background: `${color}10`, borderRadius: 10, border: `1px solid ${color}30` }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 0', marginBottom: 10, background: `${color}18`, borderRadius: 10, border: `1px solid ${color}40` }}>
                         <div style={{ textAlign: 'center' }}>
                           <div style={{ fontSize: 28, fontWeight: 800, color: color }}>{rate}%</div>
-                          <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>Overall Market Cap Rate</div>
+                          <div style={{ fontSize: 11, color: '#9aa0a6', fontWeight: 600 }}>Overall Market Cap Rate</div>
                         </div>
                       </div>
 
                       {/* Cap rate breakdown grid */}
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 10 }}>
                         {msa.CapRate_ClassA_Stab_Range && (
-                          <div style={{ padding: '6px 8px', background: '#f0fdf4', borderRadius: 6, fontSize: 11 }}>
-                            <div style={{ fontWeight: 600, color: '#6b7280', fontSize: 10 }}>CLASS A STABILIZED</div>
-                            <div style={{ fontWeight: 700, color: '#111827' }}>{msa.CapRate_ClassA_Stab_Range}</div>
+                          <div style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.06)', borderRadius: 6, fontSize: 11 }}>
+                            <div style={{ fontWeight: 600, color: '#9aa0a6', fontSize: 10 }}>CLASS A STABILIZED</div>
+                            <div style={{ fontWeight: 700, color: '#f3f4f6' }}>{msa.CapRate_ClassA_Stab_Range}</div>
                           </div>
                         )}
                         {msa.CapRate_ClassA_VA_Range && (
-                          <div style={{ padding: '6px 8px', background: '#eff6ff', borderRadius: 6, fontSize: 11 }}>
-                            <div style={{ fontWeight: 600, color: '#6b7280', fontSize: 10 }}>CLASS A VALUE-ADD</div>
-                            <div style={{ fontWeight: 700, color: '#111827' }}>{msa.CapRate_ClassA_VA_Range}</div>
+                          <div style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.06)', borderRadius: 6, fontSize: 11 }}>
+                            <div style={{ fontWeight: 600, color: '#9aa0a6', fontSize: 10 }}>CLASS A VALUE-ADD</div>
+                            <div style={{ fontWeight: 700, color: '#f3f4f6' }}>{msa.CapRate_ClassA_VA_Range}</div>
                           </div>
                         )}
                         {msa.CapRate_ClassB_Stab_Range && (
-                          <div style={{ padding: '6px 8px', background: '#fefce8', borderRadius: 6, fontSize: 11 }}>
-                            <div style={{ fontWeight: 600, color: '#6b7280', fontSize: 10 }}>CLASS B STABILIZED</div>
-                            <div style={{ fontWeight: 700, color: '#111827' }}>{msa.CapRate_ClassB_Stab_Range}</div>
+                          <div style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.06)', borderRadius: 6, fontSize: 11 }}>
+                            <div style={{ fontWeight: 600, color: '#9aa0a6', fontSize: 10 }}>CLASS B STABILIZED</div>
+                            <div style={{ fontWeight: 700, color: '#f3f4f6' }}>{msa.CapRate_ClassB_Stab_Range}</div>
                           </div>
                         )}
                         {msa.CapRate_ClassC_Stab_Range && (
-                          <div style={{ padding: '6px 8px', background: '#fdf2f8', borderRadius: 6, fontSize: 11 }}>
-                            <div style={{ fontWeight: 600, color: '#6b7280', fontSize: 10 }}>CLASS C STABILIZED</div>
-                            <div style={{ fontWeight: 700, color: '#111827' }}>{msa.CapRate_ClassC_Stab_Range}</div>
+                          <div style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.06)', borderRadius: 6, fontSize: 11 }}>
+                            <div style={{ fontWeight: 600, color: '#9aa0a6', fontSize: 10 }}>CLASS C STABILIZED</div>
+                            <div style={{ fontWeight: 700, color: '#f3f4f6' }}>{msa.CapRate_ClassC_Stab_Range}</div>
                           </div>
                         )}
                       </div>
 
                       {/* Detail grid */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: 12, borderTop: '1px solid #f3f4f6', paddingTop: 8 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: 12, borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: 8 }}>
                         <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>INVESTOR DEMAND</span><br/>
-                          <span style={{ fontWeight: 600, color: msa.Investor_Demand === 'Very High' || msa.Investor_Demand === 'High' ? '#059669' : msa.Investor_Demand === 'Low' || msa.Investor_Demand === 'Very Low' ? '#dc2626' : '#374151' }}>{msa.Investor_Demand || 'â€“'}</span></div>
+                          <span style={{ fontWeight: 600, color: msa.Investor_Demand === 'Very High' || msa.Investor_Demand === 'High' ? '#34d399' : msa.Investor_Demand === 'Low' || msa.Investor_Demand === 'Very Low' ? '#f87171' : '#d1d5db' }}>{msa.Investor_Demand || 'â€“'}</span></div>
                         <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>MARKET TIER</span><br/>
-                          <span style={{ color: '#374151' }}>{msa.Market_Tier || 'â€“'}</span></div>
+                          <span style={{ color: '#d1d5db' }}>{msa.Market_Tier || 'â€“'}</span></div>
                         {msa.Typical_Price_Per_Unit_USD && (
                           <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>PRICE / UNIT (A)</span><br/>
-                            <span style={{ fontWeight: 600, color: '#111827' }}>${Number(msa.Typical_Price_Per_Unit_USD).toLocaleString()}</span></div>
+                            <span style={{ fontWeight: 600, color: '#f3f4f6' }}>${Number(msa.Typical_Price_Per_Unit_USD).toLocaleString()}</span></div>
                         )}
                         {msa.Typical_Price_Per_Unit_ClassB_USD && (
                           <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 11 }}>PRICE / UNIT (B)</span><br/>
-                            <span style={{ fontWeight: 600, color: '#111827' }}>${Number(msa.Typical_Price_Per_Unit_ClassB_USD).toLocaleString()}</span></div>
+                            <span style={{ fontWeight: 600, color: '#f3f4f6' }}>${Number(msa.Typical_Price_Per_Unit_ClassB_USD).toLocaleString()}</span></div>
                         )}
                       </div>
 
                       {/* Notes */}
                       {msa.CapRate_Notes && (
-                        <div style={{ marginTop: 8, fontSize: 11, color: '#6b7280', lineHeight: 1.4,
-                          borderTop: '1px solid #f3f4f6', paddingTop: 6 }}>{msa.CapRate_Notes}</div>
+                        <div style={{ marginTop: 8, fontSize: 11, color: '#9aa0a6', lineHeight: 1.4,
+                          borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: 6 }}>{msa.CapRate_Notes}</div>
                       )}
                       {msa.CapRate_Data_Source && (
                         <div style={{ marginTop: 4, fontSize: 10, color: '#9ca3af' }}>Source: {msa.CapRate_Data_Source}</div>
@@ -4074,9 +4074,9 @@ function DashboardMapTab() {
                   radius={6}
                   pathOptions={{ fillColor: markerColor, fillOpacity: 0.85, color: '#fff', weight: 1.5 }}
                 >
-                  <Popup maxWidth={380}>
+                  <Popup maxWidth={380} className="parcel-popup-dark">
                     <div style={{ fontFamily: 'Inter, -apple-system, sans-serif', minWidth: 300, padding: 4 }}>
-                      <div style={{ fontWeight: 700, fontSize: 15, color: '#111827', marginBottom: 3 }}>{row.city || 'Unknown City'}</div>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: '#f3f4f6', marginBottom: 3 }}>{row.city || 'Unknown City'}</div>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                         <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: `${markerColor}20`, color: markerColor, border: `1px solid ${markerColor}50` }}>
                           {metricLabelFromKey(cityMetric)}: {rawValue || 'N/A'}
@@ -4086,11 +4086,11 @@ function DashboardMapTab() {
                         {Object.entries(row).filter(([k, v]) => !CITY_OVERLAY_BASE_FIELDS.has(k) && v !== '' && v != null).slice(0, 12).map(([k, v]) => (
                           <div key={`${idx}-${k}`}>
                             <span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>{metricLabelFromKey(k).toUpperCase()}</span><br/>
-                            <span style={{ color: '#374151', fontWeight: 600 }}>{String(v)}</span>
+                            <span style={{ color: '#d1d5db', fontWeight: 600 }}>{String(v)}</span>
                           </div>
                         ))}
                       </div>
-                      <div style={{ marginTop: 8, borderTop: '1px solid #f1f5f9', paddingTop: 6, fontSize: 10, color: '#64748b' }}>
+                      <div style={{ marginTop: 8, borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: 6, fontSize: 10, color: '#9aa0a6' }}>
                         Source: {row.data_source || 'N/A'} Â· {row.as_of_date || 'N/A'}
                       </div>
                     </div>
@@ -4117,9 +4117,9 @@ function DashboardMapTab() {
                   radius={5.5}
                   pathOptions={{ fillColor: markerColor, fillOpacity: 0.85, color: '#fff', weight: 1.5 }}
                 >
-                  <Popup maxWidth={380}>
+                  <Popup maxWidth={380} className="parcel-popup-dark">
                     <div style={{ fontFamily: 'Inter, -apple-system, sans-serif', minWidth: 300, padding: 4 }}>
-                      <div style={{ fontWeight: 700, fontSize: 15, color: '#111827', marginBottom: 3 }}>ZIP {row.zip_code || 'N/A'}{row.metro ? ` Â· ${row.metro}` : ''}</div>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: '#f3f4f6', marginBottom: 3 }}>ZIP {row.zip_code || 'N/A'}{row.metro ? ` Â· ${row.metro}` : ''}</div>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                         <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: `${markerColor}20`, color: markerColor, border: `1px solid ${markerColor}50` }}>
                           {metricLabelFromKey(zipMetricV2)}: {rawValue || 'N/A'}
@@ -4129,11 +4129,11 @@ function DashboardMapTab() {
                         {Object.entries(row).filter(([k, v]) => !ZIP_OVERLAY_BASE_FIELDS.has(k) && v !== '' && v != null).slice(0, 12).map(([k, v]) => (
                           <div key={`${idx}-${k}`}>
                             <span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>{metricLabelFromKey(k).toUpperCase()}</span><br/>
-                            <span style={{ color: '#374151', fontWeight: 600 }}>{String(v)}</span>
+                            <span style={{ color: '#d1d5db', fontWeight: 600 }}>{String(v)}</span>
                           </div>
                         ))}
                       </div>
-                      <div style={{ marginTop: 8, borderTop: '1px solid #f1f5f9', paddingTop: 6, fontSize: 10, color: '#64748b' }}>
+                      <div style={{ marginTop: 8, borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: 6, fontSize: 10, color: '#9aa0a6' }}>
                         Source: {row.data_source || 'N/A'} Â· {row.as_of_date || 'N/A'}
                       </div>
                     </div>
@@ -4155,15 +4155,15 @@ function DashboardMapTab() {
                   radius={8}
                   pathOptions={{ fillColor: '#8b5cf6', fillOpacity: 0.9, color: '#fff', weight: 2 }}
                 >
-                  <Popup maxWidth={400}>
+                  <Popup maxWidth={400} className="parcel-popup-dark">
                     <div style={{ fontFamily: 'Inter, -apple-system, sans-serif', minWidth: 300, padding: 4 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                         <div style={{ width: 30, height: 30, borderRadius: 8, background: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
                         </div>
                         <div>
-                          <div style={{ fontWeight: 700, fontSize: 14, color: '#111827', lineHeight: 1.2 }}>{fmt(dc['Project Name'])}</div>
-                          <div style={{ fontSize: 11, color: '#6b7280' }}>{fmt(dc['Operator / Developer'])}</div>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: '#f3f4f6', lineHeight: 1.2 }}>{fmt(dc['Project Name'])}</div>
+                          <div style={{ fontSize: 11, color: '#9aa0a6' }}>{fmt(dc['Operator / Developer'])}</div>
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
@@ -4172,18 +4172,18 @@ function DashboardMapTab() {
                           <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 10, fontWeight: 600, background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ddd6fe' }}>{dc['Parent Company']}</span>
                         )}
                       </div>
-                      <div style={{ fontSize: 12, color: '#374151', marginBottom: 8 }}>ðŸ“ {fmt(dc['Full Address'] || `${dc.City}, ${dc.State}`)}</div>
+                      <div style={{ fontSize: 12, color: '#d1d5db', marginBottom: 8 }}>ðŸ“ {fmt(dc['Full Address'] || `${dc.City}, ${dc.State}`)}</div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: 12 }}>
-                        {dc['Investment ($B)'] && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>INVESTMENT</span><br/><span style={{ fontWeight: 700, color: '#111827' }}>${typeof dc['Investment ($B)'] === 'number' ? `$${dc['Investment ($B)']}B` : dc['Investment ($B)']}</span></div>}
-                        {dc['Capacity (MW)'] && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>CAPACITY</span><br/><span style={{ fontWeight: 700, color: '#111827' }}>{dc['Capacity (MW)']} MW</span></div>}
-                        {dc['Site Size (Acres)'] && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>SITE SIZE</span><br/><span style={{ fontWeight: 700, color: '#111827' }}>{dc['Site Size (Acres)']} acres</span></div>}
-                        {dc['Est. Completion'] && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>EST. COMPLETION</span><br/><span style={{ fontWeight: 600, color: '#374151' }}>{dc['Est. Completion']}</span></div>}
-                        {dc['Power Source Notes'] && dc['Power Source Notes'] !== 'TBD' && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>POWER SOURCE</span><br/><span style={{ fontWeight: 600, color: '#374151' }}>{dc['Power Source Notes']}</span></div>}
-                        {dc['Jobs (Construction)'] && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>CONSTRUCTION JOBS</span><br/><span style={{ fontWeight: 600, color: '#374151' }}>{dc['Jobs (Construction)']}</span></div>}
-                        {dc['Jobs (Operational)'] && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>OPERATIONAL JOBS</span><br/><span style={{ fontWeight: 600, color: '#374151' }}>{dc['Jobs (Operational)']}</span></div>}
-                        {dc['Key Tenant / Use'] && <div style={{ gridColumn: '1 / -1' }}><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>KEY TENANT / USE</span><br/><span style={{ fontWeight: 600, color: '#374151' }}>{dc['Key Tenant / Use']}</span></div>}
+                        {dc['Investment ($B)'] && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>INVESTMENT</span><br/><span style={{ fontWeight: 700, color: '#f3f4f6' }}>${typeof dc['Investment ($B)'] === 'number' ? `$${dc['Investment ($B)']}B` : dc['Investment ($B)']}</span></div>}
+                        {dc['Capacity (MW)'] && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>CAPACITY</span><br/><span style={{ fontWeight: 700, color: '#f3f4f6' }}>{dc['Capacity (MW)']} MW</span></div>}
+                        {dc['Site Size (Acres)'] && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>SITE SIZE</span><br/><span style={{ fontWeight: 700, color: '#f3f4f6' }}>{dc['Site Size (Acres)']} acres</span></div>}
+                        {dc['Est. Completion'] && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>EST. COMPLETION</span><br/><span style={{ fontWeight: 600, color: '#d1d5db' }}>{dc['Est. Completion']}</span></div>}
+                        {dc['Power Source Notes'] && dc['Power Source Notes'] !== 'TBD' && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>POWER SOURCE</span><br/><span style={{ fontWeight: 600, color: '#d1d5db' }}>{dc['Power Source Notes']}</span></div>}
+                        {dc['Jobs (Construction)'] && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>CONSTRUCTION JOBS</span><br/><span style={{ fontWeight: 600, color: '#d1d5db' }}>{dc['Jobs (Construction)']}</span></div>}
+                        {dc['Jobs (Operational)'] && <div><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>OPERATIONAL JOBS</span><br/><span style={{ fontWeight: 600, color: '#d1d5db' }}>{dc['Jobs (Operational)']}</span></div>}
+                        {dc['Key Tenant / Use'] && <div style={{ gridColumn: '1 / -1' }}><span style={{ color: '#9ca3af', fontWeight: 600, fontSize: 10 }}>KEY TENANT / USE</span><br/><span style={{ fontWeight: 600, color: '#d1d5db' }}>{dc['Key Tenant / Use']}</span></div>}
                       </div>
-                      {dc.Notes && <div style={{ marginTop: 8, fontSize: 11, color: '#6b7280', lineHeight: 1.4, borderTop: '1px solid #f3f4f6', paddingTop: 6 }}>{dc.Notes}</div>}
+                      {dc.Notes && <div style={{ marginTop: 8, fontSize: 11, color: '#9aa0a6', lineHeight: 1.4, borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: 6 }}>{dc.Notes}</div>}
                     </div>
                   </Popup>
                 </CircleMarker>
@@ -4915,6 +4915,26 @@ function DashboardMapTab() {
         }
         .dsm-dark-tiles {
           filter: brightness(0.55) saturate(0.6) contrast(1.08);
+        }
+        /* Google Maps InfoWindow chrome (used when the Google Maps renderer
+           is active) doesn't accept a className, so its bubble/arrow/close
+           button are restyled globally to match the dark popup card look. */
+        .gm-style-iw-c {
+          background: rgba(10, 12, 16, 0.92) !important;
+          border-radius: 12px !important;
+          border: 1px solid rgba(255,255,255,0.14) !important;
+          box-shadow: 0 8px 28px rgba(0,0,0,0.55) !important;
+          padding: 0 !important;
+        }
+        .gm-style-iw-d {
+          overflow: hidden !important;
+        }
+        .gm-style-iw-t::after {
+          background: rgba(10, 12, 16, 0.92) !important;
+          box-shadow: -2px 2px 2px 0 rgba(0,0,0,0.15) !important;
+        }
+        .gm-ui-hover-effect > span {
+          background-color: #d1d5db !important;
         }
       `}</style>
     </div>
