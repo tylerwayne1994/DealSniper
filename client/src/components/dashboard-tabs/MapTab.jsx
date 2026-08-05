@@ -2990,19 +2990,20 @@ function DashboardMapTab() {
                       ].map(({ label, active, color, count, toggle }) => (
                         <button key={label} onClick={toggle} style={{
                           display: 'inline-flex', alignItems: 'center', gap: 4,
-                          padding: '4px 10px', borderRadius: 20,
-                          border: `1.5px solid ${color}`,
-                          cursor: 'pointer', fontSize: 11, fontWeight: active ? 700 : 500,
-                          color: active ? '#0b0d10' : color,
-                          backgroundColor: active ? color : `${color}1f`,
+                          padding: '5px 10px', borderRadius: 20,
+                          border: active ? '2px solid #fff' : '2px solid transparent',
+                          cursor: 'pointer', fontSize: 11, fontWeight: active ? 700 : 600,
+                          color: '#fff',
+                          backgroundColor: color,
+                          opacity: active ? 1 : 0.62,
+                          boxShadow: active ? `0 0 0 2px ${color}` : 'none',
                           transition: 'all 0.15s', lineHeight: 1,
                         }}
-                          onMouseEnter={(e) => { if (!active) e.currentTarget.style.backgroundColor = `${color}38`; }}
-                          onMouseLeave={(e) => { if (!active) e.currentTarget.style.backgroundColor = `${color}1f`; }}
+                          onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.opacity = active ? '1' : '0.62'; }}
                         >
-                          <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, backgroundColor: active ? '#0b0d10' : color }} />
                           {label}
-                          {count != null && <span style={{ fontSize: 9, fontWeight: 700, color: active ? color : '#0b0d10', backgroundColor: active ? '#0b0d10' : color, borderRadius: 8, padding: '1px 5px', marginLeft: 1 }}>{count > 999 ? `${(count/1000).toFixed(1)}k` : count}</span>}
+                          {count != null && <span style={{ fontSize: 9, fontWeight: 800, color: color, backgroundColor: '#fff', borderRadius: 8, padding: '1px 5px', marginLeft: 1 }}>{count > 999 ? `${(count/1000).toFixed(1)}k` : count}</span>}
                         </button>
                       ))}
                     </div>
