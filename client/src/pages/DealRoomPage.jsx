@@ -298,40 +298,64 @@ function DealRoomPage() {
   // Lazy-load the real per-deal investor allocations/distributions the
   // first time the Deal Room tab is opened (avoids an unnecessary call on
   // every page load, and requires the backend's Supabase service key).
+  // Hard-capped with a client-side timeout: if the backend is slow/cold-
+  // starting/unreachable, the request would otherwise hang forever with no
+  // feedback and the "Building your Deal Room…" screen would never clear
+  // (exactly the stuck-forever bug reported) — after 10s we give up and
+  // show the room anyway with whatever loaded.
   useEffect(() => {
     if (activeTab !== 'dealroom' || investorDataLoaded) return;
+    let cancelled = false;
+    const timeout = new Promise((resolve) => setTimeout(() => resolve('timeout'), 10000));
     (async () => {
       try {
-        const [a, d] = await Promise.all([
-          listAllocations(dealId).catch(() => []),
-          listDistributions(dealId).catch(() => []),
+        const result = await Promise.race([
+          Promise.all([
+            listAllocations(dealId).catch(() => []),
+            listDistributions(dealId).catch(() => []),
+          ]),
+          timeout,
         ]);
-        setAllocations(a || []);
-        setDistributions(d || []);
+        if (result !== 'timeout') {
+          const [a, d] = result;
+          if (!cancelled) { setAllocations(a || []); setDistributions(d || []); }
+        } else {
+          console.warn('DealRoom: investor data load timed out after 10s, showing room anyway');
+        }
       } catch (e) {
         console.warn('DealRoom: failed to load investor data', e);
       } finally {
-        setInvestorDataLoaded(true);
+        if (!cancelled) setInvestorDataLoaded(true);
       }
     })();
+    return () => { cancelled = true; };
   }, [activeTab, dealId, investorDataLoaded]);
 
   // Lazy-load the sponsor's saved widget layout (Comps/Market Data section
   // widgets, etc.) the first time the Deal Room tab is opened — falls back
   // to the backend's generated default if the sponsor hasn't customized it.
+  // Same 10s hard timeout as above, for the same reason.
   useEffect(() => {
     if (activeTab !== 'dealroom' || dealRoomLayout || !dealId) return;
+    let cancelled = false;
+    const timeout = new Promise((resolve) => setTimeout(() => resolve('timeout'), 10000));
     (async () => {
       try {
-        const res = await getDealRoomLayout(dealId);
-        setDealRoomLayout(res.layout);
+        const result = await Promise.race([getDealRoomLayout(dealId), timeout]);
+        if (result !== 'timeout') {
+          if (!cancelled) setDealRoomLayout(result.layout);
+        } else {
+          console.warn('DealRoom: layout load timed out after 10s, showing room anyway');
+        }
       } catch (e) {
         console.warn('DealRoom: failed to load layout', e);
       } finally {
-        setLayoutLoaded(true);
+        if (!cancelled) setLayoutLoaded(true);
       }
     })();
+    return () => { cancelled = true; };
   }, [activeTab, dealId, dealRoomLayout]);
+
 
   // Generate (or regenerate) the AI investment thesis, then cache it on the
   // deal record so it doesn't need to be regenerated on every visit.
@@ -400,57 +424,68 @@ function DealRoomPage() {
 
   // Some pre-existing images (extracted before storage_path was reliably
   // tracked) have no storage_path — deleting those used to silently no-op.
-  // Now: if there's a real storage_path, delete it server-side (cleans up
-  // the Storage object too); otherwise just drop that array entry locally
-  // by index so the user can always remove a broken/undeletable thumbnail.
+  // ALSO: images can live in either deal.images (separately uploaded) or the
+  // older deal.parsedData.images (populated straight from the parsed PDF),
+  // and the two arrays have historically ended up with overlapping/duplicate
+  // copies of the same photo. normalizeDealImages() is the single source of
+  // truth for what's actually shown on screen (merged + de-duplicated) —
+  // using it here too (instead of re-deriving a separate raw merge) keeps
+  // `index` always aligned with what the user is looking at, and writing
+  // the result back as one canonical `images` array (clearing
+  // parsedData.images) cleans up the duplicates for good.
   const handleDeleteImage = async (storagePath, index) => {
-    if (!storagePath) {
-      if (index == null) return;
-      const before = deal?.images || [];
-      const next = before.filter((_, i) => i !== index);
-      setDeal((prev) => prev ? ({ ...prev, images: next }) : prev);
+    if (storagePath) {
       try {
-        await updateDeal(dealId, { images: next });
+        const res = await fetch(API_ENDPOINTS.dealDeleteImage(dealId), {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ storage_path: storagePath }),
+        });
+        if (!res.ok) throw new Error(`Delete failed (${res.status})`);
       } catch (e) {
-        console.error('Failed to remove photo:', e);
-        setDeal((prev) => prev ? ({ ...prev, images: before }) : prev);
-        alert('Failed to remove photo: ' + e.message);
+        console.error('Failed to delete property photo from storage:', e);
+        alert('Failed to delete photo: ' + e.message);
+        return;
       }
-      return;
     }
+    if (index == null) return;
+
+    const beforeImages = deal?.images || [];
+    const beforeParsedData = deal?.parsedData || {};
+    const merged = normalizeDealImages(deal).map((img) => ({ url: img.url, storage_path: img.storage_path }));
+    const nextImages = merged.filter((_, i) => i !== index);
+    const nextParsedData = { ...beforeParsedData, images: [] };
+
+    setDeal((prev) => prev ? ({ ...prev, images: nextImages, parsedData: nextParsedData }) : prev);
     try {
-      const res = await fetch(API_ENDPOINTS.dealDeleteImage(dealId), {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ storage_path: storagePath }),
-      });
-      if (!res.ok) throw new Error(`Delete failed (${res.status})`);
-      setDeal((prev) => prev ? ({
-        ...prev,
-        images: (prev.images || []).filter((img) => (img.storage_path || img) !== storagePath),
-      }) : prev);
+      await updateDeal(dealId, { images: nextImages, parsed_data: nextParsedData });
     } catch (e) {
-      console.error('Failed to delete property photo:', e);
-      alert('Failed to delete photo: ' + e.message);
+      console.error('Failed to save photo removal:', e);
+      setDeal((prev) => prev ? ({ ...prev, images: beforeImages, parsedData: beforeParsedData }) : prev);
+      alert('Failed to remove photo: ' + e.message);
     }
   };
 
-  // Drag-to-reorder the property photo strip. Optimistic (reorders local
-  // state immediately for a snappy drag), persisted to the deal's `images`
-  // column via updateDeal — reverts on failure so the UI never silently
-  // diverges from what's actually saved.
+  // Drag-to-reorder the property photo strip. Same normalizeDealImages-as-
+  // source-of-truth approach as handleDeleteImage above — operates on the
+  // merged, de-duplicated, on-screen order and writes back a single
+  // canonical `images` array.
   const handleReorderImages = async (fromIndex, toIndex) => {
-    const before = deal?.images || [];
-    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= before.length || toIndex >= before.length) return;
-    const reordered = [...before];
+    const beforeImages = deal?.images || [];
+    const beforeParsedData = deal?.parsedData || {};
+    const merged = normalizeDealImages(deal).map((img) => ({ url: img.url, storage_path: img.storage_path }));
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= merged.length || toIndex >= merged.length) return;
+    const reordered = [...merged];
     const [moved] = reordered.splice(fromIndex, 1);
     reordered.splice(toIndex, 0, moved);
-    setDeal((prev) => prev ? ({ ...prev, images: reordered }) : prev);
+    const nextParsedData = { ...beforeParsedData, images: [] };
+
+    setDeal((prev) => prev ? ({ ...prev, images: reordered, parsedData: nextParsedData }) : prev);
     try {
-      await updateDeal(dealId, { images: reordered });
+      await updateDeal(dealId, { images: reordered, parsed_data: nextParsedData });
     } catch (e) {
       console.error('Failed to save photo order:', e);
-      setDeal((prev) => prev ? ({ ...prev, images: before }) : prev);
+      setDeal((prev) => prev ? ({ ...prev, images: beforeImages, parsedData: beforeParsedData }) : prev);
     }
   };
 
@@ -790,7 +825,7 @@ function DealRoomPage() {
         {/* ============================================================ */}
         {/* LEFT: Tabs */}
         {/* ============================================================ */}
-        <div>
+        <div style={{ minWidth: 0 }}>
           {/* Tab nav */}
           <div style={{ display: 'flex', gap: '4px', marginBottom: '16px', backgroundColor: '#fff', borderRadius: '10px', padding: '5px', border: '1px solid #e6e9ef', width: 'fit-content' }}>
             {[
@@ -1163,6 +1198,7 @@ function DealRoomPage() {
               ) : (
               <div style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e6e9ef', overflow: 'hidden' }}>
                 <InvestorDealRoom
+                  embedded
                   data={buildDealRoomData({
                     deal,
                     full: metrics._full,

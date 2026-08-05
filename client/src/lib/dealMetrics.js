@@ -19,12 +19,18 @@ export const pickNum = (...vals) => {
 /**
  * Normalize a deal's image list (from deal.images + deal.parsedData.images)
  * into a consistent [{ id, url, storage_path, page_number }] shape.
+ * De-duplicates by storage_path (falling back to url) — deal.images and
+ * deal.parsedData.images have historically ended up containing overlapping
+ * copies of the same photos (e.g. a deal re-parsed on top of an earlier
+ * upload), which made the photo strip show 2-3x as many thumbnails as
+ * there are actual distinct photos.
  */
 export function normalizeDealImages(deal) {
   const fromDeal = Array.isArray(deal?.images) ? deal.images : [];
   const fromParsed = Array.isArray(deal?.parsedData?.images) ? deal.parsedData.images : [];
   const all = [...fromDeal, ...fromParsed];
 
+  const seen = new Set();
   return all
     .map((img, idx) => {
       if (typeof img === 'string') {
@@ -42,7 +48,13 @@ export function normalizeDealImages(deal) {
       }
       return null;
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((img) => {
+      const key = img.storage_path || img.url;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 }
 
 /**

@@ -293,7 +293,7 @@ function InvestorCalculator({ full, scenarioData, accent }) {
  * generated default (same shape the backend returns) if not provided so
  * this component still works for any caller that hasn't wired it up yet.
  */
-export default function InvestorDealRoom({ data, full, metrics, scenarioData, documents, closeDate, layout, accent = DEAL_ROOM_ACCENT_DEFAULT, onGenerateNarrative, generatingNarrative = false, readOnly = false, onUploadImages, onDeleteImage, onReorderImages, uploadingImages = false, imageUploadError = '' }) {
+export default function InvestorDealRoom({ data, full, metrics, scenarioData, documents, closeDate, layout, accent = DEAL_ROOM_ACCENT_DEFAULT, onGenerateNarrative, generatingNarrative = false, readOnly = false, onUploadImages, onDeleteImage, onReorderImages, uploadingImages = false, imageUploadError = '', embedded = false }) {
   const containerRef = useRef(null);
   const [activeSection, setActiveSection] = useState('');
   const [progress, setProgress] = useState(0);
@@ -386,10 +386,16 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
   return (
     <div className="deal-room">
       <style>{css}</style>
-      <div className="dr-progress" style={{ width: `${progress}%` }} />
+      {/* position:sticky nav/progress only makes sense for a true full-page
+         view (the public investor link / static export). When this is
+         embedded inside the sponsor dashboard's own scrolling card, sticky
+         positioning inside that card's overflow:hidden wrapper caused the
+         nav to detach and behave unpredictably on scroll/anchor-jump — so
+         it's pinned to normal in-flow positioning instead here. */}
+      <div className="dr-progress" style={{ width: `${progress}%`, ...(embedded ? { position: 'static' } : {}) }} />
 <CountdownBanner closeDate={closeDate} accent={effectiveAccent} />
 
-      <nav className="dr-nav">
+      <nav className="dr-nav" style={embedded ? { position: 'static' } : undefined}>
         {sections.map((s) => (
           <a key={s.id} href={`#${s.id}`} className={activeSection === s.id ? 'active' : ''}>{s.label}</a>
         ))}
