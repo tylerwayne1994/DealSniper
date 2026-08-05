@@ -1544,7 +1544,7 @@ function DashboardMapTab() {
 
       allPins.forEach(pin => {
         let color = '#ef4444';
-        if (pin.category === 'pipeline') color = '#22c55e';
+        if (pin.category === 'pipeline') color = '#facc15';
         else if (pin.source === 'uploaded') color = '#06b6d4';
         else if (pin.category === 'prospect') color = '#8b5cf6';
 
@@ -1564,11 +1564,11 @@ function DashboardMapTab() {
           pin.source === 'uploaded' ? 'ðŸ“Š Uploaded' :
           pin.category === 'rapidfire' ? 'ðŸ”¥ Rapid Fire' : 'ðŸ˜ï¸ Prospect';
 
-        const badgeBg = pin.category === 'pipeline' ? '#d1fae5' :
+        const badgeBg = pin.category === 'pipeline' ? '#fef9c3' :
           pin.source === 'uploaded' ? '#cffafe' :
           pin.category === 'rapidfire' ? '#fecaca' : '#fef3c7';
 
-        const badgeColor = pin.category === 'pipeline' ? '#065f46' :
+        const badgeColor = pin.category === 'pipeline' ? '#713f12' :
           pin.source === 'uploaded' ? '#0e7490' :
           pin.category === 'rapidfire' ? '#991b1b' : '#92400e';
 
@@ -1718,7 +1718,7 @@ function DashboardMapTab() {
     if (source === 'uploaded' || cat === 'uploaded') {
       color = '#06b6d4'; // Cyan for uploaded properties
     } else if (cat === 'pipeline') {
-      color = '#22c55e'; // Green
+      color = '#facc15'; // Yellow
     } else if (cat === 'rapidfire') {
       color = '#ef4444'; // Red
     } else if (cat === 'prospect') {
@@ -1736,7 +1736,7 @@ function DashboardMapTab() {
     if (!window.google) return undefined;
     let color;
     if (source === 'uploaded' || cat === 'uploaded') color = '#06b6d4';
-    else if (cat === 'pipeline') color = '#22c55e';
+    else if (cat === 'pipeline') color = '#facc15';
     else if (cat === 'rapidfire') color = '#ef4444';
     else if (cat === 'prospect') color = '#f59e0b';
     else color = '#ef4444';
@@ -3216,7 +3216,7 @@ function DashboardMapTab() {
                 <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#9ca3af', marginBottom: 2 }}>Pin Visibility</div>
                   {[
-                    { label: 'Pipeline Deals', enabled: showPipelinePins, toggle: () => setShowPipelinePins(v => !v), color: '#22c55e', count: customPins.filter(p => p.category === 'pipeline').length },
+                    { label: 'Pipeline Deals', enabled: showPipelinePins, toggle: () => setShowPipelinePins(v => !v), color: '#facc15', count: customPins.filter(p => p.category === 'pipeline').length },
                     { label: 'Rapid Fire', enabled: showRapidFirePins, toggle: () => setShowRapidFirePins(v => !v), color: '#ef4444', count: customPins.filter(p => p.category === 'rapidfire').length },
                     { label: 'Uploaded Properties', enabled: showUploadedPins, toggle: () => setShowUploadedPins(v => !v), color: '#06b6d4', count: customPins.filter(p => p.source === 'uploaded').length },
                     { label: 'Parcel Boundaries', enabled: showParcelPolygons, toggle: () => setShowParcelPolygons(v => !v), color: '#f97316', count: parcelPolygons.length },
@@ -3449,12 +3449,12 @@ function DashboardMapTab() {
                               fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px',
                               backgroundColor:
                                 p.source === 'uploaded' ? '#cffafe' :
-                                p.category === 'pipeline' ? '#d1fae5' :
+                                p.category === 'pipeline' ? '#fef9c3' :
                                 p.category === 'rapidfire' ? '#fecaca' :
                                 p.category === 'prospect' ? '#fef3c7' : '#fce7f3',
                               color:
                                 p.source === 'uploaded' ? '#0e7490' :
-                                p.category === 'pipeline' ? '#065f46' :
+                                p.category === 'pipeline' ? '#713f12' :
                                 p.category === 'rapidfire' ? '#991b1b' :
                                 p.category === 'prospect' ? '#92400e' : '#831843',
                             }}>
@@ -3624,12 +3624,12 @@ function DashboardMapTab() {
                     fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8,
                     backgroundColor:
                       p.source === 'uploaded' ? '#cffafe' :
-                      p.category === 'pipeline' ? '#d1fae5' :
+                      p.category === 'pipeline' ? '#fef9c3' :
                       p.category === 'rapidfire' ? '#fecaca' :
                       p.category === 'prospect' ? '#fef3c7' : '#fce7f3',
                     color:
                       p.source === 'uploaded' ? '#0e7490' :
-                      p.category === 'pipeline' ? '#065f46' :
+                      p.category === 'pipeline' ? '#713f12' :
                       p.category === 'rapidfire' ? '#991b1b' :
                       p.category === 'prospect' ? '#92400e' : '#831843',
                   }}>
