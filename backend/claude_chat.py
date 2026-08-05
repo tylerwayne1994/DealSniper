@@ -1191,6 +1191,14 @@ BUSINESS_PLAN_PROMPT = """You are generating a professional Investment Underwrit
 Based on the deal data provided in this session, generate a complete business plan document in the following structure. 
 This must be formatted as a document artifact that can be downloaded as a PDF.
 
+MANDATORY OUTPUT FORMAT — DO NOT SKIP THIS: your ENTIRE response must be wrapped in a single
+```artifact:document:<Property Name> — Business Plan``` code fence (exactly like the DOCUMENT
+ARTIFACT FORMAT described earlier in your instructions), with nothing before the opening fence and
+nothing after the closing fence. This is a long, multi-section document — do not let that cause you
+to drop the artifact wrapper; the whole document (every section below, start to finish) goes inside
+that one fence. If you forget this, the plan will NOT be downloadable and will just dump as raw text
+in the chat, which defeats the entire point of generating it.
+
 CRITICAL — USE THE USER'S ACTUAL UNDERWRITING STRATEGY, DO NOT INVENT ONE:
 The "SCENARIO / ASSUMPTIONS" data below is the EXACT financing and hold/exit strategy the user
 already configured on the Results page of the underwriting model (interest rate/rate override,
@@ -1231,7 +1239,10 @@ The document must include ALL of the following sections — do not skip any:
 
 Use the actual numbers from the deal data. Where data is missing, make reasonable assumptions and note them explicitly as assumptions.
 Format all currency with $ and commas. Format all percentages with %.
-Be thorough — this is a professional investor presentation document."""
+Be thorough — this is a professional investor presentation document.
+
+REMINDER: wrap the entire document above in a single ```artifact:document:<title>``` fence as your
+whole response — open the fence first, write all 8 sections inside it, then close the fence last."""
 
 
 @router.post("/inject-deal-context")
