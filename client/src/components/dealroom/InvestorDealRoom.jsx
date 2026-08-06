@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Download, Lock, Clock, Camera, X, TrendingUp, Building2, Sparkles } from 'lucide-react';
 import { buildDealRoomCss, DEAL_ROOM_ACCENT_DEFAULT } from './DealRoomStyles';
 import { exportDealRoomHtml } from '../../lib/dealRoomExport';
@@ -594,6 +595,7 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
             <h2 className="dr-h2 dr-serif">Investment & Execution Plan</h2>
             <div className="dr-markdown">
               <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
                 components={{
                   h1: ({ children }) => <h3 className="dr-serif" style={{ fontSize: 20, fontWeight: 700, margin: '20px 0 10px' }}>{children}</h3>,
                   h2: ({ children }) => <h3 className="dr-serif" style={{ fontSize: 18, fontWeight: 700, margin: '20px 0 10px', color: 'var(--dr-accent)' }}>{children}</h3>,

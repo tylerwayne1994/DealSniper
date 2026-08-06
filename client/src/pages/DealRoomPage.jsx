@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   ArrowLeft, Upload, Download, Trash2,
   Eye, ClipboardCheck, Presentation,
@@ -1672,6 +1673,7 @@ function DealRoomPage() {
             }}
           >
             <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
               components={{
                 h1: ({ children }) => <h1 style={{ fontSize: 26, fontWeight: 700, color: '#1F4E79', margin: '0 0 16px' }}>{children}</h1>,
                 h2: ({ children }) => <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1F4E79', margin: '28px 0 12px', borderBottom: '2px solid #1F4E79', paddingBottom: 6 }}>{children}</h2>,
