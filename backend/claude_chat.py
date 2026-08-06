@@ -1215,7 +1215,14 @@ def _strip_wrapping_code_fence(text: str) -> str:
                 close_idx = i
                 break
         if close_idx == -1:
-            break  # no closing fence line found — leave as-is
+            # No proper closing fence line found anywhere in the text --
+            # most likely the response got truncated (hit max_tokens)
+            # before Claude ever reached the closing fence. Still strip the
+            # opening fence line so the rest of the document renders as real
+            # markdown instead of being swallowed into one giant literal
+            # code block for its entire length.
+            t = "\n".join(lines[1:]).strip()
+            break
         t = "\n".join(lines[1:close_idx]).strip()
     return t
 
@@ -1499,13 +1506,24 @@ SCENARIO / ASSUMPTIONS (the user's actual configured underwriting strategy — f
 
         client = get_anthropic_client()
         log.info(f"[Claude Chat] Generating business plan document for deal {deal_id} ({attached_count} vault documents attached)")
+        # This document has 8 required sections with many tables and is
+        # frequently 15-25k+ output tokens once fully written. The old
+        # max_tokens=8192 cap was cutting the response off mid-document
+        # *before Claude ever reached the closing artifact fence* -- which is
+        # why the fence-stripping logic downstream could never find a
+        # closing marker (there wasn't one) and the whole thing rendered as
+        # one giant literal code block. claude-sonnet-4-5 supports up to 64k
+        # output tokens, so 32000 leaves a big margin without needing any
+        # beta headers.
         response = client.messages.create(
             model=ANTHROPIC_MODEL,
-            max_tokens=8192,
+            max_tokens=32000,
             system=system,
             messages=[{"role": "user", "content": BUSINESS_PLAN_PROMPT}],
         )
         full_text = response.content[0].text
+        if response.stop_reason == "max_tokens":
+            log.warning(f"[BusinessPlan][TRUNCATED] deal_id={deal_id} response hit max_tokens=32000 and was cut off before finishing — the document is incomplete.")
 
         m = re.search(r"```artifact:document:([^\n]+)\n([\s\S]*?)```", full_text)
         if m:

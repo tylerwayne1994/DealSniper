@@ -63,7 +63,16 @@ export function stripWrappingCodeFence(text) {
     for (let i = lines.length - 1; i >= 1; i--) {
       if (/^```\s*$/.test(lines[i])) { closeIdx = i; break; }
     }
-    if (closeIdx === -1) break; // no closing fence line found — leave as-is
+    if (closeIdx === -1) {
+      // No proper closing fence line found anywhere in the text -- most
+      // likely the response got truncated (hit max_tokens) before Claude
+      // ever reached the closing fence. Still strip the opening fence line
+      // so the rest of the document renders as real markdown instead of
+      // being swallowed into one giant literal code block for its entire
+      // length.
+      t = lines.slice(1).join('\n').trim();
+      break;
+    }
     t = lines.slice(1, closeIdx).join('\n').trim();
   }
   return t;
