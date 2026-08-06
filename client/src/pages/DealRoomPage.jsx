@@ -413,56 +413,73 @@ function DealRoomPage() {
 
       setBusinessPlanMsg('Rendering document\u2026');
       setBusinessPlanMarkdown(result.markdown);
-      // Let the off-screen container actually paint before snapshotting it.
-      await new Promise((resolve) => setTimeout(resolve, 300));
 
-      const html2canvas = (await import('html2canvas')).default;
-      const jsPDF = (await import('jspdf')).default;
+      // Save the plan onto the deal itself so it shows up as its own
+      // "Business Plan" section in the actual Deal Room view (not just a
+      // downloadable file) — persisted immediately so it survives a reload,
+      // and BEFORE the PDF/Documents step below so it's saved either way.
+      const nextParsedData = { ...(deal?.parsedData || {}), businessPlanMarkdown: result.markdown };
+      await updateDeal(dealId, { parsed_data: nextParsedData });
+      setDeal((prev) => (prev ? { ...prev, parsedData: nextParsedData } : prev));
 
-      const node = businessPlanRenderRef.current;
-      if (!node) throw new Error('Could not render the document for export');
+      // Also export a PDF copy to Documents — best-effort: if this part
+      // fails (e.g. a huge plan exceeding storage's size limit), the plan
+      // has still been added to the Deal Room above, so don't treat that as
+      // a total failure.
+      try {
+        // Let the off-screen container actually paint before snapshotting it.
+        await new Promise((resolve) => setTimeout(resolve, 300));
 
-      // scale:2 PNG produced multi-hundred-MB "PDFs" for a long text document
-      // (lossless PNG of a tall canvas) and blew past Supabase Storage's max
-      // upload size ("StorageApiError: The object exceeded the maximum
-      // allowed size"). JPEG at scale 1.5 is dramatically smaller and still
-      // perfectly readable for a text/table document like this.
-      const canvas = await html2canvas(node, { scale: 1.5, useCORS: true, backgroundColor: '#ffffff' });
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-      const imgData = canvas.toDataURL('image/jpeg', 0.85);
+        const html2canvas = (await import('html2canvas')).default;
+        const jsPDF = (await import('jspdf')).default;
 
-      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
+        const node = businessPlanRenderRef.current;
+        if (!node) throw new Error('Could not render the document for export');
+
+        // scale:2 PNG produced multi-hundred-MB "PDFs" for a long text
+        // document (lossless PNG of a tall canvas) and blew past Supabase
+        // Storage's max upload size. JPEG at scale 1.5 is dramatically
+        // smaller and still perfectly readable for a text/table document.
+        const canvas = await html2canvas(node, { scale: 1.5, useCORS: true, backgroundColor: '#ffffff' });
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const imgWidth = pageWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        const imgData = canvas.toDataURL('image/jpeg', 0.85);
+
         pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+
+        const pdfBlob = pdf.output('blob');
+        const MAX_UPLOAD_BYTES = 45 * 1024 * 1024; // stay comfortably under Supabase's default limit
+        if (pdfBlob.size > MAX_UPLOAD_BYTES) {
+          throw new Error(`Generated PDF is too large to save (${(pdfBlob.size / 1024 / 1024).toFixed(1)}MB)`);
+        }
+        const safeTitle = (result.title || `${deal?.address || 'Deal'} - Business Plan`).replace(/[^a-zA-Z0-9._ -]/g, '');
+        const fileName = `${safeTitle}.pdf`;
+
+        setBusinessPlanMsg('Saving PDF to Documents\u2026');
+        await uploadDealDocument(dealId, pdfBlob, {
+          fileName,
+          category: 'business_plan',
+        });
+        await loadDocuments();
+
+        setBusinessPlanMsg('Business plan added to the Deal Room and saved to Documents \u2713');
+      } catch (pdfErr) {
+        console.error('Business plan added to Deal Room, but PDF export failed:', pdfErr);
+        setBusinessPlanMsg(`Business plan added to the Deal Room \u2713 (PDF copy for Documents failed: ${pdfErr.message})`);
       }
-
-      const pdfBlob = pdf.output('blob');
-      const MAX_UPLOAD_BYTES = 45 * 1024 * 1024; // stay comfortably under Supabase's default limit
-      if (pdfBlob.size > MAX_UPLOAD_BYTES) {
-        throw new Error(`Generated PDF is too large to save (${(pdfBlob.size / 1024 / 1024).toFixed(1)}MB). Try again — this can happen on very long plans.`);
-      }
-      const safeTitle = (result.title || `${deal?.address || 'Deal'} - Business Plan`).replace(/[^a-zA-Z0-9._ -]/g, '');
-      const fileName = `${safeTitle}.pdf`;
-
-      setBusinessPlanMsg('Saving to Documents\u2026');
-      await uploadDealDocument(dealId, pdfBlob, {
-        fileName,
-        category: 'business_plan',
-      });
-      await loadDocuments();
-
-      setBusinessPlanMsg('Business plan saved to Documents \u2713');
-      setTimeout(() => setBusinessPlanMsg(''), 4000);
+      setTimeout(() => setBusinessPlanMsg(''), 6000);
     } catch (e) {
       console.error('Failed to generate business plan:', e);
       setBusinessPlanMsg(`Failed to generate business plan: ${e.message}`);

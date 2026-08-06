@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { Download, Lock, Clock, Camera, X, TrendingUp, Building2, Sparkles } from 'lucide-react';
 import { buildDealRoomCss, DEAL_ROOM_ACCENT_DEFAULT } from './DealRoomStyles';
 import { exportDealRoomHtml } from '../../lib/dealRoomExport';
@@ -331,6 +332,7 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
     const list = [];
     list.push({ id: 'summary', label: 'Executive Summary', show: data.executiveSummary?.length > 0 });
     list.push({ id: 'thesis', label: 'Investment Thesis', show: data.whyMarket?.length > 0 || data.whyAsset?.length > 0 || data.upsidePlays?.length > 0 });
+    list.push({ id: 'businessPlan', label: 'Business Plan', show: !!data.businessPlanMarkdown });
     list.push({ id: 'financials', label: 'Financial Overview', show: data.financialOverview?.length > 0 });
     list.push({ id: 'comps', label: 'Comps', show: getSectionWidgets('comps').length > 0 && comps.length > 0 });
     list.push({ id: 'marketData', label: 'Market Data', show: getSectionWidgets('marketData').length > 0 && marketMetrics.length > 0 });
@@ -580,6 +582,30 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
                 ))}
               </div>
             )}
+          </section>
+        )}
+
+        {/* Business Plan (full AI-generated plan, markdown — generated from
+            the Deal Room tab's "Generate Business Plan" button, uses the
+            deal's actual configured underwriting strategy) */}
+        {data.businessPlanMarkdown && (
+          <section id="businessPlan" className="dr-section">
+            <div className="dr-eyebrow">Business Plan</div>
+            <h2 className="dr-h2 dr-serif">Investment & Execution Plan</h2>
+            <div className="dr-markdown">
+              <ReactMarkdown
+                components={{
+                  h1: ({ children }) => <h3 className="dr-serif" style={{ fontSize: 20, fontWeight: 700, margin: '20px 0 10px' }}>{children}</h3>,
+                  h2: ({ children }) => <h3 className="dr-serif" style={{ fontSize: 18, fontWeight: 700, margin: '20px 0 10px', color: 'var(--dr-accent)' }}>{children}</h3>,
+                  h3: ({ children }) => <h4 style={{ fontSize: 15, fontWeight: 700, margin: '16px 0 8px' }}>{children}</h4>,
+                  p: (p) => <p style={{ fontSize: 14, lineHeight: 1.7, margin: '0 0 10px' }} {...p} />,
+                  li: (p) => <li style={{ fontSize: 14, marginBottom: 4 }} {...p} />,
+                  table: (p) => <table className="dr-table" style={{ margin: '10px 0 18px' }} {...p} />,
+                }}
+              >
+                {data.businessPlanMarkdown}
+              </ReactMarkdown>
+            </div>
           </section>
         )}
 
