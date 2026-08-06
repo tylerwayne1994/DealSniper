@@ -422,7 +422,12 @@ function DealRoomPage() {
       const node = businessPlanRenderRef.current;
       if (!node) throw new Error('Could not render the document for export');
 
-      const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+      // scale:2 PNG produced multi-hundred-MB "PDFs" for a long text document
+      // (lossless PNG of a tall canvas) and blew past Supabase Storage's max
+      // upload size ("StorageApiError: The object exceeded the maximum
+      // allowed size"). JPEG at scale 1.5 is dramatically smaller and still
+      // perfectly readable for a text/table document like this.
+      const canvas = await html2canvas(node, { scale: 1.5, useCORS: true, backgroundColor: '#ffffff' });
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
@@ -430,18 +435,22 @@ function DealRoomPage() {
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
       let position = 0;
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/jpeg', 0.85);
 
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
 
       const pdfBlob = pdf.output('blob');
+      const MAX_UPLOAD_BYTES = 45 * 1024 * 1024; // stay comfortably under Supabase's default limit
+      if (pdfBlob.size > MAX_UPLOAD_BYTES) {
+        throw new Error(`Generated PDF is too large to save (${(pdfBlob.size / 1024 / 1024).toFixed(1)}MB). Try again — this can happen on very long plans.`);
+      }
       const safeTitle = (result.title || `${deal?.address || 'Deal'} - Business Plan`).replace(/[^a-zA-Z0-9._ -]/g, '');
       const fileName = `${safeTitle}.pdf`;
 
