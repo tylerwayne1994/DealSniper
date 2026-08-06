@@ -41,25 +41,30 @@ const fmtPctDecimal = (v) => (v == null || Number.isNaN(Number(v))) ? null : Num
  * Claude is instructed to wrap the Business Plan in a single
  * ```artifact:document:<title>``` fence, but doesn't always follow that —
  * sometimes it wraps the whole response in a plain/generic ``` fence
- * instead (no tag). The backend already tries to strip that, but this is a
- * client-side safety net so (a) it doesn't matter whether the backend fix
- * has finished deploying yet, and (b) any plan that was already saved to
- * Supabase with the raw fence still attached (generated before the backend
- * fix existed) renders correctly too, without needing to be regenerated.
- * Exported so DealRoomPage.jsx can apply the same cleanup to the PDF
- * snapshot render.
+ * instead (no tag), and/or appends a trailing sentence after the closing
+ * fence (e.g. "Let me know if you'd like any changes!"). That trailing
+ * text broke a naive "does the string end with ```" check, so the fence
+ * never got stripped and the whole document rendered as one literal code
+ * block. This scans for the LAST line that is just a bare ``` fence
+ * (ignoring anything after it) instead of requiring the string to end
+ * exactly on the fence, so it's resilient to trailing commentary. This is
+ * a client-side safety net so (a) it doesn't matter whether the backend
+ * fix has finished deploying yet, and (b) any plan that was already saved
+ * to Supabase with the raw fence still attached renders correctly too,
+ * without needing to be regenerated. Exported so DealRoomPage.jsx can
+ * apply the same cleanup to the PDF snapshot render.
  */
 export function stripWrappingCodeFence(text) {
   let t = (text || '').trim();
-  for (let i = 0; i < 2; i++) {
-    if (t.startsWith('```')) {
-      const firstNewline = t.indexOf('\n');
-      if (firstNewline !== -1 && t.endsWith('```') && t.length > firstNewline + 3) {
-        t = t.slice(firstNewline + 1, -3).trim();
-        continue;
-      }
+  for (let pass = 0; pass < 2; pass++) {
+    if (!t.startsWith('```')) break;
+    const lines = t.split('\n');
+    let closeIdx = -1;
+    for (let i = lines.length - 1; i >= 1; i--) {
+      if (/^```\s*$/.test(lines[i])) { closeIdx = i; break; }
     }
-    break;
+    if (closeIdx === -1) break; // no closing fence line found — leave as-is
+    t = lines.slice(1, closeIdx).join('\n').trim();
   }
   return t;
 }

@@ -1192,23 +1192,31 @@ def _strip_wrapping_code_fence(text: str) -> str:
     Claude is instructed to wrap the whole business plan in a single
     ```artifact:document:<title>``` fence, but it doesn't always follow that
     exactly — sometimes it wraps the entire response in a plain/generic
-    ``` fence instead (with no 'artifact:document:' tag, occasionally with a
-    ```markdown language tag). When that happens, the raw fence markers end
-    up stored as part of the markdown content, and the whole document then
-    renders client-side as ONE giant literal code block (raw '#', '**', '|'
-    characters visible instead of real headers/bold/tables) instead of
-    being parsed as markdown. This strips a single outer wrapping fence if
-    the entire (stripped) text starts and ends with one, and is safe/idempotent
-    to call even when there's no fence to strip.
+    ``` fence instead (with no 'artifact:document:' tag), and/or appends a
+    trailing sentence after the closing fence (e.g. "Let me know if you'd
+    like any changes!"). That trailing text breaks a naive "does the string
+    end with ```" check, so the fence never gets stripped and the whole
+    document renders client-side as ONE giant literal code block (raw '#',
+    '**', '|' characters visible instead of real headers/bold/tables)
+    instead of being parsed as markdown. This scans for the LAST line that
+    is just a bare ``` fence (ignoring anything after it) instead of
+    requiring the string to end exactly on the fence, so it's resilient to
+    trailing commentary. Safe/idempotent to call even when there's no fence
+    to strip.
     """
     t = (text or "").strip()
     for _ in range(2):  # handle at most one extra level of accidental double-wrapping
-        if t.startswith("```"):
-            first_newline = t.find("\n")
-            if first_newline != -1 and t.endswith("```") and len(t) > first_newline + 3:
-                t = t[first_newline + 1:-3].strip()
-                continue
-        break
+        if not t.startswith("```"):
+            break
+        lines = t.split("\n")
+        close_idx = -1
+        for i in range(len(lines) - 1, 0, -1):
+            if re.match(r"^```\s*$", lines[i]):
+                close_idx = i
+                break
+        if close_idx == -1:
+            break  # no closing fence line found — leave as-is
+        t = "\n".join(lines[1:close_idx]).strip()
     return t
 
 
