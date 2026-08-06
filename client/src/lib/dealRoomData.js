@@ -234,8 +234,11 @@ export function buildDealRoomData({ deal, full, metrics, allocations = [], distr
     upsidePlays: Array.isArray(narrative?.upsidePlays) ? narrative.upsidePlays : [],
     // Full AI-generated Business Plan (markdown) — undefined until the
     // sponsor clicks "Generate Business Plan" in the Deal Room tab; the
-    // component only renders this section once it exists.
-    businessPlanMarkdown: deal?.parsedData?.businessPlanMarkdown || null,
+    // component only renders this section once it exists. Sourced from the
+    // deal's dedicated `business_plan_markdown` column (falls back to the
+    // older parsed_data location for deals generated before that column
+    // existed).
+    businessPlanMarkdown: deal?.businessPlanMarkdown || deal?.parsedData?.businessPlanMarkdown || null,
     financialOverview,
     investorOptions,
     operationalPlan,

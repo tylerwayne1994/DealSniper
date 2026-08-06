@@ -230,6 +230,8 @@ export function mapDealRow(data) {
     deathReason: data.death_reason,
     parsedData: data.parsed_data,
     scenarioData: data.scenario_data,
+    businessPlanMarkdown: data.business_plan_markdown,
+    businessPlanGeneratedAt: data.business_plan_generated_at,
     marketCapRate: data.market_cap_rate,
     rentcastData: data.rentcast_data,
     costsegData: data.costseg_data,

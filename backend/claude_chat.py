@@ -1187,6 +1187,31 @@ def generate_document_from_artifact(markdown_content: str, title: str) -> bytes:
 # Deal Context Injection - Load parsed deal data into the chat session
 # ============================================================================
 
+def _strip_wrapping_code_fence(text: str) -> str:
+    """
+    Claude is instructed to wrap the whole business plan in a single
+    ```artifact:document:<title>``` fence, but it doesn't always follow that
+    exactly — sometimes it wraps the entire response in a plain/generic
+    ``` fence instead (with no 'artifact:document:' tag, occasionally with a
+    ```markdown language tag). When that happens, the raw fence markers end
+    up stored as part of the markdown content, and the whole document then
+    renders client-side as ONE giant literal code block (raw '#', '**', '|'
+    characters visible instead of real headers/bold/tables) instead of
+    being parsed as markdown. This strips a single outer wrapping fence if
+    the entire (stripped) text starts and ends with one, and is safe/idempotent
+    to call even when there's no fence to strip.
+    """
+    t = (text or "").strip()
+    for _ in range(2):  # handle at most one extra level of accidental double-wrapping
+        if t.startswith("```"):
+            first_newline = t.find("\n")
+            if first_newline != -1 and t.endswith("```") and len(t) > first_newline + 3:
+                t = t[first_newline + 1:-3].strip()
+                continue
+        break
+    return t
+
+
 BUSINESS_PLAN_PROMPT = """You are generating a professional Investment Underwriting & Business Plan document for a real estate deal. 
 
 Based on the deal data provided in this session, generate a complete business plan document in the following structure. 
@@ -1241,6 +1266,13 @@ The document must include ALL of the following sections — do not skip any:
 Use the actual numbers from the deal data. Where data is missing, make reasonable assumptions and note them explicitly as assumptions.
 Format all currency with $ and commas. Format all percentages with %.
 Be thorough — this is a professional investor presentation document.
+
+INTERNAL CONSISTENCY — DO NOT CONTRADICT YOURSELF: the "Day-1 Cash Flow" figure shown in
+OFFERING HIGHLIGHTS at the top of the document MUST be the exact same number as the "Year 1 Cash
+Flow" you compute in SECTION 5's cash flow analysis (including any adjustments/assumptions you
+apply there, e.g. a property tax reassessment). Compute Section 5 first if needed, then use that
+same final number at the top — never show two different "day-1" cash flow figures in the same
+document.
 
 REMINDER: wrap the entire document above in a single ```artifact:document:<title>``` fence as your
 whole response — open the fence first, write all 8 sections inside it, then close the fence last."""
@@ -1470,6 +1502,14 @@ SCENARIO / ASSUMPTIONS (the user's actual configured underwriting strategy — f
             # the raw text rather than failing the whole request.
             title = f"{address} — Business Plan"
             markdown_content = full_text.strip()
+
+        # Defensive cleanup: Claude sometimes wraps the whole response in a
+        # plain/generic ``` fence instead of (or in addition to) the expected
+        # ```artifact:document: fence. If that leftover fence isn't stripped,
+        # the entire document renders client-side as one literal code block
+        # instead of parsed markdown/tables. Safe to call even if there's
+        # nothing to strip.
+        markdown_content = _strip_wrapping_code_fence(markdown_content)
 
         return JSONResponse(content={
             "success": True,

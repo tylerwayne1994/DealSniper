@@ -419,9 +419,12 @@ function DealRoomPage() {
       // "Business Plan" section in the actual Deal Room view (not just a
       // downloadable file) — persisted immediately so it survives a reload,
       // and BEFORE the PDF/Documents step below so it's saved either way.
-      const nextParsedData = { ...(deal?.parsedData || {}), businessPlanMarkdown: result.markdown };
-      await updateDeal(dealId, { parsed_data: nextParsedData });
-      setDeal((prev) => (prev ? { ...prev, parsedData: nextParsedData } : prev));
+      // Written to the dedicated `business_plan_markdown` column (see
+      // backend/migrations/add_business_plan_columns.sql) rather than being
+      // buried inside parsed_data, so it's a real, queryable Supabase field.
+      const generatedAt = new Date().toISOString();
+      await updateDeal(dealId, { business_plan_markdown: result.markdown, business_plan_generated_at: generatedAt });
+      setDeal((prev) => (prev ? { ...prev, businessPlanMarkdown: result.markdown, businessPlanGeneratedAt: generatedAt } : prev));
 
       // Also export a PDF copy to Documents — best-effort: if this part
       // fails (e.g. a huge plan exceeding storage's size limit), the plan
