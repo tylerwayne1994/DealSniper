@@ -518,7 +518,7 @@ function createBubbleIcon(color = '#ef4444', textColor = '#fff', units = null) {
     className: 'bubble-marker-icon',
     html: `
       <div style="position: relative; width: 14px; height: 14px; cursor: pointer;">
-        <div style="position: absolute; inset: 0; border-radius: 50%; background: ${color}; box-shadow: 0 1px 3px rgba(0,0,0,0.5); border: 1.5px solid rgba(255,255,255,0.9);"></div>
+        <div style="position: absolute; inset: 0; border-radius: 50%; background: ${color}; box-shadow: 0 1px 4px rgba(0,0,0,0.6);"></div>
         ${badge}
       </div>
     `,
@@ -1112,29 +1112,29 @@ function DashboardMapTab() {
       .map(([label]) => ({ color: metricColorForCategory(label), label }));
   }, [zipMetricV2, zipMetricsData, zipMetricV2Meta]);
 
-  // Color by cap rate value â€” green = low (good for buyers), red = high
+  // Color by cap rate value â€” neon green = low (good for buyers), neon red = high
   const capRateColor = (rate) => {
     const r = Number(rate) || 0;
-    if (r <= 4.75) return '#22c55e'; // low / gateway
+    if (r <= 4.75) return '#39ff14'; // low / gateway (neon green)
     if (r <= 5.5) return '#10b981';  // low-mid
     if (r <= 6.25) return '#3b82f6'; // mid
     if (r <= 7.0) return '#f59e0b';  // mid-high
-    return '#ef4444';                // high
+    return '#ff073a';                // high (neon red)
   };
 
   // Color by market trend for absorption circles
   const absorptionColor = (trend) => {
     const t = (trend || '').toLowerCase();
-    if (t.includes('improving')) return '#22c55e';
+    if (t.includes('improving')) return '#39ff14'; // neon green
     if (t.includes('stable')) return '#3b82f6';
-    if (t.includes('softening')) return '#ef4444';
+    if (t.includes('softening')) return '#ff073a'; // neon red
     return '#6b7280';
   };
 
   // Color by status
   const devPinColor = (status) => {
     const s = (status || '').toLowerCase();
-    if (s.includes('complete')) return '#22c55e';
+    if (s.includes('complete')) return '#39ff14'; // neon green
     if (s.includes('under construction')) return '#f59e0b';
     if (s.includes('proposed') || s.includes('planning') || s.includes('approved') || s.includes('announced')) return '#8b5cf6';
     if (s.includes('permitted')) return '#0ea5e9';
@@ -1403,7 +1403,7 @@ function DashboardMapTab() {
           el.style.cursor = 'pointer';
           el.style.width = '18px';
           el.style.height = '18px';
-          el.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`;
+          el.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:${color};box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>`;
           const popup = new mapboxgl.Popup({ offset: 12, maxWidth: '380px' })
             .setHTML(`
               <div style="font-family:Inter,-apple-system,sans-serif;padding:8px;">
@@ -1447,7 +1447,7 @@ function DashboardMapTab() {
           el.style.cursor = 'pointer';
           el.style.width = `${radius}px`;
           el.style.height = `${radius}px`;
-          el.innerHTML = `<div style="width:${radius}px;height:${radius}px;border-radius:50%;background:${color};opacity:0.7;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;"><span style="font-size:9px;font-weight:700;color:#fff;">${msa.Absorption_Rate_Pct || ''}%</span></div>`;
+          el.innerHTML = `<div style="width:${radius}px;height:${radius}px;border-radius:50%;background:${color};opacity:0.85;box-shadow:0 2px 6px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;"><span style="font-size:9px;font-weight:700;color:#000;">${msa.Absorption_Rate_Pct || ''}%</span></div>`;
           const popup = new mapboxgl.Popup({ offset: 12, maxWidth: '380px' })
             .setHTML(`
               <div style="font-family:Inter,-apple-system,sans-serif;padding:10px;">
@@ -1504,7 +1504,7 @@ function DashboardMapTab() {
           el.style.cursor = 'pointer';
           el.style.width = `${radius}px`;
           el.style.height = `${radius}px`;
-          el.innerHTML = `<div style="width:${radius}px;height:${radius}px;border-radius:50%;background:${color};opacity:0.75;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;"><span style="font-size:9px;font-weight:700;color:#fff;">${rate}%</span></div>`;
+          el.innerHTML = `<div style="width:${radius}px;height:${radius}px;border-radius:50%;background:${color};opacity:0.85;box-shadow:0 2px 6px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;"><span style="font-size:9px;font-weight:700;color:#000;">${rate}%</span></div>`;
           const popup = new mapboxgl.Popup({ offset: 12, maxWidth: '400px' })
             .setHTML(`
               <div style="font-family:Inter,-apple-system,sans-serif;padding:10px;">
@@ -1542,8 +1542,8 @@ function DashboardMapTab() {
       }
 
       allPins.forEach(pin => {
-        let color = '#ef4444';
-        if (pin.category === 'pipeline') color = '#facc15';
+        let color = '#ff073a';
+        if (pin.category === 'pipeline') color = '#eaff00';
         else if (pin.source === 'uploaded') color = '#06b6d4';
         else if (pin.category === 'prospect') color = '#8b5cf6';
 
@@ -1554,7 +1554,7 @@ function DashboardMapTab() {
         el.innerHTML = `
           <svg width="32" height="42" viewBox="0 0 32 42" xmlns="http://www.w3.org/2000/svg">
             <path d="M16 0C9.4 0 4 5.4 4 12c0 8 12 30 12 30s12-22 12-30c0-6.6-5.4-12-12-12z" 
-                  fill="${color}" stroke="#fff" stroke-width="2"/>
+                  fill="${color}"/>
             <circle cx="16" cy="12" r="6" fill="#fff" opacity="0.9"/>
           </svg>
         `;
@@ -1717,13 +1717,13 @@ function DashboardMapTab() {
     if (source === 'uploaded' || cat === 'uploaded') {
       color = '#06b6d4'; // Cyan for uploaded properties
     } else if (cat === 'pipeline') {
-      color = '#facc15'; // Yellow
+      color = '#eaff00'; // Neon yellow
     } else if (cat === 'rapidfire') {
-      color = '#ef4444'; // Red
+      color = '#ff073a'; // Neon red
     } else if (cat === 'prospect') {
       color = '#f59e0b'; // Amber
     } else {
-      color = '#ef4444'; // Red default
+      color = '#ff073a'; // Neon red default
     }
     
     return createBubbleIcon(color, '#fff', units);
@@ -1735,12 +1735,12 @@ function DashboardMapTab() {
     if (!window.google) return undefined;
     let color;
     if (source === 'uploaded' || cat === 'uploaded') color = '#06b6d4';
-    else if (cat === 'pipeline') color = '#facc15';
-    else if (cat === 'rapidfire') color = '#ef4444';
+    else if (cat === 'pipeline') color = '#eaff00';
+    else if (cat === 'rapidfire') color = '#ff073a';
     else if (cat === 'prospect') color = '#f59e0b';
-    else color = '#ef4444';
+    else color = '#ff073a';
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="36" viewBox="0 0 26 36">` +
-      `<path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 23 13 23s13-13.25 13-23C26 5.82 20.18 0 13 0z" fill="${color}" stroke="#fff" stroke-width="1.5"/>` +
+      `<path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 23 13 23s13-13.25 13-23C26 5.82 20.18 0 13 0z" fill="${color}"/>` +
       `<circle cx="13" cy="13" r="5" fill="#fff" opacity="0.9"/></svg>`;
     return {
       url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
@@ -3240,8 +3240,8 @@ function DashboardMapTab() {
                 <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#9ca3af', marginBottom: 2 }}>Pin Visibility</div>
                   {[
-                    { label: 'Pipeline Deals', enabled: showPipelinePins, toggle: () => setShowPipelinePins(v => !v), color: '#facc15', count: customPins.filter(p => p.category === 'pipeline').length },
-                    { label: 'Rapid Fire', enabled: showRapidFirePins, toggle: () => setShowRapidFirePins(v => !v), color: '#ef4444', count: customPins.filter(p => p.category === 'rapidfire').length, bulkDelete: deleteAllRapidFirePins },
+                    { label: 'Pipeline Deals', enabled: showPipelinePins, toggle: () => setShowPipelinePins(v => !v), color: '#eaff00', count: customPins.filter(p => p.category === 'pipeline').length },
+                    { label: 'Rapid Fire', enabled: showRapidFirePins, toggle: () => setShowRapidFirePins(v => !v), color: '#ff073a', count: customPins.filter(p => p.category === 'rapidfire').length, bulkDelete: deleteAllRapidFirePins },
                     { label: 'Uploaded Properties', enabled: showUploadedPins, toggle: () => setShowUploadedPins(v => !v), color: '#06b6d4', count: customPins.filter(p => p.source === 'uploaded').length, bulkDelete: deleteAllUploadedPins },
                     { label: 'Parcel Boundaries', enabled: showParcelPolygons, toggle: () => setShowParcelPolygons(v => !v), color: '#f97316', count: parcelPolygons.length },
                     { label: 'Prospect Cities', enabled: showProspectPins, toggle: () => setShowProspectPins(v => !v), color: '#f59e0b', count: customPins.filter(p => p.category === 'prospect').length },
@@ -3786,7 +3786,7 @@ function DashboardMapTab() {
                   key={`dev-${idx}`}
                   center={[lat, lng]}
                   radius={7}
-                  pathOptions={{ fillColor: color, fillOpacity: 0.85, color: '#fff', weight: 2 }}
+                  pathOptions={{ fillColor: color, fillOpacity: 0.9, stroke: false }}
                 >
                   <Popup maxWidth={360} className="parcel-popup-dark">
                     <div style={{ fontFamily: 'Inter, -apple-system, sans-serif', minWidth: 280, padding: 4 }}>
@@ -3968,7 +3968,7 @@ function DashboardMapTab() {
                   key={`cap-${idx}`}
                   center={[lat, lng]}
                   radius={radius}
-                  pathOptions={{ fillColor: color, fillOpacity: 0.7, color: '#fff', weight: 2, opacity: 0.9 }}
+                  pathOptions={{ fillColor: color, fillOpacity: 0.85, stroke: false }}
                 >
                   <Popup maxWidth={400} className="parcel-popup-dark">
                     <div style={{ fontFamily: 'Inter, -apple-system, sans-serif', minWidth: 320, padding: 4 }}>
