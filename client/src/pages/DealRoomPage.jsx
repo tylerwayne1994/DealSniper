@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
 import {
   ArrowLeft, Upload, Download, Trash2,
   Eye, ClipboardCheck, Presentation,
   DollarSign, Home, X, StickyNote,
   Folder, FileCheck, BarChart3, AlertTriangle,
   ChevronRight, RefreshCw, Percent, Hash, Calendar,
-  Phone, Mail, Layers, Lock, Link2
+  Phone, Mail, Layers, Lock, Link2, FileText
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { loadDeal, updateDeal } from '../lib/dealsService';
@@ -20,7 +21,8 @@ import { computeDealMetrics, normalizeDealImages, computeDealScore, bandScore } 
 import ShareWithInvestorPanel from '../components/dealroom/ShareWithInvestorPanel';
 import DealRoomLayoutEditor from '../components/dealroom/DealRoomLayoutEditor';
 import { getDealRoomLayout } from '../lib/dealRoomLayoutService';
-import { API_ENDPOINTS } from '../config/api';
+import { uploadDealDocument } from '../lib/dealDocumentsService';
+import { API_ENDPOINTS, API_BASE_URL } from '../config/api';
 
 // ============================================================================
 // Constants & Helpers
@@ -221,6 +223,11 @@ function DealRoomPage() {
   const [allocations, setAllocations] = useState([]);
   const [distributions, setDistributions] = useState([]);
   const [investorDataLoaded, setInvestorDataLoaded] = useState(false);
+  // Business Plan document generation (Deal Room tab -> saved to Documents)
+  const [generatingBusinessPlan, setGeneratingBusinessPlan] = useState(false);
+  const [businessPlanMsg, setBusinessPlanMsg] = useState('');
+  const [businessPlanMarkdown, setBusinessPlanMarkdown] = useState('');
+  const businessPlanRenderRef = useRef(null);
   const [dealRoomLayout, setDealRoomLayout] = useState(null);
   const [layoutLoaded, setLayoutLoaded] = useState(false);
   const [editingLayout, setEditingLayout] = useState(false);
@@ -378,6 +385,81 @@ function DealRoomPage() {
       alert('Failed to generate investment thesis: ' + e.message);
     } finally {
       setGeneratingNarrative(false);
+    }
+  };
+
+  // Generate a full Business Plan document for this deal (uses the deal's
+  // actual configured underwriting strategy + any saved OM/T12/etc. as
+  // context — see backend/claude_chat.py's business-plan/generate-for-deal),
+  // then renders the returned markdown off-screen, snapshots it to a real
+  // multi-page PDF (same html2canvas+jsPDF pattern already used by
+  // Pitch Deck / LOI / Contract PDF export elsewhere in this app), and
+  // saves it straight onto this deal's Documents so it shows up in the
+  // vault automatically — no separate page, no manual download+re-upload.
+  const handleGenerateBusinessPlan = async () => {
+    if (generatingBusinessPlan) return;
+    setGeneratingBusinessPlan(true);
+    setBusinessPlanMsg('Generating your business plan\u2026 this can take up to a minute.');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/claude-chat/business-plan/generate-for-deal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deal_id: dealId }),
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok || !result.success) {
+        throw new Error(result.detail || 'Failed to generate business plan');
+      }
+
+      setBusinessPlanMsg('Rendering document\u2026');
+      setBusinessPlanMarkdown(result.markdown);
+      // Let the off-screen container actually paint before snapshotting it.
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      const html2canvas = (await import('html2canvas')).default;
+      const jsPDF = (await import('jspdf')).default;
+
+      const node = businessPlanRenderRef.current;
+      if (!node) throw new Error('Could not render the document for export');
+
+      const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+      const imgData = canvas.toDataURL('image/png');
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const pdfBlob = pdf.output('blob');
+      const safeTitle = (result.title || `${deal?.address || 'Deal'} - Business Plan`).replace(/[^a-zA-Z0-9._ -]/g, '');
+      const fileName = `${safeTitle}.pdf`;
+
+      setBusinessPlanMsg('Saving to Documents\u2026');
+      await uploadDealDocument(dealId, pdfBlob, {
+        fileName,
+        category: 'business_plan',
+      });
+      await loadDocuments();
+
+      setBusinessPlanMsg('Business plan saved to Documents \u2713');
+      setTimeout(() => setBusinessPlanMsg(''), 4000);
+    } catch (e) {
+      console.error('Failed to generate business plan:', e);
+      setBusinessPlanMsg(`Failed to generate business plan: ${e.message}`);
+    } finally {
+      setGeneratingBusinessPlan(false);
+      setBusinessPlanMarkdown('');
     }
   };
 
@@ -1158,6 +1240,20 @@ function DealRoomPage() {
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <button
+                    onClick={handleGenerateBusinessPlan}
+                    disabled={generatingBusinessPlan || !(investorDataLoaded && layoutLoaded)}
+                    title="Generate a full business plan document from this deal's actual underwriting strategy and save it to Documents"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      padding: '6px 12px', fontSize: 12, fontWeight: 600, borderRadius: 6,
+                      border: '1px solid #a7f3d0', background: '#fff', color: '#059669',
+                      cursor: (generatingBusinessPlan || !(investorDataLoaded && layoutLoaded)) ? 'default' : 'pointer',
+                      opacity: (generatingBusinessPlan || !(investorDataLoaded && layoutLoaded)) ? 0.6 : 1,
+                    }}
+                  >
+                    <FileText size={13} /> {generatingBusinessPlan ? 'Generating\u2026' : 'Generate Business Plan'}
+                  </button>
+                  <button
                     onClick={() => setEditingLayout((v) => !v)}
                     disabled={!(investorDataLoaded && layoutLoaded)}
                     style={{
@@ -1173,6 +1269,16 @@ function DealRoomPage() {
                   <ShareWithInvestorPanel dealId={dealId} />
                 </div>
               </div>
+              {businessPlanMsg && (
+                <div style={{
+                  fontSize: 12.5, padding: '8px 12px', borderRadius: 6, fontWeight: 500,
+                  color: businessPlanMsg.startsWith('Failed') ? '#b91c1c' : '#065f46',
+                  background: businessPlanMsg.startsWith('Failed') ? '#fef2f2' : '#ecfdf5',
+                  border: `1px solid ${businessPlanMsg.startsWith('Failed') ? '#fecaca' : '#a7f3d0'}`,
+                }}>
+                  {businessPlanMsg}
+                </div>
+              )}
               {!(investorDataLoaded && layoutLoaded) ? (
                 <div style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e6e9ef', padding: '60px 24px', textAlign: 'center' }}>
                   <div style={{ width: '220px', height: '4px', margin: '0 auto 18px', borderRadius: '999px', backgroundColor: '#e6e9ef', overflow: 'hidden' }}>
@@ -1524,6 +1630,38 @@ function DealRoomPage() {
 
       {/* Spin animation */}
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+
+      {/* Off-screen render target for the Business Plan PDF snapshot (see
+          handleGenerateBusinessPlan) — must be a real, painted element for
+          html2canvas to capture, so it's positioned off-screen rather than
+          display:none/unmounted. Fixed pixel width so the PDF's page
+          proportions come out consistent regardless of viewport size. */}
+      {businessPlanMarkdown && (
+        <div style={{ position: 'fixed', top: 0, left: '-99999px', width: '780px', zIndex: -1 }}>
+          <div
+            ref={businessPlanRenderRef}
+            style={{
+              width: '780px', padding: '48px 56px', background: '#ffffff', color: '#111827',
+              fontFamily: 'Georgia, "Times New Roman", serif', fontSize: '14px', lineHeight: 1.6,
+            }}
+          >
+            <ReactMarkdown
+              components={{
+                h1: ({ children }) => <h1 style={{ fontSize: 26, fontWeight: 700, color: '#1F4E79', margin: '0 0 16px' }}>{children}</h1>,
+                h2: ({ children }) => <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1F4E79', margin: '28px 0 12px', borderBottom: '2px solid #1F4E79', paddingBottom: 6 }}>{children}</h2>,
+                h3: ({ children }) => <h3 style={{ fontSize: 16, fontWeight: 700, color: '#2E75B6', margin: '18px 0 8px' }}>{children}</h3>,
+                p: (p) => <p style={{ margin: '0 0 10px' }} {...p} />,
+                li: (p) => <li style={{ marginBottom: 4 }} {...p} />,
+                table: (p) => <table style={{ width: '100%', borderCollapse: 'collapse', margin: '10px 0 16px', fontSize: 13 }} {...p} />,
+                th: (p) => <th style={{ background: '#1F4E79', color: '#fff', padding: '6px 10px', textAlign: 'left', border: '1px solid #d1d5db' }} {...p} />,
+                td: (p) => <td style={{ padding: '6px 10px', border: '1px solid #d1d5db' }} {...p} />,
+              }}
+            >
+              {businessPlanMarkdown}
+            </ReactMarkdown>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

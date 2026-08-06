@@ -15,6 +15,7 @@ import uuid
 import base64
 import asyncio
 import logging
+import re
 import requests
 from datetime import datetime
 from typing import Dict, Any, Optional, List, AsyncGenerator
@@ -1383,6 +1384,104 @@ async def generate_business_plan(request: Request):
         raise
     except Exception as e:
         log.exception(f"[Claude Chat] Business plan generation error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/business-plan/generate-for-deal")
+async def generate_business_plan_for_deal(request: Request):
+    """
+    One-shot (non-streaming) business plan generation tied directly to a
+    deal_id — used by the Deal Room's "Generate Business Plan" button so it
+    doesn't need to create/manage a chat session at all. Loads the deal
+    straight from Supabase, attaches the deal's saved Document Vault files
+    (OM/T12/rent roll/etc.), asks Claude for the full plan in one blocking
+    call, and returns the finished markdown (already unwrapped from the
+    ```artifact:document fence if present) so the frontend can render it to
+    PDF and save it back onto the deal's documents.
+
+    Body: { "deal_id": "..." }
+    """
+    try:
+        body = await request.json()
+        deal_id = body.get("deal_id")
+        if not deal_id:
+            raise HTTPException(status_code=400, detail="deal_id required")
+
+        from token_manager import get_supabase
+        sb = get_supabase()
+        res = sb.table("deals").select("*").eq("deal_id", deal_id).limit(1).execute()
+        rows = res.data or []
+        if not rows:
+            raise HTTPException(status_code=404, detail="Deal not found")
+        deal = rows[0]
+
+        parsed = deal.get("parsed_data") or {}
+        scenario = deal.get("scenario_data") or {}
+        address = deal.get("address") or (parsed.get("property") or {}).get("address") or "Deal"
+
+        # Reuse the same session["files"] shape / helper used by the chat-
+        # session flow, just not persisted anywhere — this call is stateless.
+        session = {"files": []}
+        attached_count = _attach_deal_vault_documents(session, deal_id)
+
+        deal_summary = f"""
+DEAL CONTEXT
+=====================================
+Address: {address}
+Units: {deal.get('units', 'N/A')}
+Purchase Price: ${(deal.get('purchase_price') or 0):,.0f}
+
+FULL PARSED DATA:
+{json.dumps(parsed, indent=2)[:30000]}
+
+SCENARIO / ASSUMPTIONS (the user's actual configured underwriting strategy — financing terms, exit/refi assumptions, JV/waterfall structure if any):
+{json.dumps(scenario, indent=2)[:8000]}
+"""
+
+        system = SYSTEM_PROMPT + f"\n\n{'='*60}\nACTIVE DEAL CONTEXT:\n{'='*60}\n{deal_summary}"
+
+        files_context = session.get("files", [])
+        if files_context:
+            file_summary = "\n\n---\n**UPLOADED DOCUMENTS:**\n"
+            for f in files_context:
+                file_summary += f"\n**{f['filename']}** ({f['file_type']})\n"
+                if f.get("extracted_text"):
+                    text = f["extracted_text"][:50000]
+                    file_summary += f"```\n{text}\n```\n"
+            file_summary += "\n---\n"
+            system += file_summary
+
+        client = get_anthropic_client()
+        log.info(f"[Claude Chat] Generating business plan document for deal {deal_id} ({attached_count} vault documents attached)")
+        response = client.messages.create(
+            model=ANTHROPIC_MODEL,
+            max_tokens=8192,
+            system=system,
+            messages=[{"role": "user", "content": BUSINESS_PLAN_PROMPT}],
+        )
+        full_text = response.content[0].text
+
+        m = re.search(r"```artifact:document:([^\n]+)\n([\s\S]*?)```", full_text)
+        if m:
+            title = m.group(1).strip()
+            markdown_content = m.group(2).strip()
+        else:
+            # Didn't get wrapped in the expected fence — fall back to using
+            # the raw text rather than failing the whole request.
+            title = f"{address} — Business Plan"
+            markdown_content = full_text.strip()
+
+        return JSONResponse(content={
+            "success": True,
+            "title": title,
+            "markdown": markdown_content,
+            "documents_attached": attached_count,
+        })
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.exception(f"[Claude Chat] Business plan (deal) generation error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
