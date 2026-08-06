@@ -13,7 +13,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { loadDeal, updateDeal } from '../lib/dealsService';
 import { listAllocations, listDistributions } from '../lib/investorService';
-import { buildDealRoomData } from '../lib/dealRoomData';
+import { buildDealRoomData, stripWrappingCodeFence } from '../lib/dealRoomData';
 import { fetchDealRoomNarrative } from '../lib/dealRoomNarrativeService';
 import BoardOfAdvisors from '../components/BoardOfAdvisors';
 import DealChat from '../components/DealChat';
@@ -413,7 +413,12 @@ function DealRoomPage() {
       }
 
       setBusinessPlanMsg('Rendering document\u2026');
-      setBusinessPlanMarkdown(result.markdown);
+      // Safety net: strip a raw ``` fence Claude sometimes wraps the whole
+      // response in instead of the expected ```artifact:document: fence
+      // (the backend already tries to strip it, but this doesn't depend on
+      // that deploy having gone out).
+      const cleanMarkdown = stripWrappingCodeFence(result.markdown);
+      setBusinessPlanMarkdown(cleanMarkdown);
 
       // Save the plan onto the deal itself so it shows up as its own
       // "Business Plan" section in the actual Deal Room view (not just a
@@ -427,11 +432,11 @@ function DealRoomPage() {
       // hard-failing.
       const generatedAt = new Date().toISOString();
       try {
-        await updateDeal(dealId, { business_plan_markdown: result.markdown, business_plan_generated_at: generatedAt });
-        setDeal((prev) => (prev ? { ...prev, businessPlanMarkdown: result.markdown, businessPlanGeneratedAt: generatedAt } : prev));
+        await updateDeal(dealId, { business_plan_markdown: cleanMarkdown, business_plan_generated_at: generatedAt });
+        setDeal((prev) => (prev ? { ...prev, businessPlanMarkdown: cleanMarkdown, businessPlanGeneratedAt: generatedAt } : prev));
       } catch (colErr) {
         console.warn('business_plan_markdown column not available yet (run backend/migrations/add_business_plan_columns.sql) — falling back to parsed_data:', colErr);
-        const nextParsedData = { ...(deal?.parsedData || {}), businessPlanMarkdown: result.markdown };
+        const nextParsedData = { ...(deal?.parsedData || {}), businessPlanMarkdown: cleanMarkdown };
         await updateDeal(dealId, { parsed_data: nextParsedData });
         setDeal((prev) => (prev ? { ...prev, parsedData: nextParsedData } : prev));
       }

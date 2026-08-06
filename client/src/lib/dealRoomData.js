@@ -38,6 +38,33 @@ const fmt$ = (v) => (v == null || Number.isNaN(Number(v))) ? null : Math.round(N
 const fmtPctDecimal = (v) => (v == null || Number.isNaN(Number(v))) ? null : Number(v) / 100;
 
 /**
+ * Claude is instructed to wrap the Business Plan in a single
+ * ```artifact:document:<title>``` fence, but doesn't always follow that —
+ * sometimes it wraps the whole response in a plain/generic ``` fence
+ * instead (no tag). The backend already tries to strip that, but this is a
+ * client-side safety net so (a) it doesn't matter whether the backend fix
+ * has finished deploying yet, and (b) any plan that was already saved to
+ * Supabase with the raw fence still attached (generated before the backend
+ * fix existed) renders correctly too, without needing to be regenerated.
+ * Exported so DealRoomPage.jsx can apply the same cleanup to the PDF
+ * snapshot render.
+ */
+export function stripWrappingCodeFence(text) {
+  let t = (text || '').trim();
+  for (let i = 0; i < 2; i++) {
+    if (t.startsWith('```')) {
+      const firstNewline = t.indexOf('\n');
+      if (firstNewline !== -1 && t.endsWith('```') && t.length > firstNewline + 3) {
+        t = t.slice(firstNewline + 1, -3).trim();
+        continue;
+      }
+    }
+    break;
+  }
+  return t;
+}
+
+/**
  * Build the Deal Room data object from real, already-computed sources.
  * Nothing here invents a value — every field is either a direct pass-through
  * of `deal`/`full`/`metrics`/`allocations`/`distributions`, or a template
@@ -237,8 +264,12 @@ export function buildDealRoomData({ deal, full, metrics, allocations = [], distr
     // component only renders this section once it exists. Sourced from the
     // deal's dedicated `business_plan_markdown` column (falls back to the
     // older parsed_data location for deals generated before that column
-    // existed).
-    businessPlanMarkdown: deal?.businessPlanMarkdown || deal?.parsedData?.businessPlanMarkdown || null,
+    // existed). Run through stripWrappingCodeFence() as a safety net for
+    // any already-saved plan that still has a raw ``` fence wrapped around
+    // the whole thing.
+    businessPlanMarkdown: (deal?.businessPlanMarkdown || deal?.parsedData?.businessPlanMarkdown)
+      ? stripWrappingCodeFence(deal.businessPlanMarkdown || deal.parsedData.businessPlanMarkdown)
+      : null,
     financialOverview,
     investorOptions,
     operationalPlan,
