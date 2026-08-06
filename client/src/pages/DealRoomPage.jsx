@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import {
   ArrowLeft, Upload, Download, Trash2,
   Eye, ClipboardCheck, Presentation,
@@ -13,11 +11,12 @@ import {
 import { supabase } from '../lib/supabase';
 import { loadDeal, updateDeal } from '../lib/dealsService';
 import { listAllocations, listDistributions } from '../lib/investorService';
-import { buildDealRoomData, stripWrappingCodeFence } from '../lib/dealRoomData';
+import { buildDealRoomData } from '../lib/dealRoomData';
 import { fetchDealRoomNarrative } from '../lib/dealRoomNarrativeService';
 import BoardOfAdvisors from '../components/BoardOfAdvisors';
 import DealChat from '../components/DealChat';
 import InvestorDealRoom from '../components/dealroom/InvestorDealRoom';
+import BusinessPlanBlocks from '../components/dealroom/BusinessPlanBlocks';
 import { computeDealMetrics, normalizeDealImages, computeDealScore, bandScore } from '../lib/dealMetrics';
 import ShareWithInvestorPanel from '../components/dealroom/ShareWithInvestorPanel';
 import DealRoomLayoutEditor from '../components/dealroom/DealRoomLayoutEditor';
@@ -227,7 +226,7 @@ function DealRoomPage() {
   // Business Plan document generation (Deal Room tab -> saved to Documents)
   const [generatingBusinessPlan, setGeneratingBusinessPlan] = useState(false);
   const [businessPlanMsg, setBusinessPlanMsg] = useState('');
-  const [businessPlanMarkdown, setBusinessPlanMarkdown] = useState('');
+  const [businessPlanData, setBusinessPlanData] = useState(null);
   const businessPlanRenderRef = useRef(null);
   const [dealRoomLayout, setDealRoomLayout] = useState(null);
   const [layoutLoaded, setLayoutLoaded] = useState(false);
@@ -246,10 +245,9 @@ function DealRoomPage() {
           routeDealId: dealId,
           loadedDealId: d?.dealId,
           address: d?.address,
-          hasBusinessPlanColumn: !!d?.businessPlanMarkdown,
-          businessPlanColumnLength: d?.businessPlanMarkdown?.length || 0,
-          hasBusinessPlanInParsedData: !!d?.parsedData?.businessPlanMarkdown,
-          businessPlanParsedDataLength: d?.parsedData?.businessPlanMarkdown?.length || 0,
+          hasBusinessPlanData: !!d?.businessPlanData,
+          numSections: d?.businessPlanData?.sections?.length,
+          hasLegacyMarkdown: !!d?.businessPlanMarkdown,
         });
         setDeal(d);
         setNotes(d?.notes || '');
@@ -401,12 +399,14 @@ function DealRoomPage() {
 
   // Generate a full Business Plan document for this deal (uses the deal's
   // actual configured underwriting strategy + any saved OM/T12/etc. as
-  // context — see backend/claude_chat.py's business-plan/generate-for-deal),
-  // then renders the returned markdown off-screen, snapshots it to a real
-  // multi-page PDF (same html2canvas+jsPDF pattern already used by
-  // Pitch Deck / LOI / Contract PDF export elsewhere in this app), and
-  // saves it straight onto this deal's Documents so it shows up in the
-  // vault automatically — no separate page, no manual download+re-upload.
+  // context — see backend/claude_chat.py's business-plan/generate-for-deal,
+  // which returns a structured JSON `plan` object via Claude tool-calling
+  // rather than a markdown blob), then renders that structured plan
+  // off-screen via BusinessPlanBlocks, snapshots it to a real multi-page PDF
+  // (same html2canvas+jsPDF pattern already used by Pitch Deck / LOI /
+  // Contract PDF export elsewhere in this app), and saves it straight onto
+  // this deal's Documents so it shows up in the vault automatically — no
+  // separate page, no manual download+re-upload.
   const handleGenerateBusinessPlan = async () => {
     if (generatingBusinessPlan) return;
     setGeneratingBusinessPlan(true);
@@ -420,7 +420,7 @@ function DealRoomPage() {
         body: JSON.stringify({ deal_id: dealId }),
       });
       const result = await res.json().catch(() => ({}));
-      if (!res.ok || !result.success) {
+      if (!res.ok || !result.success || !result.plan) {
         throw new Error(result.detail || 'Failed to generate business plan');
       }
 
@@ -430,29 +430,17 @@ function DealRoomPage() {
         currentDealAddress: deal?.address,
         returnedTitle: result.title,
         documentsAttached: result.documents_attached,
-        rawMarkdownLength: result.markdown?.length || 0,
-        rawMarkdownPreview: (result.markdown || '').slice(0, 300),
+        numSections: result.plan?.sections?.length,
       });
 
       setBusinessPlanMsg('Rendering document\u2026');
-      // Safety net: strip a raw ``` fence Claude sometimes wraps the whole
-      // response in instead of the expected ```artifact:document: fence
-      // (the backend already tries to strip it, but this doesn't depend on
-      // that deploy having gone out).
-      const cleanMarkdown = stripWrappingCodeFence(result.markdown);
-      // eslint-disable-next-line no-console
-      console.log('[BusinessPlan][generate:afterStrip]', {
-        cleanedLength: cleanMarkdown.length,
-        wasFenceStripped: cleanMarkdown.length !== (result.markdown || '').trim().length,
-        cleanedPreview: cleanMarkdown.slice(0, 300),
-      });
-      setBusinessPlanMarkdown(cleanMarkdown);
+      setBusinessPlanData(result.plan);
 
       // Save the plan onto the deal itself so it shows up as its own
       // "Business Plan" section in the actual Deal Room view (not just a
       // downloadable file) — persisted immediately so it survives a reload,
       // and BEFORE the PDF/Documents step below so it's saved either way.
-      // Prefer the dedicated `business_plan_markdown` column (see
+      // Prefer the dedicated `business_plan_data` column (see
       // backend/migrations/add_business_plan_columns.sql) so it's a real,
       // queryable Supabase field — but if that migration hasn't been run
       // yet against this project (column doesn't exist), fall back to
@@ -460,11 +448,11 @@ function DealRoomPage() {
       // hard-failing.
       const generatedAt = new Date().toISOString();
       try {
-        await updateDeal(dealId, { business_plan_markdown: cleanMarkdown, business_plan_generated_at: generatedAt });
-        setDeal((prev) => (prev ? { ...prev, businessPlanMarkdown: cleanMarkdown, businessPlanGeneratedAt: generatedAt } : prev));
+        await updateDeal(dealId, { business_plan_data: result.plan, business_plan_generated_at: generatedAt });
+        setDeal((prev) => (prev ? { ...prev, businessPlanData: result.plan, businessPlanGeneratedAt: generatedAt } : prev));
       } catch (colErr) {
-        console.warn('business_plan_markdown column not available yet (run backend/migrations/add_business_plan_columns.sql) — falling back to parsed_data:', colErr);
-        const nextParsedData = { ...(deal?.parsedData || {}), businessPlanMarkdown: cleanMarkdown };
+        console.warn('business_plan_data column not available yet (run backend/migrations/add_business_plan_columns.sql) — falling back to parsed_data:', colErr);
+        const nextParsedData = { ...(deal?.parsedData || {}), businessPlanData: result.plan };
         await updateDeal(dealId, { parsed_data: nextParsedData });
         setDeal((prev) => (prev ? { ...prev, parsedData: nextParsedData } : prev));
       }
@@ -532,7 +520,7 @@ function DealRoomPage() {
       setBusinessPlanMsg(`Failed to generate business plan: ${e.message}`);
     } finally {
       setGeneratingBusinessPlan(false);
-      setBusinessPlanMarkdown('');
+      setBusinessPlanData(null);
     }
   };
 
@@ -1708,8 +1696,11 @@ function DealRoomPage() {
           handleGenerateBusinessPlan) — must be a real, painted element for
           html2canvas to capture, so it's positioned off-screen rather than
           display:none/unmounted. Fixed pixel width so the PDF's page
-          proportions come out consistent regardless of viewport size. */}
-      {businessPlanMarkdown && (
+          proportions come out consistent regardless of viewport size. Uses
+          the same structured-block renderer as the live Deal Room section
+          (BusinessPlanBlocks) so both stay in sync from one source of truth
+          instead of a separately-maintained markdown template. */}
+      {businessPlanData && (
         <div style={{ position: 'fixed', top: 0, left: '-99999px', width: '780px', zIndex: -1 }}>
           <div
             ref={businessPlanRenderRef}
@@ -1718,21 +1709,10 @@ function DealRoomPage() {
               fontFamily: 'Georgia, "Times New Roman", serif', fontSize: '14px', lineHeight: 1.6,
             }}
           >
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                h1: ({ children }) => <h1 style={{ fontSize: 26, fontWeight: 700, color: '#1F4E79', margin: '0 0 16px' }}>{children}</h1>,
-                h2: ({ children }) => <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1F4E79', margin: '28px 0 12px', borderBottom: '2px solid #1F4E79', paddingBottom: 6 }}>{children}</h2>,
-                h3: ({ children }) => <h3 style={{ fontSize: 16, fontWeight: 700, color: '#2E75B6', margin: '18px 0 8px' }}>{children}</h3>,
-                p: (p) => <p style={{ margin: '0 0 10px' }} {...p} />,
-                li: (p) => <li style={{ marginBottom: 4 }} {...p} />,
-                table: (p) => <table style={{ width: '100%', borderCollapse: 'collapse', margin: '10px 0 16px', fontSize: 13 }} {...p} />,
-                th: (p) => <th style={{ background: '#1F4E79', color: '#fff', padding: '6px 10px', textAlign: 'left', border: '1px solid #d1d5db' }} {...p} />,
-                td: (p) => <td style={{ padding: '6px 10px', border: '1px solid #d1d5db' }} {...p} />,
-              }}
-            >
-              {businessPlanMarkdown}
-            </ReactMarkdown>
+            <h1 style={{ fontSize: 26, fontWeight: 700, color: '#1F4E79', margin: '0 0 20px' }}>
+              {businessPlanData.title || 'Business Plan'}
+            </h1>
+            <BusinessPlanBlocks plan={businessPlanData} variant="pdf" />
           </div>
         </div>
       )}
@@ -1741,3 +1721,4 @@ function DealRoomPage() {
 }
 
 export default DealRoomPage;
+

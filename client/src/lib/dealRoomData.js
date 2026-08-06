@@ -273,29 +273,23 @@ export function buildDealRoomData({ deal, full, metrics, allocations = [], distr
     whyMarket: Array.isArray(narrative?.whyMarket) ? narrative.whyMarket : [],
     whyAsset: Array.isArray(narrative?.whyAsset) ? narrative.whyAsset : [],
     upsidePlays: Array.isArray(narrative?.upsidePlays) ? narrative.upsidePlays : [],
-    // Full AI-generated Business Plan (markdown) — undefined until the
-    // sponsor clicks "Generate Business Plan" in the Deal Room tab; the
-    // component only renders this section once it exists. Sourced from the
-    // deal's dedicated `business_plan_markdown` column (falls back to the
-    // older parsed_data location for deals generated before that column
-    // existed). Run through stripWrappingCodeFence() as a safety net for
-    // any already-saved plan that still has a raw ``` fence wrapped around
-    // the whole thing.
+    // Full AI-generated Business Plan — undefined until the sponsor clicks
+    // "Generate Business Plan" in the Deal Room tab; the component only
+    // renders this section once it exists. `businessPlanData` is the
+    // current, preferred format: structured JSON (title/offeringHighlights/
+    // investmentThesis/sections[]) generated via Claude tool-calling and
+    // rendered directly into real UI components (see BusinessPlanBlocks.jsx)
+    // instead of being parsed from AI-written markdown text.
+    // `businessPlanMarkdown` is kept only as a fallback for plans generated
+    // before the structured format existed, run through
+    // stripWrappingCodeFence() as a safety net for any legacy plan that
+    // still has a raw ``` fence wrapped around the whole thing.
+    businessPlanData: deal?.businessPlanData || deal?.parsedData?.businessPlanData || null,
     businessPlanMarkdown: (() => {
+      if (deal?.businessPlanData || deal?.parsedData?.businessPlanData) return null;
       const raw = deal?.businessPlanMarkdown || deal?.parsedData?.businessPlanMarkdown;
       if (!raw) return null;
-      const cleaned = stripWrappingCodeFence(raw);
-      // eslint-disable-next-line no-console
-      console.log('[BusinessPlan][buildDealRoomData]', {
-        dealId: deal?.dealId,
-        dealAddress: deal?.address,
-        source: deal?.businessPlanMarkdown ? 'business_plan_markdown column' : 'parsedData.businessPlanMarkdown',
-        rawLength: raw.length,
-        rawStartsWithFence: raw.trim().startsWith('```'),
-        cleanedLength: cleaned.length,
-        cleanedPreview: cleaned.slice(0, 200),
-      });
-      return cleaned;
+      return stripWrappingCodeFence(raw);
     })(),
     financialOverview,
     investorOptions,

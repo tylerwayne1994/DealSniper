@@ -1227,18 +1227,13 @@ def _strip_wrapping_code_fence(text: str) -> str:
     return t
 
 
-BUSINESS_PLAN_PROMPT = """You are generating a professional Investment Underwriting & Business Plan document for a real estate deal. 
+BUSINESS_PLAN_PROMPT = """You are generating a professional Investment Underwriting & Business Plan document for a real estate deal.
 
-Based on the deal data provided in this session, generate a complete business plan document in the following structure. 
-This must be formatted as a document artifact that can be downloaded as a PDF.
-
-MANDATORY OUTPUT FORMAT — DO NOT SKIP THIS: your ENTIRE response must be wrapped in a single
-```artifact:document:<Property Name> — Business Plan``` code fence (exactly like the DOCUMENT
-ARTIFACT FORMAT described earlier in your instructions), with nothing before the opening fence and
-nothing after the closing fence. This is a long, multi-section document — do not let that cause you
-to drop the artifact wrapper; the whole document (every section below, start to finish) goes inside
-that one fence. If you forget this, the plan will NOT be downloadable and will just dump as raw text
-in the chat, which defeats the entire point of generating it.
+Based on the deal data provided in this session, generate a complete business plan by calling the
+`submit_business_plan` tool with the ENTIRE document broken into structured fields — do not respond
+with plain text, markdown, or any explanation outside of the tool call. This is a long, multi-section
+document; put everything into the tool call's arguments (every section below, start to finish) —
+never truncate or summarize a section just to finish faster.
 
 CRITICAL — USE THE USER'S ACTUAL UNDERWRITING STRATEGY, DO NOT INVENT ONE:
 The "SCENARIO / ASSUMPTIONS" data below is the EXACT financing and hold/exit strategy the user
@@ -1260,37 +1255,111 @@ ambiguous, and cite which document/section a figure came from when it materially
 headline extracted numbers (e.g. "per the T-12, actual property taxes were $X, vs. the pro forma
 figure of $Y").
 
-The document must include ALL of the following sections — do not skip any:
+The `sections` array in your tool call must include ALL of the following, in order — do not skip any:
 
-1. **OFFERING HIGHLIGHTS** — property name/address, year built/renovated, total SF, asking price, T12 actual NOI, going-in cap rate, day-1 equity, occupancy, exit strategy
+1. **SECTION 1: PROPERTY OVERVIEW** — property details table (address, type, unit mix, buildings, acreage, parking, occupancy, management, utilities), unit mix & rent roll table (unit type, count, avg rent, monthly, annual totals)
 
-2. **SECTION 1: PROPERTY OVERVIEW** — property details table (address, type, unit mix, buildings, acreage, parking, occupancy, management, utilities), unit mix & rent roll table (unit type, count, avg rent, monthly, annual totals)
+2. **SECTION 2: MARKET ANALYSIS** — why this market (paragraph), market fundamentals table (metro area, population, median income, income growth, rent growth, vacancy, anchor institutions, major employers), rent comparable summary table (competing properties with units, SF, market rent, occupancy), cap rate context table (major metro vs suburban vs tertiary vs subject market)
 
-3. **SECTION 2: MARKET ANALYSIS** — why this market, market fundamentals table (metro area, population, median income, income growth, rent growth, vacancy, anchor institutions, major employers), rent comparable summary table (competing properties with units, SF, market rent, occupancy), cap rate context table (major metro vs suburban vs tertiary vs subject market)
+3. **SECTION 3: BUSINESS PLAN / VALUE-ADD STRATEGY** — overview of strategy (paragraph), utility audit table (who pays what, annual cost, action), Phase 1 (RUBS or first value-add initiative with calculations and NOI impact), Phase 2 (rent increases or second initiative), Phase 3 (market rent upside), NOI Growth Waterfall table (baseline → each phase → exit value)
 
-4. **SECTION 3: BUSINESS PLAN** — overview of strategy, utility audit table (who pays what, annual cost, action), Phase 1 (RUBS or first value-add initiative with calculations and NOI impact), Phase 2 (rent increases or second initiative), Phase 3 (market rent upside), NOI Growth Waterfall table (baseline → each phase → exit value)
+4. **SECTION 4: UNDERWRITING — T12 INCOME & EXPENSES** — full income statement table (GPR, vacancy, other income, EGI) and expense breakdown table (taxes, insurance, utilities, repairs, management, all line items) with NOI
 
-5. **SECTION 4: UNDERWRITING — T12 INCOME & EXPENSES** — full income statement (GPR, vacancy, other income, EGI) and expense breakdown (taxes, insurance, utilities, repairs, management, all line items) with NOI
+5. **SECTION 5: THE USER'S DEAL STRUCTURE & STRATEGY** — present the ACTUAL financing/exit strategy from the scenario data described above as a single, clearly-labeled deal structure (not multiple invented alternatives): deal structure table (purchase price, down payment, closing costs, total equity, loan amount, rate, amortization, IO period, debt service), cash flow analysis table (day-1/year1/stabilized NOI, debt service, cash flow, DSCR), exit strategy paragraph exactly as configured (refi at the user's refi year/LTV/rate, OR sale at the user's exit cap rate/hold period — whichever the scenario data specifies), investor returns using the user's actual preferred return/promote/equity split if a JV or waterfall structure is present, key metrics table (going-in cap rate, market cap rate, day-1 equity, DSCR, total return, IRR/equity multiple if computable). If (and only if) the user explicitly asked for alternate scenarios to be compared, you may add a second labeled scenario — otherwise present ONE plan matching what they actually built.
 
-6. **SECTION 5: THE USER'S DEAL STRUCTURE & STRATEGY** — present the ACTUAL financing/exit strategy from the scenario data described above as a single, clearly-labeled deal structure (not multiple invented alternatives): deal structure table (purchase price, down payment, closing costs, total equity, loan amount, rate, amortization, IO period, debt service), cash flow analysis (day-1/year1/stabilized NOI, debt service, cash flow, DSCR), exit strategy exactly as configured (refi at the user's refi year/LTV/rate, OR sale at the user's exit cap rate/hold period — whichever the scenario data specifies), investor returns using the user's actual preferred return/promote/equity split if a JV or waterfall structure is present, key metrics (going-in cap rate, market cap rate, day-1 equity, DSCR, total return, IRR/equity multiple if computable). If (and only if) the user explicitly asked for alternate scenarios to be compared, you may add a second labeled scenario — otherwise present ONE plan matching what they actually built.
+6. **SECTION 6: EXECUTION & STABILIZATION TIMELINE** — a phased timeline table (columns: Phase, Timeline, Key Actions, Target/KPI) covering: Month 1 (closing, transition, initial due diligence follow-ups), Month 2-4 (lease-up / initial value-add rollout), Month 3-6 (utility billback/RUBS implementation if applicable), Month 6-12 (stabilization), Month 12-18 (optimization / rent pushes), Month 18 through the user's hold period (steady-state hold), and the Exit/Refi window matching the user's actual configured exit year. Follow this with a First-90-Days action checklist (use a `checklist` block) broken into Month 1 / Month 2 / Month 3 concrete action items.
 
-7. **SECTION 6: EXECUTION & STABILIZATION TIMELINE** — a phased timeline table (Phase | Timeline | Key Actions | Target/KPI) covering: Month 1 (closing, transition, initial due diligence follow-ups), Month 2-4 (lease-up / initial value-add rollout), Month 3-6 (utility billback/RUBS implementation if applicable), Month 6-12 (stabilization), Month 12-18 (optimization / rent pushes), Month 18 through the user's hold period (steady-state hold), and the Exit/Refi window matching the user's actual configured exit year. Follow this with a First-90-Days action checklist broken into Month 1 / Month 2 / Month 3 concrete action items.
+7. **SECTION 7: DEAL STRUCTURE SUMMARY** — a clean one-page recap table of the strategy from Section 5 (not a multi-scenario comparison, since this plan reflects the one real strategy the user configured) plus a short recommendation/conclusion paragraph.
 
-8. **SECTION 7: DEAL STRUCTURE SUMMARY** — a clean one-page recap table of the strategy from Section 5 (not a multi-scenario comparison, since this plan reflects the one real strategy the user configured) plus a short recommendation/conclusion paragraph.
+Use `subheading` blocks for sub-titles within a section (e.g. "Property Details", "Unit Mix & Rent Roll"), `table` blocks for anything tabular (always include `columns` and `rows`, every row must have the same number of cells as `columns`), `paragraph` blocks for narrative text, and `list`/`checklist` blocks for bullet points or action items.
+
+Populate `offeringHighlights` (the top summary table) with: property name/address, year built/renovated, total SF, asking price, T12 actual NOI, going-in cap rate, day-1 equity, occupancy, exit strategy, and day-1 cash flow.
+Populate `investmentThesis` with a 1-3 sentence summary of why this deal works.
 
 Use the actual numbers from the deal data. Where data is missing, make reasonable assumptions and note them explicitly as assumptions.
-Format all currency with $ and commas. Format all percentages with %.
+Format all currency with $ and commas as plain strings (e.g. "$1,075,000"). Format all percentages with % (e.g. "9.04%").
 Be thorough — this is a professional investor presentation document.
 
-INTERNAL CONSISTENCY — DO NOT CONTRADICT YOURSELF: the "Day-1 Cash Flow" figure shown in
-OFFERING HIGHLIGHTS at the top of the document MUST be the exact same number as the "Year 1 Cash
-Flow" you compute in SECTION 5's cash flow analysis (including any adjustments/assumptions you
-apply there, e.g. a property tax reassessment). Compute Section 5 first if needed, then use that
-same final number at the top — never show two different "day-1" cash flow figures in the same
-document.
+INTERNAL CONSISTENCY — DO NOT CONTRADICT YOURSELF: the "Day-1 Cash Flow" value in `offeringHighlights`
+MUST be the exact same number as the "Year 1 Cash Flow" you compute in SECTION 5's cash flow analysis
+table (including any adjustments/assumptions you apply there, e.g. a property tax reassessment).
+Compute Section 5 first if needed, then use that same final number in `offeringHighlights` — never
+show two different "day-1" cash flow figures in the same document."""
 
-REMINDER: wrap the entire document above in a single ```artifact:document:<title>``` fence as your
-whole response — open the fence first, write all 8 sections inside it, then close the fence last."""
+
+BUSINESS_PLAN_TOOL_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "title": {
+            "type": "string",
+            "description": "e.g. '58 West Apartments — Investment Business Plan'",
+        },
+        "offeringHighlights": {
+            "type": "array",
+            "description": "Key metric/value pairs for the top summary table.",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "label": {"type": "string"},
+                    "value": {"type": "string"},
+                },
+                "required": ["label", "value"],
+            },
+        },
+        "investmentThesis": {
+            "type": "string",
+            "description": "1-3 sentence summary of why this deal works.",
+        },
+        "sections": {
+            "type": "array",
+            "description": "The 7 numbered content sections, in order.",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "heading": {
+                        "type": "string",
+                        "description": "e.g. 'SECTION 1: PROPERTY OVERVIEW'",
+                    },
+                    "blocks": {
+                        "type": "array",
+                        "description": "Ordered content blocks making up this section.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "enum": ["subheading", "paragraph", "table", "list", "checklist"],
+                                },
+                                "text": {
+                                    "type": "string",
+                                    "description": "Used for subheading and paragraph blocks.",
+                                },
+                                "columns": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                    "description": "Table column headers. Used for table blocks.",
+                                },
+                                "rows": {
+                                    "type": "array",
+                                    "items": {"type": "array", "items": {"type": "string"}},
+                                    "description": "Table rows, each an array of cell strings matching the columns length. Used for table blocks.",
+                                },
+                                "items": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                    "description": "Bullet/checklist items. Used for list and checklist blocks.",
+                                },
+                            },
+                            "required": ["type"],
+                        },
+                    },
+                },
+                "required": ["heading", "blocks"],
+            },
+        },
+    },
+    "required": ["title", "offeringHighlights", "investmentThesis", "sections"],
+}
 
 
 @router.post("/inject-deal-context")
@@ -1506,54 +1575,55 @@ SCENARIO / ASSUMPTIONS (the user's actual configured underwriting strategy — f
 
         client = get_anthropic_client()
         log.info(f"[Claude Chat] Generating business plan document for deal {deal_id} ({attached_count} vault documents attached)")
-        # This document has 8 required sections with many tables and is
-        # frequently 15-25k+ output tokens once fully written. The old
-        # max_tokens=8192 cap was cutting the response off mid-document
-        # *before Claude ever reached the closing artifact fence* -- which is
-        # why the fence-stripping logic downstream could never find a
-        # closing marker (there wasn't one) and the whole thing rendered as
-        # one giant literal code block. claude-sonnet-4-5 supports up to 64k
-        # output tokens, so 32000 leaves a big margin without needing any
-        # beta headers.
+        # This document has 7 required sections with many tables and is
+        # frequently 15-25k+ output tokens once fully written. claude-sonnet-4-5
+        # supports up to 64k output tokens, so 32000 leaves a big margin.
+        # Forcing the `submit_business_plan` tool guarantees a syntactically
+        # valid, already-structured JSON object back (Claude's tool-call
+        # arguments are parsed/validated by the API itself) instead of asking
+        # Claude to hand-write a markdown document wrapped in a fence that we
+        # then have to detect and strip client-side — that fence-based
+        # approach was fragile (truncation before the closing fence, trailing
+        # commentary breaking naive string matching, etc.). Structured JSON
+        # sidesteps all of that and lets the frontend render real UI
+        # components (tables, paragraphs, lists) directly, matching how every
+        # other Deal Room section already works.
         response = client.messages.create(
             model=ANTHROPIC_MODEL,
             max_tokens=32000,
             system=system,
             messages=[{"role": "user", "content": BUSINESS_PLAN_PROMPT}],
+            tools=[{
+                "name": "submit_business_plan",
+                "description": "Submit the complete, structured business plan document for this deal.",
+                "input_schema": BUSINESS_PLAN_TOOL_SCHEMA,
+            }],
+            tool_choice={"type": "tool", "name": "submit_business_plan"},
         )
-        full_text = response.content[0].text
         if response.stop_reason == "max_tokens":
-            log.warning(f"[BusinessPlan][TRUNCATED] deal_id={deal_id} response hit max_tokens=32000 and was cut off before finishing — the document is incomplete.")
+            log.warning(f"[BusinessPlan][TRUNCATED] deal_id={deal_id} response hit max_tokens=32000 and was cut off before finishing — the document may be incomplete.")
 
-        m = re.search(r"```artifact:document:([^\n]+)\n([\s\S]*?)```", full_text)
-        if m:
-            title = m.group(1).strip()
-            markdown_content = m.group(2).strip()
-        else:
-            # Didn't get wrapped in the expected fence — fall back to using
-            # the raw text rather than failing the whole request.
-            title = f"{address} — Business Plan"
-            markdown_content = full_text.strip()
+        plan_data = None
+        for block in response.content:
+            if getattr(block, "type", None) == "tool_use" and getattr(block, "name", None) == "submit_business_plan":
+                plan_data = block.input
+                break
 
-        # Defensive cleanup: Claude sometimes wraps the whole response in a
-        # plain/generic ``` fence instead of (or in addition to) the expected
-        # ```artifact:document: fence. If that leftover fence isn't stripped,
-        # the entire document renders client-side as one literal code block
-        # instead of parsed markdown/tables. Safe to call even if there's
-        # nothing to strip.
-        markdown_content = _strip_wrapping_code_fence(markdown_content)
+        if not plan_data or not isinstance(plan_data, dict) or not plan_data.get("sections"):
+            log.error(f"[BusinessPlan][no-tool-use] deal_id={deal_id} stop_reason={response.stop_reason} content_types={[getattr(b, 'type', None) for b in response.content]}")
+            raise HTTPException(status_code=502, detail="Claude did not return a structured business plan. Please try again.")
+
+        title = plan_data.get("title") or f"{address} — Business Plan"
 
         log.info(
             f"[BusinessPlan][response] deal_id={deal_id} requested_address={address!r} returned_title={title!r} "
-            f"raw_len={len(full_text)} cleaned_len={len(markdown_content)} "
-            f"still_fenced={markdown_content.strip().startswith('```')} "
-            f"preview={markdown_content[:200]!r}"
+            f"num_sections={len(plan_data.get('sections') or [])} stop_reason={response.stop_reason}"
         )
 
         return JSONResponse(content={
             "success": True,
             "title": title,
-            "markdown": markdown_content,
+            "plan": plan_data,
             "documents_attached": attached_count,
         })
 

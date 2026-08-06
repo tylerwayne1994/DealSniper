@@ -231,6 +231,7 @@ export function mapDealRow(data) {
     parsedData: data.parsed_data,
     scenarioData: data.scenario_data,
     businessPlanMarkdown: data.business_plan_markdown,
+    businessPlanData: data.business_plan_data,
     businessPlanGeneratedAt: data.business_plan_generated_at,
     marketCapRate: data.market_cap_rate,
     rentcastData: data.rentcast_data,

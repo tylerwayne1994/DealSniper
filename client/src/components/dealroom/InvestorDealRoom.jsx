@@ -6,6 +6,7 @@ import { buildDealRoomCss, DEAL_ROOM_ACCENT_DEFAULT } from './DealRoomStyles';
 import { exportDealRoomHtml } from '../../lib/dealRoomExport';
 import { NoiCashflowChart, ValueCreationBridge, ReturnsComparisonChart } from './DealRoomCharts';
 import { renderWidget } from './DealRoomWidgets';
+import BusinessPlanBlocks from './BusinessPlanBlocks';
 import { calculateFullAnalysis } from '../../utils/realEstateCalculations';
 import { useDealRoomWidgetData, resolveWidgetDataset as resolveWidgetDatasetShared } from '../../lib/dealRoomWidgetData';
 
@@ -333,7 +334,7 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
     const list = [];
     list.push({ id: 'summary', label: 'Executive Summary', show: data.executiveSummary?.length > 0 });
     list.push({ id: 'thesis', label: 'Investment Thesis', show: data.whyMarket?.length > 0 || data.whyAsset?.length > 0 || data.upsidePlays?.length > 0 });
-    list.push({ id: 'businessPlan', label: 'Business Plan', show: !!data.businessPlanMarkdown });
+    list.push({ id: 'businessPlan', label: 'Business Plan', show: !!(data.businessPlanData || data.businessPlanMarkdown) });
     list.push({ id: 'financials', label: 'Financial Overview', show: data.financialOverview?.length > 0 });
     list.push({ id: 'comps', label: 'Comps', show: getSectionWidgets('comps').length > 0 && comps.length > 0 });
     list.push({ id: 'marketData', label: 'Market Data', show: getSectionWidgets('marketData').length > 0 && marketMetrics.length > 0 });
@@ -367,20 +368,20 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
     return () => window.removeEventListener('scroll', onScroll);
   }, [sections]);
 
-  // Debug: confirm exactly what markdown this rendered instance actually
-  // received for the Business Plan section (property name/dealId it should
-  // match, and whether it still looks fence-wrapped at the point of render).
+  // Debug: confirm exactly what this rendered instance received for the
+  // Business Plan section (property name it should match, structured vs.
+  // legacy markdown format).
   useEffect(() => {
-    if (!data.businessPlanMarkdown) return;
+    if (!data.businessPlanData && !data.businessPlanMarkdown) return;
     // eslint-disable-next-line no-console
     console.log('[BusinessPlan][InvestorDealRoom render]', {
       propertyName: data.property?.name,
       propertyAddress: data.property?.address,
-      length: data.businessPlanMarkdown.length,
-      startsWithFence: data.businessPlanMarkdown.trim().startsWith('```'),
-      preview: data.businessPlanMarkdown.slice(0, 200),
+      format: data.businessPlanData ? 'structured' : 'legacy-markdown',
+      numSections: data.businessPlanData?.sections?.length,
+      legacyMarkdownLength: data.businessPlanMarkdown?.length,
     });
-  }, [data.businessPlanMarkdown, data.property]);
+  }, [data.businessPlanData, data.businessPlanMarkdown, data.property]);
 
   const handleExport = async () => {
     setExporting(true);
@@ -601,28 +602,35 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
           </section>
         )}
 
-        {/* Business Plan (full AI-generated plan, markdown — generated from
-            the Deal Room tab's "Generate Business Plan" button, uses the
-            deal's actual configured underwriting strategy) */}
-        {data.businessPlanMarkdown && (
+        {/* Business Plan (full AI-generated plan, generated from the Deal
+            Room tab's "Generate Business Plan" button, uses the deal's
+            actual configured underwriting strategy). Prefers the structured
+            JSON (businessPlanData, rendered as real UI components) and
+            falls back to the legacy markdown blob only for plans generated
+            before the structured format existed. */}
+        {(data.businessPlanData || data.businessPlanMarkdown) && (
           <section id="businessPlan" className="dr-section">
             <div className="dr-eyebrow">Business Plan</div>
             <h2 className="dr-h2 dr-serif">Investment & Execution Plan</h2>
-            <div className="dr-markdown">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  h1: ({ children }) => <h3 className="dr-serif" style={{ fontSize: 20, fontWeight: 700, margin: '20px 0 10px' }}>{children}</h3>,
-                  h2: ({ children }) => <h3 className="dr-serif" style={{ fontSize: 18, fontWeight: 700, margin: '20px 0 10px', color: 'var(--dr-accent)' }}>{children}</h3>,
-                  h3: ({ children }) => <h4 style={{ fontSize: 15, fontWeight: 700, margin: '16px 0 8px' }}>{children}</h4>,
-                  p: (p) => <p style={{ fontSize: 14, lineHeight: 1.7, margin: '0 0 10px' }} {...p} />,
-                  li: (p) => <li style={{ fontSize: 14, marginBottom: 4 }} {...p} />,
-                  table: (p) => <table className="dr-table" style={{ margin: '10px 0 18px' }} {...p} />,
-                }}
-              >
-                {data.businessPlanMarkdown}
-              </ReactMarkdown>
-            </div>
+            {data.businessPlanData ? (
+              <BusinessPlanBlocks plan={data.businessPlanData} variant="live" />
+            ) : (
+              <div className="dr-markdown">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    h1: ({ children }) => <h3 className="dr-serif" style={{ fontSize: 20, fontWeight: 700, margin: '20px 0 10px' }}>{children}</h3>,
+                    h2: ({ children }) => <h3 className="dr-serif" style={{ fontSize: 18, fontWeight: 700, margin: '20px 0 10px', color: 'var(--dr-accent)' }}>{children}</h3>,
+                    h3: ({ children }) => <h4 style={{ fontSize: 15, fontWeight: 700, margin: '16px 0 8px' }}>{children}</h4>,
+                    p: (p) => <p style={{ fontSize: 14, lineHeight: 1.7, margin: '0 0 10px' }} {...p} />,
+                    li: (p) => <li style={{ fontSize: 14, marginBottom: 4 }} {...p} />,
+                    table: (p) => <table className="dr-table" style={{ margin: '10px 0 18px' }} {...p} />,
+                  }}
+                >
+                  {data.businessPlanMarkdown}
+                </ReactMarkdown>
+              </div>
+            )}
           </section>
         )}
 
