@@ -176,7 +176,18 @@ export function computeDealMetrics(deal) {
   const capRate = pickNum(y1.capRate, calc.capRate, calc.cap_rate, current.capRate, price > 0 && annualNOI > 0 ? (annualNOI / price) * 100 : null);
   const dscr = pickNum(y1.dscr, calc.dscr, current.dscr, annualDebtService > 0 ? annualNOI / annualDebtService : null);
   const annualCFFallback = (annualNOI - annualDebtService);
-  const monthlyCFCandidate = pickNum(deal.dayOneCashFlow, calc.monthlyCashFlow, calc.monthly_cash_flow, current.cashflow, y1.cashFlow, null);
+  // When calculateFullAnalysis() succeeded, its year1.cashFlow reflects the
+  // deal's CURRENT live scenario (financing terms, exit/refi assumptions,
+  // etc.) and is what the Deal Chat AI / rest of the app treats as the
+  // source of truth. `deal.dayOneCashFlow` is a static snapshot column
+  // written once (e.g. at parse/push-to-pipeline time) that goes stale the
+  // moment the user changes any assumption afterward — it must NOT outrank
+  // a fresh, successful recalculation, or the headline "Cash Flow (Bottom
+  // Line)" number silently drifts out of sync with the deal's real current
+  // numbers (and with what the AI chat reports when asked about the deal).
+  const monthlyCFCandidate = full
+    ? pickNum(y1.cashFlow, current.cashflow, calc.monthlyCashFlow, calc.monthly_cash_flow, deal.dayOneCashFlow, null)
+    : pickNum(deal.dayOneCashFlow, calc.monthlyCashFlow, calc.monthly_cash_flow, current.cashflow, y1.cashFlow, null);
   let monthlyCF = monthlyCFBreakdown;
   if (monthlyCFCandidate != null) {
     // If the candidate is annual-sized, normalize to monthly.
