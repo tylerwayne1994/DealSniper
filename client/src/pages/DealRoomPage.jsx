@@ -419,12 +419,22 @@ function DealRoomPage() {
       // "Business Plan" section in the actual Deal Room view (not just a
       // downloadable file) — persisted immediately so it survives a reload,
       // and BEFORE the PDF/Documents step below so it's saved either way.
-      // Written to the dedicated `business_plan_markdown` column (see
-      // backend/migrations/add_business_plan_columns.sql) rather than being
-      // buried inside parsed_data, so it's a real, queryable Supabase field.
+      // Prefer the dedicated `business_plan_markdown` column (see
+      // backend/migrations/add_business_plan_columns.sql) so it's a real,
+      // queryable Supabase field — but if that migration hasn't been run
+      // yet against this project (column doesn't exist), fall back to
+      // storing it inside parsed_data so the feature still works instead of
+      // hard-failing.
       const generatedAt = new Date().toISOString();
-      await updateDeal(dealId, { business_plan_markdown: result.markdown, business_plan_generated_at: generatedAt });
-      setDeal((prev) => (prev ? { ...prev, businessPlanMarkdown: result.markdown, businessPlanGeneratedAt: generatedAt } : prev));
+      try {
+        await updateDeal(dealId, { business_plan_markdown: result.markdown, business_plan_generated_at: generatedAt });
+        setDeal((prev) => (prev ? { ...prev, businessPlanMarkdown: result.markdown, businessPlanGeneratedAt: generatedAt } : prev));
+      } catch (colErr) {
+        console.warn('business_plan_markdown column not available yet (run backend/migrations/add_business_plan_columns.sql) — falling back to parsed_data:', colErr);
+        const nextParsedData = { ...(deal?.parsedData || {}), businessPlanMarkdown: result.markdown };
+        await updateDeal(dealId, { parsed_data: nextParsedData });
+        setDeal((prev) => (prev ? { ...prev, parsedData: nextParsedData } : prev));
+      }
 
       // Also export a PDF copy to Documents — best-effort: if this part
       // fails (e.g. a huge plan exceeding storage's size limit), the plan
