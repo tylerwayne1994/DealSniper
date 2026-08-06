@@ -272,9 +272,22 @@ export function buildDealRoomData({ deal, full, metrics, allocations = [], distr
     // existed). Run through stripWrappingCodeFence() as a safety net for
     // any already-saved plan that still has a raw ``` fence wrapped around
     // the whole thing.
-    businessPlanMarkdown: (deal?.businessPlanMarkdown || deal?.parsedData?.businessPlanMarkdown)
-      ? stripWrappingCodeFence(deal.businessPlanMarkdown || deal.parsedData.businessPlanMarkdown)
-      : null,
+    businessPlanMarkdown: (() => {
+      const raw = deal?.businessPlanMarkdown || deal?.parsedData?.businessPlanMarkdown;
+      if (!raw) return null;
+      const cleaned = stripWrappingCodeFence(raw);
+      // eslint-disable-next-line no-console
+      console.log('[BusinessPlan][buildDealRoomData]', {
+        dealId: deal?.dealId,
+        dealAddress: deal?.address,
+        source: deal?.businessPlanMarkdown ? 'business_plan_markdown column' : 'parsedData.businessPlanMarkdown',
+        rawLength: raw.length,
+        rawStartsWithFence: raw.trim().startsWith('```'),
+        cleanedLength: cleaned.length,
+        cleanedPreview: cleaned.slice(0, 200),
+      });
+      return cleaned;
+    })(),
     financialOverview,
     investorOptions,
     operationalPlan,

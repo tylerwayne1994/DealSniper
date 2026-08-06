@@ -241,6 +241,16 @@ function DealRoomPage() {
       setLoading(true);
       try {
         const d = await loadDeal(dealId);
+        // eslint-disable-next-line no-console
+        console.log('[BusinessPlan][load]', {
+          routeDealId: dealId,
+          loadedDealId: d?.dealId,
+          address: d?.address,
+          hasBusinessPlanColumn: !!d?.businessPlanMarkdown,
+          businessPlanColumnLength: d?.businessPlanMarkdown?.length || 0,
+          hasBusinessPlanInParsedData: !!d?.parsedData?.businessPlanMarkdown,
+          businessPlanParsedDataLength: d?.parsedData?.businessPlanMarkdown?.length || 0,
+        });
         setDeal(d);
         setNotes(d?.notes || '');
         const embeddedDocs = Array.isArray(d?.parsedData?.deal_room_documents) ? d.parsedData.deal_room_documents : [];
@@ -401,6 +411,8 @@ function DealRoomPage() {
     if (generatingBusinessPlan) return;
     setGeneratingBusinessPlan(true);
     setBusinessPlanMsg('Generating your business plan\u2026 this can take up to a minute.');
+    // eslint-disable-next-line no-console
+    console.log('[BusinessPlan][generate:request]', { dealId, currentDealAddress: deal?.address, currentDealUnits: deal?.units });
     try {
       const res = await fetch(`${API_BASE_URL}/api/claude-chat/business-plan/generate-for-deal`, {
         method: 'POST',
@@ -412,12 +424,28 @@ function DealRoomPage() {
         throw new Error(result.detail || 'Failed to generate business plan');
       }
 
+      // eslint-disable-next-line no-console
+      console.log('[BusinessPlan][generate:response]', {
+        dealId,
+        currentDealAddress: deal?.address,
+        returnedTitle: result.title,
+        documentsAttached: result.documents_attached,
+        rawMarkdownLength: result.markdown?.length || 0,
+        rawMarkdownPreview: (result.markdown || '').slice(0, 300),
+      });
+
       setBusinessPlanMsg('Rendering document\u2026');
       // Safety net: strip a raw ``` fence Claude sometimes wraps the whole
       // response in instead of the expected ```artifact:document: fence
       // (the backend already tries to strip it, but this doesn't depend on
       // that deploy having gone out).
       const cleanMarkdown = stripWrappingCodeFence(result.markdown);
+      // eslint-disable-next-line no-console
+      console.log('[BusinessPlan][generate:afterStrip]', {
+        cleanedLength: cleanMarkdown.length,
+        wasFenceStripped: cleanMarkdown.length !== (result.markdown || '').trim().length,
+        cleanedPreview: cleanMarkdown.slice(0, 300),
+      });
       setBusinessPlanMarkdown(cleanMarkdown);
 
       // Save the plan onto the deal itself so it shows up as its own

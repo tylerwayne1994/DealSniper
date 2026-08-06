@@ -367,6 +367,21 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
     return () => window.removeEventListener('scroll', onScroll);
   }, [sections]);
 
+  // Debug: confirm exactly what markdown this rendered instance actually
+  // received for the Business Plan section (property name/dealId it should
+  // match, and whether it still looks fence-wrapped at the point of render).
+  useEffect(() => {
+    if (!data.businessPlanMarkdown) return;
+    // eslint-disable-next-line no-console
+    console.log('[BusinessPlan][InvestorDealRoom render]', {
+      propertyName: data.property?.name,
+      propertyAddress: data.property?.address,
+      length: data.businessPlanMarkdown.length,
+      startsWithFence: data.businessPlanMarkdown.trim().startsWith('```'),
+      preview: data.businessPlanMarkdown.slice(0, 200),
+    });
+  }, [data.businessPlanMarkdown, data.property]);
+
   const handleExport = async () => {
     setExporting(true);
     try {

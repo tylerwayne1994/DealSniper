@@ -1459,6 +1459,12 @@ async def generate_business_plan_for_deal(request: Request):
         scenario = deal.get("scenario_data") or {}
         address = deal.get("address") or (parsed.get("property") or {}).get("address") or "Deal"
 
+        log.info(
+            f"[BusinessPlan][request] deal_id={deal_id} db_address={deal.get('address')!r} "
+            f"db_units={deal.get('units')!r} parsed_property_name={(parsed.get('property') or {}).get('property_name')!r} "
+            f"parsed_address={(parsed.get('property') or {}).get('address')!r} resolved_address={address!r}"
+        )
+
         # Reuse the same session["files"] shape / helper used by the chat-
         # session flow, just not persisted anywhere — this call is stateless.
         session = {"files": []}
@@ -1518,6 +1524,13 @@ SCENARIO / ASSUMPTIONS (the user's actual configured underwriting strategy — f
         # instead of parsed markdown/tables. Safe to call even if there's
         # nothing to strip.
         markdown_content = _strip_wrapping_code_fence(markdown_content)
+
+        log.info(
+            f"[BusinessPlan][response] deal_id={deal_id} requested_address={address!r} returned_title={title!r} "
+            f"raw_len={len(full_text)} cleaned_len={len(markdown_content)} "
+            f"still_fenced={markdown_content.strip().startswith('```')} "
+            f"preview={markdown_content[:200]!r}"
+        )
 
         return JSONResponse(content={
             "success": True,
