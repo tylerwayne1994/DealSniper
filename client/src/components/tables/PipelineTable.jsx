@@ -27,19 +27,16 @@ const fmtCompact = (val) => {
 
 // Table Styles
 const thStyle = {
-  padding: '18px 16px',
-  fontSize: '10px',
-  fontWeight: '800',
-  color: '#ffffff',
+  padding: '14px 16px',
+  fontSize: '11px',
+  fontWeight: '700',
+  color: '#374151',
   textAlign: 'left',
   textTransform: 'uppercase',
-  letterSpacing: '1.8px',
+  letterSpacing: '0.6px',
   whiteSpace: 'nowrap',
-  background: 'linear-gradient(180deg, #1e3a5f 0%, #0f2744 50%, #0a1929 100%)',
-  borderBottom: '3px solid #14b8a6',
-  textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)',
-  position: 'relative',
-  boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+  background: '#f9fafb',
+  borderBottom: '2px solid #10b981'
 };
 
 const tdStyle = {
@@ -117,10 +114,10 @@ const PipelineTable = ({
 
       <div style={{ 
         backgroundColor: 'white', 
-        borderRadius: '14px', 
-        border: '1px solid rgba(45, 212, 191, 0.15)',
+        borderRadius: '16px', 
+        border: '1px solid #e5e7eb',
         overflow: 'hidden',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08), 0 0 40px rgba(20, 184, 166, 0.04)'
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.06)'
       }}>
         <div style={{ 
           overflowX: 'auto',
@@ -166,7 +163,7 @@ const PipelineTable = ({
                   {/* Address */}
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                      <Building2 size={18} style={{ color: '#14b8a6', flexShrink: 0, marginTop: '2px' }} />
+                      <Building2 size={18} style={{ color: '#10b981', flexShrink: 0, marginTop: '2px' }} />
                       <div>
                         <div style={{ fontWeight: '600', color: '#111827', lineHeight: '1.3' }}>
                           {deal.address || '-'}
@@ -269,7 +266,7 @@ const PipelineTable = ({
                           display: 'flex', 
                           alignItems: 'center', 
                           gap: '4px',
-                          color: '#0f766e',
+                          color: '#047857',
                           textDecoration: 'none',
                           fontSize: '13px'
                         }}
@@ -291,7 +288,7 @@ const PipelineTable = ({
                           display: 'flex', 
                           alignItems: 'center', 
                           gap: '4px',
-                          color: '#0f766e',
+                          color: '#047857',
                           textDecoration: 'none',
                           fontSize: '13px',
                           maxWidth: '180px',
@@ -338,7 +335,7 @@ const PipelineTable = ({
                             alignItems: 'center',
                             gap: '6px',
                             padding: '8px 14px',
-                            backgroundColor: '#0f766e',
+                            backgroundColor: '#059669',
                             color: 'white',
                             border: 'none',
                             borderRadius: '6px',
@@ -409,7 +406,7 @@ const PipelineTable = ({
                           alignItems: 'center',
                           gap: '6px',
                           padding: '8px 14px',
-                          backgroundColor: '#3b82f6',
+                          backgroundColor: '#0891b2',
                           color: 'white',
                           border: 'none',
                           borderRadius: '6px',

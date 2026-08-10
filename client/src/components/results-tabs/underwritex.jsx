@@ -12,6 +12,9 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import MarketResearchTab from "./MarketResearchTab";
 import UnderwritingModelTab from "./UnderwritingModelTab";
+import SensitivityAnalysisTab from "./SensitivityAnalysisTab";
+import MonteCarloTab from "./MonteCarloTab";
+import { calculateFullAnalysis } from "../../utils/realEstateCalculations";
 
 // Satellite imagery uses Mapbox (higher-res) when a token is configured,
 // falling back to free Esri World Imagery tiles if it isn't.
@@ -1090,6 +1093,8 @@ const NAV = [
   { k: "returns", l: "Returns", i: I.trend },
   { k: "comps", l: "Comps", i: I.bldg },
   { k: "model", l: "Model", i: I.grid },
+  { k: "sensitivity", l: "Sensitivity", i: I.sliders },
+  { k: "montecarlo", l: "Monte Carlo", i: I.warn },
 ];
 function Sidebar({ tab, setTab, cfView, setCfView, mode, setMode, onExport, docsSubView, setDocsSubView }) {
   if (mode === "docs") {
@@ -1508,7 +1513,7 @@ function ParsedDataView({ scenarioData, extraDocs = [], pdfData, pdfUrl }) {
   );
 }
 
-function SummaryTab({ M, S, set }) {
+function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData }) {
   const [toast, setToast] = useState(true);
   const [capexOpen, setCapexOpen] = useState(false);
   const [debtOpen, setDebtOpen] = useState(false);
@@ -1537,16 +1542,24 @@ function SummaryTab({ M, S, set }) {
   ];
   const acqFee = M.acqFeeAmt;
   const loanFees = M.finFeeAmt;
+  // Real per-field citations from the parser (page + snippet) when available —
+  // only these render a working "open source PDF" button; everything else
+  // is demo/calculated data with no real document to point to.
+  const conf = scenarioData?._confidence || {};
+  const withSource = (path) => {
+    const c = conf[path];
+    return c && c.page != null ? { page: c.page, snippet: c.snippet } : {};
+  };
   const summaryVerifyFields = [
-    { label: "Property Name", value: CFG.deal.name, source: "Offering Memorandum" },
-    { label: "Address", value: CFG.deal.address, source: "Offering Memorandum" },
-    { label: "Total Units", value: fm(CFG.deal.units), source: "Offering Memorandum" },
-    { label: "Year Built", value: CFG.deal.yearBuilt, source: "Offering Memorandum" },
-    { label: "NRSF", value: fm(CFG.deal.nrsf), source: "Offering Memorandum" },
-    { label: "Purchase Price", value: $f(M.purchasePrice), source: "Purchase & Sale Agreement" },
+    { label: "Property Name", value: CFG.deal.name, source: "Offering Memorandum", ...withSource("property.name") },
+    { label: "Address", value: CFG.deal.address, source: "Offering Memorandum", ...withSource("property.address") },
+    { label: "Total Units", value: fm(CFG.deal.units), source: "Offering Memorandum", ...withSource("property.units") },
+    { label: "Year Built", value: CFG.deal.yearBuilt, source: "Offering Memorandum", ...withSource("property.year_built") },
+    { label: "NRSF", value: fm(CFG.deal.nrsf), source: "Offering Memorandum", ...withSource("property.net_rentable_sf") },
+    { label: "Purchase Price", value: $f(M.purchasePrice), source: "Purchase & Sale Agreement", ...withSource("pricing_financing.price") },
     { label: "Closing Costs", value: $f(CFG.acq.closingCosts), source: "Purchase & Sale Agreement" },
     { label: "Sale Price", value: $f(Math.round(M.salePrice)), source: "Calculated", note: "Year 5 forward NOI ÷ exit cap" },
-    { label: "Loan Amount", value: $f(M.loan), source: "Lender Term Sheet" },
+    { label: "Loan Amount", value: $f(M.loan), source: "Lender Term Sheet", ...withSource("pricing_financing.loan_amount") },
     { label: "Total Sources/Uses", value: $f(M.totalUses), source: "Calculated" },
   ];
   return (
@@ -1719,13 +1732,13 @@ function SummaryTab({ M, S, set }) {
         <div className="flex items-start gap-2 text-sm text-gray-700"><span className="text-emerald-500 mt-0.5">{I.check}</span>T-12 parsed — your underwriting updated</div>
         <button className="mt-3 flex items-center gap-2 bg-emerald-50 text-emerald-700 text-xs font-semibold px-3 py-2 rounded-lg w-full">{I.doc} Go to Underwriting Workflow</button>
       </div>}
-      {verify.open && <DocSourcePanel title="Summary" fields={summaryVerifyFields} onClose={verify.close} />}
+      {verify.open && <DocSourcePanel title="Summary" fields={summaryVerifyFields} onClose={verify.close} pdfData={pdfData} pdfUrl={pdfUrl} />}
     </div>
   );
 }
 
 /* -------- Strategy -------- */
-function StrategyTab({ M, S, set }) {
+function StrategyTab({ M, S, set, pdfData, pdfUrl }) {
   const [subTab, setSubTab] = useState("Units");
   const [search, setSearch] = useState("");
   const [ganttType, setGanttType] = useState("all");
@@ -1966,7 +1979,7 @@ function StrategyTab({ M, S, set }) {
         <RentMatrix M={M} S={S} set={set} />
       </>)}
       {S.incomeMethod === "simple" && <RentMatrix M={M} S={S} set={set} simple />}
-      {verify.open && <DocSourcePanel title="Strategy" fields={strategyVerifyFields} onClose={verify.close} />}
+      {verify.open && <DocSourcePanel title="Strategy" fields={strategyVerifyFields} onClose={verify.close} pdfData={pdfData} pdfUrl={pdfUrl} />}
     </div>
   );
 }
@@ -2198,7 +2211,7 @@ function RentMatrix({ M, S, set, simple }) {
 }
 
 /* -------- Income -------- */
-function IncomeTab({ M }) {
+function IncomeTab({ M, pdfData, pdfUrl }) {
   const y1 = M.years[0];
   const rows = [
     ["Gross Potential Rental Revenue", y1.gprY], ["Physical Vacancy", y1.physVac], ["Bad Debt", y1.badDebt],
@@ -2250,7 +2263,7 @@ function IncomeTab({ M }) {
           <tfoot><tr className="bg-emerald-50 font-bold border-t border-emerald-100"><td className="py-2.5 px-4">Gross Potential Rent</td><td className="text-right px-4">{CFG.deal.units}</td><td className="text-right px-4">{$f(M.gprMonthly / CFG.deal.units)}</td><td className="text-right px-4">{$f(M.gprMonthly)}</td><td className="text-right px-4">100%</td></tr></tfoot>
         </table>
       </Card>
-      {verify.open && <DocSourcePanel title="Income" fields={incomeVerifyFields} onClose={verify.close} />}
+      {verify.open && <DocSourcePanel title="Income" fields={incomeVerifyFields} onClose={verify.close} pdfData={pdfData} pdfUrl={pdfUrl} />}
     </div>
   );
 }
@@ -2761,7 +2774,9 @@ const DOC_TONE = {
   "Calculated": "gray",
   "RentCast Market Data": "purple",
 };
-function DocSourcePanel({ title, fields, onClose }) {
+function DocSourcePanel({ title, fields, onClose, pdfData, pdfUrl }) {
+  const [viewer, setViewer] = useState(null); // { label, value, page, snippet }
+  const hasPdf = !!(pdfData || pdfUrl);
   return (
     <div className="fixed top-20 right-5 w-[460px] bg-white border border-gray-200 rounded-2xl shadow-2xl z-40 overflow-hidden">
       <div className="bg-emerald-50 border-b border-emerald-100 px-4 py-3 flex items-center justify-between">
@@ -2772,19 +2787,41 @@ function DocSourcePanel({ title, fields, onClose }) {
       <div className="max-h-[420px] overflow-y-auto">
         <table className="w-full text-[12px]">
           <thead className="sticky top-0 bg-white"><tr className="text-left text-gray-400 bg-gray-50">
-            <th className="py-1.5 px-3">Field</th><th className="px-3">Source Document</th><th className="text-right px-3">Value</th>
+            <th className="py-1.5 px-3">Field</th><th className="px-3">Source Document</th><th className="text-right px-3">Value</th><th className="w-8" />
           </tr></thead>
           <tbody>
-            {fields.map((f, i) => (
-              <tr key={i} className="border-t border-gray-50">
-                <td className="py-2 px-3 text-gray-700 font-medium">{f.label}{f.note && <span className="block text-[10px] text-gray-400 font-normal">{f.note}</span>}</td>
-                <td className="px-3"><Pill tone={DOC_TONE[f.source] || "gray"}>{f.source}</Pill></td>
-                <td className="py-2 px-3 text-right font-semibold text-gray-800">{f.value}</td>
-              </tr>
-            ))}
+            {fields.map((f, i) => {
+              const canOpen = hasPdf && f.page != null;
+              return (
+                <tr key={i} className="border-t border-gray-50">
+                  <td className="py-2 px-3 text-gray-700 font-medium">{f.label}{f.note && <span className="block text-[10px] text-gray-400 font-normal">{f.note}</span>}</td>
+                  <td className="px-3"><Pill tone={DOC_TONE[f.source] || "gray"}>{f.source}</Pill></td>
+                  <td className="py-2 px-3 text-right font-semibold text-gray-800">{f.value}</td>
+                  <td className="px-2 text-center">
+                    {canOpen && (
+                      <button title="Open source PDF" onClick={() => setViewer(f)} className="text-emerald-500 hover:text-emerald-700">{I.eye}</button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
+      {!hasPdf && (
+        <div className="px-4 py-2 text-[11px] text-gray-400 border-t border-gray-100">No source PDF attached to this deal yet — upload one to enable click-to-verify.</div>
+      )}
+      {viewer && (
+        <PDFViewerModal
+          isOpen={!!viewer}
+          onClose={() => setViewer(null)}
+          pdfData={pdfData}
+          pdfUrl={pdfUrl}
+          fieldLabel={viewer.label}
+          fieldValue={typeof viewer.value === "number" ? viewer.value.toLocaleString() : String(viewer.value)}
+          highlightInfo={{ page: viewer.page, searchTerm: viewer.snippet || String(viewer.value) }}
+        />
+      )}
     </div>
   );
 }
@@ -3242,7 +3279,7 @@ function ExpensesTab({ M, scenarioData }) {
 }
 
 /* -------- Cashflow -------- */
-function CashflowTab({ M, S, cfView }) {
+function CashflowTab({ M, S, cfView, pdfData, pdfUrl }) {
   const H = CFG.acq.holdYears;
   const years = M.years.slice(0, H);
   const [open, setOpen] = useState({ rev: true, opex: true, fees: true, loan: true, jv: true, wc: true, acq: true });
@@ -3367,13 +3404,13 @@ function CashflowTab({ M, S, cfView }) {
           </table>
         </div>
       </Card>
-      {verify.open && <DocSourcePanel title="Cashflow" fields={cashflowVerifyFields} onClose={verify.close} />}
+      {verify.open && <DocSourcePanel title="Cashflow" fields={cashflowVerifyFields} onClose={verify.close} pdfData={pdfData} pdfUrl={pdfUrl} />}
     </div>
   );
 }
 
 /* -------- Renovations -------- */
-function RenovationsTab({ M, S, set }) {
+function RenovationsTab({ M, S, set, pdfData, pdfUrl }) {
   const [modal, setModal] = useState(false);
   const data = useMemo(() => {
     let running = 0;
@@ -3456,7 +3493,7 @@ function RenovationsTab({ M, S, set }) {
         </table>
       </Card>
       {modal && <TimelineModal M={M} S={S} set={set} onClose={() => setModal(false)} />}
-      {verify.open && <DocSourcePanel title="Renovations" fields={renoVerifyFields} onClose={verify.close} />}
+      {verify.open && <DocSourcePanel title="Renovations" fields={renoVerifyFields} onClose={verify.close} pdfData={pdfData} pdfUrl={pdfUrl} />}
     </div>
   );
 }
@@ -3514,7 +3551,7 @@ function TimelineModal({ M, S, set, onClose }) {
 }
 
 /* -------- Waterfall -------- */
-function WaterfallTab({ M, S, set }) {
+function WaterfallTab({ M, S, set, pdfData, pdfUrl }) {
   const [mode, setMode] = useState("$");
   const WF = CFG.waterfall;
   const fmtV = (v, tot) => (mode === "$" ? $f(Math.round(v)) : pct(tot > 0 ? v / tot : 0));
@@ -3721,13 +3758,13 @@ function WaterfallTab({ M, S, set }) {
           </tbody>
         </table>
       </Card>
-      {verify.open && <DocSourcePanel title="Equity Waterfall" fields={waterfallVerifyFields} onClose={verify.close} />}
+      {verify.open && <DocSourcePanel title="Equity Waterfall" fields={waterfallVerifyFields} onClose={verify.close} pdfData={pdfData} pdfUrl={pdfUrl} />}
     </div>
   );
 }
 
 /* -------- Financing -------- */
-function FinancingTab({ M, S, set }) {
+function FinancingTab({ M, S, set, pdfData, pdfUrl }) {
   const [hover, setHover] = useState(null);
   const [rateOpen, setRateOpen] = useState(false);
   // Preferred Equity / Mezz / Seller Financing inputs used to be plain local
@@ -3996,13 +4033,13 @@ function FinancingTab({ M, S, set }) {
           </div>
         </Card>
       </div>
-      {verify.open && <DocSourcePanel title="Financing" fields={financingVerifyFields} onClose={verify.close} />}
+      {verify.open && <DocSourcePanel title="Financing" fields={financingVerifyFields} onClose={verify.close} pdfData={pdfData} pdfUrl={pdfUrl} />}
     </div>
   );
 }
 
 /* -------- Returns -------- */
-function ReturnsTab({ M }) {
+function ReturnsTab({ M, pdfData, pdfUrl }) {
   const verify = useVerifyPanel();
   const returnsVerifyFields = [
     { label: "Levered IRR", value: M.leveredIRR === null ? "—" : pct(M.leveredIRR), source: "Calculated" },
@@ -4052,7 +4089,7 @@ function ReturnsTab({ M }) {
         </table>
         <div className="px-4 py-2 text-[11px] text-gray-400">Highlighted cell = current assumptions. Red &lt; 8% · Green &gt; 15%.</div>
       </Card>
-      {verify.open && <DocSourcePanel title="Returns" fields={returnsVerifyFields} onClose={verify.close} />}
+      {verify.open && <DocSourcePanel title="Returns" fields={returnsVerifyFields} onClose={verify.close} pdfData={pdfData} pdfUrl={pdfUrl} />}
     </div>
   );
 }
@@ -4069,7 +4106,7 @@ function CompsFitBounds({ center, comps }) {
   }, [map, center, comps]);
   return null;
 }
-function CompsTab({ M, scenarioData, dealId, marketData, marketDataLoading, onRefetchMarketData }) {
+function CompsTab({ M, scenarioData, dealId, marketData, marketDataLoading, onRefetchMarketData, pdfData, pdfUrl }) {
   // Seed from the deal's saved rentcast_cache (written by the backend the
   // first time "Refresh Comps" is clicked for this deal) so reopening a deal
   // shows the same comps instantly, with zero extra RentCast API calls or
@@ -4326,7 +4363,7 @@ function CompsTab({ M, scenarioData, dealId, marketData, marketDataLoading, onRe
         </Card>
       </div>
 
-      {verify.open && <DocSourcePanel title="Comps" fields={compsVerifyFields} onClose={verify.close} />}
+      {verify.open && <DocSourcePanel title="Comps" fields={compsVerifyFields} onClose={verify.close} pdfData={pdfData} pdfUrl={pdfUrl} />}
     </div>
   );
 }
@@ -4385,20 +4422,28 @@ export default function App({
     });
     return merged;
   }, [scenarioData, extraParsedDocs]);
+  // Real, deterministic calc engine (same one Sensitivity/Deal Room/Investor views use) —
+  // independent from the mock CFG-driven `M` model used by the other underwriting tabs.
+  const fullCalcs = useMemo(() => {
+    if (!mergedParsedData) return {};
+    try { return calculateFullAnalysis(mergedParsedData); } catch { return {}; }
+  }, [mergedParsedData]);
   const tabs = {
-    summary: <SummaryTab M={M} S={S} set={set} />,
-    strategy: <StrategyTab M={M} S={S} set={set} />,
-    income: <IncomeTab M={M} />,
+    summary: <SummaryTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} scenarioData={mergedParsedData} />,
+    strategy: <StrategyTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} />,
+    income: <IncomeTab M={M} pdfData={pdfData} pdfUrl={pdfUrl} />,
     rentroll: <RentRollTab M={M} />,
     t12: <T12Tab M={M} />,
     expenses: <ExpensesTab M={M} scenarioData={mergedParsedData} />,
-    cashflow: <CashflowTab M={M} S={S} cfView={cfView} />,
-    renovations: <RenovationsTab M={M} S={S} set={set} />,
-    waterfall: <WaterfallTab M={M} S={S} set={set} />,
-    financing: <FinancingTab M={M} S={S} set={set} />,
-    returns: <ReturnsTab M={M} />,
-    comps: <CompsTab M={M} scenarioData={mergedParsedData} dealId={dealId} marketData={marketData} marketDataLoading={marketDataLoading} onRefetchMarketData={onRefetchMarketData} />,
+    cashflow: <CashflowTab M={M} S={S} cfView={cfView} pdfData={pdfData} pdfUrl={pdfUrl} />,
+    renovations: <RenovationsTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} />,
+    waterfall: <WaterfallTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} />,
+    financing: <FinancingTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} />,
+    returns: <ReturnsTab M={M} pdfData={pdfData} pdfUrl={pdfUrl} />,
+    comps: <CompsTab M={M} scenarioData={mergedParsedData} dealId={dealId} marketData={marketData} marketDataLoading={marketDataLoading} onRefetchMarketData={onRefetchMarketData} pdfData={pdfData} pdfUrl={pdfUrl} />,
     model: <UnderwritingModelTab scenarioData={mergedParsedData} dealId={dealId} />,
+    sensitivity: <SensitivityAnalysisTab scenarioData={mergedParsedData} fullCalcs={fullCalcs} calculateFullAnalysisFn={calculateFullAnalysis} />,
+    montecarlo: <MonteCarloTab scenarioData={mergedParsedData} fullCalcs={fullCalcs} dealId={dealId} />,
   };
   const renderDocsSubView = () => {
     if (docsSubView === "upload") {

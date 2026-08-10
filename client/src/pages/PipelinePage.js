@@ -23,6 +23,7 @@ import {
 import { loadPipelineDeals as loadDealsFromSupabase, loadRapidFireDeals as loadRapidFireDealsFromSupabase, deleteDeal, updateDeal, bulkDeleteDeals } from '../lib/dealsService';
 import DealComparisonModal from '../components/DealComparisonModal';
 import DealPhotoGallery, { DealThumbnail } from '../components/DealPhotoGallery';
+import PipelineAnalytics from '../components/PipelineAnalytics';
 
 // ============================================================================
 // Helper Functions
@@ -136,13 +137,13 @@ const assessStructureRisk = (deal) => {
 
 const getStatusColor = (status) => {
   const colors = {
-    sourced:     { bg: '#c4def6', text: '#1e3a5f', border: '#7fb3de' },
-    underwritten:{ bg: '#b6e9d1', text: '#15573a', border: '#6dd4a0' },
-    loi:         { bg: '#d4c4f0', text: '#5b2e91', border: '#b494e0' },
-    contract:    { bg: '#fdcb8a', text: '#7c3a07', border: '#f9a94b' },
-    financing:   { bg: '#c2f5ea', text: '#0d5e56', border: '#6ae0cd' },
-    closed:      { bg: '#a3e4b8', text: '#14532d', border: '#5ecc7f' },
-    dead:        { bg: '#f5bebe', text: '#7f1d1d', border: '#eb8282' }
+    sourced:     { bg: '#e2e8f0', text: '#334155', border: '#94a3b8' },
+    underwritten:{ bg: '#d1fae5', text: '#065f46', border: '#34d399' },
+    loi:         { bg: '#ede9fe', text: '#5b21b6', border: '#a78bfa' },
+    contract:    { bg: '#fef3c7', text: '#92400e', border: '#fbbf24' },
+    financing:   { bg: '#cffafe', text: '#155e75', border: '#22d3ee' },
+    closed:      { bg: '#a7f3d0', text: '#065f46', border: '#10b981' },
+    dead:        { bg: '#fee2e2', text: '#991b1b', border: '#f87171' }
   };
   return colors[status] || colors.sourced;
 };
@@ -167,34 +168,34 @@ const calculateDaysInStage = (stageChangedAt) => {
   return Math.ceil(Math.abs(now - changed) / (1000 * 60 * 60 * 24));
 };
 
-// Monday-style group header accent per stage
+// Stage accent colors — emerald-forward palette matching the Results page
 const stageGroupColor = {
-  sourced: '#579bfc',
-  underwritten: '#00c875',
-  loi: '#a25ddc',
-  contract: '#fdab3d',
-  financing: '#66ccff',
-  closed: '#037f4c',
-  dead: '#e2445c'
+  sourced: '#64748b',
+  underwritten: '#10b981',
+  loi: '#8b5cf6',
+  contract: '#f59e0b',
+  financing: '#06b6d4',
+  closed: '#059669',
+  dead: '#ef4444'
 };
 
-// Monday-style risk badge
+// Risk badge
 const riskBadge = (level) => {
-  if (level === 'green')  return { bg: '#00c875', text: '#fff' };
-  if (level === 'yellow') return { bg: '#fdab3d', text: '#fff' };
-  return { bg: '#e2445c', text: '#fff' };
+  if (level === 'green')  return { bg: '#10b981', text: '#fff' };
+  if (level === 'yellow') return { bg: '#f59e0b', text: '#fff' };
+  return { bg: '#ef4444', text: '#fff' };
 };
 
-// Monday-style deal-structure badge
+// Deal-structure badge
 const structureBadge = (structure) => {
   const s = (structure || '').toLowerCase();
-  if (s.includes('seller'))  return { bg: '#ff642e', text: '#fff' };
-  if (s.includes('partner')) return { bg: '#a25ddc', text: '#fff' };
-  if (s.includes('syndic'))  return { bg: '#579bfc', text: '#fff' };
-  if (s.includes('equity'))  return { bg: '#00c875', text: '#fff' };
-  if (s.includes('bridge'))  return { bg: '#fdab3d', text: '#fff' };
-  if (s.includes('subto') || s.includes('subject')) return { bg: '#e2445c', text: '#fff' };
-  return { bg: '#c4c4c4', text: '#333' };
+  if (s.includes('seller'))  return { bg: '#f97316', text: '#fff' };
+  if (s.includes('partner')) return { bg: '#8b5cf6', text: '#fff' };
+  if (s.includes('syndic'))  return { bg: '#0ea5e9', text: '#fff' };
+  if (s.includes('equity'))  return { bg: '#10b981', text: '#fff' };
+  if (s.includes('bridge'))  return { bg: '#f59e0b', text: '#fff' };
+  if (s.includes('subto') || s.includes('subject')) return { bg: '#ef4444', text: '#fff' };
+  return { bg: '#e5e7eb', text: '#374151' };
 };
 
 // ============================================================================
@@ -406,14 +407,14 @@ function PipelinePage() {
 
   // Monday CRM table header style
   const thStyle = {
-    padding: '7px 6px',
+    padding: '9px 6px',
     fontSize: '11px',
-    fontWeight: '600',
-    color: '#676879',
+    fontWeight: '700',
+    color: '#374151',
     textAlign: 'left',
     whiteSpace: 'nowrap',
-    borderBottom: '1px solid #e6e9ef',
-    background: '#fff',
+    borderBottom: '2px solid #10b981',
+    background: '#f9fafb',
     textTransform: 'none',
     letterSpacing: '0',
   };
@@ -443,17 +444,23 @@ function PipelinePage() {
             <div>
               <h1 style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: '#323338', letterSpacing: '-0.3px' }}>Deal Pipeline</h1>
               <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: '#676879', fontWeight: '400' }}>
-                {viewMode === 'pipeline' ? pipelineDeals.length : rapidFireDeals.length}{' '}
-                {viewMode === 'pipeline'
-                  ? (pipelineDeals.length === 1 ? 'deal in pipeline' : 'deals in pipeline')
-                  : (rapidFireDeals.length === 1 ? 'Rapid Fire lead' : 'Rapid Fire leads')}
+                {viewMode === 'analytics'
+                  ? `${pipelineDeals.length} ${pipelineDeals.length === 1 ? 'deal' : 'deals'} analyzed`
+                  : (
+                    <>
+                      {viewMode === 'pipeline' ? pipelineDeals.length : rapidFireDeals.length}{' '}
+                      {viewMode === 'pipeline'
+                        ? (pipelineDeals.length === 1 ? 'deal in pipeline' : 'deals in pipeline')
+                        : (rapidFireDeals.length === 1 ? 'Rapid Fire lead' : 'Rapid Fire leads')}
+                    </>
+                  )}
               </p>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             {/* View toggle pill */}
             <div style={{ display: 'flex', backgroundColor: '#f6f7fb', borderRadius: '8px', padding: '3px', border: '1px solid #e6e9ef' }}>
-              {['pipeline', 'rapidfire'].map(mode => (
+              {['pipeline', 'rapidfire', 'analytics'].map(mode => (
                 <button key={mode} type="button" onClick={() => setViewMode(mode)} style={{
                   padding: '7px 16px', borderRadius: '6px', border: 'none', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
                   backgroundColor: viewMode === mode ? '#fff' : 'transparent',
@@ -461,7 +468,7 @@ function PipelinePage() {
                   boxShadow: viewMode === mode ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
                   transition: 'all 0.15s'
                 }}>
-                  {mode === 'pipeline' ? 'Underwritten' : 'Rapid Fire Queue'}
+                  {mode === 'pipeline' ? 'Underwritten' : mode === 'rapidfire' ? 'Rapid Fire Queue' : 'Analytics'}
                 </button>
               ))}
             </div>
@@ -489,7 +496,7 @@ function PipelinePage() {
               <input
                 type="text" placeholder="Search..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
                 style={{ padding: '8px 12px 8px 34px', width: '220px', backgroundColor: '#fff', border: '1px solid #e6e9ef', borderRadius: '8px', color: '#323338', fontSize: '13px', outline: 'none' }}
-                onFocus={e => e.target.style.borderColor = '#579bfc'}
+                onFocus={e => e.target.style.borderColor = '#10b981'}
                 onBlur={e => e.target.style.borderColor = '#e6e9ef'}
               />
             </div>
@@ -518,9 +525,9 @@ function PipelinePage() {
               <ArrowUpDown size={14} color="#676879" />
               <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{
                 padding: '5px 8px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontWeight: '500', outline: 'none',
-                border: sortBy !== 'none' ? '1px solid #579bfc' : '1px solid transparent',
-                backgroundColor: sortBy !== 'none' ? '#e6f0ff' : 'transparent',
-                color: sortBy !== 'none' ? '#0073ea' : '#676879',
+                border: sortBy !== 'none' ? '1px solid #10b981' : '1px solid transparent',
+                backgroundColor: sortBy !== 'none' ? '#ecfdf5' : 'transparent',
+                color: sortBy !== 'none' ? '#059669' : '#676879',
               }}>
                 <option value="none">Sort</option>
                 <option value="status">Deal Stage</option>
@@ -535,21 +542,21 @@ function PipelinePage() {
             {/* Filter toggle */}
             <button onClick={() => setShowFilters(!showFilters)} style={{
               display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', borderRadius: '6px', fontSize: '13px', fontWeight: '500', cursor: 'pointer',
-              border: hasActiveFilters ? '1px solid #579bfc' : '1px solid transparent',
-              backgroundColor: hasActiveFilters ? '#e6f0ff' : 'transparent',
-              color: hasActiveFilters ? '#0073ea' : '#676879',
+              border: hasActiveFilters ? '1px solid #10b981' : '1px solid transparent',
+              backgroundColor: hasActiveFilters ? '#ecfdf5' : 'transparent',
+              color: hasActiveFilters ? '#059669' : '#676879',
             }}>
               <Filter size={14} />
               Filter
               {hasActiveFilters && (
-                <span style={{ backgroundColor: '#0073ea', color: '#fff', borderRadius: '999px', fontSize: '10px', fontWeight: '700', padding: '1px 6px', marginLeft: '2px' }}>
+                <span style={{ backgroundColor: '#059669', color: '#fff', borderRadius: '999px', fontSize: '10px', fontWeight: '700', padding: '1px 6px', marginLeft: '2px' }}>
                   {filterStatus.length + filterRisk.length + (filterOutsideCapital !== 'all' ? 1 : 0)}
                 </span>
               )}
             </button>
             {hasActiveFilters && (
               <button onClick={() => { setFilterStatus([]); setFilterRisk([]); setFilterOutsideCapital('all'); setSortBy('none'); }}
-                style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', backgroundColor: '#ffefef', color: '#d83a52', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
+                style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', backgroundColor: '#fee2e2', color: '#dc2626', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
                 Clear All
               </button>
             )}
@@ -558,11 +565,11 @@ function PipelinePage() {
             {selectedDealIds.length >= 2 ? (
               <button onClick={() => setShowComparison(true)} style={{
                 display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: '700', cursor: 'pointer',
-                border: '1px solid #a25ddc', backgroundColor: '#f3e8ff', color: '#7e22ce',
+                border: '1px solid #8b5cf6', backgroundColor: '#ede9fe', color: '#6d28d9',
                 transition: 'all 0.15s',
               }}
-                onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#e9d5ff'; }}
-                onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#f3e8ff'; }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#ddd6fe'; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#ede9fe'; }}
               >
                 <Columns size={14} />
                 Compare ({selectedDealIds.length})
@@ -579,11 +586,11 @@ function PipelinePage() {
                 <div style={{ width: '1px', height: '20px', backgroundColor: '#e6e9ef', margin: '0 4px' }} />
                 <button onClick={handleBulkDelete} style={{
                   display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: '700', cursor: 'pointer',
-                  border: '1px solid #e2445c', backgroundColor: '#ffefef', color: '#d83a52',
+                  border: '1px solid #ef4444', backgroundColor: '#fee2e2', color: '#dc2626',
                   transition: 'all 0.15s',
                 }}
-                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#fde2e4'; }}
-                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#ffefef'; }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#fecaca'; }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#fee2e2'; }}
                 >
                   <Trash2 size={14} />
                   Delete Selected ({selectedDealIds.length})
@@ -618,7 +625,7 @@ function PipelinePage() {
               {/* Risk */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ fontSize: '12px', fontWeight: '600', color: '#676879' }}>Risk:</span>
-                {[{ level: 'green', label: 'Low', color: '#00c875' }, { level: 'yellow', label: 'Medium', color: '#fdab3d' }, { level: 'red', label: 'High', color: '#e2445c' }].map(({ level, label, color }) => {
+                {[{ level: 'green', label: 'Low', color: '#10b981' }, { level: 'yellow', label: 'Medium', color: '#f59e0b' }, { level: 'red', label: 'High', color: '#ef4444' }].map(({ level, label, color }) => {
                   const isSelected = filterRisk.includes(level);
                   return (
                     <button key={level} onClick={() => setFilterRisk(prev => isSelected ? prev.filter(r => r !== level) : [...prev, level])}
@@ -653,10 +660,17 @@ function PipelinePage() {
       {/* Main Content */}
       {/* ================================================================ */}
       <div style={{ margin: '0 auto', padding: '20px 16px' }}>
-        {viewMode === 'pipeline' ? (
+        {viewMode === 'analytics' ? (
+          <PipelineAnalytics
+            deals={pipelineDeals}
+            stageGroupColor={stageGroupColor}
+            getStatusLabel={getStatusLabel}
+            onOpenDealRoom={handleOpenDealRoom}
+          />
+        ) : viewMode === 'pipeline' ? (
           isLoading ? (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <RefreshCw size={28} style={{ animation: 'spin 1s linear infinite', color: '#579bfc' }} />
+              <RefreshCw size={28} style={{ animation: 'spin 1s linear infinite', color: '#10b981' }} />
               <p style={{ marginTop: '14px', color: '#676879', fontSize: '14px' }}>Loading pipeline...</p>
             </div>
           ) : filteredDeals.length === 0 ? (
@@ -730,14 +744,14 @@ function PipelinePage() {
                                   <GripVertical size={14} color="#c3c6d4" style={{ flexShrink: 0, marginTop: '1px' }} />
                                 </div>
                                 <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
-                                  {deal.units && <span style={{ backgroundColor: '#cce5ff', color: '#0073ea', padding: '2px 8px', borderRadius: '999px', fontSize: '10px', fontWeight: '600' }}>{deal.units} units</span>}
+                                  {deal.units && <span style={{ backgroundColor: '#d1fae5', color: '#047857', padding: '2px 8px', borderRadius: '999px', fontSize: '10px', fontWeight: '600' }}>{deal.units} units</span>}
                                   <span style={{ backgroundColor: rColors.bg, color: rColors.text, padding: '2px 8px', borderRadius: '999px', fontSize: '10px', fontWeight: '600' }}>{risk.text}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '11px', color: '#676879' }}>
                                   <span>{fmtCompact(deal.purchasePrice)}</span>
-                                  <span style={{ color: (deal.dayOneCashFlow || 0) >= 0 ? '#00854d' : '#d83a52', fontWeight: '600' }}>CF: {fmtCompact(deal.dayOneCashFlow)}</span>
+                                  <span style={{ color: (deal.dayOneCashFlow || 0) >= 0 ? '#059669' : '#dc2626', fontWeight: '600' }}>CF: {fmtCompact(deal.dayOneCashFlow)}</span>
                                 </div>
-                                <button onClick={() => handleOpenDealRoom(deal)} title="Open Deal Room" style={{ marginTop: '8px', width: '100%', padding: '6px', backgroundColor: '#0073ea', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}><BookOpen size={10} />Deal Room</button>
+                                <button onClick={() => handleOpenDealRoom(deal)} title="Open Deal Room" style={{ marginTop: '8px', width: '100%', padding: '6px', backgroundColor: '#059669', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}><BookOpen size={10} />Deal Room</button>
                               </div>
                             );
                           })}
@@ -760,7 +774,7 @@ function PipelinePage() {
                           <input type="checkbox"
                             checked={getSortedAndFilteredDeals().length > 0 && getSortedAndFilteredDeals().every(d => selectedDealIds.includes(d.dealId))}
                             onChange={e => e.target.checked ? setSelectedDealIds(getSortedAndFilteredDeals().map(d => d.dealId)) : setSelectedDealIds([])}
-                            style={{ accentColor: '#579bfc' }}
+                            style={{ accentColor: '#10b981' }}
                           />
                         </th>
                         <th style={thStyle}>Address</th>
@@ -816,7 +830,7 @@ function PipelinePage() {
 
                               return (
                                 <tr key={deal.dealId || idx}
-                                  style={{ backgroundColor: isSelected ? '#e6f0ff' : '#fff', transition: 'background 0.1s' }}
+                                  style={{ backgroundColor: isSelected ? '#ecfdf5' : '#fff', transition: 'background 0.1s' }}
                                   onMouseEnter={e => { if (!isSelected) e.currentTarget.style.backgroundColor = '#f7f8fa'; }}
                                   onMouseLeave={e => { if (!isSelected) e.currentTarget.style.backgroundColor = '#fff'; }}
                                 >
@@ -828,13 +842,13 @@ function PipelinePage() {
                                   <td style={{ ...cs, textAlign: 'center', paddingLeft: '4px' }}>
                                     <input type="checkbox" checked={isSelected}
                                       onChange={e => e.target.checked ? setSelectedDealIds(prev => [...prev, deal.dealId]) : setSelectedDealIds(prev => prev.filter(id => id !== deal.dealId))}
-                                      style={{ accentColor: '#579bfc' }}
+                                      style={{ accentColor: '#10b981' }}
                                     />
                                   </td>
                                   {/* Address */}
                                     <td style={cs}>
                                       <div
-                                        style={{ fontWeight: '600', color: '#0073ea', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' }}
+                                        style={{ fontWeight: '600', color: '#059669', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' }}
                                         onClick={() => handleOpenDealRoom(deal)}
                                         title="Open Deal Room"
                                       >
@@ -858,7 +872,7 @@ function PipelinePage() {
                                   </td>
                                   {/* Units */}
                                   <td style={{ ...cs, textAlign: 'center' }}>
-                                    <span style={{ backgroundColor: '#cce5ff', color: '#0073ea', padding: '3px 10px', borderRadius: '999px', fontWeight: '600', fontSize: '12px' }}>{deal.units || '-'}</span>
+                                    <span style={{ backgroundColor: '#d1fae5', color: '#047857', padding: '3px 10px', borderRadius: '999px', fontWeight: '600', fontSize: '12px' }}>{deal.units || '-'}</span>
                                   </td>
                                   {/* Price */}
                                   <td style={cs}><span style={{ fontWeight: '600' }}>{fmtCompact(deal.purchasePrice)}</span></td>
@@ -867,7 +881,7 @@ function PipelinePage() {
                                   <td style={cs}>{fmtCompact(capital.sponsorCashIn)}</td>
                                   <td style={cs}>
                                     {capital.outsideCapital > 0
-                                      ? <span style={{ backgroundColor: '#f3e8ff', color: '#7e22ce', padding: '3px 8px', borderRadius: '999px', fontSize: '12px', fontWeight: '600' }}>{fmtCompact(capital.outsideCapital)}</span>
+                                      ? <span style={{ backgroundColor: '#ede9fe', color: '#6d28d9', padding: '3px 8px', borderRadius: '999px', fontSize: '12px', fontWeight: '600' }}>{fmtCompact(capital.outsideCapital)}</span>
                                       : <span style={{ color: '#c3c6d4' }}>—</span>
                                     }
                                   </td>
@@ -883,16 +897,16 @@ function PipelinePage() {
                                     </span>
                                   </td>
                                   {/* Cash flow columns */}
-                                  <td style={cs}><span style={{ color: (deal.dayOneCashFlow || 0) >= 0 ? '#00854d' : '#d83a52', fontWeight: '500' }}>{fmtCompact(deal.dayOneCashFlow)}</span></td>
-                                  <td style={cs}><span style={{ color: (deal.stabilizedCashFlow || 0) >= 0 ? '#00854d' : '#d83a52', fontWeight: '500' }}>{fmtCompact(deal.stabilizedCashFlow)}</span></td>
+                                  <td style={cs}><span style={{ color: (deal.dayOneCashFlow || 0) >= 0 ? '#059669' : '#dc2626', fontWeight: '500' }}>{fmtCompact(deal.dayOneCashFlow)}</span></td>
+                                  <td style={cs}><span style={{ color: (deal.stabilizedCashFlow || 0) >= 0 ? '#059669' : '#dc2626', fontWeight: '500' }}>{fmtCompact(deal.stabilizedCashFlow)}</span></td>
                                   <td style={cs}>{fmtCompact(deal.refiValue)}</td>
-                                  <td style={cs}><span style={{ color: (deal.postRefiCashFlow || 0) >= 0 ? '#00854d' : '#d83a52', fontWeight: '500' }}>{fmtCompact(deal.postRefiCashFlow)}</span></td>
+                                  <td style={cs}><span style={{ color: (deal.postRefiCashFlow || 0) >= 0 ? '#059669' : '#dc2626', fontWeight: '500' }}>{fmtCompact(deal.postRefiCashFlow)}</span></td>
                                   {/* Broker */}
                                   <td style={cs}>
                                     <div style={{ fontSize: '13px', fontWeight: '500', color: '#323338' }}>{deal.brokerName || '-'}</div>
                                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '2px' }}>
-                                      {deal.brokerPhone && <a href={`tel:${deal.brokerPhone}`} style={{ color: '#579bfc', textDecoration: 'none', fontSize: '11px' }}>{deal.brokerPhone}</a>}
-                                      {deal.brokerEmail && <a href={`mailto:${deal.brokerEmail}`} style={{ color: '#579bfc', textDecoration: 'none', fontSize: '11px' }}>{deal.brokerEmail}</a>}
+                                      {deal.brokerPhone && <a href={`tel:${deal.brokerPhone}`} style={{ color: '#059669', textDecoration: 'none', fontSize: '11px' }}>{deal.brokerPhone}</a>}
+                                      {deal.brokerEmail && <a href={`mailto:${deal.brokerEmail}`} style={{ color: '#059669', textDecoration: 'none', fontSize: '11px' }}>{deal.brokerEmail}</a>}
                                     </div>
                                   </td>
                                 </tr>
@@ -914,7 +928,7 @@ function PipelinePage() {
           /* ============================================================ */
           isLoadingRapid ? (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <RefreshCw size={28} style={{ animation: 'spin 1s linear infinite', color: '#579bfc' }} />
+              <RefreshCw size={28} style={{ animation: 'spin 1s linear infinite', color: '#10b981' }} />
               <p style={{ marginTop: '14px', color: '#676879', fontSize: '14px' }}>Loading Rapid Fire queue...</p>
             </div>
           ) : filteredRapidFireDeals.length === 0 ? (
@@ -938,14 +952,14 @@ function PipelinePage() {
                       if (e.target.checked) { setSelectedRapidFireIds(prev => Array.from(new Set([...prev, ...filteredRapidFireDeals.map(d => d.dealId)]))); }
                       else { const vis = new Set(filteredRapidFireDeals.map(d => d.dealId)); setSelectedRapidFireIds(prev => prev.filter(id => !vis.has(id))); }
                     }}
-                    style={{ accentColor: '#579bfc' }}
+                    style={{ accentColor: '#10b981' }}
                   />
                   Select all
                 </label>
                 <button type="button" onClick={() => handleDeleteRapidFireDeals(selectedRapidFireIds)} disabled={selectedRapidFireIds.length === 0}
                   style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', fontSize: '12px', fontWeight: 600,
                     cursor: selectedRapidFireIds.length === 0 ? 'not-allowed' : 'pointer',
-                    backgroundColor: selectedRapidFireIds.length === 0 ? '#f0f1f3' : '#e2445c',
+                    backgroundColor: selectedRapidFireIds.length === 0 ? '#f0f1f3' : '#ef4444',
                     color: selectedRapidFireIds.length === 0 ? '#c3c6d4' : '#fff'
                   }}>
                   Delete Selected
@@ -966,26 +980,26 @@ function PipelinePage() {
                       const cs = { padding: '10px 12px', fontSize: '13px', color: '#323338', verticalAlign: 'middle', borderBottom: '1px solid #f0f1f3' };
                       return (
                         <tr key={deal.dealId || index}
-                          style={{ backgroundColor: isSelected ? '#e6f0ff' : '#fff', transition: 'background 0.1s' }}
+                          style={{ backgroundColor: isSelected ? '#ecfdf5' : '#fff', transition: 'background 0.1s' }}
                           onMouseEnter={e => { if (!isSelected) e.currentTarget.style.backgroundColor = '#f7f8fa'; }}
                           onMouseLeave={e => { if (!isSelected) e.currentTarget.style.backgroundColor = '#fff'; }}
                         >
-                          <td style={{ ...cs, textAlign: 'center', borderLeft: '4px solid #579bfc', paddingLeft: '8px' }}>
+                          <td style={{ ...cs, textAlign: 'center', borderLeft: '4px solid #10b981', paddingLeft: '8px' }}>
                             <input type="checkbox" checked={isSelected}
                               onChange={e => e.target.checked ? setSelectedRapidFireIds(prev => prev.includes(deal.dealId) ? prev : [...prev, deal.dealId]) : setSelectedRapidFireIds(prev => prev.filter(id => id !== deal.dealId))}
-                              style={{ accentColor: '#579bfc' }}
+                              style={{ accentColor: '#10b981' }}
                             />
                           </td>
                           <td style={cs}><div style={{ fontWeight: '600', color: '#323338', maxWidth: '220px' }}>{deal.name || deal.address || '-'}</div></td>
                           <td style={cs}>
                             {deal.listingUrl
-                              ? <a href={deal.listingUrl} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: '#579bfc', textDecoration: 'none', fontWeight: '500' }}>Open Listing ↗</a>
+                              ? <a href={deal.listingUrl} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: '#059669', textDecoration: 'none', fontWeight: '500' }}>Open Listing ↗</a>
                               : <span style={{ color: '#c3c6d4' }}>—</span>
                             }
                           </td>
                           <td style={cs}><span style={{ color: '#676879' }}>{(deal.city || '')}{deal.state ? `, ${deal.state}` : ''}</span></td>
                           <td style={{ ...cs, textAlign: 'center' }}>
-                            <span style={{ backgroundColor: '#cce5ff', color: '#0073ea', padding: '3px 10px', borderRadius: '999px', fontWeight: '600', fontSize: '12px' }}>{deal.units ?? '-'}</span>
+                            <span style={{ backgroundColor: '#d1fae5', color: '#047857', padding: '3px 10px', borderRadius: '999px', fontWeight: '600', fontSize: '12px' }}>{deal.units ?? '-'}</span>
                           </td>
                           <td style={cs}>{deal.pricePerUnit != null ? fmtCompact(deal.pricePerUnit) : '-'}</td>
                           <td style={cs}><span style={{ fontWeight: '600' }}>{fmtCompact(deal.totalPrice)}</span></td>
@@ -993,12 +1007,12 @@ function PipelinePage() {
                           <td style={cs}>{deal.noi != null ? fmtCompact(deal.noi) : '-'}</td>
                           <td style={cs}>{deal.monthlyCashFlow != null ? fmtCompact(deal.monthlyCashFlow) : '-'}</td>
                           <td style={cs}><span style={{ fontWeight: '600' }}>{deal.calculatedCapRate != null ? `${deal.calculatedCapRate.toFixed(1)}%` : '-'}</span></td>
-                          <td style={cs}><span style={{ fontWeight: '600', color: deal.dscr != null && deal.dscr >= 1.25 ? '#00854d' : '#d83a52' }}>{deal.dscr != null ? deal.dscr.toFixed(2) : '-'}</span></td>
-                          <td style={cs}><span style={{ fontWeight: '600', color: deal.cashOnCash != null && deal.cashOnCash >= 8 ? '#00854d' : '#d83a52' }}>{deal.cashOnCash != null ? `${deal.cashOnCash.toFixed(1)}%` : '-'}</span></td>
+                          <td style={cs}><span style={{ fontWeight: '600', color: deal.dscr != null && deal.dscr >= 1.25 ? '#059669' : '#dc2626' }}>{deal.dscr != null ? deal.dscr.toFixed(2) : '-'}</span></td>
+                          <td style={cs}><span style={{ fontWeight: '600', color: deal.cashOnCash != null && deal.cashOnCash >= 8 ? '#059669' : '#dc2626' }}>{deal.cashOnCash != null ? `${deal.cashOnCash.toFixed(1)}%` : '-'}</span></td>
                           <td style={cs}>
                             <span style={{
                               padding: '4px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase',
-                              backgroundColor: (deal.verdict || '').toUpperCase() === 'DEAL' ? '#00c875' : (deal.verdict || '').toUpperCase() === 'MAYBE' ? '#fdab3d' : '#e2445c',
+                              backgroundColor: (deal.verdict || '').toUpperCase() === 'DEAL' ? '#10b981' : (deal.verdict || '').toUpperCase() === 'MAYBE' ? '#f59e0b' : '#ef4444',
                               color: '#fff'
                             }}>
                               {(deal.verdict || '').toUpperCase() || 'UNKNOWN'}
@@ -1006,7 +1020,7 @@ function PipelinePage() {
                           </td>
                           <td style={{ ...cs, textAlign: 'center' }}>
                             <button onClick={() => handleDeleteRapidFireDeals([deal.dealId])} title="Remove"
-                              style={{ border: 'none', background: '#ffefef', borderRadius: '6px', cursor: 'pointer', padding: '5px', color: '#d83a52', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+                              style={{ border: 'none', background: '#fee2e2', borderRadius: '6px', cursor: 'pointer', padding: '5px', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
                               <Trash2 size={14} />
                             </button>
                           </td>
@@ -1023,10 +1037,10 @@ function PipelinePage() {
         {/* Summary Stats */}
         {viewMode === 'pipeline' && getSortedAndFilteredDeals().length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginTop: '20px' }}>
-            <StatCard label="Total Pipeline Value" value={fmtCompact(getSortedAndFilteredDeals().reduce((s, d) => s + (d.purchasePrice || 0), 0))} icon={Building2} color="#579bfc" />
-            <StatCard label="Total Day 1 Cash Flow" value={fmtCompact(getSortedAndFilteredDeals().reduce((s, d) => s + (d.dayOneCashFlow || 0), 0))} icon={DollarSign} color="#00c875" />
-            <StatCard label="Total Refi Cash-Out" value={fmtCompact(getSortedAndFilteredDeals().reduce((s, d) => s + (d.cashOutRefiAmount || 0), 0))} icon={TrendingUp} color="#a25ddc" />
-            <StatCard label="Avg. Stabilized CF" value={fmtCompact(getSortedAndFilteredDeals().reduce((s, d) => s + (d.stabilizedCashFlow || 0), 0) / getSortedAndFilteredDeals().length)} icon={Layers} color="#fdab3d" />
+            <StatCard label="Total Pipeline Value" value={fmtCompact(getSortedAndFilteredDeals().reduce((s, d) => s + (d.purchasePrice || 0), 0))} icon={Building2} color="#059669" />
+            <StatCard label="Total Day 1 Cash Flow" value={fmtCompact(getSortedAndFilteredDeals().reduce((s, d) => s + (d.dayOneCashFlow || 0), 0))} icon={DollarSign} color="#10b981" />
+            <StatCard label="Total Refi Cash-Out" value={fmtCompact(getSortedAndFilteredDeals().reduce((s, d) => s + (d.cashOutRefiAmount || 0), 0))} icon={TrendingUp} color="#8b5cf6" />
+            <StatCard label="Avg. Stabilized CF" value={fmtCompact(getSortedAndFilteredDeals().reduce((s, d) => s + (d.stabilizedCashFlow || 0), 0) / getSortedAndFilteredDeals().length)} icon={Layers} color="#f59e0b" />
           </div>
         )}
       </div>
@@ -1076,14 +1090,14 @@ function PipelinePage() {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(41, 47, 76, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ backgroundColor: '#fff', borderRadius: '8px', padding: '24px', maxWidth: '380px', width: '90%', boxShadow: '0 16px 50px rgba(0,0,0,0.2)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#e2445c' }}>Mark Deal as Dead</h3>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#dc2626' }}>Mark Deal as Dead</h3>
               <button onClick={() => { setShowDeathModal(null); setDeathReason(''); }} style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '4px', color: '#676879' }}><X size={18} /></button>
             </div>
             <div style={{ fontSize: '13px', color: '#676879', marginBottom: '14px' }}>{showDeathModal.address}</div>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#323338', marginBottom: '6px' }}>Why did this deal die?</label>
             <select value={deathReason} onChange={e => setDeathReason(e.target.value)}
               style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #e6e9ef', fontSize: '13px', marginBottom: '16px', color: '#323338', outline: 'none' }}
-              onFocus={e => e.target.style.borderColor = '#579bfc'}
+              onFocus={e => e.target.style.borderColor = '#10b981'}
               onBlur={e => e.target.style.borderColor = '#e6e9ef'}
             >
               <option value="">Select reason...</option>
@@ -1098,7 +1112,7 @@ function PipelinePage() {
             </select>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button onClick={handleDeathReasonSubmit} disabled={!deathReason}
-                style={{ flex: 1, padding: '9px 16px', borderRadius: '8px', border: 'none', backgroundColor: deathReason ? '#e2445c' : '#f0f1f3', color: deathReason ? '#fff' : '#c3c6d4', fontSize: '13px', fontWeight: '600', cursor: deathReason ? 'pointer' : 'not-allowed' }}>
+                style={{ flex: 1, padding: '9px 16px', borderRadius: '8px', border: 'none', backgroundColor: deathReason ? '#dc2626' : '#f0f1f3', color: deathReason ? '#fff' : '#c3c6d4', fontSize: '13px', fontWeight: '600', cursor: deathReason ? 'pointer' : 'not-allowed' }}>
                 Mark as Dead
               </button>
               <button onClick={() => { setShowDeathModal(null); setDeathReason(''); }}
