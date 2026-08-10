@@ -119,7 +119,7 @@ const dashboardStyles = {
     width: 24,
     height: 24,
     borderRadius: 6,
-    backgroundColor: '#2563eb',
+    backgroundColor: '#059669',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

@@ -37,6 +37,10 @@ router = APIRouter(prefix="/api/claude-chat", tags=["Claude Chat Underwriter"])
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY")
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
+# Cheaper/faster model for conversational Q&A (Deal Chat, board follow-ups) —
+# these are just answering questions about already-computed numbers, not doing
+# the heavy document parsing/analysis work that needs the flagship model.
+ANTHROPIC_MODEL_FAST = os.getenv("ANTHROPIC_MODEL_FAST", "claude-3-5-haiku-20241022")
 
 # In-memory session storage (use Redis in production)
 _sessions: Dict[str, Dict[str, Any]] = {}
@@ -354,7 +358,7 @@ async def stream_claude_response(
 
     try:
         with client.messages.stream(
-            model=ANTHROPIC_MODEL,
+            model=ANTHROPIC_MODEL_FAST,
             max_tokens=8192,
             system=system,
             messages=messages
@@ -661,7 +665,7 @@ async def chat_non_streaming(request: Request):
             system = system + file_summary
         
         response = client.messages.create(
-            model=ANTHROPIC_MODEL,
+            model=ANTHROPIC_MODEL_FAST,
             max_tokens=8192,
             system=system,
             messages=messages

@@ -7,6 +7,7 @@ import { exportDealRoomHtml } from '../../lib/dealRoomExport';
 import { NoiCashflowChart, ValueCreationBridge, ReturnsComparisonChart } from './DealRoomCharts';
 import { renderWidget } from './DealRoomWidgets';
 import BusinessPlanBlocks from './BusinessPlanBlocks';
+import PropertyFlyover3D from './PropertyFlyover3D';
 import { calculateFullAnalysis } from '../../utils/realEstateCalculations';
 import { useDealRoomWidgetData, resolveWidgetDataset as resolveWidgetDatasetShared } from '../../lib/dealRoomWidgetData';
 
@@ -551,6 +552,12 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {property?.address && (
+          <div data-export-exclude>
+            <PropertyFlyover3D address={property.address} latitude={property.latitude} longitude={property.longitude} accent={effectiveAccent} />
           </div>
         )}
 

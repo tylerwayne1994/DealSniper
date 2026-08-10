@@ -133,7 +133,7 @@ function TokenPackageCard({ name, tokens, price, description, packageId, profile
         style={{
           width: '100%',
           padding: '14px',
-          backgroundColor: loading ? '#9ca3af' : '#2563eb',
+          backgroundColor: loading ? '#9ca3af' : '#059669',
           color: 'white',
           border: 'none',
           borderRadius: '8px',
@@ -143,8 +143,8 @@ function TokenPackageCard({ name, tokens, price, description, packageId, profile
           transition: 'all 0.2s',
           textTransform: 'uppercase'
         }}
-        onMouseOver={(e) => !loading && (e.target.style.backgroundColor = '#1d4ed8')}
-        onMouseOut={(e) => !loading && (e.target.style.backgroundColor = '#2563eb')}
+        onMouseOver={(e) => !loading && (e.target.style.backgroundColor = '#047857')}
+        onMouseOut={(e) => !loading && (e.target.style.backgroundColor = '#059669')}
       >
         {loading ? 'Processing...' : 'Pay'}
       </button>
@@ -683,7 +683,7 @@ function DashboardPage() {
               <div style={{ fontSize: 30, fontWeight: 800, color: '#111827' }}>{completionPct}%</div>
             </div>
             <div style={{ height: 10, background: '#e2e8f0', borderRadius: 999, overflow: 'hidden' }}>
-              <div style={{ width: `${completionPct}%`, height: '100%', background: 'linear-gradient(90deg, #0f766e 0%, #2563eb 100%)' }} />
+              <div style={{ width: `${completionPct}%`, height: '100%', background: 'linear-gradient(90deg, #34d399 0%, #22d3ee 100%)' }} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
               <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: 16, border: '1px solid #e2e8f0' }}>

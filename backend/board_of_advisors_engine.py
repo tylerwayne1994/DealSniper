@@ -25,6 +25,10 @@ BOARD_DIR = Path(__file__).parent / "board_of_advisors"
 ADVISORS_DIR = BOARD_DIR / "advisors"
 
 ANTHROPIC_MODEL = "claude-sonnet-4-5-20250929"
+# Cheaper/faster model for the follow-up chat — answering a quick question to
+# an already-convened advisor doesn't need the flagship model that ran the
+# full 7-stage deliberation.
+ANTHROPIC_MODEL_FAST = "claude-3-5-haiku-20241022"
 
 
 def _get_client() -> Anthropic:
@@ -366,7 +370,7 @@ def chat_with_advisors(
 
     client = _get_client()
     response = client.messages.create(
-        model=ANTHROPIC_MODEL,
+        model=ANTHROPIC_MODEL_FAST,
         max_tokens=1500,
         system=system_prompt,
         messages=[{"role": "user", "content": user_content}],
@@ -377,7 +381,7 @@ def chat_with_advisors(
         result = json.loads(_extract_json(content))
     except json.JSONDecodeError:
         response2 = client.messages.create(
-            model=ANTHROPIC_MODEL,
+            model=ANTHROPIC_MODEL_FAST,
             max_tokens=1500,
             system=system_prompt + "\n\nIMPORTANT: your previous response was not valid JSON. Return ONLY the JSON object, nothing else.",
             messages=[{"role": "user", "content": user_content}],
