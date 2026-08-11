@@ -263,6 +263,8 @@ export function buildDealRoomData({ deal, full, metrics, allocations = [], distr
     property: {
       name: propertyName,
       address: deal?.address || '',
+      latitude: deal?.latitude ?? null,
+      longitude: deal?.longitude ?? null,
       assetDescriptor,
       images: images.length ? images : [],
     },

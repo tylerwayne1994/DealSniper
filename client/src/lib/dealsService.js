@@ -46,8 +46,13 @@ async function nominatimGeocode(address) {
 /**
  * Geocode an address trying Google Maps first (handles messy/range addresses
  * much better) and falling back to Nominatim if Google is unavailable (e.g.
- * REACT_APP_GOOGLE_MAPS_KEY not configured in this environment) or returns
- * no result. Always normalizes the address first. Exported so callers like
+ * REACT_APP_GOOGLE_MAPS_KEY not configured in this environment, or the key
+ * doesn't have the Geocoding API enabled) or returns no result. Always
+ * normalizes the address first. If the full street address still can't be
+ * resolved (Nominatim in particular struggles with rural/highway-route
+ * addresses like "12800 Texas 110"), falls back to geocoding just the
+ * city/state so the property still gets an approximate pin instead of
+ * disappearing from the map entirely. Exported so callers like
  * ResultsPageV2's push-to-pipeline flow get the same reliability.
  */
 export async function robustGeocodeAddress(rawAddress) {
@@ -59,7 +64,20 @@ export async function robustGeocodeAddress(rawAddress) {
   } catch (e) {
     console.warn('Google geocode failed, falling back to Nominatim:', e);
   }
-  return nominatimGeocode(address);
+  const fromNominatim = await nominatimGeocode(address);
+  if (fromNominatim) return fromNominatim;
+
+  // Last resort: strip the street portion and try just "City, ST" so the
+  // pin lands approximately right instead of not showing up at all.
+  const cityStateMatch = address.match(/([^,]+,\s*[A-Z]{2})(\s+\d{5})?$/);
+  if (cityStateMatch) {
+    const cityState = cityStateMatch[1].trim();
+    if (cityState !== address) {
+      console.warn(`Full address geocode failed for "${address}", trying city-level fallback: "${cityState}"`);
+      return nominatimGeocode(cityState);
+    }
+  }
+  return null;
 }
 
 /**
@@ -222,6 +240,8 @@ export function mapDealRow(data) {
   return {
     dealId: data.deal_id,
     address: data.address,
+    latitude: data.latitude,
+    longitude: data.longitude,
     units: data.units,
     purchasePrice: data.purchase_price,
     dealStructure: data.deal_structure,

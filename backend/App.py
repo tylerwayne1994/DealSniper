@@ -410,6 +410,21 @@ try:
 except Exception as e:
     log.warning(f"[FRED] Treasury rates endpoint unavailable: {e}")
 
+# ── Server-side Geocoding proxy (see geocode_api.py for why this can't run client-side) ──
+try:
+    from geocode_api import geocode_address
+
+    @app.get("/api/geocode")
+    async def geocode_route(address: str):
+        """Geocode an address server-side (Google key restricted by HTTP referrer can't be used client-side)."""
+        result = geocode_address(address)
+        if result is None:
+            return {"error": "Could not geocode address", "latitude": None, "longitude": None}
+        return result
+    log.info("[GEOCODE] Server-side geocoding endpoint ready")
+except Exception as e:
+    log.warning(f"[GEOCODE] Geocoding endpoint unavailable: {e}")
+
 # Google Sheets: Auto-populate underwriting model
 from google_sheets_updater import update_google_sheet
 from google_sheets_results_exporter import export_full_results_workbook

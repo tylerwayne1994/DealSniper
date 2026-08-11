@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
-import { Play, Pause, RotateCcw } from 'lucide-react';
-import { geocodeAddress } from '../../utils/geocode';
+import { Play, Pause, RotateCcw, MapPinOff } from 'lucide-react';
+import { robustGeocodeAddress } from '../../lib/dealsService';
 
 const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_KEY || '';
 
@@ -28,10 +28,19 @@ export default function PropertyFlyover3D({ address, latitude, longitude, accent
   const headingRef = useRef(0);
   const rafRef = useRef(null);
 
+  // Prefer coordinates the deal already has stored (same ones the map uses)
+  // over a fresh client-side geocode — covers async deal loads too.
+  useEffect(() => {
+    if (latitude != null && longitude != null) setCoords({ lat: latitude, lng: longitude });
+  }, [latitude, longitude]);
+
   useEffect(() => {
     if (coords || !address) return;
     let cancelled = false;
-    geocodeAddress(address).then((loc) => {
+    // Same Google+Nominatim fallback chain (with address normalization) used
+    // by the map's pins — a raw Google-only lookup silently fails whenever
+    // the Geocoding API isn't enabled for the configured key.
+    robustGeocodeAddress(address).then((loc) => {
       if (cancelled) return;
       if (loc) setCoords({ lat: loc.latitude, lng: loc.longitude });
       else setGeocodeError(true);
@@ -64,7 +73,17 @@ export default function PropertyFlyover3D({ address, latitude, longitude, accent
     if (mapRef.current) mapRef.current.setHeading(0);
   };
 
-  if (!GOOGLE_MAPS_API_KEY || geocodeError) return null;
+  if (!GOOGLE_MAPS_API_KEY) return null;
+
+  if (geocodeError) {
+    return (
+      <div className="dr-card" style={{ marginTop: 24, padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 12, color: '#6b7280' }}>
+        <MapPinOff size={18} style={{ flexShrink: 0 }} />
+        <span style={{ fontSize: 13 }}>Couldn't locate "{address}" for the aerial flyover \u2014 the address may need to be more specific (street number + city + state).</span>
+      </div>
+    );
+  }
+
   if (!coords) return null;
 
   return (
