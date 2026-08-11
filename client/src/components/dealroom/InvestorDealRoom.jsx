@@ -555,9 +555,9 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
           </div>
         )}
 
-        {property?.address && (
+        {(data.property?.address || property?.address) && (
           <div data-export-exclude>
-            <PropertyFlyover3D address={property.address} latitude={property.latitude} longitude={property.longitude} accent={effectiveAccent} />
+            <PropertyFlyover3D address={data.property?.address || property.address} latitude={property.latitude} longitude={property.longitude} accent={effectiveAccent} />
           </div>
         )}
 

@@ -623,11 +623,11 @@ function DashboardPage() {
       )}
 
       <div style={{
-        background: 'linear-gradient(135deg, #f8fafc 0%, #eef2ff 52%, #fdf2f8 100%)',
-        border: '1px solid #e2e8f0',
+        background: 'linear-gradient(135deg, #f0fdf9 0%, #ecfeff 55%, #f0fdf4 100%)',
+        border: '1px solid #d1fae5',
         borderRadius: '28px',
         padding: isMobile ? '20px' : '28px',
-        boxShadow: '0 18px 40px rgba(15,23,42,0.08)'
+        boxShadow: '0 18px 40px rgba(5,150,105,0.10)'
       }}>
         <div style={{
           display: 'grid',
@@ -640,7 +640,7 @@ function DashboardPage() {
               width: 68,
               height: 68,
               borderRadius: '50%',
-              background: '#111827',
+              background: 'linear-gradient(135deg, #34d399 0%, #22d3ee 100%)',
               color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
@@ -648,7 +648,7 @@ function DashboardPage() {
               fontSize: 24,
               fontWeight: 800,
               flexShrink: 0,
-              boxShadow: '0 14px 28px rgba(15,23,42,0.18)'
+              boxShadow: '0 14px 28px rgba(5,150,105,0.25)'
             }}>
               {profileInitial}
             </div>
@@ -670,7 +670,7 @@ function DashboardPage() {
           </div>
           <div style={{
             background: 'rgba(255,255,255,0.82)',
-            border: '1px solid #e2e8f0',
+            border: '1px solid #d1fae5',
             borderRadius: 22,
             padding: '18px 20px',
             display: 'flex',
