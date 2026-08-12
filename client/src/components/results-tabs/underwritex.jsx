@@ -3468,7 +3468,7 @@ function ExpensesTab({ M, scenarioData }) {
 }
 
 /* -------- Cashflow -------- */
-function CashflowTab({ M, S, cfView, pdfData, pdfUrl }) {
+function CashflowTab({ M, S, set, cfView, pdfData, pdfUrl }) {
   const H = CFG.acq.holdYears;
   const years = M.years.slice(0, H);
   const isMonthly = cfView === "Monthly";
@@ -3532,7 +3532,13 @@ function CashflowTab({ M, S, cfView, pdfData, pdfUrl }) {
   return (
     <div className="p-6 flex flex-col gap-5 w-full">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2"><GradPill>{I.chart} Pro Forma Cash Flow</GradPill><span className="text-sm text-gray-500">· ↗ Value-Add ▾</span></div>
+        <div className="flex items-center gap-2">
+          <GradPill>{I.chart} Pro Forma Cash Flow</GradPill>
+          <select value={S.incomeMethod} onChange={(e) => set({ incomeMethod: e.target.value })}
+            className="text-sm text-emerald-700 font-semibold border border-emerald-200 bg-emerald-50 rounded-lg px-2 py-1 outline-none">
+            {Object.entries(INCOME_METHOD_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+          </select>
+        </div>
         <div className="flex gap-2"><VerifyButton onClick={verify.toggle} /><Ghost>{I.sliders} Controls</Ghost></div>
       </div>
       {isMonthly && <div className="text-xs text-gray-400">Monthly view of Year 1 — revenue/expense lines from the real parsed T-12's month-by-month figures, debt service from the actual amortization schedule.</div>}
@@ -4728,13 +4734,18 @@ export default function App({
   }, [mergedParsedData]);
   // Real, deterministic calc engine (same one Sensitivity/Deal Room/Investor views use) —
   // independent from the mock CFG-driven `M` model used by the other underwriting tabs.
-  // Overlays the user's LIVE edits (purchase price, LTV, rate, amort, exit cap — all part
-  // of S) on top of the parsed deal before recomputing, so editing those fields actually
+  // Overlays the user's LIVE edits (purchase price, exit cap, value-add strategy — all
+  // part of S) on top of the parsed deal before recomputing, so editing those actually
   // changes the Summary tab's Sources&Uses/Financing/Returns numbers instead of them being
   // frozen to whatever was originally parsed.
+  const valueAddRentIncrease = S.incomeMethod === "simple" || S.incomeMethod === "advanced" ? M.totalPremiumYr : 0;
+  const valueAddOtherIncomeIncrease = S.incomeMethod === "rubs" ? M.rubsAnnual : 0;
+  const hasValueAdd = valueAddRentIncrease > 0 || valueAddOtherIncomeIncrease > 0;
   const effectiveScenarioData = useMemo(() => {
     if (!mergedParsedData) return null;
     const origPrice = mergedParsedData.pricing_financing?.purchase_price || mergedParsedData.pricing_financing?.price || 0;
+    const basePnl = mergedParsedData.pnl || {};
+    const baseGpr = basePnl.gross_potential_rent || basePnl.potential_gross_income || 0;
     return {
       ...mergedParsedData,
       pricing_financing: {
@@ -4743,12 +4754,25 @@ export default function App({
         purchase_price: S.purchasePrice,
         price: S.purchasePrice,
       },
+      // Only touch pnl at all once an actual value-add strategy is selected —
+      // otherwise leave the parsed EGI/NOI exactly as the backend reported them.
+      pnl: !hasValueAdd ? basePnl : {
+        ...basePnl,
+        gross_potential_rent: baseGpr + valueAddRentIncrease,
+        other_income: (basePnl.other_income || 0) + valueAddOtherIncomeIncrease,
+        // The backend-parsed EGI/NOI totals are now stale once a value-add
+        // strategy is applied — force calculateFullAnalysis to recompute
+        // both from the bumped GPR/other-income instead of using them as-is.
+        effective_gross_income: undefined,
+        noi: undefined,
+        noi_t12: undefined,
+      },
       underwriting: {
         ...mergedParsedData.underwriting,
         exit_cap_rate: S.exitCap * 100,
       },
     };
-  }, [mergedParsedData, S.purchasePrice, S.exitCap]);
+  }, [mergedParsedData, S.purchasePrice, S.exitCap, hasValueAdd, valueAddRentIncrease, valueAddOtherIncomeIncrease]);
   const fullCalcs = useMemo(() => {
     if (!effectiveScenarioData) return {};
     try { return calculateFullAnalysis(effectiveScenarioData); } catch { return {}; }
@@ -4760,7 +4784,7 @@ export default function App({
     rentroll: <RentRollTab M={M} scenarioData={mergedParsedData} />,
     t12: <T12Tab M={M} scenarioData={mergedParsedData} />,
     expenses: <ExpensesTab M={M} scenarioData={mergedParsedData} />,
-    cashflow: <CashflowTab M={M} S={S} cfView={cfView} pdfData={pdfData} pdfUrl={pdfUrl} />,
+    cashflow: <CashflowTab M={M} S={S} set={set} cfView={cfView} pdfData={pdfData} pdfUrl={pdfUrl} />,
     renovations: <RenovationsTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} />,
     waterfall: <WaterfallTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} />,
     financing: <FinancingTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} />,
