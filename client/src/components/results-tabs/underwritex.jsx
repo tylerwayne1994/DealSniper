@@ -4728,10 +4728,31 @@ export default function App({
   }, [mergedParsedData]);
   // Real, deterministic calc engine (same one Sensitivity/Deal Room/Investor views use) —
   // independent from the mock CFG-driven `M` model used by the other underwriting tabs.
+  // Overlays the user's LIVE edits (purchase price, LTV, rate, amort, exit cap — all part
+  // of S) on top of the parsed deal before recomputing, so editing those fields actually
+  // changes the Summary tab's Sources&Uses/Financing/Returns numbers instead of them being
+  // frozen to whatever was originally parsed.
+  const effectiveScenarioData = useMemo(() => {
+    if (!mergedParsedData) return null;
+    const origPrice = mergedParsedData.pricing_financing?.purchase_price || mergedParsedData.pricing_financing?.price || 0;
+    return {
+      ...mergedParsedData,
+      pricing_financing: {
+        ...mergedParsedData.pricing_financing,
+        _original_purchase_price: origPrice,
+        purchase_price: S.purchasePrice,
+        price: S.purchasePrice,
+      },
+      underwriting: {
+        ...mergedParsedData.underwriting,
+        exit_cap_rate: S.exitCap * 100,
+      },
+    };
+  }, [mergedParsedData, S.purchasePrice, S.exitCap]);
   const fullCalcs = useMemo(() => {
-    if (!mergedParsedData) return {};
-    try { return calculateFullAnalysis(mergedParsedData); } catch { return {}; }
-  }, [mergedParsedData]);
+    if (!effectiveScenarioData) return {};
+    try { return calculateFullAnalysis(effectiveScenarioData); } catch { return {}; }
+  }, [effectiveScenarioData]);
   const tabs = {
     summary: <SummaryTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} scenarioData={mergedParsedData} fullCalcs={fullCalcs} />,
     strategy: <StrategyTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} />,
