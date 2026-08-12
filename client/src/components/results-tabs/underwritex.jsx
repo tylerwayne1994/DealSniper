@@ -183,6 +183,88 @@ function buildT12(rnd = mulberry32(7)) {
 }
 const sum = (a) => a.reduce((x, y) => x + y, 0);
 
+/* ---------------- real-deal builders --------------------------------
+   Same output shape as buildUnits()/buildT12() above, but every input
+   number is sourced from the actual parsed deal (unit count/mix, GPR,
+   expenses, EGI) instead of the hardcoded "Cobblestone" demo — only the
+   individual tenant names/lease dates/monthly jitter stay synthetic since
+   the parser doesn't extract that level of detail. Annual totals always
+   tie back to the real parsed figures. */
+function spreadAnnual(total, rnd, vol = 0.06) {
+  const weights = Array.from({ length: 12 }, () => 1 - vol + rnd() * vol * 2);
+  const wSum = sum(weights);
+  return weights.map((w) => Math.round((total * w) / wSum));
+}
+
+function buildRealUnits(totalUnits, mix, vacantCount) {
+  const rnd = mulberry32(42);
+  const mixExpanded = [];
+  mix.forEach((m) => { for (let i = 0; i < m.count; i++) mixExpanded.push(m); });
+  while (mixExpanded.length < totalUnits) mixExpanded.push(mix[mixExpanded.length % mix.length]);
+  mixExpanded.length = totalUnits;
+  for (let i = mixExpanded.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [mixExpanded[i], mixExpanded[j]] = [mixExpanded[j], mixExpanded[i]];
+  }
+  const vacantIdx = new Set();
+  const vc = Math.max(0, Math.min(vacantCount, totalUnits));
+  while (vacantIdx.size < vc) vacantIdx.add(Math.floor(rnd() * totalUnits));
+  const months = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+  const units = [];
+  for (let i = 0; i < totalUnits; i++) {
+    const m = mixExpanded[i];
+    const baseRent = m.baseRent > 0 ? m.baseRent : 1200;
+    const rent = Math.round(baseRent * (0.94 + rnd() * 0.12));
+    const vac = vacantIdx.has(i);
+    const startYr = 2019 + Math.floor(rnd() * 7);
+    const sm = months[Math.floor(rnd() * 12)];
+    const expYr = 2025 + Math.floor(rnd() * 2);
+    const em = months[Math.floor(rnd() * 12)];
+    units.push({
+      id: i, unit: String(100 + i).padStart(4, "0"), expYear: expYr,
+      tenant: vac ? "VACANT" : `${CFG.firstNames[Math.floor(rnd() * 20)]} ${CFG.lastNames[Math.floor(rnd() * 20)]}`,
+      code: m.code, type: m.type, sf: m.sf, rent, vacant: vac,
+      leaseStart: vac ? "N/A" : `${sm}/${Math.floor(rnd() * 27 + 1)}/${startYr}`,
+      leaseExp: vac ? "N/A" : `${em}/${Math.floor(rnd() * 27 + 1)}/${expYr}`,
+      expMonthIdx: Math.floor(rnd() * 12),
+      tenureYears: vac ? 0 : +(rnd() * 6).toFixed(1),
+    });
+  }
+  return units;
+}
+
+function buildRealT12(real) {
+  const rnd = mulberry32(11);
+  const pnl = real?.pnl || {};
+  const exp = real?.expenses || {};
+  const gprAnnual = pnl.gross_potential_rent || 0;
+  const otherIncomeAnnual = pnl.other_income || 0;
+  const egiAnnual = pnl.effective_gross_income || (gprAnnual + otherIncomeAnnual);
+  // The parser doesn't split vacancy/bad debt/concessions/other-loss out
+  // individually — the whole GPR→EGI gap is booked to Physical Vacancy so
+  // the statement still ties exactly to the real parsed EGI.
+  const lossAnnual = Math.max(0, gprAnnual + otherIncomeAnnual - egiAnnual);
+  const rows = {};
+  rows.gpr = spreadAnnual(gprAnnual, rnd, 0.02);
+  rows.physVac = spreadAnnual(-lossAnnual, rnd, 0.15);
+  rows.badDebt = Array(12).fill(0);
+  rows.concessions = Array(12).fill(0);
+  rows.otherLoss = Array(12).fill(0);
+  rows.otherIncome = spreadAnnual(otherIncomeAnnual, rnd, 0.08);
+  rows.payroll = spreadAnnual(-(exp.payroll || 0), rnd, 0.08);
+  rows.utilities = spreadAnnual(-(exp.utilities || 0), rnd, 0.1);
+  rows.rm = spreadAnnual(-(exp.repairs_maintenance || 0), rnd, 0.2);
+  rows.insurance = spreadAnnual(-(exp.insurance || 0), rnd, 0.05);
+  rows.reTax = spreadAnnual(-(exp.taxes || 0), rnd, 0.02);
+  rows.propMgmt = spreadAnnual(-(exp.management || 0), rnd, 0.05);
+  rows.marketing = spreadAnnual(-(exp.marketing || 0), rnd, 0.15);
+  rows.admin = spreadAnnual(-(exp.admin || 0), rnd, 0.1);
+  rows.contract = Array(12).fill(0);
+  rows.turnover = Array(12).fill(0);
+  rows.other = spreadAnnual(-(exp.other || 0), rnd, 0.1);
+  return rows;
+}
+
 function annuityPmt(loan, rate, amortYrs) {
   const r = rate / 12, n = amortYrs * 12;
   return loan * r / (1 - Math.pow(1 + r, -n));
@@ -205,7 +287,7 @@ function irr(flows) {
   return (lo + hi) / 2;
 }
 
-function useModel(state) {
+function useModel(state, real) {
   return useMemo(() => {
     const { ltv, loanFeesPct, scenarioKey, rateOverride, spread, baseRate, amort, ioMonths,
       exitCap, costsOfSalePct, growth, incomeMethod, renoPremium, renoCost, selectedRenoIds, distWeights,
@@ -213,8 +295,29 @@ function useModel(state) {
       renoDowntime, maxConcurrent, capexMode, gpPct, cmFeePct, amFeePct, acqFeePct, dispFeePct,
       jvOn, jvContribPct, jvPrefRate, jvMode, refiYear, refiLTV, refiRate, refiOn, purchasePrice } = state;
     const A = CFG.assumptions, ACQ = { ...CFG.acq, price: purchasePrice ?? CFG.acq.price };
-    const units = buildUnits();
-    const t12 = buildT12();
+    // Real-deal overrides: derive unit count/mix/vacancy/T-12 from the ACTUAL
+    // parsed deal instead of the hardcoded "Cobblestone" demo dataset — every
+    // deal used to show the exact same fake 248-unit property here regardless
+    // of what was uploaded.
+    const realUnitsCount = real?.property?.units > 0 ? Math.round(real.property.units) : 0;
+    const realMix = Array.isArray(real?.unit_mix) ? real.unit_mix.filter((m) => m && m.units > 0) : [];
+    const useRealUnits = realUnitsCount > 0 && realMix.length > 0;
+    const dealUnits = useRealUnits ? realUnitsCount : CFG.deal.units;
+    const unitMixSource = useRealUnits ? realMix.map((m) => ({
+      type: m.type || "Unit",
+      count: Math.round(m.units),
+      baseRent: m.rent_current || m.rent_market || 0,
+      sf: m.unit_sf || CFG.deal.avgUnitSize,
+      code: (m.type || "unit").toLowerCase().replace(/[^a-z0-9]/g, ""),
+    })) : CFG.unitMix;
+    const vacRatePct = real?.pnl?.vacancy_rate_current ?? real?.pnl?.vacancy_rate ?? null;
+    const vacantCount = useRealUnits
+      ? Math.max(0, Math.min(dealUnits, Math.round(dealUnits * ((vacRatePct != null ? vacRatePct : 5) / 100))))
+      : CFG.vacantCount;
+    const hasRealFinancials = (real?.pnl?.gross_potential_rent > 0) || (real?.pnl?.effective_gross_income > 0);
+    const units = useRealUnits ? buildRealUnits(dealUnits, unitMixSource, vacantCount) : buildUnits();
+    const t12 = hasRealFinancials ? buildRealT12(real) : buildT12();
+
 
     /* rent roll aggregates */
     const gprMonthly = units.reduce((s, u) => s + u.rent, 0);
@@ -274,20 +377,22 @@ function useModel(state) {
     const utilAnnual = -sum(t12.utilities);
     const rubsRows = CFG.rubs.items.map((it) => {
       const annual = utilAnnual * it.share;
-      return { ...it, annual, perUnitMo: annual / CFG.deal.units / 12, selected: rubsSelected.has(it.key) };
+      return { ...it, annual, perUnitMo: annual / dealUnits / 12, selected: rubsSelected.has(it.key) };
     });
     const rubsActive = incomeMethod === "rubs";
     const rubsAnnual = rubsActive
       ? rubsRows.filter((r) => r.selected).reduce((s, r) => s + r.annual, 0) * rubsRecoveryPct
       : 0;
     const rubsValueImpact = rubsAnnual / exitCap;
-    const rubsPerUnitMo = rubsAnnual / CFG.deal.units / 12;
+    const rubsPerUnitMo = rubsAnnual / dealUnits / 12;
 
     /* pro forma years 1..hold */
     const H = ACQ.holdYears;
     const years = [];
     const premiumActive = incomeMethod === "simple" || incomeMethod === "advanced";
     const marketGprY1 = (gprMonthly + (premiumActive ? renoCount * renoPremium : 0)) * 12;
+    // Real other-income (from the parsed T-12) when available, else the demo constant.
+    const otherIncomeAnnualBase = hasRealFinancials ? (real?.pnl?.other_income || 0) : A.otherIncomeT12;
     for (let y = 1; y <= H + 1; y++) {
       const g = Math.pow(1 + growth, y - 1);
       const gprY = marketGprY1 * g;
@@ -297,14 +402,14 @@ function useModel(state) {
       const conc = -gprY * A.concessionsPct;
       const netRental = gprY + physVac + badDebt + conc;
       const rubsInc = rubsAnnual * g;
-      const otherInc = A.otherIncomeT12 * g + rubsInc;
+      const otherInc = otherIncomeAnnualBase * g + rubsInc;
       const egr = netRental + otherInc;
       const opex = T12.opex * Math.pow(1 + A.expGrowth, y);
       const noi = egr + opex;
       const amFee = -egr * amFeePct;
       const cmFee = y === 1 ? -cmFeePct * totalRenoCost : 0;
       const capexSpend = y === 1 && capexMode === "cashflow" ? -totalRenoCost : 0;
-      const capexRes = -A.capexReservePerUnit * CFG.deal.units * g;
+      const capexRes = -A.capexReservePerUnit * dealUnits * g;
       const cfbds = noi + amFee + cmFee + capexSpend + capexRes;
       years.push({ y, gprY, physVac, badDebt, conc, netRental, otherInc, rubsInc, egr, opex, noi, amFee, cmFee, capexSpend, capexRes, cfbds, opexRatio: -opex / egr });
     }
@@ -573,8 +678,9 @@ function useModel(state) {
       refiActive, refiValue, refiLoan, refiFees, oldPayoffAtRefi, netRefi, refiDSyr, exitPayoff,
       jvCap, sponsorEq, jvYears, jvBuyoutOwed, jvBuyoutPaid, jvDeferred, jvBuyoutYear: B,
       sponsorIRR, sponsorEM, jvIRR, jvEM, jvOn,
+      dealUnits, vacantCount, isRealDeal: useRealUnits,
     };
-  }, [state]);
+  }, [state, real]);
 }
 
 /* ================================================================
@@ -602,7 +708,7 @@ function exportWorkbook(M, S) {
     ["Bad Debt %", P(CFG.assumptions.badDebtPct)],
     ["Concessions %", P(CFG.assumptions.concessionsPct)],
     ["Other Income (annual)", D(CFG.assumptions.otherIncomeT12)],
-    ["Total Units", CFG.deal.units],
+    ["Total Units", M.dealUnits],
     ["Hold Period (yrs)", H],
     ["Closing Costs", D(CFG.acq.closingCosts)],
     ["Acquisition Fee %", P(S.acqFeePct)],
@@ -1006,7 +1112,7 @@ function UploadPage({ onEnter, files, setFiles }) {
 function TopBar({
   onExportPDF, onExportToSheets, onExportToExcel, onGeneratePitchDeck, onGenerateBusinessPlan, onPushToPipeline,
   isSheetsExporting, isExcelExporting, isExportingPDF, isPushingToPipeline,
-  sheetsExportStatus, isInPipeline, pipelineSuccess, onGoHome,
+  sheetsExportStatus, isInPipeline, pipelineSuccess, onGoHome, dealName, dealUnits,
 }) {
   const navigate = useNavigate();
   const shareLink = () => {
@@ -1025,8 +1131,8 @@ function TopBar({
       <Ghost onClick={shareLink}>{I.share} Share</Ghost>
       <div className="flex-1 flex items-center justify-center gap-3 min-w-0">
         <div className="text-center leading-tight min-w-0">
-          <div className="font-semibold text-gray-800 text-sm truncate">{CFG.deal.name}</div>
-          <div className="text-[11px] text-gray-400">{CFG.deal.units} Units</div>
+          <div className="font-semibold text-gray-800 text-sm truncate">{dealName || CFG.deal.name}</div>
+          <div className="text-[11px] text-gray-400">{dealUnits || CFG.deal.units} Units</div>
         </div>
         <span className="flex items-center gap-1 bg-orange-50 text-orange-500 text-xs font-semibold px-3 py-1 rounded-full border border-orange-100 shrink-0">{I.eye} Review ▾</span>
       </div>
@@ -1730,7 +1836,7 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData, fullCalcs }) {
                 <div className="text-gray-500 text-[13px]">In-place market rents, no renovation program modeled.</div>
               )}
               {(S.incomeMethod === "simple" || S.incomeMethod === "advanced") && (<>
-                <SnapRow label="Units Renovated" value={`${M.renoCount} / ${CFG.deal.units}`} />
+                <SnapRow label="Units Renovated" value={`${M.renoCount} / ${M.dealUnits}`} />
                 <SnapRow label="Avg Premium / Unit" value={`${$f(S.renoPremium)}/mo`} />
                 <SnapRow label="Total Premium / Yr (Increase)" value={`+${$f(M.totalPremiumYr)}`} />
                 <SnapRow label="Reno Schedule" value={`Month ${S.scheduleStart} – ${S.scheduleEnd}`} />
@@ -1814,7 +1920,7 @@ function StrategyTab({ M, S, set, pdfData, pdfUrl }) {
     { label: "Income Method", value: S.incomeMethod, source: "Model Assumption" },
     { label: "Reno Premium / Unit", value: $f(S.renoPremium) + "/mo", source: "Model Assumption" },
     { label: "Reno Cost / Unit", value: $f(S.renoCost), source: "Model Assumption" },
-    { label: "Units Selected for Reno", value: `${M.renoCount} / ${CFG.deal.units}`, source: "Rent Roll", note: "Target unit type from rent roll" },
+    { label: "Units Selected for Reno", value: `${M.renoCount} / ${M.dealUnits}`, source: "Rent Roll", note: "Target unit type from rent roll" },
     { label: "Max Concurrent Renos", value: `${S.maxConcurrent} units/mo`, source: "Model Assumption" },
     { label: "Unit Downtime", value: `${S.renoDowntime} months`, source: "Model Assumption" },
   ];
@@ -1840,7 +1946,7 @@ function StrategyTab({ M, S, set, pdfData, pdfUrl }) {
       {(S.incomeMethod === "simple" || S.incomeMethod === "advanced") && (<>
         <div><GradPill>Renovation &amp; Absorption Schedule</GradPill></div>
         <div className="flex gap-4">
-          <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex-1 min-w-[130px]"><div className="text-xs text-gray-500 font-medium">Total Units</div><div className="text-xl font-bold text-gray-900">{fm(CFG.deal.units)}</div></div>
+          <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex-1 min-w-[130px]"><div className="text-xs text-gray-500 font-medium">Total Units</div><div className="text-xl font-bold text-gray-900">{fm(M.dealUnits)}</div></div>
           <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex-1 min-w-[130px]"><div className="text-xs text-gray-500 font-medium">Start Month</div>
             <input value={S.scheduleStart} onChange={(e) => set({ scheduleStart: Math.max(1, Math.min(parseInt(e.target.value, 10) || 1, S.scheduleEnd)) })} className="text-xl font-bold text-blue-600 w-16 outline-none border-b border-dashed border-blue-300 bg-transparent" /></div>
           <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex-1 min-w-[130px]"><div className="text-xs text-gray-500 font-medium">End Month</div>
@@ -1859,7 +1965,7 @@ function StrategyTab({ M, S, set, pdfData, pdfUrl }) {
             <div className="flex items-center gap-2 font-bold text-lg text-gray-900">{I.cal} Unit Selection</div>
             <div className="text-sm text-gray-500 mb-4">Select which units to include in the renovation schedule and set target premiums</div>
             <div className="flex gap-4 mb-4">
-              <StatCard label="Units Selected" value={`${M.renoCount} / ${CFG.deal.units}`} />
+              <StatCard label="Units Selected" value={`${M.renoCount} / ${M.dealUnits}`} />
               <StatCard label="Avg Premium" value={$f(S.renoPremium)} />
               <StatCard label="Total Premium/Yr" value={$f(M.totalPremiumYr)} />
               <StatCard label="Total Reno Cost" value={$f(M.totalRenoCost)} />
@@ -1963,7 +2069,7 @@ function StrategyTab({ M, S, set, pdfData, pdfUrl }) {
               <Ghost onClick={() => setGanttType(ganttType === "all" ? CFG.reno.targetType : "all")}>{I.sliders} {ganttType === "all" ? "All Unit Types" : ganttType} ▾</Ghost>
               <Ghost onClick={() => setGanttMonth((ganttMonth + 1) % 4)}>{I.cal} {["All Months", "M1–M4", "M5–M8", "M9–M13"][ganttMonth]} ▾</Ghost>
             </div>
-            <span className="bg-gray-100 rounded-lg px-3 py-1.5 text-xs font-bold text-gray-700">{M.renoCount} of {CFG.deal.units} units selected for renovation</span>
+            <span className="bg-gray-100 rounded-lg px-3 py-1.5 text-xs font-bold text-gray-700">{M.renoCount} of {M.dealUnits} units selected for renovation</span>
           </div>
           <Card className="p-4">
             <div className="flex items-center gap-5 text-sm text-gray-600"><span className="font-semibold">Legend:</span>
@@ -2048,7 +2154,7 @@ function RubsPanel({ M, S, set }) {
           <thead><tr className="text-left text-gray-500 bg-gray-50">
             <th className="py-2.5 px-4 w-10"></th><th>Expense</th>
             <th className="text-right px-4">T-12 Annual</th>
-            <th className="text-right px-4">÷ {CFG.deal.units} Units</th>
+            <th className="text-right px-4">÷ {M.dealUnits} Units</th>
             <th className="text-right px-4">÷ 12 Mo = Tenant Charge</th>
             <th className="text-right px-4">NOI Impact / Yr</th>
           </tr></thead>
@@ -2060,7 +2166,7 @@ function RubsPanel({ M, S, set }) {
                 </td>
                 <td className="font-semibold">{r.label}</td>
                 <td className="text-right px-4">{$f(Math.round(r.annual))}</td>
-                <td className="text-right px-4 text-gray-500">{$f(r.annual / CFG.deal.units, 2)}/yr</td>
+                <td className="text-right px-4 text-gray-500">{$f(r.annual / M.dealUnits, 2)}/yr</td>
                 <td className="text-right px-4 font-semibold text-emerald-700">{$f(r.perUnitMo, 2)}/unit/mo</td>
                 <td className="text-right px-4 font-semibold">{r.selected ? `+${$f(Math.round(r.annual * S.rubsRecoveryPct))}` : "—"}</td>
               </tr>
@@ -2085,7 +2191,7 @@ function RubsPanel({ M, S, set }) {
       </div>
       {selRows.length > 0 && (
         <Card className="p-4 text-sm text-gray-700 bg-emerald-50/40 border-emerald-100">
-          <b>Breakdown:</b> {selRows.map((r) => `${r.label} ${$f(Math.round(r.annual))}/yr ÷ ${CFG.deal.units} units ÷ 12 = ${$f(r.perUnitMo, 2)}/mo`).join(" · ")}.
+          <b>Breakdown:</b> {selRows.map((r) => `${r.label} ${$f(Math.round(r.annual))}/yr ÷ ${M.dealUnits} units ÷ 12 = ${$f(r.perUnitMo, 2)}/mo`).join(" · ")}.
           Recovered <b>{$f(Math.round(recovered))}</b>/yr added to NOI ÷ {pct(S.exitCap)} cap = <b className="text-emerald-700">+{$f(Math.round(M.rubsValueImpact))}</b> in property value.
         </Card>
       )}
@@ -2102,7 +2208,7 @@ function exportRentMatrix(M, simple) {
   } else {
     const header = ["Unit", "Type", ...Array.from({ length: 12 }, (_, i) => `M${i + 1}`)];
     const rows = [header, ...M.matrix.map(({ u, cells }) => [u.unit, u.type, ...cells.map((c) => Math.round(c.v))])];
-    rows.push(["Total", `${CFG.deal.units} units`, ...M.matrixTotals.map((t) => Math.round(t.tot))]);
+    rows.push(["Total", `${M.dealUnits} units`, ...M.matrixTotals.map((t) => Math.round(t.tot))]);
     rows.push(["GPR", "Full Potential", ...M.matrixTotals.map((t) => Math.round(t.full))]);
     rows.push(["Vacancy", "Reno Loss", ...M.matrixTotals.map((t) => -Math.round(t.loss))]);
     rows.push(["Net", "Rental Income", ...M.matrixTotals.map((t) => Math.round(t.tot))]);
@@ -2231,7 +2337,7 @@ function RentMatrix({ M, S, set, simple }) {
               ))}
             </tbody>
             <tfoot>
-              <tr className="bg-emerald-50 font-bold border-t border-emerald-100"><td className="py-2 px-3 sticky left-0 bg-emerald-50">Total</td><td className="px-2">{CFG.deal.units} units</td>
+              <tr className="bg-emerald-50 font-bold border-t border-emerald-100"><td className="py-2 px-3 sticky left-0 bg-emerald-50">Total</td><td className="px-2">{M.dealUnits} units</td>
                 {advancedTotals.map((t, i) => <td key={i} className="px-2 text-right">{$f(t.tot)}</td>)}</tr>
               <tr className="bg-sky-50 border-t border-sky-100"><td className="py-2 px-3 sticky left-0 bg-sky-50 font-semibold text-sky-800">GPR</td><td className="px-2 text-sky-700 font-semibold">Full Potential</td>
                 {advancedTotals.map((t, i) => <td key={i} className="px-2 text-right text-sky-800">{$f(t.full)}</td>)}</tr>
@@ -2299,7 +2405,7 @@ function IncomeTab({ M, pdfData, pdfUrl }) {
               <td className="text-right px-4 text-gray-500">{pct(r.rev / M.gprMonthly, 0)}</td>
             </tr>
           ))}</tbody>
-          <tfoot><tr className="bg-emerald-50 font-bold border-t border-emerald-100"><td className="py-2.5 px-4">Gross Potential Rent</td><td className="text-right px-4">{CFG.deal.units}</td><td className="text-right px-4">{$f(M.gprMonthly / CFG.deal.units)}</td><td className="text-right px-4">{$f(M.gprMonthly)}</td><td className="text-right px-4">100%</td></tr></tfoot>
+          <tfoot><tr className="bg-emerald-50 font-bold border-t border-emerald-100"><td className="py-2.5 px-4">Gross Potential Rent</td><td className="text-right px-4">{M.dealUnits}</td><td className="text-right px-4">{$f(M.gprMonthly / M.dealUnits)}</td><td className="text-right px-4">{$f(M.gprMonthly)}</td><td className="text-right px-4">100%</td></tr></tfoot>
         </table>
       </Card>
       {verify.open && <DocSourcePanel title="Income" fields={incomeVerifyFields} onClose={verify.close} pdfData={pdfData} pdfUrl={pdfUrl} />}
@@ -2351,7 +2457,7 @@ function RentRollTab({ M, scenarioData }) {
   const dd = useDueDiligence();
   const findings = dd.findings;
   const critCount = findings.filter((x) => x.severity === "critical").length;
-  const avgAll = M.gprMonthly / CFG.deal.units;
+  const avgAll = M.gprMonthly / M.dealUnits;
   const draftDocument = async (docType, topic) => {
     setDraft({
       open: true, loading: true, error: null, text: "",
@@ -2365,9 +2471,9 @@ function RentRollTab({ M, scenarioData }) {
         body: JSON.stringify({
           doc_type: docType,
           topic: topic || null,
-          deal_name: CFG.deal.name,
-          address: CFG.deal.address,
-          units: CFG.deal.units,
+          deal_name: scenarioData?.property?.address || CFG.deal.name,
+          address: scenarioData?.property?.address || CFG.deal.address,
+          units: M.dealUnits,
           findings: docType === "email" ? findings.map((f) => ({ severity: f.severity, label: f.label, detail: f.detail })) : undefined,
         }),
       });
@@ -2382,8 +2488,8 @@ function RentRollTab({ M, scenarioData }) {
     setDdOpen(true);
     dd.run({
       section: "rentroll",
-      dealName: CFG.deal.name,
-      units: CFG.deal.units,
+      dealName: scenarioData?.property?.address || CFG.deal.name,
+      units: M.dealUnits,
       data: { units: M.units.slice(0, 80).map((u) => ({
         unit: u.unit, type: u.type, vacant: u.vacant, rent: u.rent, sf: u.sf,
         leaseStart: u.leaseStart, leaseExp: u.leaseExp, tenureYears: u.tenureYears,
@@ -2417,9 +2523,9 @@ function RentRollTab({ M, scenarioData }) {
   const mixRows = CFG.unitMix.map((m) => {
     const us = M.units.filter((u) => u.type === m.type);
     const rev = us.reduce((s, u) => s + u.rent, 0);
-    return { ...m, rev, pu: us.length / CFG.deal.units, pr: rev / M.gprMonthly };
+    return { ...m, rev, pu: us.length / M.dealUnits, pr: rev / M.gprMonthly };
   });
-  const forecast = [{ m: "Vacant", v: CFG.vacantCount, vac: true }, ...["Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct"].map((m, i) => ({ m, v: M.expByMonth[i] }))];
+  const forecast = [{ m: "Vacant", v: M.vacantCount, vac: true }, ...["Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct"].map((m, i) => ({ m, v: M.expByMonth[i] }))];
   const avgRoll = Math.round(sum(M.expByMonth) / 12);
   return (
     <div className="p-6 flex flex-col gap-5 w-full">
@@ -2503,8 +2609,8 @@ function RentRollTab({ M, scenarioData }) {
           </Card>
         )}
         <div className="flex gap-3 flex-wrap">
-          {[[I.grid, "Total Units", fm(CFG.deal.units)], [I.people, "Occupied", fm(M.occupied)], [I.home, "Vacant", fm(CFG.deal.units - M.occupied)],
-            [I.pctI, "Occupancy", pct(M.occupied / CFG.deal.units, 1)], [I.dollar, "Total In-Place Rent", $f(M.inPlaceMonthly)], [I.cash, "Avg In-Place Rent", $f(Math.round(M.inPlaceMonthly / M.occupied))]].map(([ic, l, v]) => (
+          {[[I.grid, "Total Units", fm(M.dealUnits)], [I.people, "Occupied", fm(M.occupied)], [I.home, "Vacant", fm(M.dealUnits - M.occupied)],
+            [I.pctI, "Occupancy", pct(M.occupied / M.dealUnits, 1)], [I.dollar, "Total In-Place Rent", $f(M.inPlaceMonthly)], [I.cash, "Avg In-Place Rent", $f(Math.round(M.inPlaceMonthly / M.occupied))]].map(([ic, l, v]) => (
             <div key={l} className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex-1 min-w-[130px]">
               <div className="text-xs text-gray-500 font-medium flex items-center gap-1.5"><span className="text-gray-300">{ic}</span>{l}</div>
               <div className="text-xl font-bold text-gray-900">{v}</div>
@@ -2541,7 +2647,7 @@ function RentRollTab({ M, scenarioData }) {
               );})}</tbody>
             </table>
           </div>
-          <div className="px-4 py-2 text-xs text-gray-400 border-t border-gray-100">Showing {list.length} of {CFG.deal.units} units</div>
+          <div className="px-4 py-2 text-xs text-gray-400 border-t border-gray-100">Showing {list.length} of {M.dealUnits} units</div>
         </Card>
       </>)}
       {view === "ai" && (<>
@@ -2552,7 +2658,7 @@ function RentRollTab({ M, scenarioData }) {
             <div><div className="text-[11px] text-gray-500">&gt; 3 Years</div><div className="font-bold text-lg">{pct(M.over3, 0)}</div></div>
             <div><div className="text-[11px] text-gray-500">Month-to-Month</div><div className="font-bold text-lg">{pct(M.mtmPct, 0)}</div></div>
           </div>
-          <div className="text-xs text-gray-600 mt-3 flex items-center gap-1.5">{I.warn} {pct(M.units.filter((u) => u.tenureYears > 4).length / CFG.deal.units, 0)} of tenants have been in place &gt; 4 years{M.rentTrend.pct < 0 ? ` while new leases are signing ${fm(Math.abs(M.rentTrend.pct) * 100, 1)}% below older leases` : ""}. That signals embedded upside plus potential turnover risk.</div>
+          <div className="text-xs text-gray-600 mt-3 flex items-center gap-1.5">{I.warn} {pct(M.units.filter((u) => u.tenureYears > 4).length / M.dealUnits, 0)} of tenants have been in place &gt; 4 years{M.rentTrend.pct < 0 ? ` while new leases are signing ${fm(Math.abs(M.rentTrend.pct) * 100, 1)}% below older leases` : ""}. That signals embedded upside plus potential turnover risk.</div>
         </Card>
         <Card className="overflow-hidden border-sky-100">
           <div className="px-4 py-3 bg-sky-50 font-semibold text-sm text-sky-800 flex items-center gap-2">{I.chart} Concentration Risk Detection</div>
@@ -2562,7 +2668,7 @@ function RentRollTab({ M, scenarioData }) {
               {mixRows.map((r) => (
                 <tr key={r.type} className="border-t border-gray-50"><td className="py-2 px-4 font-semibold">{r.type}</td><td className="text-right px-4">{r.count}</td><td className="text-right px-4">{pct(r.pu, 0)}</td><td className="text-right px-4">{$f(r.rev)}</td><td className="text-right px-4">{pct(r.pr, 0)}</td><td className={`text-right px-4 font-semibold ${r.pr - r.pu >= 0 ? "text-emerald-600" : "text-red-500"}`}>{r.pr - r.pu >= 0 ? "+" : ""}{fm((r.pr - r.pu) * 100, 0)}pp</td></tr>
               ))}
-              <tr className="border-t border-gray-100 font-bold"><td className="py-2 px-4">Gross Potential Rent</td><td className="text-right px-4">{CFG.deal.units} units</td><td /><td className="text-right px-4">{$f(M.gprMonthly)}</td><td className="text-right px-4">100%</td><td /></tr>
+              <tr className="border-t border-gray-100 font-bold"><td className="py-2 px-4">Gross Potential Rent</td><td className="text-right px-4">{M.dealUnits} units</td><td /><td className="text-right px-4">{$f(M.gprMonthly)}</td><td className="text-right px-4">100%</td><td /></tr>
               <tr className="text-emerald-600 font-semibold"><td className="py-1.5 px-4">In-Place Collected</td><td /><td /><td className="text-right px-4">{$f(M.inPlaceMonthly)}</td><td className="text-right px-4">{pct(M.inPlaceMonthly / M.gprMonthly, 0)}</td><td /></tr>
               <tr className="text-red-500 font-semibold"><td className="py-1.5 px-4 pb-3">Vacancy Loss</td><td /><td /><td className="text-right px-4">-{$f(M.gprMonthly - M.inPlaceMonthly)}</td><td className="text-right px-4">-{pct(1 - M.inPlaceMonthly / M.gprMonthly, 0)}</td><td /></tr>
             </tbody>
@@ -2584,11 +2690,11 @@ function RentRollTab({ M, scenarioData }) {
           <div className={`px-4 py-3 ${GRAD} text-white font-semibold text-sm flex items-center gap-2`}>{I.cal} Lease Expiration &amp; Turnover Timeline</div>
           <div className="p-4">
             <div className="flex gap-8 flex-wrap mb-4">
-              <div><div className="text-[11px] text-gray-500 flex items-center gap-1">🔴 Currently Vacant ⓘ</div><div className="font-bold text-red-500 text-lg">{CFG.vacantCount} ({pct(CFG.vacantCount / CFG.deal.units, 1)})</div></div>
+              <div><div className="text-[11px] text-gray-500 flex items-center gap-1">🔴 Currently Vacant ⓘ</div><div className="font-bold text-red-500 text-lg">{M.vacantCount} ({pct(M.vacantCount / M.dealUnits, 1)})</div></div>
               <div><div className="text-[11px] text-gray-500">🗓 Expiring (12 Mo)</div><div className="font-bold text-lg">{sum(M.expByMonth)} leases</div></div>
               <div><div className="text-[11px] text-gray-500">⚠ Peak Month</div><div className="font-bold text-lg">{MONTH_NAMES[M.expByMonth.indexOf(Math.max(...M.expByMonth))]} ({Math.max(...M.expByMonth)})</div></div>
               <div><div className="text-[11px] text-gray-500">Avg Monthly Roll</div><div className="font-bold text-lg">{avgRoll} units</div></div>
-              <div><div className="text-[11px] text-gray-500">↗ Rolling in 12 Mo</div><div className="font-bold text-lg">{pct(sum(M.expByMonth) / CFG.deal.units, 0)} ({sum(M.expByMonth)} units)</div></div>
+              <div><div className="text-[11px] text-gray-500">↗ Rolling in 12 Mo</div><div className="font-bold text-lg">{pct(sum(M.expByMonth) / M.dealUnits, 0)} ({sum(M.expByMonth)} units)</div></div>
             </div>
             <div className="flex justify-between items-center mb-1"><div className="text-sm font-semibold flex items-center gap-1.5">{I.chart} 12-Month Expiration Forecast</div><button className="text-xs text-gray-400">Hide Chart</button></div>
             <div className="h-56">
@@ -2685,7 +2791,7 @@ function RentRollTab({ M, scenarioData }) {
             <div className="flex items-center gap-2 text-sm font-bold text-gray-800"><span className="text-emerald-500">{I.check}</span> Source Verification — Unit {verifyUnit.unit}</div>
             <button onClick={() => setVerify(false)} className="text-gray-500">{I.x}</button>
           </div>
-          <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-100">Parsed live from Rent Roll upload · {CFG.deal.units} unit roll</div>
+          <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-100">Parsed live from Rent Roll upload · {M.dealUnits} unit roll</div>
           <table className="w-full text-[12px]">
             <tbody>
               {[["Unit #", verifyUnit.unit], ["Tenant", verifyUnit.tenant], ["Unit Code", verifyUnit.code],
@@ -2816,7 +2922,7 @@ function SourceVerificationPanel({ t, M, fieldKey, month, onNavigate, onClose })
           <button onClick={onClose}>{I.x}</button>
         </div>
       </div>
-      <div className="px-4 py-2 text-xs text-gray-500 flex justify-between border-b border-gray-100"><span>Live T-12 data · {CFG.deal.units} unit rent roll</span><span>Month {month + 1}</span></div>
+      <div className="px-4 py-2 text-xs text-gray-500 flex justify-between border-b border-gray-100"><span>Live T-12 data · {M.dealUnits} unit rent roll</span><span>Month {month + 1}</span></div>
       <div className="max-h-[380px] overflow-y-auto">
         <table className="w-full text-[11px]">
           <thead><tr className="text-left text-gray-400 bg-gray-50"><th className="py-1.5 px-3 w-8">#</th><th>GL Code</th><th>Description</th><th className="text-right px-3">Amount</th></tr></thead>
@@ -2912,7 +3018,7 @@ const VerifyButton = ({ onClick }) => (
   <Ghost onClick={onClick} className="!border-emerald-300 !text-emerald-600"><span className="text-emerald-500">{I.check}</span> Verify Source</Ghost>
 );
 
-function T12Tab({ M }) {
+function T12Tab({ M, scenarioData }) {
   const [email, setEmail] = useState(false);
   const [ddOpen, setDdOpen] = useState(false);
   const [revOpen, setRevOpen] = useState(true);
@@ -2940,8 +3046,8 @@ function T12Tab({ M }) {
     setDdOpen(true);
     dd.run({
       section: "t12",
-      dealName: CFG.deal.name,
-      units: CFG.deal.units,
+      dealName: scenarioData?.property?.address || CFG.deal.name,
+      units: M.dealUnits,
       data: { rows: DD_LABELS ? Object.fromEntries(Object.keys(DD_LABELS).map((k) => [k, M.t12[k]])) : {}, labels: DD_LABELS },
     });
   };
@@ -3271,8 +3377,8 @@ function ExpensesTab({ M, scenarioData }) {
     setDdOpen(true);
     dd.run({
       section: "expenses",
-      dealName: CFG.deal.name,
-      units: CFG.deal.units,
+      dealName: scenarioData?.property?.address || CFG.deal.name,
+      units: M.dealUnits,
       data: { rows: Object.fromEntries(keys.map((k) => [k, M.t12[k]])), labels: T12_LABELS },
     });
   };
@@ -3318,7 +3424,7 @@ function ExpensesTab({ M, scenarioData }) {
       <div className="flex gap-4">
         <StatCard label="T-12 Total OpEx" value={$f(-M.T12.opex)} />
         <StatCard label="T-12 OpEx Ratio" value={pct(M.T12.opexRatio, 1)} />
-        <StatCard label="Per Unit / Yr" value={$f(-M.T12.opex / CFG.deal.units)} />
+        <StatCard label="Per Unit / Yr" value={$f(-M.T12.opex / M.dealUnits)} />
         <StatCard label="Year 1 Pro Forma OpEx" value={$f(-y1.opex)} />
       </div>
       <Card className="overflow-hidden">
@@ -3333,7 +3439,7 @@ function ExpensesTab({ M, scenarioData }) {
                 <tr key={k} className={`border-t border-gray-50 ${flagged ? "bg-amber-50" : ""}`}>
                   <td className="py-2.5 px-4 flex items-center gap-1.5">{T12_LABELS[k]}{flagged && <span className="text-amber-500" title="Flagged in Due Diligence">{I.warn}</span>}</td>
                   <td className="text-right px-4"><Mono v={v} /></td>
-                  <td className="text-right px-4 text-gray-500">{$f(-v / CFG.deal.units)}</td>
+                  <td className="text-right px-4 text-gray-500">{$f(-v / M.dealUnits)}</td>
                   <td className="text-right px-4 text-gray-500">{pct(-v / M.T12.egr, 1)}</td>
                   <td className="text-right px-4"><Mono v={Math.round(v * (1 + CFG.assumptions.expGrowth))} /></td>
                 </tr>
@@ -3341,7 +3447,7 @@ function ExpensesTab({ M, scenarioData }) {
             })}
           </tbody>
           <tfoot>
-            <tr className="bg-red-50 font-bold border-t border-red-100"><td className="py-2.5 px-4">Total Operating Expenses</td><td className="text-right px-4"><Mono v={M.T12.opex} bold /></td><td className="text-right px-4">{$f(-M.T12.opex / CFG.deal.units)}</td><td className="text-right px-4">{pct(M.T12.opexRatio, 1)}</td><td className="text-right px-4"><Mono v={Math.round(y1.opex)} bold /></td></tr>
+            <tr className="bg-red-50 font-bold border-t border-red-100"><td className="py-2.5 px-4">Total Operating Expenses</td><td className="text-right px-4"><Mono v={M.T12.opex} bold /></td><td className="text-right px-4">{$f(-M.T12.opex / M.dealUnits)}</td><td className="text-right px-4">{pct(M.T12.opexRatio, 1)}</td><td className="text-right px-4"><Mono v={Math.round(y1.opex)} bold /></td></tr>
             <tr className="bg-sky-50 font-bold"><td className="py-2.5 px-4">Net Operating Income (NOI)</td><td className="text-right px-4">{$f(M.T12.noi)}</td><td /><td /><td className="text-right px-4">{$f(Math.round(y1.noi))}</td></tr>
           </tfoot>
         </table>
@@ -3501,7 +3607,7 @@ function RenovationsTab({ M, S, set, pdfData, pdfUrl }) {
   const peak = Math.max(...M.spend);
   const verify = useVerifyPanel();
   const renoVerifyFields = [
-    { label: "Units to Renovate", value: `${M.renoCount} / ${CFG.deal.units}`, source: "Rent Roll" },
+    { label: "Units to Renovate", value: `${M.renoCount} / ${M.dealUnits}`, source: "Rent Roll" },
     { label: "Reno Cost / Unit", value: $f(S.renoCost), source: "Model Assumption" },
     { label: "Total CapEx Budget", value: $f(M.totalRenoCost), source: "Calculated" },
     { label: "Rent Premium / Unit", value: $f(S.renoPremium) + "/mo", source: "Model Assumption" },
@@ -4286,7 +4392,7 @@ function CompsTab({ M, scenarioData, dealId, marketData, marketDataLoading, onRe
     return [...rentcastList, ...repliersList];
   }, [rc.data, repliers.comps]);
 
-  const subj = M.purchasePrice / CFG.deal.units;
+  const subj = M.purchasePrice / M.dealUnits;
   const verify = useVerifyPanel();
   const compsVerifyFields = [
     { label: "Nearby Comps Found", value: `${comps.length} properties`, source: "RentCast Market Data" },
@@ -4502,7 +4608,6 @@ export default function App({
     prefPaymentMode: "accruing",
   }));
   const set = (patch) => setS((p) => ({ ...p, ...patch }));
-  const M = useModel(S);
   const mergedParsedData = useMemo(() => {
     if (!scenarioData) return null;
     if (extraParsedDocs.length === 0) return scenarioData;
@@ -4518,6 +4623,7 @@ export default function App({
     });
     return merged;
   }, [scenarioData, extraParsedDocs]);
+  const M = useModel(S, mergedParsedData);
   // Sync the real deal's purchase price into S on load — S.purchasePrice
   // previously ONLY ever initialized to the hardcoded demo CFG.acq.price
   // and nothing synced it from the actual uploaded/parsed deal, so every
@@ -4544,7 +4650,7 @@ export default function App({
     strategy: <StrategyTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} />,
     income: <IncomeTab M={M} pdfData={pdfData} pdfUrl={pdfUrl} />,
     rentroll: <RentRollTab M={M} scenarioData={mergedParsedData} />,
-    t12: <T12Tab M={M} />,
+    t12: <T12Tab M={M} scenarioData={mergedParsedData} />,
     expenses: <ExpensesTab M={M} scenarioData={mergedParsedData} />,
     cashflow: <CashflowTab M={M} S={S} cfView={cfView} pdfData={pdfData} pdfUrl={pdfUrl} />,
     renovations: <RenovationsTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} />,
@@ -4588,6 +4694,8 @@ export default function App({
         isInPipeline={isInPipeline}
         pipelineSuccess={pipelineSuccess}
         onGoHome={onGoHome}
+        dealName={mergedParsedData?.property?.address}
+        dealUnits={M.dealUnits}
       />
       <div className="flex flex-1 overflow-hidden">
         <IconRail mode={mode} setMode={setMode} />
