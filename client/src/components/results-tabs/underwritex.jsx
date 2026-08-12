@@ -2365,10 +2365,15 @@ function IncomeTab({ M, pdfData, pdfUrl }) {
     ["Other Income", y1.otherInc],
     ["Effective Gross Revenue", y1.egr, true, "egr"],
   ];
-  const mixRows = CFG.unitMix.map((m) => {
-    const us = M.units.filter((u) => u.type === m.type);
+  // Build unit-type rows from the ACTUAL units in this deal, not the fake
+  // demo CFG.unitMix — a real deal's type set (e.g. "2x1") almost never
+  // matches the demo's "2BR/2BA"/"3BR/3BA"/"1BR/1BA" labels, which used to
+  // leave every row at $0/NaN while the fake counts (160/64/24) still showed.
+  const realTypes = Array.from(new Set(M.units.map((u) => u.type)));
+  const mixRows = realTypes.map((type) => {
+    const us = M.units.filter((u) => u.type === type);
     const rev = us.reduce((s, u) => s + u.rent, 0);
-    return { ...m, rev, avg: rev / us.length };
+    return { type, count: us.length, rev, avg: us.length ? rev / us.length : 0 };
   });
   const verify = useVerifyPanel();
   const incomeVerifyFields = [
@@ -3466,6 +3471,7 @@ function ExpensesTab({ M, scenarioData }) {
 function CashflowTab({ M, S, cfView, pdfData, pdfUrl }) {
   const H = CFG.acq.holdYears;
   const years = M.years.slice(0, H);
+  const isMonthly = cfView === "Monthly";
   const [open, setOpen] = useState({ rev: true, opex: true, fees: true, loan: true, jv: true, wc: true, acq: true });
   const flip = (k) => setOpen((p) => ({ ...p, [k]: !p[k] }));
   const g = CFG.assumptions.expGrowth;
@@ -3473,7 +3479,7 @@ function CashflowTab({ M, S, cfView, pdfData, pdfUrl }) {
   const wcap = CFG.acq.workingCapital;
   const loanFees = M.finFeeAmt;
   const Sect = ({ k, cls, children }) => (
-    <tr className={cls}><td colSpan={3 + H} className="py-2 px-3 font-bold text-xs"><button onClick={() => flip(k)} className="flex items-center gap-1.5">{open[k] ? "\u2304" : "›"} {children}</button></td></tr>
+    <tr className={cls}><td colSpan={isMonthly ? 13 : 3 + H} className="py-2 px-3 font-bold text-xs"><button onClick={() => flip(k)} className="flex items-center gap-1.5">{open[k] ? "\u2304" : "›"} {children}</button></td></tr>
   );
   const CFRow = ({ label, get, hist, closing, tone = "", bold, red, isPct }) => (
     <tr className={`border-t border-gray-50 ${tone}`}>
@@ -3483,6 +3489,36 @@ function CashflowTab({ M, S, cfView, pdfData, pdfUrl }) {
       {years.map((y, i) => <td key={i} className="px-2 py-2 text-right text-[12px]">{get ? (isPct ? <span className="text-gray-600">{pct(get(y, i), 1)}</span> : <Mono v={Math.round(get(y, i))} bold={bold} />) : ""}</td>)}
     </tr>
   );
+  // Monthly view: Year 1 broken into 12 months. Revenue/expense lines come
+  // straight from the real per-month T-12 (buildRealT12), debt service comes
+  // from the real month-by-month amortization schedule — not a flat annual÷12
+  // guess, except for the handful of fields (fees/capex) that only exist as
+  // an annual figure to begin with.
+  const CFRowM = ({ label, get, tone = "", bold, red, isPct }) => (
+    <tr className={`border-t border-gray-50 ${tone}`}>
+      <td className={`py-2 px-3 text-right sticky left-0 whitespace-nowrap ${bold ? "font-bold" : "text-gray-600"} ${tone || "bg-white"}`}>{label}</td>
+      {Array.from({ length: 12 }, (_, i) => (
+        <td key={i} className="px-2 py-2 text-right text-[12px]">
+          {get ? (isPct ? <span className="text-gray-600">{pct(get(i), 1)}</span> : <Mono v={Math.round(get(i))} bold={bold} red={red} />) : ""}
+        </td>
+      ))}
+    </tr>
+  );
+  const y1 = years[0];
+  const t12M = (k, i) => (M.t12[k] ? M.t12[k][i] : 0);
+  const monthlyDS = (i) => (M.amSchedule[i] ? M.amSchedule[i].pmt : 0);
+  const monthlyNetRental = (i) => t12M("gpr", i) + t12M("physVac", i) + t12M("badDebt", i) + t12M("concessions", i) + t12M("otherLoss", i);
+  const monthlyRubsInc = () => (M.rubsActive ? y1.rubsInc / 12 : 0);
+  const monthlyOtherInc = (i) => t12M("otherIncome", i) + monthlyRubsInc();
+  const monthlyEGR = (i) => monthlyNetRental(i) + monthlyOtherInc(i);
+  const monthlyOpexTotal = (i) => Object.keys(T12_LABELS).reduce((s, k) => s + t12M(k, i), 0);
+  const monthlyNOI = (i) => monthlyEGR(i) + monthlyOpexTotal(i);
+  const monthlyAmFee = () => y1.amFee / 12;
+  const monthlyCmFee = () => y1.cmFee / 12;
+  const monthlyCapexSpend = () => y1.capexSpend / 12;
+  const monthlyCapexRes = () => y1.capexRes / 12;
+  const monthlyCFBDS = (i) => monthlyNOI(i) + monthlyAmFee() + monthlyCmFee() + monthlyCapexSpend() + monthlyCapexRes();
+  const monthlyCFADS = (i) => monthlyCFBDS(i) - monthlyDS(i);
   const dsY = (i) => M.rowsCF[i].ds;
   const verify = useVerifyPanel();
   const cashflowVerifyFields = [
@@ -3499,9 +3535,59 @@ function CashflowTab({ M, S, cfView, pdfData, pdfUrl }) {
         <div className="flex items-center gap-2"><GradPill>{I.chart} Pro Forma Cash Flow</GradPill><span className="text-sm text-gray-500">· ↗ Value-Add ▾</span></div>
         <div className="flex gap-2"><VerifyButton onClick={verify.toggle} /><Ghost>{I.sliders} Controls</Ghost></div>
       </div>
-      {cfView === "Monthly" && <div className="text-xs text-gray-400">Monthly view shows Year 1 months (annual ÷ 12 with debt service by actual IO schedule).</div>}
+      {isMonthly && <div className="text-xs text-gray-400">Monthly view of Year 1 — revenue/expense lines from the real parsed T-12's month-by-month figures, debt service from the actual amortization schedule.</div>}
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
+          {isMonthly ? (
+          <table className="w-full min-w-[1080px]">
+            <thead>
+              <tr>
+                <th className="sticky left-0 bg-white" />
+                <th colSpan={12} className={`${GRAD} text-white text-xs font-bold py-2`}>↗ Year 1 — Monthly Pro Forma</th>
+              </tr>
+              <tr className="bg-emerald-50/60">
+                <th className="text-right py-2 px-3 text-[11px] text-gray-500 sticky left-0 bg-emerald-50/60">Month</th>
+                {MONTH_NAMES.map((m) => <th key={m} className="px-2 py-2 text-center text-[11px] text-gray-500">{m}</th>)}
+              </tr>
+            </thead>
+            <tbody className="bg-white">
+              <Sect k="rev" cls="bg-emerald-50 text-emerald-700">💲 REVENUE</Sect>
+              {open.rev && (<>
+                <CFRowM label="Gross Potential Rental Revenue" get={(i) => t12M("gpr", i)} />
+                <CFRowM label="Physical Vacancy" get={(i) => t12M("physVac", i)} />
+                <CFRowM label="Bad Debt" get={(i) => t12M("badDebt", i)} />
+                <CFRowM label="Concessions" get={(i) => t12M("concessions", i)} />
+                <CFRowM label="Other Loss" get={(i) => t12M("otherLoss", i)} />
+                <CFRowM label="Net Rental Income" get={monthlyNetRental} />
+                {M.rubsActive && <CFRowM label="RUBS Reimbursement Income" get={monthlyRubsInc} />}
+                <CFRowM label="Total Other Income" get={(i) => t12M("otherIncome", i)} />
+              </>)}
+              <CFRowM label="Effective Gross Revenue" get={monthlyEGR} tone="bg-emerald-50" bold />
+              <Sect k="opex" cls="bg-red-50 text-red-500">OPERATING EXPENSES ⚙</Sect>
+              {open.opex && (<>
+                <CFRowM label="Operating Expense Ratio" get={(i) => -monthlyOpexTotal(i) / monthlyEGR(i)} isPct />
+                {Object.keys(T12_LABELS).map((k) => (
+                  <CFRowM key={k} label={T12_LABELS[k]} get={(i) => t12M(k, i)} />
+                ))}
+              </>)}
+              <CFRowM label="Total Operating Expenses" get={monthlyOpexTotal} tone="bg-red-50" bold />
+              <CFRowM label="Net Operating Income (NOI)" get={monthlyNOI} tone="bg-sky-50" bold />
+              <Sect k="fees" cls="text-gray-500">ADDITIONAL FEES</Sect>
+              {open.fees && (<>
+                <CFRowM label="Construction Management Fee" get={monthlyCmFee} />
+                <CFRowM label="Asset Management Fee" get={monthlyAmFee} />
+                <CFRowM label="Renovations / CapEx" get={monthlyCapexSpend} red />
+                <CFRowM label="CapEx Reserves" get={monthlyCapexRes} />
+              </>)}
+              <CFRowM label="Cash Flow Before Debt Service" get={monthlyCFBDS} tone="bg-emerald-50" bold />
+              <Sect k="loan" cls="text-gray-500">LOAN INFORMATION</Sect>
+              {open.loan && (<>
+                <CFRowM label="Debt Service (P&I)" get={(i) => -monthlyDS(i)} red />
+              </>)}
+              <CFRowM label="Cash Flow After Debt Service" get={monthlyCFADS} tone="bg-emerald-50" bold />
+            </tbody>
+          </table>
+          ) : (
           <table className="w-full min-w-[1080px]">
             <thead>
               <tr>
@@ -3586,6 +3672,7 @@ function CashflowTab({ M, S, cfView, pdfData, pdfUrl }) {
               </tr>
             </tbody>
           </table>
+          )}
         </div>
       </Card>
       {verify.open && <DocSourcePanel title="Cashflow" fields={cashflowVerifyFields} onClose={verify.close} pdfData={pdfData} pdfUrl={pdfUrl} />}
