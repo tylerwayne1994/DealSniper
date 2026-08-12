@@ -99,7 +99,11 @@ function SignUpPage() {
     // Stripe Checkout right after Google auth completes.
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` }
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        scopes: 'https://www.googleapis.com/auth/gmail.send',
+        queryParams: { access_type: 'offline', prompt: 'consent' },
+      }
     });
     if (oauthError) setError(oauthError.message || 'Failed to start Google sign-up');
   };

@@ -57,7 +57,13 @@ export const API_ENDPOINTS = {
   emailDealsSync: `${API_BASE_URL}/api/email-deals/sync`,
   emailDealsSyncInbound: `${API_BASE_URL}/api/email-deals/sync-inbound`,
   emailDealsDisconnect: `${API_BASE_URL}/api/email-deals/disconnect`,
-  
+
+  // Gmail (connect user's own Gmail to send drafted emails)
+  gmailStatus: (userId) => `${API_BASE_URL}/api/gmail/status?user_id=${encodeURIComponent(userId)}`,
+  gmailSend: `${API_BASE_URL}/api/gmail/send`,
+  gmailDisconnect: `${API_BASE_URL}/api/gmail/disconnect`,
+  gmailStoreSupabaseToken: `${API_BASE_URL}/api/gmail/store-supabase-token`,
+
   // Due Diligence
   dueDiligenceChat: `${API_BASE_URL}/api/due-diligence/chat`,
   financialAudit: `${API_BASE_URL}/api/underwrite/financial-audit`,

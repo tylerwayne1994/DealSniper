@@ -12,9 +12,11 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import MarketResearchTab from "./MarketResearchTab";
 import UnderwritingModelTab from "./UnderwritingModelTab";
-import SensitivityAnalysisTab from "./SensitivityAnalysisTab";
 import MonteCarloTab from "./MonteCarloTab";
 import { calculateFullAnalysis } from "../../utils/realEstateCalculations";
+import { geocodeAddress } from "../../utils/geocode";
+import { supabase } from "../../lib/supabase";
+import { getGmailStatus, sendGmail } from "../../lib/gmailService";
 
 // Satellite imagery uses Mapbox (higher-res) when a token is configured,
 // falling back to free Esri World Imagery tiles if it isn't.
@@ -1093,7 +1095,6 @@ const NAV = [
   { k: "returns", l: "Returns", i: I.trend },
   { k: "comps", l: "Comps", i: I.bldg },
   { k: "model", l: "Model", i: I.grid },
-  { k: "sensitivity", l: "Sensitivity", i: I.sliders },
   { k: "montecarlo", l: "Monte Carlo", i: I.warn },
 ];
 function Sidebar({ tab, setTab, cfView, setCfView, mode, setMode, onExport, docsSubView, setDocsSubView }) {
@@ -1513,7 +1514,7 @@ function ParsedDataView({ scenarioData, extraDocs = [], pdfData, pdfUrl }) {
   );
 }
 
-function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData }) {
+function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData, fullCalcs }) {
   const [toast, setToast] = useState(true);
   const [capexOpen, setCapexOpen] = useState(false);
   const [debtOpen, setDebtOpen] = useState(false);
@@ -1523,8 +1524,41 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData }) {
     set({ scenarioKey: k, rateOverride: sc.rate, amort: sc.amort, ioMonths: sc.io });
     setDebtOpen(false);
   };
+  // Real data from the actual parsed/uploaded deal, with the demo dataset
+  // only ever used as a last-resort fallback (e.g. nothing uploaded yet).
+  const realProperty = scenarioData?.property || {};
+  const hasReal = !!(fullCalcs && Object.keys(fullCalcs).length > 0);
+  const realUnits = realProperty.units || CFG.deal.units;
+  const realAddress = realProperty.address || scenarioData?.address || CFG.deal.address;
+  const realYearBuilt = realProperty.year_built || CFG.deal.yearBuilt;
+  const realRba = realProperty.rba_sqft || CFG.deal.nrsf;
+  const realAcres = realProperty.land_area_acres || CFG.deal.acres;
+  const realPropertyType = realProperty.property_type || CFG.deal.type;
+  const realParking = realProperty.parking_spaces;
+  // Real Sources & Uses / Financing / Returns figures from the calc engine —
+  // fall back to the demo M model only when no real deal is loaded yet.
+  // NOTE: fullCalcs stores rates/returns as PERCENTAGES (e.g. 6.5 = 6.5%)
+  // while M/S store the same fields as DECIMALS (e.g. 0.065) — normalized
+  // to decimals here so every value below can go through the same pct().
+  const realLoan = hasReal ? fullCalcs.financing.loanAmount : M.loan;
+  const realTotalUses = hasReal ? (fullCalcs.sourcesAndUses?.uses?.total || 0) : M.totalUses;
+  const realEquity = hasReal ? (fullCalcs.sourcesAndUses?.sources?.equity ?? fullCalcs.financing.totalEquityRequired) : M.equity;
+  const realRate = hasReal ? (fullCalcs.financing.interestRate || 0) / 100 : M.rate;
+  const realLtv = hasReal ? (fullCalcs.financing.ltv || 0) / 100 : S.ltv;
+  const realAmortYears = hasReal ? fullCalcs.financing.amortYears : S.amort;
+  const realIoYears = hasReal ? fullCalcs.financing.ioYears : 0;
+  const realDscr = hasReal ? fullCalcs.year1?.dscr : (M.metrics.dscr === null ? null : M.metrics.dscr);
+  const realGoingInCap = hasReal ? (fullCalcs.year1?.capRate || 0) / 100 : M.goingInCap;
+  const realIRR = hasReal ? (fullCalcs.returns?.leveredIRR != null ? fullCalcs.returns.leveredIRR / 100 : null) : M.leveredIRR;
+  const realEM = hasReal ? fullCalcs.returns?.leveredEquityMultiple : M.equityMultiple;
+  const realAvgCoC = hasReal ? (fullCalcs.returns?.avgCashOnCash || 0) / 100 : M.avgCoC;
+  const realExitCap = hasReal ? (fullCalcs.returns?.exitCapRate || 0) / 100 : S.exitCap;
+  const realHoldPeriod = hasReal ? (fullCalcs.returns?.holdingPeriod || CFG.acq.holdYears) : CFG.acq.holdYears;
   // Value-add impact: NOI/value/cashflow/return uplift attributable to whichever
-  // strategy is currently selected on the Strategy tab (reno premiums or RUBS).
+  // strategy is currently selected on the Strategy tab (reno premiums or RUBS) —
+  // this is a hypothetical modeling tool, not an extracted fact, so it's still
+  // layered on top of the demo T-12 unless/until the value-add engine itself
+  // gets rewired to the real unit mix.
   const strategyAnnualIncrease = S.incomeMethod === "rubs" ? M.rubsAnnual
     : (S.incomeMethod === "simple" || S.incomeMethod === "advanced") ? M.totalPremiumYr : 0;
   const strategyNewNOI = M.T12.noi + strategyAnnualIncrease;
@@ -1534,14 +1568,14 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData }) {
   const strategyNewCoC = M.avgCoC;
   const ADD = <span className="italic text-gray-400 text-[13px]">Click to add…</span>;
   const info = [
-    [I.bldg, "Property Name", CFG.deal.name], [I.pin, "Address", CFG.deal.address], [I.tag, "Property Type", <>{CFG.deal.type} ▾</>], [I.grid, "Total Units", fm(CFG.deal.units)],
-    [I.cal, "Year Built", CFG.deal.yearBuilt], [I.bldg, "Buildings", CFG.deal.buildings], [I.layers, "# Stories", CFG.deal.stories], [I.hash, "Parcel ID/Folio #", CFG.deal.parcel],
-    [I.ruler, "NRSF", fm(CFG.deal.nrsf)], [I.map, "Land Area (Acres)", `${CFG.deal.acres} Acres`], [I.car, "Parking Spaces", ADD], [I.ruler, "Avg Unit Size", fm(CFG.deal.avgUnitSize)],
+    [I.bldg, "Property Name", realAddress], [I.pin, "Address", realAddress], [I.tag, "Property Type", <>{realPropertyType || CFG.deal.type} ▾</>], [I.grid, "Total Units", fm(realUnits)],
+    [I.cal, "Year Built", realYearBuilt || ADD], [I.bldg, "Buildings", CFG.deal.buildings], [I.layers, "# Stories", CFG.deal.stories], [I.hash, "Parcel ID/Folio #", CFG.deal.parcel],
+    [I.ruler, "NRSF", realRba ? fm(realRba) : ADD], [I.map, "Land Area (Acres)", realAcres ? `${realAcres} Acres` : ADD], [I.car, "Parking Spaces", realParking ? fm(realParking) : ADD], [I.ruler, "Avg Unit Size", fm(CFG.deal.avgUnitSize)],
     [I.person, "Ownership", null, "search"], [I.cal, "Last Sale Date", ADD], [I.dollar, "Last Sale Price", ADD], [I.bank, "Lender", ADD],
-    [I.dollar, "Loan Amount", ADD], [I.tag, "Loan Type", ADD], [I.cal, "Maturity Date", ADD], [I.cal, "Mortgage Date", ADD],
+    [I.dollar, "Loan Amount", hasReal ? $f(fullCalcs.financing.loanAmount) : ADD], [I.tag, "Loan Type", ADD], [I.cal, "Maturity Date", ADD], [I.cal, "Mortgage Date", ADD],
   ];
-  const acqFee = M.acqFeeAmt;
-  const loanFees = M.finFeeAmt;
+  const acqFee = hasReal ? fullCalcs.acquisition.acquisitionFee : M.acqFeeAmt;
+  const loanFees = hasReal ? (fullCalcs.financing.loanFees || 0) + (fullCalcs.financing.financingFees || 0) : M.finFeeAmt;
   // Real per-field citations from the parser (page + snippet) when available —
   // only these render a working "open source PDF" button; everything else
   // is demo/calculated data with no real document to point to.
@@ -1551,16 +1585,16 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData }) {
     return c && c.page != null ? { page: c.page, snippet: c.snippet } : {};
   };
   const summaryVerifyFields = [
-    { label: "Property Name", value: CFG.deal.name, source: "Offering Memorandum", ...withSource("property.name") },
-    { label: "Address", value: CFG.deal.address, source: "Offering Memorandum", ...withSource("property.address") },
-    { label: "Total Units", value: fm(CFG.deal.units), source: "Offering Memorandum", ...withSource("property.units") },
-    { label: "Year Built", value: CFG.deal.yearBuilt, source: "Offering Memorandum", ...withSource("property.year_built") },
-    { label: "NRSF", value: fm(CFG.deal.nrsf), source: "Offering Memorandum", ...withSource("property.net_rentable_sf") },
+    { label: "Property Name", value: realAddress, source: "Offering Memorandum", ...withSource("property.name") },
+    { label: "Address", value: realAddress, source: "Offering Memorandum", ...withSource("property.address") },
+    { label: "Total Units", value: fm(realUnits), source: "Offering Memorandum", ...withSource("property.units") },
+    { label: "Year Built", value: realYearBuilt, source: "Offering Memorandum", ...withSource("property.year_built") },
+    { label: "NRSF", value: fm(realRba), source: "Offering Memorandum", ...withSource("property.rba_sqft") },
     { label: "Purchase Price", value: $f(M.purchasePrice), source: "Purchase & Sale Agreement", ...withSource("pricing_financing.price") },
-    { label: "Closing Costs", value: $f(CFG.acq.closingCosts), source: "Purchase & Sale Agreement" },
-    { label: "Sale Price", value: $f(Math.round(M.salePrice)), source: "Calculated", note: "Year 5 forward NOI ÷ exit cap" },
-    { label: "Loan Amount", value: $f(M.loan), source: "Lender Term Sheet", ...withSource("pricing_financing.loan_amount") },
-    { label: "Total Sources/Uses", value: $f(M.totalUses), source: "Calculated" },
+    { label: "Closing Costs", value: $f(hasReal ? fullCalcs.acquisition.closingCosts : CFG.acq.closingCosts), source: "Purchase & Sale Agreement" },
+    { label: "Sale Price", value: $f(Math.round(hasReal ? (fullCalcs.returns.terminalValue || 0) : M.salePrice)), source: "Calculated", note: hasReal ? "Exit-year NOI \u00f7 exit cap" : "Year 5 forward NOI \u00f7 exit cap" },
+    { label: "Loan Amount", value: $f(hasReal ? fullCalcs.financing.loanAmount : M.loan), source: "Lender Term Sheet", ...withSource("pricing_financing.loan_amount") },
+    { label: "Total Sources/Uses", value: $f(hasReal ? fullCalcs.sourcesAndUses?.uses?.total : M.totalUses), source: "Calculated" },
   ];
   return (
     <div className="p-6 flex flex-col gap-6 w-full">
@@ -1581,12 +1615,12 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData }) {
           <GradBanner className="rounded-b-none"><span className="font-bold">Acquisition</span></GradBanner>
           <div className="p-4 grid grid-cols-2 gap-x-6">
             <Field icon={I.dollar} label="Purchase Price"><Input w="w-36" value={fm(M.purchasePrice)} onChange={(v) => set({ purchasePrice: parseInt(String(v).replace(/,/g, ""), 10) || CFG.acq.price })} /></Field>
-            <Field icon={I.dollar} label="Price per Unit"><Input w="w-32" value={fm(Math.round(M.purchasePrice / CFG.deal.units))} readOnly /></Field>
-            <Field icon={I.cal} label="Hold Period"><Input w="w-28" value={CFG.acq.holdYears} readOnly suffix="Years" /></Field>
+            <Field icon={I.dollar} label="Price per Unit"><Input w="w-32" value={fm(Math.round(M.purchasePrice / realUnits))} readOnly /></Field>
+            <Field icon={I.cal} label="Hold Period"><Input w="w-28" value={hasReal ? (fullCalcs.returns.holdingPeriod || CFG.acq.holdYears) : CFG.acq.holdYears} readOnly suffix="Years" /></Field>
             <Field icon={I.cal} label="Closing Date"><Input w="w-28" value={CFG.acq.closingDate} readOnly /></Field>
             <Field icon={I.cash} label="Working Capital"><span className="font-bold">{$f(CFG.acq.workingCapital)} ▾</span></Field>
             <Field icon={I.card} label="Closing Costs">
-              <span className="flex items-center gap-1.5 font-bold">{$f(CFG.acq.closingCosts)}
+              <span className="flex items-center gap-1.5 font-bold">{$f(hasReal ? fullCalcs.acquisition.closingCosts : CFG.acq.closingCosts)}
                 <span className="bg-emerald-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">$</span>
                 <span className="text-gray-300 text-xs">%</span></span>
             </Field>
@@ -1595,8 +1629,8 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData }) {
         <Card>
           <GradBanner className="rounded-b-none"><span className="font-bold">Disposition</span></GradBanner>
           <div className="p-4 grid grid-cols-2 gap-x-6">
-            <Field icon={I.dollar} label="Sale Price"><Input w="w-36" value={fm(Math.round(M.salePrice))} readOnly /></Field>
-            <Field icon={I.dollar} label="Sale Price Per Unit"><Input w="w-32" value={fm(Math.round(M.salePrice / CFG.deal.units))} readOnly /></Field>
+            <Field icon={I.dollar} label="Sale Price"><Input w="w-36" value={fm(Math.round(hasReal ? (fullCalcs.returns.terminalValue || 0) : M.salePrice))} readOnly /></Field>
+            <Field icon={I.dollar} label="Sale Price Per Unit"><Input w="w-32" value={fm(Math.round((hasReal ? (fullCalcs.returns.terminalValue || 0) : M.salePrice) / realUnits))} readOnly /></Field>
             <Field icon={I.pctI} label="Exit Cap Rate"><Input w="w-24" value={fm(S.exitCap * 100, 2)} onChange={(v) => set({ exitCap: (parseFloat(v) || 5.5) / 100 })} suffix="%" /></Field>
             <Field icon={I.pctI} label="Costs of Sale"><Input w="w-24" value={fm(S.costsOfSalePct * 100, 1)} onChange={(v) => set({ costsOfSalePct: (parseFloat(v) || 2) / 100 })} suffix="%" /></Field>
             <Field icon={I.cal} label="Sale Date"><Input w="w-28" value={CFG.acq.saleDate} readOnly /></Field>
@@ -1615,13 +1649,13 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData }) {
                 <div className="grid grid-cols-3 px-4 py-2.5 text-sm border-t border-gray-50"><span className="text-gray-700">$ Sponsor Equity</span><Mono v={Math.round(M.sponsorEq)} /><span className="text-right text-[13px] text-gray-500">{pct(M.sponsorEq / M.totalUses, 1)}</span></div>
                 <div className="grid grid-cols-3 px-4 py-2.5 text-sm border-t border-gray-50"><span className="text-gray-700 flex items-center gap-1.5">🤝 JV Partner Equity <Pill tone="green">{pct(S.jvPrefRate, 1)} pref</Pill></span><Mono v={Math.round(M.jvCap)} /><span className="text-right text-[13px] text-gray-500">{pct(M.jvCap / M.totalUses, 1)}</span></div>
               </>) : (
-                <div className="grid grid-cols-3 px-4 py-2.5 text-sm border-t border-gray-50"><span className="text-gray-700">$ Equity ＋</span><Mono v={M.equity} /><span className="text-right text-[13px] text-gray-500">{pct(M.equity / M.totalUses, 1)}</span></div>
+                <div className="grid grid-cols-3 px-4 py-2.5 text-sm border-t border-gray-50"><span className="text-gray-700">$ Equity ＋</span><Mono v={realEquity} /><span className="text-right text-[13px] text-gray-500">{pct(realEquity / realTotalUses, 1)}</span></div>
               )}
               <div className="grid grid-cols-3 px-4 py-2.5 text-sm border-t border-gray-50 relative">
                 <span className="text-gray-700 flex items-center gap-1.5">Debt ({CFG.scenarios[S.scenarioKey].label})
                   <button onClick={() => setDebtOpen(!debtOpen)} className="w-5 h-5 rounded-full border border-gray-300 text-gray-400 text-xs leading-none">＋</button>
                 </span>
-                <Mono v={M.loan} /><span className="text-right text-[13px] text-gray-500">{pct(M.loan / M.totalUses, 1)}</span>
+                <Mono v={realLoan} /><span className="text-right text-[13px] text-gray-500">{pct(realLoan / realTotalUses, 1)}</span>
                 {debtOpen && (
                   <div className="absolute top-10 left-4 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 z-30 p-2">
                     <div className="text-xs font-semibold text-gray-500 px-2 py-1.5">Financing Scenario</div>
@@ -1637,14 +1671,14 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData }) {
                   </div>
                 )}
               </div>
-              <div className="grid grid-cols-3 px-4 py-2.5 text-sm bg-emerald-50 font-bold border-t border-emerald-100"><span>Total Sources</span><span className="text-right">{$f(M.totalUses)}</span><span className="text-right">100%</span></div>
+              <div className="grid grid-cols-3 px-4 py-2.5 text-sm bg-emerald-50 font-bold border-t border-emerald-100"><span>Total Sources</span><span className="text-right">{$f(realTotalUses)}</span><span className="text-right">100%</span></div>
             </Card>
           </div>
           <div>
             <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">{I.wrench} Uses of Funds</div>
             <Card className="overflow-hidden">
               <div className={`grid grid-cols-3 text-[11px] font-bold uppercase ${GRAD} text-white px-4 py-2`}><span>Item</span><span className="text-right">Amount</span><span className="text-right">%</span></div>
-              {[["Purchase Price", M.purchasePrice], ["› Closing Costs", CFG.acq.closingCosts],
+              {[["Purchase Price", M.purchasePrice], ["› Closing Costs", hasReal ? fullCalcs.acquisition.closingCosts : CFG.acq.closingCosts],
                 [<span className="relative inline-flex items-center gap-2">CapEx
                   <button onClick={() => setCapexOpen(!capexOpen)}><Pill tone="purple">{S.capexMode === "closing" ? "Funded at Closing" : "Funded from Cashflow"}</Pill></button>
                   {capexOpen && (
@@ -1660,9 +1694,9 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData }) {
                   )}
                 </span>, M.capexAtClosing, "capex"],
                 ["Working Capital", CFG.acq.workingCapital], ["Acquisition Fee", acqFee], ["Loan Fees", loanFees]].map(([l, v], i) => (
-                <div key={i} className="grid grid-cols-3 px-4 py-2.5 text-sm border-t border-gray-50 items-center"><span className="text-gray-700">{l}</span><Mono v={v} /><span className="text-right text-[13px] text-gray-500">{pct(v / M.totalUses, 1)}</span></div>
+                <div key={i} className="grid grid-cols-3 px-4 py-2.5 text-sm border-t border-gray-50 items-center"><span className="text-gray-700">{l}</span><Mono v={v} /><span className="text-right text-[13px] text-gray-500">{pct(v / realTotalUses, 1)}</span></div>
               ))}
-              <div className="grid grid-cols-3 px-4 py-2.5 text-sm bg-emerald-50 font-bold border-t border-emerald-100"><span>Total Uses</span><span className="text-right">{$f(M.totalUses)}</span><span className="text-right">100%</span></div>
+              <div className="grid grid-cols-3 px-4 py-2.5 text-sm bg-emerald-50 font-bold border-t border-emerald-100"><span>Total Uses</span><span className="text-right">{$f(realTotalUses)}</span><span className="text-right">100%</span></div>
             </Card>
           </div>
         </div>
@@ -1675,10 +1709,10 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData }) {
             <GradBanner className="rounded-b-none"><span className="font-bold text-sm">Financing</span></GradBanner>
             <div className="p-4 flex flex-col gap-2 text-sm">
               <SnapRow label="Scenario" value={CFG.scenarios[S.scenarioKey].label} />
-              <SnapRow label="Loan Amount" value={$f(M.loan)} />
-              <SnapRow label="Rate / LTV" value={`${pct(M.rate, 2)} · ${pct(S.ltv, 0)} LTV`} />
-              <SnapRow label="Amort / IO" value={`${S.amort}yr / ${S.ioMonths}mo IO`} />
-              <SnapRow label="DSCR" value={M.metrics.dscr === null ? "—" : `${fm(M.metrics.dscr, 2)}x`} />
+              <SnapRow label="Loan Amount" value={$f(realLoan)} />
+              <SnapRow label="Rate / LTV" value={`${pct(realRate, 2)} · ${pct(realLtv, 0)} LTV`} />
+              <SnapRow label="Amort / IO" value={`${realAmortYears}yr / ${realIoYears * 12}mo IO`} />
+              <SnapRow label="DSCR" value={realDscr == null ? "—" : `${fm(realDscr, 2)}x`} />
               <SnapRow label="Refinance"
                 value={S.refiOn ? `Year ${S.refiYear} @ ${pct(S.refiLTV, 0)} LTV, ${pct(S.refiRate, 2)}` : "Not modeled"} />
             </div>
@@ -1717,12 +1751,12 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData }) {
           <Card className="overflow-hidden">
             <GradBanner className="rounded-b-none"><span className="font-bold text-sm">Returns</span></GradBanner>
             <div className="p-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <SnapRow label="Going-In Cap" value={pct(M.goingInCap)} />
-              <SnapRow label="Levered IRR" value={M.leveredIRR === null ? "—" : pct(M.leveredIRR)} />
-              <SnapRow label="Equity Multiple" value={`${fm(M.equityMultiple, 2)}x`} />
-              <SnapRow label="Avg Cash-on-Cash" value={pct(M.avgCoC)} />
-              <SnapRow label="Exit Cap Rate" value={pct(S.exitCap, 2)} />
-              <SnapRow label="Hold Period" value={`${CFG.acq.holdYears} yrs`} />
+              <SnapRow label="Going-In Cap" value={pct(realGoingInCap)} />
+              <SnapRow label="Levered IRR" value={realIRR === null ? "—" : pct(realIRR)} />
+              <SnapRow label="Equity Multiple" value={`${fm(realEM, 2)}x`} />
+              <SnapRow label="Avg Cash-on-Cash" value={pct(realAvgCoC)} />
+              <SnapRow label="Exit Cap Rate" value={pct(realExitCap, 2)} />
+              <SnapRow label="Hold Period" value={`${realHoldPeriod} yrs`} />
             </div>
           </Card>
         </div>
@@ -2269,7 +2303,7 @@ function IncomeTab({ M, pdfData, pdfUrl }) {
 }
 
 /* -------- Rent Roll -------- */
-function RentRollTab({ M }) {
+function RentRollTab({ M, scenarioData }) {
   const [view, setView] = useState("table");
   const [search, setSearch] = useState("");
   const [trendWin, setTrendWin] = useState("6 Mo");
@@ -2287,6 +2321,28 @@ function RentRollTab({ M }) {
   const [verify, setVerify] = useState(false);
   const [verifyUnit, setVerifyUnit] = useState(null);
   const [draft, setDraft] = useState({ open: false, loading: false, error: null, text: "", title: "" });
+  const [gmail, setGmail] = useState({ userId: null, connected: false, email: null });
+  const [sendTo, setSendTo] = useState(scenarioData?.brokerEmail || scenarioData?.property?.broker_email || "");
+  const [sendState, setSendState] = useState({ sending: false, error: null, sent: false });
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getUser().then(({ data }) => {
+      const userId = data?.user?.id;
+      if (!userId || cancelled) return;
+      getGmailStatus(userId).then((status) => { if (!cancelled) setGmail({ userId, ...status }); });
+    });
+    return () => { cancelled = true; };
+  }, []);
+  const handleSendGmail = async () => {
+    if (!gmail.userId || !sendTo) return;
+    setSendState({ sending: true, error: null, sent: false });
+    try {
+      await sendGmail(gmail.userId, sendTo, draft.title, draft.text);
+      setSendState({ sending: false, error: null, sent: true });
+    } catch (e) {
+      setSendState({ sending: false, error: e.message || "Failed to send", sent: false });
+    }
+  };
   const dd = useDueDiligence();
   const findings = dd.findings;
   const critCount = findings.filter((x) => x.severity === "critical").length;
@@ -2296,6 +2352,7 @@ function RentRollTab({ M }) {
       open: true, loading: true, error: null, text: "",
       title: docType === "loi" ? "LOI Cover Email Draft" : topic ? `Email Draft — ${topic}` : "Email Draft — All Findings",
     });
+    setSendState({ sending: false, error: null, sent: false });
     try {
       const res = await fetch(`${API_BASE_URL}/api/claude-chat/draft`, {
         method: "POST",
@@ -2591,10 +2648,26 @@ function RentRollTab({ M }) {
               {!draft.loading && !draft.error && (
                 <>
                   <textarea readOnly value={draft.text} className="w-full h-64 border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none outline-none" />
-                  <div className="flex gap-2 mt-3">
+                  {gmail.connected && (
+                    <div className="mt-3 flex items-center gap-2">
+                      <input value={sendTo} onChange={(e) => setSendTo(e.target.value)} placeholder="broker@email.com"
+                        className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-emerald-300" />
+                    </div>
+                  )}
+                  <div className="flex gap-2 mt-3 items-center flex-wrap">
                     <Primary onClick={() => navigator.clipboard.writeText(draft.text)}>{I.check} Copy to Clipboard</Primary>
+                    {gmail.connected ? (
+                      <button onClick={handleSendGmail} disabled={sendState.sending || !sendTo}
+                        className="flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-lg bg-red-500 text-white disabled:opacity-40">
+                        {I.mail} {sendState.sending ? "Sending…" : `Send from ${gmail.email}`}
+                      </button>
+                    ) : (
+                      <span className="text-xs text-gray-400">Connect Gmail in your Dashboard to send this directly.</span>
+                    )}
                     <Ghost onClick={() => setDraft((p) => ({ ...p, open: false }))}>Close</Ghost>
                   </div>
+                  {sendState.sent && <div className="text-xs text-emerald-600 font-semibold mt-2">Sent ✓</div>}
+                  {sendState.error && <div className="text-xs text-red-500 font-semibold mt-2">{sendState.error}</div>}
                 </>
               )}
             </div>
@@ -4131,6 +4204,23 @@ function CompsTab({ M, scenarioData, dealId, marketData, marketDataLoading, onRe
   const propertyLat = property.lat ?? property.latitude ?? scenarioData?.lat ?? scenarioData?.latitude;
   const propertyLng = property.lng ?? property.longitude ?? scenarioData?.lng ?? scenarioData?.longitude;
 
+  // The deal's scenario data doesn't reliably carry lat/lng, so geocode the
+  // subject address ourselves (Google, via utils/geocode.js) as a fallback —
+  // ensures the map/Repliers search always has real coordinates instead of
+  // only working after RentCast happens to return them.
+  const [geocodedCoords, setGeocodedCoords] = useState(null);
+  useEffect(() => {
+    if (propertyLat != null && propertyLng != null) return;
+    if (!propertyAddress || propertyAddress === CFG.deal.address) return;
+    let cancelled = false;
+    const fullAddress = [propertyAddress, propertyCity, propertyState, propertyZip].filter(Boolean).join(", ");
+    geocodeAddress(fullAddress).then((loc) => {
+      if (!cancelled && loc) setGeocodedCoords({ lat: loc.latitude, lng: loc.longitude });
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyAddress, propertyCity, propertyState, propertyZip, propertyLat, propertyLng]);
+
   const fetchComps = async () => {
     if (!dealId) { setRc({ loading: false, error: "Save or upload this deal first to fetch nearby comps.", data: null }); return; }
     setRc((p) => ({ ...p, loading: true, error: null }));
@@ -4175,8 +4265,9 @@ function CompsTab({ M, scenarioData, dealId, marketData, marketDataLoading, onRe
   const mapCenter = useMemo(() => {
     if (rc.data?.latitude && rc.data?.longitude) return { lat: Number(rc.data.latitude), lng: Number(rc.data.longitude) };
     if (propertyLat != null && propertyLng != null) return { lat: Number(propertyLat), lng: Number(propertyLng) };
+    if (geocodedCoords) return geocodedCoords;
     return null;
-  }, [rc.data, propertyLat, propertyLng]);
+  }, [rc.data, propertyLat, propertyLng, geocodedCoords]);
 
   // Repliers comps are also only fetched on demand (via the Refresh Comps button),
   // not automatically — see fetchComps/fetchRepliersComps call in the button below.
@@ -4422,6 +4513,21 @@ export default function App({
     });
     return merged;
   }, [scenarioData, extraParsedDocs]);
+  // Sync the real deal's purchase price into S on load — S.purchasePrice
+  // previously ONLY ever initialized to the hardcoded demo CFG.acq.price
+  // and nothing synced it from the actual uploaded/parsed deal, so every
+  // real deal silently showed the demo property's price throughout Summary/
+  // Financing/Sources & Uses. This does not touch S.purchasePrice again
+  // after the initial sync so in-tab edits still work as before.
+  const realPriceSynced = useRef(false);
+  useEffect(() => {
+    if (realPriceSynced.current) return;
+    const realPrice = mergedParsedData?.pricing_financing?.purchase_price || mergedParsedData?.pricing_financing?.price;
+    if (realPrice && realPrice > 0) {
+      realPriceSynced.current = true;
+      setS((p) => ({ ...p, purchasePrice: realPrice }));
+    }
+  }, [mergedParsedData]);
   // Real, deterministic calc engine (same one Sensitivity/Deal Room/Investor views use) —
   // independent from the mock CFG-driven `M` model used by the other underwriting tabs.
   const fullCalcs = useMemo(() => {
@@ -4429,10 +4535,10 @@ export default function App({
     try { return calculateFullAnalysis(mergedParsedData); } catch { return {}; }
   }, [mergedParsedData]);
   const tabs = {
-    summary: <SummaryTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} scenarioData={mergedParsedData} />,
+    summary: <SummaryTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} scenarioData={mergedParsedData} fullCalcs={fullCalcs} />,
     strategy: <StrategyTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} />,
     income: <IncomeTab M={M} pdfData={pdfData} pdfUrl={pdfUrl} />,
-    rentroll: <RentRollTab M={M} />,
+    rentroll: <RentRollTab M={M} scenarioData={mergedParsedData} />,
     t12: <T12Tab M={M} />,
     expenses: <ExpensesTab M={M} scenarioData={mergedParsedData} />,
     cashflow: <CashflowTab M={M} S={S} cfView={cfView} pdfData={pdfData} pdfUrl={pdfUrl} />,
@@ -4442,7 +4548,6 @@ export default function App({
     returns: <ReturnsTab M={M} pdfData={pdfData} pdfUrl={pdfUrl} />,
     comps: <CompsTab M={M} scenarioData={mergedParsedData} dealId={dealId} marketData={marketData} marketDataLoading={marketDataLoading} onRefetchMarketData={onRefetchMarketData} pdfData={pdfData} pdfUrl={pdfUrl} />,
     model: <UnderwritingModelTab scenarioData={mergedParsedData} dealId={dealId} />,
-    sensitivity: <SensitivityAnalysisTab scenarioData={mergedParsedData} fullCalcs={fullCalcs} calculateFullAnalysisFn={calculateFullAnalysis} />,
     montecarlo: <MonteCarloTab scenarioData={mergedParsedData} fullCalcs={fullCalcs} dealId={dealId} />,
   };
   const renderDocsSubView = () => {

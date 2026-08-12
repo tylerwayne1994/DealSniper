@@ -425,6 +425,74 @@ try:
 except Exception as e:
     log.warning(f"[GEOCODE] Geocoding endpoint unavailable: {e}")
 
+# ── Gmail connect + send (lets a user send drafted emails from their own Gmail) ──
+try:
+    from fastapi.responses import HTMLResponse
+    from pydantic import BaseModel
+    import gmail_integration as gmail
+
+    class GmailSendBody(BaseModel):
+        user_id: str
+        to: str
+        subject: str
+        body: str
+
+    class GmailStoreTokenBody(BaseModel):
+        user_id: str
+        access_token: str
+        refresh_token: str | None = None
+        expires_at: str | None = None
+
+    class GmailUserBody(BaseModel):
+        user_id: str
+
+    @app.get("/auth/google")
+    async def auth_google_start(user_id: str):
+        """Kick off the Gmail-connect OAuth consent flow for this user."""
+        if not gmail.is_configured():
+            raise HTTPException(status_code=500, detail="Google OAuth not configured on the server")
+        return RedirectResponse(gmail.build_auth_url(user_id))
+
+    @app.get("/auth/google/callback")
+    async def auth_google_callback(code: str, state: str):
+        """OAuth redirect target — state carries the user_id through. Closes the connect popup on success."""
+        try:
+            tokens = gmail.exchange_code_for_tokens(code)
+            gmail.store_tokens(state, tokens["access_token"], tokens.get("refresh_token"), tokens.get("expiry"))
+            return HTMLResponse("<html><body><script>window.close();</script>Gmail connected — you can close this window.</body></html>")
+        except Exception as e:
+            log.warning(f"[GMAIL] OAuth callback failed: {e}")
+            return HTMLResponse(f"<html><body>Failed to connect Gmail: {e}</body></html>", status_code=400)
+
+    @app.get("/api/gmail/status")
+    async def gmail_status_route(user_id: str):
+        return gmail.get_status(user_id)
+
+    @app.post("/api/gmail/disconnect")
+    async def gmail_disconnect_route(body: GmailUserBody):
+        gmail.disconnect(body.user_id)
+        return {"success": True}
+
+    @app.post("/api/gmail/send")
+    async def gmail_send_route(body: GmailSendBody):
+        try:
+            result = gmail.send_email(body.user_id, body.to, body.subject, body.body)
+            return {"success": True, "id": result.get("id")}
+        except Exception as e:
+            return JSONResponse(status_code=400, content={"success": False, "error": str(e)})
+
+    @app.post("/api/gmail/store-supabase-token")
+    async def gmail_store_supabase_token_route(body: GmailStoreTokenBody):
+        """Auto-connect Gmail when a user signs up/logs in via 'Continue with Google' — the frontend
+        forwards the provider token Supabase already obtained (with gmail.send scope requested) instead
+        of making the user click 'Connect Gmail' again separately."""
+        gmail.store_tokens(body.user_id, body.access_token, body.refresh_token, body.expires_at)
+        return {"success": True}
+
+    log.info("[GMAIL] Connect/send endpoints ready")
+except Exception as e:
+    log.warning(f"[GMAIL] Gmail integration unavailable: {e}")
+
 # Google Sheets: Auto-populate underwriting model
 from google_sheets_updater import update_google_sheet
 from google_sheets_results_exporter import export_full_results_workbook

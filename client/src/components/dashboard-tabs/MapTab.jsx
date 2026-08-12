@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup, CircleMarker, GeoJSON, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker, GeoJSON, useMap, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -2888,29 +2888,29 @@ function DashboardMapTab() {
           zIndex: 1000,
           width: panelOpen ? (isMobile ? 'calc(100% - 16px)' : 320) : 44,
           maxHeight: isMobile ? 'calc(100% - 60px)' : 'calc(100% - 24px)',
-          backgroundColor: 'rgba(10, 12, 16, 0.88)',
+          backgroundColor: 'rgba(255, 255, 255, 0.97)',
           borderRadius: 12,
-          border: '1px solid rgba(255,255,255,0.14)',
-          boxShadow: '0 8px 28px rgba(0,0,0,0.55)',
+          border: '1px solid rgba(0,0,0,0.10)',
+          boxShadow: '0 8px 28px rgba(0,0,0,0.25)',
           backdropFilter: 'blur(8px)',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           transition: 'width 0.25s cubic-bezier(.4,0,.2,1)',
-          color: '#e5e7eb',
+          color: '#111827',
         }}>
           {/* Panel Header */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: panelOpen ? '10px 14px' : '10px 11px',
-            borderBottom: panelOpen ? '1px solid rgba(255,255,255,0.12)' : 'none',
+            borderBottom: panelOpen ? '1px solid rgba(0,0,0,0.08)' : 'none',
             flexShrink: 0,
           }}>
-            {panelOpen && <span style={{ fontSize: 13, fontWeight: 700, color: '#f3f4f6', letterSpacing: '0.3px' }}>Map Controls</span>}
+            {panelOpen && <span style={{ fontSize: 13, fontWeight: 700, color: '#111827', letterSpacing: '0.3px' }}>Map Controls</span>}
             <button onClick={() => setPanelOpen(v => !v)} style={{
-              background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 6,
+              background: 'rgba(0,0,0,0.05)', border: 'none', borderRadius: 6,
               width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: '#d1d5db', flexShrink: 0,
+              cursor: 'pointer', color: '#4b5563', flexShrink: 0,
             }}>
               {panelOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
             </button>
@@ -2941,7 +2941,7 @@ function DashboardMapTab() {
           {panelOpen && (
             <div style={{
               display: 'flex', gap: 2, padding: '6px 10px',
-              borderBottom: '1px solid rgba(255,255,255,0.12)', flexShrink: 0,
+              borderBottom: '1px solid rgba(0,0,0,0.08)', flexShrink: 0,
             }}>
               {[
                 { tab: 'layers', label: 'Layers', icon: <Layers size={13} /> },
@@ -2952,7 +2952,7 @@ function DashboardMapTab() {
                 <button key={tab} onClick={() => setPanelTab(tab)} style={{
                   flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
                   padding: '6px 0', fontSize: 11, fontWeight: panelTab === tab ? 600 : 500,
-                  color: panelTab === tab ? '#34d399' : '#9aa0a6',
+                  color: panelTab === tab ? '#34d399' : '#6b7280',
                   background: panelTab === tab ? 'rgba(16,185,129,0.12)' : 'transparent',
                   border: 'none', borderRadius: 6, cursor: 'pointer',
                   borderBottom: panelTab === tab ? '2px solid #34d399' : '2px solid transparent',
@@ -3250,13 +3250,13 @@ function DashboardMapTab() {
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '8px 10px', borderRadius: 8, cursor: 'pointer',
                       backgroundColor: enabled ? 'rgba(16,185,129,0.1)' : 'transparent',
-                      border: '1px solid rgba(255,255,255,0.12)',
+                      border: '1px solid rgba(0,0,0,0.08)',
                       transition: 'all 0.15s',
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: enabled ? color : '#6b7280' }} />
-                        <span style={{ fontSize: 12, fontWeight: 500, color: enabled ? '#f3f4f6' : '#9aa0a6' }}>{label}</span>
-                        <span style={{ fontSize: 10, fontWeight: 600, color: '#d1d5db', backgroundColor: 'rgba(255,255,255,0.1)', padding: '1px 6px', borderRadius: 8 }}>{count}</span>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: enabled ? color : '#9ca3af' }} />
+                        <span style={{ fontSize: 12, fontWeight: 500, color: enabled ? '#111827' : '#6b7280' }}>{label}</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: '#4b5563', backgroundColor: 'rgba(0,0,0,0.05)', padding: '1px 6px', borderRadius: 8 }}>{count}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {bulkDelete && count > 0 && (
@@ -3275,12 +3275,12 @@ function DashboardMapTab() {
                       </div>
                     </div>
                   ))}
-                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: 8, marginTop: 4 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#9aa0a6', marginBottom: 6 }}>Quick Filter</div>
+                  <div style={{ borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: 8, marginTop: 4 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#6b7280', marginBottom: 6 }}>Quick Filter</div>
                     <select value={mapFilter} onChange={(e) => setMapFilter(e.target.value)} style={{
                       width: '100%', padding: '5px 8px', fontSize: 11, fontWeight: 500,
-                      border: '1px solid rgba(255,255,255,0.16)', borderRadius: 6,
-                      backgroundColor: 'rgba(255,255,255,0.08)', color: '#f3f4f6',
+                      border: '1px solid #d1d5db', borderRadius: 6,
+                      backgroundColor: '#ffffff', color: '#111827',
                     }}>
                       <option value="all">All Pins ({customPins.length})</option>
                       <option value="pipeline">Pipeline Only</option>
@@ -3606,7 +3606,8 @@ function DashboardMapTab() {
             sales, data centers, city/zip metrics) which depend on Leaflet's
             GeoJSON/bounds APIs. */}
         {mapStyle !== '3d' && !useGoogleMaps && (
-        <MapContainer center={defaultCenter} zoom={defaultZoom} style={{ width: '100%', height: '100%' }}>
+        <MapContainer center={defaultCenter} zoom={defaultZoom} style={{ width: '100%', height: '100%' }} zoomControl={false}>
+          <ZoomControl position="bottomright" />
           <TileLayer
             url={tileUrl}
             attribution={attribution}

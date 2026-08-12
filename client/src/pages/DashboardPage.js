@@ -10,7 +10,8 @@ import {
   Lock,
   AlertCircle,
   Presentation,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Mail
 } from 'lucide-react';
 import { loadProfile, saveProfile } from '../lib/dealsService';
 import { supabase } from '../lib/supabase';
@@ -18,6 +19,7 @@ import { API_ENDPOINTS } from '../config/api';
 import { useIsMobile } from '../hooks/useIsMobile';
 import DashboardShell from '../components/DashboardShell';
 import DashboardMapTab from '../components/dashboard-tabs/MapTab';
+import { getGmailStatus, openConnectGmailPopup, disconnectGmail } from '../lib/gmailService';
 
 // ============================================================================
 // Token Package Card Component
@@ -324,6 +326,10 @@ function DashboardPage() {
   const [tokenBalance, setTokenBalance] = useState(null);
   const [tokenLoading, setTokenLoading] = useState(true);
 
+  // Gmail connection state (lets Due Diligence draft emails actually send)
+  const [gmailStatus, setGmailStatus] = useState({ connected: false, email: null });
+  const [gmailConnecting, setGmailConnecting] = useState(false);
+
   // Cancellation feedback state
   const [showCancelFlow, setShowCancelFlow] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -438,6 +444,28 @@ function DashboardPage() {
       window.history.replaceState({}, '', '/dashboard');
     }
   }, [profile.id]);
+
+  // Gmail connection status (for the Connect Gmail card + Due Diligence send)
+  useEffect(() => {
+    if (!profile.id) return;
+    getGmailStatus(profile.id).then(setGmailStatus);
+  }, [profile.id]);
+
+  const handleConnectGmail = () => {
+    if (!profile.id) return;
+    setGmailConnecting(true);
+    openConnectGmailPopup(profile.id, async () => {
+      const status = await getGmailStatus(profile.id);
+      setGmailStatus(status);
+      setGmailConnecting(false);
+    });
+  };
+
+  const handleDisconnectGmail = async () => {
+    if (!profile.id) return;
+    await disconnectGmail(profile.id);
+    setGmailStatus({ connected: false, email: null });
+  };
 
   // Load profile from Supabase
   useEffect(() => {
@@ -732,6 +760,67 @@ function DashboardPage() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Connect Gmail — lets Due Diligence draft emails actually send from the user's own inbox */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: isMobile ? '18px 20px' : '18px 22px',
+        backgroundColor: 'white',
+        borderRadius: '18px',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+        flexWrap: 'wrap',
+        gap: '12px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+            backgroundColor: gmailStatus.connected ? '#d1fae5' : '#f3f4f6',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Mail size={20} color={gmailStatus.connected ? '#059669' : '#6b7280'} />
+          </div>
+          <div>
+            <div style={{ fontSize: '15px', fontWeight: 600, color: '#111827' }}>
+              {gmailStatus.connected ? 'Gmail connected' : 'Connect your Gmail'}
+            </div>
+            <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px' }}>
+              {gmailStatus.connected
+                ? `Emails drafted in Due Diligence will send from ${gmailStatus.email}`
+                : 'Let drafted emails (Due Diligence findings, LOI cover notes) send straight from your inbox instead of just copy/paste.'}
+            </div>
+          </div>
+        </div>
+        {gmailStatus.connected ? (
+          <button
+            onClick={handleDisconnectGmail}
+            style={{
+              padding: '10px 18px', fontSize: '13px', fontWeight: '600',
+              backgroundColor: 'transparent', color: '#dc2626', border: '1px solid #fecaca',
+              borderRadius: '10px', cursor: 'pointer', whiteSpace: 'nowrap',
+            }}
+          >
+            Disconnect
+          </button>
+        ) : (
+          <button
+            onClick={handleConnectGmail}
+            disabled={gmailConnecting}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '10px 18px', fontSize: '13px', fontWeight: '700',
+              background: gmailConnecting ? '#9ca3af' : 'linear-gradient(90deg, #34d399 0%, #22d3ee 100%)',
+              color: 'white', border: 'none', borderRadius: '10px',
+              cursor: gmailConnecting ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap',
+            }}
+          >
+            <Mail size={15} />
+            {gmailConnecting ? 'Connecting…' : 'Connect Gmail'}
+          </button>
+        )}
       </div>
 
       {/* Primary CTA: Upload Deal (routes to V2 Underwriter) */}

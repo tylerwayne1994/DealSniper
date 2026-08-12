@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { storeSupabaseGoogleToken } from '../lib/gmailService';
 
 // ============================================================================
 // OAuth callback landing page — handles both Google "Sign in" and
@@ -34,6 +35,15 @@ export default function AuthCallbackPage() {
           setError('Sign-in did not complete. Please try again.');
           setTimeout(() => navigate('/login'), 2000);
           return;
+        }
+
+        // Best-effort: if this Google sign-in granted the gmail.send scope
+        // (requested in LoginPage.js/SignUpPage.js), Supabase exposes the
+        // real Google access/refresh token on the session — forward it so
+        // Gmail is connected automatically, no separate "Connect Gmail"
+        // click needed. Silently does nothing if the token/scope isn't there.
+        if (session.provider_token) {
+          storeSupabaseGoogleToken(user.id, session.provider_token, session.provider_refresh_token);
         }
 
         const { data: profile } = await supabase
