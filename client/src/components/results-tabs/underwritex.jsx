@@ -209,7 +209,7 @@ function useModel(state) {
   return useMemo(() => {
     const { ltv, loanFeesPct, scenarioKey, rateOverride, spread, baseRate, amort, ioMonths,
       exitCap, costsOfSalePct, growth, incomeMethod, renoPremium, renoCost, selectedRenoIds, distWeights,
-      scheduleStart, scheduleEnd, rubsSelected, rubsRecoveryPct,
+      scheduleStart, scheduleEnd, rubsSelected, rubsRecoveryPct, imputeVacant,
       renoDowntime, maxConcurrent, capexMode, gpPct, cmFeePct, amFeePct, acqFeePct, dispFeePct,
       jvOn, jvContribPct, jvPrefRate, jvMode, refiYear, refiLTV, refiRate, refiOn, purchasePrice } = state;
     const A = CFG.assumptions, ACQ = { ...CFG.acq, price: purchasePrice ?? CFG.acq.price };
@@ -495,7 +495,12 @@ function useModel(state) {
         const grow = Math.pow(1.0025, mi);
         if (isReno && m >= start && m < ret) return { v: 0, s: "reno" };
         if (isReno && m >= ret) return { v: Math.round((u.rent + renoPremium) * grow), s: "prem" };
-        if (u.vacant && !isReno && m <= 2) return { v: 0, s: "reno" };
+        if (u.vacant && !isReno) {
+          // Impute Vacant ON: assume the unit re-leases at market rent after a 2-mo lease-up.
+          // Impute Vacant OFF: show it as producing $0 all year (no lease-up assumed).
+          if (!imputeVacant) return { v: 0, s: "reno" };
+          if (m <= 2) return { v: 0, s: "reno" };
+        }
         return { v: Math.round(u.rent * grow), s: "inplace" };
       });
       return { u, cells, start, ret };
@@ -512,7 +517,7 @@ function useModel(state) {
         full += fullRent;
         if (isReno && m >= start && m < ret) tot += 0;
         else if (isReno && m >= ret) tot += fullRent;
-        else if (u.vacant && !isReno && m <= 2) tot += 0;
+        else if (u.vacant && !isReno && (!imputeVacant || m <= 2)) tot += 0;
         else tot += Math.round(u.rent * grow);
       });
       return { tot, full, loss: tot - full };
