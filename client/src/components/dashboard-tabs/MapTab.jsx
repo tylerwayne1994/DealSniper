@@ -9,7 +9,7 @@ import { API_ENDPOINTS } from '../../config/api';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
-import { loadPipelineDeals, geocodeExistingDeals } from '../../lib/dealsService';
+import { loadPipelineDeals, geocodeExistingDeals, getDismissedPipelinePinIds, dismissPipelinePin } from '../../lib/dealsService';
 import { batchFetchParcels } from '../../utils/parcelEndpoints';
 import MapOverlayLayers, { COUNTY_METRIC_OPTIONS, ZIP_METRIC_OPTIONS, ZIP_HEATMAP_METRIC_OPTIONS, SfrSalesLegend, MfSalesLegend } from './MapOverlayLayers';
 import MSA_COORDINATES from '../../data/msaCoordinates';
@@ -1250,7 +1250,10 @@ function DashboardMapTab() {
         }).catch(e => console.warn('Backfill geocode error:', e));
       }
       
-      const pipelinePinsRaw = dealsWithCoords.map(d => ({
+      const dismissedIds = await getDismissedPipelinePinIds();
+      const pipelinePinsRaw = dealsWithCoords
+        .filter(d => !dismissedIds.has(d.dealId))
+        .map(d => ({
         id: `pipeline-${d.dealId}`,
         name: d.address || 'Pipeline Property',
         category: 'pipeline',
@@ -2121,6 +2124,15 @@ function DashboardMapTab() {
 
   // Delete pin from map and database
   const deletePin = async (pinId, dbId) => {
+    // Pipeline pins have no dbId (they're derived live from the deals
+    // table, not map_prospects) — removing them from local state alone
+    // means they reappear on the next reload since nothing persists. Record
+    // a permanent dismissal instead so the deal itself is never touched but
+    // its pin stays gone.
+    const target = customPins.find(p => p.id === pinId);
+    if (target?.category === 'pipeline' && target?.dealId) {
+      await dismissPipelinePin(target.dealId);
+    }
     // Remove from UI
     setCustomPins(prev => prev.filter(p => p.id !== pinId));
     

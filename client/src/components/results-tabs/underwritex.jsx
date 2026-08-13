@@ -1134,7 +1134,6 @@ function TopBar({
           <div className="font-semibold text-gray-800 text-sm truncate">{dealName || CFG.deal.name}</div>
           <div className="text-[11px] text-gray-400">{dealUnits || CFG.deal.units} Units</div>
         </div>
-        <span className="flex items-center gap-1 bg-orange-50 text-orange-500 text-xs font-semibold px-3 py-1 rounded-full border border-orange-100 shrink-0">{I.eye} Review ▾</span>
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
         <Ghost onClick={onExportPDF} className={isExportingPDF ? "opacity-50 pointer-events-none" : ""}>
@@ -1678,10 +1677,11 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData, fullCalcs }) {
   const strategyNewMonthlyCF = M.lev[1] / 12;
   const strategyNewCoC = M.avgCoC;
   const ADD = <span className="italic text-gray-400 text-[13px]">Click to add…</span>;
+  const realAvgUnitSize = realRba && realUnits ? Math.round(realRba / realUnits) : 0;
   const info = [
-    [I.bldg, "Property Name", realAddress], [I.pin, "Address", realAddress], [I.tag, "Property Type", <>{realPropertyType || CFG.deal.type} ▾</>], [I.grid, "Total Units", fm(realUnits)],
-    [I.cal, "Year Built", realYearBuilt || ADD], [I.bldg, "Buildings", CFG.deal.buildings], [I.layers, "# Stories", CFG.deal.stories], [I.hash, "Parcel ID/Folio #", CFG.deal.parcel],
-    [I.ruler, "NRSF", realRba ? fm(realRba) : ADD], [I.map, "Land Area (Acres)", realAcres ? `${realAcres} Acres` : ADD], [I.car, "Parking Spaces", realParking ? fm(realParking) : ADD], [I.ruler, "Avg Unit Size", fm(CFG.deal.avgUnitSize)],
+    [I.bldg, "Property Name", realAddress], [I.pin, "Address", realAddress], [I.tag, "Property Type", realPropertyType || CFG.deal.type], [I.grid, "Total Units", fm(realUnits)],
+    [I.cal, "Year Built", realYearBuilt || ADD], [I.bldg, "Buildings", ADD], [I.layers, "# Stories", ADD], [I.hash, "Parcel ID/Folio #", ADD],
+    [I.ruler, "NRSF", realRba ? fm(realRba) : ADD], [I.map, "Land Area (Acres)", realAcres ? `${realAcres} Acres` : ADD], [I.car, "Parking Spaces", realParking ? fm(realParking) : ADD], [I.ruler, "Avg Unit Size", realAvgUnitSize ? fm(realAvgUnitSize) : ADD],
     [I.person, "Ownership", null, "search"], [I.cal, "Last Sale Date", ADD], [I.dollar, "Last Sale Price", ADD], [I.bank, "Lender", ADD],
     [I.dollar, "Loan Amount", hasReal ? $f(fullCalcs.financing.loanAmount) : ADD], [I.tag, "Loan Type", ADD], [I.cal, "Maturity Date", ADD], [I.cal, "Mortgage Date", ADD],
   ];
@@ -1729,7 +1729,7 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData, fullCalcs }) {
             <Field icon={I.dollar} label="Price per Unit"><Input w="w-32" value={fm(Math.round(M.purchasePrice / realUnits))} readOnly /></Field>
             <Field icon={I.cal} label="Hold Period"><Input w="w-28" value={hasReal ? (fullCalcs.returns.holdingPeriod || CFG.acq.holdYears) : CFG.acq.holdYears} readOnly suffix="Years" /></Field>
             <Field icon={I.cal} label="Closing Date"><Input w="w-28" value={CFG.acq.closingDate} readOnly /></Field>
-            <Field icon={I.cash} label="Working Capital"><span className="font-bold">{$f(CFG.acq.workingCapital)} ▾</span></Field>
+            <Field icon={I.cash} label="Working Capital"><span className="font-bold">{$f(CFG.acq.workingCapital)}</span></Field>
             <Field icon={I.card} label="Closing Costs">
               <span className="flex items-center gap-1.5 font-bold">{$f(hasReal ? fullCalcs.acquisition.closingCosts : CFG.acq.closingCosts)}
                 <span className="bg-emerald-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">$</span>
@@ -2438,6 +2438,7 @@ function RentRollTab({ M, scenarioData }) {
   const [verifyUnit, setVerifyUnit] = useState(null);
   const [draft, setDraft] = useState({ open: false, loading: false, error: null, text: "", title: "" });
   const [gmail, setGmail] = useState({ userId: null, connected: false, email: null });
+  const [showExpChart, setShowExpChart] = useState(true);
   const [sendTo, setSendTo] = useState(scenarioData?.brokerEmail || scenarioData?.property?.broker_email || "");
   const [sendState, setSendState] = useState({ sending: false, error: null, sent: false });
   useEffect(() => {
@@ -2701,7 +2702,8 @@ function RentRollTab({ M, scenarioData }) {
               <div><div className="text-[11px] text-gray-500">Avg Monthly Roll</div><div className="font-bold text-lg">{avgRoll} units</div></div>
               <div><div className="text-[11px] text-gray-500">↗ Rolling in 12 Mo</div><div className="font-bold text-lg">{pct(sum(M.expByMonth) / M.dealUnits, 0)} ({sum(M.expByMonth)} units)</div></div>
             </div>
-            <div className="flex justify-between items-center mb-1"><div className="text-sm font-semibold flex items-center gap-1.5">{I.chart} 12-Month Expiration Forecast</div><button className="text-xs text-gray-400">Hide Chart</button></div>
+            <div className="flex justify-between items-center mb-1"><div className="text-sm font-semibold flex items-center gap-1.5">{I.chart} 12-Month Expiration Forecast</div><button onClick={() => setShowExpChart((v) => !v)} className="text-xs text-gray-400 hover:text-gray-600">{showExpChart ? "Hide Chart" : "Show Chart"}</button></div>
+            {showExpChart && (<>
             <div className="h-56">
               <ResponsiveContainer>
                 <BarChart data={forecast}>
@@ -2720,6 +2722,7 @@ function RentRollTab({ M, scenarioData }) {
               <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Expiring Leases</span>
               <span className="flex items-center gap-1">- - - Monthly average</span>
             </div>
+            </>)}
           </div>
         </Card>
         <div className="flex gap-3">
@@ -3032,6 +3035,7 @@ function T12Tab({ M, scenarioData }) {
   const [verify, setVerify] = useState(false);
   const [verifyKey, setVerifyKey] = useState("gpr");
   const [verifyMonth, setVerifyMonth] = useState(0);
+  const [zoomPct, setZoomPct] = useState(100);
   const cellRefs = useRef({});
   const dd = useDueDiligence();
   const findings = dd.findings;
@@ -3087,12 +3091,17 @@ function T12Tab({ M, scenarioData }) {
   return (
     <div className="p-6 flex flex-col gap-5 w-full relative">
       <div className="flex items-center justify-between">
-        <Ghost className="font-semibold">{I.doc} T-12 Operating Statement ▾</Ghost>
+        <Ghost className="font-semibold">{I.doc} T-12 Operating Statement</Ghost>
         <div className="flex gap-2 items-center">
           <div className="relative"><Ghost onClick={() => (dd.hasRun ? setDdOpen(!ddOpen) : runDueDiligence())}><span className="text-teal-500">{I.spark}</span> {dd.loading ? "Analyzing…" : "Due Diligence"}</Ghost>
             {dd.hasRun && !dd.loading && <span className="absolute -top-1.5 -right-1.5 bg-amber-400 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">{findings.length}</span>}</div>
           <Ghost onClick={() => openVerifyFor(verifyKey, verifyMonth)} className="!border-emerald-300 !text-emerald-600"><span className="text-emerald-500">{I.check}</span> Verify Source</Ghost>
-          <div className="flex items-center gap-2 text-gray-500 text-sm"><button>−</button><span>100%</span><button>＋</button><button>⟲</button></div>
+          <div className="flex items-center gap-2 text-gray-500 text-sm">
+            <button onClick={() => setZoomPct((p) => Math.max(60, p - 10))} className="hover:text-gray-800">−</button>
+            <span>{zoomPct}%</span>
+            <button onClick={() => setZoomPct((p) => Math.min(150, p + 10))} className="hover:text-gray-800">＋</button>
+            <button onClick={() => setZoomPct(100)} className="hover:text-gray-800">⟲</button>
+          </div>
         </div>
       </div>
       {ddOpen && (
@@ -3127,7 +3136,7 @@ function T12Tab({ M, scenarioData }) {
         </Card>
       )}
       <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" style={{ fontSize: `${zoomPct}%` }}>
           <table className="w-full min-w-[1100px]">
             <thead>
               <tr className="bg-emerald-50/60"><th className="text-left py-3 px-3 sticky left-0 bg-emerald-50/60 text-emerald-800 font-bold text-sm">Month</th>
@@ -3174,31 +3183,68 @@ function T12Tab({ M, scenarioData }) {
           <div className="text-[11px] text-gray-400 ml-6">Ask about T-12 discrepancies</div>
         </button>
       )}
-      {email && <EmailComposer findings={findings} onClose={() => setEmail(false)} />}
+      {email && <EmailComposer findings={findings} scenarioData={scenarioData} onClose={() => setEmail(false)} />}
     </div>
   );
 }
-function EmailComposer({ findings = [], onClose }) {
-  const body = `Hi Frank,
+function EmailComposer({ findings = [], scenarioData, onClose }) {
+  const dealLabel = scenarioData?.property?.address || CFG.deal.name;
+  const [subject, setSubject] = useState(`${dealLabel} T-12 Discrepancies`);
+  const [to, setTo] = useState(scenarioData?.brokerEmail || scenarioData?.property?.broker_email || "");
+  const [body, setBody] = useState(`Hi,
 
-While reviewing the T-12 for ${CFG.deal.name}, our due diligence analysis flagged several items needing clarification. Could you please provide additional details or supporting documentation for the following:
+While reviewing the T-12 for ${dealLabel}, our due diligence analysis flagged several items needing clarification. Could you please provide additional details or supporting documentation for the following:
 
 ${findings.map((f, i) => `${i + 1}. ${f.label}${typeof f.month === "number" ? ` (${MONTH_NAMES[f.month]})` : ""}: ${f.detail}`).join("\n")}
 
-Thanks,
-[Sender's Name]`;
+Thanks,`);
+  const [gmail, setGmail] = useState({ userId: null, connected: false, email: null });
+  const [sendState, setSendState] = useState({ sending: false, error: null, sent: false });
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getUser().then(({ data }) => {
+      const userId = data?.user?.id;
+      if (!userId || cancelled) return;
+      getGmailStatus(userId).then((status) => { if (!cancelled) setGmail({ userId, ...status }); });
+    });
+    return () => { cancelled = true; };
+  }, []);
+  const handleSend = async () => {
+    if (!gmail.userId || !to) return;
+    setSendState({ sending: true, error: null, sent: false });
+    try {
+      await sendGmail(gmail.userId, to, subject, body);
+      setSendState({ sending: false, error: null, sent: true });
+    } catch (e) {
+      setSendState({ sending: false, error: e.message || "Failed to send", sent: false });
+    }
+  };
   return (
     <div className="fixed bottom-5 right-5 w-[520px] bg-white border-2 border-emerald-300 rounded-2xl shadow-2xl z-40 flex flex-col max-h-[80vh]">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
         <div className="flex items-center gap-2 font-semibold text-gray-800"><span className="text-teal-500">{I.mail}</span> Email Composer</div>
-        <div className="flex gap-3 text-gray-400"><button>⤢</button><button onClick={onClose}>{I.x}</button></div>
+        <button onClick={onClose} className="text-gray-400">{I.x}</button>
       </div>
-      <div className="flex items-center px-4 py-2 border-b border-gray-100 text-sm"><button className="text-gray-500">← Back</button><span className="flex-1 text-center font-semibold text-gray-700">New Message</span></div>
-      {[["From", "joeylazerowitz@yahoo.com (Primary) ▾"], ["To", <span className="bg-gray-100 rounded-full px-2.5 py-0.5 text-xs font-semibold inline-flex items-center gap-1">Frank Carriera <button className="text-gray-400">×</button></span>], ["Cc", <span className="text-gray-400">Add Cc</span>], ["Subject", <b>{CFG.deal.name} T-12 Discrepancies</b>]].map(([l, v]) => (
-        <div key={l} className="flex items-center gap-4 px-4 py-2.5 border-b border-gray-100 text-sm"><span className="text-gray-400 w-14">{l}</span><span className="text-gray-700">{v}</span></div>
-      ))}
-      <textarea defaultValue={body} className="flex-1 p-4 text-sm text-gray-700 outline-none resize-none min-h-[240px] font-sans" />
-      <div className="px-4 py-3 border-t border-gray-100"><button className="text-gray-400 text-lg">＋</button></div>
+      <div className="flex items-center gap-4 px-4 py-2.5 border-b border-gray-100 text-sm"><span className="text-gray-400 w-14">To</span>
+        <input value={to} onChange={(e) => setTo(e.target.value)} placeholder="broker@email.com" className="flex-1 outline-none text-gray-700" />
+      </div>
+      <div className="flex items-center gap-4 px-4 py-2.5 border-b border-gray-100 text-sm"><span className="text-gray-400 w-14">Subject</span>
+        <input value={subject} onChange={(e) => setSubject(e.target.value)} className="flex-1 outline-none text-gray-700 font-semibold" />
+      </div>
+      <textarea value={body} onChange={(e) => setBody(e.target.value)} className="flex-1 p-4 text-sm text-gray-700 outline-none resize-none min-h-[240px] font-sans" />
+      <div className="px-4 py-3 border-t border-gray-100 flex items-center gap-2 flex-wrap">
+        <Primary onClick={() => navigator.clipboard.writeText(body)}>{I.check} Copy to Clipboard</Primary>
+        {gmail.connected ? (
+          <button onClick={handleSend} disabled={sendState.sending || !to}
+            className="flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-lg bg-red-500 text-white disabled:opacity-40">
+            {I.mail} {sendState.sending ? "Sending…" : `Send from ${gmail.email}`}
+          </button>
+        ) : (
+          <span className="text-xs text-gray-400">Connect Gmail in your Dashboard to send this directly.</span>
+        )}
+        {sendState.sent && <span className="text-xs text-emerald-600 font-semibold">Sent ✓</span>}
+        {sendState.error && <span className="text-xs text-red-500 font-semibold">{sendState.error}</span>}
+      </div>
     </div>
   );
 }
@@ -4155,7 +4201,7 @@ function FinancingTab({ M, S, set, pdfData, pdfUrl }) {
             </Field>
             {rateOpen && (<>
               <Field icon={null} label="Base Rate">
-                <div className="flex items-center gap-2"><span className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700">SOFR 90-Day Avg ▾</span><span className="text-sm">{pct(S.baseRate)}</span><button onClick={() => set({ rateOverride: null })} className="text-gray-400">⟲</button></div>
+                <div className="flex items-center gap-2"><span className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700">SOFR 90-Day Avg</span><span className="text-sm">{pct(S.baseRate)}</span><button onClick={() => set({ rateOverride: null })} className="text-gray-400">⟲</button></div>
               </Field>
               <Field icon={null} label="Spread"><Input w="w-28" value={fm(S.spread * 100, 1)} onChange={(v) => set({ spread: (parseFloat(v) || 2.5) / 100, rateOverride: null })} suffix="%" /></Field>
             </>)}
@@ -4187,7 +4233,6 @@ function FinancingTab({ M, S, set, pdfData, pdfUrl }) {
             <SubHead>Reserves</SubHead>
             <Field icon={I.clock} label="Interest Reserve"><Input w="w-28" value="0" readOnly suffix="mos" /></Field>
             <Field icon={I.cash} label="Reserve Amount ⭘"><Input w="w-28" value="0" readOnly suffix="$" /></Field>
-            <div className="flex justify-end py-2"><span className="bg-gray-100 text-gray-500 text-[11px] font-semibold px-3 py-1 rounded-full">Rate updated: 4:23 PM</span></div>
           </Card>
         </div>
         <div className="flex flex-col gap-3">

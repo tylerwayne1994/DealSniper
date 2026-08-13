@@ -68,10 +68,13 @@ export async function robustGeocodeAddress(rawAddress) {
   if (fromNominatim) return fromNominatim;
 
   // Last resort: strip the street portion and try just "City, ST" so the
-  // pin lands approximately right instead of not showing up at all.
-  const cityStateMatch = address.match(/([^,]+,\s*[A-Z]{2})(\s+\d{5})?$/);
+  // pin lands approximately right instead of not showing up at all. Handles
+  // "City, ST", "City, ST 12345" AND "City, ST, 12345" (comma before the zip
+  // — the previous regex only handled a space there and silently matched
+  // nothing for addresses formatted with a comma, e.g. "Danville, VA, 24541").
+  const cityStateMatch = address.match(/([^,]+),\s*([A-Z]{2})\s*,?\s*\d{0,5}$/);
   if (cityStateMatch) {
-    const cityState = cityStateMatch[1].trim();
+    const cityState = `${cityStateMatch[1].trim()}, ${cityStateMatch[2]}`;
     if (cityState !== address) {
       console.warn(`Full address geocode failed for "${address}", trying city-level fallback: "${cityState}"`);
       return nominatimGeocode(cityState);
@@ -452,6 +455,42 @@ export async function geocodeExistingDeals() {
 
   console.log(`Geocoded ${updated}/${needsGeocode.length} deals`);
   return updated;
+}
+
+// Pipeline pins are re-derived from the `deals` table on every map load, so
+// removing one from the map (a plain client-side delete) always reappeared
+// on the next reload/deployment since nothing was actually persisted. These
+// two functions let a user "dismiss" a pipeline deal's pin permanently
+// without touching the deal itself. Requires the map_dismissed_pins table
+// (backend/migrations/create_map_dismissed_pins.sql) — no-ops gracefully
+// (empty set / silently skip) if that migration hasn't been run yet.
+export async function getDismissedPipelinePinIds() {
+  const userId = await getCurrentUserId();
+  if (!userId) return new Set();
+  try {
+    const { data, error } = await supabase
+      .from('map_dismissed_pins')
+      .select('deal_id')
+      .eq('user_id', userId);
+    if (error) return new Set();
+    return new Set((data || []).map(r => r.deal_id));
+  } catch (e) {
+    return new Set();
+  }
+}
+
+export async function dismissPipelinePin(dealId) {
+  const userId = await getCurrentUserId();
+  if (!userId || !dealId) return false;
+  try {
+    const { error } = await supabase
+      .from('map_dismissed_pins')
+      .upsert({ user_id: userId, deal_id: dealId }, { onConflict: 'user_id,deal_id' });
+    return !error;
+  } catch (e) {
+    console.warn('Failed to dismiss pipeline pin (has the map_dismissed_pins migration been run?):', e);
+    return false;
+  }
 }
 
 /**
