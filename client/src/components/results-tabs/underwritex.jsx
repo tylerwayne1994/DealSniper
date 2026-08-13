@@ -844,8 +844,8 @@ const GradBanner = ({ children, className = "", gradient = GRAD }) => (
 const Ghost = ({ children, onClick, className = "", active }) => (
   <button onClick={onClick} className={`inline-flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg border transition ${active ? `${GRAD} text-white border-transparent` : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"} ${className}`}>{children}</button>
 );
-const Primary = ({ children, onClick, className = "" }) => (
-  <button onClick={onClick} className={`${GRAD} text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm hover:opacity-90 ${className}`}>{children}</button>
+const Primary = ({ children, onClick, className = "", disabled = false }) => (
+  <button onClick={onClick} disabled={disabled} className={`${GRAD} text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed ${className}`}>{children}</button>
 );
 const Toggle = ({ on, onChange, green = true }) => (
   <button onClick={() => onChange(!on)} className={`w-11 h-6 rounded-full p-0.5 transition ${on ? (green ? "bg-emerald-400" : "bg-white/40") : "bg-white/30"}`}>
@@ -4087,9 +4087,76 @@ function WaterfallTab({ M, S, set, pdfData, pdfUrl }) {
 }
 
 /* -------- Financing -------- */
+// Given target DSCR / debt yield / max LTV constraints, computes the
+// largest loan each one supports (using the deal's real Year-1 NOI and the
+// currently-selected rate/amortization) and applies whichever is most
+// conservative (lowest) — the same "size to the tightest constraint"
+// convention lenders actually use.
+function LoanSizingModal({ M, S, set, onClose }) {
+  const noi = M.years[0]?.noi || 0;
+  const [targetDscr, setTargetDscr] = useState("1.25");
+  const [targetDy, setTargetDy] = useState("10");
+  const [maxLtvPct, setMaxLtvPct] = useState(fm(S.ltv * 100, 0));
+  const unitPmt = annuityPmt(1, M.rate, S.amort); // monthly payment per $1 of loan
+  const dscrNum = parseFloat(targetDscr) || 0;
+  const dyNum = parseFloat(targetDy) || 0;
+  const ltvNum = parseFloat(maxLtvPct) || 0;
+  const loanByDscr = dscrNum > 0 && unitPmt > 0 ? (noi / dscrNum / 12) / unitPmt : null;
+  const loanByDy = dyNum > 0 ? noi / (dyNum / 100) : null;
+  const loanByLtv = ltvNum > 0 ? M.purchasePrice * (ltvNum / 100) : null;
+  const constraints = [
+    { label: "Target DSCR", value: dscrNum ? `${fm(dscrNum, 2)}x` : "—", loan: loanByDscr },
+    { label: "Target Debt Yield", value: dyNum ? `${fm(dyNum, 1)}%` : "—", loan: loanByDy },
+    { label: "Max LTV", value: ltvNum ? `${fm(ltvNum, 0)}%` : "—", loan: loanByLtv },
+  ].filter((c) => c.loan != null && c.loan > 0);
+  const maxLoan = constraints.length ? Math.min(...constraints.map((c) => c.loan)) : null;
+  const bindingLabel = constraints.find((c) => c.loan === maxLoan)?.label;
+  const apply = () => {
+    if (!maxLoan || !M.purchasePrice) return;
+    set({ ltv: Math.min(1, maxLoan / M.purchasePrice) });
+    onClose();
+  };
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-6">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <div className="flex justify-between items-start mb-4">
+          <div className="text-lg font-bold text-gray-900">Size My Loan</div>
+          <button onClick={onClose} className="text-gray-400">{I.x}</button>
+        </div>
+        <div className="text-xs text-gray-500 mb-4">Based on this deal's Year 1 NOI ({$f(Math.round(noi))}) at the current rate ({pct(M.rate, 2)}) and {S.amort}-year amortization. Leave a field blank to ignore that constraint.</div>
+        <div className="flex flex-col gap-3">
+          <Field icon={I.pctI} label="Target DSCR"><Input w="w-28" value={targetDscr} onChange={setTargetDscr} suffix="x" /></Field>
+          <Field icon={I.pctI} label="Target Debt Yield"><Input w="w-28" value={targetDy} onChange={setTargetDy} suffix="%" /></Field>
+          <Field icon={I.target} label="Max LTV"><Input w="w-28" value={maxLtvPct} onChange={setMaxLtvPct} suffix="%" /></Field>
+        </div>
+        <div className="border-t border-gray-100 mt-4 pt-4 flex flex-col gap-1.5">
+          {constraints.map((c) => (
+            <div key={c.label} className={`flex justify-between text-sm ${c.loan === maxLoan ? "font-bold text-emerald-700" : "text-gray-500"}`}>
+              <span>{c.label} ({c.value})</span><span>{$f(Math.round(c.loan))}</span>
+            </div>
+          ))}
+          {constraints.length === 0 && <div className="text-xs text-gray-400">Enter at least one constraint above.</div>}
+        </div>
+        <div className="bg-emerald-50 rounded-lg px-4 py-3 mt-3 flex justify-between items-center">
+          <div>
+            <div className="text-[11px] text-gray-500 font-semibold uppercase">Max Supportable Loan</div>
+            {bindingLabel && <div className="text-[11px] text-gray-400">Binding constraint: {bindingLabel}</div>}
+          </div>
+          <div className="text-xl font-bold text-emerald-700">{maxLoan ? $f(Math.round(maxLoan)) : "—"}</div>
+        </div>
+        <div className="flex gap-2 mt-4">
+          <Primary onClick={apply} disabled={!maxLoan}>Apply to LTV</Primary>
+          <Ghost onClick={onClose}>Cancel</Ghost>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function FinancingTab({ M, S, set, pdfData, pdfUrl }) {
   const [hover, setHover] = useState(null);
   const [rateOpen, setRateOpen] = useState(false);
+  const [sizingOpen, setSizingOpen] = useState(false);
   // Preferred Equity / Mezz / Seller Financing inputs used to be plain local
   // state, which got wiped back to defaults every time you switched away
   // from this tab and back (FinancingTab unmounts when another tab is
@@ -4154,8 +4221,9 @@ function FinancingTab({ M, S, set, pdfData, pdfUrl }) {
     <div className="p-6 w-full">
       <div className="flex items-center justify-between mb-3">
         <div className="text-sm text-gray-600 font-medium">Financing Scenario ⓘ</div>
-        <div className="flex gap-2"><VerifyButton onClick={verify.toggle} /><Ghost onClick={() => alert("Loan sizing tool: Enter your target DSCR, debt yield, or max LTV to calculate the max loan amount. Coming soon!")}>{I.sliders} Size My Loan</Ghost><Ghost onClick={() => exportWorkbook(M, S)}>{I.dl} Export</Ghost></div>
+        <div className="flex gap-2"><VerifyButton onClick={verify.toggle} /><Ghost onClick={() => setSizingOpen(true)}>{I.sliders} Size My Loan</Ghost><Ghost onClick={() => exportWorkbook(M, S)}>{I.dl} Export</Ghost></div>
       </div>
+      {sizingOpen && <LoanSizingModal M={M} S={S} set={set} onClose={() => setSizingOpen(false)} />}
       <div className="flex gap-2 mb-5 relative">
         {Object.keys(CFG.scenarios).map((k) => (
           <div key={k} className="relative" onMouseEnter={() => setHover(k)} onMouseLeave={() => setHover(null)}>
@@ -4191,6 +4259,7 @@ function FinancingTab({ M, S, set, pdfData, pdfUrl }) {
         <div>
           <GradBanner className="mb-3"><span className="font-bold text-sm tracking-wide">LOAN ASSUMPTIONS</span></GradBanner>
           <Card className="px-5 py-2">
+            <Field icon={I.dollar} label="Purchase Price"><Input value={fm(M.purchasePrice)} readOnly /></Field>
             <Field icon={I.dollar} label="Loan Amount"><Input value={fm(M.loan)} readOnly /></Field>
             <Field icon={I.target} label="LTV"><Input w="w-28" value={fm(S.ltv * 100, 0)} onChange={(v) => set({ ltv: (parseFloat(v) || 70) / 100 })} suffix="%" /></Field>
             <Field icon={I.pctI} label="LTC"><Input w="w-28" value={pct(M.ltc)} readOnly /></Field>
@@ -4775,6 +4844,25 @@ export default function App({
     if (realPrice && realPrice > 0) {
       realPriceSynced.current = true;
       setS((p) => ({ ...p, purchasePrice: realPrice }));
+    }
+  }, [mergedParsedData]);
+  // Same problem existed for the exit cap rate: S.exitCap was ALWAYS
+  // initialized to the demo's fake 5.5% (CFG.assumptions.exitCap), which is
+  // wildly optimistic for a real deal that actually trades at a much higher
+  // cap rate (e.g. a 9%+ cap workforce-housing asset) — using a 5.5% exit
+  // cap to value a property that really trades at 9%+ inflates the modeled
+  // exit/sale price by 60%+ (Value = NOI / capRate). Sync it once from the
+  // real parsed going-in cap rate (or an explicit underwriting assumption,
+  // if the OM stated one) so the projected sale price stays plausible.
+  const realExitCapSynced = useRef(false);
+  useEffect(() => {
+    if (realExitCapSynced.current) return;
+    const underwritingExitCap = mergedParsedData?.underwriting?.exit_cap_rate;
+    const goingInCap = mergedParsedData?.pnl?.cap_rate_t12 || mergedParsedData?.pnl?.cap_rate;
+    const realExitCapPct = underwritingExitCap || goingInCap;
+    if (realExitCapPct && realExitCapPct > 0) {
+      realExitCapSynced.current = true;
+      setS((p) => ({ ...p, exitCap: realExitCapPct / 100 }));
     }
   }, [mergedParsedData]);
   // Real, deterministic calc engine (same one Sensitivity/Deal Room/Investor views use) —
