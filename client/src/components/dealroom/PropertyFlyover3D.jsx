@@ -73,7 +73,14 @@ export default function PropertyFlyover3D({ address, latitude, longitude, accent
     if (mapRef.current) mapRef.current.setHeading(0);
   };
 
-  if (!GOOGLE_MAPS_API_KEY) return null;
+  if (!GOOGLE_MAPS_API_KEY) {
+    return (
+      <div className="dr-card" style={{ marginTop: 24, padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 12, color: '#6b7280' }}>
+        <MapPinOff size={18} style={{ flexShrink: 0 }} />
+        <span style={{ fontSize: 13 }}>Aerial flyover unavailable — no Google Maps API key configured in this build (REACT_APP_GOOGLE_MAPS_KEY).</span>
+      </div>
+    );
+  }
 
   if (geocodeError) {
     return (
@@ -84,7 +91,13 @@ export default function PropertyFlyover3D({ address, latitude, longitude, accent
     );
   }
 
-  if (!coords) return null;
+  if (!coords) {
+    return (
+      <div className="dr-card" style={{ marginTop: 24, padding: '20px 24px', color: '#9ca3af', fontSize: 13 }}>
+        Locating property for the aerial flyover…
+      </div>
+    );
+  }
 
   return (
     <div className="dr-card" style={{ overflow: 'hidden', marginTop: 24 }}>

@@ -555,6 +555,42 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
           </div>
         )}
 
+        {(data.timeline?.steps?.length > 0 || data.timeline?.isDead) && (
+          <div className="dr-card" style={{ marginTop: 24, padding: '20px 24px' }}>
+            <div className="dr-eyebrow">Deal Timeline</div>
+            {data.timeline.isDead ? (
+              <div style={{ marginTop: 8, color: '#991b1b', fontSize: 14 }}>
+                <b>Dead</b>{data.timeline.deathReason ? ` — ${data.timeline.deathReason}` : ''}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0, marginTop: 12, overflowX: 'auto' }}>
+                {data.timeline.steps.map((step, i) => (
+                  <React.Fragment key={step.key}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 96 }}>
+                      <div style={{
+                        width: 14, height: 14, borderRadius: '50%',
+                        background: step.status === 'pending' ? '#e5e7eb' : effectiveAccent,
+                        border: step.status === 'active' ? `3px solid ${effectiveAccent}55` : 'none',
+                      }} />
+                      <div style={{ fontSize: 12, fontWeight: step.status === 'active' ? 700 : 500, color: step.status === 'pending' ? '#9ca3af' : '#374151', marginTop: 6, textAlign: 'center' }}>{step.label}</div>
+                      {step.status === 'active' && data.timeline.currentStageSince && (
+                        <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 2 }}>since {new Date(data.timeline.currentStageSince).toLocaleDateString()}</div>
+                      )}
+                    </div>
+                    {i < data.timeline.steps.length - 1 && (
+                      <div style={{ flex: 1, height: 2, marginTop: 6, background: step.status === 'done' ? effectiveAccent : '#e5e7eb', minWidth: 24 }} />
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 20, marginTop: 14, fontSize: 12, color: '#6b7280', flexWrap: 'wrap' }}>
+              {data.timeline.sourcedAt && <span>Sourced {new Date(data.timeline.sourcedAt).toLocaleDateString()}</span>}
+              {data.timeline.projectedHoldYears && <span>Projected {data.timeline.projectedHoldYears}-year hold (underwriting assumption)</span>}
+            </div>
+          </div>
+        )}
+
         {(data.property?.address || property?.address) && (
           <div data-export-exclude>
             <PropertyFlyover3D

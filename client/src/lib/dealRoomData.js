@@ -105,6 +105,28 @@ export function buildDealRoomData({ deal, full, metrics, allocations = [], distr
     'Investment',
   ].filter(Boolean).join(' ');
 
+  // ---- Deal timeline (real stage/date data only — no fabricated milestones) --
+  const STAGE_ORDER = ['sourced', 'underwritten', 'loi', 'contract', 'financing', 'closed'];
+  const STAGE_LABELS = {
+    sourced: 'Sourced', underwritten: 'Underwritten', loi: 'LOI Sent',
+    contract: 'Under Contract', financing: 'Financing Secured', closed: 'Closed',
+  };
+  const currentStage = deal?.dealStage || 'underwritten';
+  const isDead = currentStage === 'dead';
+  const currentIdx = STAGE_ORDER.indexOf(currentStage);
+  const timeline = {
+    isDead,
+    deathReason: isDead ? deal?.deathReason : null,
+    sourcedAt: deal?.createdAt || null,
+    currentStageSince: deal?.stageChangedAt || null,
+    projectedHoldYears: full?.returns?.holdingPeriod || null,
+    steps: isDead ? [] : STAGE_ORDER.map((key, i) => ({
+      key,
+      label: STAGE_LABELS[key],
+      status: i < currentIdx ? 'done' : i === currentIdx ? 'active' : 'pending',
+    })),
+  };
+
   // ---- Snapshot stat bar --------------------------------------------------
   const snapshotStats = [
     { label: 'Units', value: metrics?.units || null },
@@ -269,6 +291,7 @@ export function buildDealRoomData({ deal, full, metrics, allocations = [], distr
       images: images.length ? images : [],
     },
     snapshotStats,
+    timeline,
     executiveSummary,
     // AI-grounded thesis sections (undefined/empty until generated — the
     // component only renders these once real content exists).
