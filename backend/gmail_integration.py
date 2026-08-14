@@ -24,6 +24,12 @@ import os
 from email.mime.text import MIMEText
 from typing import Optional
 
+# Google often echoes back extra/reordered scopes (or, since this client_id
+# has been used for other flows, previously-granted ones like calendar/drive)
+# in the token response. oauthlib treats any mismatch from the requested
+# scopes as a hard error by default -- relax that so it doesn't block connect.
+os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
+
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request as GoogleAuthRequest
 from google_auth_oauthlib.flow import Flow
@@ -75,7 +81,6 @@ def build_auth_url(user_id: str) -> str:
     auth_url, _ = flow.authorization_url(
         access_type="offline",       # required to get a refresh_token
         prompt="consent",            # forces refresh_token on repeat connects too
-        include_granted_scopes="true",
         state=user_id,
     )
     return auth_url
