@@ -117,6 +117,17 @@ const $f = (n, d = 0) => n < 0 ? `-$${fm(Math.abs(n), d)}` : `$${fm(n, d)}`;
 const $p = (n) => n < 0 ? `($${fm(Math.abs(n))})` : `$${fm(n)}`;
 const pct = (n, d = 2) => `${fm(n * 100, d)}%`;
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+// "3/7/26" style date strings, used throughout as the assumed closing date.
+const fmtMDY = (d) => `${d.getMonth() + 1}/${d.getDate()}/${String(d.getFullYear()).slice(-2)}`;
+const addYearsToMDY = (mdy, years) => {
+  const [m, d, y] = mdy.split("/").map(Number);
+  const dt = new Date(2000 + y, m - 1, d);
+  dt.setFullYear(dt.getFullYear() + years);
+  return fmtMDY(dt);
+};
+// Default assumed closing date: 30 days from today, NOT a hardcoded past
+// date — computed once at module load, not per-render.
+const DEFAULT_CLOSING_DATE = fmtMDY(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
 
 /* ================================================================
    FINANCIAL ENGINE — everything derived, nothing hardcoded in UI
@@ -291,10 +302,10 @@ function useModel(state, real) {
   return useMemo(() => {
     const { ltv, loanFeesPct, scenarioKey, rateOverride, spread, baseRate, amort, ioMonths,
       exitCap, costsOfSalePct, growth, incomeMethod, renoPremium, renoCost, selectedRenoIds, distWeights,
-      scheduleStart, scheduleEnd, rubsSelected, rubsRecoveryPct, imputeVacant,
+      scheduleStart, scheduleEnd, rubsSelected, rubsRecoveryPct, imputeVacant, holdYears, closingDate, renoTargetType,
       renoDowntime, maxConcurrent, capexMode, gpPct, cmFeePct, amFeePct, acqFeePct, dispFeePct,
       jvOn, jvContribPct, jvPrefRate, jvMode, refiYear, refiLTV, refiRate, refiOn, purchasePrice } = state;
-    const A = CFG.assumptions, ACQ = { ...CFG.acq, price: purchasePrice ?? CFG.acq.price };
+    const A = CFG.assumptions, ACQ = { ...CFG.acq, price: purchasePrice ?? CFG.acq.price, holdYears: holdYears || CFG.acq.holdYears, closingDate: closingDate || CFG.acq.closingDate };
     // Real-deal overrides: derive unit count/mix/vacancy/T-12 from the ACTUAL
     // parsed deal instead of the hardcoded "Cobblestone" demo dataset — every
     // deal used to show the exact same fake 248-unit property here regardless
@@ -325,7 +336,7 @@ function useModel(state, real) {
     const occupied = units.filter((u) => !u.vacant).length;
 
     /* reno set */
-    const renoPool = units.filter((u) => u.type === CFG.reno.targetType);
+    const renoPool = units.filter((u) => u.type === (renoTargetType || CFG.reno.targetType));
     const renoUnits = renoPool.filter((u) => selectedRenoIds.has(u.id));
     const renoCount = renoUnits.length;
     const totalRenoCost = renoCount * renoCost;
@@ -564,7 +575,7 @@ function useModel(state, real) {
     const amSchedule = [];
     if (loan > 0) {
       let bal = loan;
-      const [cm_, cd_, cy_] = CFG.acq.closingDate.split("/").map((x) => parseInt(x, 10));
+      const [cm_, cd_, cy_] = ACQ.closingDate.split("/").map((x) => parseInt(x, 10));
       for (let m = 1; m <= termMonths; m++) {
         const io = m <= ioMonths;
         const interest = bal * amort_r;
@@ -678,7 +689,8 @@ function useModel(state, real) {
       refiActive, refiValue, refiLoan, refiFees, oldPayoffAtRefi, netRefi, refiDSyr, exitPayoff,
       jvCap, sponsorEq, jvYears, jvBuyoutOwed, jvBuyoutPaid, jvDeferred, jvBuyoutYear: B,
       sponsorIRR, sponsorEM, jvIRR, jvEM, jvOn,
-      dealUnits, vacantCount, isRealDeal: useRealUnits,
+      dealUnits, vacantCount, isRealDeal: useRealUnits, holdYears: ACQ.holdYears, closingDate: ACQ.closingDate,
+      renoTargetType: renoTargetType || CFG.reno.targetType,
     };
   }, [state, real]);
 }
@@ -688,7 +700,7 @@ function useModel(state, real) {
    ================================================================ */
 function exportWorkbook(M, S) {
   const wb = XLSX.utils.book_new();
-  const H = CFG.acq.holdYears;
+  const H = S.holdYears;
   const F = (f) => ({ t: "n", f });
   const P = (n) => ({ t: "n", v: n, z: "0.00%" });
   const D = (n) => ({ t: "n", v: Math.round(n), z: "#,##0" });
@@ -707,7 +719,7 @@ function exportWorkbook(M, S) {
     ["Year 1 Vacancy", P(CFG.assumptions.y1Vacancy)],
     ["Bad Debt %", P(CFG.assumptions.badDebtPct)],
     ["Concessions %", P(CFG.assumptions.concessionsPct)],
-    ["Other Income (annual)", D(CFG.assumptions.otherIncomeT12)],
+    ["Other Income (annual)", D(sum(M.t12.otherIncome))],
     ["Total Units", M.dealUnits],
     ["Hold Period (yrs)", H],
     ["Closing Costs", D(CFG.acq.closingCosts)],
@@ -1663,7 +1675,7 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData, fullCalcs }) {
   const realEM = hasReal ? fullCalcs.returns?.leveredEquityMultiple : M.equityMultiple;
   const realAvgCoC = hasReal ? (fullCalcs.returns?.avgCashOnCash || 0) / 100 : M.avgCoC;
   const realExitCap = hasReal ? (fullCalcs.returns?.exitCapRate || 0) / 100 : S.exitCap;
-  const realHoldPeriod = hasReal ? (fullCalcs.returns?.holdingPeriod || CFG.acq.holdYears) : CFG.acq.holdYears;
+  const realHoldPeriod = hasReal ? (fullCalcs.returns?.holdingPeriod || S.holdYears) : S.holdYears;
   // Value-add impact: NOI/value/cashflow/return uplift attributable to whichever
   // strategy is currently selected on the Strategy tab (reno premiums or RUBS) —
   // this is a hypothetical modeling tool, not an extracted fact, so it's still
@@ -1727,8 +1739,8 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData, fullCalcs }) {
           <div className="p-4 grid grid-cols-2 gap-x-6">
             <Field icon={I.dollar} label="Purchase Price"><Input w="w-36" value={fm(M.purchasePrice)} onChange={(v) => set({ purchasePrice: parseInt(String(v).replace(/,/g, ""), 10) || CFG.acq.price })} /></Field>
             <Field icon={I.dollar} label="Price per Unit"><Input w="w-32" value={fm(Math.round(M.purchasePrice / realUnits))} readOnly /></Field>
-            <Field icon={I.cal} label="Hold Period"><Input w="w-28" value={hasReal ? (fullCalcs.returns.holdingPeriod || CFG.acq.holdYears) : CFG.acq.holdYears} readOnly suffix="Years" /></Field>
-            <Field icon={I.cal} label="Closing Date"><Input w="w-28" value={CFG.acq.closingDate} readOnly /></Field>
+            <Field icon={I.cal} label="Hold Period"><Input w="w-28" value={S.holdYears} onChange={(v) => set({ holdYears: Math.max(1, parseInt(v, 10) || CFG.acq.holdYears) })} suffix="Years" /></Field>
+            <Field icon={I.cal} label="Closing Date"><Input w="w-28" value={S.closingDate} onChange={(v) => set({ closingDate: v })} /></Field>
             <Field icon={I.cash} label="Working Capital"><span className="font-bold">{$f(CFG.acq.workingCapital)}</span></Field>
             <Field icon={I.card} label="Closing Costs">
               <span className="flex items-center gap-1.5 font-bold">{$f(hasReal ? fullCalcs.acquisition.closingCosts : CFG.acq.closingCosts)}
@@ -1744,7 +1756,7 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData, fullCalcs }) {
             <Field icon={I.dollar} label="Sale Price Per Unit"><Input w="w-32" value={fm(Math.round((hasReal ? (fullCalcs.returns.terminalValue || 0) : M.salePrice) / realUnits))} readOnly /></Field>
             <Field icon={I.pctI} label="Exit Cap Rate"><Input w="w-24" value={fm(S.exitCap * 100, 2)} onChange={(v) => set({ exitCap: (parseFloat(v) || 5.5) / 100 })} suffix="%" /></Field>
             <Field icon={I.pctI} label="Costs of Sale"><Input w="w-24" value={fm(S.costsOfSalePct * 100, 1)} onChange={(v) => set({ costsOfSalePct: (parseFloat(v) || 2) / 100 })} suffix="%" /></Field>
-            <Field icon={I.cal} label="Sale Date"><Input w="w-28" value={CFG.acq.saleDate} readOnly /></Field>
+            <Field icon={I.cal} label="Sale Date"><Input w="w-28" value={addYearsToMDY(S.closingDate, S.holdYears)} readOnly /></Field>
             <Field icon={I.trend} label="Cap Rate Compression / Yr ⓘ"><span className="font-bold text-emerald-600 text-sm">18 bps</span></Field>
           </div>
         </Card>
@@ -1977,7 +1989,7 @@ function StrategyTab({ M, S, set, pdfData, pdfUrl }) {
                 <Ghost onClick={() => setTypeDDOpen(!typeDDOpen)}>{unitTypeFilter} ▾</Ghost>
                 {typeDDOpen && (
                   <div className="absolute top-10 right-0 w-48 bg-white rounded-xl shadow-2xl border border-gray-100 z-30 p-1.5">
-                    {["All Types", ...CFG.unitMix.map((m) => m.type)].map((t) => (
+                    {["All Types", ...Array.from(new Set(M.units.map((u) => u.type)))].map((t) => (
                       <button key={t} onClick={() => { setUnitTypeFilter(t); setTypeDDOpen(false); }}
                         className={`w-full text-left px-3 py-2 rounded-lg text-sm ${unitTypeFilter === t ? "bg-emerald-500 text-white font-semibold" : "text-gray-700 hover:bg-gray-50"}`}>{t}</button>
                     ))}
@@ -2044,9 +2056,12 @@ function StrategyTab({ M, S, set, pdfData, pdfUrl }) {
               <Field icon={I.dollar} label="Premium (all units)"><Input value={S.renoPremium} onChange={(v) => set({ renoPremium: parseInt(v) || 0 })} suffix="/mo" /></Field>
               <Field icon={I.wrench} label="Reno Cost (per unit)"><Input value={S.renoCost} onChange={(v) => set({ renoCost: parseInt(v) || 0 })} suffix="$" /></Field>
             </div>
-            <div className="flex gap-3">
-              <Primary onClick={() => set({ selectedRenoIds: new Set(M.renoPool.map((u) => u.id)) })}>Select all {M.renoPool.length} {CFG.reno.targetType}</Primary>
+            <div className="flex gap-3 items-center">
+              <Primary onClick={() => set({ selectedRenoIds: new Set(M.renoPool.map((u) => u.id)) })}>Select all {M.renoPool.length} {M.renoTargetType}</Primary>
               <Ghost onClick={() => set({ selectedRenoIds: new Set() })}>Clear selection</Ghost>
+              <select value={M.renoTargetType} onChange={(e) => set({ renoTargetType: e.target.value })} className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white outline-none text-gray-600">
+                {Array.from(new Set(M.units.map((u) => u.type))).map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
             </div>
           </Card>
         )}
@@ -2066,7 +2081,7 @@ function StrategyTab({ M, S, set, pdfData, pdfUrl }) {
           </Card>
           <div className="flex items-center justify-between">
             <div className="flex gap-3">
-              <Ghost onClick={() => setGanttType(ganttType === "all" ? CFG.reno.targetType : "all")}>{I.sliders} {ganttType === "all" ? "All Unit Types" : ganttType} ▾</Ghost>
+              <Ghost onClick={() => setGanttType(ganttType === "all" ? M.renoTargetType : "all")}>{I.sliders} {ganttType === "all" ? "All Unit Types" : ganttType} ▾</Ghost>
               <Ghost onClick={() => setGanttMonth((ganttMonth + 1) % 4)}>{I.cal} {["All Months", "M1–M4", "M5–M8", "M9–M13"][ganttMonth]} ▾</Ghost>
             </div>
             <span className="bg-gray-100 rounded-lg px-3 py-1.5 text-xs font-bold text-gray-700">{M.renoCount} of {M.dealUnits} units selected for renovation</span>
@@ -2586,7 +2601,7 @@ function RentRollTab({ M, scenarioData }) {
             <div className="flex flex-wrap gap-x-6 gap-y-3 items-end">
               <div><div className="text-[11px] font-semibold text-gray-500 mb-1">Unit Type</div>
                 <select value={fType} onChange={(e) => setFType(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white outline-none">
-                  {["All Types", ...CFG.unitMix.map((m) => m.type)].map((o) => <option key={o}>{o}</option>)}
+                  {["All Types", ...Array.from(new Set(M.units.map((u) => u.type)))].map((o) => <option key={o}>{o}</option>)}
                 </select></div>
               <div><div className="text-[11px] font-semibold text-gray-500 mb-1">Status</div>
                 <select value={fStatus} onChange={(e) => setFStatus(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white outline-none">
@@ -3515,7 +3530,7 @@ function ExpensesTab({ M, scenarioData }) {
 
 /* -------- Cashflow -------- */
 function CashflowTab({ M, S, set, cfView, pdfData, pdfUrl }) {
-  const H = CFG.acq.holdYears;
+  const H = S.holdYears;
   const years = M.years.slice(0, H);
   const isMonthly = cfView === "Monthly";
   const [open, setOpen] = useState({ rev: true, opex: true, fees: true, loan: true, jv: true, wc: true, acq: true });
@@ -3650,8 +3665,8 @@ function CashflowTab({ M, S, set, cfView, pdfData, pdfUrl }) {
               <tr className="bg-emerald-50/60">
                 <th className="text-right py-2 px-3 text-[11px] text-gray-500 sticky left-0 bg-emerald-50/60">Year<br/>Period</th>
                 <th className="px-2 py-2 text-center border-l-2 border-emerald-200"><Pill tone="purple">T-12</Pill><div className="text-[10px] text-gray-400 mt-0.5">Jul–Jun 25</div></th>
-                <th className="px-2 py-2 text-center border-r-2 border-emerald-200"><Pill tone="purple">Closing</Pill><div className="text-[10px] text-gray-400 mt-0.5">{CFG.acq.closingDate}</div></th>
-                {years.map((y) => <th key={y.y} className="px-2 py-2 text-center"><span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-bold inline-flex items-center justify-center">{y.y}</span><div className="text-[10px] text-gray-400 mt-0.5">3/31/{26 + y.y}</div></th>)}
+                <th className="px-2 py-2 text-center border-r-2 border-emerald-200"><Pill tone="purple">Closing</Pill><div className="text-[10px] text-gray-400 mt-0.5">{S.closingDate}</div></th>
+                {years.map((y) => <th key={y.y} className="px-2 py-2 text-center"><span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-bold inline-flex items-center justify-center">{y.y}</span><div className="text-[10px] text-gray-400 mt-0.5">{addYearsToMDY(S.closingDate, y.y)}</div></th>)}
               </tr>
             </thead>
             <tbody className="bg-white">
@@ -3987,7 +4002,7 @@ function WaterfallTab({ M, S, set, pdfData, pdfUrl }) {
               <Input w="w-full" value={fm(S.jvPrefRate * 100, 1)} onChange={(v) => set({ jvPrefRate: Math.max(0, (parseFloat(v) || 0) / 100) })} suffix="%" />
               <div className="text-sm text-gray-500 mt-1">{$f(Math.round(M.jvCap * S.jvPrefRate))}/yr ({$f(Math.round(M.jvCap * S.jvPrefRate / 12))}/mo)</div></div>
             <div><div className="text-sm font-semibold text-gray-700 mb-1.5">Refinance / Buyout Year</div>
-              <Input w="w-full" value={S.refiYear} onChange={(v) => set({ refiYear: Math.max(1, Math.min(parseInt(v, 10) || 1, CFG.acq.holdYears - 1)) })} suffix="yr" />
+              <Input w="w-full" value={S.refiYear} onChange={(v) => set({ refiYear: Math.max(1, Math.min(parseInt(v, 10) || 1, S.holdYears - 1)) })} suffix="yr" />
               <div className="text-sm text-gray-500 mt-1">End of value-add period</div></div>
           </div>
           <div className="mt-4">
@@ -4181,7 +4196,7 @@ function FinancingTab({ M, S, set, pdfData, pdfUrl }) {
   const [treasuryAsOf, setTreasuryAsOf] = useState(null);
   const [treasuryLoading, setTreasuryLoading] = useState(false);
   const [treasuryError, setTreasuryError] = useState("");
-  const prefAccrual = prefAmt * (Math.pow(1 + CFG.waterfall.pref, CFG.acq.holdYears) - 1);
+  const prefAccrual = prefAmt * (Math.pow(1 + CFG.waterfall.pref, S.holdYears) - 1);
 
   useEffect(() => {
     let cancelled = false;
@@ -4310,7 +4325,7 @@ function FinancingTab({ M, S, set, pdfData, pdfUrl }) {
               <GradBanner gradient={g}><span className="font-bold text-sm tracking-wide">{l}</span><Toggle green={false} on={on} onChange={setOn} /></GradBanner>
               {k === "refi" && on && (
                 <Card className="px-5 py-2">
-                  <Field icon={I.cal} label="Refinance Year"><Input w="w-28" value={S.refiYear} onChange={(v) => set({ refiYear: Math.max(1, Math.min(parseInt(v, 10) || 1, CFG.acq.holdYears - 1)) })} suffix="yr" /></Field>
+                  <Field icon={I.cal} label="Refinance Year"><Input w="w-28" value={S.refiYear} onChange={(v) => set({ refiYear: Math.max(1, Math.min(parseInt(v, 10) || 1, S.holdYears - 1)) })} suffix="yr" /></Field>
                   <Field icon={I.target} label="Refinance LTV"><Input w="w-28" value={fm(S.refiLTV * 100, 0)} onChange={(v) => set({ refiLTV: Math.max(0, Math.min((parseFloat(v) || 0) / 100, 0.9)) })} suffix="%" /></Field>
                   <Field icon={I.pctI} label="Refinance Rate"><Input w="w-28" value={fm(S.refiRate * 100, 2)} onChange={(v) => set({ refiRate: Math.max(0, (parseFloat(v) || 0) / 100) })} suffix="%" /></Field>
                   <div className="bg-gray-50 rounded-xl p-3 my-3 grid grid-cols-2 gap-3">
@@ -4347,7 +4362,7 @@ function FinancingTab({ M, S, set, pdfData, pdfUrl }) {
                     </div>
                   </div>
                   {prefPaymentMode === "accruing" ? (
-                    <div className="bg-gray-50 rounded-xl p-3 my-3"><div className="text-[11px] font-bold text-gray-400 uppercase">Estimated Accrual at Disposition</div>{prefAmt > 0 ? <div className="text-sm font-bold text-gray-800">{$f(Math.round(prefAccrual))} <span className="font-normal text-gray-400 text-xs">over {CFG.acq.holdYears} yrs @ {pct(CFG.waterfall.pref, 0)} compounding</span></div> : <div className="text-sm text-gray-400">Enter a pref amount to see preview</div>}</div>
+                    <div className="bg-gray-50 rounded-xl p-3 my-3"><div className="text-[11px] font-bold text-gray-400 uppercase">Estimated Accrual at Disposition</div>{prefAmt > 0 ? <div className="text-sm font-bold text-gray-800">{$f(Math.round(prefAccrual))} <span className="font-normal text-gray-400 text-xs">over {S.holdYears} yrs @ {pct(CFG.waterfall.pref, 0)} compounding</span></div> : <div className="text-sm text-gray-400">Enter a pref amount to see preview</div>}</div>
                   ) : (
                     <div className="bg-gray-50 rounded-xl p-3 my-3"><div className="text-[11px] font-bold text-gray-400 uppercase">Estimated Periodic Payment</div>{prefAmt > 0 ? <div className="text-sm font-bold text-gray-800">{$f(Math.round((prefAmt * CFG.waterfall.pref) / 12))}<span className="font-normal text-gray-400 text-xs">/mo</span> <span className="font-normal text-gray-400 text-xs">({$f(Math.round(prefAmt * CFG.waterfall.pref))}/yr @ {pct(CFG.waterfall.pref, 0)})</span></div> : <div className="text-sm text-gray-400">Enter a pref amount to see preview</div>}</div>
                   )}
@@ -4801,6 +4816,7 @@ export default function App({
     exitCap: CFG.assumptions.exitCap, costsOfSalePct: CFG.acq.costsOfSalePct,
     growth: CFG.assumptions.growth,
     incomeMethod: "advanced", renoPremium: CFG.reno.premium, renoCost: CFG.reno.costPerUnit,
+    renoTargetType: CFG.reno.targetType,
     selectedRenoIds: new Set(buildUnits().filter((u) => u.type === CFG.reno.targetType).map((u) => u.id)),
     distWeights: [1, 1, 1, 1, 1, 1], imputeVacant: true, matrixView: "Monthly",
     scheduleStart: 1, scheduleEnd: 12,
@@ -4811,6 +4827,8 @@ export default function App({
     jvOn: false, jvContribPct: 1.0, jvPrefRate: 0.10, jvMode: "current",
     refiYear: 3, refiLTV: 0.70, refiRate: 0.0625, refiOn: false,
     purchasePrice: CFG.acq.price,
+    holdYears: CFG.acq.holdYears,
+    closingDate: DEFAULT_CLOSING_DATE,
     prefOn: true, mezzOn: false, sellerOn: false, prefAmt: 0, mezzAmt: 0, sellerAmt: 0,
     prefPaymentMode: "accruing",
   }));
@@ -4865,6 +4883,36 @@ export default function App({
       setS((p) => ({ ...p, exitCap: realExitCapPct / 100 }));
     }
   }, [mergedParsedData]);
+  // Hold period had the same bug: S.holdYears didn't even exist — every
+  // calc (Cashflow's Year 1-5 columns, Waterfall, refi-year cap, pref
+  // accrual) read straight from the hardcoded CFG.acq.holdYears (5 years).
+  // Sync the real parsed holding period once if the OM stated one.
+  const realHoldYearsSynced = useRef(false);
+  useEffect(() => {
+    if (realHoldYearsSynced.current) return;
+    const realHoldYears = mergedParsedData?.underwriting?.holding_period;
+    if (realHoldYears && realHoldYears > 0) {
+      realHoldYearsSynced.current = true;
+      setS((p) => ({ ...p, holdYears: Math.round(realHoldYears) }));
+    }
+  }, [mergedParsedData]);
+  // The initial selectedRenoIds/renoTargetType were always seeded from the
+  // fake demo unit mix (filtering for "1BR/1BA") before any real deal data
+  // was available — for a real deal whose unit types don't include that
+  // exact string (nearly all of them), this left a phantom, meaningless
+  // selection with no way to tell it wasn't real. Once real units load,
+  // reset to an honest empty selection (the user picks which units to
+  // renovate) and default the target-type filter to the real deal's own
+  // most common unit type instead of the demo label.
+  const realRenoResetDone = useRef(false);
+  useEffect(() => {
+    if (realRenoResetDone.current || !M.isRealDeal) return;
+    realRenoResetDone.current = true;
+    const typeCounts = {};
+    M.units.forEach((u) => { typeCounts[u.type] = (typeCounts[u.type] || 0) + 1; });
+    const mostCommonType = Object.keys(typeCounts).sort((a, b) => typeCounts[b] - typeCounts[a])[0];
+    setS((p) => ({ ...p, selectedRenoIds: new Set(), renoTargetType: mostCommonType || p.renoTargetType }));
+  }, [M.isRealDeal, M.units]);
   // Real, deterministic calc engine (same one Sensitivity/Deal Room/Investor views use) —
   // independent from the mock CFG-driven `M` model used by the other underwriting tabs.
   // Overlays the user's LIVE edits (purchase price, exit cap, value-add strategy — all
