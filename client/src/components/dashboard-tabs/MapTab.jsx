@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup, CircleMarker, GeoJSON, useMap, ZoomControl } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker, GeoJSON, useMap, ZoomControl, Pane } from 'react-leaflet';
 import L from 'leaflet';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -27,13 +27,6 @@ import {
   X,
   Trash2
 } from 'lucide-react';
-
-// Stable reference (module-level) — must match PropertyFlyover3D.jsx's own
-// useJsApiLoader call exactly, since both share the same loader `id` and
-// @react-google-maps/api throws if the same id is loaded with different
-// options. PropertyFlyover3D needs the 'maps3d' library for its Photorealistic
-// 3D flyover; loading it here too (unused on this page) is harmless.
-const GOOGLE_MAPS_LIBRARIES = ['maps3d'];
 
 if (process.env.REACT_APP_MAPBOX_TOKEN) {
   mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
@@ -1684,14 +1677,17 @@ function DashboardMapTab() {
   const { isLoaded: googleMapsLoaded } = useJsApiLoader({
     id: 'dealsniper-google-maps',
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries: GOOGLE_MAPS_LIBRARIES,
   });
   const googleMapRef = useRef(null);
   const [activeInfoPinId, setActiveInfoPinId] = useState(null);
-  const anyAdvancedOverlayActive = countyOverlay || zipOverlay || zipHeatmap || devPipelineEnabled ||
-    absorptionEnabled || capRateEnabled || zoningEnabled || sfrSalesEnabled || mfSalesEnabled ||
-    dataCentersEnabled || cityMetricsEnabled || zipMetricsEnabled;
-  const useGoogleMaps = mapStyle !== '3d' && !anyAdvancedOverlayActive && !!GOOGLE_MAPS_API_KEY;
+  // Forced off: this used to auto-switch the default map view to Google Maps
+  // the instant a Google Maps key became available in the build (it wasn't,
+  // in production, until the key was added for an unrelated feature) —
+  // silently replacing the dark Leaflet map + small pin markers with a
+  // completely different-looking Google base map with no user action taken.
+  // Keep Leaflet as the one and only default renderer regardless of whether
+  // a Google key exists.
+  const useGoogleMaps = false; // eslint-disable-line no-unused-vars
 
   const tileConfigs = {
     voyager: {
@@ -3644,6 +3640,15 @@ function DashboardMapTab() {
               pane="overlayPane"
             />
           )}
+          {/* Dark tint over the satellite basemap only — sits above the tiles
+              but below markerPane (600)/popupPane (700) so pins/popups stay
+              bright. Oversized well beyond the viewport so panning never
+              reveals an edge. */}
+          {mapStyle === 'satellite' && (
+            <Pane name="satellite-dim-pane" style={{ zIndex: 350 }}>
+              <div style={{ position: 'absolute', top: '-200%', left: '-200%', width: '500%', height: '500%', background: 'rgba(0,0,0,0.72)', pointerEvents: 'none' }} />
+            </Pane>
+          )}
           <CommandExecutor commands={pendingCommands} onDone={() => setPendingCommands([])} addPin={addPinFromCommand} />
 
           {/* Base categorized markers */}
@@ -4939,7 +4944,7 @@ function DashboardMapTab() {
           color: #9aa0a6 !important;
         }
         .dsm-dark-tiles {
-          filter: brightness(0.55) saturate(0.6) contrast(1.08);
+          filter: brightness(0.9) saturate(0.65);
         }
         /* Google Maps InfoWindow chrome (used when the Google Maps renderer
            is active) doesn't accept a className, so its bubble/arrow/close
