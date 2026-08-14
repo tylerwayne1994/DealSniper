@@ -63,7 +63,15 @@ def is_configured() -> bool:
 
 def build_auth_url(user_id: str) -> str:
     """Start the OAuth consent flow for connecting a user's Gmail. `state` carries the user_id through the redirect."""
-    flow = Flow.from_client_config(_client_config(), scopes=SCOPES, redirect_uri=GOOGLE_REDIRECT_URI)
+    # PKCE disabled: this library auto-generates a code_verifier per Flow
+    # instance, but build_auth_url() and exchange_code_for_tokens() run in
+    # two separate HTTP requests (separate Flow instances) with nothing
+    # persisting the verifier between them -- Google then rejects the token
+    # exchange with "invalid_grant: Missing code verifier". PKCE exists to
+    # protect public clients that can't hold a secret; this is a confidential
+    # server-side client (has GOOGLE_CLIENT_SECRET), so the standard
+    # Authorization Code flow without PKCE is correct and simpler here.
+    flow = Flow.from_client_config(_client_config(), scopes=SCOPES, redirect_uri=GOOGLE_REDIRECT_URI, autogenerate_code_verifier=False)
     auth_url, _ = flow.authorization_url(
         access_type="offline",       # required to get a refresh_token
         prompt="consent",            # forces refresh_token on repeat connects too
@@ -75,7 +83,7 @@ def build_auth_url(user_id: str) -> str:
 
 def exchange_code_for_tokens(code: str) -> dict:
     """Exchange the OAuth authorization code for access/refresh tokens."""
-    flow = Flow.from_client_config(_client_config(), scopes=SCOPES, redirect_uri=GOOGLE_REDIRECT_URI)
+    flow = Flow.from_client_config(_client_config(), scopes=SCOPES, redirect_uri=GOOGLE_REDIRECT_URI, autogenerate_code_verifier=False)
     flow.fetch_token(code=code)
     creds = flow.credentials
     return {

@@ -304,7 +304,8 @@ function useModel(state, real) {
       exitCap, costsOfSalePct, growth, incomeMethod, renoPremium, renoCost, selectedRenoIds, distWeights,
       scheduleStart, scheduleEnd, rubsSelected, rubsRecoveryPct, imputeVacant, holdYears, closingDate, renoTargetType,
       renoDowntime, maxConcurrent, capexMode, gpPct, cmFeePct, amFeePct, acqFeePct, dispFeePct,
-      jvOn, jvContribPct, jvPrefRate, jvMode, refiYear, refiLTV, refiRate, refiOn, purchasePrice } = state;
+      jvOn, jvContribPct, jvPrefRate, jvMode, refiYear, refiLTV, refiRate, refiOn, purchasePrice,
+      wfPrefRate, wfPromotePct } = state;
     const A = CFG.assumptions, ACQ = { ...CFG.acq, price: purchasePrice ?? CFG.acq.price, holdYears: holdYears || CFG.acq.holdYears, closingDate: closingDate || CFG.acq.closingDate };
     // Real-deal overrides: derive unit count/mix/vacancy/T-12 from the ACTUAL
     // parsed deal instead of the hardcoded "Cobblestone" demo dataset — every
@@ -493,7 +494,7 @@ function useModel(state, real) {
     const goingInCap = years[0].noi / ACQ.price;
 
     /* waterfall */
-    const WF = CFG.waterfall;
+    const WF = { pref: wfPrefRate ?? CFG.waterfall.pref, promote: wfPromotePct ?? CFG.waterfall.promote, lpShare: CFG.waterfall.lpShare };
     const lpShare = 1 - gpPct;
     const lpEq = equity * lpShare, gpEq = equity * gpPct;
     let prefBal = 0, capBal = equity;
@@ -3891,7 +3892,7 @@ function TimelineModal({ M, S, set, onClose }) {
 /* -------- Waterfall -------- */
 function WaterfallTab({ M, S, set, pdfData, pdfUrl }) {
   const [mode, setMode] = useState("$");
-  const WF = CFG.waterfall;
+  const WF = { pref: S.wfPrefRate ?? CFG.waterfall.pref, promote: S.wfPromotePct ?? CFG.waterfall.promote };
   const fmtV = (v, tot) => (mode === "$" ? $f(Math.round(v)) : pct(tot > 0 ? v / tot : 0));
   const FeeInput = ({ label, value, onChange, amount, note }) => (
     <div>
@@ -3942,6 +3943,16 @@ function WaterfallTab({ M, S, set, pdfData, pdfUrl }) {
             <div className="flex items-center gap-3">
               <Input w="w-56" value={fm(Math.round(M.lpEq))} readOnly />
               <span className="text-sm text-gray-500 font-semibold">{pct(M.lpShare)}</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100">
+            <div>
+              <div className="text-sm font-semibold text-gray-700 mb-1.5">LP Preferred Return</div>
+              <Input w="w-full" value={fm(WF.pref * 100, 1)} onChange={(v) => set({ wfPrefRate: Math.max(0, (parseFloat(v) || 0) / 100) })} suffix="%" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-gray-700 mb-1.5">GP Promote</div>
+              <Input w="w-full" value={fm(WF.promote * 100, 1)} onChange={(v) => set({ wfPromotePct: Math.max(0, (parseFloat(v) || 0) / 100) })} suffix="%" />
             </div>
           </div>
           <div className="flex items-center gap-3 pt-3 border-t border-gray-100">
@@ -4185,6 +4196,8 @@ function FinancingTab({ M, S, set, pdfData, pdfUrl }) {
   const setSellerOn = (v) => set({ sellerOn: v });
   const prefAmt = S.prefAmt ?? 0;
   const setPrefAmt = (v) => set({ prefAmt: v });
+  const prefRate = S.prefRate ?? CFG.waterfall.pref;
+  const setPrefRate = (v) => set({ prefRate: v });
   const prefPaymentMode = S.prefPaymentMode ?? "accruing";
   const setPrefPaymentMode = (v) => set({ prefPaymentMode: v });
   const mezzAmt = S.mezzAmt ?? 0;
@@ -4196,7 +4209,7 @@ function FinancingTab({ M, S, set, pdfData, pdfUrl }) {
   const [treasuryAsOf, setTreasuryAsOf] = useState(null);
   const [treasuryLoading, setTreasuryLoading] = useState(false);
   const [treasuryError, setTreasuryError] = useState("");
-  const prefAccrual = prefAmt * (Math.pow(1 + CFG.waterfall.pref, S.holdYears) - 1);
+  const prefAccrual = prefAmt * (Math.pow(1 + prefRate, S.holdYears) - 1);
 
   useEffect(() => {
     let cancelled = false;
@@ -4340,7 +4353,7 @@ function FinancingTab({ M, S, set, pdfData, pdfUrl }) {
               {k === "pref" && on && (
                 <Card className="px-5 py-2">
                   <Field icon={I.dollar} label="Pref Amount"><Input value={fm(prefAmt)} onChange={(v) => setPrefAmt(parseInt(String(v).replace(/,/g, ""), 10) || 0)} /></Field>
-                  <Field icon={I.pctI} label="Preferred Return"><Input w="w-28" value={fm(CFG.waterfall.pref * 100, 0)} readOnly suffix="%" /></Field>
+                  <Field icon={I.pctI} label="Preferred Return"><Input w="w-28" value={fm(prefRate * 100, 1)} onChange={(v) => setPrefRate(Math.max(0, (parseFloat(v) || 0) / 100))} suffix="%" /></Field>
                   <div className="py-3">
                     <div className="text-sm font-semibold text-gray-700 mb-2">Payment Mode</div>
                     <div className="grid grid-cols-2 gap-3">
@@ -4362,9 +4375,9 @@ function FinancingTab({ M, S, set, pdfData, pdfUrl }) {
                     </div>
                   </div>
                   {prefPaymentMode === "accruing" ? (
-                    <div className="bg-gray-50 rounded-xl p-3 my-3"><div className="text-[11px] font-bold text-gray-400 uppercase">Estimated Accrual at Disposition</div>{prefAmt > 0 ? <div className="text-sm font-bold text-gray-800">{$f(Math.round(prefAccrual))} <span className="font-normal text-gray-400 text-xs">over {S.holdYears} yrs @ {pct(CFG.waterfall.pref, 0)} compounding</span></div> : <div className="text-sm text-gray-400">Enter a pref amount to see preview</div>}</div>
+                    <div className="bg-gray-50 rounded-xl p-3 my-3"><div className="text-[11px] font-bold text-gray-400 uppercase">Estimated Accrual at Disposition</div>{prefAmt > 0 ? <div className="text-sm font-bold text-gray-800">{$f(Math.round(prefAccrual))} <span className="font-normal text-gray-400 text-xs">over {S.holdYears} yrs @ {pct(prefRate, 0)} compounding</span></div> : <div className="text-sm text-gray-400">Enter a pref amount to see preview</div>}</div>
                   ) : (
-                    <div className="bg-gray-50 rounded-xl p-3 my-3"><div className="text-[11px] font-bold text-gray-400 uppercase">Estimated Periodic Payment</div>{prefAmt > 0 ? <div className="text-sm font-bold text-gray-800">{$f(Math.round((prefAmt * CFG.waterfall.pref) / 12))}<span className="font-normal text-gray-400 text-xs">/mo</span> <span className="font-normal text-gray-400 text-xs">({$f(Math.round(prefAmt * CFG.waterfall.pref))}/yr @ {pct(CFG.waterfall.pref, 0)})</span></div> : <div className="text-sm text-gray-400">Enter a pref amount to see preview</div>}</div>
+                    <div className="bg-gray-50 rounded-xl p-3 my-3"><div className="text-[11px] font-bold text-gray-400 uppercase">Estimated Periodic Payment</div>{prefAmt > 0 ? <div className="text-sm font-bold text-gray-800">{$f(Math.round((prefAmt * prefRate) / 12))}<span className="font-normal text-gray-400 text-xs">/mo</span> <span className="font-normal text-gray-400 text-xs">({$f(Math.round(prefAmt * prefRate))}/yr @ {pct(prefRate, 0)})</span></div> : <div className="text-sm text-gray-400">Enter a pref amount to see preview</div>}</div>
                   )}
                 </Card>
               )}
@@ -4829,6 +4842,7 @@ export default function App({
     purchasePrice: CFG.acq.price,
     holdYears: CFG.acq.holdYears,
     closingDate: DEFAULT_CLOSING_DATE,
+    wfPrefRate: CFG.waterfall.pref, wfPromotePct: CFG.waterfall.promote,
     prefOn: true, mezzOn: false, sellerOn: false, prefAmt: 0, mezzAmt: 0, sellerAmt: 0,
     prefPaymentMode: "accruing",
   }));

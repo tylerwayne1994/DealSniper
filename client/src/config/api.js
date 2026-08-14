@@ -64,6 +64,9 @@ export const API_ENDPOINTS = {
   gmailDisconnect: `${API_BASE_URL}/api/gmail/disconnect`,
   gmailStoreSupabaseToken: `${API_BASE_URL}/api/gmail/store-supabase-token`,
 
+  // Freeform deal terms parser ("type out your deal terms" chat box on Upload)
+  parseDealTerms: `${API_BASE_URL}/api/parse-deal-terms`,
+
   // Due Diligence
   dueDiligenceChat: `${API_BASE_URL}/api/due-diligence/chat`,
   financialAudit: `${API_BASE_URL}/api/underwrite/financial-audit`,

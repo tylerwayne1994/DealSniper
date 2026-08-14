@@ -56,6 +56,17 @@ const styles = {
     cursor: 'pointer',
     transition: 'background-color 0.15s ease'
   },
+  termPill: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '4px 10px',
+    borderRadius: 999,
+    background: '#ecfdf5',
+    color: '#047857',
+    fontSize: 12,
+    fontWeight: 600,
+    border: '1px solid #a7f3d0',
+  },
   card: {
     background: '#fff',
     border: '1px solid #e5e7eb',
@@ -195,6 +206,15 @@ function UnderwriteV2Page() {
   
   // Underwrite template (loaded from Supabase profiles)
   const [uwTemplate, setUwTemplate] = useState(null);
+
+  // Freeform "type out your deal terms" box (above the upload dropzone) —
+  // lets the user state financing terms in plain English before uploading;
+  // parsed via Claude into structured fields and merged into the parsed
+  // deal's `financing` object once the OM itself is parsed.
+  const [dealTermsText, setDealTermsText] = useState('');
+  const [dealTerms, setDealTerms] = useState(null);
+  const [isParsingDealTerms, setIsParsingDealTerms] = useState(false);
+  const [dealTermsError, setDealTermsError] = useState(null);
 
   // AI Underwriting result
   const [underwritingResult, setUnderwritingResult] = useState(null);
@@ -535,6 +555,30 @@ function UnderwriteV2Page() {
     processSelectedFile(e.dataTransfer?.files?.[0]);
   };
 
+  // Parse the freeform deal-terms text into structured financing fields.
+  const handleParseDealTerms = async () => {
+    const text = dealTermsText.trim();
+    if (!text || isParsingDealTerms) return;
+    setIsParsingDealTerms(true);
+    setDealTermsError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/parse-deal-terms`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.detail || 'Failed to parse deal terms');
+      }
+      setDealTerms(data.terms);
+    } catch (err) {
+      setDealTermsError(err.message || 'Failed to parse deal terms');
+    } finally {
+      setIsParsingDealTerms(false);
+    }
+  };
+
   // Handle file upload & parse
   const handleUpload = async () => {
     if (!file) return;
@@ -669,6 +713,30 @@ function UnderwriteV2Page() {
           ...parsedCopy.financing
         };
       }
+
+      // Overlay the user's own stated deal terms (from the chat box above
+      // the upload zone) LAST — these are explicit sponsor instructions, so
+      // they take priority over both the OM's parsed financing and the
+      // saved template defaults.
+      if (dealTerms) {
+        if (dealTerms.interest_rate != null) parsedCopy.financing.interest_rate = dealTerms.interest_rate;
+        if (dealTerms.amortization_years != null) parsedCopy.financing.amortization_years = dealTerms.amortization_years;
+        if (dealTerms.loan_term_years != null) parsedCopy.financing.loan_term_years = dealTerms.loan_term_years;
+        if (dealTerms.ltv != null) parsedCopy.financing.ltv = dealTerms.ltv;
+        if (dealTerms.io_years != null) parsedCopy.financing.io_years = dealTerms.io_years;
+        if (dealTerms.loan_fees_percent != null) parsedCopy.financing.loan_fees_percent = dealTerms.loan_fees_percent;
+        if (dealTerms.exit_cap_rate != null) {
+          parsedCopy.underwriting = { ...(parsedCopy.underwriting || {}), exit_cap_rate: dealTerms.exit_cap_rate };
+        }
+        if (dealTerms.holding_period_years != null) {
+          parsedCopy.underwriting = { ...(parsedCopy.underwriting || {}), holding_period: dealTerms.holding_period_years };
+        }
+        if (dealTerms.equity_notes) {
+          parsedCopy.sponsor_deal_terms_notes = dealTerms.equity_notes;
+        }
+        console.log('[DEAL TERMS] Applied user-stated deal terms:', dealTerms);
+      }
+
       setVerifiedData(parsedCopy);
       
       // Move to wizard step
@@ -1095,6 +1163,56 @@ function UnderwriteV2Page() {
               <Home size={14} />
               Home
             </button>
+          </div>
+
+          <div style={{ ...styles.card, marginBottom: 16 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 4, color: '#111827' }}>
+              Tell us your deal terms (optional)
+            </h2>
+            <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 12 }}>
+              Type it out in plain English — e.g. "6% interest, 30 year am, 20% down, I have an investor coming in with the 20% down." We'll apply it to the deal once the document is parsed.
+            </div>
+            <textarea
+              value={dealTermsText}
+              onChange={(e) => setDealTermsText(e.target.value)}
+              placeholder="6% interest, 30 year amortization, 20% down…"
+              rows={3}
+              disabled={isUploading}
+              style={{
+                width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: 10,
+                border: '1px solid #e5e7eb', fontSize: 13, fontFamily: 'inherit', resize: 'vertical', outline: 'none',
+              }}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
+              <button
+                type="button"
+                onClick={handleParseDealTerms}
+                disabled={!dealTermsText.trim() || isParsingDealTerms || isUploading}
+                style={{ ...styles.button, opacity: (!dealTermsText.trim() || isParsingDealTerms || isUploading) ? 0.5 : 1 }}
+              >
+                {isParsingDealTerms ? 'Reading…' : dealTerms ? 'Update Terms' : 'Apply Terms'}
+              </button>
+              {dealTerms && !isParsingDealTerms && (
+                <div style={{ fontSize: 12, color: '#059669', fontWeight: 600 }}>
+                  ✓ Got it — will apply to your deal after upload
+                </div>
+              )}
+            </div>
+            {dealTermsError && <div style={{ fontSize: 12, color: '#dc2626', marginTop: 8 }}>{dealTermsError}</div>}
+            {dealTerms && !isParsingDealTerms && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+                {dealTerms.interest_rate != null && <span style={styles.termPill}>{dealTerms.interest_rate}% rate</span>}
+                {dealTerms.ltv != null && <span style={styles.termPill}>{dealTerms.ltv}% LTV</span>}
+                {dealTerms.amortization_years != null && <span style={styles.termPill}>{dealTerms.amortization_years}yr amort</span>}
+                {dealTerms.loan_term_years != null && <span style={styles.termPill}>{dealTerms.loan_term_years}yr term</span>}
+                {dealTerms.io_years != null && <span style={styles.termPill}>{dealTerms.io_years}yr IO</span>}
+                {dealTerms.exit_cap_rate != null && <span style={styles.termPill}>{dealTerms.exit_cap_rate}% exit cap</span>}
+                {dealTerms.holding_period_years != null && <span style={styles.termPill}>{dealTerms.holding_period_years}yr hold</span>}
+              </div>
+            )}
+            {dealTerms?.equity_notes && (
+              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 8, fontStyle: 'italic' }}>Note: {dealTerms.equity_notes}</div>
+            )}
           </div>
 
           <div style={styles.card}>

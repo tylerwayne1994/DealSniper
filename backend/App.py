@@ -493,6 +493,14 @@ try:
 except Exception as e:
     log.warning(f"[GMAIL] Gmail integration unavailable: {e}")
 
+# ── Freeform "type out your deal terms" parser (Upload page chat box) ──
+try:
+    from deal_terms_parser import router as deal_terms_router
+    app.include_router(deal_terms_router)
+    log.info("[DEAL TERMS] Freeform deal-terms parser endpoint ready")
+except Exception as e:
+    log.warning(f"[DEAL TERMS] Deal-terms parser unavailable: {e}")
+
 # Google Sheets: Auto-populate underwriting model
 from google_sheets_updater import update_google_sheet
 from google_sheets_results_exporter import export_full_results_workbook
