@@ -19,11 +19,29 @@ export function openConnectGmailPopup(userId, onDone) {
   const top = window.screenY + (window.outerHeight - height) / 2;
   const authUrl = `${API_ENDPOINTS.authGoogle}?user_id=${encodeURIComponent(userId)}`;
   const popup = window.open(authUrl, 'gmail_oauth', `width=${width},height=${height},left=${left},top=${top}`);
+
+  // accounts.google.com sets Cross-Origin-Opener-Policy: same-origin, which
+  // blocks the opener from reading popup.closed (throws/spams console
+  // warnings and never actually detects the popup closing). The OAuth
+  // callback page instead posts a message here right before it closes.
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    clearInterval(pollTimer);
+    window.removeEventListener('message', onMessage);
+    if (onDone) onDone();
+  };
+  const onMessage = (event) => {
+    if (event.data && event.data.type === 'gmail-oauth-done') finish();
+  };
+  window.addEventListener('message', onMessage);
+
+  // Best-effort fallback for browsers/cases where COOP doesn't block the read.
   const pollTimer = setInterval(() => {
-    if (!popup || popup.closed) {
-      clearInterval(pollTimer);
-      if (onDone) onDone();
-    }
+    let closed = false;
+    try { closed = !popup || popup.closed; } catch { /* blocked by COOP */ }
+    if (closed) finish();
   }, 500);
 }
 

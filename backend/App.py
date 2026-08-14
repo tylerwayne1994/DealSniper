@@ -455,14 +455,17 @@ try:
 
     @app.get("/auth/google/callback")
     async def auth_google_callback(code: str, state: str):
-        """OAuth redirect target — state carries the user_id through. Closes the connect popup on success."""
+        """OAuth redirect target — state carries the user_id through. postMessages the opener (Cross-Origin-Opener-Policy on accounts.google.com blocks the opener from reading window.closed) then closes the popup."""
         try:
             tokens = gmail.exchange_code_for_tokens(code)
             gmail.store_tokens(state, tokens["access_token"], tokens.get("refresh_token"), tokens.get("expiry"))
-            return HTMLResponse("<html><body><script>window.close();</script>Gmail connected — you can close this window.</body></html>")
+            script = "if (window.opener) { window.opener.postMessage({ type: 'gmail-oauth-done', success: true }, '*'); } window.close();"
+            return HTMLResponse(f"<html><body><script>{script}</script>Gmail connected — you can close this window.</body></html>")
         except Exception as e:
             log.warning(f"[GMAIL] OAuth callback failed: {e}")
-            return HTMLResponse(f"<html><body>Failed to connect Gmail: {e}</body></html>", status_code=400)
+            error_js = json.dumps(str(e))
+            script = f"if (window.opener) {{ window.opener.postMessage({{ type: 'gmail-oauth-done', success: false, error: {error_js} }}, '*'); }}"
+            return HTMLResponse(f"<html><body><script>{script}</script>Failed to connect Gmail: {e}</body></html>", status_code=400)
 
     @app.get("/api/gmail/status")
     async def gmail_status_route(user_id: str):
