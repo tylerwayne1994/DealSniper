@@ -306,7 +306,20 @@ function useModel(state, real) {
       renoDowntime, maxConcurrent, capexMode, gpPct, cmFeePct, amFeePct, acqFeePct, dispFeePct,
       jvOn, jvContribPct, jvPrefRate, jvMode, refiYear, refiLTV, refiRate, refiOn, purchasePrice,
       wfPrefRate, wfPromotePct } = state;
-    const A = CFG.assumptions, ACQ = { ...CFG.acq, price: purchasePrice ?? CFG.acq.price, holdYears: holdYears || CFG.acq.holdYears, closingDate: closingDate || CFG.acq.closingDate };
+    const A = CFG.assumptions;
+    // Closing costs were a flat $509,613 demo constant regardless of the
+    // real deal's price (e.g. still $509,613 on an $800K deal) — once a real
+    // purchase price is known, scale it as a percentage of price instead
+    // (2%, the same default calculateFullAnalysis uses) so Sources & Uses/
+    // the Excel export don't silently show a wildly wrong closing cost.
+    const hasRealPrice = !!(real?.pricing_financing?.purchase_price || real?.pricing_financing?.price);
+    const ACQ = {
+      ...CFG.acq,
+      price: purchasePrice ?? CFG.acq.price,
+      holdYears: holdYears || CFG.acq.holdYears,
+      closingDate: closingDate || CFG.acq.closingDate,
+      closingCosts: hasRealPrice ? Math.round((purchasePrice ?? CFG.acq.price) * 0.02) : CFG.acq.closingCosts,
+    };
     // Real-deal overrides: derive unit count/mix/vacancy/T-12 from the ACTUAL
     // parsed deal instead of the hardcoded "Cobblestone" demo dataset — every
     // deal used to show the exact same fake 248-unit property here regardless
@@ -675,7 +688,7 @@ function useModel(state, real) {
     );
 
     return {
-      purchasePrice: ACQ.price,
+      purchasePrice: ACQ.price, closingCosts: ACQ.closingCosts,
       units, t12, T12, years, loan, ltc, equity, totalUses, rate, metrics, salePrice, costsOfSale,
       dispFee, payoff, lev, unlev, leveredIRR, unleveredIRR, equityMultiple, avgCoC, goingInCap,
       rowsCF, wfRows, lpEq, gpEq, matrix, matrixTotals, spend, gprMonthly, inPlaceMonthly, occupied,
@@ -723,7 +736,7 @@ function exportWorkbook(M, S) {
     ["Other Income (annual)", D(sum(M.t12.otherIncome))],
     ["Total Units", M.dealUnits],
     ["Hold Period (yrs)", H],
-    ["Closing Costs", D(CFG.acq.closingCosts)],
+    ["Closing Costs", D(M.closingCosts)],
     ["Acquisition Fee %", P(S.acqFeePct)],
     ["Costs of Sale %", P(S.costsOfSalePct)],
     ["Disposition Fee %", P(S.dispFeePct)],
@@ -1715,7 +1728,7 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData, fullCalcs }) {
     { label: "Year Built", value: realYearBuilt, source: "Offering Memorandum", ...withSource("property.year_built") },
     { label: "NRSF", value: fm(realRba), source: "Offering Memorandum", ...withSource("property.rba_sqft") },
     { label: "Purchase Price", value: $f(M.purchasePrice), source: "Purchase & Sale Agreement", ...withSource("pricing_financing.price") },
-    { label: "Closing Costs", value: $f(hasReal ? fullCalcs.acquisition.closingCosts : CFG.acq.closingCosts), source: "Purchase & Sale Agreement" },
+    { label: "Closing Costs", value: $f(hasReal ? fullCalcs.acquisition.closingCosts : M.closingCosts), source: "Purchase & Sale Agreement" },
     { label: "Sale Price", value: $f(Math.round(hasReal ? (fullCalcs.returns.terminalValue || 0) : M.salePrice)), source: "Calculated", note: hasReal ? "Exit-year NOI \u00f7 exit cap" : "Year 5 forward NOI \u00f7 exit cap" },
     { label: "Loan Amount", value: $f(hasReal ? fullCalcs.financing.loanAmount : M.loan), source: "Lender Term Sheet", ...withSource("pricing_financing.loan_amount") },
     { label: "Total Sources/Uses", value: $f(hasReal ? fullCalcs.sourcesAndUses?.uses?.total : M.totalUses), source: "Calculated" },
@@ -1744,7 +1757,7 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData, fullCalcs }) {
             <Field icon={I.cal} label="Closing Date"><Input w="w-28" value={S.closingDate} onChange={(v) => set({ closingDate: v })} /></Field>
             <Field icon={I.cash} label="Working Capital"><span className="font-bold">{$f(CFG.acq.workingCapital)}</span></Field>
             <Field icon={I.card} label="Closing Costs">
-              <span className="flex items-center gap-1.5 font-bold">{$f(hasReal ? fullCalcs.acquisition.closingCosts : CFG.acq.closingCosts)}
+              <span className="flex items-center gap-1.5 font-bold">{$f(hasReal ? fullCalcs.acquisition.closingCosts : M.closingCosts)}
                 <span className="bg-emerald-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">$</span>
                 <span className="text-gray-300 text-xs">%</span></span>
             </Field>
@@ -1802,7 +1815,7 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData, fullCalcs }) {
             <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">{I.wrench} Uses of Funds</div>
             <Card className="overflow-hidden">
               <div className={`grid grid-cols-3 text-[11px] font-bold uppercase ${GRAD} text-white px-4 py-2`}><span>Item</span><span className="text-right">Amount</span><span className="text-right">%</span></div>
-              {[["Purchase Price", M.purchasePrice], ["› Closing Costs", hasReal ? fullCalcs.acquisition.closingCosts : CFG.acq.closingCosts],
+              {[["Purchase Price", M.purchasePrice], ["› Closing Costs", hasReal ? fullCalcs.acquisition.closingCosts : M.closingCosts],
                 [<span className="relative inline-flex items-center gap-2">CapEx
                   <button onClick={() => setCapexOpen(!capexOpen)}><Pill tone="purple">{S.capexMode === "closing" ? "Funded at Closing" : "Funded from Cashflow"}</Pill></button>
                   {capexOpen && (
@@ -3725,7 +3738,7 @@ function CashflowTab({ M, S, set, cfView, pdfData, pdfUrl }) {
               <Sect k="acq" cls="text-gray-500">ACQUISITION &amp; SALE INFORMATION</Sect>
               {open.acq && (<>
                 <CFRow label="Purchase Price" closing={-M.purchasePrice} red />
-                <CFRow label="Closing Costs" closing={-CFG.acq.closingCosts} red />
+                <CFRow label="Closing Costs" closing={-M.closingCosts} red />
                 <CFRow label="Sale Price" get={(y, i) => i === H - 1 ? M.salePrice : 0} />
                 <CFRow label="Costs of Sale" get={(y, i) => i === H - 1 ? M.costsOfSale : 0} />
                 <CFRow label="Acquisition Fee" closing={-M.acqFeeAmt} red />
