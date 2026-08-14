@@ -28,6 +28,13 @@ import {
   Trash2
 } from 'lucide-react';
 
+// Stable reference (module-level) — must match PropertyFlyover3D.jsx's own
+// useJsApiLoader call exactly, since both share the same loader `id` and
+// @react-google-maps/api throws if the same id is loaded with different
+// options. PropertyFlyover3D needs the 'maps3d' library for its Photorealistic
+// 3D flyover; loading it here too (unused on this page) is harmless.
+const GOOGLE_MAPS_LIBRARIES = ['maps3d'];
+
 if (process.env.REACT_APP_MAPBOX_TOKEN) {
   mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 }
@@ -1677,6 +1684,7 @@ function DashboardMapTab() {
   const { isLoaded: googleMapsLoaded } = useJsApiLoader({
     id: 'dealsniper-google-maps',
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
   const googleMapRef = useRef(null);
   const [activeInfoPinId, setActiveInfoPinId] = useState(null);
