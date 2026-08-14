@@ -7,7 +7,6 @@ import { exportDealRoomHtml } from '../../lib/dealRoomExport';
 import { NoiCashflowChart, ValueCreationBridge, ReturnsComparisonChart } from './DealRoomCharts';
 import { renderWidget } from './DealRoomWidgets';
 import BusinessPlanBlocks from './BusinessPlanBlocks';
-import PropertyFlyover3D from './PropertyFlyover3D';
 import { calculateFullAnalysis } from '../../utils/realEstateCalculations';
 import { useDealRoomWidgetData, resolveWidgetDataset as resolveWidgetDatasetShared } from '../../lib/dealRoomWidgetData';
 
@@ -588,17 +587,6 @@ export default function InvestorDealRoom({ data, full, metrics, scenarioData, do
               {data.timeline.sourcedAt && <span>Sourced {new Date(data.timeline.sourcedAt).toLocaleDateString()}</span>}
               {data.timeline.projectedHoldYears && <span>Projected {data.timeline.projectedHoldYears}-year hold (underwriting assumption)</span>}
             </div>
-          </div>
-        )}
-
-        {(data.property?.address || property?.address) && (
-          <div data-export-exclude>
-            <PropertyFlyover3D
-              address={data.property?.address || property.address}
-              latitude={data.property?.latitude ?? property.latitude}
-              longitude={data.property?.longitude ?? property.longitude}
-              accent={effectiveAccent}
-            />
           </div>
         )}
 
