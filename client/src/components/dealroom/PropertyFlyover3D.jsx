@@ -7,12 +7,22 @@ const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_KEY || '';
 
 /**
  * A satellite/hybrid "3D fly-around" of the property — orbits the camera
- * heading 360° around a fixed point with tilt engaged, using the classic
- * Google Maps JS API (map.setTilt/setHeading). This is the reliable,
- * widely-supported way to get an orbiting flyover effect (works anywhere
- * Google has satellite imagery); it does not depend on the newer
- * Photorealistic 3D Tiles preview API, which requires separate allow-listing.
+ * heading 360° around a fixed point with tilt engaged, using Google's VECTOR
+ * Maps JS rendering (map.setTilt/setHeading against a `mapId`). This matters:
+ * on a plain RASTER map (no mapId), setHeading()/tilt only snap between the
+ * handful of preset "45° imagery" angles Google has oblique aerial photos
+ * for — coverage that's limited to a short list of major metros — so most
+ * addresses just sat there as a flat, non-rotating satellite image. Vector
+ * rendering supports smooth, continuous heading rotation everywhere Google
+ * has any imagery at all, not just the 45°-photography metros.
+ * DEMO_MAP_ID is Google's own public test Map ID (documented in their vector
+ * map samples) — works immediately with zero Cloud Console setup, but carries
+ * a small Google watermark/no styling; swap in a real Map ID (Google Cloud
+ * Console → Maps Platform → Map Management → create one, Vector render type,
+ * free) for production use.
  */
+const FLYOVER_MAP_ID = process.env.REACT_APP_GOOGLE_MAPS_ID || 'DEMO_MAP_ID';
+
 export default function PropertyFlyover3D({ address, latitude, longitude, accent = '#0f5132' }) {
   const { isLoaded } = useJsApiLoader({
     id: 'dealsniper-google-maps',
@@ -131,6 +141,7 @@ export default function PropertyFlyover3D({ address, latitude, longitude, accent
           zoom={19}
           onLoad={onLoad}
           options={{
+            mapId: FLYOVER_MAP_ID,
             mapTypeId: 'satellite',
             tilt: 45,
             disableDefaultUI: true,
