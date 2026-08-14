@@ -7,7 +7,6 @@ import {
   FileSpreadsheet,
   Home,
   Mail,
-  FileText,
   Menu,
   X,
   Users,
@@ -204,7 +203,6 @@ const tabs = [
   { id: 'pipeline', label: 'Pipeline', icon: Layers, section: 'deals' },
   { id: 'underwrite', label: 'Underwrite', icon: FileSpreadsheet, section: 'deals' },
   { id: 'napkin', label: 'Back of the Napkin', icon: NotebookPen, section: 'deals' },
-  { id: 'templates', label: 'Templates', icon: FileText, section: 'deals' },
   { id: 'pitch-deck', label: 'Pitch Deck', icon: Presentation, section: 'analysis' },
   { id: 'investor-portal', label: 'Investor Portal', icon: Users, section: 'analysis' },
 ];
@@ -243,8 +241,6 @@ function DashboardShell({ activeTab, title = 'Dashboard', onTabClick, children }
       navigate('/agent-builder');
     } else if (tabId === 'email-underwrite') {
       navigate('/email-underwrite');
-    } else if (tabId === 'templates') {
-      navigate('/templates');
     } else if (tabId === 'market') {
       navigate('/market-research');
     } else if (tabId === 'pitch-deck') {
