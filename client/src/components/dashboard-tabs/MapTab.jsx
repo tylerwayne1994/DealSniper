@@ -187,6 +187,28 @@ const CATEGORY_COLORS = {
 };
 const DEFAULT_ZONE_COLOR = '#cccccc';
 
+const LOCAL_ZONING_SERVICES = {
+  carlsbad: { label: 'Carlsbad', file: 'carlsbad_zoning.geojson' },
+  encinitas: { label: 'Encinitas', file: 'encinitas_zoning.geojson' },
+  odc: { label: 'ODC', file: 'ODC_ZONE_ZONING_A_-4161197010437700683.geojson' },
+  slc: { label: 'Salt Lake City', file: 'SLCzoning.geojson' },
+  vista: { label: 'Vista', file: 'vista_zoning.geojson' },
+  zoning: { label: 'Zoning', file: 'Zoning.geojson' },
+};
+
+function resolveZoningDataUrl(serviceKey) {
+  if (!serviceKey) return null;
+  const key = String(serviceKey).trim().toLowerCase();
+  const local = LOCAL_ZONING_SERVICES[key];
+  if (local) return `/ZONING/${local.file}`;
+
+  const directMatch = Object.entries(LOCAL_ZONING_SERVICES).find(([k, v]) =>
+    key === String(v.file).replace(/\.geojson$/i, '').toLowerCase() ||
+    key === String(v.file).toLowerCase().replace(/_/g, '')
+  );
+  return directMatch ? `/ZONING/${directMatch[1].file}` : null;
+}
+
 // Fallback: first-character prefix guess (used when legend has no match)
 const ZONE_PREFIX_COLORS = {
   R: '#22c55e', C: '#ef4444', I: '#8b5cf6', A: '#eab308', M: '#f97316', O: '#3b82f6',
@@ -217,7 +239,8 @@ function ZoningOverlayLayer({ serviceKey, enabled, zoneFilter }) {
     const bounds = map.getBounds();
     const bbox = `${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}`;
     try {
-      const url = `${API_ENDPOINTS.zoningData(serviceKey)}?bbox=${bbox}`;
+      const localUrl = resolveZoningDataUrl(serviceKey);
+      const url = localUrl || `${API_ENDPOINTS.zoningData(serviceKey)}?bbox=${bbox}`;
       const res = await fetch(url);
       if (!res.ok) { console.error('[Zoning] fetch error', res.status); return; }
       const geojson = await res.json();
@@ -926,14 +949,21 @@ function DashboardMapTab() {
     (async () => {
       try {
         setZoningLoading(true);
+        const localServices = Object.fromEntries(
+          Object.entries(LOCAL_ZONING_SERVICES).map(([key, value]) => [key, { label: value.label, source: 'local' }])
+        );
         const res = await fetch(API_ENDPOINTS.zoningServices);
         if (res.ok) {
           const data = await res.json();
-          setZoningServices(data);
-          // Don't auto-select â€” let user pick from 85 services
+          setZoningServices({ ...localServices, ...data });
+        } else {
+          setZoningServices(localServices);
         }
       } catch (err) {
         console.error('[Zoning] Failed to load services:', err);
+        setZoningServices(Object.fromEntries(
+          Object.entries(LOCAL_ZONING_SERVICES).map(([key, value]) => [key, { label: value.label, source: 'local' }])
+        ));
       } finally {
         setZoningLoading(false);
       }
