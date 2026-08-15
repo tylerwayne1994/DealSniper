@@ -18,17 +18,18 @@ export function openConnectGmailPopup(userId, onDone) {
   const left = window.screenX + (window.outerWidth - width) / 2;
   const top = window.screenY + (window.outerHeight - height) / 2;
   const authUrl = `${API_ENDPOINTS.authGoogle}?user_id=${encodeURIComponent(userId)}`;
-  const popup = window.open(authUrl, 'gmail_oauth', `width=${width},height=${height},left=${left},top=${top}`);
+  window.open(authUrl, 'gmail_oauth', `width=${width},height=${height},left=${left},top=${top}`);
 
   // accounts.google.com sets Cross-Origin-Opener-Policy: same-origin, which
-  // blocks the opener from reading popup.closed (throws/spams console
-  // warnings and never actually detects the popup closing). The OAuth
-  // callback page instead posts a message here right before it closes.
+  // permanently blocks the opener from reading popup.closed (the browser
+  // logs a console warning on every read attempt, whether or not it's
+  // wrapped in try/catch -- so don't poll it at all here). The OAuth
+  // callback page instead posts a message right before it closes itself.
   let done = false;
   const finish = () => {
     if (done) return;
     done = true;
-    clearInterval(pollTimer);
+    clearTimeout(giveUpTimer);
     window.removeEventListener('message', onMessage);
     if (onDone) onDone();
   };
@@ -37,12 +38,9 @@ export function openConnectGmailPopup(userId, onDone) {
   };
   window.addEventListener('message', onMessage);
 
-  // Best-effort fallback for browsers/cases where COOP doesn't block the read.
-  const pollTimer = setInterval(() => {
-    let closed = false;
-    try { closed = !popup || popup.closed; } catch { /* blocked by COOP */ }
-    if (closed) finish();
-  }, 500);
+  // Fallback in case the popup is closed manually before completing the
+  // flow (no postMessage will ever arrive in that case).
+  const giveUpTimer = setTimeout(finish, 5 * 60 * 1000);
 }
 
 export async function disconnectGmail(userId) {
