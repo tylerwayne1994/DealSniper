@@ -445,13 +445,27 @@ function DashboardPage() {
     }
   }, [profile.id]);
 
+  const getCurrentAuthUserId = async () => {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) {
+        console.error('Failed to get current auth user:', error);
+        return profile?.id || null;
+      }
+      return user?.id || profile?.id || null;
+    } catch (err) {
+      console.error('Error reading auth user:', err);
+      return profile?.id || null;
+    }
+  };
+
   // Gmail connection status (for the Connect Gmail card + Due Diligence send)
   useEffect(() => {
     const loadGmailStatus = async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (error || !user) return;
-        const status = await getGmailStatus(user.id);
+        const userId = await getCurrentAuthUserId();
+        if (!userId) return;
+        const status = await getGmailStatus(userId);
         setGmailStatus(status);
       } catch (err) {
         console.error('Failed to load Gmail status:', err);
@@ -464,10 +478,9 @@ function DashboardPage() {
 
   const handleConnectGmail = async () => {
     try {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error || !user) throw new Error('Not signed in');
+      const userId = await getCurrentAuthUserId();
+      if (!userId) throw new Error('Not signed in');
 
-      const userId = user.id;
       setGmailConnecting(true);
       openConnectGmailPopup(userId, async () => {
         const status = await getGmailStatus(userId);
