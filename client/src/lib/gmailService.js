@@ -21,25 +21,25 @@ export function openConnectGmailPopup(userId, onDone) {
   window.open(authUrl, 'gmail_oauth', `width=${width},height=${height},left=${left},top=${top}`);
 
   // accounts.google.com sets Cross-Origin-Opener-Policy: same-origin, which
-  // permanently blocks the opener from reading popup.closed (the browser
-  // logs a console warning on every read attempt, whether or not it's
-  // wrapped in try/catch -- so don't poll it at all here). The OAuth
-  // callback page instead posts a message right before it closes itself.
+  // permanently severs window.opener inside the popup the moment it
+  // navigates there -- it stays null even after the popup later navigates
+  // back to our own domain, so postMessage/window.closed from the popup can
+  // never reach this window. Poll our own backend for the connection status
+  // instead; that's unaffected by any of this.
   let done = false;
   const finish = () => {
     if (done) return;
     done = true;
+    clearInterval(pollTimer);
     clearTimeout(giveUpTimer);
-    window.removeEventListener('message', onMessage);
     if (onDone) onDone();
   };
-  const onMessage = (event) => {
-    if (event.data && event.data.type === 'gmail-oauth-done') finish();
-  };
-  window.addEventListener('message', onMessage);
+  const pollTimer = setInterval(async () => {
+    const status = await getGmailStatus(userId);
+    if (status.connected) finish();
+  }, 1500);
 
-  // Fallback in case the popup is closed manually before completing the
-  // flow (no postMessage will ever arrive in that case).
+  // Fallback in case the popup is closed manually before completing the flow.
   const giveUpTimer = setTimeout(finish, 5 * 60 * 1000);
 }
 
