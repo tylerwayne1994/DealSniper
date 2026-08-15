@@ -3,7 +3,7 @@
 Build an office cash-flow model that explicitly reflects downtime, tenant improvements, leasing commissions, free rent, renewal costs, and net effective rent.
 
 ---
-
+the 
 ## When to Use This Skill
 
 Use this skill when office underwriting depends on rollover, vacancy lease-up, second-generation leasing, or repositioning capital. It is the right model when NOI alone overstates cash flow because leasing costs are material.
