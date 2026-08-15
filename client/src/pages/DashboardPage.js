@@ -447,18 +447,37 @@ function DashboardPage() {
 
   // Gmail connection status (for the Connect Gmail card + Due Diligence send)
   useEffect(() => {
+    const loadGmailStatus = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) return;
+        const status = await getGmailStatus(user.id);
+        setGmailStatus(status);
+      } catch (err) {
+        console.error('Failed to load Gmail status:', err);
+      }
+    };
+
     if (!profile.id) return;
-    getGmailStatus(profile.id).then(setGmailStatus);
+    loadGmailStatus();
   }, [profile.id]);
 
-  const handleConnectGmail = () => {
-    if (!profile.id) return;
-    setGmailConnecting(true);
-    openConnectGmailPopup(profile.id, async () => {
-      const status = await getGmailStatus(profile.id);
-      setGmailStatus(status);
+  const handleConnectGmail = async () => {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) throw new Error('Not signed in');
+
+      const userId = user.id;
+      setGmailConnecting(true);
+      openConnectGmailPopup(userId, async () => {
+        const status = await getGmailStatus(userId);
+        setGmailStatus(status);
+        setGmailConnecting(false);
+      });
+    } catch (err) {
+      console.error('Failed to start Gmail connect:', err);
       setGmailConnecting(false);
-    });
+    }
   };
 
   const handleDisconnectGmail = async () => {
