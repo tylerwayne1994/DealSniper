@@ -196,7 +196,12 @@ const LOCAL_ZONING_SERVICES = {
   zoning: { label: 'Zoning', file: 'Zoning.geojson' },
 };
 
+// Local static zoning files were removed from the repository due GitHub size limits.
+// Keep this switch off in production so overlay data always comes from backend services.
+const ENABLE_LOCAL_ZONING_FILES = false;
+
 function resolveZoningDataUrl(serviceKey) {
+  if (!ENABLE_LOCAL_ZONING_FILES) return null;
   if (!serviceKey) return null;
   const key = String(serviceKey).trim().toLowerCase();
   const local = LOCAL_ZONING_SERVICES[key];
@@ -949,21 +954,16 @@ function DashboardMapTab() {
     (async () => {
       try {
         setZoningLoading(true);
-        const localServices = Object.fromEntries(
-          Object.entries(LOCAL_ZONING_SERVICES).map(([key, value]) => [key, { label: value.label, source: 'local' }])
-        );
         const res = await fetch(API_ENDPOINTS.zoningServices);
         if (res.ok) {
           const data = await res.json();
-          setZoningServices({ ...localServices, ...data });
+          setZoningServices(data || {});
         } else {
-          setZoningServices(localServices);
+          setZoningServices({});
         }
       } catch (err) {
         console.error('[Zoning] Failed to load services:', err);
-        setZoningServices(Object.fromEntries(
-          Object.entries(LOCAL_ZONING_SERVICES).map(([key, value]) => [key, { label: value.label, source: 'local' }])
-        ));
+        setZoningServices({});
       } finally {
         setZoningLoading(false);
       }
