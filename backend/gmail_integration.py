@@ -31,7 +31,7 @@ from typing import Optional
 os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
 
 from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request as GoogleAuthRequest
+from google.auth.transport.requests import AuthorizedSession, Request as GoogleAuthRequest
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 
@@ -152,10 +152,23 @@ def get_status(user_id: str) -> dict:
     creds = _load_credentials(user_id)
     if not creds:
         return {"connected": False, "email": None}
+    # Can't use gmail users().getProfile() to identify the account: it isn't
+    # authorized under the gmail.send scope (needs gmail.readonly/modify/...),
+    # so Google 403s it even on a perfectly good token. The openid+email
+    # scopes we request cover the userinfo endpoint instead. AuthorizedSession
+    # auto-refreshes an expired access token via the refresh_token.
     try:
-        service = build("gmail", "v1", credentials=creds)
-        profile = service.users().getProfile(userId="me").execute()
-        return {"connected": True, "email": profile.get("emailAddress")}
+        token_before = creds.token
+        session = AuthorizedSession(creds)
+        resp = session.get("https://www.googleapis.com/oauth2/v3/userinfo", timeout=10)
+        if resp.status_code in (401, 403):
+            logger.warning("[gmail] Token rejected during status check for user %s: %s", user_id, resp.text)
+            return {"connected": False, "email": None}
+        email = resp.json().get("email") if resp.ok else None
+        if creds.token and creds.token != token_before:
+            # Persist the refreshed access token so later sends reuse it.
+            store_tokens(user_id, creds.token, creds.refresh_token, creds.expiry.isoformat() if creds.expiry else None)
+        return {"connected": True, "email": email}
     except Exception as e:
         logger.warning("[gmail] Status check failed for user %s: %s", user_id, e)
         return {"connected": False, "email": None}
