@@ -2387,12 +2387,17 @@ function RentMatrix({ M, S, set, simple }) {
 /* -------- Income -------- */
 function IncomeTab({ M, pdfData, pdfUrl }) {
   const y1 = M.years[0];
-  const rows = [
-    ["Gross Potential Rental Revenue", y1.gprY], ["Physical Vacancy", y1.physVac], ["Bad Debt", y1.badDebt],
-    ["Concessions", y1.conc], ["Net Rental Income", y1.netRental, true],
-    ...(M.rubsActive ? [["RUBS Reimbursement Income", y1.rubsInc]] : []),
-    ["Other Income", y1.otherInc],
-    ["Effective Gross Revenue", y1.egr, true, "egr"],
+  // Simplified, consolidated line items — vacancy/bad debt/concessions rolled into
+  // one "Vacancy & Credit Loss" line, RUBS (when active) folded into Other Income —
+  // shown at both a Monthly and an Annual level instead of one dense annual-only table.
+  const vacancyLoss = y1.physVac + y1.badDebt + y1.conc;
+  const otherIncome = y1.otherInc + (M.rubsActive ? y1.rubsInc : 0);
+  const annualRows = [
+    ["Gross Potential Rent", y1.gprY],
+    ["Vacancy & Credit Loss", vacancyLoss],
+    ["Net Rental Income", y1.netRental, true],
+    ["Other Income", otherIncome],
+    ["Effective Gross Income", y1.egr, true, "egr"],
   ];
   // Build unit-type rows from the ACTUAL units in this deal, not the fake
   // demo CFG.unitMix — a real deal's type set (e.g. "2x1") almost never
@@ -2407,12 +2412,21 @@ function IncomeTab({ M, pdfData, pdfUrl }) {
   const verify = useVerifyPanel();
   const incomeVerifyFields = [
     { label: "Gross Potential Rental", value: $f(y1.gprY), source: "Rent Roll" },
-    { label: "Physical Vacancy", value: $f(y1.physVac), source: "T-12 Operating Statement", note: "Year 1 assumption applied to GPR" },
-    { label: "Bad Debt", value: $f(y1.badDebt), source: "T-12 Operating Statement" },
-    { label: "Concessions", value: $f(y1.conc), source: "T-12 Operating Statement" },
-    { label: "Other Income", value: $f(y1.otherInc), source: "T-12 Operating Statement" },
-    { label: "Effective Gross Revenue", value: $f(y1.egr), source: "Calculated" },
+    { label: "Vacancy & Credit Loss", value: $f(vacancyLoss), source: "T-12 Operating Statement", note: "Vacancy + bad debt + concessions" },
+    { label: "Other Income", value: $f(otherIncome), source: "T-12 Operating Statement" },
+    { label: "Effective Gross Income", value: $f(y1.egr), source: "Calculated" },
   ];
+  const IncomeTable = ({ title, divisor }) => (
+    <Card className="overflow-hidden">
+      <div className="px-5 py-2.5 border-b border-gray-100 text-xs font-bold uppercase tracking-wide text-gray-500">{title}</div>
+      {annualRows.map(([l, v, bold, tone]) => (
+        <div key={l} className={`flex justify-between px-5 py-3 border-b border-gray-50 last:border-0 ${tone === "egr" ? "bg-emerald-50" : ""}`}>
+          <span className={`text-sm ${bold ? "font-bold text-gray-800" : "text-gray-600"}`}>{l}</span>
+          <Mono v={Math.round(v / divisor)} bold={bold} green={tone === "egr"} />
+        </div>
+      ))}
+    </Card>
+  );
   return (
     <div className="p-6 flex flex-col gap-6 w-full">
       <div className="flex items-center justify-between">
@@ -2420,14 +2434,10 @@ function IncomeTab({ M, pdfData, pdfUrl }) {
         <VerifyButton onClick={verify.toggle} />
       </div>
       <div><GradPill>Year 1 Income Summary</GradPill></div>
-      <Card className="overflow-hidden">
-        {rows.map(([l, v, bold, tone]) => (
-          <div key={l} className={`flex justify-between px-5 py-3 border-b border-gray-50 last:border-0 ${tone === "egr" ? "bg-emerald-50" : ""}`}>
-            <span className={`text-sm ${bold ? "font-bold text-gray-800" : "text-gray-600"}`}>{l}</span>
-            <Mono v={Math.round(v)} bold={bold} green={tone === "egr"} />
-          </div>
-        ))}
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <IncomeTable title="Monthly" divisor={12} />
+        <IncomeTable title="Annual" divisor={1} />
+      </div>
       <div><GradPill>Income by Unit Type</GradPill></div>
       <Card className="overflow-hidden">
         <table className="w-full text-[13px]">
