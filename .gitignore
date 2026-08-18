@@ -73,3 +73,4 @@ backend/data/deals_v2/
 backend/_route_test.xlsx
 backend/_spec_debug.json
 backend/_test_export.xlsx
+.vercel

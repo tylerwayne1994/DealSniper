@@ -1,0 +1,6 @@
+build2/
+build_log.txt
+build_result.txt
+build_stderr.txt
+build_stdout.txt
+*.log

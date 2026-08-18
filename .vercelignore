@@ -1,0 +1,7 @@
+client/build2/
+client/build_log.txt
+client/build_result.txt
+client/build_stderr.txt
+client/build_stdout.txt
+build*.txt
+*.log
