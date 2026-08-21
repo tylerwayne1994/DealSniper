@@ -5194,16 +5194,36 @@ export default function App({
   const hasValueAdd = valueAddRentIncrease > 0 || valueAddOtherIncomeIncrease > 0;
   const effectiveScenarioData = useMemo(() => {
     if (!mergedParsedData) return null;
-    const origPrice = mergedParsedData.pricing_financing?.purchase_price || mergedParsedData.pricing_financing?.price || 0;
     const basePnl = mergedParsedData.pnl || {};
     const baseGpr = basePnl.gross_potential_rent || basePnl.potential_gross_income || 0;
     return {
       ...mergedParsedData,
+      // Overlay EVERY live Financing-tab assumption (not just Purchase Price) —
+      // previously only purchase_price/exit_cap_rate were synced here, so
+      // calculateFullAnalysis (which drives the Summary tab's whole Financing/
+      // Returns snapshot) never reflected LTV/rate/amort/IO edits at all, and
+      // even purchase-price changes only recomputed loan amount when the OM
+      // happened to have both an original price AND a parsed loan amount.
+      // Forcing _original_purchase_price to match the live price makes
+      // calculateFullAnalysis treat `loan_amount` below as already-correct
+      // for the CURRENT price (computed fresh from S.ltv here) instead of
+      // trying to preserve some other implied LTV from the original parse.
       pricing_financing: {
         ...mergedParsedData.pricing_financing,
-        _original_purchase_price: origPrice,
+        _original_purchase_price: S.purchasePrice,
         purchase_price: S.purchasePrice,
         price: S.purchasePrice,
+        loan_amount: Math.round(S.purchasePrice * S.ltv),
+        annual_debt_service: undefined,
+        monthly_payment: undefined,
+        down_payment: undefined,
+        interest_rate: M.rate * 100,
+        amortization_years: S.amort,
+        term_years: CFG.scenarios[S.scenarioKey].term,
+      },
+      financing: {
+        ...mergedParsedData.financing,
+        io_years: S.ioMonths / 12,
       },
       // Only touch pnl at all once an actual value-add strategy is selected —
       // otherwise leave the parsed EGI/NOI exactly as the backend reported them.
@@ -5223,7 +5243,7 @@ export default function App({
         exit_cap_rate: S.exitCap * 100,
       },
     };
-  }, [mergedParsedData, S.purchasePrice, S.exitCap, hasValueAdd, valueAddRentIncrease, valueAddOtherIncomeIncrease]);
+  }, [mergedParsedData, S.purchasePrice, S.ltv, M.rate, S.amort, S.ioMonths, S.scenarioKey, S.exitCap, hasValueAdd, valueAddRentIncrease, valueAddOtherIncomeIncrease]);
   const fullCalcs = useMemo(() => {
     if (!effectiveScenarioData) return {};
     try { return calculateFullAnalysis(effectiveScenarioData); } catch { return {}; }
