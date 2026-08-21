@@ -313,6 +313,39 @@ function calcRefiScenario({ noi, capRate, ltv, rate, amortYears = 30, existingLo
 }
 const REFI_LTV_STEPS = [0.60, 0.65, 0.70, 0.75, 0.80];
 const refiCapSteps = (baseCap) => [-0.5, -0.25, 0, 0.25, 0.5].map((d) => Math.max(0.01, baseCap + d / 100));
+function annualDebtServiceForYear(loan, rate, amortYears, ioMonths, year) {
+  if (loan <= 0) return 0;
+  const mStart = (year - 1) * 12, mEnd = year * 12;
+  let ds = 0;
+  for (let m = mStart; m < mEnd; m++) ds += m < ioMonths ? loan * rate / 12 : annuityPmt(loan, rate, amortYears);
+  return ds;
+}
+// Full deal-level return recomputed AS IF this refi actually happened at
+// `refiYear` with the selected LTV/cap/rate — this is what makes the rate
+// input actually move the headline IRR/equity-multiple numbers, not just an
+// isolated debt-service row.
+function buildPostRefiReturn({ years, equity, H, exitCap, costsOfSalePct, dispFeePct, originalLoan, originalRate, originalAmort, originalIoMonths, refiYear, newLoan, netProceeds, newRate }) {
+  const flows = [-equity];
+  for (let y = 1; y <= H; y++) {
+    const ds = y <= refiYear
+      ? annualDebtServiceForYear(originalLoan, originalRate, originalAmort, originalIoMonths, y)
+      : annualDebtServiceForYear(newLoan, newRate, 30, 0, y - refiYear);
+    let cf = years[y - 1].cfbds - ds;
+    if (y === refiYear) cf += netProceeds;
+    if (y === H) {
+      const salePrice = exitCap > 0 ? years[H].noi / exitCap : 0;
+      const netSale = salePrice * (1 - costsOfSalePct - dispFeePct);
+      const payoffAtExit = refiYear < H
+        ? (newLoan > 0 ? balanceAfter(newLoan, newRate, 30, 0, (H - refiYear) * 12) : 0)
+        : (originalLoan > 0 ? balanceAfter(originalLoan, originalRate, originalAmort, originalIoMonths, H * 12) : 0);
+      cf += netSale - payoffAtExit;
+    }
+    flows.push(cf);
+  }
+  const rr = irr(flows);
+  const em = equity > 0 ? flows.slice(1).reduce((a, b) => a + b, 0) / equity : null;
+  return { irr: rr, em };
+}
 
 function useModel(state, real) {
   return useMemo(() => {
@@ -4564,6 +4597,12 @@ function ReturnsTab({ M, Mbase, S, set, pdfData, pdfUrl }) {
   const existingLoanArgs = { existingLoan: M.loan, existingRate: M.rate, existingAmort: S.amort, existingIoMonths: S.ioMonths, monthsElapsed: yr * 12 };
   const detailNew = calcRefiScenario({ noi: noiNew, capRate: selNew.cap, ltv: selNew.ltv, rate: refiRateInput, ...existingLoanArgs });
   const detailBase = calcRefiScenario({ noi: noiBase, capRate: selBase.cap, ltv: selBase.ltv, rate: refiRateInput, ...existingLoanArgs });
+  // Full deal-level IRR/equity-multiple AS IF this refi actually happened —
+  // this is what makes the rate input move the headline return numbers, not
+  // just an isolated debt-service line.
+  const postRefiArgs = { originalLoan: M.loan, originalRate: M.rate, originalAmort: S.amort, originalIoMonths: S.ioMonths, refiYear: yr, newRate: refiRateInput, H, costsOfSalePct: S.costsOfSalePct, dispFeePct: S.dispFeePct };
+  const postRefiNew = buildPostRefiReturn({ years: M.years, equity: M.equity, exitCap: selNew.cap, newLoan: detailNew.loan, netProceeds: detailNew.netProceeds, ...postRefiArgs });
+  const postRefiBase = buildPostRefiReturn({ years: Mbase.years, equity: Mbase.equity, exitCap: selBase.cap, newLoan: detailBase.loan, netProceeds: detailBase.netProceeds, ...postRefiArgs });
   return (
     <div className="p-6 flex flex-col gap-5 w-full">
       <div className="flex items-center justify-between">
@@ -4619,8 +4658,10 @@ function ReturnsTab({ M, Mbase, S, set, pdfData, pdfUrl }) {
               <div className="flex gap-4 bg-amber-50 border border-amber-100 rounded-lg px-4 py-2">
                 <div><div className="text-[10px] font-bold text-amber-700 uppercase">New Annual Debt Service</div><div className="text-sm font-bold text-gray-900">{$f(Math.round(detailNew.annualDS))}</div></div>
                 <div><div className="text-[10px] font-bold text-amber-700 uppercase">New DSCR</div><div className="text-sm font-bold text-gray-900">{detailNew.dscr == null ? "—" : `${fm(detailNew.dscr, 2)}x`}</div></div>
+                <div><div className="text-[10px] font-bold text-amber-700 uppercase">Post-Refi Levered IRR</div><div className="text-sm font-bold text-gray-900">{postRefiNew.irr == null ? "—" : pct(postRefiNew.irr)}</div></div>
+                <div><div className="text-[10px] font-bold text-amber-700 uppercase">Post-Refi Equity Multiple</div><div className="text-sm font-bold text-gray-900">{postRefiNew.em == null ? "—" : `${fm(postRefiNew.em, 2)}x`}</div></div>
               </div>
-              <div className="text-xs text-gray-500 max-w-sm"><b>Loan Amount</b> is priced off NOI ÷ Cap Rate × LTV — it does not move with rate. Changing the <b>Interest Rate</b> updates the Debt Service / DSCR / Cash Flow rows below (highlighted).</div>
+              <div className="text-xs text-gray-500 max-w-sm"><b>Loan Amount</b> is priced off NOI ÷ Cap Rate × LTV — it does not move with rate. Changing the <b>Interest Rate</b> recomputes the full deal's IRR/Equity Multiple as if this refi happened, plus Debt Service/DSCR/Cash Flow below (highlighted).</div>
             </div>
           </Card>
           <div className="grid grid-cols-2 gap-4">
@@ -4641,6 +4682,8 @@ function ReturnsTab({ M, Mbase, S, set, pdfData, pdfUrl }) {
                 <tr className="border-t border-gray-100 bg-amber-50"><td className="py-2 px-4 font-semibold">↳ New Annual Debt Service <Pill tone="orange">changes with rate</Pill></td><td className="text-right px-4 font-semibold">{$f(Math.round(detailBase.annualDS))}</td><td className="text-right px-4 font-semibold">{$f(Math.round(detailNew.annualDS))}</td></tr>
                 <tr className="border-t border-gray-50 bg-amber-50"><td className="py-2 px-4 font-semibold">↳ New DSCR <Pill tone="orange">changes with rate</Pill></td><td className="text-right px-4 font-semibold">{detailBase.dscr == null ? "—" : `${fm(detailBase.dscr, 2)}x`}</td><td className="text-right px-4 font-semibold">{detailNew.dscr == null ? "—" : `${fm(detailNew.dscr, 2)}x`}</td></tr>
                 <tr className="border-t border-gray-50 bg-amber-50"><td className="py-2 px-4 font-semibold">↳ Post-Refi Annual Cash Flow <Pill tone="orange">changes with rate</Pill></td><td className="text-right px-4"><Mono v={Math.round(Mbase.years[yr].cfbds - detailBase.annualDS)} bold /></td><td className="text-right px-4"><Mono v={Math.round(M.years[yr].cfbds - detailNew.annualDS)} bold /></td></tr>
+                <tr className="border-t border-gray-100 bg-emerald-50"><td className="py-2 px-4 font-bold">↳ Post-Refi Levered IRR (Full Deal) <Pill tone="orange">changes with rate</Pill></td><td className="text-right px-4 font-bold">{postRefiBase.irr == null ? "—" : pct(postRefiBase.irr)}</td><td className="text-right px-4 font-bold">{postRefiNew.irr == null ? "—" : pct(postRefiNew.irr)}</td></tr>
+                <tr className="border-t border-gray-50 bg-emerald-50"><td className="py-2 px-4 font-bold">↳ Post-Refi Equity Multiple (Full Deal) <Pill tone="orange">changes with rate</Pill></td><td className="text-right px-4 font-bold">{postRefiBase.em == null ? "—" : `${fm(postRefiBase.em, 2)}x`}</td><td className="text-right px-4 font-bold">{postRefiNew.em == null ? "—" : `${fm(postRefiNew.em, 2)}x`}</td></tr>
               </tbody>
             </table>
           </Card>
