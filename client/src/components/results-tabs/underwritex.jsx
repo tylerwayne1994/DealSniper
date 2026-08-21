@@ -297,6 +297,22 @@ function irr(flows) {
   }
   return (lo + hi) / 2;
 }
+// Shared refi math — used by both the Summary tab's compact snapshot and the
+// Returns tab's full simulator so the two never drift apart. Loan amount is
+// driven purely by the chosen NOI basis / cap rate / LTV; rate only affects
+// the resulting debt service, not the loan size itself.
+function calcRefiScenario({ noi, capRate, ltv, rate, amortYears = 30, existingLoan = 0, existingRate = 0, existingAmort = 30, existingIoMonths = 0, monthsElapsed = 0 }) {
+  const value = capRate > 0 ? noi / capRate : 0;
+  const loan = value * ltv;
+  const fees = loan * 0.01;
+  const payoff = existingLoan > 0 ? balanceAfter(existingLoan, existingRate, existingAmort, existingIoMonths, monthsElapsed) : 0;
+  const netProceeds = loan - payoff - fees;
+  const annualDS = rate > 0 ? annuityPmt(loan, rate, amortYears) * 12 : 0;
+  const dscr = annualDS > 0 ? noi / annualDS : null;
+  return { value, loan, fees, payoff, netProceeds, annualDS, dscr };
+}
+const REFI_LTV_STEPS = [0.60, 0.65, 0.70, 0.75, 0.80];
+const refiCapSteps = (baseCap) => [-0.5, -0.25, 0, 0.25, 0.5].map((d) => Math.max(0.01, baseCap + d / 100));
 
 function useModel(state, real) {
   return useMemo(() => {
@@ -665,37 +681,13 @@ function useModel(state, real) {
     const avgTenure = tenure.reduce((a, u) => a + u.tenureYears, 0) / tenure.length;
     const over3 = tenure.filter((u) => u.tenureYears > 3).length / tenure.length;
 
-    /* sensitivity IRR matrix — centered on THIS deal's own exit cap/growth
-       assumptions, not a fixed 5-6%/2-4% demo range that would completely
-       miss the mark for a real deal trading at, say, a 9%+ cap rate. */
-    const caps = [-0.5, -0.25, 0, 0.25, 0.5].map((d) => Math.max(0.01, exitCap + d / 100));
-    const grs = [-1, -0.5, 0, 0.5, 1].map((d) => Math.max(-0.1, growth + d / 100));
-    const sens = caps.map((c) =>
-      grs.map((g) => {
-        const n1 = years[0].noi;
-        const flows = [-equity];
-        for (let y = 1; y <= H; y++) {
-          const noiY = n1 * Math.pow(1 + g, y - 1);
-          const cfb = noiY + years[y - 1].amFee + years[y - 1].capexRes;
-          const ds = loan > 0 ? dsYear(y) : 0;
-          let cf = cfb - ds;
-          if (y === H) {
-            const sp = (n1 * Math.pow(1 + g, H)) / c;
-            cf += sp * (1 - costsOfSalePct - dispFeePct) - (loan > 0 ? balanceAfter(loan, rate, amort, ioMonths, H * 12) : 0);
-          }
-          flows.push(cf);
-        }
-        return irr(flows);
-      })
-    );
-
     return {
       purchasePrice: ACQ.price, closingCosts: ACQ.closingCosts,
       units, t12, T12, years, loan, ltc, equity, totalUses, rate, metrics, salePrice, costsOfSale,
       dispFee, payoff, lev, unlev, leveredIRR, unleveredIRR, equityMultiple, avgCoC, goingInCap,
       rowsCF, wfRows, lpEq, gpEq, matrix, matrixTotals, spend, gprMonthly, inPlaceMonthly, occupied,
       renoUnits, renoPool, renoCount, totalRenoCost, totalPremiumYr, expByMonth, exp12, avgTenure, over3,
-      caps, grs, sens, renoStart, renoReturn,
+      renoStart, renoReturn,
       rubsRows, rubsActive, rubsAnnual, rubsValueImpact, rubsPerUnitMo, utilAnnual,
       rentTrend, mtmPct,
       schedule, downUnits, ganttMonths, lpShare,
@@ -1652,7 +1644,7 @@ function ParsedDataView({ scenarioData, extraDocs = [], pdfData, pdfUrl }) {
   );
 }
 
-function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData, fullCalcs }) {
+function SummaryTab({ M, Mbase, S, set, pdfData, pdfUrl, scenarioData, fullCalcs }) {
   const [capexOpen, setCapexOpen] = useState(false);
   const [debtOpen, setDebtOpen] = useState(false);
   const verify = useVerifyPanel();
@@ -1703,6 +1695,15 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData, fullCalcs }) {
   const strategyNewValue = M.purchasePrice + strategyValueAdd;
   const strategyNewMonthlyCF = M.lev[1] / 12;
   const strategyNewCoC = M.avgCoC;
+  // Compact refi preview (full LTV × cap-rate × rate simulator lives on the
+  // Returns tab) — same shared calcRefiScenario helper, computed for both
+  // the As-Is and Value-Add NOI bases so neither is hidden behind a toggle.
+  const refiYr = Math.min(Math.max(S.refiYear || 3, 1), S.holdYears);
+  const refiNoiNew = M.years[refiYr].noi;
+  const refiNoiBase = Mbase.years[refiYr].noi;
+  const refiExisting = { existingLoan: M.loan, existingRate: M.rate, existingAmort: S.amort, existingIoMonths: S.ioMonths, monthsElapsed: refiYr * 12 };
+  const refiNew = calcRefiScenario({ noi: refiNoiNew, capRate: S.exitCap, ltv: S.refiLTV, rate: S.refiRate, ...refiExisting });
+  const refiBase = calcRefiScenario({ noi: refiNoiBase, capRate: S.exitCap, ltv: S.refiLTV, rate: S.refiRate, ...refiExisting });
   const ADD = <span className="italic text-gray-400 text-[13px]">Click to add…</span>;
   const realAvgUnitSize = realRba && realUnits ? Math.round(realRba / realUnits) : 0;
   const info = [
@@ -1894,6 +1895,32 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData, fullCalcs }) {
               <SnapRow label="Avg Cash-on-Cash" value={pct(realAvgCoC)} />
               <SnapRow label="Exit Cap Rate" value={pct(realExitCap, 2)} />
               <SnapRow label="Hold Period" value={`${realHoldPeriod} yrs`} />
+            </div>
+          </Card>
+        </div>
+      </div>
+      <div>
+        <GradPill className="mb-3">Refinance Snapshot</GradPill>
+        <div className="text-xs text-gray-400 -mt-1 mb-3">At Year {refiYr} · {pct(S.refiLTV, 0)} LTV · {pct(S.exitCap, 2)} Cap · {pct(S.refiRate, 2)} Rate — full LTV/cap/rate simulator on the Returns tab</div>
+        <div className="grid grid-cols-2 gap-5">
+          <Card className="overflow-hidden">
+            <GradBanner className="rounded-b-none" gradient="bg-gray-500"><span className="font-bold text-sm">Current (As-Is)</span></GradBanner>
+            <div className="p-4 flex flex-col gap-2 text-sm">
+              <SnapRow label="Stabilized NOI Used" value={$f(Math.round(refiNoiBase))} />
+              <SnapRow label="Refi Loan Amount" value={$f(Math.round(refiBase.loan))} highlight />
+              <SnapRow label="Net Cash-Out Proceeds" value={$f(Math.round(refiBase.netProceeds))} highlight />
+              <SnapRow label="New Annual Debt Service" value={$f(Math.round(refiBase.annualDS))} />
+              <SnapRow label="New DSCR" value={refiBase.dscr == null ? "—" : `${fm(refiBase.dscr, 2)}x`} />
+            </div>
+          </Card>
+          <Card className="overflow-hidden">
+            <GradBanner className="rounded-b-none"><span className="font-bold text-sm">New (Value-Add)</span></GradBanner>
+            <div className="p-4 flex flex-col gap-2 text-sm">
+              <SnapRow label="Stabilized NOI Used" value={$f(Math.round(refiNoiNew))} />
+              <SnapRow label="Refi Loan Amount" value={$f(Math.round(refiNew.loan))} highlight />
+              <SnapRow label="Net Cash-Out Proceeds" value={$f(Math.round(refiNew.netProceeds))} highlight />
+              <SnapRow label="New Annual Debt Service" value={$f(Math.round(refiNew.annualDS))} />
+              <SnapRow label="New DSCR" value={refiNew.dscr == null ? "—" : `${fm(refiNew.dscr, 2)}x`} />
             </div>
           </Card>
         </div>
@@ -4474,60 +4501,150 @@ function FinancingTab({ M, S, set, pdfData, pdfUrl }) {
 }
 
 /* -------- Returns -------- */
-function ReturnsTab({ M, pdfData, pdfUrl }) {
+// Refi Loan Amount matrix for ONE noi basis — LTV rows × Cap Rate columns.
+// Click a cell to price the detail panel in ReturnsTab off that combination.
+function RefiMatrix({ title, tone, noi, ltvSteps, capSteps, selected, onSelect }) {
+  return (
+    <Card className="overflow-hidden">
+      <div className={`px-4 py-3 ${tone} text-white font-bold text-sm`}>{title}</div>
+      <table className="w-full text-[13px]">
+        <thead><tr className="text-gray-500 bg-gray-50"><th className="py-2.5 px-4 text-left">LTV ↓ / Cap Rate →</th>{capSteps.map((c) => <th key={c} className="text-right px-4">{pct(c, 2)}</th>)}</tr></thead>
+        <tbody>{ltvSteps.map((ltv) => (
+          <tr key={ltv} className="border-t border-gray-50">
+            <td className="py-2 px-4 font-semibold">{pct(ltv, 0)}</td>
+            {capSteps.map((cap) => {
+              const loanAmt = cap > 0 ? (noi / cap) * ltv : 0;
+              const isSel = selected && Math.abs(selected.ltv - ltv) < 1e-9 && Math.abs(selected.cap - cap) < 1e-9;
+              return (
+                <td key={cap} onClick={() => onSelect({ ltv, cap })}
+                  className={`text-right px-4 cursor-pointer ${isSel ? "bg-emerald-100 font-bold text-emerald-800 rounded" : "text-gray-700 hover:bg-gray-50"}`}>
+                  {$f(Math.round(loanAmt))}
+                </td>
+              );
+            })}
+          </tr>
+        ))}</tbody>
+      </table>
+      <div className="px-4 py-2 text-[11px] text-gray-400">Click a cell to price it in the detail panel below.</div>
+    </Card>
+  );
+}
+function ReturnsTab({ M, Mbase, S, set, pdfData, pdfUrl }) {
   const verify = useVerifyPanel();
+  const H = S.holdYears;
+  const strategyLabel = INCOME_METHOD_LABELS[S.incomeMethod] || S.incomeMethod;
   const returnsVerifyFields = [
-    { label: "Levered IRR", value: M.leveredIRR === null ? "—" : pct(M.leveredIRR), source: "Calculated" },
-    { label: "Unlevered IRR", value: M.unleveredIRR === null ? "—" : pct(M.unleveredIRR), source: "Calculated" },
+    { label: "Levered IRR (Value-Add)", value: M.leveredIRR === null ? "—" : pct(M.leveredIRR), source: "Calculated" },
+    { label: "Levered IRR (As-Is)", value: Mbase.leveredIRR === null ? "—" : pct(Mbase.leveredIRR), source: "Calculated" },
     { label: "Equity Multiple", value: `${fm(M.equityMultiple, 2)}x`, source: "Calculated" },
-    { label: "Exit Value", value: $f(Math.round(M.salePrice)), source: "Calculated", note: "Year 5 forward NOI ÷ exit cap" },
+    { label: "Exit Value", value: $f(Math.round(M.salePrice)), source: "Calculated", note: "Exit-year NOI ÷ exit cap" },
   ];
+  // Current (as-is) vs New (value-add) headline comparison
+  const cmp = [
+    ["Year 1 NOI", $f(Math.round(Mbase.years[0].noi)), $f(Math.round(M.years[0].noi))],
+    ["Going-In Cap Rate", pct(Mbase.goingInCap), pct(M.goingInCap)],
+    ["Levered IRR", Mbase.leveredIRR === null ? "—" : pct(Mbase.leveredIRR), M.leveredIRR === null ? "—" : pct(M.leveredIRR)],
+    ["Avg Cash-on-Cash", pct(Mbase.avgCoC), pct(M.avgCoC)],
+    ["Year 1 Cash Flow (Annual)", $f(Math.round(Mbase.lev[1])), $f(Math.round(M.lev[1]))],
+    ["Year 1 Cash Flow (Monthly)", $f(Math.round(Mbase.lev[1] / 12)), $f(Math.round(M.lev[1] / 12))],
+    ["Equity Multiple", `${fm(Mbase.equityMultiple, 2)}x`, `${fm(M.equityMultiple, 2)}x`],
+    ["Exit Value", $f(Math.round(Mbase.salePrice)), $f(Math.round(M.salePrice))],
+  ];
+  // Refi simulator state — independent of the S.refiOn toggle used elsewhere,
+  // this is a free-standing "what if" explorer.
+  const [refiYear, setRefiYear] = useState(Math.min(Math.max(S.refiYear || 3, 1), H));
+  const [refiRateInput, setRefiRateInput] = useState(S.refiRate || 0.0625);
+  const [selNew, setSelNew] = useState({ ltv: S.refiLTV || 0.70, cap: S.exitCap });
+  const [selBase, setSelBase] = useState({ ltv: S.refiLTV || 0.70, cap: S.exitCap });
+  const yr = Math.min(Math.max(refiYear, 1), H);
+  const noiNew = M.years[yr].noi;
+  const noiBase = Mbase.years[yr].noi;
+  const capSteps = refiCapSteps(S.exitCap);
+  const existingLoanArgs = { existingLoan: M.loan, existingRate: M.rate, existingAmort: S.amort, existingIoMonths: S.ioMonths, monthsElapsed: yr * 12 };
+  const detailNew = calcRefiScenario({ noi: noiNew, capRate: selNew.cap, ltv: selNew.ltv, rate: refiRateInput, ...existingLoanArgs });
+  const detailBase = calcRefiScenario({ noi: noiBase, capRate: selBase.cap, ltv: selBase.ltv, rate: refiRateInput, ...existingLoanArgs });
   return (
     <div className="p-6 flex flex-col gap-5 w-full">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Returns</h1>
         <VerifyButton onClick={verify.toggle} />
       </div>
-      <div className="grid grid-cols-3 gap-4">
-        {[["LEVERED IRR", M.leveredIRR === null ? "—" : pct(M.leveredIRR)], ["UNLEVERED IRR", M.unleveredIRR === null ? "—" : pct(M.unleveredIRR)],
-          ["EQUITY MULTIPLE", `${fm(M.equityMultiple, 2)}x`], ["AVG CASH-ON-CASH", pct(M.avgCoC)],
-          ["GOING-IN CAP", pct(M.goingInCap)], ["EXIT VALUE", $f(Math.round(M.salePrice))],
-          ...(M.jvOn ? [["SPONSOR NET IRR (JV)", M.sponsorIRR === null ? "—" : M.sponsorEq <= 0 ? "∞" : pct(M.sponsorIRR)], ["PARTNER IRR (JV)", M.jvIRR === null ? "—" : pct(M.jvIRR)]] : [])].map(([l, v]) => (
-          <Card key={l} className="p-4"><div className="text-[11px] font-bold text-gray-400 uppercase flex items-center gap-2"><span className="w-6 h-6 rounded-md bg-emerald-100 text-emerald-600 flex items-center justify-center">{I.trend}</span>{l}</div><div className="text-2xl font-bold text-gray-900 mt-1">{v}</div></Card>
-        ))}
-      </div>
       <Card className="overflow-hidden">
-        <div className={`px-4 py-3 ${GRAD} text-white font-bold text-sm`}>Annual Levered Cash Flow &amp; Yield</div>
+        <div className={`px-4 py-3 ${GRAD} text-white font-bold text-sm`}>Current (As-Is) vs New (Value-Add: {strategyLabel})</div>
         <table className="w-full text-[13px]">
-          <thead><tr className="text-left text-gray-500 bg-gray-50"><th className="py-2.5 px-4">Period</th><th className="text-right px-4">Cash Flow</th><th className="text-right px-4">Cash-on-Cash</th></tr></thead>
+          <thead><tr className="text-left text-gray-500 bg-gray-50"><th className="py-2.5 px-4">Metric</th><th className="text-right px-4">Current (As-Is)</th><th className="text-right px-4">New (Value-Add)</th></tr></thead>
+          <tbody>{cmp.map(([l, c, n]) => (
+            <tr key={l} className="border-t border-gray-50"><td className="py-2.5 px-4 text-gray-600">{l}</td><td className="text-right px-4 text-gray-700">{c}</td><td className="text-right px-4 font-semibold text-emerald-600">{n}</td></tr>
+          ))}</tbody>
+        </table>
+      </Card>
+      <Card className="overflow-hidden">
+        <div className={`px-4 py-3 ${GRAD} text-white font-bold text-sm`}>Equity Split — {M.jvOn ? "Joint Venture" : "Syndication"}</div>
+        <table className="w-full text-[13px]">
+          <thead><tr className="text-left text-gray-500 bg-gray-50"><th className="py-2.5 px-4">Party</th><th className="text-right px-4">Equity Share</th><th className="text-right px-4">Current IRR / EM</th><th className="text-right px-4">New IRR / EM</th></tr></thead>
           <tbody>
-            <tr className="border-t border-gray-50"><td className="py-2.5 px-4 font-semibold">Closing</td><td className="text-right px-4"><Mono v={Math.round(M.lev[0])} /></td><td className="text-right px-4 text-gray-400">—</td></tr>
-            {M.rowsCF.map((r, i) => (
-              <tr key={r.y} className="border-t border-gray-50"><td className="py-2.5 px-4 font-semibold">Year {r.y}</td>
-                <td className="text-right px-4"><Mono v={Math.round(M.lev[i + 1])} /></td>
-                <td className="text-right px-4 text-gray-600">{pct(r.cfads / M.equity)}</td></tr>
-            ))}
+            {M.jvOn && (<>
+              <tr className="border-t border-gray-50"><td className="py-2.5 px-4 font-semibold">Sponsor</td><td className="text-right px-4">{pct(M.equity > 0 ? M.sponsorEq / M.equity : 0, 0)}</td>
+                <td className="text-right px-4">{Mbase.sponsorIRR === null ? "—" : pct(Mbase.sponsorIRR)} / {Mbase.sponsorEM === null ? "—" : `${fm(Mbase.sponsorEM, 2)}x`}</td>
+                <td className="text-right px-4 font-semibold text-emerald-600">{M.sponsorIRR === null ? "—" : pct(M.sponsorIRR)} / {M.sponsorEM === null ? "—" : `${fm(M.sponsorEM, 2)}x`}</td></tr>
+              <tr className="border-t border-gray-50"><td className="py-2.5 px-4 font-semibold flex items-center gap-1.5">JV Partner <Pill tone="green">{pct(S.jvPrefRate, 1)} pref</Pill></td><td className="text-right px-4">{pct(M.equity > 0 ? M.jvCap / M.equity : 0, 0)}</td>
+                <td className="text-right px-4">{Mbase.jvIRR === null ? "—" : pct(Mbase.jvIRR)} / {Mbase.jvEM === null ? "—" : `${fm(Mbase.jvEM, 2)}x`}</td>
+                <td className="text-right px-4 font-semibold text-emerald-600">{M.jvIRR === null ? "—" : pct(M.jvIRR)} / {M.jvEM === null ? "—" : `${fm(M.jvEM, 2)}x`}</td></tr>
+            </>)}
+            <tr className="border-t border-gray-50"><td className="py-2.5 px-4 font-semibold">GP {M.jvOn ? "(within Sponsor)" : ""}</td><td className="text-right px-4">{pct(S.gpPct, 0)}</td>
+              <td className="text-right px-4">{Mbase.gpIRR === null ? "—" : pct(Mbase.gpIRR)} / {Mbase.gpEM === null ? "—" : `${fm(Mbase.gpEM, 2)}x`}</td>
+              <td className="text-right px-4 font-semibold text-emerald-600">{M.gpIRR === null ? "—" : pct(M.gpIRR)} / {M.gpEM === null ? "—" : `${fm(M.gpEM, 2)}x`}</td></tr>
+            <tr className="border-t border-gray-50"><td className="py-2.5 px-4 font-semibold">LP {M.jvOn ? "(within Sponsor)" : ""}</td><td className="text-right px-4">{pct(M.lpShare, 0)}</td>
+              <td className="text-right px-4">{Mbase.lpIRR === null ? "—" : pct(Mbase.lpIRR)} / {Mbase.lpEM === null ? "—" : `${fm(Mbase.lpEM, 2)}x`}</td>
+              <td className="text-right px-4 font-semibold text-emerald-600">{M.lpIRR === null ? "—" : pct(M.lpIRR)} / {M.lpEM === null ? "—" : `${fm(M.lpEM, 2)}x`}</td></tr>
           </tbody>
         </table>
       </Card>
-      <Card className="overflow-hidden">
-        <div className={`px-4 py-3 ${GRAD} text-white font-bold text-sm`}>IRR Sensitivity — Exit Cap × Rent Growth</div>
-        <table className="w-full text-[13px]">
-          <thead><tr className="text-gray-500 bg-gray-50"><th className="py-2.5 px-4 text-left">Exit Cap ↓ / Growth →</th>{M.grs.map((g) => <th key={g} className="text-right px-4">{pct(g, 1)}</th>)}</tr></thead>
-          <tbody>{M.caps.map((c, ci) => (
-            <tr key={c} className="border-t border-gray-50"><td className="py-2 px-4 font-semibold">{pct(c)}</td>
-              {M.sens[ci].map((v, gi) => {
-                const base = ci === 2 && gi === 2;
-                return <td key={gi} className={`text-right px-4 ${base ? "bg-emerald-100 font-bold text-emerald-800 rounded" : v !== null && v < 0.08 ? "text-red-500" : v !== null && v > 0.15 ? "text-emerald-600" : "text-gray-700"}`}>{v === null ? "—" : pct(v, 1)}</td>;
-              })}</tr>
-          ))}</tbody>
-        </table>
-        <div className="px-4 py-2 text-[11px] text-gray-400">Highlighted cell = current assumptions. Red &lt; 8% · Green &gt; 15%.</div>
-      </Card>
+      <div>
+        <GradPill className="mb-3">Refinance Simulator</GradPill>
+        <div className="flex flex-col gap-4">
+          <Card className="p-4">
+            <div className="flex flex-wrap items-center gap-6">
+              <div>
+                <div className="text-[11px] font-bold text-gray-400 uppercase mb-1">Refi Year</div>
+                <select value={yr} onChange={(e) => setRefiYear(parseInt(e.target.value, 10))} className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-800 outline-none">
+                  {Array.from({ length: H }, (_, i) => i + 1).map((y) => <option key={y} value={y}>Year {y}</option>)}
+                </select>
+              </div>
+              <div>
+                <div className="text-[11px] font-bold text-gray-400 uppercase mb-1">New Interest Rate</div>
+                <Input w="w-24" value={fm(refiRateInput * 100, 2)} onChange={(v) => setRefiRateInput((parseFloat(v) || 0) / 100)} suffix="%" />
+              </div>
+              <div className="text-xs text-gray-400 max-w-sm">Loan Amount = Stabilized NOI ÷ Cap Rate × LTV. Rate only drives the resulting debt service/DSCR below.</div>
+            </div>
+          </Card>
+          <div className="grid grid-cols-2 gap-4">
+            <RefiMatrix title={`Refi Loan Amount — Value-Add NOI (${$f(Math.round(noiNew))}/yr)`} tone={GRAD} noi={noiNew} ltvSteps={REFI_LTV_STEPS} capSteps={capSteps} selected={selNew} onSelect={setSelNew} />
+            <RefiMatrix title={`Refi Loan Amount — As-Is NOI (${$f(Math.round(noiBase))}/yr)`} tone="bg-gray-500" noi={noiBase} ltvSteps={REFI_LTV_STEPS} capSteps={capSteps} selected={selBase} onSelect={setSelBase} />
+          </div>
+          <Card className="overflow-hidden">
+            <div className={`px-4 py-3 ${GRAD} text-white font-bold text-sm`}>Refinance Proceeds — Year {yr} @ {pct(refiRateInput, 2)} Rate</div>
+            <table className="w-full text-[13px]">
+              <thead><tr className="text-left text-gray-500 bg-gray-50"><th className="py-2.5 px-4">Metric</th><th className="text-right px-4">Current (As-Is) — {pct(selBase.ltv, 0)} LTV @ {pct(selBase.cap, 2)}</th><th className="text-right px-4">New (Value-Add) — {pct(selNew.ltv, 0)} LTV @ {pct(selNew.cap, 2)}</th></tr></thead>
+              <tbody>
+                <tr className="border-t border-gray-50"><td className="py-2 px-4">Stabilized NOI Used</td><td className="text-right px-4">{$f(Math.round(noiBase))}</td><td className="text-right px-4">{$f(Math.round(noiNew))}</td></tr>
+                <tr className="border-t border-gray-50"><td className="py-2 px-4">Implied Value</td><td className="text-right px-4">{$f(Math.round(detailBase.value))}</td><td className="text-right px-4">{$f(Math.round(detailNew.value))}</td></tr>
+                <tr className="border-t border-gray-50 font-bold"><td className="py-2 px-4">New Loan Amount</td><td className="text-right px-4">{$f(Math.round(detailBase.loan))}</td><td className="text-right px-4">{$f(Math.round(detailNew.loan))}</td></tr>
+                <tr className="border-t border-gray-50"><td className="py-2 px-4">Payoff of Existing Loan</td><td className="text-right px-4">-{$f(Math.round(detailBase.payoff))}</td><td className="text-right px-4">-{$f(Math.round(detailNew.payoff))}</td></tr>
+                <tr className="border-t border-gray-50"><td className="py-2 px-4">Refi Fees (1%)</td><td className="text-right px-4">-{$f(Math.round(detailBase.fees))}</td><td className="text-right px-4">-{$f(Math.round(detailNew.fees))}</td></tr>
+                <tr className="border-t border-gray-100 bg-emerald-50 font-bold"><td className="py-2 px-4">Net Cash-Out Proceeds</td><td className="text-right px-4"><Mono v={Math.round(detailBase.netProceeds)} /></td><td className="text-right px-4"><Mono v={Math.round(detailNew.netProceeds)} /></td></tr>
+                <tr className="border-t border-gray-50"><td className="py-2 px-4">New Annual Debt Service</td><td className="text-right px-4">{$f(Math.round(detailBase.annualDS))}</td><td className="text-right px-4">{$f(Math.round(detailNew.annualDS))}</td></tr>
+                <tr className="border-t border-gray-50"><td className="py-2 px-4">New DSCR</td><td className="text-right px-4">{detailBase.dscr == null ? "—" : `${fm(detailBase.dscr, 2)}x`}</td><td className="text-right px-4">{detailNew.dscr == null ? "—" : `${fm(detailNew.dscr, 2)}x`}</td></tr>
+              </tbody>
+            </table>
+          </Card>
+        </div>
+      </div>
       {verify.open && <DocSourcePanel title="Returns" fields={returnsVerifyFields} onClose={verify.close} pdfData={pdfData} pdfUrl={pdfUrl} />}
     </div>
   );
 }
+
 
 /* -------- Comps: RentCast market data + Leaflet satellite map -------- */
 function CompsFitBounds({ center, comps }) {
@@ -4880,6 +4997,13 @@ export default function App({
     return merged;
   }, [scenarioData, extraParsedDocs]);
   const M = useModel(S, mergedParsedData);
+  // "As-is" baseline model — identical inputs except forced to the
+  // no-premium/no-RUBS "stabilized" income method, so the Returns/Summary
+  // tabs can show Current (as-is) numbers side-by-side with the New
+  // (value-add) numbers M already represents, instead of only ever showing
+  // one strategy at a time.
+  const baselineState = useMemo(() => ({ ...S, incomeMethod: "stabilized" }), [S]);
+  const Mbase = useModel(baselineState, mergedParsedData);
   // Sync the real deal's purchase price into S on load — S.purchasePrice
   // previously ONLY ever initialized to the hardcoded demo CFG.acq.price
   // and nothing synced it from the actual uploaded/parsed deal, so every
@@ -5056,7 +5180,7 @@ export default function App({
     try { return calculateFullAnalysis(effectiveScenarioData); } catch { return {}; }
   }, [effectiveScenarioData]);
   const tabs = {
-    summary: <SummaryTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} scenarioData={mergedParsedData} fullCalcs={fullCalcs} />,
+    summary: <SummaryTab M={M} Mbase={Mbase} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} scenarioData={mergedParsedData} fullCalcs={fullCalcs} />,
     strategy: <StrategyTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} />,
     income: <IncomeTab M={M} pdfData={pdfData} pdfUrl={pdfUrl} />,
     rentroll: <RentRollTab M={M} S={S} scenarioData={mergedParsedData} />,
@@ -5066,7 +5190,7 @@ export default function App({
     renovations: <RenovationsTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} />,
     waterfall: <WaterfallTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} />,
     financing: <FinancingTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} />,
-    returns: <ReturnsTab M={M} pdfData={pdfData} pdfUrl={pdfUrl} />,
+    returns: <ReturnsTab M={M} Mbase={Mbase} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} />,
     comps: <CompsTab M={M} scenarioData={mergedParsedData} dealId={dealId} marketData={marketData} marketDataLoading={marketDataLoading} onRefetchMarketData={onRefetchMarketData} pdfData={pdfData} pdfUrl={pdfUrl} />,
     model: <UnderwritingModelTab scenarioData={mergedParsedData} dealId={dealId} />,
     montecarlo: <MonteCarloTab scenarioData={mergedParsedData} fullCalcs={fullCalcs} dealId={dealId} />,
