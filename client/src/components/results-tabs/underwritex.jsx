@@ -4615,7 +4615,7 @@ function ReturnsTab({ M, Mbase, S, set, pdfData, pdfUrl }) {
                 <div className="text-[11px] font-bold text-gray-400 uppercase mb-1">New Interest Rate</div>
                 <Input w="w-24" value={fm(refiRateInput * 100, 2)} onChange={(v) => setRefiRateInput((parseFloat(v) || 0) / 100)} suffix="%" />
               </div>
-              <div className="text-xs text-gray-400 max-w-sm">Loan Amount = Stabilized NOI ÷ Cap Rate × LTV. Rate only drives the resulting debt service/DSCR below.</div>
+              <div className="text-xs text-gray-500 max-w-sm"><b>Loan Amount</b> is priced off NOI ÷ Cap Rate × LTV — it does not move with rate. Changing the <b>Interest Rate</b> updates the Debt Service / DSCR / Cash Flow rows below (highlighted).</div>
             </div>
           </Card>
           <div className="grid grid-cols-2 gap-4">
@@ -4633,8 +4633,9 @@ function ReturnsTab({ M, Mbase, S, set, pdfData, pdfUrl }) {
                 <tr className="border-t border-gray-50"><td className="py-2 px-4">Payoff of Existing Loan</td><td className="text-right px-4">-{$f(Math.round(detailBase.payoff))}</td><td className="text-right px-4">-{$f(Math.round(detailNew.payoff))}</td></tr>
                 <tr className="border-t border-gray-50"><td className="py-2 px-4">Refi Fees (1%)</td><td className="text-right px-4">-{$f(Math.round(detailBase.fees))}</td><td className="text-right px-4">-{$f(Math.round(detailNew.fees))}</td></tr>
                 <tr className="border-t border-gray-100 bg-emerald-50 font-bold"><td className="py-2 px-4">Net Cash-Out Proceeds</td><td className="text-right px-4"><Mono v={Math.round(detailBase.netProceeds)} /></td><td className="text-right px-4"><Mono v={Math.round(detailNew.netProceeds)} /></td></tr>
-                <tr className="border-t border-gray-50"><td className="py-2 px-4">New Annual Debt Service</td><td className="text-right px-4">{$f(Math.round(detailBase.annualDS))}</td><td className="text-right px-4">{$f(Math.round(detailNew.annualDS))}</td></tr>
-                <tr className="border-t border-gray-50"><td className="py-2 px-4">New DSCR</td><td className="text-right px-4">{detailBase.dscr == null ? "—" : `${fm(detailBase.dscr, 2)}x`}</td><td className="text-right px-4">{detailNew.dscr == null ? "—" : `${fm(detailNew.dscr, 2)}x`}</td></tr>
+                <tr className="border-t border-gray-100 bg-amber-50"><td className="py-2 px-4 font-semibold">↳ New Annual Debt Service <Pill tone="orange">changes with rate</Pill></td><td className="text-right px-4 font-semibold">{$f(Math.round(detailBase.annualDS))}</td><td className="text-right px-4 font-semibold">{$f(Math.round(detailNew.annualDS))}</td></tr>
+                <tr className="border-t border-gray-50 bg-amber-50"><td className="py-2 px-4 font-semibold">↳ New DSCR <Pill tone="orange">changes with rate</Pill></td><td className="text-right px-4 font-semibold">{detailBase.dscr == null ? "—" : `${fm(detailBase.dscr, 2)}x`}</td><td className="text-right px-4 font-semibold">{detailNew.dscr == null ? "—" : `${fm(detailNew.dscr, 2)}x`}</td></tr>
+                <tr className="border-t border-gray-50 bg-amber-50"><td className="py-2 px-4 font-semibold">↳ Post-Refi Annual Cash Flow <Pill tone="orange">changes with rate</Pill></td><td className="text-right px-4"><Mono v={Math.round(Mbase.years[yr].cfbds - detailBase.annualDS)} bold /></td><td className="text-right px-4"><Mono v={Math.round(M.years[yr].cfbds - detailNew.annualDS)} bold /></td></tr>
               </tbody>
             </table>
           </Card>
