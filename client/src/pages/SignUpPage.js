@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { User, Building2, Mail, Lock, Phone, MapPin, Briefcase, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -12,6 +12,10 @@ function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  // Ref-based double-submit guard: React state updates are async, so a fast
+  // double-click can fire handleSubmit twice before `loading` re-renders and
+  // disables the button. The ref flips synchronously on the first click.
+  const submittingRef = useRef(false);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -35,6 +39,7 @@ function SignUpPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submittingRef.current) return; // ignore double-clicks / double-submits
     setError('');
     setSuccess('');
 
@@ -52,7 +57,8 @@ function SignUpPage() {
       return;
     }
 
-    setLoading(true);
+    submittingRef.current = true;
+    setLoading(true); // button stays disabled until the Stripe redirect (or error)
 
     try {
       sessionStorage.setItem('pendingSignup', JSON.stringify({
@@ -78,15 +84,35 @@ function SignUpPage() {
           plan: plan
         })
       });
-      if (!res.ok) throw new Error('Failed to create Stripe Checkout session');
-      const { url } = await res.json();
+
+      let body = null;
+      try { body = await res.json(); } catch (_) { /* non-JSON error body */ }
+
+      if (res.status === 409 && body?.already_subscribed) {
+        // Backend found a live subscription for this email — don't let them
+        // pay twice; point them at sign-in instead.
+        sessionStorage.removeItem('pendingSignup');
+        setError('This email already has an active subscription. Please sign in instead.');
+        submittingRef.current = false;
+        setLoading(false);
+        return;
+      }
+      if (res.status === 409 && body?.checkout_in_progress) {
+        sessionStorage.removeItem('pendingSignup');
+        setError('Your checkout is already being prepared — please wait a moment and try again.');
+        submittingRef.current = false;
+        setLoading(false);
+        return;
+      }
+      if (!res.ok) throw new Error(body?.message || 'Failed to create Stripe Checkout session');
 
       // 3. Redirect to Stripe Checkout
-      window.location.href = url;
+      window.location.href = body.url;
     } catch (err) {
       console.error('Stripe Checkout error:', err);
       sessionStorage.removeItem('pendingSignup');
       setError(err.message || 'Failed to start payment');
+      submittingRef.current = false;
       setLoading(false);
     }
   };

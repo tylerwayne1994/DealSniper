@@ -267,8 +267,12 @@ async def flood_zone_lookup(lat: float = None, lng: float = None, address: str =
 
 import stripe
 
-# Price ID: single $100/month plan - prefer env var, fallback to known ID
-PRICE_ID = os.getenv("STRIPE_PRICE_ID", "price_1SfA2SRRD0SJQZk3q6Zujrw0")
+# Price ID: single $100/month "Monthly Membership" plan. Env var wins;
+# fallback is the confirmed LIVE price id (price_1TG3gc..., $100.00/month,
+# product prod_UEWkW5dJ9T8oE4) so checkout keeps working even if the env var
+# is missing. NOTE: the previous fallback here (price_1SfA2S...) did NOT
+# match the live membership price.
+PRICE_ID = os.getenv("STRIPE_PRICE_ID", "price_1TG3gcRSKEwwH1TScuY9fRtm")
 STRIPE_TRIAL_DAYS = max(0, int(os.getenv("STRIPE_TRIAL_DAYS", "4")))
 
 # Debug endpoint for env vars (dev only)
@@ -700,11 +704,161 @@ log.info("[ENV] Frontend URL: %s", os.getenv("FRONTEND_URL"))
 log.info("[ENV] Stripe webhook secret prefix: %s", _preview(os.getenv("STRIPE_WEBHOOK_SECRET")))  # Updated logging for webhook secret
 
 
+# ============================================================================
+# Stripe subscription checkout — hardened against duplicate subscriptions.
+#
+# In production two customers ended up with 2–3 live subscriptions created
+# minutes apart, each billing independently. Four independent layers now
+# prevent that (any one alone stops the double-charge):
+#
+#   1. Existing-subscription check: never create a checkout session for
+#      someone who already has an active/trialing/past_due subscription —
+#      respond 409 already_subscribed instead.
+#   2. Customer reuse: sessions are created with customer=<existing id>,
+#      never customer_email (which made Stripe mint a brand-new customer per
+#      checkout, letting duplicate subs hide under separate customers).
+#   3. Pending-checkout claim: a partial unique index in checkout_attempts
+#      (one 'pending' row per user+price — see
+#      migrations/add_stripe_dedup_tables.sql) makes concurrent/repeated
+#      requests reuse the same open session instead of racing.
+#   4. Stable idempotency keys on every Stripe create call, so network-level
+#      retries replay the original response instead of creating again.
+# ============================================================================
+
+LIVE_SUB_STATUSES = ("active", "trialing", "past_due")
+
+
+def _find_stripe_customer_and_live_sub(email: str, stored_customer_id: str | None):
+    """Return (customer_id_to_reuse, live_subscription_or_None).
+
+    Scans the customer id stored on the profile first, then every Stripe
+    customer sharing the email (historical duplicates from the old
+    customer_email flow), so an existing subscription is found no matter
+    which customer object it lives under.
+    """
+    candidate_ids = []
+    if stored_customer_id:
+        candidate_ids.append(stored_customer_id)
+    try:
+        for customer in stripe.Customer.list(email=email, limit=10).get("data", []):
+            if customer["id"] not in candidate_ids:
+                candidate_ids.append(customer["id"])
+    except Exception as e:
+        log.warning("[CHECKOUT] Customer.list failed for %s: %s", email, e)
+
+    reusable_id = candidate_ids[0] if candidate_ids else None
+    for customer_id in candidate_ids:
+        try:
+            subs = stripe.Subscription.list(customer=customer_id, status="all", limit=10)
+        except Exception as e:
+            log.warning("[CHECKOUT] Subscription.list failed for customer %s: %s", customer_id, e)
+            continue
+        for sub in subs.get("data", []):
+            if sub.get("status") in LIVE_SUB_STATUSES:
+                return customer_id, sub
+    return reusable_id, None
+
+
+async def _claim_pending_checkout(supabase, customer_key: str, price_id: str):
+    """Claim the single 'pending' checkout slot for this user+price.
+
+    Returns (claim_id, existing_url, in_progress):
+      - claim_id set        → we hold the slot; caller creates the session.
+      - existing_url set    → another still-open session exists; reuse it.
+      - in_progress True    → a concurrent request is creating one right now.
+      - all None/False      → guard table unavailable; caller proceeds with
+                              idempotency keys as the only (still real) guard.
+    """
+    import asyncio
+    from datetime import datetime, timezone
+
+    for _ in range(2):
+        try:
+            res = supabase.table("checkout_attempts").insert({
+                "customer_key": customer_key,
+                "price_id": price_id,
+                "status": "pending",
+            }).execute()
+            return res.data[0]["id"], None, False
+        except Exception as insert_err:
+            # Either the unique index rejected us (a pending attempt already
+            # exists) or the table is missing. Look for the existing row.
+            try:
+                rows = (supabase.table("checkout_attempts").select("*")
+                        .eq("customer_key", customer_key).eq("price_id", price_id)
+                        .eq("status", "pending").limit(1).execute().data) or []
+            except Exception:
+                log.warning(
+                    "[CHECKOUT] checkout_attempts table unavailable (%s) — "
+                    "run migrations/add_stripe_dedup_tables.sql. Continuing "
+                    "with idempotency keys only.", insert_err
+                )
+                return None, None, False
+
+            if not rows:
+                log.warning("[CHECKOUT] Pending-claim insert failed with no existing row (%s); retrying once", insert_err)
+                continue
+
+            row = rows[0]
+            session_id = row.get("session_id")
+            if not session_id:
+                # A concurrent request claimed the slot but hasn't stored its
+                # session yet — give it a moment to finish, then reuse.
+                for _wait in range(3):
+                    await asyncio.sleep(1)
+                    refreshed = (supabase.table("checkout_attempts").select("*")
+                                 .eq("id", row["id"]).limit(1).execute().data) or []
+                    if refreshed and refreshed[0].get("session_id"):
+                        row = refreshed[0]
+                        session_id = row["session_id"]
+                        break
+                if not session_id:
+                    # Fresh claim that never produced a session (< ~60s old
+                    # means a request is still in flight — tell the caller to
+                    # retry; older means the creating request died — expire it).
+                    age_seconds = None
+                    try:
+                        created = datetime.fromisoformat(str(row["created_at"]).replace("Z", "+00:00"))
+                        age_seconds = (datetime.now(timezone.utc) - created).total_seconds()
+                    except Exception:
+                        pass
+                    if age_seconds is not None and age_seconds < 60:
+                        log.info("[CHECKOUT] Concurrent checkout in progress for %s — telling client to retry", customer_key)
+                        return None, None, True
+                    log.warning("[CHECKOUT] Expiring stale sessionless claim %s for %s", row["id"], customer_key)
+                    supabase.table("checkout_attempts").update({"status": "expired"}).eq("id", row["id"]).execute()
+                    continue
+
+            try:
+                existing = stripe.checkout.Session.retrieve(session_id)
+                if existing.get("status") == "open":
+                    log.info("[CHECKOUT] Reusing open checkout session %s for %s", session_id, customer_key)
+                    return None, existing.get("url") or row.get("url"), False
+                # complete or expired — release the slot and claim a new one.
+                new_status = "completed" if existing.get("status") == "complete" else "expired"
+                supabase.table("checkout_attempts").update({"status": new_status}).eq("id", row["id"]).execute()
+                log.info("[CHECKOUT] Prior session %s is %s — released claim for %s", session_id, existing.get("status"), customer_key)
+            except Exception as e:
+                log.warning("[CHECKOUT] Could not inspect prior session %s (%s) — expiring claim", session_id, e)
+                supabase.table("checkout_attempts").update({"status": "expired"}).eq("id", row["id"]).execute()
+    return None, None, False
+
+
+def _release_checkout_claim(supabase, claim_id):
+    """Free the pending slot after a failed session creation (best effort)."""
+    if not supabase or claim_id is None:
+        return
+    try:
+        supabase.table("checkout_attempts").update({"status": "expired"}).eq("id", claim_id).execute()
+    except Exception as e:
+        log.warning("[CHECKOUT] Could not release claim %s: %s", claim_id, e)
+
+
 # Stripe Checkout session creation endpoint for plan selection
 @app.post("/api/create-checkout-session")
 async def create_checkout_session(request: Request):
     data = await request.json()
-    email = data.get("email")
+    email = (data.get("email") or "").strip().lower()
     plan = data.get("plan")
     first_name = data.get("firstName", "")
     last_name = data.get("lastName", "")
@@ -724,12 +878,72 @@ async def create_checkout_session(request: Request):
 
     if not email:
         raise HTTPException(status_code=400, detail="Missing required field: email")
+    if not PRICE_ID:
+        log.error("[CHECKOUT] STRIPE_PRICE_ID is not configured — cannot create checkout sessions")
+        raise HTTPException(status_code=500, detail="Subscription price is not configured")
 
-    # Single plan at $100/month
-    price_id = PRICE_ID
+    stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+    customer_key = user_id or email
+    log.info("[CHECKOUT] Checkout requested: email=%s user_id=%s", email, user_id or "-")
 
+    # Profile lookup for a previously stored Stripe customer id (never create
+    # a second customer for a known user).
+    supabase = None
+    stored_customer_id = None
     try:
-        stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+        from stripe_webhook_handler import get_supabase
+        supabase = get_supabase()
+        query = supabase.table("profiles").select("id, stripe_customer_id")
+        query = query.eq("id", user_id) if user_id else query.eq("email", email)
+        rows = (query.limit(1).execute().data) or []
+        if rows:
+            stored_customer_id = rows[0].get("stripe_customer_id")
+    except Exception as e:
+        log.warning("[CHECKOUT] Profile lookup failed (continuing without it): %s", e)
+
+    claim_id = None
+    try:
+        # Layer 1 — refuse to sell a second subscription to a live subscriber.
+        customer_id, live_sub = _find_stripe_customer_and_live_sub(email, stored_customer_id)
+        if live_sub:
+            log.warning(
+                "[CHECKOUT] BLOCKED duplicate checkout: %s already has a %s subscription "
+                "(%s) on customer %s", email, live_sub.get("status"), live_sub.get("id"), customer_id
+            )
+            return JSONResponse(status_code=409, content={
+                "already_subscribed": True,
+                "subscription_status": live_sub.get("status"),
+                "message": "You already have an active subscription. Please sign in instead of subscribing again.",
+            })
+
+        # Layer 2 — reuse (or create exactly one) Stripe customer.
+        if customer_id:
+            log.info("[CHECKOUT] Reusing Stripe customer %s for %s", customer_id, email)
+        else:
+            customer = stripe.Customer.create(
+                email=email,
+                name=(f"{first_name} {last_name}".strip() or None),
+                idempotency_key=f"customer:{email}",
+            )
+            customer_id = customer["id"]
+            log.info("[CHECKOUT] Created Stripe customer %s for %s", customer_id, email)
+        if supabase and user_id and stored_customer_id != customer_id:
+            try:
+                supabase.table("profiles").update({"stripe_customer_id": customer_id}).eq("id", user_id).execute()
+            except Exception as e:
+                log.warning("[CHECKOUT] Could not stamp stripe_customer_id on profile %s: %s", user_id, e)
+
+        # Layer 3 — claim the single pending-checkout slot (DB race guard).
+        if supabase:
+            claim_id, existing_url, in_progress = await _claim_pending_checkout(supabase, customer_key, PRICE_ID)
+            if existing_url:
+                return {"url": existing_url, "reused": True}
+            if in_progress:
+                return JSONResponse(status_code=409, content={
+                    "checkout_in_progress": True,
+                    "message": "Your checkout is already being prepared — please wait a moment and try again.",
+                })
+
         metadata = {
             "email": email,
             "first_name": first_name,
@@ -748,14 +962,14 @@ async def create_checkout_session(request: Request):
         session_kwargs = dict(
             payment_method_types=["card"],
             line_items=[{
-                "price": price_id,
+                "price": PRICE_ID,
                 "quantity": 1,
             }],
             mode="subscription",
             subscription_data={
                 "trial_period_days": STRIPE_TRIAL_DAYS,
             },
-            customer_email=email,
+            customer=customer_id,
             metadata=metadata,
             success_url=os.getenv("FRONTEND_URL", "http://localhost:3000") + f"/payment-success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=os.getenv("FRONTEND_URL", "http://localhost:3000") + "/signup?canceled=true",
@@ -763,9 +977,41 @@ async def create_checkout_session(request: Request):
         if user_id:
             session_kwargs["client_reference_id"] = user_id
 
-        checkout_session = stripe.checkout.Session.create(**session_kwargs)
+        # Layer 4 — stable idempotency key: derived from who + what + which
+        # claimed attempt, so Stripe-level retries of this exact request can
+        # never create a second session. When the claim table is unavailable
+        # the key stays stable per user+price within a 10-minute window.
+        if claim_id is not None:
+            idempotency_key = f"sub-checkout:{customer_key}:{PRICE_ID}:attempt{claim_id}"
+        else:
+            import time as _time
+            idempotency_key = f"sub-checkout:{customer_key}:{PRICE_ID}:tb{int(_time.time() // 600)}"
+
+        checkout_session = stripe.checkout.Session.create(
+            **session_kwargs,
+            idempotency_key=idempotency_key,
+        )
+        log.info(
+            "[CHECKOUT] Created checkout session %s for customer %s (%s), idempotency_key=%s",
+            checkout_session["id"], customer_id, email, idempotency_key
+        )
+
+        if supabase and claim_id is not None:
+            try:
+                supabase.table("checkout_attempts").update({
+                    "session_id": checkout_session["id"],
+                    "url": checkout_session["url"],
+                }).eq("id", claim_id).execute()
+            except Exception as e:
+                log.warning("[CHECKOUT] Could not record session on claim %s: %s", claim_id, e)
+
         return {"url": checkout_session.url}
+    except HTTPException:
+        _release_checkout_claim(supabase, claim_id)
+        raise
     except Exception as e:
+        _release_checkout_claim(supabase, claim_id)
+        log.error("[CHECKOUT] Failed to create checkout session for %s: %s", email, e)
         raise HTTPException(status_code=500, detail=str(e))
 
 

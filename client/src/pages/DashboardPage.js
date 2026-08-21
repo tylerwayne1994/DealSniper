@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   User, 
@@ -27,8 +27,20 @@ import { getGmailStatus, openConnectGmailPopup, disconnectGmail } from '../lib/g
 
 function TokenPackageCard({ name, tokens, price, description, packageId, profileEmail, profileId, compact = false }) {
   const [loading, setLoading] = useState(false);
+  // Ref-based double-click guard (state updates are async, so a fast double
+  // click could fire handlePurchase twice before `loading` disables the button)
+  const purchasingRef = useRef(false);
+  // One checkout intent per page mount: the backend derives its Stripe
+  // idempotency key from this, so retries/double-clicks reuse the same
+  // checkout session while a fresh page visit can legitimately buy again.
+  const checkoutIntentRef = useRef(null);
+  if (checkoutIntentRef.current === null) {
+    checkoutIntentRef.current = (window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  }
 
   const handlePurchase = async () => {
+    if (purchasingRef.current) return;
+    purchasingRef.current = true;
     setLoading(true);
     try {
       const response = await fetch(API_ENDPOINTS.createTokenCheckout, {
@@ -37,7 +49,8 @@ function TokenPackageCard({ name, tokens, price, description, packageId, profile
         body: JSON.stringify({
           package: packageId,
           email: profileEmail,
-          profile_id: profileId
+          profile_id: profileId,
+          checkout_intent_id: checkoutIntentRef.current
         })
       });
 
@@ -52,6 +65,7 @@ function TokenPackageCard({ name, tokens, price, description, packageId, profile
     } catch (error) {
       console.error('Error creating checkout:', error);
       alert('Failed to initiate payment. Please try again.');
+      purchasingRef.current = false;
       setLoading(false);
     }
   };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { storeSupabaseGoogleToken } from '../lib/gmailService';
@@ -18,14 +18,64 @@ import { storeSupabaseGoogleToken } from '../lib/gmailService';
 // their now-known user id so the existing webhook logic
 // (stripe_webhook_handler.py's metadata.user_id branch) activates the
 // correct profile. Existing subscribers just go straight to the dashboard.
+//
+// Duplicate-subscription protection:
+//  - `ranRef` makes the effect run exactly once (React 18 StrictMode mounts
+//    effects twice in dev; each run used to create a checkout session).
+//  - The backend now refuses to create a session for anyone with a live
+//    subscription (HTTP 409 already_subscribed) — if we get that response,
+//    the user has already paid, so go to the dashboard instead of checkout.
+//  - HTTP 409 checkout_in_progress means a concurrent request is already
+//    creating the session — wait briefly and retry once; the backend then
+//    returns the SAME session instead of a second one.
 // ============================================================================
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate();
   const [message, setMessage] = useState('Finishing sign-in...');
   const [error, setError] = useState('');
+  const ranRef = useRef(false);
 
   useEffect(() => {
+    if (ranRef.current) return; // never create two checkout sessions from one landing
+    ranRef.current = true;
+
+    const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
+
+    const startCheckout = async (user, attempt = 0) => {
+      const nameParts = (user.user_metadata?.full_name || user.user_metadata?.name || '').split(' ');
+      const res = await fetch(`${API_BASE}/api/create-checkout-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user.email,
+          userId: user.id,
+          firstName: user.user_metadata?.given_name || nameParts[0] || '',
+          lastName: user.user_metadata?.family_name || nameParts.slice(1).join(' ') || '',
+          plan: 'standard',
+        }),
+      });
+
+      let body = null;
+      try { body = await res.json(); } catch (_) { /* non-JSON error body */ }
+
+      if (res.status === 409 && body?.already_subscribed) {
+        // Backend found a live subscription in Stripe — this is a paying
+        // member, never push them into a second checkout.
+        setMessage('Welcome back! Redirecting to your dashboard...');
+        setTimeout(() => navigate('/dashboard'), 600);
+        return;
+      }
+      if (res.status === 409 && body?.checkout_in_progress && attempt < 1) {
+        // Another request (e.g. a second tab) is creating the session right
+        // now — wait for it, then the backend hands us the same session.
+        await new Promise((r) => setTimeout(r, 2500));
+        return startCheckout(user, attempt + 1);
+      }
+      if (!res.ok) throw new Error(body?.message || 'Failed to start checkout');
+      window.location.href = body.url;
+    };
+
     const run = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -66,8 +116,6 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8010';
-
         // No stripe_customer_id on the profile — but that is NOT proof they
         // never paid. Accounts from before PaymentSuccessRedirect stamped
         // Stripe ids (webhook's find-by-email fallback fired before the
@@ -94,23 +142,10 @@ export default function AuthCallbackPage() {
         }
 
         // New (or never-subscribed) user — send them to start a subscription,
-        // same plan/trial as the standard signup flow.
+        // same plan/trial as the standard signup flow. The backend re-checks
+        // Stripe for a live subscription before creating anything.
         setMessage('Almost there — setting up your subscription...');
-        const nameParts = (user.user_metadata?.full_name || user.user_metadata?.name || '').split(' ');
-        const res = await fetch(`${API_BASE}/api/create-checkout-session`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: user.email,
-            userId: user.id,
-            firstName: user.user_metadata?.given_name || nameParts[0] || '',
-            lastName: user.user_metadata?.family_name || nameParts.slice(1).join(' ') || '',
-            plan: 'standard',
-          }),
-        });
-        if (!res.ok) throw new Error('Failed to start checkout');
-        const { url } = await res.json();
-        window.location.href = url;
+        await startCheckout(user);
       } catch (err) {
         console.error('Auth callback error:', err);
         setError(err.message || 'Something went wrong finishing sign-in.');
