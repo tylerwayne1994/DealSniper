@@ -4545,6 +4545,7 @@ function ReturnsTab({ M, Mbase, S, set, pdfData, pdfUrl }) {
     ["Going-In Cap Rate", pct(Mbase.goingInCap), pct(M.goingInCap)],
     ["Levered IRR", Mbase.leveredIRR === null ? "—" : pct(Mbase.leveredIRR), M.leveredIRR === null ? "—" : pct(M.leveredIRR)],
     ["Avg Cash-on-Cash", pct(Mbase.avgCoC), pct(M.avgCoC)],
+    ["Year 1 DSCR", Mbase.metrics.dscr == null ? "—" : `${fm(Mbase.metrics.dscr, 2)}x`, M.metrics.dscr == null ? "—" : `${fm(M.metrics.dscr, 2)}x`],
     ["Year 1 Cash Flow (Annual)", $f(Math.round(Mbase.lev[1])), $f(Math.round(M.lev[1]))],
     ["Year 1 Cash Flow (Monthly)", $f(Math.round(Mbase.lev[1] / 12)), $f(Math.round(M.lev[1] / 12))],
     ["Equity Multiple", `${fm(Mbase.equityMultiple, 2)}x`, `${fm(M.equityMultiple, 2)}x`],
