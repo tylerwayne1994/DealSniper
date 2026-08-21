@@ -305,7 +305,7 @@ function useModel(state, real) {
       scheduleStart, scheduleEnd, rubsSelected, rubsRecoveryPct, imputeVacant, holdYears, closingDate, renoTargetType,
       renoDowntime, maxConcurrent, capexMode, gpPct, cmFeePct, amFeePct, acqFeePct, dispFeePct,
       jvOn, jvContribPct, jvPrefRate, jvMode, refiYear, refiLTV, refiRate, refiOn, purchasePrice,
-      wfPrefRate, wfPromotePct } = state;
+      wfPrefRate, wfPromotePct, expGrowth, y1Vacancy, stabVacancy } = state;
     const A = CFG.assumptions;
     // Closing costs were a flat $509,613 demo constant regardless of the
     // real deal's price (e.g. still $509,613 on an $800K deal) — once a real
@@ -421,7 +421,7 @@ function useModel(state, real) {
     for (let y = 1; y <= H + 1; y++) {
       const g = Math.pow(1 + growth, y - 1);
       const gprY = marketGprY1 * g;
-      const vac = y === 1 ? A.y1Vacancy : A.stabVacancy;
+      const vac = y === 1 ? y1Vacancy : stabVacancy;
       const physVac = -gprY * vac;
       const badDebt = -gprY * A.badDebtPct;
       const conc = -gprY * A.concessionsPct;
@@ -429,7 +429,7 @@ function useModel(state, real) {
       const rubsInc = rubsAnnual * g;
       const otherInc = otherIncomeAnnualBase * g + rubsInc;
       const egr = netRental + otherInc;
-      const opex = T12.opex * Math.pow(1 + A.expGrowth, y);
+      const opex = T12.opex * Math.pow(1 + expGrowth, y);
       const noi = egr + opex;
       const amFee = -egr * amFeePct;
       const cmFee = y === 1 ? -cmFeePct * totalRenoCost : 0;
@@ -665,9 +665,11 @@ function useModel(state, real) {
     const avgTenure = tenure.reduce((a, u) => a + u.tenureYears, 0) / tenure.length;
     const over3 = tenure.filter((u) => u.tenureYears > 3).length / tenure.length;
 
-    /* sensitivity IRR matrix */
-    const caps = [0.05, 0.0525, 0.055, 0.0575, 0.06];
-    const grs = [0.02, 0.025, 0.03, 0.035, 0.04];
+    /* sensitivity IRR matrix — centered on THIS deal's own exit cap/growth
+       assumptions, not a fixed 5-6%/2-4% demo range that would completely
+       miss the mark for a real deal trading at, say, a 9%+ cap rate. */
+    const caps = [-0.5, -0.25, 0, 0.25, 0.5].map((d) => Math.max(0.01, exitCap + d / 100));
+    const grs = [-1, -0.5, 0, 0.5, 1].map((d) => Math.max(-0.1, growth + d / 100));
     const sens = caps.map((c) =>
       grs.map((g) => {
         const n1 = years[0].noi;
@@ -704,7 +706,7 @@ function useModel(state, real) {
       jvCap, sponsorEq, jvYears, jvBuyoutOwed, jvBuyoutPaid, jvDeferred, jvBuyoutYear: B,
       sponsorIRR, sponsorEM, jvIRR, jvEM, jvOn,
       dealUnits, vacantCount, isRealDeal: useRealUnits, holdYears: ACQ.holdYears, closingDate: ACQ.closingDate,
-      renoTargetType: renoTargetType || CFG.reno.targetType,
+      renoTargetType: renoTargetType || CFG.reno.targetType, expGrowth, y1Vacancy, stabVacancy,
     };
   }, [state, real]);
 }
@@ -729,8 +731,8 @@ function exportWorkbook(M, S) {
     ["IO Period (months)", S.ioMonths],
     ["Exit Cap Rate", P(S.exitCap)],
     ["Rent Growth", P(S.growth)],
-    ["Stabilized Vacancy", P(CFG.assumptions.stabVacancy)],
-    ["Year 1 Vacancy", P(CFG.assumptions.y1Vacancy)],
+    ["Stabilized Vacancy", P(M.stabVacancy)],
+    ["Year 1 Vacancy", P(M.y1Vacancy)],
     ["Bad Debt %", P(CFG.assumptions.badDebtPct)],
     ["Concessions %", P(CFG.assumptions.concessionsPct)],
     ["Other Income (annual)", D(sum(M.t12.otherIncome))],
@@ -1651,7 +1653,6 @@ function ParsedDataView({ scenarioData, extraDocs = [], pdfData, pdfUrl }) {
 }
 
 function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData, fullCalcs }) {
-  const [toast, setToast] = useState(true);
   const [capexOpen, setCapexOpen] = useState(false);
   const [debtOpen, setDebtOpen] = useState(false);
   const verify = useVerifyPanel();
@@ -1742,7 +1743,6 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData, fullCalcs }) {
             <div className="text-[11px] text-gray-400 font-medium flex items-center gap-1.5 mb-1"><span className="text-gray-300">{ic}</span>{l}</div>
             <div className="flex items-center gap-2">
               <div className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-800 bg-white min-h-[34px] flex items-center">{v === null ? ADD : v}</div>
-              {extra === "search" && <button className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-2 py-1.5">{I.search} Search</button>}
             </div>
           </div>
         ))}
@@ -1898,11 +1898,6 @@ function SummaryTab({ M, S, set, pdfData, pdfUrl, scenarioData, fullCalcs }) {
           </Card>
         </div>
       </div>
-      {toast && <div className="fixed bottom-5 right-5 bg-white border border-gray-200 rounded-2xl shadow-lg p-4 w-72 z-20">
-        <div className="flex items-center justify-between mb-2"><span className="text-xs font-semibold text-gray-500">Document Activity</span><button onClick={() => setToast(false)} className="text-gray-300">{I.x}</button></div>
-        <div className="flex items-start gap-2 text-sm text-gray-700"><span className="text-emerald-500 mt-0.5">{I.check}</span>T-12 parsed — your underwriting updated</div>
-        <button className="mt-3 flex items-center gap-2 bg-emerald-50 text-emerald-700 text-xs font-semibold px-3 py-2 rounded-lg w-full">{I.doc} Go to Underwriting Workflow</button>
-      </div>}
       {verify.open && <DocSourcePanel title="Summary" fields={summaryVerifyFields} onClose={verify.close} pdfData={pdfData} pdfUrl={pdfUrl} />}
     </div>
   );
@@ -2458,12 +2453,11 @@ function IncomeTab({ M, pdfData, pdfUrl }) {
 }
 
 /* -------- Rent Roll -------- */
-function RentRollTab({ M, scenarioData }) {
+function RentRollTab({ M, S, scenarioData }) {
   const [view, setView] = useState("table");
   const [search, setSearch] = useState("");
   const [trendWin, setTrendWin] = useState("6 Mo");
   const [toast, setToast] = useState(true);
-  const [saving, setSaving] = useState(true);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [fType, setFType] = useState("All Types");
   const [fStatus, setFStatus] = useState("All Statuses");
@@ -2565,16 +2559,19 @@ function RentRollTab({ M, scenarioData }) {
     (!sfMin || u.sf >= parseInt(sfMin, 10)) && (!sfMax || u.sf <= parseInt(sfMax, 10)) &&
     (!belowMkt || u.rent < 0.9 * avgAll);
   const list = M.units.filter((u) => (u.unit + u.tenant + u.type).toLowerCase().includes(search.toLowerCase()) && passFilters(u)).slice(0, 60);
-  const mixRows = CFG.unitMix.map((m) => {
-    const us = M.units.filter((u) => u.type === m.type);
+  // Concentration table rows from the ACTUAL unit types in this deal, not the
+  // fake demo CFG.unitMix — same class of bug fixed on the Income tab, missed here
+  // (fake type labels like "2BR/2BA" never matched a real deal's own type strings).
+  const rrRealTypes = Array.from(new Set(M.units.map((u) => u.type)));
+  const mixRows = rrRealTypes.map((type) => {
+    const us = M.units.filter((u) => u.type === type);
     const rev = us.reduce((s, u) => s + u.rent, 0);
-    return { ...m, rev, pu: us.length / M.dealUnits, pr: rev / M.gprMonthly };
+    return { type, count: us.length, rev, pu: us.length / M.dealUnits, pr: rev / M.gprMonthly };
   });
   const forecast = [{ m: "Vacant", v: M.vacantCount, vac: true }, ...["Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct"].map((m, i) => ({ m, v: M.expByMonth[i] }))];
   const avgRoll = Math.round(sum(M.expByMonth) / 12);
   return (
     <div className="p-6 flex flex-col gap-5 w-full">
-      {saving && <button onClick={() => setSaving(false)} className="fixed top-16 right-5 bg-white border border-gray-200 rounded-full shadow px-3 py-1 text-xs text-gray-500 z-20">Saving…</button>}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Rent Roll</h1>
         <div className="flex gap-2">
@@ -2584,7 +2581,7 @@ function RentRollTab({ M, scenarioData }) {
           </div>
           <Ghost active={view === "ai"} onClick={() => setView(view === "table" ? "ai" : "table")}>{I.chart} Analytics</Ghost>
           <Ghost onClick={() => openVerifyFor(verifyUnit?.unit || M.units[0]?.unit)} className="!border-emerald-300 !text-emerald-600"><span className="text-emerald-500">{I.check}</span> Verify Source</Ghost>
-          <Ghost>{I.dl} Export to Excel</Ghost>
+          <Ghost onClick={() => exportWorkbook(M, S)}>{I.dl} Export to Excel</Ghost>
         </div>
       </div>
       {ddOpen && (
@@ -2764,10 +2761,6 @@ function RentRollTab({ M, scenarioData }) {
             </>)}
           </div>
         </Card>
-        <div className="flex gap-3">
-          <div className="flex-1 flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-400">{I.search}<input placeholder="Search by unit, tenant, type, or status…" className="outline-none w-full text-gray-700" /></div>
-          <Ghost>{I.sliders} Filters</Ghost>
-        </div>
         {toast && (
           <div className="fixed bottom-5 right-5 bg-white border border-gray-200 rounded-2xl shadow-lg p-4 w-80 z-20">
             <div className="flex items-center justify-between mb-2"><span className="text-xs font-semibold text-gray-500">Rent Roll AI Insights detected</span><button onClick={() => setToast(false)} className="text-gray-300">{I.x}</button></div>
@@ -3531,7 +3524,7 @@ function ExpensesTab({ M, scenarioData }) {
                   <td className="text-right px-4"><Mono v={v} /></td>
                   <td className="text-right px-4 text-gray-500">{$f(-v / M.dealUnits)}</td>
                   <td className="text-right px-4 text-gray-500">{pct(-v / M.T12.egr, 1)}</td>
-                  <td className="text-right px-4"><Mono v={Math.round(v * (1 + CFG.assumptions.expGrowth))} /></td>
+                  <td className="text-right px-4"><Mono v={Math.round(v * (1 + M.expGrowth))} /></td>
                 </tr>
               );
             })}
@@ -3559,7 +3552,7 @@ function CashflowTab({ M, S, set, cfView, pdfData, pdfUrl }) {
   const isMonthly = cfView === "Monthly";
   const [open, setOpen] = useState({ rev: true, opex: true, fees: true, loan: true, jv: true, wc: true, acq: true });
   const flip = (k) => setOpen((p) => ({ ...p, [k]: !p[k] }));
-  const g = CFG.assumptions.expGrowth;
+  const g = M.expGrowth;
   const t12sum = (k) => sum(M.t12[k]);
   const wcap = CFG.acq.workingCapital;
   const loanFees = M.finFeeAmt;
@@ -3624,7 +3617,7 @@ function CashflowTab({ M, S, set, cfView, pdfData, pdfUrl }) {
             {Object.entries(INCOME_METHOD_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
           </select>
         </div>
-        <div className="flex gap-2"><VerifyButton onClick={verify.toggle} /><Ghost>{I.sliders} Controls</Ghost></div>
+        <div className="flex gap-2"><VerifyButton onClick={verify.toggle} /></div>
       </div>
       {isMonthly && <div className="text-xs text-gray-400">Monthly view of Year 1 — revenue/expense lines from the real parsed T-12's month-by-month figures, debt service from the actual amortization schedule.</div>}
       <Card className="overflow-hidden">
@@ -4850,7 +4843,8 @@ export default function App({
     rateOverride: CFG.scenarios.bridge.rate, baseRate: 0.0375, spread: 0.025,
     amort: 30, ioMonths: 24,
     exitCap: CFG.assumptions.exitCap, costsOfSalePct: CFG.acq.costsOfSalePct,
-    growth: CFG.assumptions.growth,
+    growth: CFG.assumptions.growth, expGrowth: CFG.assumptions.expGrowth,
+    y1Vacancy: CFG.assumptions.y1Vacancy, stabVacancy: CFG.assumptions.stabVacancy,
     incomeMethod: "advanced", renoPremium: CFG.reno.premium, renoCost: CFG.reno.costPerUnit,
     renoTargetType: CFG.reno.targetType,
     selectedRenoIds: new Set(buildUnits().filter((u) => u.type === CFG.reno.targetType).map((u) => u.id)),
@@ -4933,6 +4927,72 @@ export default function App({
       setS((p) => ({ ...p, holdYears: Math.round(realHoldYears) }));
     }
   }, [mergedParsedData]);
+  // Income/expense growth rates had the same bug: S.growth/expGrowth were ALWAYS
+  // the demo's flat 3%/3% (CFG.assumptions.growth/expGrowth), even though the
+  // parser has real underwriting.income_growth_rate/expense_growth_rate fields
+  // (already used by fullCalcs/calculateFullAnalysis for the Summary tab) — the
+  // multi-year model feeding Income/Cashflow/Expenses tabs never read them.
+  const realGrowthSynced = useRef(false);
+  useEffect(() => {
+    if (realGrowthSynced.current) return;
+    const realIncomeGrowth = mergedParsedData?.underwriting?.income_growth_rate;
+    const realExpenseGrowth = mergedParsedData?.underwriting?.expense_growth_rate;
+    if ((realIncomeGrowth && realIncomeGrowth > 0) || (realExpenseGrowth && realExpenseGrowth > 0)) {
+      realGrowthSynced.current = true;
+      setS((p) => ({
+        ...p,
+        growth: realIncomeGrowth > 0 ? realIncomeGrowth / 100 : p.growth,
+        expGrowth: realExpenseGrowth > 0 ? realExpenseGrowth / 100 : p.expGrowth,
+      }));
+    }
+  }, [mergedParsedData]);
+  // Financing terms (rate/LTV/amortization/IO) had the same bug: S.ltv/rateOverride/
+  // amort/ioMonths were ALWAYS the demo Bridge scenario defaults (70% LTV / 9% rate /
+  // 30yr am / 24mo IO), with nothing syncing them from the real parsed loan terms —
+  // every deal's Financing/Cashflow/Waterfall/Returns debt-service math ran on the
+  // demo loan regardless of what the OM/deal-terms chat actually stated. Sync once.
+  const realFinancingSynced = useRef(false);
+  useEffect(() => {
+    if (realFinancingSynced.current) return;
+    const pf = mergedParsedData?.pricing_financing || {};
+    const fin = mergedParsedData?.financing || {};
+    const price = pf.purchase_price || pf.price;
+    const realLTV = pf.ltv > 0 ? pf.ltv / 100
+      : (pf.loan_amount > 0 && price > 0 ? pf.loan_amount / price : null);
+    const realRate = pf.interest_rate > 0 ? pf.interest_rate : null;
+    const realAmort = pf.amortization_years > 0 ? pf.amortization_years : null;
+    const realIOMonths = fin.io_years > 0 ? fin.io_years * 12 : null;
+    if (realLTV || realRate || realAmort || realIOMonths) {
+      realFinancingSynced.current = true;
+      setS((p) => ({
+        ...p,
+        ltv: realLTV ? Math.min(Math.max(realLTV, 0), 1) : p.ltv,
+        rateOverride: realRate ? realRate / 100 : p.rateOverride,
+        amort: realAmort ? Math.round(realAmort) : p.amort,
+        ioMonths: realIOMonths != null ? Math.round(realIOMonths) : p.ioMonths,
+      }));
+    }
+  }, [mergedParsedData]);
+  // Year 1 / stabilized vacancy assumptions had the same bug: always the demo's
+  // flat 7%/5% (CFG.assumptions.y1Vacancy/stabVacancy), even though the parser
+  // has real pnl.vacancy_rate_current/vacancy_rate_stabilized fields — the
+  // pro-forma projection could show a fixed 7% Year-1 vacancy while the Rent
+  // Roll's own unit-level vacancy count reflected a totally different real rate.
+  const realVacancySynced = useRef(false);
+  useEffect(() => {
+    if (realVacancySynced.current) return;
+    const pnl = mergedParsedData?.pnl || {};
+    const realY1Vac = pnl.vacancy_rate_current ?? pnl.vacancy_rate_t12 ?? pnl.vacancy_rate;
+    const realStabVac = pnl.vacancy_rate_stabilized;
+    if (realY1Vac > 0 || realStabVac > 0) {
+      realVacancySynced.current = true;
+      setS((p) => ({
+        ...p,
+        y1Vacancy: realY1Vac > 0 ? realY1Vac / 100 : p.y1Vacancy,
+        stabVacancy: realStabVac > 0 ? realStabVac / 100 : p.stabVacancy,
+      }));
+    }
+  }, [mergedParsedData]);
   // The initial selectedRenoIds/renoTargetType were always seeded from the
   // fake demo unit mix (filtering for "1BR/1BA") before any real deal data
   // was available — for a real deal whose unit types don't include that
@@ -4999,7 +5059,7 @@ export default function App({
     summary: <SummaryTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} scenarioData={mergedParsedData} fullCalcs={fullCalcs} />,
     strategy: <StrategyTab M={M} S={S} set={set} pdfData={pdfData} pdfUrl={pdfUrl} />,
     income: <IncomeTab M={M} pdfData={pdfData} pdfUrl={pdfUrl} />,
-    rentroll: <RentRollTab M={M} scenarioData={mergedParsedData} />,
+    rentroll: <RentRollTab M={M} S={S} scenarioData={mergedParsedData} />,
     t12: <T12Tab M={M} scenarioData={mergedParsedData} />,
     expenses: <ExpensesTab M={M} scenarioData={mergedParsedData} />,
     cashflow: <CashflowTab M={M} S={S} set={set} cfView={cfView} pdfData={pdfData} pdfUrl={pdfUrl} />,
