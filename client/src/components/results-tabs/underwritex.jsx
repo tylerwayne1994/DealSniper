@@ -4616,6 +4616,10 @@ function ReturnsTab({ M, Mbase, S, set, pdfData, pdfUrl }) {
                 <div className="text-[11px] font-bold text-gray-400 uppercase mb-1">New Interest Rate</div>
                 <Input w="w-24" value={fm(refiRateInput * 100, 2)} onChange={(v) => setRefiRateInput((parseFloat(v) || 0) / 100)} suffix="%" />
               </div>
+              <div className="flex gap-4 bg-amber-50 border border-amber-100 rounded-lg px-4 py-2">
+                <div><div className="text-[10px] font-bold text-amber-700 uppercase">New Annual Debt Service</div><div className="text-sm font-bold text-gray-900">{$f(Math.round(detailNew.annualDS))}</div></div>
+                <div><div className="text-[10px] font-bold text-amber-700 uppercase">New DSCR</div><div className="text-sm font-bold text-gray-900">{detailNew.dscr == null ? "—" : `${fm(detailNew.dscr, 2)}x`}</div></div>
+              </div>
               <div className="text-xs text-gray-500 max-w-sm"><b>Loan Amount</b> is priced off NOI ÷ Cap Rate × LTV — it does not move with rate. Changing the <b>Interest Rate</b> updates the Debt Service / DSCR / Cash Flow rows below (highlighted).</div>
             </div>
           </Card>
