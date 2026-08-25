@@ -1,4 +1,5 @@
-> **Status note (added when this file was dropped into the project):** DealSniper's Board of
+> **Status note:** The canonical packaged Claude skill is
+> `backend/board-of-advisors-skill-workflow.skill`. DealSniper's Board of
 > Advisors is already fully built and live — see `board-deliberation-engine.md`, `advisors/*.md`,
 > and the runtime implementation in `backend/board_of_advisors_engine.py`
 > (`POST /v2/deals/{deal_id}/board` + `/board/chat`). Our implementation already runs all 7

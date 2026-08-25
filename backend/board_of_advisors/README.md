@@ -2,6 +2,15 @@
 
 A ready-to-install "board of advisors" for your underwriting site. Eight iconic multifamily investors, each modeled as a source-cited persona, deliberate over a deal in your pipeline and hand back a recommendation with the dissent preserved.
 
+## Claude Skill
+
+The packaged Claude skill lives at `backend/board-of-advisors-skill-workflow.skill`.
+It contains a separate, ready-to-run ten-advisor research workflow, including
+market and syndication references. It is intended for Claude/agent deliberations;
+the live DealSniper API continues to load the personas in this folder at runtime.
+This separation keeps API behavior tied to the application's real deal data and
+allows the skill package to evolve without changing production board responses.
+
 ## What's in this package
 
 ```
