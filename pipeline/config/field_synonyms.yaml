@@ -1,0 +1,55 @@
+# Canonical field -> source-header synonyms, per layer.
+# Matching: headers are lower-cased and stripped of non-alphanumerics, then exact-matched
+# against these lists; remaining unmatched required fields fall back to fuzzy matching
+# (threshold in pipeline.yaml field_matching.fuzzy_threshold). Unmatched source columns land in `raw`.
+
+parcels:
+  apn: [apn, ain, pin, parcelid, parcelno, parcelnum, parcelnumber, parcel, taxparcelid, taxpin,
+        propid, propertyid, accountno, acctno, account, gpin, mapparcel, parid, blklot, mapblklot,
+        assessorparcelnumber, parcelapn, apnchr, taxkey, folio, folionumber, strap]
+  owner_name: [owner, ownername, owner1, ownernme1, taxpayer, taxpayername, ownernamе, deededowner,
+               primaryowner, ownfullname, py_owner_n, ownerna1]
+  owner_mail_addr: [mailaddress, mailingaddress, owneraddress, mailaddr, mailingaddr, mailadr,
+                    taxpayeraddress, ownermailingaddress, mailingadd, mail_addr1]
+  situs_addr: [situsaddress, situs, siteaddress, siteaddr, propertyaddress, propaddress, address,
+               fulladdress, situsfulladdress, locationaddress, situsaddr, siteadd, physaddress,
+               streetaddress, propstreet]
+  situs_city: [situscity, sitecity, propertycity, propcity, city, munname]
+  situs_zip: [situszip, sitezip, propertyzip, propzip, zip, zipcode, situszipcode, postalcode, zip5]
+  land_use_code: [landuse, landusecode, uscode, usecode, usecd, lucode, propertyuse, proptype,
+                  propertytype, useclass, landusetype, dorcode, doruc, landusecd, statecode]
+  land_use_desc: [landusedesc, landusedescription, usedesc, usedescription, usetype, propertyusedesc,
+                  landusecategory, usecodedesc]
+  zoning: [zoning, zone, zonecode, zoningcode, zoneclass, zoningclass, zonedesignation, zoning1]
+  assessed_land: [landvalue, assessedland, landval, landassessedvalue, avland, lndvalue, land_av,
+                  assessedlandvalue]
+  assessed_impr: [improvementvalue, assessedimprovement, imprvalue, improvval, avimprovements,
+                  impvalue, bldgvalue, buildingvalue, impr_av]
+  assessed_total: [totalvalue, assessedtotal, assessedvalue, totalassessedvalue, avtotal, totval,
+                   totalav, justvalue, marketvalue, totmktval, netvalue, taxablevalue]
+  last_sale_date: [saledate, lastsaledate, saledt, deeddate, recordingdate, transferdate, docdate,
+                   salesdate, currentsaledate]
+  last_sale_price: [saleprice, lastsaleprice, saleamount, salesprice, considerationamount, price,
+                    currentsaleprice, transferamount, saleamt]
+  year_built: [yearbuilt, yrbuilt, yearblt, effyearbuilt, yrblt, actualyearbuilt, ybuilt, eyb]
+  sqft_bldg: [buildingsqft, bldgsqft, buildingarea, totallivingarea, livingarea, sqftbldg, sqft,
+              grosssqft, totalarea, heatedarea, finishedarea, bldgarea, totlvgarea, sfla]
+  sqft_lot: [lotsqft, lotsize, lotarea, landarea, sqftlot, landsqft, acreage, acres, lotacres,
+             parcelarea, shapearea, calcacres, gisacres]
+  units: [units, unitcount, numberofunits, numunits, dwellingunits, livingunits, unitstotal,
+          residentialunits, nounits, du]
+
+zoning:
+  zone_code: [zone, zoning, zonecode, zoningcode, zoneclass, zoningclass, zonecd, zndist,
+              zonedistrict, zoningdistrict, district, zonesymbol, zonelabel, zoning1, basezone,
+              zonecodename, zonetype, zn, code, symbol]
+  zone_desc: [zonedesc, zonedescription, zoningdescription, description, zonename, districtname,
+              zoningname, longname, classdesc, zonecategorydesc, label, descriptio]
+  jurisdiction: [jurisdiction, city, municipality, muni, cityname, juris, jurisname, community,
+                 place, agency, authority]
+  overlay: [overlay, overlaydistrict, isoverlay, overlayzone, overlayflag]
+  ordinance_url: [ordinanceurl, ordinance, codeurl, link, url, weblink, hyperlink, municode,
+                  ordlink, regulationurl]
+  effective_date: [effectivedate, adopteddate, ordinancedate, dateadopted, lastupdate, editdate,
+                   effdate, adoptdate]
+  source_key: [objectid, fid, globalid, id, gid, uid, uniqueid, zoneid, polyid, shapeid]

@@ -1,0 +1,13 @@
+anthropic>=1.0
+geopandas>=1.0
+pyogrio>=0.10
+shapely>=2.0
+pyproj>=3.6
+requests>=2.32
+psycopg[binary]>=3.2
+PyYAML>=6.0
+python-dotenv>=1.0
+rapidfuzz>=3.9
+beautifulsoup4>=4.12
+lxml>=5.0
+pytest>=8.0

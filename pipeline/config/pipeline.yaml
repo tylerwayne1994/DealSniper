@@ -1,0 +1,132 @@
+# Deal Sniper county data pipeline — all tunables live here or in the environment.
+# ${VAR} values are expanded from the environment (pipeline/.env is loaded first).
+# A command fails fast at startup, listing missing names, if a var it needs is unset.
+
+target:
+  county_count: 50
+  census_vintage: latest          # "latest" probes acs5 vintages downward from last year
+  census_dataset: acs/acs5        # dataset path under the vintage
+  census_population_variable: B01003_001E
+  layers: [parcels, zoning]
+
+sources:
+  census_population_api: ${CENSUS_API_BASE}
+  census_tiger_base: ${CENSUS_TIGER_BASE}   # full ArcGIS REST service URL; layers found by name below
+  census_tiger_layers:                      # layer *names* matched against the service's layer list
+    counties: "Counties"
+    incorporated_places: "Incorporated Places"
+    census_designated_places: "Census Designated Places"
+  arcgis_hub_search_api: ${ARCGIS_HUB_API_BASE}
+  socrata_discovery_api: ${SOCRATA_DISCOVERY_API}
+  ckan_seed_portals: []                # optional, filled by discover
+  state_clearinghouses: []             # optional, filled by discover
+  ladder: [bulk_download, arcgis_rest, socrata, ckan, statewide, scraper]   # ORDER MATTERS
+
+discover:
+  max_concurrent: 8
+  request_timeout_s: 45
+  candidate_score_threshold: 0.55      # 0..1 name-similarity + field-match score to accept a candidate
+  geometry_simplify_tolerance: 0.001   # degrees, for stored county/place outlines
+  max_candidates_checked: 5            # per job per rung, deep-validated candidates
+  lsad_kinds:                          # TIGER LSADC -> jurisdiction kind
+    "25": city
+    "21": city
+    "43": town
+    "47": town
+    "57": cdp
+  search_keywords:
+    parcels: [parcels, "tax parcels", "parcel boundaries", cadastral]
+    zoning: [zoning, "zoning districts", "zoning map"]
+  statewide_keywords:
+    parcels: ["statewide parcels", "parcel fabric"]
+    zoning: ["statewide zoning"]
+
+ingest:
+  page_size: 2000
+  max_concurrent_jobs: 3
+  request_timeout_s: 120
+  max_retries_per_run: 3
+  backoff_base_s: 5
+  upsert_batch_size: 1000
+
+field_matching:
+  fuzzy_threshold: 87                  # rapidfuzz token ratio needed for a header match
+
+scraper:
+  respect_robots_txt: true
+  min_delay_s: 2.0
+  max_pages_per_run: 5000
+  user_agent: ${SCRAPER_USER_AGENT}
+  require_manual_approval: true        # scraper adapters stay 'pending_approval' until --approve
+
+selfheal:
+  enabled: true
+  max_rewrites_per_job: 3
+  model: ${CLAUDE_MODEL}
+  api_key: ${ANTHROPIC_API_KEY}
+  max_tokens: 16000
+  web_search: true                     # give the model web search in discovery mode when supported
+  sandbox_timeout_s: 600
+  sandbox_row_sample: 500
+  context_log_lines: 60
+  context_response_bytes: 4096
+  context_sample_rows: 20
+
+validation:
+  parcels:
+    min_rows: 1000
+    required_fields: [apn, geom]
+    max_null_ratio_per_field: 0.5
+  zoning:
+    min_rows: 20
+    required_fields: [zone_code, geom, jurisdiction]
+    max_null_ratio_per_field: 0.2
+  geom_srid: 4326
+  bbox_must_intersect_target: true
+  bbox_sample_rows: 1000
+  max_invalid_geom_ratio: 0.05
+  max_duplicate_key_ratio: 0.01
+  max_zone_other_ratio: 0.30           # zoning only: > this ratio of 'other' categories fails the run
+
+# zone_code / zone_desc -> zone_category. First matching regex wins; case-insensitive.
+# Unknown codes get 'other' and are listed in the run report.
+zone_categories:
+  - {pattern: '(?:^|[^A-Z])R[MH]|MULTI[- ]?FAM|APART|R-?[3-9]\d*|RM-|MF', category: multifamily}
+  - {pattern: '(?:^|[^A-Z])R-?[12]?(?:$|[^0-9A-Z])|SINGLE[- ]?FAM|RESIDENT|RS-|RE-|SFR', category: residential}
+  - {pattern: 'MIXED|MX|MU(?:$|[^A-Z])|TOD|TRANSIT', category: mixed}
+  - {pattern: '(?:^|[^A-Z])C-?\d|COMM|CB|CC(?:$|[^A-Z])|CG(?:$|[^A-Z])|RETAIL|OFFICE|(?:^|[^A-Z])CO(?:$|[^A-Z])', category: commercial}
+  - {pattern: '(?:^|[^A-Z])[MI]-?\d|INDUST|MFG|LI(?:$|[^A-Z])|HI(?:$|[^A-Z])|IND', category: industrial}
+  - {pattern: 'AGRIC|(?:^|[^A-Z])A-?\d|(?:^|[^A-Z])AG(?:$|[^A-Z])|RURAL|FARM|RA(?:$|[^A-Z])', category: ag}
+
+tiles:
+  min_zoom: 10
+  max_zoom: 16
+  output_dir: ${TILES_DIR}
+  base_url: ${TILES_BASE_URL}
+  tippecanoe_bin: tippecanoe
+  properties:
+    parcels: [apn, situs_addr, land_use_code, zoning, last_sale_date, last_sale_price, assessed_total]
+    zoning: [zone_code, zone_category, jurisdiction]
+
+db:
+  dsn: ${DATABASE_URL}
+
+paths:                                  # relative to the pipeline/ directory
+  sources_file: config/sources.yaml
+  generated_adapters_dir: adapters/generated
+  data_dir: data
+  discover_cache_dir: data/discover
+  logs_dir: logs
+  reports_dir: reports
+
+schedule:
+  cron: "0 3 * * 0"
+
+# Env vars each subsystem needs; the CLI fails fast listing whichever are unset.
+required_env:
+  discover: [CENSUS_API_BASE, CENSUS_TIGER_BASE, ARCGIS_HUB_API_BASE, SOCRATA_DISCOVERY_API]
+  ingest: []                            # dry-run needs nothing beyond discover's outputs
+  ingest_db: [DATABASE_URL]
+  scraper: [SCRAPER_USER_AGENT]
+  selfheal: [ANTHROPIC_API_KEY, CLAUDE_MODEL]
+  tiles: [TILES_DIR, TILES_BASE_URL]
