@@ -16,6 +16,8 @@ from fastapi import APIRouter, Request, HTTPException
 from supabase import create_client, Client
 import logging
 
+from account_provisioning import ensure_paid_account
+
 log = logging.getLogger("stripe_webhook")
 
 # ============================================================================
@@ -137,6 +139,47 @@ def audit_duplicate_subscriptions(customer_id: str, email: str | None):
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
+def ensure_account_for_customer(supabase: Client, customer_id: str, subscription=None, provisioned_by: str = "webhook"):
+    """Safety net: make sure a Supabase account exists for this Stripe customer.
+
+    Looks the customer up by stripe_customer_id first; if no profile carries
+    it, resolves the customer's email in Stripe and find-or-creates the
+    account (sending a set-password email when one had to be created).
+    Returns the profile/user id or None. Never raises.
+    """
+    try:
+        rows = (supabase.table("profiles").select("id").eq("stripe_customer_id", customer_id).limit(1).execute().data) or []
+        if rows:
+            return rows[0]["id"]
+
+        customer = stripe.Customer.retrieve(customer_id)
+        email = (customer.get("email") or "").strip().lower()
+        if not email:
+            log.error("[WEBHOOK] Stripe customer %s has no email — cannot provision an account", customer_id)
+            return None
+
+        if subscription is None:
+            subs = stripe.Subscription.list(customer=customer_id, status="all", limit=5).get("data", [])
+            live = [x for x in subs if x.get("status") in LIVE_SUB_STATUSES]
+            subscription = (live or subs or [None])[0]
+
+        user_id, _ = ensure_paid_account(
+            supabase,
+            email=email,
+            customer_id=customer_id,
+            subscription_id=subscription.get("id") if subscription else None,
+            sub_status=subscription.get("status") if subscription else None,
+            trial_end_ts=subscription.get("trial_end") if subscription else None,
+            metadata=dict((subscription or {}).get("metadata") or {}),
+            monthly_tokens=TIER_TOKEN_LIMITS["standard"],
+            provisioned_by=provisioned_by,
+        )
+        return user_id
+    except Exception as e:
+        log.error("[WEBHOOK] ensure_account_for_customer(%s) failed: %s", customer_id, e)
+        return None
+
 
 def update_subscription_tier(stripe_customer_id: str, subscription_tier: str, stripe_subscription_id: str, subscription_status: str = "active"):
     """Update user's subscription tier in Supabase profiles table."""
@@ -306,22 +349,31 @@ async def stripe_webhook(request: Request):
                 supabase.table("profiles").update(update_data).eq("id", user_id).execute()
 
                 log.info(f"✅ SUBSCRIPTION ACTIVATED: User {user_id} | Plan: {plan} | Tokens: {monthly} | Status: {sub_status}")
+            elif customer_email:
+                # No user_id in the session (legacy checkout started without an
+                # account). Find-or-CREATE the account by email: a Stripe
+                # subscriber must never exist without a Supabase login, or the
+                # trial converts into a charge for someone who can't sign in.
+                # If /api/complete-signup runs first this is a no-op update;
+                # if it runs second it just sets the password.
+                ensure_paid_account(
+                    supabase,
+                    email=customer_email,
+                    customer_id=customer_id,
+                    subscription_id=subscription_id,
+                    sub_status=sub_status,
+                    trial_end_ts=trial_end_ts,
+                    metadata=metadata,
+                    plan=tier,
+                    monthly_tokens=TIER_TOKEN_LIMITS.get(tier, 25),
+                    provisioned_by="webhook:checkout.session.completed",
+                    # The person is on /payment-success choosing a password
+                    # right now; only email them if that never happens (see
+                    # trial_will_end below).
+                    notify_if_created=False,
+                )
             else:
-                # Fallback: try to find profile by email
-                if customer_email:
-                    update_data = {
-                        "stripe_customer_id": customer_id,
-                        "subscription_tier": tier,
-                        "stripe_subscription_id": subscription_id,
-                        "subscription_status": sub_status,
-                    }
-                    if trial_ends_at:
-                        update_data["trial_ends_at"] = trial_ends_at
-
-                    result = supabase.table("profiles").update(update_data).eq("email", customer_email).execute()
-
-                    if not result.data:
-                        log.error(f"❌ No profile found for email: {customer_email}")
+                log.error("❌ checkout.session.completed with no user_id and no email: session=%s", session_id)
 
             # Update subscription tier
             update_subscription_tier(customer_id, tier, subscription_id, sub_status)
@@ -350,10 +402,15 @@ async def stripe_webhook(request: Request):
             cancel_subscription(customer_id)
 
     elif event["type"] == "customer.subscription.trial_will_end":
-        # Trial ending soon (fires 3 days before trial ends)
+        # Trial ending soon (fires 3 days before trial ends). Last stop before
+        # the card is charged: if this customer still has no Supabase account
+        # (never finished /payment-success), create it and email them a
+        # set-password link so they can log in before they pay.
         subscription = event["data"]["object"]
         customer_id = subscription.get("customer")
         log.info(f"⏰ TRIAL ENDING SOON for customer {customer_id}")
+        if customer_id:
+            ensure_account_for_customer(supabase, customer_id, subscription, provisioned_by="webhook:trial_will_end")
 
     elif event["type"] == "invoice.payment_succeeded":
         # Recurring payment successful - grant monthly tokens (rollover adds to balance)
@@ -362,6 +419,9 @@ async def stripe_webhook(request: Request):
         subscription_id = invoice.get("subscription")
 
         if customer_id and subscription_id:
+            # A real charge just happened — this customer MUST have a login.
+            ensure_account_for_customer(supabase, customer_id, provisioned_by="webhook:invoice.payment_succeeded")
+
             # Fetch current balance and monthly limit
             result = supabase.table("profiles").select("token_balance, monthly_token_limit").eq("stripe_customer_id", customer_id).single().execute()
 

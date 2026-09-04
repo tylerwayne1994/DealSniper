@@ -62,6 +62,23 @@ function LoginPage() {
     }
   };
 
+  // Sends the Supabase recovery email; the link lands on /set-password. This
+  // is also how a customer whose account was created server-side (paid via
+  // Stripe but never finished the old signup page) gets their first password.
+  const handleForgotPassword = async () => {
+    setError('');
+    setSuccess('');
+    if (!formData.email) {
+      setError('Enter your email above, then click "Forgot password?"');
+      return;
+    }
+    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(formData.email.trim(), {
+      redirectTo: `${window.location.origin}/set-password`,
+    });
+    if (resetErr) setError(resetErr.message || 'Could not send reset email');
+    else setSuccess('Check your email for a link to set your password.');
+  };
+
   const handleGoogleLogin = async () => {
     setError('');
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
@@ -282,6 +299,15 @@ function LoginPage() {
               <Link to="/signup" style={{ color: '#10b981', fontWeight: '600', textDecoration: 'none' }}>
                 Create one
               </Link>
+            </p>
+            <p style={{ color: '#94a3b8', fontSize: '14px', marginTop: '10px', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                style={{ background: 'none', border: 'none', padding: 0, color: '#10b981', fontWeight: '600', cursor: 'pointer', fontSize: '14px' }}
+              >
+                Forgot password?
+              </button>
             </p>
           </div>
         </div>

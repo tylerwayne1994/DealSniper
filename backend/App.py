@@ -875,6 +875,11 @@ async def create_checkout_session(request: Request):
     # stripe_webhook_handler.py's `metadata.get("user_id")` branch, which
     # already supports this and needed no changes.
     user_id = data.get("userId")
+    # Email/password signups send the chosen password so the Supabase account
+    # can be created HERE, before Stripe ever sees a card. Previously the
+    # account was only created in the browser after checkout, and any hiccup
+    # on that page left a paying Stripe subscriber with no login at all.
+    password = data.get("password") or None
 
     if not email:
         raise HTTPException(status_code=400, detail="Missing required field: email")
@@ -883,16 +888,60 @@ async def create_checkout_session(request: Request):
         raise HTTPException(status_code=500, detail="Subscription price is not configured")
 
     stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-    customer_key = user_id or email
     log.info("[CHECKOUT] Checkout requested: email=%s user_id=%s", email, user_id or "-")
 
-    # Profile lookup for a previously stored Stripe customer id (never create
-    # a second customer for a known user).
     supabase = None
-    stored_customer_id = None
     try:
         from stripe_webhook_handler import get_supabase
         supabase = get_supabase()
+    except Exception as e:
+        log.warning("[CHECKOUT] Supabase unavailable (continuing without it): %s", e)
+
+    # Layer 0 — account-first for the password flow: find-or-create the auth
+    # user now so the checkout session carries a user_id and the webhook's
+    # by-id branch activates the right profile with no browser involvement.
+    if not user_id and password:
+        if not supabase:
+            raise HTTPException(status_code=503, detail="Account service unavailable — please try again in a moment")
+        from account_provisioning import (
+            find_user_id_by_email, verify_password, ensure_auth_user, stamp_profile,
+        )
+        signup_fields = {
+            "first_name": first_name, "last_name": last_name, "phone": phone,
+            "company": company, "title": title, "city": city, "state": state,
+        }
+        try:
+            existing_id = find_user_id_by_email(supabase, email)
+            if existing_id:
+                if not verify_password(email, password):
+                    log.info("[CHECKOUT] %s already has an account (password mismatch) — asking them to sign in", email)
+                    return JSONResponse(status_code=409, content={
+                        "account_exists": True,
+                        "message": "An account with this email already exists. Please sign in to continue to checkout.",
+                    })
+                user_id = existing_id
+                log.info("[CHECKOUT] Reusing existing account %s for %s", user_id, email)
+            else:
+                user_id, _ = ensure_auth_user(
+                    supabase, email, password=password,
+                    user_metadata=signup_fields, provisioned_by="checkout",
+                )
+                stamp_profile(supabase, user_id, email=email, plan=None, profile_fields=signup_fields)
+                log.info("[CHECKOUT] Created account %s for %s before checkout", user_id, email)
+        except HTTPException:
+            raise
+        except Exception as e:
+            log.error("[CHECKOUT] Account provisioning failed for %s: %s", email, e)
+            raise HTTPException(status_code=500, detail="Could not create your account. Please try again.")
+
+    customer_key = user_id or email
+
+    # Profile lookup for a previously stored Stripe customer id (never create
+    # a second customer for a known user).
+    stored_customer_id = None
+    try:
+        if not supabase:
+            raise RuntimeError("no supabase client")
         query = supabase.table("profiles").select("id, stripe_customer_id")
         query = query.eq("id", user_id) if user_id else query.eq("email", email)
         rows = (query.limit(1).execute().data) or []
@@ -1088,6 +1137,109 @@ async def get_checkout_session(session_id: str):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/complete-signup")
+async def complete_signup(request: Request):
+    """
+    Finish an email/password signup after Stripe Checkout, server-side.
+
+    Replaces the old browser-side `supabase.auth.signUp` on /payment-success.
+    Given a completed checkout session id and the password the person chose:
+      1. verify the session with Stripe (completed, subscription mode),
+      2. find-or-create the Supabase auth user for the session's email,
+      3. set the password — but ONLY if the account has never been signed
+         into (a brand-new or webhook-provisioned account). Setting the
+         password on an already-used account would let anyone who pays for
+         a checkout with someone else's email take that account over, so
+         that case returns account_exists and the person signs in instead.
+      4. stamp the profile with the Stripe ids so the paid-access gate
+         recognizes them.
+    Idempotent: safe to call again after a refresh, and safe in either order
+    relative to the checkout.session.completed webhook.
+    """
+    from datetime import datetime as _dt
+    from stripe_webhook_handler import get_supabase, TIER_TOKEN_LIMITS
+    from account_provisioning import (
+        find_user_id_by_email, ensure_auth_user, get_auth_user, user_has_signed_in,
+        set_user_password, stamp_profile, PROFILE_FIELDS,
+    )
+
+    data = await request.json()
+    session_id = (data.get("session_id") or "").strip()
+    password = data.get("password") or ""
+    if not session_id:
+        raise HTTPException(status_code=400, detail="session_id is required")
+    if len(password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+
+    stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+    except Exception as e:
+        log.warning("[COMPLETE-SIGNUP] Bad session %s: %s", session_id, e)
+        raise HTTPException(status_code=404, detail="Checkout session not found")
+
+    if session.get("mode") != "subscription" or session.get("status") != "complete":
+        raise HTTPException(status_code=400, detail="Checkout has not completed")
+
+    metadata = dict(session.get("metadata") or {})
+    email = (
+        metadata.get("email")
+        or session.get("customer_email")
+        or (session.get("customer_details") or {}).get("email")
+        or ""
+    ).strip().lower()
+    if not email:
+        raise HTTPException(status_code=400, detail="Checkout session has no email")
+
+    customer_id = session.get("customer")
+    subscription_id = session.get("subscription")
+    sub_status, trial_end_ts = None, None
+    if subscription_id:
+        try:
+            sub = stripe.Subscription.retrieve(subscription_id)
+            sub_status = sub.get("status")
+            trial_end_ts = sub.get("trial_end")
+        except Exception as e:
+            log.warning("[COMPLETE-SIGNUP] Could not load subscription %s: %s", subscription_id, e)
+
+    supabase = get_supabase()
+    profile_fields = {k: metadata.get(k) for k in PROFILE_FIELDS}
+    try:
+        user_id = metadata.get("user_id") or find_user_id_by_email(supabase, email)
+        if user_id:
+            user = get_auth_user(supabase, user_id)
+            if user is not None and user_has_signed_in(user):
+                log.info("[COMPLETE-SIGNUP] %s already has a used account — not resetting password", email)
+                return JSONResponse(status_code=409, content={
+                    "account_exists": True,
+                    "message": "This email already has an account. Please sign in (or reset your password) to continue.",
+                })
+            set_user_password(supabase, user_id, password, user_metadata={k: v for k, v in profile_fields.items() if v})
+        else:
+            user_id, _ = ensure_auth_user(
+                supabase, email, password=password, user_metadata=profile_fields, provisioned_by="complete-signup",
+            )
+
+        trial_ends_at = _dt.fromtimestamp(trial_end_ts).isoformat() if trial_end_ts else None
+        stamp_profile(
+            supabase, user_id,
+            email=email,
+            customer_id=customer_id,
+            subscription_id=subscription_id,
+            sub_status=sub_status,
+            trial_ends_at=trial_ends_at,
+            plan="standard",
+            monthly_tokens=TIER_TOKEN_LIMITS.get("standard", 25),
+            profile_fields=profile_fields,
+        )
+        log.info("[COMPLETE-SIGNUP] Account %s ready for %s (customer %s)", user_id, email, customer_id)
+        return {"ok": True, "user_id": user_id, "email": email}
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error("[COMPLETE-SIGNUP] Failed for %s: %s", email, e)
+        raise HTTPException(status_code=500, detail="Could not finish creating your account. Please try again.")
 
 @app.post("/api/reconcile-subscription")
 async def reconcile_subscription(request: Request):

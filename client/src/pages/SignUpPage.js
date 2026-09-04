@@ -74,6 +74,10 @@ function SignUpPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: formData.email,
+          // The server creates the Supabase account BEFORE Stripe checkout so
+          // a paying subscriber can never end up without a login (the old
+          // flow only created it in the browser after checkout).
+          password: formData.password,
           firstName: formData.firstName,
           lastName: formData.lastName,
           phone: formData.phone,
@@ -93,6 +97,16 @@ function SignUpPage() {
         // pay twice; point them at sign-in instead.
         sessionStorage.removeItem('pendingSignup');
         setError('This email already has an active subscription. Please sign in instead.');
+        submittingRef.current = false;
+        setLoading(false);
+        return;
+      }
+      if (res.status === 409 && body?.account_exists) {
+        // This email already has an account with a different password —
+        // never overwrite it from a signup form. Sign in instead; the paid
+        // gate sends them into checkout if they have no subscription yet.
+        sessionStorage.removeItem('pendingSignup');
+        setError('An account with this email already exists. Please sign in to continue.');
         submittingRef.current = false;
         setLoading(false);
         return;

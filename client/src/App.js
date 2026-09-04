@@ -18,6 +18,7 @@ import SignUpPage from './pages/SignUpPage'; // Sign Up
 import SignupCompletePage from './pages/SignupCompletePage'; // Signup Complete
 import LoginPage from './pages/LoginPage'; // Login
 import AuthCallbackPage from './pages/AuthCallbackPage'; // Google/OAuth callback + subscription gate
+import SetPasswordPage from './pages/SetPasswordPage'; // Recovery-link landing: set password for server-provisioned accounts
 import RequireSubscription from './components/RequireSubscription'; // Paid-access route guard
 import ManualEntryPage from './pages/ManualEntryPage'; // Manual Entry
 import PitchDeckPage from './pages/PitchDeckPage'; // Pitch Deck Generator
@@ -40,6 +41,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/payment-success" element={<PaymentSuccessRedirect />} />
+        <Route path="/set-password" element={<SetPasswordPage />} />
         <Route path="/investor" element={<InvestorGatewayPage />} /> {/* Public investor access gateway */}
         <Route path="/investor/view/:code" element={<InvestorPitchDeckView />} /> {/* Public read-only pitch deck */}
 
